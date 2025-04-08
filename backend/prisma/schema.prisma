@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SuperAdmin {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  created_at DateTime @default(now())
+}
+
+model Consumer {
+  id          String   @id @default(cuid())
+  name        String
+  subdomain   String   @unique
+  plan_id     String
+  created_at  DateTime @default(now())
+
+  // Relations
+  plan         Plan             @relation(fields: [plan_id], references: [id])
+  users        User[]
+  roles        Role[]
+  billing_logs BillingHistory[]
+}
+
+model Plan {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  price      Float
+  features   String     // JSON string (optional)
+  created_at DateTime   @default(now())
+  consumers  Consumer[]
+}
+
+model BillingHistory {
+  id          String    @id @default(cuid())
+  consumer_id String
+  amount      Float
+  reference   String
+  created_at  DateTime  @default(now())
+
+  consumer    Consumer  @relation(fields: [consumer_id], references: [id])
+}
+
+model User {
+  id           String     @id @default(cuid())
+  consumer_id  String
+  email        String
+  name         String
+  password     String
+  created_at   DateTime   @default(now())
+
+  consumer     Consumer   @relation(fields: [consumer_id], references: [id])
+  user_roles   UserRole[]
+}
+
+model Role {
+  id           String     @id @default(cuid())
+  consumer_id  String
+  name         String
+  created_at   DateTime   @default(now())
+
+  consumer     Consumer     @relation(fields: [consumer_id], references: [id])
+  permissions  Permission[]
+  user_roles   UserRole[]
+}
+
+model Permission {
+  id       String   @id @default(cuid())
+  role_id  String
+  action   String   // e.g., 'create_invoice', 'view_report'
+
+  role     Role     @relation(fields: [role_id], references: [id])
+}
+
+model UserRole {
+  id       String   @id @default(cuid())
+  user_id  String
+  role_id  String
+
+  user     User     @relation(fields: [user_id], references: [id])
+  role     Role     @relation(fields: [role_id], references: [id])
+}
