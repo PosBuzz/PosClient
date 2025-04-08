@@ -8,13 +8,13 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
-import { CreateConsumerDto } from '../../dto/create-consumer.dto';
-import { UpdateConsumerDto } from '../../dto/update-consumer.dto';
-import { ConsumerService } from '../../services/consumer/consumer.service';
+import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { HasRoles } from 'src/decorators/set-roles.decorator';
-import { Role } from 'src/enums/roles.enum';
+import { Role } from 'src/auth/enums/roles.enum';
+import { CreateConsumerDto } from '../dto/create-consumer.dto';
+import { ConsumerService } from '../services/consumer.service';
+import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @HasRoles([Role.SUPER_ADMIN])
