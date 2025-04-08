@@ -40,11 +40,9 @@ async function main() {
   const superAdmin = await prisma.superAdmin.create({
     data: {
       email: 'admin@example.com',
-      password: '123456', // make sure to hash it before production
+      password: hash, // make sure to hash it before production
     },
   });
-
-  console.log({ basicPlan, proPlan, enterprisePlan, superAdmin });
 }
 
 main()
