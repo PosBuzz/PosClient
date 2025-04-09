@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Layout, Menu, Button, theme } from "antd";
+import { Layout, Menu, Button, theme, Tooltip } from "antd";
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -8,12 +8,15 @@ import {
   UploadOutlined,
   DashboardOutlined,
   SettingOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 import { Outlet } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 
 const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
+  const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const {
@@ -118,10 +121,13 @@ const AppLayout = () => {
             />
             <h2 className="m-0 text-lg hidden md:block">Admin Dashboard</h2>
           </div>
-          <div className="mr-6">
-            <Button type="primary" icon={<UserOutlined />} className="mr-2">
-              Profile
-            </Button>
+          <div>
+            <Tooltip title="Profile">
+              <Button type="text" icon={<UserOutlined />} />
+            </Tooltip>
+            <Tooltip title="Logout">
+              <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
+            </Tooltip>
           </div>
         </Header>
 
