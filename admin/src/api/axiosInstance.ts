@@ -5,6 +5,12 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// Separate instance for refresh token call (no interceptors)
+const refreshInstance = axios.create({
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  withCredentials: true,
+});
+
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
@@ -32,25 +38,32 @@ axiosInstance.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => axiosInstance(originalRequest))
-          .catch((error) => Promise.reject(error));
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          })
+          .catch((error) => {
+            return Promise.reject(error);
+          });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const { data } = await axiosInstance.post("/auth/refresh-token");
-        isRefreshing = false;
-        processQueue(null, data.access_token);
+        const { data } = await refreshInstance.post("/auth/refresh-token");
+        const newAccessToken = data.access_token;
 
+        // Apply token globally (optional if you're using cookies only)
+        // axiosInstance.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
+
+        processQueue(null, newAccessToken);
         return axiosInstance(originalRequest);
       } catch (refreshErr) {
-        isRefreshing = false;
         processQueue(refreshErr, null);
-
-        // Redirect to login or handle logout
-        return Promise.reject(refreshErr);
+        return Promise.reject(refreshErr); 
+      } finally {
+        isRefreshing = false;
       }
     }
 

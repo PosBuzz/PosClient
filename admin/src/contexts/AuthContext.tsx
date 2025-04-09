@@ -1,6 +1,5 @@
-// src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -11,12 +10,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+
   const navigate = useNavigate();
 
   const checkAuth = async () => {
     try {
-      await axiosInstance.get('/auth/me'); // use a protected route to verify login
+      await axiosInstance.get("/auth/me");
       setIsAuthenticated(true);
     } catch (err) {
       setIsAuthenticated(false);
@@ -25,18 +26,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [location.pathname]);
 
   const login = async (email: string, password: string) => {
-    await axiosInstance.post('/auth/login-superadmin', { email, password });
+    await axiosInstance.post("/auth/login-superadmin", { email, password });
     setIsAuthenticated(true);
-    navigate('/'); // or wherever your admin panel starts
+    navigate("/"); // or wherever your admin panel starts
   };
 
   const logout = async () => {
-    await axiosInstance.post('/auth/logout'); // you can clear cookies server-side
+    await axiosInstance.post("/auth/logout"); // you can clear cookies server-side
     setIsAuthenticated(false);
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

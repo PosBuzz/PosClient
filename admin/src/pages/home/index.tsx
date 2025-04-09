@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import reactLogo from '../../assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useNavigate } from "react-router-dom";
+import reactLogo from "../../assets/react.svg";
+import { useAuth } from "../../contexts/AuthContext";
+import viteLogo from "/vite.svg";
 
 function index() {
-  const [count, setCount] = useState(0)
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -17,9 +19,14 @@ function index() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <button
+          onClick={() => {
+            navigate("/user");
+          }}
+        >
+          navigate
         </button>
+        <button onClick={logout}>Logout</button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
@@ -28,7 +35,7 @@ function index() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
 export default index;
