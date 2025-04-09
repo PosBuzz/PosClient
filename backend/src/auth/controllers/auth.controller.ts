@@ -62,22 +62,35 @@ export class AuthController {
   }
 
   @Post('refresh-token')
-  async refreshToken(@Req() req: Request, @Res() res: Response) {
-    const refreshToken = req.cookies['refresh_token'];
+async refreshToken(@Req() req: Request, @Res() res: Response) {
+  const refreshToken = req.cookies['refresh_token'];
 
-    if (!refreshToken) {
-      return res.status(401).send({ message: 'Refresh token not found' });
-    }
+  if (!refreshToken) {
+    // If refresh token is not found, clear cookies and log the user out
+    res.clearCookie('access_token', { httpOnly: true });
+    res.clearCookie('refresh_token', { httpOnly: true });
+    return res.status(401).send({ message: 'Refresh token not found. Logged out successfully.' });
+  }
 
+  try {
     const { access_token } = await this.authService.refreshToken(refreshToken);
 
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      maxAge: 15 * 60 * 1000,
-    }); // 15 minutes
+    // If refresh token is expired or invalid
+    if (!access_token) {
+      res.clearCookie('access_token', { httpOnly: true });
+      res.clearCookie('refresh_token', { httpOnly: true });
+      return res.status(401).send({ message: 'Refresh token expired. Please log in again.' });
+    }
 
+    res.cookie('access_token', access_token, { httpOnly: true, maxAge: 15 * 60 * 1000 }); // 15 minutes
     return res.send({ message: 'Token refreshed' });
+  } catch (error) {
+    res.clearCookie('access_token', { httpOnly: true });
+    res.clearCookie('refresh_token', { httpOnly: true });
+    return res.status(401).send({ message: 'Invalid refresh token or expired session.' });
   }
+}
+
 
   @Post('logout')
   async logout(@Req() req: Request, @Res() res: Response) {
