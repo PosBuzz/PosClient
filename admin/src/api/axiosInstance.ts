@@ -1,4 +1,5 @@
 import axios from "axios";
+import { endpoints } from "./endpoints";
 
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
@@ -51,7 +52,7 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await refreshInstance.post("/auth/refresh-token");
+        await refreshInstance.post(endpoints.refreshToken);
         return axiosInstance(originalRequest);
       } catch (refreshErr) {
         return Promise.reject(refreshErr);
