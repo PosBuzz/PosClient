@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Form, Input, Button, message, Spin, Card } from "antd";
+import { Form, Input, Button, message, Card } from "antd";
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuth();

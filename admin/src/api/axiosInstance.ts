@@ -17,16 +17,16 @@ let failedQueue: Array<{
   reject: (reason?: any) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((promise) => {
-    if (token) {
-      promise.resolve(token);
-    } else {
-      promise.reject(error);
-    }
-  });
-  failedQueue = [];
-};
+// const processQueue = (error: any, token: string | null = null) => {
+//   failedQueue.forEach((promise) => {
+//     if (token) {
+//       promise.resolve(token);
+//     } else {
+//       promise.reject(error);
+//     }
+//   });
+//   failedQueue = [];
+// };
 
 axiosInstance.interceptors.response.use(
   (res) => res,
@@ -51,17 +51,10 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await refreshInstance.post("/auth/refresh-token");
-        const newAccessToken = data.access_token;
-
-        // Apply token globally (optional if you're using cookies only)
-        // axiosInstance.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
+        await refreshInstance.post("/auth/refresh-token");
         return axiosInstance(originalRequest);
       } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        return Promise.reject(refreshErr); 
+        return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
