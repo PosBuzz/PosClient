@@ -12,8 +12,19 @@ export class AuthService {
 
   async loginSuperAdmin(superAdmin: { email: string; id: string }) {
     const payload = { email: superAdmin.email, sub: superAdmin.id };
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d', // Refresh token validity
+    });
+
+    // Save refresh token in the database
+    await this.prisma.superAdmin.update({
+      where: { id: superAdmin.id },
+      data: { refresh_token: refreshToken },
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refresh_token: refreshToken,
     };
   }
 
@@ -23,8 +34,19 @@ export class AuthService {
       sub: user.id,
       consumer_id: user.consumer_id,
     };
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d', // Refresh token validity
+    });
+
+    // Save refresh token in the database
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refresh_token: refreshToken },
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refresh_token: refreshToken,
     };
   }
 
@@ -41,16 +63,61 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    // Find user in the database by email
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    // Verify password here (you should hash passwords in a real app)
     if (user && (await bcrypt.compare(pass, user.password))) {
       return user;
     }
 
     return null;
+  }
+
+  async refreshToken(refreshToken: string) {
+    const payload = this.jwtService.verify(refreshToken);
+
+    // Validate refresh token in the database
+    const user =
+      (await this.prisma.user.findUnique({
+        where: { id: payload.sub, refresh_token: refreshToken },
+      })) ||
+      (await this.prisma.superAdmin.findUnique({
+        where: { id: payload.sub, refresh_token: refreshToken },
+      }));
+
+    if (!user) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const newAccessToken = this.jwtService.sign(
+      {
+        email: payload.email,
+        sub: payload.sub,
+        consumer_id: payload.consumer_id,
+      },
+      { expiresIn: '15m' },
+    );
+
+    return { access_token: newAccessToken };
+  }
+
+  async invalidateRefreshToken(refreshToken: string): Promise<void> {
+    const payload = this.jwtService.decode(refreshToken) as { sub: string };
+
+    if (!payload) {
+      throw new Error('Invalid refresh token');
+    }
+
+    // Invalidate the refresh token in the database
+    await this.prisma.user.updateMany({
+      where: { id: payload.sub, refresh_token: refreshToken },
+      data: { refresh_token: null },
+    });
+
+    await this.prisma.superAdmin.updateMany({
+      where: { id: payload.sub, refresh_token: refreshToken },
+      data: { refresh_token: null },
+    });
   }
 }

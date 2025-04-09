@@ -1,8 +1,6 @@
-
-
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
+import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClientExceptionFilter } from 'prisma-client-exception/prisma-client-exception.filter';
@@ -13,6 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  app.use(cookieParser());
   const options = {
     origin: [
       'http://localhost:3001',

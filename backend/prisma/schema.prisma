@@ -8,10 +8,11 @@ datasource db {
 }
 
 model SuperAdmin {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  created_at DateTime @default(now())
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  refresh_token String?
+  created_at    DateTime @default(now())
 }
 
 model Consumer {
@@ -48,12 +49,13 @@ model BillingHistory {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  consumer_id String
-  email       String   @unique
-  name        String
-  password    String
-  created_at  DateTime @default(now())
+  id            String   @id @default(cuid())
+  consumer_id   String
+  email         String   @unique
+  name          String
+  password      String
+  refresh_token String?
+  created_at    DateTime @default(now())
 
   consumer   Consumer   @relation(fields: [consumer_id], references: [id])
   user_roles UserRole[]

@@ -8,7 +8,8 @@ import { JwtPayload } from './jwt-payload.interface';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>
+        req.cookies['access_token'],
       secretOrKey: process.env.JWT_SECRET_KEY || 'default_secret_key',
     });
   }
@@ -25,7 +26,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!user) {
         throw new Error('User not found');
       }
-      return user; // Return the found user
+      const { password, created_at, ...userWithoutPassword } = user
+      ;
+      return userWithoutPassword; // Return the found user
     }
 
     // Validate for SuperAdmin
@@ -37,6 +40,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('SuperAdmin not found');
     }
 
-    return superAdmin; // Return the found superAdmin
+    const { password, created_at, ...superAdminWithoutPassword } = superAdmin;
+
+    return superAdminWithoutPassword; // Return the found superAdmin without password
   }
 }
