@@ -119,7 +119,7 @@ const AppLayout = () => {
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <h2 className="m-0 text-lg hidden md:block">Admin Dashboard</h2>
+            <h2 className="m-0 text-lg hidden md:block">Client Dashboard</h2>
           </div>
           <div>
             <Tooltip title="Profile">
