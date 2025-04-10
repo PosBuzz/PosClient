@@ -91,7 +91,7 @@ export class AuthController {
 
     try {
       const { access_token } =
-        await this.authService.refreshToken(refreshToken);
+        await this.authService.adminRefreshToken(refreshToken);
 
       // If refresh token is expired or invalid
       if (!access_token) {
@@ -118,7 +118,7 @@ export class AuthController {
 
   @Post('client-refresh-token')
   async clientRefreshToken(@Req() req: Request, @Res() res: Response) {
-    const refreshToken = req.cookies['refresh_token'];
+    const refreshToken = req.cookies['client_refresh_token'];
 
     if (!refreshToken) {
       // If refresh token is not found, clear cookies and log the user out
@@ -131,7 +131,7 @@ export class AuthController {
 
     try {
       const { access_token } =
-        await this.authService.refreshToken(refreshToken);
+        await this.authService.clientRefreshToken(refreshToken);
 
       // If refresh token is expired or invalid
       if (!access_token) {

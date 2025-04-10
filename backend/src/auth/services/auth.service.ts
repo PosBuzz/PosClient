@@ -74,17 +74,13 @@ export class AuthService {
     return null;
   }
 
-  async refreshToken(refreshToken: string) {
+  async clientRefreshToken(refreshToken: string) {
     const payload = this.jwtService.verify(refreshToken);
 
     // Validate refresh token in the database
-    const user =
-      (await this.prisma.user.findUnique({
-        where: { id: payload.sub, refresh_token: refreshToken },
-      })) ||
-      (await this.prisma.superAdmin.findUnique({
-        where: { id: payload.sub, refresh_token: refreshToken },
-      }));
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub, refresh_token: refreshToken },
+    });
 
     if (!user) {
       throw new Error('Invalid refresh token');
@@ -95,6 +91,29 @@ export class AuthService {
         email: payload.email,
         sub: payload.sub,
         consumer_id: payload.consumer_id,
+      },
+      { expiresIn: '15m' },
+    );
+
+    return { access_token: newAccessToken };
+  }
+
+  async adminRefreshToken(refreshToken: string) {
+    const payload = this.jwtService.verify(refreshToken);
+
+    // Validate refresh token in the database
+    const user = await this.prisma.superAdmin.findUnique({
+      where: { id: payload.sub, refresh_token: refreshToken },
+    });
+
+    if (!user) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const newAccessToken = this.jwtService.sign(
+      {
+        email: payload.email,
+        sub: payload.sub,
       },
       { expiresIn: '15m' },
     );
