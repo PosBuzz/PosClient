@@ -8,15 +8,15 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { Role } from 'src/auth/enums/roles.enum';
+import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { HasRoles } from 'src/decorators/set-roles.decorator';
-import { Role } from 'src/auth/enums/roles.enum';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
-import { ConsumerService } from '../services/consumer.service';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
+import { ConsumerService } from '../services/consumer.service';
 
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AdminAuthGuard, RolesGuard)
 @HasRoles([Role.SUPER_ADMIN])
 @Controller('admin/consumers')
 export class ConsumerController {

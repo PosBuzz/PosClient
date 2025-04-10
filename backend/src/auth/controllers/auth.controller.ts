@@ -1,20 +1,17 @@
 import {
   Body,
   Controller,
-  Post,
-  Res,
-  Req,
-  UseGuards,
   Get,
-  HttpException,
-  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { AuthService } from '../services/auth.service';
+import { Request, Response } from 'express';
 import { LoginDto } from '../dto/login.dto';
-import { Response, Request } from 'express';
-
-import { AuthGuard } from '../guards/auth.guard';
-import { Role } from '../enums/roles.enum';
+import { AdminAuthGuard } from '../guards/admin.auth.guard';
+import { ClientAuthGuard } from '../guards/client.auth.guard';
+import { AuthService } from '../services/auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -175,28 +172,14 @@ export class AuthController {
   }
 
   @Get('client')
-  @UseGuards(AuthGuard)
-  async getClientMe(@Req() req: Request) {
-    const user = req.user;
-    if (user && !('consumer_id' in user)) {
-      throw new HttpException(
-        'Unauthorized: Not a client',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    return { role: Role.USER, user };
+  @UseGuards(ClientAuthGuard)
+  getClientMe(@Req() req: Request) {
+    return { user: req.user };
   }
 
   @Get('admin')
-  @UseGuards(AuthGuard)
-  async getAdminMe(@Req() req: Request) {
-    const user = req.user;
-    if (user && 'consumer_id' in user) {
-      throw new HttpException(
-        'Unauthorized: Not a client',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    return { role: Role.SUPER_ADMIN, user };
+  @UseGuards(AdminAuthGuard)
+  getAdminMe(@Req() req: Request) {
+    return { user: req.user };
   }
 }
