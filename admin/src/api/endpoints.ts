@@ -1,6 +1,6 @@
 export const endpoints = {
   login: "/auth/login-superadmin",
-  getMe: "/auth/me",
-  logout: "/auth/logout",
-  refreshToken: "/auth/refresh-token",
+  getMe: "/auth/admin",
+  logout: "/auth/admin-logout",
+  refreshToken: "/auth/admin-refresh-token",
 };

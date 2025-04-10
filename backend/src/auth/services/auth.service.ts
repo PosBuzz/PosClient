@@ -102,7 +102,21 @@ export class AuthService {
     return { access_token: newAccessToken };
   }
 
-  async invalidateRefreshToken(refreshToken: string): Promise<void> {
+  async invalidateAdminRefreshToken(refreshToken: string): Promise<void> {
+    const payload = this.jwtService.decode(refreshToken) as { sub: string };
+
+    if (!payload) {
+      throw new Error('Invalid refresh token');
+    }
+
+    // Invalidate the refresh token in the database
+    await this.prisma.superAdmin.updateMany({
+      where: { id: payload.sub, refresh_token: refreshToken },
+      data: { refresh_token: null },
+    });
+  }
+
+  async invalidateClientRefreshToken(refreshToken: string): Promise<void> {
     const payload = this.jwtService.decode(refreshToken) as { sub: string };
 
     if (!payload) {
@@ -111,11 +125,6 @@ export class AuthService {
 
     // Invalidate the refresh token in the database
     await this.prisma.user.updateMany({
-      where: { id: payload.sub, refresh_token: refreshToken },
-      data: { refresh_token: null },
-    });
-
-    await this.prisma.superAdmin.updateMany({
       where: { id: payload.sub, refresh_token: refreshToken },
       data: { refresh_token: null },
     });

@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>
-        req.cookies['access_token'],
+        req.cookies['client_access_token'] || req.cookies['admin_access_token'],
       secretOrKey: process.env.JWT_SECRET_KEY || 'default_secret_key',
     });
   }
@@ -26,8 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!user) {
         throw new Error('User not found');
       }
-      const { password, created_at, ...userWithoutPassword } = user
-      ;
+      const { password, created_at, ...userWithoutPassword } = user;
       return userWithoutPassword; // Return the found user
     }
 

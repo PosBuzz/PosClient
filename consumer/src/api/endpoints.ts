@@ -1,6 +1,6 @@
 export const endpoints = {
   login: "/auth/login-user",
-  getMe: "/auth/me",
-  logout: "/auth/logout",
-  refreshToken: "/auth/refresh-token",
+  getMe: "/auth/client",
+  logout: "/auth/client-logout",
+  refreshToken: "/auth/client-refresh-token",
 };
