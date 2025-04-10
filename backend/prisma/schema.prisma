@@ -64,7 +64,7 @@ model User {
 model Role {
   id          String   @id @default(cuid())
   consumer_id String
-  name        String
+  name        String   @unique
   created_at  DateTime @default(now())
 
   consumer    Consumer     @relation(fields: [consumer_id], references: [id])

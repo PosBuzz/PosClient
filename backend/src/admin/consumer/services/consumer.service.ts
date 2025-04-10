@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'; 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
@@ -8,7 +8,38 @@ export class ConsumerService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateConsumerDto) {
-    return this.prisma.consumer.create({ data });
+    // Check if the "Admin" role already exists, if not create it
+    const adminRole = await this.prisma.role.findUnique({
+      where: {
+        name: 'Admin',
+      },
+    });
+
+    if (!adminRole) {
+      throw new ConflictException('Admin role does not exist');
+    }
+
+    // Create the consumer
+    const consumer = await this.prisma.consumer.create({
+      data: {
+        ...data,
+        // Create the user with the Admin role
+        users: {
+          create: {
+            email: data.email,
+            name: data.name,
+            password: data.password, // You should hash the password before saving
+            user_roles: {
+              create: {
+                role_id: adminRole.id,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return consumer;
   }
 
   async findAll() {
@@ -21,7 +52,12 @@ export class ConsumerService {
   }
 
   async findOne(id: string) {
-    const consumer = await this.prisma.consumer.findUnique({ where: { id } });
+    const consumer = await this.prisma.consumer.findUnique({
+      where: { id },
+      include: {
+        users: true, // Include users to see assigned roles
+      },
+    });
     if (!consumer) throw new NotFoundException('Consumer not found');
     return consumer;
   }
@@ -31,6 +67,17 @@ export class ConsumerService {
   }
 
   async remove(id: string) {
+    // First remove all users associated with the consumer
+    const consumer = await this.prisma.consumer.findUnique({
+      where: { id },
+      include: {
+        users: true,
+      },
+    });
+    if (!consumer) throw new NotFoundException('Consumer not found');
+    
+    // Remove users and then consumer
+    await this.prisma.user.deleteMany({ where: { consumer_id: id } });
     return this.prisma.consumer.delete({ where: { id } });
   }
 }

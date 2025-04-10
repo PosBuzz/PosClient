@@ -1,39 +1,22 @@
-import { useNavigate } from "react-router-dom";
-import reactLogo from "../../assets/react.svg";
-import { useAuth } from "../../contexts/AuthContext";
-import viteLogo from "/vite.svg";
+import { useQuery } from "@tanstack/react-query";
+import { getUrlForModel } from "../../api/endpoints";
+import { get } from "../../api/crud-api";
 
 function index() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  // const { logout } = useAuth();
+  // const navigate = useNavigate();
+
+  const { data: plans } = useQuery({
+    queryKey: ["plans"],
+    queryFn: () => get(getUrlForModel("Plan")),
+    staleTime: 0,
+  });
+
+  console.log(plans);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button
-          onClick={() => {
-            navigate("/user");
-          }}
-        >
-          navigate
-        </button>
-        <button onClick={logout}>Logout</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <h1 className="text-4xl">This is Admin</h1>
     </>
   );
 }

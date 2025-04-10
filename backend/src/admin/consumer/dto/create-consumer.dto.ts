@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsEmail } from 'class-validator';
 
 export class CreateConsumerDto {
   @IsString()
@@ -9,4 +9,10 @@ export class CreateConsumerDto {
 
   @IsString()
   plan_id: string;
+
+  @IsEmail()
+  email: string;  // Added email validation
+
+  @IsString()
+  password: string;  // Added password validation
 }
