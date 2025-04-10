@@ -6,6 +6,7 @@ export const getUrlForModel = (model: string, id: any = null) => {
 };
 
 export const endpoints = {
+  csrfToken: "/auth/csrf-token",
   login: "/auth/login-superadmin",
   getMe: "/auth/admin",
   logout: "/auth/admin-logout",

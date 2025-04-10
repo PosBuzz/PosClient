@@ -25,6 +25,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getCsrfToken = async () => {
+    try {
+      await axiosInstance.get(endpoints.csrfToken);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    getCsrfToken();
+  }, []);
+
   useEffect(() => {
     checkAuth();
   }, [location.pathname]);

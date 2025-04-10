@@ -16,6 +16,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const navigate = useNavigate();
 
+  const getCsrfToken = async () => {
+    try {
+      await axiosInstance.get(endpoints.csrfToken);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    getCsrfToken();
+  }, []);
+
   const checkAuth = async () => {
     try {
       await axiosInstance.get(endpoints.getMe);

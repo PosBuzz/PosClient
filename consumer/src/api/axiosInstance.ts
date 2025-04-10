@@ -1,15 +1,28 @@
 import axios from "axios";
 import { endpoints } from "./endpoints";
 
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
   withCredentials: true,
+  headers: {
+    "X-CSRF-TOKEN": getCookie("XSRF-TOKEN"),
+  },
 });
 
 // Separate instance for refresh token call (no interceptors)
 const refreshInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
   withCredentials: true,
+  headers: {
+    "X-CSRF-TOKEN": getCookie("XSRF-TOKEN"),
+  },
 });
 
 let isRefreshing = false;

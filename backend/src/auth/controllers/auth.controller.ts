@@ -8,6 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+
+// Extend the Request interface to include csrfToken
 import { LoginDto } from '../dto/login.dto';
 import { AdminAuthGuard } from '../guards/admin.auth.guard';
 import { ClientAuthGuard } from '../guards/client.auth.guard';
@@ -16,6 +18,19 @@ import { AuthService } from '../services/auth.service';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Get('csrf-token')
+  getCsrfToken(@Req() req: Request, @Res() res: Response): void {
+    // Set the CSRF token in an HTTP-only cookie
+    res.cookie('XSRF-TOKEN', req.csrfToken(), {
+      httpOnly: false,
+      secure: true, // Set to true in production to use HTTPS
+      sameSite: 'none',
+    });
+
+    // You can also send the CSRF token in the response body, if necessary
+    res.json({ csrfToken: req.csrfToken() });
+  }
 
   @Post('login-superadmin')
   async loginSuperAdmin(@Body() loginDto: LoginDto, @Res() res: Response) {
