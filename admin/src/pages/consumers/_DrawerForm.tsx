@@ -21,7 +21,7 @@ export default function DrawerForm({
   const banner_type = Form.useWatch("banner_type", form);
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.createConsumer, data),
+    mutationFn: async (data) => await post(endpoints.consumer, data),
     onSuccess: (response) => {
       message.success("Saved Successfully");
       form.resetFields();
@@ -34,7 +34,7 @@ export default function DrawerForm({
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
-      await patch(getUrlForModel(model, data.id), data),
+      await patch(`${endpoints.consumer}/${data.id}`, data),
     onSuccess: (response) => {
       message.success("Updated Successfully");
       form.resetFields();
@@ -65,6 +65,10 @@ export default function DrawerForm({
         password: formValues.password,
       };
 
+      if (isEditing && editedItem) {
+        return updateData.mutate(payload);
+      }
+
       // @ts-ignore
       createData.mutate(payload);
     }
@@ -74,32 +78,22 @@ export default function DrawerForm({
     console.log("Failed:", errorInfo);
   };
 
+  console.log(editedItem);
+
   useEffect(() => {
-    if (editedItem) {
-      const { data } = editedItem;
-
-      const parsedData = JSON.parse(data ? data : "{}");
-
-      const val = {
-        is_active: editedItem?.is_active,
-        banner_type: editedItem.banner_type,
-        title: parsedData?.title,
-        sub_title: parsedData?.sub_title,
-        open_in_newtab: parsedData?.open_in_newtab,
-        url: parsedData?.url,
-        image: [
-          {
-            uid: "-1",
-            status: "done",
-            thumbUrl: parsedData?.image,
-          },
-        ],
-      };
-      form.setFieldsValue(val);
+    if (isEditing && editedItem) {
+      form.setFieldsValue({
+        name: editedItem.name,
+        email: editedItem.email,
+        phone: editedItem.phone,
+        address: editedItem.address,
+        subdomain: editedItem.subdomain,
+        plan_id: editedItem.plan_id,
+      });
     } else {
       form.resetFields();
     }
-  }, [isEditing, editedItem]);
+  }, [isEditing, editedItem, form]);
 
   return (
     <>
@@ -173,7 +167,7 @@ export default function DrawerForm({
           <Form.Item
             label="Password"
             name="password"
-            rules={[{ required: true, message: "This field is required" }]}
+            rules={[{ required: !isEditing, message: "This field is required" }]}
           >
             <Input.Password />
           </Form.Item>

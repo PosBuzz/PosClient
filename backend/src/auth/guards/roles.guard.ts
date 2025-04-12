@@ -24,9 +24,6 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user; // Assuming user object contains the role (e.g., from JWT payload)
 
-    console.log(user);
-    
-
     // Check if the user's role is in the list of required roles
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Access denied');

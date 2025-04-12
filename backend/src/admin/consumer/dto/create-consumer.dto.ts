@@ -11,12 +11,12 @@ export class CreateConsumerDto {
   plan_id: number;
 
   @IsEmail()
-  email: string; // Added email validation
+  email: string;  // Added email validation
 
   @IsString()
-  password: string; // Added password validation
+  password: string;  // Added password validation
 
   address: string;
-
+  
   phone: string;
 }

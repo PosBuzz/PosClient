@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
@@ -12,78 +13,97 @@ export class ConsumerService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateConsumerDto) {
-    // Check if the "Admin" role already exists, if not create it
-    const adminRole = await this.prisma.role.findUnique({
-      where: {
-        name: 'Admin',
-      },
+    const { password, email, name, ...consumerData } = data;
+
+    // Create everything in a transaction
+    return this.prisma.$transaction(async (tx) => {
+      // Step 1: Create the consumer
+      const consumer = await tx.consumer.create({
+        data: {
+          ...consumerData,
+          name: data.name,
+          email: data.email,
+        },
+      });
+
+      // Step 2: Create the user
+      const user = await tx.user.create({
+        data: {
+          email,
+          name,
+          password: bcryptjs.hashSync(password, 10),
+          consumer: {
+            connect: { id: consumer.id },
+          },
+        },
+      });
+
+      // Step 3: Create the Admin role
+      const role = await tx.role.create({
+        data: {
+          name: 'Admin',
+          consumer: {
+            connect: { id: consumer.id },
+          },
+        },
+      });
+
+      // Step 4: Assign Admin role to the user
+      await tx.userRole.create({
+        data: {
+          user_id: user.id,
+          role_id: role.id,
+        },
+      });
+
+      return {
+        consumer,
+        admin_user: user,
+        admin_role: role,
+      };
     });
+  }
 
-    if (!adminRole) {
-      throw new ConflictException('Admin role does not exist');
-    }
+  async update(consumerId: number, data: UpdateConsumerDto) {
+    const { password, ...consumerData } = data;
 
-    const { password,  ...consumerData } = data;
-
-    // Create the consumer
-    const consumer = await this.prisma.consumer.create({
-      data: {
-        ...consumerData,
-        // Create the user with the Admin role
-        users: {
-          create: {
-            email: data.email,
-            name: data.name,
-            password: data.password, // You should hash the password before saving
-            user_roles: {
-              create: {
-                role_id: adminRole.id,
-              },
+    // Find the admin user for this consumer
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        consumer_id: consumerId,
+        user_roles: {
+          some: {
+            role: {
+              name: 'Admin',
+              consumer_id: consumerId,
             },
           },
         },
       },
     });
 
-    return consumer;
-  }
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found for this consumer');
+    }
 
-  async findAll() {
-    return this.prisma.consumer.findMany({
-      include: {
-        plan: true,
-        users: true,
+    // Update consumer
+    await this.prisma.consumer.update({
+      where: { id: consumerId },
+      data: {
+        ...consumerData,
       },
     });
-  }
 
-  async findOne(id: number) {
-    const consumer = await this.prisma.consumer.findUnique({
-      where: { id },
-      include: {
-        users: true, // Include users to see assigned roles
+    // Update admin user (if needed)
+    await this.prisma.user.update({
+      where: { id: adminUser.id },
+      data: {
+        email: data.email,
+        name: data.name,
+        ...(password && { password: bcryptjs.hashSync(password, 10) }), // hash before saving
       },
     });
-    if (!consumer) throw new NotFoundException('Consumer not found');
-    return consumer;
-  }
 
-  async update(id: number, data: UpdateConsumerDto) {
-    return this.prisma.consumer.update({ where: { id }, data });
-  }
-
-  async remove(id: number) {
-    // First remove all users associated with the consumer
-    const consumer = await this.prisma.consumer.findUnique({
-      where: { id },
-      include: {
-        users: true,
-      },
-    });
-    if (!consumer) throw new NotFoundException('Consumer not found');
-
-    // Remove users and then consumer
-    await this.prisma.user.deleteMany({ where: { consumer_id: id } });
-    return this.prisma.consumer.delete({ where: { id } });
+    return { message: 'Consumer and admin user updated successfully' };
   }
 }

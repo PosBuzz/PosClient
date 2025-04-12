@@ -13,5 +13,5 @@ export const endpoints = {
   getMe: "/auth/admin",
   logout: "/auth/admin-logout",
   refreshToken: "/auth/admin-refresh-token",
-  createConsumer: "/admin/consumers",
+  consumer: "/admin/consumers",
 };

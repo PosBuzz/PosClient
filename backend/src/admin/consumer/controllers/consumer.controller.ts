@@ -27,23 +27,8 @@ export class ConsumerController {
     return this.consumerService.create(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.consumerService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.consumerService.findOne(id);
-  }
-
   @Patch(':id')
   update(@Param('id') id: number, @Body() dto: UpdateConsumerDto) {
     return this.consumerService.update(id, dto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.consumerService.remove(id);
   }
 }

@@ -13,6 +13,7 @@ model SuperAdmin {
   password      String
   refresh_token String?
   created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 }
 
 model Consumer {
@@ -24,6 +25,7 @@ model Consumer {
   subdomain  String   @unique
   plan_id    Int
   created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   plan         Plan             @relation(fields: [plan_id], references: [id])
@@ -38,6 +40,7 @@ model Plan {
   price      Float
   features   String // JSON string (optional)
   created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
   consumers  Consumer[]
 }
 
@@ -48,6 +51,7 @@ model BillingHistory {
   reference     String
   billing_month DateTime
   created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   consumer Consumer @relation(fields: [consumer_id], references: [id])
 }
@@ -60,6 +64,7 @@ model User {
   password      String
   refresh_token String?
   created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   consumer   Consumer   @relation(fields: [consumer_id], references: [id])
   user_roles UserRole[]
@@ -68,8 +73,9 @@ model User {
 model Role {
   id          Int      @id @default(autoincrement())
   consumer_id Int
-  name        String   @unique
+  name        String
   created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   consumer    Consumer     @relation(fields: [consumer_id], references: [id])
   permissions Permission[]
