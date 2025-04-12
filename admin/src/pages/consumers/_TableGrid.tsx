@@ -6,6 +6,7 @@ import { Button, Image, message, Popconfirm, Space, Table, Tag } from "antd";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 import { deleteApi, post } from "../../api/crud-api";
 import { useEffect } from "react";
+import dayjs from "dayjs";
 
 // @ts-ignore
 export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
@@ -21,6 +22,17 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
     queryFn: () =>
       post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
         where: {},
+        include: {
+          plan: true,
+          billing_logs: {
+            where: {
+              billing_month: {
+                gte: dayjs().startOf("month"),
+                lte: dayjs().endOf("month"),
+              },
+            },
+          }, // <- This closing brace was missing
+        },
       }),
     staleTime: 0,
   });
@@ -48,64 +60,47 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
 
   const columns = [
     {
-      title: "Image",
-      render: (record: any) => {
-        const parsedData = JSON.parse(record.data || "{}");
-        return (
-          <div style={{ height: "40px", width: "40px" }}>
-            <Image width={40} height={40} src={parsedData?.image} />
-          </div>
-        );
-      },
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
     },
     {
-      title: "Title",
-      render: (record: any) => {
-        const parsedData = JSON.parse(record.data || "{}");
-        return parsedData?.title || "-";
-      },
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
     },
     {
-      title: "Sub Title",
-      render: (record: any) => {
-        const parsedData = JSON.parse(record.data || "{}");
-        return parsedData?.sub_title || "-";
-      },
+      title: "Phone",
+      dataIndex: "phone",
+      key: "phone",
     },
     {
-      title: "URL",
-      render: (record: any) => {
-        const parsedData = JSON.parse(record.data || "{}");
-        return parsedData?.url ? (
-          <a href={parsedData.url} target="_blank" rel="noopener noreferrer">
-            {parsedData.url}
-          </a>
-        ) : (
-          "-"
-        );
-      },
+      title: "Address",
+      dataIndex: "address",
+      key: "address",
     },
     {
-      title: "Open in New Tab",
-      render: (record: any) => {
-        const parsedData = JSON.parse(record.data || "{}");
-        return (
-          <Tag color={parsedData?.open_in_newtab ? "success" : "error"}>
-            {parsedData?.open_in_newtab ? "Yes" : "No"}
-          </Tag>
-        );
-      },
+      title: "Subdomain",
+      dataIndex: "subdomain",
+      key: "subdomain",
     },
     {
-      title: "Is Active?",
+      title: "Plan",
+      render: (record: any) => record.plan?.name || "-",
+      key: "plan",
+    },
+    {
+      title: "Status",
       render: (record: any) => (
-        <Tag color={record.is_active ? "success" : "error"}>
-          {record.is_active ? "Active" : "Inactive"}
+        <Tag color={record.billing_logs?.length ? "success" : "error"}>
+          {record.billing_logs?.length ? "Active" : "Inactive"}
         </Tag>
       ),
+      key: "status",
     },
     {
       title: "Actions",
+      key: "actions",
       render: (record: any) => (
         <Space>
           <Button onClick={() => onClickEdit(record)} type={"link"}>
@@ -115,7 +110,6 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
             title="Delete this item?"
             description="This action cannot be undone"
             onConfirm={() => handleDeleteClient(record.id)}
-            onCancel={() => {}}
             okText="Yes"
             cancelText="No"
           >
@@ -131,6 +125,7 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
   if (isError) {
     return <p>Failed to load data</p>;
   }
+  
 
   return (
     <>
@@ -141,7 +136,7 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
         }}
         loading={isLoading}
         columns={columns}
-        dataSource={fetchData?.data}
+        dataSource={fetchData}
       />
     </>
   );

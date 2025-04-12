@@ -18,6 +18,7 @@ model SuperAdmin {
 model Consumer {
   id         Int      @id @default(autoincrement())
   name       String
+  email      String
   phone      String?
   address    String?
   subdomain  String   @unique
@@ -41,11 +42,12 @@ model Plan {
 }
 
 model BillingHistory {
-  id          Int      @id @default(autoincrement())
-  consumer_id Int
-  amount      Float
-  reference   String
-  created_at  DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  consumer_id   Int
+  amount        Float
+  reference     String
+  billing_month DateTime
+  created_at    DateTime @default(now())
 
   consumer Consumer @relation(fields: [consumer_id], references: [id])
 }

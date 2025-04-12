@@ -46,15 +46,15 @@ const AppLayout = () => {
   };
 
   return (
-    <Layout className="min-h-screen">
-      {/* Sidebar */}
+    <Layout className="h-screen">
+      {/* Sidebar - Fixed position */}
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
         breakpoint="md"
-        className={`overflow-auto h-screen fixed left-0 top-0 bottom-0 ${
-          isMobile && !collapsed ? "fixed z-50 shadow-lg" : ""
+        className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
+          isMobile && !collapsed ? "z-50 shadow-lg" : ""
         }`}
         style={{
           zIndex: 999,
@@ -67,19 +67,26 @@ const AppLayout = () => {
               collapsed ? "text-lg" : "text-xl"
             }`}
           >
-            {collapsed ? "App" : "MyApp"}
+            {collapsed ? "PB" : "PosBuzz"}
           </h1>
         </div>
-        
+
         <SideBar />
       </Sider>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Adjusted for sidebar */}
       <Layout className={`transition-all duration-300`}>
-        {/* Header */}
+        {/* Header - Fixed at the top of content area */}
         <Header
-          style={{ background: colorBgContainer }}
-          className="p-2! md:p-6! flex items-center justify-between shadow-sm sticky top-0 z-10"
+          style={{
+            background: colorBgContainer,
+            position: "sticky",
+            top: 0,
+            width: "100%",
+            zIndex: 10,
+            padding: "0 16px",
+          }}
+          className="shadow-sm flex items-center justify-between"
         >
           <div className="flex items-center">
             <Button
@@ -108,13 +115,14 @@ const AppLayout = () => {
           />
         )}
 
-        {/* Page Content */}
+        {/* Page Content - Scrollable */}
         <Content
-          className="md:m-6 p-2 md:p-6"
+          className="p-4 md:p-6 overflow-auto"
           style={{
             background: colorBgContainer,
             borderRadius: borderRadiusLG,
-            minHeight: 280,
+            minHeight: "calc(100vh - 64px)", // Subtract header height
+            height: "calc(100vh - 64px)",
           }}
         >
           <Outlet />

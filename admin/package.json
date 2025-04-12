@@ -15,9 +15,11 @@
     "@tanstack/react-query": "^5.72.1",
     "antd": "^5.24.6",
     "axios": "^1.8.4",
+    "dayjs": "^1.11.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
+    "react-helmet-async": "^2.0.5",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.5.0",
     "tailwindcss": "^4.1.3"

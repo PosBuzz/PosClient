@@ -10,12 +10,14 @@ export class BillingService {
     consumerId: number,
     amount: number,
     reference: string,
+    billing_month: Date,
   ): Promise<BillingHistory> {
     return this.prisma.billingHistory.create({
       data: {
         consumer_id: consumerId,
         amount,
         reference,
+        billing_month,
       },
     });
   }

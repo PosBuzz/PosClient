@@ -1,13 +1,6 @@
 /* eslint-disable */
 import { useMutation } from "@tanstack/react-query";
-import {
-  Button,
-  Drawer,
-  Form,
-  Input,
-  Select,
-  message
-} from "antd";
+import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints, getUrlForModel } from "../../api/endpoints";
@@ -115,7 +108,7 @@ export default function DrawerForm({
         onClose={onClose}
         width={600}
         open={open}
-        bodyStyle={{ maxHeight: "100vh", overflowY: "auto" }} // Adjusting drawer max height
+        style={{ maxHeight: "100vh", overflowY: "auto" }} // Adjusting drawer max height
       >
         <Form
           form={form}
@@ -128,9 +121,9 @@ export default function DrawerForm({
           autoComplete="off"
         >
           <Form.Item
-            label="Consumer Name"
-            name="consumer_name"
-            rules={[{ required: true }]}
+            label="Name"
+            name="name"
+            rules={[{ required: true, message: "This field is required" }]}
           >
             <Input />
           </Form.Item>
@@ -146,7 +139,7 @@ export default function DrawerForm({
           <Form.Item
             label="Subdomain"
             name="subdomain"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "This field is required" }]}
           >
             <Input />
           </Form.Item>
@@ -170,9 +163,17 @@ export default function DrawerForm({
           </Form.Item>
 
           <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
             label="Password"
             name="password"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "This field is required" }]}
           >
             <Input.Password />
           </Form.Item>

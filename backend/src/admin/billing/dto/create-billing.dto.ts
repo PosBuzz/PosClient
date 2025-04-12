@@ -1,4 +1,4 @@
-import { IsString, IsNumber } from 'class-validator';
+import { IsString, IsNumber, IsDate } from 'class-validator';
 
 export class CreateBillingDto {
   @IsNumber()
@@ -6,4 +6,7 @@ export class CreateBillingDto {
 
   @IsString()
   reference: string;
+
+  @IsDate()
+  billing_month: Date;
 }

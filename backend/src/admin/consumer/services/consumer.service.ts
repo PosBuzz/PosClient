@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'; 
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
@@ -19,10 +23,12 @@ export class ConsumerService {
       throw new ConflictException('Admin role does not exist');
     }
 
+    const { password,  ...consumerData } = data;
+
     // Create the consumer
     const consumer = await this.prisma.consumer.create({
       data: {
-        ...data,
+        ...consumerData,
         // Create the user with the Admin role
         users: {
           create: {
@@ -75,7 +81,7 @@ export class ConsumerService {
       },
     });
     if (!consumer) throw new NotFoundException('Consumer not found');
-    
+
     // Remove users and then consumer
     await this.prisma.user.deleteMany({ where: { consumer_id: id } });
     return this.prisma.consumer.delete({ where: { id } });

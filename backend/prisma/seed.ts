@@ -49,6 +49,7 @@ async function main() {
     data: {
       name: 'Consumer 1',
       subdomain: 'consumer1',
+      email: 'admin@consumer1.com',
       plan_id: enterprisePlan.id,
     },
   });
@@ -123,6 +124,7 @@ async function main() {
       consumer_id: consumer1.id,
       amount: 100.0,
       reference: 'Invoice #12345',
+      billing_month: new Date(),
     },
   });
 
@@ -131,6 +133,7 @@ async function main() {
       consumer_id: consumer1.id,
       amount: 250.0,
       reference: 'Invoice #67890',
+      billing_month: new Date(),
     },
   });
 }

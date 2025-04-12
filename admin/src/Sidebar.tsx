@@ -33,11 +33,6 @@ const SideBar: React.FC = () => {
 
   const menuItems = [
     {
-      key: "/",
-      icon: <DashboardOutlined />,
-      label: "Dashboard",
-    },
-    {
       key: "/consumers",
       icon: <UserOutlined />,
       label: "Consumers",

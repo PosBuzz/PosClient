@@ -9,7 +9,7 @@ export class BillingController {
 
   @Post(':consumerId')
   create(@Param('consumerId') consumerId: number, @Body() dto: CreateBillingDto) {
-    return this.billingService.createBillingRecord(consumerId, dto.amount, dto.reference);
+    return this.billingService.createBillingRecord(consumerId, dto.amount, dto.reference, dto.billing_month);
   }
 
   @Get(':consumerId')
