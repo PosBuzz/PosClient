@@ -8,12 +8,12 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Post(':consumerId')
-  create(@Param('consumerId') consumerId: string, @Body() dto: CreateBillingDto) {
+  create(@Param('consumerId') consumerId: number, @Body() dto: CreateBillingDto) {
     return this.billingService.createBillingRecord(consumerId, dto.amount, dto.reference);
   }
 
   @Get(':consumerId')
-  findHistory(@Param('consumerId') consumerId: string) {
+  findHistory(@Param('consumerId') consumerId: number) {
     return this.billingService.getBillingHistory(consumerId);
   }
 }

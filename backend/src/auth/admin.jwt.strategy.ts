@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtPayload } from './jwt-payload.interface';
+import { Role } from './enums/roles.enum';
 
 @Injectable()
 export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
@@ -24,6 +25,7 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
     if (!admin) throw new Error('SuperAdmin not found');
 
     const { password, created_at, ...adminWithoutPassword } = admin;
-    return adminWithoutPassword;
+    const jwtPayload = { ...adminWithoutPassword, role: Role.SUPER_ADMIN };
+    return jwtPayload;
   }
 }

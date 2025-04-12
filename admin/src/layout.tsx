@@ -12,6 +12,7 @@ import {
 } from "@ant-design/icons";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+import SideBar from "./Sidebar";
 
 const { Header, Sider, Content } = Layout;
 
@@ -44,34 +45,6 @@ const AppLayout = () => {
     setCollapsed(!collapsed);
   };
 
-  const menuItems = [
-    {
-      key: "1",
-      icon: <DashboardOutlined />,
-      label: "Dashboard",
-    },
-    {
-      key: "2",
-      icon: <UserOutlined />,
-      label: "Users",
-    },
-    {
-      key: "3",
-      icon: <VideoCameraOutlined />,
-      label: "Media",
-    },
-    {
-      key: "4",
-      icon: <UploadOutlined />,
-      label: "Upload",
-    },
-    {
-      key: "5",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    },
-  ];
-
   return (
     <Layout className="min-h-screen">
       {/* Sidebar */}
@@ -97,12 +70,8 @@ const AppLayout = () => {
             {collapsed ? "App" : "MyApp"}
           </h1>
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={["1"]}
-          items={menuItems}
-        />
+        
+        <SideBar />
       </Sider>
 
       {/* Main Content Area */}

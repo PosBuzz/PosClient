@@ -7,7 +7,7 @@ export class BillingService {
   constructor(private prisma: PrismaService) {}
 
   async createBillingRecord(
-    consumerId: string,
+    consumerId: number,
     amount: number,
     reference: string,
   ): Promise<BillingHistory> {
@@ -20,7 +20,7 @@ export class BillingService {
     });
   }
 
-  async getBillingHistory(consumerId: string): Promise<BillingHistory[]> {
+  async getBillingHistory(consumerId: number): Promise<BillingHistory[]> {
     return this.prisma.billingHistory.findMany({
       where: { consumer_id: consumerId },
       orderBy: { created_at: 'desc' },

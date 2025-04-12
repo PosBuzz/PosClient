@@ -51,7 +51,7 @@ export class ConsumerService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const consumer = await this.prisma.consumer.findUnique({
       where: { id },
       include: {
@@ -62,11 +62,11 @@ export class ConsumerService {
     return consumer;
   }
 
-  async update(id: string, data: UpdateConsumerDto) {
+  async update(id: number, data: UpdateConsumerDto) {
     return this.prisma.consumer.update({ where: { id }, data });
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     // First remove all users associated with the consumer
     const consumer = await this.prisma.consumer.findUnique({
       where: { id },

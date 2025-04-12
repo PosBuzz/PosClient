@@ -8,7 +8,7 @@ datasource db {
 }
 
 model SuperAdmin {
-  id            String   @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   email         String   @unique
   password      String
   refresh_token String?
@@ -16,10 +16,12 @@ model SuperAdmin {
 }
 
 model Consumer {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
   name       String
+  phone      String?
+  address    String?
   subdomain  String   @unique
-  plan_id    String
+  plan_id    Int
   created_at DateTime @default(now())
 
   // Relations
@@ -30,7 +32,7 @@ model Consumer {
 }
 
 model Plan {
-  id         String     @id @default(cuid())
+  id         Int        @id @default(autoincrement())
   name       String     @unique
   price      Float
   features   String // JSON string (optional)
@@ -39,8 +41,8 @@ model Plan {
 }
 
 model BillingHistory {
-  id          String   @id @default(cuid())
-  consumer_id String
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
   amount      Float
   reference   String
   created_at  DateTime @default(now())
@@ -49,8 +51,8 @@ model BillingHistory {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  consumer_id   String
+  id            Int      @id @default(autoincrement())
+  consumer_id   Int
   email         String   @unique
   name          String
   password      String
@@ -62,8 +64,8 @@ model User {
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  consumer_id String
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
   name        String   @unique
   created_at  DateTime @default(now())
 
@@ -73,17 +75,17 @@ model Role {
 }
 
 model Permission {
-  id      String @id @default(cuid())
-  role_id String
+  id      Int    @id @default(autoincrement())
+  role_id Int
   action  String // e.g., 'create_invoice', 'view_report'
 
   role Role @relation(fields: [role_id], references: [id])
 }
 
 model UserRole {
-  id      String @id @default(cuid())
-  user_id String
-  role_id String
+  id      Int @id @default(autoincrement())
+  user_id Int
+  role_id Int
 
   user User @relation(fields: [user_id], references: [id])
   role Role @relation(fields: [role_id], references: [id])

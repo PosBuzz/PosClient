@@ -16,8 +16,8 @@ import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ConsumerService } from '../services/consumer.service';
 
-@UseGuards(AdminAuthGuard, RolesGuard)
 @HasRoles([Role.SUPER_ADMIN])
+@UseGuards(AdminAuthGuard, RolesGuard)
 @Controller('admin/consumers')
 export class ConsumerController {
   constructor(private readonly consumerService: ConsumerService) {}
@@ -33,17 +33,17 @@ export class ConsumerController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.consumerService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateConsumerDto) {
+  update(@Param('id') id: number, @Body() dto: UpdateConsumerDto) {
     return this.consumerService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.consumerService.remove(id);
   }
 }

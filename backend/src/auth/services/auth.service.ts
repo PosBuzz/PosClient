@@ -10,7 +10,7 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  async loginSuperAdmin(superAdmin: { email: string; id: string }) {
+  async loginSuperAdmin(superAdmin: { email: string; id: number }) {
     const payload = { email: superAdmin.email, sub: superAdmin.id };
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: '7d', // Refresh token validity
@@ -28,7 +28,7 @@ export class AuthService {
     };
   }
 
-  async loginUser(user: { email: string; id: string; consumer_id: string }) {
+  async loginUser(user: { email: string; id: number; consumer_id: number }) {
     const payload = {
       email: user.email,
       sub: user.id,
@@ -122,7 +122,7 @@ export class AuthService {
   }
 
   async invalidateAdminRefreshToken(refreshToken: string): Promise<void> {
-    const payload = this.jwtService.decode(refreshToken) as { sub: string };
+    const payload = this.jwtService.decode(refreshToken) as { sub: number };
 
     if (!payload) {
       throw new Error('Invalid refresh token');
@@ -136,7 +136,7 @@ export class AuthService {
   }
 
   async invalidateClientRefreshToken(refreshToken: string): Promise<void> {
-    const payload = this.jwtService.decode(refreshToken) as { sub: string };
+    const payload = this.jwtService.decode(refreshToken) as { sub: number };
 
     if (!payload) {
       throw new Error('Invalid refresh token');

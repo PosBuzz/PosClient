@@ -1,4 +1,4 @@
-import { IsString, IsEmail } from 'class-validator';
+import { IsEmail, IsInt, IsString } from 'class-validator';
 
 export class CreateConsumerDto {
   @IsString()
@@ -7,8 +7,8 @@ export class CreateConsumerDto {
   @IsString()
   subdomain: string;
 
-  @IsString()
-  plan_id: string;
+  @IsInt()
+  plan_id: number;
 
   @IsEmail()
   email: string;  // Added email validation

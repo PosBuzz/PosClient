@@ -5,10 +5,13 @@ export const getUrlForModel = (model: string, id: any = null) => {
   return `crud?model=${model}`;
 };
 
+export const API_CRUD_FIND_WHERE = 'crud/find-where';
+
 export const endpoints = {
   csrfToken: "/auth/csrf-token",
   login: "/auth/login-superadmin",
   getMe: "/auth/admin",
   logout: "/auth/admin-logout",
   refreshToken: "/auth/admin-refresh-token",
+  createConsumer: "/admin/consumers",
 };
