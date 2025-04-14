@@ -14,4 +14,5 @@ export const endpoints = {
   logout: "/auth/admin-logout",
   refreshToken: "/auth/admin-refresh-token",
   consumer: "/admin/consumers",
+  plan: "/admin/plans",
 };

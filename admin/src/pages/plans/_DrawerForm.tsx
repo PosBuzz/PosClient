@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
-import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { endpoints } from "../../api/endpoints";
 import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
 
@@ -18,10 +18,9 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
-  const banner_type = Form.useWatch("banner_type", form);
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.consumer, data),
+    mutationFn: async (data) => await post(endpoints.plan, data),
     onSuccess: (response) => {
       message.success("Saved Successfully");
       form.resetFields();
@@ -34,7 +33,7 @@ export default function DrawerForm({
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
-      await patch(`${endpoints.consumer}/${data.id}`, data),
+      await patch(`${endpoints.plan}/${data.id}`, data),
     onSuccess: (response) => {
       message.success("Updated Successfully");
       form.resetFields();
@@ -45,33 +44,24 @@ export default function DrawerForm({
     },
   });
 
-  // const planOptions: any = useModelOptions(models?.Plan, "name");
+  const permissionOptions: any = useModelOptions(models?.Permission, "action");
 
   const onFinish = async (formValues: any) => {
-    if (isEditing) {
-      // Handle update logic if needed
-      updateData.mutate({
-        ...formValues,
+    const payload = {
+      name: formValues.name,
+      price: +formValues.price,
+      permission_ids: formValues.permission_ids,
+    };
+
+    if (isEditing && editedItem) {
+      return updateData.mutate({
+        ...payload,
         id: editedItem.id,
       });
-    } else {
-      const payload = {
-        name: formValues.name,
-        phone: formValues.phone,
-        address: formValues.address,
-        subdomain: formValues.subdomain,
-        plan_id: formValues.plan_id, // dropdown or input
-        email: formValues.email,
-        password: formValues.password,
-      };
-
-      if (isEditing && editedItem) {
-        return updateData.mutate(payload);
-      }
-
-      // @ts-ignore
-      createData.mutate(payload);
     }
+
+    // @ts-ignore
+    createData.mutate(payload);
   };
 
   const onFinishFailed = (errorInfo: any) => {
@@ -82,11 +72,10 @@ export default function DrawerForm({
     if (isEditing && editedItem) {
       form.setFieldsValue({
         name: editedItem.name,
-        email: editedItem.email,
-        phone: editedItem.phone,
-        address: editedItem.address,
-        subdomain: editedItem.subdomain,
-        plan_id: editedItem.plan_id,
+        price: editedItem.price,
+        permission_ids: editedItem.permissions?.map(
+          (p: any) => p.permission_id
+        ),
       });
     } else {
       form.resetFields();
@@ -120,54 +109,36 @@ export default function DrawerForm({
             <Input />
           </Form.Item>
 
-          <Form.Item label="Phone" name="phone">
-            <Input />
-          </Form.Item>
-
-          <Form.Item label="Address" name="address">
-            <Input />
-          </Form.Item>
-
           <Form.Item
-            label="Subdomain"
-            name="subdomain"
-            rules={[{ required: true, message: "This field is required" }]}
+            label="Price"
+            name="price"
+            rules={[
+              {
+                required: true,
+                message: "This field is required",
+              },
+            ]}
           >
-            <Input />
+            <Input type="number" />
           </Form.Item>
 
-          <Form.Item label="Plan ID" name="plan_id">
-            {/* <Select
+          <Form.Item label="Permissions" name="permission_ids">
+            <Select
               size="middle"
+              mode="multiple"
               allowClear
-              // showSearch
-              // optionFilterProp="label"
-              // filterSort={(
-              //   optionA: { label?: string },
-              //   optionB: { label?: string }
-              // ) =>
-              //   (optionA?.label ?? "")
-              //     .toLowerCase()
-              //     .localeCompare((optionB?.label ?? "").toLowerCase())
-              // }
-              options={planOptions}
-            /> */}
-          </Form.Item>
-
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ required: true, message: "This field is required" }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[{ required: !isEditing, message: "This field is required" }]}
-          >
-            <Input.Password />
+              showSearch
+              optionFilterProp="label"
+              filterSort={(
+                optionA: { label?: string },
+                optionB: { label?: string }
+              ) =>
+                (optionA?.label ?? "")
+                  .toLowerCase()
+                  .localeCompare((optionB?.label ?? "").toLowerCase())
+              }
+              options={permissionOptions}
+            />
           </Form.Item>
 
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>

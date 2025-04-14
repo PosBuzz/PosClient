@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
-import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { endpoints } from "../../api/endpoints";
 import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
 
@@ -18,7 +18,6 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
-  const banner_type = Form.useWatch("banner_type", form);
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.consumer, data),
@@ -48,30 +47,25 @@ export default function DrawerForm({
   const planOptions: any = useModelOptions(models?.Plan, "name");
 
   const onFinish = async (formValues: any) => {
-    if (isEditing) {
-      // Handle update logic if needed
-      updateData.mutate({
-        ...formValues,
+    const payload = {
+      name: formValues.name,
+      phone: formValues.phone,
+      address: formValues.address,
+      subdomain: formValues.subdomain,
+      plan_id: formValues.plan_id, // dropdown or input
+      email: formValues.email,
+      password: formValues.password,
+    };
+
+    if (isEditing && editedItem) {
+      return updateData.mutate({
+        ...payload,
         id: editedItem.id,
       });
-    } else {
-      const payload = {
-        name: formValues.name,
-        phone: formValues.phone,
-        address: formValues.address,
-        subdomain: formValues.subdomain,
-        plan_id: formValues.plan_id, // dropdown or input
-        email: formValues.email,
-        password: formValues.password,
-      };
-
-      if (isEditing && editedItem) {
-        return updateData.mutate(payload);
-      }
-
-      // @ts-ignore
-      createData.mutate(payload);
     }
+
+    // @ts-ignore
+    createData.mutate(payload);
   };
 
   const onFinishFailed = (errorInfo: any) => {
@@ -136,7 +130,7 @@ export default function DrawerForm({
             <Input />
           </Form.Item>
 
-          <Form.Item label="Plan ID" name="plan_id">
+          <Form.Item label="Plan" name="plan_id">
             <Select
               size="middle"
               allowClear
@@ -165,7 +159,9 @@ export default function DrawerForm({
           <Form.Item
             label="Password"
             name="password"
-            rules={[{ required: !isEditing, message: "This field is required" }]}
+            rules={[
+              { required: !isEditing, message: "This field is required" },
+            ]}
           >
             <Input.Password />
           </Form.Item>
