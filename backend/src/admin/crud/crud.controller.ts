@@ -12,8 +12,12 @@ import {
 } from '@nestjs/common';
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
 import { CrudService } from './crud.service';
+import { HasRoles } from 'src/decorators/set-roles.decorator';
+import { Role } from 'src/auth/enums/roles.enum';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
-@UseGuards(AdminAuthGuard)
+@HasRoles([Role.SUPER_ADMIN])
+@UseGuards(AdminAuthGuard, RolesGuard)
 @Controller('crud')
 export class CrudController {
   constructor(private readonly crudService: CrudService) {}
@@ -58,6 +62,4 @@ export class CrudController {
   async search(@Query('query') query, @Query('model') model, @Body() data) {
     return this.crudService.search(query, model, data);
   }
-
-  
 }

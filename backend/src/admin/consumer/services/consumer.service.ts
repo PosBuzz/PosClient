@@ -59,9 +59,8 @@ export class ConsumerService {
       });
 
       return {
+        message: 'Consumer, admin user, and permissions created successfully',
         consumer,
-        admin_user: user,
-        admin_role: role,
       };
     });
   }

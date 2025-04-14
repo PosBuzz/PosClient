@@ -6,6 +6,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const Home = lazy(() => import("./pages/home"));
 const Consumers = lazy(() => import("./pages/consumers"));
+const Plans = lazy(() => import("./pages/plans"));
 
 export const routes = [
   {
@@ -26,6 +27,7 @@ export const routes = [
     children: [
       { index: true, element: <Home /> },
       { path: "consumers", element: <Consumers /> },
+      { path: "plans", element: <Plans /> },
     ],
   },
 ];

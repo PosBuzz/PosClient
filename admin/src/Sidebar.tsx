@@ -1,7 +1,4 @@
-import {
-  DashboardOutlined,
-  UserOutlined
-} from "@ant-design/icons";
+import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -32,6 +29,11 @@ const SideBar: React.FC = () => {
   };
 
   const menuItems = [
+    {
+      key: "/plans",
+      icon: <UserOutlined />,
+      label: "Plans",
+    },
     {
       key: "/consumers",
       icon: <UserOutlined />,
@@ -67,17 +69,17 @@ const SideBar: React.FC = () => {
   // ];
 
   return (
-      <Menu
-        onClick={({ key }) => {
-          navigate(key);
-        }}
-        theme="dark"
-        mode="inline"
-        selectedKeys={selectedKeys}
-        openKeys={openKeys}
-        onOpenChange={onOpenChange}
-        items={menuItems}
-      />
+    <Menu
+      onClick={({ key }) => {
+        navigate(key);
+      }}
+      theme="dark"
+      mode="inline"
+      selectedKeys={selectedKeys}
+      openKeys={openKeys}
+      onOpenChange={onOpenChange}
+      items={menuItems}
+    />
   );
 };
 

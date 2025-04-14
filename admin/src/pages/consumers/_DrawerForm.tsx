@@ -78,8 +78,6 @@ export default function DrawerForm({
     console.log("Failed:", errorInfo);
   };
 
-  console.log(editedItem);
-
   useEffect(() => {
     if (isEditing && editedItem) {
       form.setFieldsValue({

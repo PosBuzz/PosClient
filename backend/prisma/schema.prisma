@@ -28,7 +28,7 @@ model Consumer {
   updated_at DateTime @updatedAt
 
   // Relations
-  plan         Plan             @relation(fields: [plan_id], references: [id])
+  plan         Plan             @relation(fields: [plan_id], references: [id], onDelete: Restrict)
   users        User[]
   roles        Role[]
   billing_logs BillingHistory[]
@@ -47,8 +47,8 @@ model Plan {
 model PlanPermission {
   plan_id       Int
   permission_id Int
-  plan          Plan       @relation(fields: [plan_id], references: [id])
-  permission    Permission @relation(fields: [permission_id], references: [id])
+  plan          Plan       @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([plan_id, permission_id])
 }
@@ -62,7 +62,7 @@ model BillingHistory {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer Consumer @relation(fields: [consumer_id], references: [id])
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -76,8 +76,8 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer Consumer @relation(fields: [consumer_id], references: [id])
-  role     Role     @relation(fields: [role_id], references: [id])
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
 }
 
 model Permission {
@@ -91,7 +91,7 @@ model Role {
   id          Int              @id @default(autoincrement())
   name        String
   consumer_id Int
-  consumer    Consumer         @relation(fields: [consumer_id], references: [id])
+  consumer    Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   permissions RolePermission[]
   users       User[]
 }
@@ -99,8 +99,8 @@ model Role {
 model RolePermission {
   role_id       Int
   permission_id Int
-  role          Role       @relation(fields: [role_id], references: [id])
-  permission    Permission @relation(fields: [permission_id], references: [id])
+  role          Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
 }

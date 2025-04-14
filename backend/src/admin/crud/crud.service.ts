@@ -1,8 +1,9 @@
 /* eslint-disable */
 
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UpdateCrudDto } from './dto/update-crud.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { error } from 'console';
 
 @Injectable()
 export class CrudService {
@@ -38,12 +39,15 @@ export class CrudService {
     try {
       await this.prismaService[model].delete({ where: { id } });
     } catch (e) {
-      return { success: false };
+      throw new HttpException(
+        { message: 'failed', error: e },
+        HttpStatus.EXPECTATION_FAILED,
+      );
     }
     return { success: true };
   }
 
-async findAllByWhere(model: string, body: any) {
+  async findAllByWhere(model: string, body: any) {
     let findClause: any = {};
     if (body.where) {
       findClause.where = body.where;
