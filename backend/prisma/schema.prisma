@@ -35,13 +35,22 @@ model Consumer {
 }
 
 model Plan {
-  id         Int        @id @default(autoincrement())
-  name       String     @unique
-  price      Float
-  features   String // JSON string (optional)
-  created_at DateTime   @default(now())
-  updated_at DateTime   @updatedAt
-  consumers  Consumer[]
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  price       Float
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  consumers   Consumer[]
+  permissions PlanPermission[]
+}
+
+model PlanPermission {
+  plan_id       Int
+  permission_id Int
+  plan          Plan       @relation(fields: [plan_id], references: [id])
+  permission    Permission @relation(fields: [permission_id], references: [id])
+
+  @@id([plan_id, permission_id])
 }
 
 model BillingHistory {
@@ -59,6 +68,7 @@ model BillingHistory {
 model User {
   id            Int      @id @default(autoincrement())
   consumer_id   Int
+  role_id       Int
   email         String   @unique
   name          String
   password      String
@@ -66,35 +76,31 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer   Consumer   @relation(fields: [consumer_id], references: [id])
-  user_roles UserRole[]
-}
-
-model Role {
-  id          Int      @id @default(autoincrement())
-  consumer_id Int
-  name        String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  consumer    Consumer     @relation(fields: [consumer_id], references: [id])
-  permissions Permission[]
-  user_roles  UserRole[]
+  consumer Consumer @relation(fields: [consumer_id], references: [id])
+  role     Role     @relation(fields: [role_id], references: [id])
 }
 
 model Permission {
-  id      Int    @id @default(autoincrement())
-  role_id Int
-  action  String // e.g., 'create_invoice', 'view_report'
-
-  role Role @relation(fields: [role_id], references: [id])
+  id             Int              @id @default(autoincrement())
+  action         String           @unique
+  RolePermission RolePermission[]
+  PlanPermission PlanPermission[]
 }
 
-model UserRole {
-  id      Int @id @default(autoincrement())
-  user_id Int
-  role_id Int
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer         @relation(fields: [consumer_id], references: [id])
+  permissions RolePermission[]
+  users       User[]
+}
 
-  user User @relation(fields: [user_id], references: [id])
-  role Role @relation(fields: [role_id], references: [id])
+model RolePermission {
+  role_id       Int
+  permission_id Int
+  role          Role       @relation(fields: [role_id], references: [id])
+  permission    Permission @relation(fields: [permission_id], references: [id])
+
+  @@id([role_id, permission_id])
 }

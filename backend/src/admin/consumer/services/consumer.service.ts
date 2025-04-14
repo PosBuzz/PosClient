@@ -15,14 +15,21 @@ export class ConsumerService {
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
 
-    // Create everything in a transaction
     return this.prisma.$transaction(async (tx) => {
       // Step 1: Create the consumer
       const consumer = await tx.consumer.create({
         data: {
           ...consumerData,
-          name: data.name,
-          email: data.email,
+          name,
+          email,
+        },
+      });
+
+      // Step 3: Create the Admin role
+      const role = await tx.role.create({
+        data: {
+          name: 'Admin',
+          consumer_id: consumer.id,
         },
       });
 
@@ -32,28 +39,23 @@ export class ConsumerService {
           email,
           name,
           password: bcryptjs.hashSync(password, 10),
-          consumer: {
-            connect: { id: consumer.id },
-          },
-        },
-      });
-
-      // Step 3: Create the Admin role
-      const role = await tx.role.create({
-        data: {
-          name: 'Admin',
-          consumer: {
-            connect: { id: consumer.id },
-          },
-        },
-      });
-
-      // Step 4: Assign Admin role to the user
-      await tx.userRole.create({
-        data: {
-          user_id: user.id,
+          consumer_id: consumer.id,
           role_id: role.id,
         },
+      });
+
+      // Get plan-based permissions
+      const planPermissions = await tx.planPermission.findMany({
+        where: { plan_id: consumer.plan_id },
+      });
+
+      // Assign them to admin role
+      await tx.rolePermission.createMany({
+        data: planPermissions.map((p) => ({
+          role_id: role.id,
+          permission_id: p.permission_id,
+        })),
+        skipDuplicates: true,
       });
 
       return {
@@ -65,20 +67,18 @@ export class ConsumerService {
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
-    const { password, ...consumerData } = data;
+    const { password, plan_id, ...consumerData } = data;
 
-    // Find the admin user for this consumer
     const adminUser = await this.prisma.user.findFirst({
       where: {
         consumer_id: consumerId,
-        user_roles: {
-          some: {
-            role: {
-              name: 'Admin',
-              consumer_id: consumerId,
-            },
-          },
+        role: {
+          name: 'Admin',
+          consumer_id: consumerId,
         },
+      },
+      include: {
+        role: true,
       },
     });
 
@@ -86,24 +86,51 @@ export class ConsumerService {
       throw new NotFoundException('Admin user not found for this consumer');
     }
 
-    // Update consumer
+    const adminRole = adminUser.role;
+
+    // Step 2: Update consumer (including plan if changed)
     await this.prisma.consumer.update({
       where: { id: consumerId },
       data: {
         ...consumerData,
+        ...(plan_id && { plan_id }), // only update plan if provided
       },
     });
 
-    // Update admin user (if needed)
+    // Step 3: Update admin user info
     await this.prisma.user.update({
       where: { id: adminUser.id },
       data: {
         email: data.email,
         name: data.name,
-        ...(password && { password: bcryptjs.hashSync(password, 10) }), // hash before saving
+        ...(password && { password: bcryptjs.hashSync(password, 10) }),
       },
     });
 
-    return { message: 'Consumer and admin user updated successfully' };
+    // Step 4: If plan_id was updated, update role permissions
+    if (plan_id) {
+      // Delete old role permissions
+      await this.prisma.rolePermission.deleteMany({
+        where: { role_id: adminRole.id },
+      });
+
+      // Get permissions for the new plan
+      const planPermissions = await this.prisma.planPermission.findMany({
+        where: { plan_id },
+        select: { permission_id: true },
+      });
+
+      // Insert new permissions to the admin role
+      await this.prisma.rolePermission.createMany({
+        data: planPermissions.map((pp) => ({
+          role_id: adminRole.id,
+          permission_id: pp.permission_id,
+        })),
+      });
+    }
+
+    return {
+      message: 'Consumer, admin user, and permissions updated successfully',
+    };
   }
 }

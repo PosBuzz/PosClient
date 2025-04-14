@@ -6,12 +6,30 @@ const prisma = new PrismaClient();
 async function main() {
   const hash = bcryptjs.hashSync('123456', 10);
 
+  // Seed default permissions
+  const permissions = await Promise.all([
+    prisma.permission.upsert({
+      where: { action: 'create_invoice' },
+      update: {},
+      create: { action: 'create_invoice' },
+    }),
+    prisma.permission.upsert({
+      where: { action: 'view_report' },
+      update: {},
+      create: { action: 'view_report' },
+    }),
+    prisma.permission.upsert({
+      where: { action: 'manage_users' },
+      update: {},
+      create: { action: 'manage_users' },
+    }),
+  ]);
+
   // Seed default plans
   const basicPlan = await prisma.plan.create({
     data: {
       name: 'Basic',
       price: 10,
-      features: JSON.stringify(['Feature1', 'Feature2']),
     },
   });
 
@@ -19,7 +37,6 @@ async function main() {
     data: {
       name: 'Pro',
       price: 30,
-      features: JSON.stringify(['Feature1', 'Feature2', 'Feature3']),
     },
   });
 
@@ -27,24 +44,49 @@ async function main() {
     data: {
       name: 'Enterprise',
       price: 50,
-      features: JSON.stringify([
-        'Feature1',
-        'Feature2',
-        'Feature3',
-        'Feature4',
-      ]),
     },
+  });
+
+  // Seed PlanPermissions
+  const permissionMap = Object.fromEntries(
+    permissions.map((p) => [p.action, p.id]),
+  );
+
+  await prisma.planPermission.createMany({
+    data: [
+      // Basic Plan Permissions
+      { plan_id: basicPlan.id, permission_id: permissionMap['view_report'] },
+
+      // Pro Plan Permissions
+      { plan_id: proPlan.id, permission_id: permissionMap['view_report'] },
+      { plan_id: proPlan.id, permission_id: permissionMap['create_invoice'] },
+
+      // Enterprise Plan Permissions
+      {
+        plan_id: enterprisePlan.id,
+        permission_id: permissionMap['view_report'],
+      },
+      {
+        plan_id: enterprisePlan.id,
+        permission_id: permissionMap['create_invoice'],
+      },
+      {
+        plan_id: enterprisePlan.id,
+        permission_id: permissionMap['manage_users'],
+      },
+    ],
+    skipDuplicates: true,
   });
 
   // Seed SuperAdmin
   const superAdmin = await prisma.superAdmin.create({
     data: {
       email: 'admin@example.com',
-      password: hash, // make sure to hash it before production
+      password: hash,
     },
   });
 
-  // Create a Consumer for each plan
+  // Create Consumer for Enterprise Plan
   const consumer1 = await prisma.consumer.create({
     data: {
       name: 'Consumer 1',
@@ -54,88 +96,81 @@ async function main() {
     },
   });
 
-  // Create Users for Consumers
-  const user1 = await prisma.user.create({
-    data: {
-      consumer_id: consumer1.id,
-      email: 'user1@consumer1.com',
-      name: 'User One',
-      password: hash, // You should hash the password in production
-    },
+  // Create Roles
+  const [roleAdmin, roleUser] = await Promise.all([
+    prisma.role.create({
+      data: {
+        consumer_id: consumer1.id,
+        name: 'Admin',
+      },
+    }),
+    prisma.role.create({
+      data: {
+        consumer_id: consumer1.id,
+        name: 'User',
+      },
+    }),
+  ]);
+
+  // Create Users
+  const [user1, user2] = await Promise.all([
+    prisma.user.create({
+      data: {
+        consumer_id: consumer1.id,
+        email: 'user1@consumer1.com',
+        name: 'User One',
+        password: hash,
+        role_id: roleAdmin.id,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        consumer_id: consumer1.id,
+        email: 'user2@consumer2.com',
+        name: 'User Two',
+        password: hash,
+        role_id: roleUser.id,
+      },
+    }),
+  ]);
+
+  // Assign Permissions to Admin Role
+  await prisma.rolePermission.createMany({
+    data: [
+      { role_id: roleAdmin.id, permission_id: permissionMap['view_report'] },
+      { role_id: roleAdmin.id, permission_id: permissionMap['create_invoice'] },
+      { role_id: roleAdmin.id, permission_id: permissionMap['manage_users'] },
+    ],
+    skipDuplicates: true,
   });
 
-  const user2 = await prisma.user.create({
-    data: {
-      consumer_id: consumer1.id,
-      email: 'user2@consumer2.com',
-      name: 'User Two',
-      password: hash, // You should hash the password in production
-    },
+  // Assign Permissions to User Role (limited)
+  await prisma.rolePermission.createMany({
+    data: [
+      { role_id: roleUser.id, permission_id: permissionMap['view_report'] },
+    ],
+    skipDuplicates: true,
   });
 
-  // Create Roles for Consumers
-  const roleAdmin = await prisma.role.create({
-    data: {
-      consumer_id: consumer1.id,
-      name: 'Admin',
-    },
+  // Billing History
+  await prisma.billingHistory.createMany({
+    data: [
+      {
+        consumer_id: consumer1.id,
+        amount: 100.0,
+        reference: 'Invoice #12345',
+        billing_month: new Date(),
+      },
+      {
+        consumer_id: consumer1.id,
+        amount: 250.0,
+        reference: 'Invoice #67890',
+        billing_month: new Date(),
+      },
+    ],
   });
 
-  const roleUser = await prisma.role.create({
-    data: {
-      consumer_id: consumer1.id,
-      name: 'User',
-    },
-  });
-
-  // Create Permissions for Roles
-  await prisma.permission.create({
-    data: {
-      role_id: roleAdmin.id,
-      action: 'create_invoice',
-    },
-  });
-
-  await prisma.permission.create({
-    data: {
-      role_id: roleUser.id,
-      action: 'view_report',
-    },
-  });
-
-  // Assign Roles to Users
-  await prisma.userRole.create({
-    data: {
-      user_id: user1.id,
-      role_id: roleAdmin.id,
-    },
-  });
-
-  await prisma.userRole.create({
-    data: {
-      user_id: user2.id,
-      role_id: roleUser.id,
-    },
-  });
-
-  // Create Billing History for Consumers
-  await prisma.billingHistory.create({
-    data: {
-      consumer_id: consumer1.id,
-      amount: 100.0,
-      reference: 'Invoice #12345',
-      billing_month: new Date(),
-    },
-  });
-
-  await prisma.billingHistory.create({
-    data: {
-      consumer_id: consumer1.id,
-      amount: 250.0,
-      reference: 'Invoice #67890',
-      billing_month: new Date(),
-    },
-  });
+  console.log('🌱 Seeding complete!');
 }
 
 main()
