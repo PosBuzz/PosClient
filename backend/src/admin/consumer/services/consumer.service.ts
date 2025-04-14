@@ -132,4 +132,13 @@ export class ConsumerService {
       message: 'Consumer, admin user, and permissions updated successfully',
     };
   }
+
+   async checkSubdomain(value: string) {
+      const exists = await this.prisma.consumer.findUnique({
+        where: { subdomain: value },
+        select: { id: true },
+      });
+  
+      return { available: !exists };
+    }
 }

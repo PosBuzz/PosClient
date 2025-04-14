@@ -5,7 +5,7 @@ export const getUrlForModel = (model: string, id: any = null) => {
   return `crud?model=${model}`;
 };
 
-export const API_CRUD_FIND_WHERE = 'crud/find-where';
+export const API_CRUD_FIND_WHERE = "crud/find-where";
 
 export const endpoints = {
   csrfToken: "/auth/csrf-token",
@@ -14,5 +14,6 @@ export const endpoints = {
   logout: "/auth/admin-logout",
   refreshToken: "/auth/admin-refresh-token",
   consumer: "/admin/consumers",
+  checkSubdomain: "/admin/consumers/check-subdomain",
   plan: "/admin/plans",
 };

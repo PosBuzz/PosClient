@@ -2,10 +2,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
-import { patch, post } from "../../api/crud-api";
+import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
+import { useDebounce } from "use-debounce";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -18,6 +19,13 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
+
+  const checkSubdomain = async (value: string) => {
+    const response = await get(
+      `${endpoints.checkSubdomain}?value=${value}`
+    );
+    return response.available;
+  };
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.consumer, data),
@@ -125,7 +133,27 @@ export default function DrawerForm({
           <Form.Item
             label="Subdomain"
             name="subdomain"
-            rules={[{ required: true, message: "This field is required" }]}
+            rules={[
+              { required: true, message: "This field is required" },
+              {
+                validator: async (_, value) => {
+                  if (!value) return Promise.resolve(); // Skip validation if the field is empty
+                  try {
+                    const availabilty = await checkSubdomain(value);
+                    if (!availabilty) {
+                      return Promise.reject(
+                        new Error("Subdomain is already taken")
+                      );
+                    }
+                  } catch (error) {
+                    return Promise.reject(
+                      new Error("Failed to validate subdomain")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
           >
             <Input />
           </Form.Item>

@@ -1,11 +1,11 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from 'src/auth/enums/roles.enum';
@@ -30,5 +30,10 @@ export class ConsumerController {
   @Patch(':id')
   update(@Param('id') id: number, @Body() dto: UpdateConsumerDto) {
     return this.consumerService.update(id, dto);
+  }
+
+  @Get('check-subdomain')
+  async checkSubdomain(@Query('value') value: string) {
+    return this.consumerService.checkSubdomain(value);
   }
 }
