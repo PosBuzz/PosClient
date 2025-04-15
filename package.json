@@ -1,0 +1,26 @@
+{
+  "name": "cybercraft-bd",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n BACKEND,ADMIN,CONSUMER -c green,blue,magenta \"npm run start:dev --prefix backend\" \"npm run dev --prefix admin\" \"npm run dev --prefix consumer\"",
+    "build": "concurrently -n BACKEND,ADMIN,CONSUMER -c green,blue,magenta \"npm run build --prefix backend\" \"npm run build --prefix admin\" \"npm run build --prefix consumer\"",
+    "start": "concurrently -n BACKEND,ADMIN,CONSUMER -c green,blue,magenta \"npm run start --prefix backend\" \"npm run preview --prefix admin\" \"npm run preview --prefix consumer\"",
+    "setup": "bash setup.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Istiak-A-Tashrif/cybercraft-bd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Istiak-A-Tashrif/cybercraft-bd/issues"
+  },
+  "homepage": "https://github.com/Istiak-A-Tashrif/cybercraft-bd#readme",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

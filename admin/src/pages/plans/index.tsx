@@ -11,7 +11,7 @@ import TableGrid from "./_TableGrid";
 const model = models.Plan;
 const title = "Plans";
 
-const Banner = () => {
+const Plans = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -89,4 +89,4 @@ const Banner = () => {
   );
 };
 
-export default Banner;
+export default Plans;

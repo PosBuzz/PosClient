@@ -12,7 +12,7 @@ import TableGrid from "./_TableGrid";
 const model = models.Consumer;
 const title = "Consumers";
 
-const Banner = () => {
+const Consumers = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -93,4 +93,4 @@ const Banner = () => {
   );
 };
 
-export default Banner;
+export default Consumers;

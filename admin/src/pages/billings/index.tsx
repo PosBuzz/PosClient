@@ -14,7 +14,7 @@ import TableGrid from "./_TableGrid";
 const model = models.BillingHistory;
 const title = "Billing Histories";
 
-const Banner = () => {
+const Billings = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -165,4 +165,4 @@ const Banner = () => {
   );
 };
 
-export default Banner;
+export default Billings;
