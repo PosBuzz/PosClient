@@ -159,13 +159,13 @@ async function main() {
         consumer_id: consumer1.id,
         amount: 100.0,
         reference: 'Invoice #12345',
-        billing_month: new Date(),
+        billing_month: '2025-03',
       },
       {
         consumer_id: consumer1.id,
         amount: 250.0,
         reference: 'Invoice #67890',
-        billing_month: new Date(),
+        billing_month: '2025-04',
       },
     ],
   });

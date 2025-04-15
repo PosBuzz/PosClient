@@ -58,11 +58,15 @@ model BillingHistory {
   consumer_id   Int
   amount        Float
   reference     String
-  billing_month DateTime
+  billing_month String
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
   consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@unique([consumer_id, billing_month])
+  @@index([consumer_id])
+  @@index([billing_month])
 }
 
 model User {
@@ -78,6 +82,8 @@ model User {
 
   consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@index([consumer_id])
 }
 
 model Permission {
@@ -94,6 +100,8 @@ model Role {
   consumer    Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   permissions RolePermission[]
   users       User[]
+
+  @@index([consumer_id])
 }
 
 model RolePermission {

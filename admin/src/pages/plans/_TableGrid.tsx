@@ -30,7 +30,6 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
           },
         },
       }),
-    staleTime: 0,
   });
 
   useEffect(() => {

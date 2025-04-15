@@ -8,5 +8,5 @@ export class CreateBillingDto {
   reference: string;
 
   @IsDate()
-  billing_month: Date;
+  billing_month: string;
 }

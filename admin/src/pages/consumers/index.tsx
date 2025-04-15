@@ -7,6 +7,7 @@ import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
 import PageTitle from "../../components/Pagetitle";
 import { models } from "../../constants/Models";
+import useModelOptions from "../../hooks/useModelOptions";
 
 const model = models.Consumer;
 const title = "Consumers";
@@ -16,6 +17,8 @@ const Banner = () => {
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [trigger, setTrigger] = useState(0);
+  const planOptions: any = useModelOptions(models?.Plan, "name");
+
 
   const showDrawer = () => {
     setOpen(true);
@@ -56,6 +59,7 @@ const Banner = () => {
         isEditing={isEditing}
         editedItem={editedItem}
         onSubmitSuccess={onSubmitSuccess}
+        planOptions={planOptions}
       />
 
       <PageTitle
@@ -82,6 +86,7 @@ const Banner = () => {
             trigger={trigger}
             model={model}
             onClickEdit={onClickEdit}
+            planOptions={planOptions}
           />
         </Col>
       </Row>

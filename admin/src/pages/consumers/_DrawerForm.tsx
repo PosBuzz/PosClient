@@ -4,8 +4,6 @@ import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { models } from "../../constants/Models";
-import useModelOptions from "../../hooks/useModelOptions";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -15,14 +13,13 @@ export default function DrawerForm({
   onSubmitSuccess,
   isEditing,
   editedItem,
+  planOptions,
   ...props
 }) {
   const [form] = Form.useForm();
 
   const checkSubdomain = async (value: string) => {
-    const response = await get(
-      `${endpoints.checkSubdomain}?value=${value}`
-    );
+    const response = await get(`${endpoints.checkSubdomain}?value=${value}`);
     return response.available;
   };
 
@@ -50,8 +47,6 @@ export default function DrawerForm({
       message.error("Something went wrong");
     },
   });
-
-  const planOptions: any = useModelOptions(models?.Plan, "name");
 
   const onFinish = async (formValues: any) => {
     const payload = {

@@ -7,6 +7,7 @@ const Login = lazy(() => import("./pages/login"));
 const Home = lazy(() => import("./pages/home"));
 const Consumers = lazy(() => import("./pages/consumers"));
 const Plans = lazy(() => import("./pages/plans"));
+const Billings = lazy(() => import("./pages/billings"));
 
 export const routes = [
   {
@@ -28,6 +29,7 @@ export const routes = [
       { index: true, element: <Home /> },
       { path: "consumers", element: <Consumers /> },
       { path: "plans", element: <Plans /> },
+      { path: "billings", element: <Billings /> },
     ],
   },
 ];

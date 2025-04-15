@@ -1,6 +1,7 @@
 import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
+import { MdSubscriptions } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const SideBar: React.FC = () => {
@@ -38,6 +39,11 @@ const SideBar: React.FC = () => {
       key: "/consumers",
       icon: <UserOutlined />,
       label: "Consumers",
+    },
+    {
+      key: "/billings",
+      icon: <MdSubscriptions />,
+      label: "Billing & Subscriptions",
     },
   ];
   // const menuItems = [
