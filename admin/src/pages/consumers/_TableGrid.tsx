@@ -4,14 +4,24 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Col, Input, Popconfirm, Row, Select, Space, Table, Tag, message } from "antd";
+import {
+  Button,
+  Col,
+  Input,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
+  message,
+} from "antd";
 import dayjs from "dayjs";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 const { Option } = Select;
-
 
 export default function _TableGrid({
   model,
@@ -41,7 +51,12 @@ export default function _TableGrid({
 
   const KEY = `all-${model}`;
 
-  const { isLoading, isError, data: fetchData, refetch } = useQuery({
+  const {
+    isLoading,
+    isError,
+    data: fetchData,
+    refetch,
+  } = useQuery({
     queryKey: [KEY, debouncedSearchText, selectedStatus, selectedPlan],
     queryFn: () =>
       post(`${API_CRUD_FIND_WHERE}?model=${model}`, {

@@ -1,12 +1,11 @@
 /* eslint-disable */
 
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Image, message, Popconfirm, Space, Table, Tag } from "antd";
-import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
-import { deleteApi, post } from "../../api/crud-api";
+import { useMutation } from "@tanstack/react-query";
+import { Button, message, Popconfirm, Space, Table } from "antd";
 import { useEffect } from "react";
-import dayjs from "dayjs";
+import { deleteApi } from "../../api/crud-api";
+import { getUrlForModel } from "../../api/endpoints";
 
 // @ts-ignore
 export default function _TableGrid({

@@ -1,12 +1,12 @@
 /* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
-import { Button, Col, Row, Typography } from "antd";
+import { Button, Col, Row } from "antd";
 import { useState } from "react";
+import PageTitle from "../../components/Pagetitle";
+import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
-import PageTitle from "../../components/Pagetitle";
-import { models } from "../../constants/Models";
 
 const model = models.Plan;
 const title = "Plans";

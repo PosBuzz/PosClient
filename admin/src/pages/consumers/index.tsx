@@ -1,13 +1,13 @@
 /* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
-import { Button, Col, Row, Typography } from "antd";
+import { Button, Col, Row } from "antd";
 import { useState } from "react";
-import { setPageTitle } from "../../utils/setPageTitle";
-import DrawerForm from "./_DrawerForm";
-import TableGrid from "./_TableGrid";
 import PageTitle from "../../components/Pagetitle";
 import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
+import { setPageTitle } from "../../utils/setPageTitle";
+import DrawerForm from "./_DrawerForm";
+import TableGrid from "./_TableGrid";
 
 const model = models.Consumer;
 const title = "Consumers";
@@ -18,7 +18,6 @@ const Banner = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [trigger, setTrigger] = useState(0);
   const planOptions: any = useModelOptions(models?.Plan, "name");
-
 
   const showDrawer = () => {
     setOpen(true);

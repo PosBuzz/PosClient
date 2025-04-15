@@ -1,16 +1,9 @@
-/* eslint-disable */
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button, DatePicker, Drawer, Form, Input, Select, message } from "antd";
-import { useEffect } from "react";
-import { get, patch, post } from "../../api/crud-api";
-import {
-  API_CRUD_FIND_WHERE,
-  endpoints,
-  getUrlForModel,
-} from "../../api/endpoints";
-import { models } from "../../constants/Models";
-import useModelOptions from "../../hooks/useModelOptions";
 import dayjs from "dayjs";
+import { useEffect } from "react";
+import { patch, post } from "../../api/crud-api";
+import { getUrlForModel } from "../../api/endpoints";
 
 // @ts-ignore
 export default function DrawerForm({
