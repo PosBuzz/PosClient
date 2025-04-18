@@ -12,12 +12,8 @@ import {
 } from '@nestjs/common';
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
 import { CrudService } from './crud.service';
-import { HasRoles } from 'src/decorators/set-roles.decorator';
-import { Role } from 'src/auth/enums/roles.enum';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
 
-@HasRoles([Role.SUPER_ADMIN])
-@UseGuards(AdminAuthGuard, RolesGuard)
+@UseGuards(AdminAuthGuard)
 @Controller('crud')
 export class CrudController {
   constructor(private readonly crudService: CrudService) {}

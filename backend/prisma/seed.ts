@@ -6,6 +6,42 @@ const prisma = new PrismaClient();
 async function main() {
   const hash = bcryptjs.hashSync('123456', 10);
 
+  const adminPermissions = ['plans', 'consumers', 'billing'];
+  const createdPermissions = await Promise.all(
+    adminPermissions.map((action) =>
+      prisma.superAdminPermission.upsert({
+        where: { action },
+        update: {},
+        create: { action },
+      }),
+    ),
+  );
+
+  // Create "admin" role with all permissions
+  const adminRole = await prisma.superAdminRole.upsert({
+    where: { name: 'admin' },
+    update: {},
+    create: {
+      name: 'admin',
+      permissions: {
+        create: createdPermissions.map((perm) => ({
+          permission_id: perm.id,
+        })),
+      },
+    },
+  });
+
+  await prisma.superAdmin.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      name: 'Root Admin',
+      email: 'admin@example.com',
+      password: hash,
+      role_id: adminRole.id,
+    },
+  });
+
   // Seed default permissions
   const permissions = await Promise.all([
     prisma.permission.upsert({
@@ -76,14 +112,6 @@ async function main() {
       },
     ],
     skipDuplicates: true,
-  });
-
-  // Seed SuperAdmin
-  const superAdmin = await prisma.superAdmin.create({
-    data: {
-      email: 'admin@example.com',
-      password: hash,
-    },
   });
 
   // Create Consumer for Enterprise Plan

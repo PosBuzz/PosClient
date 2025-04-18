@@ -10,14 +10,15 @@ import {
 } from '@nestjs/common';
 import { Role } from 'src/auth/enums/roles.enum';
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { HasRoles } from 'src/decorators/set-roles.decorator';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ConsumerService } from '../services/consumer.service';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 
-@HasRoles([Role.SUPER_ADMIN])
-@UseGuards(AdminAuthGuard, RolesGuard)
+@HasPermissions([AdminPermission.consumers])
+@UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/consumers')
 export class ConsumerController {
   constructor(private readonly consumerService: ConsumerService) {}

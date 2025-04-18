@@ -8,12 +8,41 @@ datasource db {
 }
 
 model SuperAdmin {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
+  id            Int          @id @default(autoincrement())
+  role_id       Int
+  email         String       @unique
+  name          String
   password      String
   refresh_token String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+  created_by_id Int?
+  created_by    SuperAdmin?  @relation("CreatedBy", fields: [created_by_id], references: [id])
+  created       SuperAdmin[] @relation("CreatedBy")
+
+  role SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
+}
+
+model SuperAdminRole {
+  id          Int                        @id @default(autoincrement())
+  name        String                     @unique
+  permissions SuperAdminRolePermission[]
+  users       SuperAdmin[]
+}
+
+model SuperAdminPermission {
+  id             Int                        @id @default(autoincrement())
+  action         String                     @unique
+  RolePermission SuperAdminRolePermission[]
+}
+
+model SuperAdminRolePermission {
+  role_id       Int
+  permission_id Int
+  role          SuperAdminRole       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission    SuperAdminPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
 }
 
 model Consumer {
@@ -101,6 +130,7 @@ model Role {
   permissions RolePermission[]
   users       User[]
 
+  @@unique([consumer_id, name])
   @@index([consumer_id])
 }
 

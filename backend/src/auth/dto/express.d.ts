@@ -1,7 +1,9 @@
 export interface User {
   id: string;
   email: string;
-  role: string; // Add other properties as needed
+  role: string;
+  permissions: string[]; 
+  name?: string; 
 }
 
 declare global {

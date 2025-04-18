@@ -20,12 +20,32 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
 
     const admin = await this.prisma.superAdmin.findUnique({
       where: { id: sub, email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!admin) throw new Error('SuperAdmin not found');
 
-    const { password, created_at, ...adminWithoutPassword } = admin;
-    const jwtPayload = { ...adminWithoutPassword, role: Role.SUPER_ADMIN };
-    return jwtPayload;
+    const { password, created_at, updated_at, ...rest } = admin;
+
+    // Extract permission actions from role
+    const permissions = admin.role.permissions.map(
+      (rp) => rp.permission.action,
+    );
+
+    return {
+      ...rest,
+      permissions, // attach permissions to request.user
+      role: admin.role.name,
+    };
   }
 }

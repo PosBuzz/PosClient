@@ -122,7 +122,16 @@ export default function DrawerForm({
             <Input type="number" />
           </Form.Item>
 
-          <Form.Item label="Permissions" name="permission_ids">
+          <Form.Item
+            label="Permissions"
+            name="permission_ids"
+            rules={[
+              {
+                required: true,
+                message: "This field is required",
+              },
+            ]}
+          >
             <Select
               size="middle"
               mode="multiple"

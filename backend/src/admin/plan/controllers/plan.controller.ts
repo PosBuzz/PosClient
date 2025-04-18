@@ -1,24 +1,32 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { PlanService } from '../services/plan.service';
-import { HasRoles } from 'src/decorators/set-roles.decorator';
-import { Role } from 'src/auth/enums/roles.enum';
+import {
+  Body,
+  Controller,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { PlanService } from '../services/plan.service';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 
-@HasRoles([Role.SUPER_ADMIN])
-@UseGuards(AdminAuthGuard, RolesGuard)
+@HasPermissions([AdminPermission.plans])
+@UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/plans')
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
-      @Post()
-      create(@Body() dto: CreatePlanDto) {
-        return this.planService.create(dto);
-      }
-    
-      @Patch(':id')
-      update(@Param('id') id: number, @Body() dto: UpdatePlanDto) {
-        return this.planService.update(id, dto);
-      }
+  @Post()
+  create(@Body() dto: CreatePlanDto) {
+    return this.planService.create(dto);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: number, @Body() dto: UpdatePlanDto) {
+    return this.planService.update(id, dto);
+  }
 }
