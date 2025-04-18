@@ -117,7 +117,7 @@ async function main() {
   // Create Consumer for Enterprise Plan
   const consumer1 = await prisma.consumer.create({
     data: {
-      name: 'Consumer 1',
+      company_name: 'Possbuzz',
       subdomain: 'consumer1',
       email: 'admin@consumer1.com',
       plan_id: enterprisePlan.id,

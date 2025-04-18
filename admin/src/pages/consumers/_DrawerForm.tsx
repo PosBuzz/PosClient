@@ -50,6 +50,7 @@ export default function DrawerForm({
 
   const onFinish = async (formValues: any) => {
     const payload = {
+      company_name: formValues.company_name,
       name: formValues.name,
       phone: formValues.phone,
       address: formValues.address,
@@ -77,7 +78,9 @@ export default function DrawerForm({
   useEffect(() => {
     if (isEditing && editedItem) {
       form.setFieldsValue({
-        name: editedItem.name,
+        company_name: editedItem.company_name,
+        name: editedItem.users?.find((user: any) => user.role?.name === "Admin")
+          ?.name,
         email: editedItem.email,
         phone: editedItem.phone,
         address: editedItem.address,
@@ -109,8 +112,8 @@ export default function DrawerForm({
           autoComplete="off"
         >
           <Form.Item
-            label="Name"
-            name="name"
+            label="Company Name"
+            name="company_name"
             rules={[{ required: true, message: "This field is required" }]}
           >
             <Input />
@@ -168,6 +171,14 @@ export default function DrawerForm({
               // }
               options={planOptions}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="User Name"
+            name="name"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
+            <Input />
           </Form.Item>
 
           <Form.Item

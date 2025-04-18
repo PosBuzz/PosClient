@@ -61,38 +61,60 @@ export default function _TableGrid({
     queryFn: () =>
       post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
         where: {
-          ...(debouncedSearchText && {
-            OR: [
-              { name: { contains: debouncedSearchText, mode: "insensitive" } },
-              { email: { contains: debouncedSearchText, mode: "insensitive" } },
-              { phone: { contains: debouncedSearchText, mode: "insensitive" } },
-              {
-                subdomain: {
-                  contains: debouncedSearchText,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          }),
-          ...(selectedStatus && {
-            billing_logs:
-              selectedStatus === "active"
-                ? {
-                    some: {
-                      billing_month: dayjs().format("YYYY-MM"),
-                    },
-                  }
-                : {
-                    none: {
-                      billing_month: dayjs().format("YYYY-MM"),
+          ...(debouncedSearchText
+            ? {
+                OR: [
+                  {
+                    company_name: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
                     },
                   },
-          }),
-          ...(selectedPlan && {
-            plan_id: selectedPlan,
-          }),
+                  {
+                    email: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    phone: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    subdomain: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
+                    },
+                  },
+                ],
+              }
+            : {}),
+          ...(selectedStatus
+            ? {
+                billing_logs:
+                  selectedStatus === "active"
+                    ? {
+                        some: {
+                          billing_month: dayjs().format("YYYY-MM"),
+                        },
+                      }
+                    : {
+                        none: {
+                          billing_month: dayjs().format("YYYY-MM"),
+                        },
+                      },
+              }
+            : {}),
+          ...(selectedPlan ? { plan_id: selectedPlan } : {}),
         },
         include: {
+          users: {
+            include: {
+              role: true,
+            },
+          },
           plan: true,
           billing_logs: {
             where: {
@@ -126,9 +148,19 @@ export default function _TableGrid({
 
   const columns = [
     {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
+      title: "Company Name",
+      dataIndex: "company_name",
+      key: "company_name",
+    },
+    {
+      title: "User Name",
+      render: (record: any) => {
+        const adminUser = record.users?.find(
+          (user: any) => user.role?.name === "Admin"
+        );
+        return adminUser ? adminUser.name : "-";
+      },
+      key: "user_name",
     },
     {
       title: "Email",

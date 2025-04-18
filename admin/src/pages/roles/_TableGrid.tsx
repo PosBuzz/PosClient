@@ -76,20 +76,24 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
       key: "actions",
       render: (record: any) => (
         <Space>
-          <Button onClick={() => onClickEdit(record)} type={"link"}>
-            <EditOutlined />
-          </Button>
-          <Popconfirm
-            title="Delete this item?"
-            description="This action cannot be undone"
-            onConfirm={() => handleDeleteClient(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger type={"link"}>
-              <DeleteOutlined />
-            </Button>
-          </Popconfirm>
+          {record?.name !== "admin" && (
+            <>
+              <Button onClick={() => onClickEdit(record)} type={"link"}>
+                <EditOutlined />
+              </Button>
+              <Popconfirm
+                title="Delete this item?"
+                description="This action cannot be undone"
+                onConfirm={() => handleDeleteClient(record.id)}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button danger type={"link"}>
+                  <DeleteOutlined />
+                </Button>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
@@ -109,6 +113,7 @@ export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
         loading={isLoading}
         columns={columns}
         dataSource={fetchData}
+        style={{textTransform: 'capitalize'}}
       />
     </>
   );

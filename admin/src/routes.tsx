@@ -9,7 +9,7 @@ const Consumers = lazy(() => import("./pages/consumers"));
 const Plans = lazy(() => import("./pages/plans"));
 const Billings = lazy(() => import("./pages/billings"));
 const Roles = lazy(() => import("./pages/roles"));
-// const Users = lazy(() => import("./pages/users"));
+const Users = lazy(() => import("./pages/users"));
 
 export const routes = [
   {
@@ -33,7 +33,7 @@ export const routes = [
       { path: "plans", element: <Plans /> },
       { path: "billings", element: <Billings /> },
       { path: "roles", element: <Roles /> },
-      // { path: "users", element: <Users /> },
+      { path: "users", element: <Users /> },
     ],
   },
 ];

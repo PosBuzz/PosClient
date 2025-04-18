@@ -32,7 +32,7 @@ const SideBar: React.FC = () => {
 
   const menuItems = [
     {
-      label: <span title="Organizer Section">Organizer</span>,
+      label: <span title="Employee">Employee</span>,
       key: "/user",
       icon: <GrUserAdmin />,
       children: [
@@ -59,7 +59,11 @@ const SideBar: React.FC = () => {
     {
       key: "/billings",
       icon: <MdSubscriptions />,
-      label: <span title="Billing and Subscription Details">Billing & Subscriptions</span>,
+      label: (
+        <span title="Billing and Subscription Details">
+          Billing & Subscriptions
+        </span>
+      ),
     },
   ];
 

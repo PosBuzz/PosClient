@@ -21,6 +21,10 @@ model SuperAdmin {
   created       SuperAdmin[] @relation("CreatedBy")
 
   role SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([name])
+  @@index([role_id])
 }
 
 model SuperAdminRole {
@@ -46,21 +50,27 @@ model SuperAdminRolePermission {
 }
 
 model Consumer {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String
-  phone      String?
-  address    String?
-  subdomain  String   @unique
-  plan_id    Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  company_name String
+  email        String
+  phone        String?
+  address      String?
+  subdomain    String   @unique
+  plan_id      Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   // Relations
   plan         Plan             @relation(fields: [plan_id], references: [id], onDelete: Restrict)
   users        User[]
   roles        Role[]
   billing_logs BillingHistory[]
+
+  @@index([email])
+  @@index([company_name])
+  @@index([phone])
+  @@index([subdomain])
+  @@index([plan_id])
 }
 
 model Plan {

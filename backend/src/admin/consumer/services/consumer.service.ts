@@ -20,7 +20,6 @@ export class ConsumerService {
       const consumer = await tx.consumer.create({
         data: {
           ...consumerData,
-          name,
           email,
         },
       });
@@ -66,7 +65,7 @@ export class ConsumerService {
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
-    const { password, plan_id, ...consumerData } = data;
+    const { password, plan_id, name, ...consumerData } = data;
 
     const adminUser = await this.prisma.user.findFirst({
       where: {
@@ -100,8 +99,8 @@ export class ConsumerService {
     await this.prisma.user.update({
       where: { id: adminUser.id },
       data: {
+        name,
         email: data.email,
-        name: data.name,
         ...(password && { password: bcryptjs.hashSync(password, 10) }),
       },
     });
@@ -133,12 +132,12 @@ export class ConsumerService {
     };
   }
 
-   async checkSubdomain(value: string) {
-      const exists = await this.prisma.consumer.findUnique({
-        where: { subdomain: value },
-        select: { id: true },
-      });
-  
-      return { available: !exists };
-    }
+  async checkSubdomain(value: string) {
+    const exists = await this.prisma.consumer.findUnique({
+      where: { subdomain: value },
+      select: { id: true },
+    });
+
+    return { available: !exists };
+  }
 }

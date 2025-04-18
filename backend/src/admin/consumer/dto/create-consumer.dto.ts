@@ -2,6 +2,9 @@ import { IsEmail, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateConsumerDto {
   @IsString()
+  company_name: string;
+
+  @IsString()
   name: string;
 
   @IsString()
