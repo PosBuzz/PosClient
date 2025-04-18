@@ -53,7 +53,7 @@ export default function DrawerForm({
   const onFinish = async (formValues: any) => {
     const payload = {
       consumer_id: formValues.consumer_id,
-      amount: formValues.amount,
+      amount: +formValues.amount,
       billing_month: dayjs(formValues.billing_month).format("YYYY-MM"),
       reference: formValues.reference,
     };
@@ -103,7 +103,7 @@ export default function DrawerForm({
 
   useEffect(() => {
     const selectedConsumer = consumers?.find((i) => i.id === consumer_id);
-    if (selectedConsumer) {
+    if (selectedConsumer && !isEditing) {
       form.setFieldValue("amount", selectedConsumer?.plan.price);
     }
   }, [consumer_id]);

@@ -1,5 +1,5 @@
 {
-  "name": "cybercraft-bd",
+  "name": "posbuzz",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Istiak-A-Tashrif/cybercraft-bd.git"
+    "url": "git+https://github.com/PosBuzz/PosClient.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Istiak-A-Tashrif/cybercraft-bd/issues"
+    "url": "https://github.com/PosBuzz/PosClient/issues"
   },
-  "homepage": "https://github.com/Istiak-A-Tashrif/cybercraft-bd#readme",
+  "homepage": "https://github.com/PosBuzz/PosClient#readme",
   "description": "",
   "devDependencies": {
     "concurrently": "^9.1.2"
