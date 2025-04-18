@@ -3,4 +3,6 @@ export const models = {
   Consumer: "Consumer",
   Permission: "Permission",
   Plan: "Plan",
+  SuperAdminPermission: "SuperAdminPermission",
+  SuperAdminRole: "SuperAdminRole",
 };

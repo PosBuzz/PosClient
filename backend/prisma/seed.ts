@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   const hash = bcryptjs.hashSync('123456', 10);
 
-  const adminPermissions = ['plans', 'consumers', 'billing'];
+  const adminPermissions = ['plans', 'consumers', 'billing', 'users'];
   const createdPermissions = await Promise.all(
     adminPermissions.map((action) =>
       prisma.superAdminPermission.upsert({

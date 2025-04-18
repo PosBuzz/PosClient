@@ -1,6 +1,7 @@
-import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
+import { UserOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
+import { GrUserAdmin } from "react-icons/gr";
 import { MdSubscriptions } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -31,48 +32,36 @@ const SideBar: React.FC = () => {
 
   const menuItems = [
     {
+      label: <span title="Organizer Section">Organizer</span>,
+      key: "/user",
+      icon: <GrUserAdmin />,
+      children: [
+        {
+          label: <span title="Roles">Roles</span>,
+          key: "/roles",
+        },
+        {
+          label: <span title="Users">Users</span>,
+          key: "/users",
+        },
+      ],
+    },
+    {
       key: "/plans",
       icon: <UserOutlined />,
-      label: "Plans",
+      label: <span title="Plans Section">Plans</span>,
     },
     {
       key: "/consumers",
       icon: <UserOutlined />,
-      label: "Consumers",
+      label: <span title="Consumers Section">Consumers</span>,
     },
     {
       key: "/billings",
       icon: <MdSubscriptions />,
-      label: "Billing & Subscriptions",
+      label: <span title="Billing and Subscription Details">Billing & Subscriptions</span>,
     },
   ];
-  // const menuItems = [
-  //   {
-  //     label: 'Dashboard',
-  //     key: '/',
-  //     icon: <DashboardFilled />,
-  //   },
-  //   {
-  //     label: 'Teams',
-  //     key: '/teams',
-  //     icon: <TeamOutlined />,
-  //   },
-  //   {
-  //     label: 'Organizer',
-  //     key: '/organizer',
-  //     icon: <FileWordFilled />,
-  //     children: [
-  //       {
-  //         label: 'Registered Organizer',
-  //         key: '/organizer?organizer-status=accepted',
-  //       },
-  //       {
-  //         label: 'Organizer Requests',
-  //         key: '/request-organizers?organizer-status=pending',
-  //       },
-  //     ],
-  //   },
-  // ];
 
   return (
     <Menu

@@ -16,4 +16,6 @@ export const endpoints = {
   consumer: "/admin/consumers",
   checkSubdomain: "/admin/consumers/check-subdomain",
   plan: "/admin/plans",
+  user: "/admin/users",
+  role: "/admin/users/roles",
 };

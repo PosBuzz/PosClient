@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -29,7 +30,10 @@ export class ConsumerController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: UpdateConsumerDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateConsumerDto,
+  ) {
     return this.consumerService.update(id, dto);
   }
 

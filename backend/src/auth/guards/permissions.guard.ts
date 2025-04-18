@@ -14,7 +14,6 @@ export class PermissionsGuard implements CanActivate {
         context.getHandler(),
       ) ||
       this.reflector.get<AdminPermission[]>('permissions', context.getClass());
-    console.log(requiredPermissions);
     if (!requiredPermissions || requiredPermissions.length === 0) return true;
 
     const request = context.switchToHttp().getRequest<Request>();

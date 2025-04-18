@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -26,7 +27,7 @@ export class PlanController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: UpdatePlanDto) {
+  update(@Param('id',ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
     return this.planService.update(id, dto);
   }
 }
