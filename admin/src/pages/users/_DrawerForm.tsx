@@ -2,7 +2,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select, message } from "antd";
 import { useEffect } from "react";
-import { get, patch, post } from "../../api/crud-api";
+import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 
 // @ts-ignore

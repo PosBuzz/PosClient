@@ -5,7 +5,7 @@ import { Button, Col, Input, Row, Select } from "antd";
 import { useState } from "react";
 import { post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE } from "../../api/endpoints";
-import PageTitle from "../../components/Pagetitle";
+import PageTitle from "../../components/PageTitle";
 import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
@@ -133,9 +133,9 @@ const Billings = () => {
             style={{ width: "100%" }}
             optionFilterProp="label"
             filterSort={(a, b) =>
-              (a?.label ?? "")
+              String(a?.label ?? "")
                 .toLowerCase()
-                .localeCompare((b?.label ?? "").toLowerCase())
+                .localeCompare(String(b?.label ?? "").toLowerCase())
             }
             options={consumerOptions}
             onChange={(value) => setConsumerFilter(value)}

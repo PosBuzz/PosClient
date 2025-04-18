@@ -1,10 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { get } from "../../api/crud-api";
-import { getUrlForModel } from "../../api/endpoints";
-import PageTitle from "../../components/Pagetitle";
 import { Button } from "antd";
-import { TiPlusOutline } from "react-icons/ti";
 import { BiPlus } from "react-icons/bi";
+import PageTitle from "../../components/PageTitle";
 
 function index() {
   // const { logout } = useAuth();

@@ -2,7 +2,7 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
-import PageTitle from "../../components/Pagetitle";
+import PageTitle from "../../components/PageTitle";
 import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";

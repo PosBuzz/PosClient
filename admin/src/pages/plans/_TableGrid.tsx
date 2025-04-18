@@ -8,7 +8,7 @@ import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 
 // @ts-ignore
-export default function _TableGrid({ model, trigger, onClickEdit, ...props }) {
+export default function _TableGrid({ model, trigger, onClickEdit }) {
   const KEY = `all-${model}`;
 
   const {

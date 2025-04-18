@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
-import { Layout, Menu, Button, theme, Tooltip } from "antd";
 import {
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  UserOutlined,
-  VideoCameraOutlined,
-  UploadOutlined,
-  DashboardOutlined,
-  SettingOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined
 } from "@ant-design/icons";
+import { Button, Layout, theme, Tooltip } from "antd";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import SideBar from "./Sidebar";
