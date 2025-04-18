@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import RequireAuth from "./components/RequireAuth";
 import AppLayout from "./layout";
+import RequirePermission from "./components/RequirePermission";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
@@ -29,11 +30,46 @@ export const routes = [
     ),
     children: [
       { index: true, element: <Home /> },
-      { path: "consumers", element: <Consumers /> },
-      { path: "plans", element: <Plans /> },
-      { path: "billings", element: <Billings /> },
-      { path: "roles", element: <Roles /> },
-      { path: "users", element: <Users /> },
+      {
+        path: "consumers",
+        element: (
+          <RequirePermission permission="consumers">
+            <Consumers />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "plans",
+        element: (
+          <RequirePermission permission="plans">
+            <Plans />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "billings",
+        element: (
+          <RequirePermission permission="billing">
+            <Billings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "roles",
+        element: (
+          <RequirePermission permission="users">
+            <Roles />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "users",
+        element: (
+          <RequirePermission permission="users">
+            <Users />
+          </RequirePermission>
+        ),
+      },
     ],
   },
 ];

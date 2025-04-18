@@ -4,12 +4,15 @@ import React, { useEffect, useState } from "react";
 import { GrUserAdmin } from "react-icons/gr";
 import { MdSubscriptions } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { user } = useAuth();
 
   useEffect(() => {
     const currentKey = location.pathname + location.search || "";
@@ -30,6 +33,7 @@ const SideBar: React.FC = () => {
     setOpenKeys(keys);
   };
 
+  // Define menu items with required permissions
   const menuItems = [
     {
       label: <span title="Employee">Employee</span>,
@@ -39,33 +43,49 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Roles">Roles</span>,
           key: "/roles",
+          permission: "users", // Required permission
         },
         {
           label: <span title="Users">Users</span>,
           key: "/users",
+          permission: "users", // Required permission
         },
       ],
+      permission: "users", // Required permission for parent
     },
     {
       key: "/plans",
       icon: <UserOutlined />,
-      label: <span title="Plans Section">Plans</span>,
+      label: <span title="Plans">Plans</span>,
+      permission: "plans", // Required permission
     },
     {
       key: "/consumers",
       icon: <UserOutlined />,
-      label: <span title="Consumers Section">Consumers</span>,
+      label: <span title="Consumers">Consumers</span>,
+      permission: "consumers", // Required permission
     },
     {
       key: "/billings",
       icon: <MdSubscriptions />,
       label: (
-        <span title="Billing and Subscription Details">
-          Billing & Subscriptions
-        </span>
+        <span title="Billing and Subscription">Billing & Subscriptions</span>
       ),
+      permission: "billing", // Required permission
     },
   ];
+
+  // Filter menu items based on user permissions
+  const filteredMenuItems = menuItems
+    .filter((item) => !item.permission || user?.permissions?.includes(item.permission))
+    .map((item) => ({
+      ...item,
+      children: item.children
+        ? item.children.filter(
+            (child) => !child.permission || user?.permissions?.includes(child.permission)
+          )
+        : undefined,
+    }));
 
   return (
     <Menu
@@ -77,7 +97,7 @@ const SideBar: React.FC = () => {
       selectedKeys={selectedKeys}
       openKeys={openKeys}
       onOpenChange={onOpenChange}
-      items={menuItems}
+      items={filteredMenuItems}
     />
   );
 };

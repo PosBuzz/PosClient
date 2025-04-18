@@ -6,6 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  user: any;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -13,12 +14,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [user, setUser] = useState<any>(null);
 
   const navigate = useNavigate();
 
   const checkAuth = async () => {
     try {
-      await axiosInstance.get(endpoints.getMe);
+      const response = await axiosInstance.get(endpoints.getMe);
+      setUser(response.data?.user);
       setIsAuthenticated(true);
     } catch (err) {
       setIsAuthenticated(false);
@@ -54,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user }}>
       {children}
     </AuthContext.Provider>
   );

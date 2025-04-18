@@ -10,14 +10,6 @@ function index() {
   // const { logout } = useAuth();
   // const navigate = useNavigate();
 
-  const { data: plans } = useQuery({
-    queryKey: ["plans"],
-    queryFn: () => get(getUrlForModel("Plan")),
-    staleTime: 0,
-  });
-
-  console.log(plans);
-
   return (
     <>
       <PageTitle
