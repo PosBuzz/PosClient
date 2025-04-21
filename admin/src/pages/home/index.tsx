@@ -1,16 +1,7 @@
-import {
-  Button,
-  message,
-  Upload,
-  Select,
-  Checkbox,
-  Form,
-  Space,
-  Spin,
-} from "antd";
+import { Button, message, Upload, Select, Form, Space, Spin } from "antd";
 import { BiPlus } from "react-icons/bi";
 import { useState, useEffect } from "react";
-import PageTitle from "../../components/PageTitle";
+import PageTitle from "../../components/PageTitle"; // Assuming this is still being used
 import axiosInstance from "../../api/axiosInstance";
 import { endpoints } from "../../api/endpoints";
 import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -21,7 +12,6 @@ function BackupRestorePage() {
   const [form] = Form.useForm();
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
   const [loading, setLoading] = useState<boolean>(false);
   const [restoreLoading, setRestoreLoading] = useState<boolean>(false);
 
@@ -84,29 +74,16 @@ function BackupRestorePage() {
     try {
       // Build query parameters for restore
       let url = endpoints.restore;
-      const params = [];
-
-      if (restoreMode) {
-        params.push(`mode=${restoreMode}`);
-      }
 
       if (selectedTables.length > 0) {
-        params.push(`tables=${selectedTables.join(",")}`);
-      }
-
-      if (params.length > 0) {
-        url += `?${params.join("&")}`;
+        url += `?tables=${selectedTables.join(",")}`;
       }
 
       await axiosInstance.post(url, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      message.success(
-        restoreMode === "replace"
-          ? "Database tables replaced successfully"
-          : "Database restored successfully"
-      );
+      message.success("Database restored successfully");
     } catch (error) {
       console.error("Restore failed:", error);
       message.error("Database restore failed");
@@ -138,65 +115,24 @@ function BackupRestorePage() {
             title: "Database Management",
           },
         ]}
-        rightSection={
-          <Button type="primary" icon={<BiPlus />}>
-            Add New
-          </Button>
-        }
       />
 
-      <div className="bg-white p-6 rounded shadow">
-        <h1 className="text-2xl mb-6">Database Backup and Restore</h1>
+      <Space size="middle">
+        <Button
+          type="primary"
+          onClick={handleBackup}
+          icon={<DownloadOutlined />}
+          loading={loading}
+        >
+          Download Backup
+        </Button>
 
-        <Form form={form} layout="vertical">
-          <Form.Item label="Select Tables (leave empty for all tables)">
-            <Select
-              mode="multiple"
-              placeholder="Select tables to backup/restore"
-              value={selectedTables}
-              onChange={setSelectedTables}
-              style={{ width: "100%" }}
-              allowClear
-            >
-              {tables?.map((table) => (
-                <Option key={table} value={table?.raw}>
-                  {table?.raw}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Restore Mode">
-            <Select
-              value={restoreMode}
-              onChange={setRestoreMode}
-              style={{ width: "100%" }}
-            >
-              <Option value="merge">Merge (Keep existing data)</Option>
-              <Option value="replace">
-                Replace (Clear selected tables first)
-              </Option>
-            </Select>
-          </Form.Item>
-
-          <Space size="middle">
-            <Button
-              type="primary"
-              onClick={handleBackup}
-              icon={<DownloadOutlined />}
-              loading={loading}
-            >
-              Download Backup
-            </Button>
-
-            <Upload {...uploadProps}>
-              <Button icon={<UploadOutlined />} loading={restoreLoading}>
-                Restore Database
-              </Button>
-            </Upload>
-          </Space>
-        </Form>
-      </div>
+        <Upload {...uploadProps}>
+          <Button icon={<UploadOutlined />} loading={restoreLoading}>
+            Restore Database
+          </Button>
+        </Upload>
+      </Space>
     </>
   );
 }
