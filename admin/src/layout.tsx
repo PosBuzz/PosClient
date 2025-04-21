@@ -47,6 +47,7 @@ const AppLayout = () => {
           Layout: {
             siderBg: isDarkMode ? "#001529" : "#fff",
             headerBg: isDarkMode ? "#001529" : "#fff",
+               // bodyBg: isDarkMode ? '#141414' : '#f0f2f5',
           },
           Menu: {
             itemBg: isDarkMode ? "#001529" : "#fff",
