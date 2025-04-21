@@ -26,7 +26,7 @@ function itemRender(
   const isLast = routes.indexOf(route) === routes.length - 1;
 
   if (isLast) {
-    return <span style={{ color: "#1f1f1f", fontWeight: 500 }}>{route.title}</span>;
+    return <span>{route.title}</span>;
   }
 
   return (

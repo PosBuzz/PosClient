@@ -77,12 +77,15 @@ const SideBar: React.FC = () => {
 
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems
-    .filter((item) => !item.permission || user?.permissions?.includes(item.permission))
+    .filter(
+      (item) => !item.permission || user?.permissions?.includes(item.permission)
+    )
     .map((item) => ({
       ...item,
       children: item.children
         ? item.children.filter(
-            (child) => !child.permission || user?.permissions?.includes(child.permission)
+            (child) =>
+              !child.permission || user?.permissions?.includes(child.permission)
           )
         : undefined,
     }));
@@ -92,7 +95,7 @@ const SideBar: React.FC = () => {
       onClick={({ key }) => {
         navigate(key);
       }}
-      theme="dark"
+      style={{ border: 0 }}
       mode="inline"
       selectedKeys={selectedKeys}
       openKeys={openKeys}

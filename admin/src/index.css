@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+/* Scrollbar for dark theme */
+html[data-theme="dark"] {
+    scrollbar-color: #444 #000;
+    scrollbar-width: thin;
+  }
+  
+  /* Scrollbar for light theme */
+  html[data-theme="light"] {
+    scrollbar-color: #bbb #f1f1f1;
+    scrollbar-width: thin;
+  }
+  
+  /* For Webkit (Chrome, Edge, Safari) */
+  html[data-theme="dark"]::-webkit-scrollbar {
+    width: 8px;
+  }
+  html[data-theme="dark"]::-webkit-scrollbar-track {
+    background: #000;
+  }
+  html[data-theme="dark"]::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+  }
+  
+  html[data-theme="light"]::-webkit-scrollbar {
+    width: 8px;
+  }
+  html[data-theme="light"]::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  html[data-theme="light"]::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+  }
+  

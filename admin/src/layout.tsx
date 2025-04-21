@@ -2,11 +2,12 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UserOutlined
+  UserOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, theme, Tooltip } from "antd";
+import { Button, ConfigProvider, Layout, theme, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import ThemeDropdown from "./components/ThemeDropdown";
 import { useAuth } from "./contexts/AuthContext";
 import SideBar from "./Sidebar";
 
@@ -16,9 +17,7 @@ const AppLayout = () => {
   const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>();
 
   // Check if the screen is mobile size
   useEffect(() => {
@@ -42,89 +41,118 @@ const AppLayout = () => {
   };
 
   return (
-    <Layout className="h-screen">
-      {/* Sidebar - Fixed position */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        breakpoint="md"
-        className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
-          isMobile && !collapsed ? "z-50 shadow-lg" : ""
-        }`}
-        style={{
-          zIndex: 999,
-          display: isMobile && collapsed ? "none" : "block",
-        }}
-      >
-        <div className="text-center py-4">
-          <h1
-            className={`text-white transition-all duration-300 ${
-              collapsed ? "text-lg" : "text-xl"
-            }`}
+    <ConfigProvider
+      theme={{
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        components: {
+          Layout: {
+            siderBg: isDarkMode ? "#001529" : "#fff",
+            headerBg: isDarkMode ? "#001529" : "#fff",
+            // bodyBg: isDarkMode ? '#141414' : '#f0f2f5',
+          },
+          Menu: {
+            // Light theme settings
+            itemBg: isDarkMode ? "#001529" : "#fff",
+            itemHoverColor: isDarkMode ? "#1677ff" : "#1677ff",
+            itemSelectedColor: isDarkMode ? "#fff" : "#1677ff",
+            itemSelectedBg: isDarkMode ? "#1677ff" : "rgba(0, 0, 0, 0.04)",
+
+            // Dark theme specific settings
+            // darkItemColor: 'rgba(255, 255, 255, 0.65)',
+            // darkItemHoverColor: '#fff',
+            // darkItemSelectedColor: '#fff',
+            // darkItemSelectedBg: '#1677ff',
+          },
+        },
+      }}
+    >
+      <Layout className="max-h-screen">
+        {/* Sidebar - Fixed position */}
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          breakpoint="md"
+          theme={isDarkMode ? "dark" : "light"}
+          className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
+            isMobile && !collapsed ? "z-50 shadow-lg" : ""
+          }`}
+          style={{
+            zIndex: 999,
+            display: isMobile && collapsed ? "none" : "block",
+          }}
+        >
+          <div className="text-center py-4">
+            <h1
+              className={`transition-all duration-300 ${
+                collapsed ? "text-lg" : "text-xl"
+              }`}
+              style={{ color: isDarkMode ? "#fff" : "#000" }}
+            >
+              {collapsed ? "PB" : "PosBuzz"}
+            </h1>
+          </div>
+
+          <SideBar />
+        </Sider>
+
+        {/* Main Content Area - Adjusted for sidebar */}
+        <Layout className={`transition-all duration-300`}>
+          {/* Header - Fixed at the top of content area */}
+          <Header
+            style={{
+              position: "sticky",
+              top: 0,
+              width: "100%",
+              zIndex: 10,
+              padding: "0 16px",
+            }}
+            className="shadow-sm flex items-center justify-between"
           >
-            {collapsed ? "PB" : "PosBuzz"}
-          </h1>
-        </div>
+            <div className="flex items-center">
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={toggleSidebar}
+                className="w-16 h-16 text-lg"
+              />
+              <h2 className="m-0 text-lg hidden md:block">Admin Dashboard</h2>
+            </div>
+            <div className="flex">
+              <ThemeDropdown
+                isDarkMode={isDarkMode}
+                setIsDarkMode={setIsDarkMode}
+              />
+              <Tooltip title="Logout">
+                <Button
+                  type="text"
+                  icon={<LogoutOutlined />}
+                  onClick={logout}
+                />
+              </Tooltip>
+            </div>
+          </Header>
 
-        <SideBar />
-      </Sider>
-
-      {/* Main Content Area - Adjusted for sidebar */}
-      <Layout className={`transition-all duration-300`}>
-        {/* Header - Fixed at the top of content area */}
-        <Header
-          style={{
-            background: colorBgContainer,
-            position: "sticky",
-            top: 0,
-            width: "100%",
-            zIndex: 10,
-            padding: "0 16px",
-          }}
-          className="shadow-sm flex items-center justify-between"
-        >
-          <div className="flex items-center">
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={toggleSidebar}
-              className="w-16 h-16 text-lg"
+          {/* Overlay for mobile when sidebar is open */}
+          {isMobile && !collapsed && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setCollapsed(true)}
             />
-            <h2 className="m-0 text-lg hidden md:block">Admin Dashboard</h2>
-          </div>
-          <div>
-            <Tooltip title="Profile">
-              <Button type="text" icon={<UserOutlined />} />
-            </Tooltip>
-            <Tooltip title="Logout">
-              <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
-            </Tooltip>
-          </div>
-        </Header>
+          )}
 
-        {/* Overlay for mobile when sidebar is open */}
-        {isMobile && !collapsed && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setCollapsed(true)}
-          />
-        )}
-
-        {/* Page Content - Scrollable */}
-        <Content
-          className="p-4 md:p-6 overflow-auto"
-          style={{
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-            minHeight: "calc(100vh - 64px)", // Subtract header height
-            height: "calc(100vh - 64px)",
-          }}
-        >
-          <Outlet />
-        </Content>
+          {/* Page Content - Scrollable */}
+          <Content
+            className="p-4 md:p-6 overflow-auto"
+            style={{
+              height: "calc(100vh - 64px)",
+            }}
+          >
+            <Outlet />
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 };
 

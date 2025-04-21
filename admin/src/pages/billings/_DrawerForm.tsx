@@ -46,7 +46,7 @@ export default function DrawerForm({
   });
 
   const consumerOptions: any = consumers?.map((i: any) => ({
-    label: `${i.name} (${i.plan.name})`,
+    label: `${i.company_name} (${i.plan.name})`,
     value: i.id,
   }));
 
@@ -78,8 +78,6 @@ export default function DrawerForm({
     ?.map((bill: any) =>
       dayjs(bill.billing_month).startOf("month").toISOString()
     );
-
-  console.log(disabledBillingMonths);
 
   const isMonthDisabled = (current: dayjs.Dayjs) => {
     if (!current) return false;

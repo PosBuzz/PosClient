@@ -65,7 +65,7 @@ const Billings = () => {
 
   const consumerOptions =
     consumers?.map((c: any) => ({
-      label: c.name,
+      label: c.company_name,
       value: c.id,
     })) || [];
 

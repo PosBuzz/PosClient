@@ -42,7 +42,7 @@ export default function _TableGrid({
   const columns = [
     {
       title: "Name",
-      dataIndex: ["consumer", "name"],
+      dataIndex: ["consumer", "company_name"],
       key: "name",
     },
     {
