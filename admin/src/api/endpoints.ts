@@ -20,5 +20,4 @@ export const endpoints = {
   role: "/admin/users/roles",
   backup: "/admin/backup",
   restore: "/admin/restore",
-  tables: "/admin/tables",
 };

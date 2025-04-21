@@ -55,6 +55,10 @@ const AppLayout = () => {
             itemSelectedColor: isDarkMode ? "#fff" : "#1677ff",
             itemSelectedBg: isDarkMode ? "#1677ff" : "rgba(0, 0, 0, 0.04)",
           },
+          Message: {
+            contentBg: isDarkMode ? "#1F1F1F" : "#fff",
+            colorText: "#fff",
+          }
         },
       }}
     >

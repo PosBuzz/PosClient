@@ -15,34 +15,12 @@ function BackupRestorePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [restoreLoading, setRestoreLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    // Fetch available tables when component mounts
-    const fetchTables = async () => {
-      try {
-        const response = await axiosInstance.get(endpoints.tables);
-        setTables(response.data);
-      } catch (error) {
-        console.error("Failed to fetch tables:", error);
-        message.error("Failed to load database tables");
-      }
-    };
-
-    fetchTables();
-  }, []);
-
   const handleBackup = async () => {
     setLoading(true);
     try {
-      // Build query string for selected tables
-      const tableQuery =
-        selectedTables.length > 0 ? `?tables=${selectedTables.join(",")}` : "";
-
-      const response = await axiosInstance.get(
-        `${endpoints.backup}${tableQuery}`,
-        {
-          responseType: "blob", // Important: tells axios to treat the response as binary
-        }
-      );
+      const response = await axiosInstance.get(endpoints.backup, {
+        responseType: "blob",
+      });
 
       // Create a download link for the backup file
       const url = window.URL.createObjectURL(new Blob([response.data]));
