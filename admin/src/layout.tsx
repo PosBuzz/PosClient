@@ -1,8 +1,7 @@
 import {
   LogoutOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  UserOutlined,
+  MenuUnfoldOutlined
 } from "@ant-design/icons";
 import { Button, ConfigProvider, Layout, theme, Tooltip } from "antd";
 import { useEffect, useState } from "react";
@@ -48,20 +47,12 @@ const AppLayout = () => {
           Layout: {
             siderBg: isDarkMode ? "#001529" : "#fff",
             headerBg: isDarkMode ? "#001529" : "#fff",
-            // bodyBg: isDarkMode ? '#141414' : '#f0f2f5',
           },
           Menu: {
-            // Light theme settings
             itemBg: isDarkMode ? "#001529" : "#fff",
             itemHoverColor: isDarkMode ? "#1677ff" : "#1677ff",
             itemSelectedColor: isDarkMode ? "#fff" : "#1677ff",
             itemSelectedBg: isDarkMode ? "#1677ff" : "rgba(0, 0, 0, 0.04)",
-
-            // Dark theme specific settings
-            // darkItemColor: 'rgba(255, 255, 255, 0.65)',
-            // darkItemHoverColor: '#fff',
-            // darkItemSelectedColor: '#fff',
-            // darkItemSelectedBg: '#1677ff',
           },
         },
       }}
