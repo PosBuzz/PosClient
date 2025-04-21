@@ -86,7 +86,7 @@ export default function DrawerForm({
   return (
     <>
       <Drawer
-        title={isEditing ? "Update Plan" : "Add Plan"}
+        title={isEditing ? "Update Role" : "Add Role"}
         onClose={onClose}
         width={600}
         open={open}
