@@ -4,4 +4,5 @@ export enum AdminPermission {
   billings = 'billings',
   users = 'users',
   backupRestore = 'backup&restore',
+  profile = 'profile',
 }

@@ -12,6 +12,7 @@ async function main() {
     'billing',
     'users',
     'backup&restore',
+    'profile',
   ];
   const createdPermissions = await Promise.all(
     adminPermissions.map((action) =>

@@ -2,6 +2,7 @@ import { lazy } from "react";
 import RequireAuth from "./components/RequireAuth";
 import AppLayout from "./layout";
 import RequirePermission from "./components/RequirePermission";
+import { AdminPermission } from "./constants/adminPermissions";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
@@ -12,6 +13,7 @@ const Billings = lazy(() => import("./pages/billings"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const BackupRestore = lazy(() => import("./pages/backup&restore"));
+const Profile = lazy(() => import("./pages/profile"));
 
 export const routes = [
   {
@@ -34,7 +36,7 @@ export const routes = [
       {
         path: "consumers",
         element: (
-          <RequirePermission permission="consumers">
+          <RequirePermission permission={AdminPermission.consumers}>
             <Consumers />
           </RequirePermission>
         ),
@@ -42,7 +44,7 @@ export const routes = [
       {
         path: "plans",
         element: (
-          <RequirePermission permission="plans">
+          <RequirePermission permission={AdminPermission.plans}>
             <Plans />
           </RequirePermission>
         ),
@@ -50,7 +52,7 @@ export const routes = [
       {
         path: "billings",
         element: (
-          <RequirePermission permission="billing">
+          <RequirePermission permission={AdminPermission.billings}>
             <Billings />
           </RequirePermission>
         ),
@@ -58,7 +60,7 @@ export const routes = [
       {
         path: "roles",
         element: (
-          <RequirePermission permission="users">
+          <RequirePermission permission={AdminPermission.users}>
             <Roles />
           </RequirePermission>
         ),
@@ -66,7 +68,7 @@ export const routes = [
       {
         path: "users",
         element: (
-          <RequirePermission permission="users">
+          <RequirePermission permission={AdminPermission.users}>
             <Users />
           </RequirePermission>
         ),
@@ -74,8 +76,16 @@ export const routes = [
       {
         path: "backup&restore",
         element: (
-          <RequirePermission permission="backup&restore">
+          <RequirePermission permission={AdminPermission.backupRestore}>
             <BackupRestore />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <RequirePermission permission={AdminPermission.profile}>
+            <Profile />
           </RequirePermission>
         ),
       },

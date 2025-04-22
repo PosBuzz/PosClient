@@ -1,0 +1,8 @@
+export const AdminPermission = {
+  plans: "plans",
+  consumers: "consumers",
+  billings: "billings",
+  users: "users",
+  backupRestore: "backup&restore",
+  profile: "profile",
+};

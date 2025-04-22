@@ -3,7 +3,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtPayload } from './jwt-payload.interface';
-import { Role } from './enums/roles.enum';
 
 @Injectable()
 export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {

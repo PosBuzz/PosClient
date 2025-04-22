@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateSuperAdminRoleDto } from '../dtos/create-role.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSuperAdminUserDto } from '../dtos/create-user.dto';
@@ -94,6 +94,40 @@ export class UsersService {
         name: true,
         role: true,
       },
+    });
+  }
+
+  async changePassword(id: number, old_password: string, new_password: string) {
+    // Fetch the user by ID
+    const user = await this.prisma.superAdmin.findUnique({
+      where: { id },
+      select: { password: true },
+    });
+
+    if (!user) {
+      throw new HttpException(
+        { message: 'User not found' },
+        HttpStatus.EXPECTATION_FAILED,
+      );
+    }
+
+    // Verify the old password
+    const isPasswordValid = await bcryptjs.compare(old_password, user.password);
+    if (!isPasswordValid) {
+      throw new HttpException(
+        { message: 'Old password is incorrect' },
+        HttpStatus.EXPECTATION_FAILED,
+      );
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcryptjs.hash(new_password, 10);
+
+    // Update the user's password
+    return this.prisma.superAdmin.update({
+      where: { id },
+      data: { password: hashedNewPassword },
+      select: { id: true, email: true, name: true },
     });
   }
 }

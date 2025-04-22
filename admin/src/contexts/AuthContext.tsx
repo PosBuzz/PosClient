@@ -6,15 +6,26 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  user: any;
+  user: User | null;
 }
+
+type User = {
+  id: number;
+  role_id: number;
+  email: string;
+  name: string;
+  refresh_token: string;
+  created_by_id: number | null;
+  role: string;
+  permissions: string[];
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const navigate = useNavigate();
 

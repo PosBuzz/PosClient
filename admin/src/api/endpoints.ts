@@ -17,6 +17,7 @@ export const endpoints = {
   checkSubdomain: "/admin/consumers/check-subdomain",
   plan: "/admin/plans",
   user: "/admin/users",
+  changePassword: "/admin/users/change-password",
   role: "/admin/users/roles",
   backup: "/admin/backup",
   restore: "/admin/restore",
