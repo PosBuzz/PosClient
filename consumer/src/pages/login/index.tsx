@@ -7,7 +7,6 @@ export default function LoginPage() {
   const { isAuthenticated, login } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const messageApi = useAntdMessage();
 
   // Redirect if the user is already authenticated
   if (isAuthenticated) {
