@@ -11,6 +11,7 @@ const Plans = lazy(() => import("./pages/plans"));
 const Billings = lazy(() => import("./pages/billings"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
+const BackupRestore = lazy(() => import("./pages/backup&restore"));
 
 export const routes = [
   {
@@ -67,6 +68,14 @@ export const routes = [
         element: (
           <RequirePermission permission="users">
             <Users />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "backup&restore",
+        element: (
+          <RequirePermission permission="backup&restore">
+            <BackupRestore />
           </RequirePermission>
         ),
       },

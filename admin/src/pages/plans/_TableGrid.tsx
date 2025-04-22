@@ -6,9 +6,11 @@ import { Button, message, Popconfirm, Space, Table, Tag } from "antd";
 import { useEffect } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
+import { useAntdMessage } from "../../contexts/MessageContext";
 
 // @ts-ignore
 export default function _TableGrid({ model, trigger, onClickEdit }) {
+  const messageApi = useAntdMessage();
   const KEY = `all-${model}`;
 
   const {
@@ -40,11 +42,11 @@ export default function _TableGrid({ model, trigger, onClickEdit }) {
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
     onSuccess: () => {
-      message.success("Deleted Successfully");
+      messageApi.success("Deleted Successfully");
       refetch();
     },
     onError: () => {
-      message.error("Something went wrong");
+      messageApi.error("Something went wrong");
     },
   });
 

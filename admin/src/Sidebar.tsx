@@ -5,12 +5,14 @@ import { GrUserAdmin } from "react-icons/gr";
 import { MdSubscriptions } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+import useDarkMode from "./hooks/useDarkMode";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const isDarkMode = useDarkMode();
 
   const { user } = useAuth();
 
@@ -73,6 +75,24 @@ const SideBar: React.FC = () => {
       ),
       permission: "billing", // Required permission
     },
+    {
+      label: <span title="Settings">Settings</span>,
+      key: "/settings",
+      icon: <GrUserAdmin />,
+      children: [
+        {
+          label: <span title="Backup & Restore">Backup & Restore</span>,
+          key: "/backup&restore",
+          permission: "backup&restore",
+        },
+        {
+          label: <span title="Users">Users</span>,
+          key: "/users",
+          permission: "users", // Required permission
+        },
+      ],
+      permission: "users", // Required permission for parent
+    },
   ];
 
   // Filter menu items based on user permissions
@@ -97,6 +117,7 @@ const SideBar: React.FC = () => {
       }}
       style={{ border: 0 }}
       mode="inline"
+      theme={isDarkMode ? "dark" : "light"}
       selectedKeys={selectedKeys}
       openKeys={openKeys}
       onOpenChange={onOpenChange}

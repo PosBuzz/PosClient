@@ -21,6 +21,7 @@ import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
+import { useAntdMessage } from "../../contexts/MessageContext";
 const { Option } = Select;
 
 export default function _TableGrid({
@@ -33,6 +34,7 @@ export default function _TableGrid({
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const messageApi = useAntdMessage();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -134,11 +136,11 @@ export default function _TableGrid({
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
     onSuccess: () => {
-      message.success("Deleted Successfully");
+      messageApi.success("Deleted Successfully");
       refetch();
     },
     onError: () => {
-      message.error("Something went wrong");
+      messageApi.error("Something went wrong");
     },
   });
 

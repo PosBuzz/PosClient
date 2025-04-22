@@ -19,10 +19,14 @@ import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
 import { BackupRestoreService } from './backup-restore.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 
 const exec = promisify(execCb);
 
-@UseGuards(AdminAuthGuard)
+@HasPermissions([AdminPermission.backupRestore])
+@UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin')
 export class BackupRestoreController {
   constructor(private readonly backupRestoreService: BackupRestoreService) {}
@@ -71,10 +75,7 @@ export class BackupRestoreController {
       }),
     }),
   )
-  async restore(
-    @UploadedFile() file: any,
-    @Res() res: Response,
-  ) {
+  async restore(@UploadedFile() file: any, @Res() res: Response) {
     if (!file) throw new BadRequestException('No file uploaded.');
 
     const filePath = path.resolve(file.path);

@@ -3,4 +3,5 @@ export enum AdminPermission {
   consumers = 'consumers',
   billings = 'billings',
   users = 'users',
+  backupRestore = 'backup&restore',
 }

@@ -5,13 +5,7 @@ import { useEffect, useState } from "react";
 import { GrSystem } from "react-icons/gr";
 import useThemeDetector from "../hooks/useThemeDetector";
 
-const ThemeDropdown = ({
-  isDarkMode,
-  setIsDarkMode,
-}: {
-  isDarkMode: boolean | undefined;
-  setIsDarkMode: (mode: boolean) => void;
-}) => {
+const ThemeDropdown = () => {
   const [selectedOption, setSelectedOption] = useState<
     "dark" | "light" | "system"
   >("system");
@@ -25,12 +19,8 @@ const ThemeDropdown = ({
       | "light"
       | "system"
       | null;
-    if (
-      savedTheme === "dark" ||
-      savedTheme === "light" ||
-      savedTheme === "system"
-    ) {
-      setSelectedOption(savedTheme);
+    if (["dark", "light", "system"].includes(savedTheme || "")) {
+      setSelectedOption(savedTheme as "dark" | "light" | "system");
     }
     setHasLoaded(true);
   }, []);
@@ -41,20 +31,17 @@ const ThemeDropdown = ({
 
     localStorage.setItem("themeSettings", selectedOption);
 
-    if (selectedOption === "system") {
-      setIsDarkMode(isSystemDark);
-      document.documentElement.setAttribute(
-        "data-theme",
-        isSystemDark ? "dark" : "light"
-      );
-    } else if (selectedOption === "dark") {
-      document.documentElement.setAttribute("data-theme", selectedOption);
-      setIsDarkMode(true);
-    } else {
-      document.documentElement.setAttribute("data-theme", selectedOption);
-      setIsDarkMode(false);
-    }
-  }, [selectedOption, isSystemDark, setIsDarkMode, hasLoaded]);
+    const themeToApply =
+      selectedOption === "system"
+        ? isSystemDark
+          ? "dark"
+          : "light"
+        : selectedOption;
+
+    document.documentElement.setAttribute("data-theme", themeToApply);
+    localStorage.setItem("isDarkMode", String(themeToApply === "dark"));
+    window.dispatchEvent(new Event("themeChanged"));
+  }, [selectedOption, isSystemDark, hasLoaded]);
 
   const handleMenuClick: MenuProps["onClick"] = (e) => {
     if (["dark", "light", "system"].includes(e.key)) {
@@ -80,6 +67,13 @@ const ThemeDropdown = ({
     },
   ];
 
+  const currentTheme =
+    selectedOption === "system"
+      ? isSystemDark
+        ? "dark"
+        : "light"
+      : selectedOption;
+
   return (
     <Dropdown
       menu={{
@@ -92,7 +86,7 @@ const ThemeDropdown = ({
     >
       <Button
         type="text"
-        icon={isDarkMode ? <BulbFilled /> : <BulbOutlined />}
+        icon={currentTheme === "dark" ? <BulbFilled /> : <BulbOutlined />}
       />
     </Dropdown>
   );
