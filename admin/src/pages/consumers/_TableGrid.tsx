@@ -13,8 +13,7 @@ import {
   Select,
   Space,
   Table,
-  Tag,
-  message,
+  Tag
 } from "antd";
 import dayjs from "dayjs";
 import { debounce } from "lodash";

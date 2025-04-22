@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import PageTitle from "../../components/PageTitle";
-import { Card, Typography, Form, Input, Button, message, Space } from "antd";
-import { useAntdMessage } from "../../contexts/MessageContext";
-import { endpoints } from "../../api/endpoints";
+import { Button, Card, Form, Input, Space, Typography } from "antd";
 import { patch } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
+import PageTitle from "../../components/PageTitle";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAntdMessage } from "../../contexts/MessageContext";
 
 const { Text } = Typography;
 
@@ -21,7 +21,7 @@ function index() {
       form.resetFields();
     },
     onError: (err) => {
-      messageApi.error(err?.response?.data?.message);
+      messageApi.error((err as any)?.response?.data?.message || "An error occurred");
     },
   });
 
@@ -50,13 +50,13 @@ function index() {
       <Card title="User Information" className="mb-6!">
         <Space direction="vertical" size="middle">
           <Text className="capitalize">
-            <strong>Name:</strong> {userData.name}
+            <strong>Name:</strong> {userData?.name}
           </Text>
           <Text>
-            <strong>Email:</strong> {userData.email}
+            <strong>Email:</strong> {userData?.email}
           </Text>
           <Text className="capitalize">
-            <strong>Role:</strong> {userData.role}
+            <strong>Role:</strong> {userData?.role}
           </Text>
         </Space>
       </Card>

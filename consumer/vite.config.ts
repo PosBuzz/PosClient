@@ -7,10 +7,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     strictPort: true,
-  port: 3000,
+    port: 3000,
   },
   preview: {
     strictPort: true,
     port: 3000,
+  },
+  build: {
+    chunkSizeWarningLimit: 1600,
   },
 });

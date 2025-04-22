@@ -1,5 +1,5 @@
 import { DownloadOutlined, UploadOutlined } from "@ant-design/icons";
-import { Button, Select, Space, Upload } from "antd";
+import { Button, Space, Upload } from "antd";
 import { useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { endpoints } from "../../api/endpoints";

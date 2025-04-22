@@ -2,7 +2,7 @@
 
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
-import { Button, message, Popconfirm, Space, Table } from "antd";
+import { Button, Popconfirm, Space, Table } from "antd";
 import { useEffect } from "react";
 import { deleteApi } from "../../api/crud-api";
 import { getUrlForModel } from "../../api/endpoints";

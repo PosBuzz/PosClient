@@ -1,9 +1,9 @@
-import { Button, Card, Form, Input, message } from "antd";
+import { Button, Card, Form, Input } from "antd";
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import useDarkMode from "../../hooks/useDarkMode";
 import { useAntdMessage } from "../../contexts/MessageContext";
+import useDarkMode from "../../hooks/useDarkMode";
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuth();

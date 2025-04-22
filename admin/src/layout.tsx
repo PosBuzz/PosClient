@@ -3,13 +3,13 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from "@ant-design/icons";
-import { Button, ConfigProvider, Layout, theme, Tooltip } from "antd";
+import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import ThemeDropdown from "./components/ThemeDropdown";
 import { useAuth } from "./contexts/AuthContext";
-import SideBar from "./Sidebar";
 import useDarkMode from "./hooks/useDarkMode";
+import SideBar from "./Sidebar";
 
 const { Header, Sider, Content } = Layout;
 
