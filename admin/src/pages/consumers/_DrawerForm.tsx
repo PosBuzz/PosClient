@@ -136,7 +136,7 @@ export default function DrawerForm({
               { required: true, message: "This field is required" },
               {
                 validator: async (_, value) => {
-                  if (!value || isEditing) return Promise.resolve(); // Skip validation if the field is empty
+                  if (!value || editedItem?.subdomain === value) return Promise.resolve(); // Skip validation if the field is empty
                   try {
                     const availabilty = await checkSubdomain(value);
                     if (!availabilty) {
