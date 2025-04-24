@@ -1,4 +1,4 @@
-import { UserOutlined } from "@ant-design/icons";
+import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { GrUserAdmin } from "react-icons/gr";
@@ -38,15 +38,11 @@ const SideBar: React.FC = () => {
 
   // Define menu items with required permissions
   const menuItems = [
-    // {
-    //   label: <span title="Employee">Employee</span>,
-    //   key: "/user",
-    //   icon: <GrUserAdmin />,
-    //   permissions: [AdminPermission.users], // Updated
-    //   children: [
-
-    //   ],
-    // },
+    {
+      key: "/",
+      icon: <DashboardOutlined />,
+      label: <span title="Dashboard">Dashboard</span>,
+    },
     {
       key: "/plans",
       icon: <UserOutlined />,

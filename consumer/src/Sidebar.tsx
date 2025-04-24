@@ -41,21 +41,20 @@ const SideBar: React.FC = () => {
       key: "/",
       icon: <DashboardOutlined />,
       label: <span title="Dashboard">Dashboard</span>,
-      permissions: [Permissions.profile],
     },
-    {
-      label: <span title="Settings">Settings</span>,
-      key: "/settings",
-      icon: <GrUserAdmin />,
-      children: [
-        {
-          label: <span title="Account and Security">Account & Security</span>,
-          key: "/account&security",
-          permissions: [Permissions.profile],
-        },
-      ],
-      permissions: [Permissions.profile],
-    },
+    // {
+    //   label: <span title="Settings">Settings</span>,
+    //   key: "/settings",
+    //   icon: <GrUserAdmin />,
+    //   children: [
+    //     {
+    //       label: <span title="Account and Security">Account & Security</span>,
+    //       key: "/account&security",
+    //       permissions: [Permissions.profile],
+    //     },
+    //   ],
+    //   permissions: [Permissions.profile],
+    // },
   ];
 
   const hasPermission = (required: string[] = []) => {

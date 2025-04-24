@@ -4,5 +4,5 @@ export const endpoints = {
   getMe: "/auth/client",
   logout: "/auth/client-logout",
   refreshToken: "/auth/client-refresh-token",
-  changePassword: "/admin/users/change-password",
+  changePassword: "/consumer/change-password",
 };
