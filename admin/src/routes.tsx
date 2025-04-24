@@ -13,7 +13,7 @@ const Billings = lazy(() => import("./pages/billings"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const BackupRestore = lazy(() => import("./pages/backup&restore"));
-const Profile = lazy(() => import("./pages/profile"));
+const AccountSecurity = lazy(() => import("./pages/profile"));
 
 export const routes = [
   {
@@ -82,10 +82,10 @@ export const routes = [
         ),
       },
       {
-        path: "profile",
+        path: "account&security",
         element: (
           <RequirePermission permission={AdminPermission.profile}>
-            <Profile />
+            <AccountSecurity />
           </RequirePermission>
         ),
       },

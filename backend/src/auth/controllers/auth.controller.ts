@@ -14,6 +14,8 @@ import { LoginDto } from '../dto/login.dto';
 import { AdminAuthGuard } from '../guards/admin.auth.guard';
 import { ClientAuthGuard } from '../guards/client.auth.guard';
 import { AuthService } from '../services/auth.service';
+import { Throttle } from '@nestjs/throttler';
+
 
 @Controller('auth')
 export class AuthController {
@@ -32,6 +34,7 @@ export class AuthController {
     res.json({ csrfToken: req.csrfToken() });
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login-superadmin')
   async loginSuperAdmin(@Body() loginDto: LoginDto, @Res() res: Response) {
     const superAdmin = await this.authService.validateSuperAdmin(
@@ -54,6 +57,7 @@ export class AuthController {
     return res.send({ message: 'Login successful' });
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login-user')
   async loginUser(@Body() loginDto: LoginDto, @Res() res: Response) {
     const user = await this.authService.validateUser(

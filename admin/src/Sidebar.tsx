@@ -38,24 +38,15 @@ const SideBar: React.FC = () => {
 
   // Define menu items with required permissions
   const menuItems = [
-    {
-      label: <span title="Employee">Employee</span>,
-      key: "/user",
-      icon: <GrUserAdmin />,
-      permissions: [AdminPermission.users], // Updated
-      children: [
-        {
-          label: <span title="Roles">Roles</span>,
-          key: "/roles",
-          permissions: [AdminPermission.users],
-        },
-        {
-          label: <span title="Users">Users</span>,
-          key: "/users",
-          permissions: [AdminPermission.users],
-        },
-      ],
-    },
+    // {
+    //   label: <span title="Employee">Employee</span>,
+    //   key: "/user",
+    //   icon: <GrUserAdmin />,
+    //   permissions: [AdminPermission.users], // Updated
+    //   children: [
+
+    //   ],
+    // },
     {
       key: "/plans",
       icon: <UserOutlined />,
@@ -82,14 +73,24 @@ const SideBar: React.FC = () => {
       icon: <GrUserAdmin />,
       children: [
         {
+          label: <span title="Account and Security">Account & Security</span>,
+          key: "/account&security",
+          permissions: [AdminPermission.profile],
+        },
+        {
+          label: <span title="Roles">Roles</span>,
+          key: "/roles",
+          permissions: [AdminPermission.users],
+        },
+        {
+          label: <span title="Users">Users</span>,
+          key: "/users",
+          permissions: [AdminPermission.users],
+        },
+        {
           label: <span title="Backup & Restore">Backup & Restore</span>,
           key: "/backup&restore",
           permissions: [AdminPermission.backupRestore],
-        },
-        {
-          label: <span title="Profile">Profile</span>,
-          key: "/profile",
-          permissions: [AdminPermission.profile],
         },
       ],
       permissions: [AdminPermission.profile, AdminPermission.backupRestore],
