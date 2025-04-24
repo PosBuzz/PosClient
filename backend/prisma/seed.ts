@@ -50,23 +50,21 @@ async function main() {
   });
 
   // Seed default permissions
-  const permissions = await Promise.all([
-    prisma.permission.upsert({
-      where: { action: 'create_invoice' },
-      update: {},
-      create: { action: 'create_invoice' },
-    }),
-    prisma.permission.upsert({
-      where: { action: 'view_report' },
-      update: {},
-      create: { action: 'view_report' },
-    }),
-    prisma.permission.upsert({
-      where: { action: 'manage_users' },
-      update: {},
-      create: { action: 'manage_users' },
-    }),
-  ]);
+  const consumerPermissions = [
+    'create_invoice',
+    'view_report',
+    'manage_users',
+    'profile',
+  ];
+  const permissions = await Promise.all(
+    consumerPermissions.map((action) =>
+      prisma.permission.upsert({
+        where: { action },
+        update: {},
+        create: { action },
+      }),
+    ),
+  );
 
   // Seed default plans
   const basicPlan = await prisma.plan.create({
@@ -99,10 +97,12 @@ async function main() {
     data: [
       // Basic Plan Permissions
       { plan_id: basicPlan.id, permission_id: permissionMap['view_report'] },
+      { plan_id: basicPlan.id, permission_id: permissionMap['profile'] },
 
       // Pro Plan Permissions
       { plan_id: proPlan.id, permission_id: permissionMap['view_report'] },
       { plan_id: proPlan.id, permission_id: permissionMap['create_invoice'] },
+      { plan_id: proPlan.id, permission_id: permissionMap['profile'] },
 
       // Enterprise Plan Permissions
       {
@@ -116,6 +116,10 @@ async function main() {
       {
         plan_id: enterprisePlan.id,
         permission_id: permissionMap['manage_users'],
+      },
+      {
+        plan_id: enterprisePlan.id,
+        permission_id: permissionMap['profile'],
       },
     ],
     skipDuplicates: true,
@@ -175,6 +179,7 @@ async function main() {
       { role_id: roleAdmin.id, permission_id: permissionMap['view_report'] },
       { role_id: roleAdmin.id, permission_id: permissionMap['create_invoice'] },
       { role_id: roleAdmin.id, permission_id: permissionMap['manage_users'] },
+      { role_id: roleAdmin.id, permission_id: permissionMap['profile'] },
     ],
     skipDuplicates: true,
   });
@@ -183,6 +188,7 @@ async function main() {
   await prisma.rolePermission.createMany({
     data: [
       { role_id: roleUser.id, permission_id: permissionMap['view_report'] },
+      { role_id: roleAdmin.id, permission_id: permissionMap['profile'] },
     ],
     skipDuplicates: true,
   });

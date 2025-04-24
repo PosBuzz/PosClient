@@ -6,15 +6,38 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  user: User | null;
 }
+
+type User = {
+  id: number;
+  consumer_id: number;
+  role_id: number;
+  email: string;
+  name: string;
+  refresh_token: string;
+  role: string;
+  permissions: string[];
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(null);
 
   const navigate = useNavigate();
+
+  const checkAuth = async () => {
+    try {
+      const response = await axiosInstance.get(endpoints.getMe);
+      setUser(response.data?.user);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setIsAuthenticated(false);
+    }
+  };
 
   const getCsrfToken = async () => {
     try {
@@ -27,15 +50,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     getCsrfToken();
   }, []);
-
-  const checkAuth = async () => {
-    try {
-      await axiosInstance.get(endpoints.getMe);
-      setIsAuthenticated(true);
-    } catch (err) {
-      setIsAuthenticated(false);
-    }
-  };
 
   useEffect(() => {
     checkAuth();
@@ -54,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user }}>
       {children}
     </AuthContext.Provider>
   );

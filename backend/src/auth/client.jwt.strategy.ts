@@ -22,11 +22,30 @@ export class JwtClientStrategy extends PassportStrategy(
 
     const user = await this.prisma.user.findUnique({
       where: { id: sub, consumer_id },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) throw new Error('Client user not found');
 
-    const { password, created_at, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    const { password, created_at, updated_at, ...userWithoutPassword } = user;
+
+    // Extract permission actions from role
+    const permissions = user.role.permissions.map((rp) => rp.permission.action);
+
+    return {
+      ...userWithoutPassword,
+      permissions, // attach permissions to request.user
+      role: user.role.name,
+    };
   }
 }

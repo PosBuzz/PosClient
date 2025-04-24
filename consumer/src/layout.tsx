@@ -1,27 +1,26 @@
-import { useState, useEffect } from "react";
-import { Layout, Menu, Button, theme, Tooltip } from "antd";
 import {
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  UserOutlined,
-  VideoCameraOutlined,
-  UploadOutlined,
-  DashboardOutlined,
-  SettingOutlined,
   LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { Outlet } from "react-router-dom";
+import { Button, Layout, Tooltip } from "antd";
+import { useEffect, useState } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+import ThemeDropdown from "./components/ThemeDropdown";
 import { useAuth } from "./contexts/AuthContext";
+import useDarkMode from "./hooks/useDarkMode";
+import SideBar from "./Sidebar";
 
 const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
-  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const { logout, user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const isDarkMode = useDarkMode();
 
   // Check if the screen is mobile size
   useEffect(() => {
@@ -44,44 +43,17 @@ const AppLayout = () => {
     setCollapsed(!collapsed);
   };
 
-  const menuItems = [
-    {
-      key: "1",
-      icon: <DashboardOutlined />,
-      label: "Dashboard",
-    },
-    {
-      key: "2",
-      icon: <UserOutlined />,
-      label: "Users",
-    },
-    {
-      key: "3",
-      icon: <VideoCameraOutlined />,
-      label: "Media",
-    },
-    {
-      key: "4",
-      icon: <UploadOutlined />,
-      label: "Upload",
-    },
-    {
-      key: "5",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    },
-  ];
-
   return (
-    <Layout className="min-h-screen">
-      {/* Sidebar */}
+    <Layout className="max-h-screen">
+      {/* Sidebar - Fixed position */}
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
         breakpoint="md"
-        className={`overflow-auto h-screen fixed left-0 top-0 bottom-0 ${
-          isMobile && !collapsed ? "fixed z-50 shadow-lg" : ""
+        theme={isDarkMode ? "dark" : "light"}
+        className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
+          isMobile && !collapsed ? "z-50 shadow-lg!" : ""
         }`}
         style={{
           zIndex: 999,
@@ -90,27 +62,30 @@ const AppLayout = () => {
       >
         <div className="text-center py-4">
           <h1
-            className={`text-white transition-all duration-300 ${
+            className={`transition-all duration-300 ${
               collapsed ? "text-lg" : "text-xl"
             }`}
+            style={{ color: isDarkMode ? "#fff" : "#000" }}
           >
-            {collapsed ? "App" : "MyApp"}
+            {collapsed ? "PB" : "PosBuzz"}
           </h1>
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={["1"]}
-          items={menuItems}
-        />
+
+        <SideBar />
       </Sider>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Adjusted for sidebar */}
       <Layout className={`transition-all duration-300`}>
-        {/* Header */}
+        {/* Header - Fixed at the top of content area */}
         <Header
-          style={{ background: colorBgContainer }}
-          className="p-2! md:p-6! flex items-center justify-between shadow-sm sticky top-0 z-10"
+          style={{
+            position: "sticky",
+            top: 0,
+            width: "100%",
+            zIndex: 10,
+            padding: "0 16px",
+          }}
+          className="shadow-sm flex items-center justify-between"
         >
           <div className="flex items-center">
             <Button
@@ -119,11 +94,16 @@ const AppLayout = () => {
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <h2 className="m-0 text-lg hidden md:block">Client Dashboard</h2>
+            <h2 className="m-0 text-lg hidden md:block">{user?.name}</h2>
           </div>
-          <div>
-            <Tooltip title="Profile">
-              <Button type="text" icon={<UserOutlined />} />
+          <div className="flex">
+            <ThemeDropdown />
+            <Tooltip title="Account and Security">
+              <Button
+                type="text"
+                icon={<UserOutlined />}
+                onClick={() => navigate("/account&security")}
+              />
             </Tooltip>
             <Tooltip title="Logout">
               <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
@@ -134,18 +114,18 @@ const AppLayout = () => {
         {/* Overlay for mobile when sidebar is open */}
         {isMobile && !collapsed && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className={`fixed inset-0 ${
+              isDarkMode ? "bg-black" : "bg-gray-100"
+            } bg-opacity-50 z-40`}
             onClick={() => setCollapsed(true)}
           />
         )}
 
-        {/* Page Content */}
+        {/* Page Content - Scrollable */}
         <Content
-          className="md:m-6 p-2 md:p-6"
+          className="p-4 md:p-6 overflow-auto"
           style={{
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-            minHeight: 280,
+            height: "calc(100vh - 64px)",
           }}
         >
           <Outlet />
