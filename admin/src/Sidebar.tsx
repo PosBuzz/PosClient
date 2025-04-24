@@ -37,7 +37,15 @@ const SideBar: React.FC = () => {
   };
 
   // Define menu items with required permissions
-  const menuItems = [
+  interface MenuItem {
+    key: string;
+    icon: React.ReactNode;
+    label: React.ReactNode;
+    children?: MenuItem[];
+    permissions?: string[];
+  }
+
+  const menuItems: MenuItem[] = [
     {
       key: "/",
       icon: <DashboardOutlined />,

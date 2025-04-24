@@ -1,11 +1,9 @@
-import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
+import { DashboardOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
-import { GrUserAdmin } from "react-icons/gr";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import useDarkMode from "./hooks/useDarkMode";
-import { Permissions } from "./constants/permissions";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -36,7 +34,15 @@ const SideBar: React.FC = () => {
   };
 
   // Define menu items with required permissions
-  const menuItems = [
+  interface MenuItem {
+    key: string;
+    icon: React.ReactNode;
+    label: React.ReactNode;
+    children?: MenuItem[];
+    permissions?: string[];
+  }
+
+  const menuItems: MenuItem[] = [
     {
       key: "/",
       icon: <DashboardOutlined />,
