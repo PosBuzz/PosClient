@@ -4,6 +4,8 @@ export interface User {
   role: string;
   permissions: string[];
   consumer_id?: number;
+  company_name?: string;
+  company_email?: string;
   plan_id?: number;
   name?: string;
 }

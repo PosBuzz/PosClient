@@ -25,6 +25,7 @@ model SuperAdmin {
   @@index([email])
   @@index([name])
   @@index([role_id])
+  @@map("super_admins")
 }
 
 model SuperAdminRole {
@@ -32,12 +33,16 @@ model SuperAdminRole {
   name        String                     @unique
   permissions SuperAdminRolePermission[]
   users       SuperAdmin[]
+
+  @@map("super_admin_roles")
 }
 
 model SuperAdminPermission {
   id             Int                        @id @default(autoincrement())
   action         String                     @unique
   RolePermission SuperAdminRolePermission[]
+
+  @@map("super_admin_permissions")
 }
 
 model SuperAdminRolePermission {
@@ -47,6 +52,7 @@ model SuperAdminRolePermission {
   permission    SuperAdminPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
+  @@map("super_admin_role_permissions")
 }
 
 model Consumer {
@@ -71,6 +77,7 @@ model Consumer {
   @@index([phone])
   @@index([subdomain])
   @@index([plan_id])
+  @@map("consumers")
 }
 
 model Plan {
@@ -81,6 +88,8 @@ model Plan {
   updated_at  DateTime         @updatedAt
   consumers   Consumer[]
   permissions PlanPermission[]
+
+  @@map("plans")
 }
 
 model PlanPermission {
@@ -90,6 +99,7 @@ model PlanPermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([plan_id, permission_id])
+  @@map("plan_permissions")
 }
 
 model BillingHistory {
@@ -106,6 +116,7 @@ model BillingHistory {
   @@unique([consumer_id, billing_month])
   @@index([consumer_id])
   @@index([billing_month])
+  @@map("billing_histories")
 }
 
 model User {
@@ -123,6 +134,7 @@ model User {
   role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
   @@index([consumer_id])
+  @@map("users")
 }
 
 model Permission {
@@ -130,6 +142,8 @@ model Permission {
   action         String           @unique
   RolePermission RolePermission[]
   PlanPermission PlanPermission[]
+
+  @@map("permissions")
 }
 
 model Role {
@@ -142,6 +156,7 @@ model Role {
 
   @@unique([consumer_id, name])
   @@index([consumer_id])
+  @@map("roles")
 }
 
 model RolePermission {
@@ -151,4 +166,5 @@ model RolePermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
+  @@map("role_permissions")
 }

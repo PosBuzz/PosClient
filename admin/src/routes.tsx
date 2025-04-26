@@ -13,7 +13,7 @@ const Billings = lazy(() => import("./pages/billings"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const BackupRestore = lazy(() => import("./pages/backup&restore"));
-const AccountSecurity = lazy(() => import("./pages/profile"));
+const AccountSecurity = lazy(() => import("./pages/account-security"));
 
 export const routes = [
   {

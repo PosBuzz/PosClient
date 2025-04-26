@@ -89,6 +89,27 @@ function index() {
             <Input.Password />
           </Form.Item>
 
+          <Form.Item
+            label="Confirm Password"
+            name="confirm_password"
+            dependencies={["new_password"]}
+            rules={[
+              { required: true, message: "Please confirm your new password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("new_password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("The two passwords do not match!")
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password />
+          </Form.Item>
+
           <Form.Item>
             <Button
               type="primary"

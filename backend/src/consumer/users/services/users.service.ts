@@ -63,6 +63,32 @@ export class UsersService {
     });
   }
 
+  async getUsers(consumer_id: number, search_text?: string | null, role_id?: number) {
+    console.log({consumer_id, search_text, role_id});
+    
+    return await this.prisma.user.findMany({
+      where: {
+        consumer_id,
+        ...(search_text && {
+          OR: [
+            { name: { contains: search_text, mode: 'insensitive' } },
+            { email: { contains: search_text, mode: 'insensitive' } },
+          ],
+        }),
+        ...(role_id && { role_id }),
+      },
+      include: {
+        role: true,
+      },
+    });
+  }
+
+  async deleteUser(id: number, consumer_id: number) {
+    return await this.prisma.user.delete({
+      where: { consumer_id, id },
+    });
+  }
+
   async createUser(dto: CreateUserDto, consumer_id: number) {
     const hashedPassword = await bcryptjs.hash(dto.password, 10);
     return this.prisma.user.create({

@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -26,19 +27,21 @@ import { UsersService } from '../services/users.service';
 @Controller('consumer/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-  @Get('plan-permissions')
-  permissionOptions(@Req() req: Request) {
-    return this.usersService.permissionOptions(Number(req?.user?.plan_id));
-  }
 
-  @Get('roles')
-  getRoles(@Req() req: Request) {
-    return this.usersService.getRoles(Number(req?.user?.consumer_id));
-  }
+  @Get()
+  getUsers(
+    @Query('search_text') search_text: string,
+    @Query('role_id') role_id: string,
+    @Req() req: Request,
+  ) {
+    const parsedRoleId =
+      role_id && role_id !== 'null' ? Number(role_id) : undefined;
 
-  @Delete('roles/:id')
-  deleteRole(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
-    return this.usersService.deleteRole(id, Number(req?.user?.consumer_id));
+    return this.usersService.getUsers(
+      Number(req?.user?.consumer_id),
+      search_text !== 'null' ? search_text : undefined,
+      parsedRoleId,
+    );
   }
 
   @Post()
@@ -54,6 +57,21 @@ export class UsersController {
     return this.usersService.updateUser(id, dto);
   }
 
+  @Delete(':id')
+  deleteUser(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.usersService.deleteUser(id, Number(req?.user?.consumer_id));
+  }
+
+  @Get('plan-permissions')
+  permissionOptions(@Req() req: Request) {
+    return this.usersService.permissionOptions(Number(req?.user?.plan_id));
+  }
+
+  @Get('roles')
+  getRoles(@Req() req: Request) {
+    return this.usersService.getRoles(Number(req?.user?.consumer_id));
+  }
+
   @Post('roles')
   createRole(@Body() dto: CreateRoleDto, @Req() req: Request) {
     return this.usersService.createRole(dto, Number(req?.user?.consumer_id));
@@ -65,5 +83,10 @@ export class UsersController {
     @Body() dto: UpdateRoleDto,
   ) {
     return this.usersService.updateRole(id, dto);
+  }
+
+  @Delete('roles/:id')
+  deleteRole(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.usersService.deleteRole(id, Number(req?.user?.consumer_id));
   }
 }

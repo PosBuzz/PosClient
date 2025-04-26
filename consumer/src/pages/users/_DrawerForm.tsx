@@ -8,7 +8,6 @@ import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
 export default function DrawerForm({
-  model,
   onClose,
   open,
   onSubmitSuccess,

@@ -35,6 +35,8 @@ export class JwtClientStrategy extends PassportStrategy(
         consumer: {
           select: {
             plan_id: true,
+            email: true,
+            company_name: true,
           },
         },
       },
@@ -58,6 +60,8 @@ export class JwtClientStrategy extends PassportStrategy(
       permissions, // attach permissions to request.user
       role: user.role.name,
       plan_id: user.consumer.plan_id,
+      company_name: user.consumer.company_name,
+      company_email: user.consumer.email,
     };
   }
 }

@@ -1,15 +1,15 @@
 import { lazy } from "react";
 import RequireAuth from "./components/RequireAuth";
-import AppLayout from "./layout";
 import RequirePermission from "./components/RequirePermission";
 import { Permissions } from "./constants/permissions";
-import Roles from "./pages/roles";
-import Users from "./pages/users";
+import AppLayout from "./layout";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const Home = lazy(() => import("./pages/dashboard"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
+const Roles = lazy(() => import("./pages/roles"));
+const Users = lazy(() => import("./pages/users"));
 
 export const routes = [
   {
@@ -45,14 +45,14 @@ export const routes = [
           </RequirePermission>
         ),
       },
-      // {
-      //   path: "users",
-      //   element: (
-      //     <RequirePermission permission={Permissions.users}>
-      //       <Users />
-      //     </RequirePermission>
-      //   ),
-      // },
+      {
+        path: "users",
+        element: (
+          <RequirePermission permission={Permissions.users}>
+            <Users />
+          </RequirePermission>
+        ),
+      },
     ],
   },
 ];

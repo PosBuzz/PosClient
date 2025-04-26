@@ -10,6 +10,8 @@ type User = {
   name: string;
   refresh_token: string;
   created_by_id: number | null;
+  company_name: string;
+  company_email: string;
   role: string;
   permissions: string[];
 };
@@ -58,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   getCsrfToken: async () => {
     try {
       const response = await axiosInstance.get(endpoints.csrfToken);
-      const token = response.data?.csrfToken; 
+      const token = response.data?.csrfToken;
       if (token) {
         set({ csrfToken: token });
       }

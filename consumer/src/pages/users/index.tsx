@@ -3,13 +3,13 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
-import useModelOptions from "../../hooks/useModelOptions";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
+import { useQuery } from "@tanstack/react-query";
+import { get } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
 
-const model = models.SuperAdmin;
 const title = "Users";
 
 const Users = () => {
@@ -17,7 +17,15 @@ const Users = () => {
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [trigger, setTrigger] = useState(0);
-  const roleOptions: any = useModelOptions(models?.SuperAdminRole, "name");
+
+  const { data: fetchData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => get(endpoints.role),
+  });
+
+  const roleOptions: any = fetchData?.map((role) => {
+    return { label: role.name, value: role.id };
+  });
 
   const showDrawer = () => {
     setOpen(true);
@@ -54,7 +62,6 @@ const Users = () => {
       <DrawerForm
         onClose={onClose}
         open={open}
-        model={model}
         isEditing={isEditing}
         editedItem={editedItem}
         onSubmitSuccess={onSubmitSuccess}
@@ -83,7 +90,6 @@ const Users = () => {
         <Col className="gutter-row" span={24}>
           <TableGrid
             trigger={trigger}
-            model={model}
             onClickEdit={onClickEdit}
             roleOptions={roleOptions}
           />

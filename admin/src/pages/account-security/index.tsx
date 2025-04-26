@@ -28,7 +28,7 @@ function index() {
   const handlePasswordChange = (values: {
     old_password: string;
     new_password: string;
-  }) => {
+      }) => {
     // Replace with your API call
     updateData.mutate(values);
   };
@@ -82,6 +82,25 @@ function index() {
                 min: 6,
                 message: "Password must be at least 6 characters long.",
               },
+            ]}
+          >
+            <Input.Password />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="confirm_password"
+            dependencies={['new_password']}
+            rules={[
+              { required: true, message: "Please confirm your new password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('new_password') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("The two passwords do not match!"));
+                },
+              }),
             ]}
           >
             <Input.Password />

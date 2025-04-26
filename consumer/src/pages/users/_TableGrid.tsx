@@ -13,24 +13,25 @@ import {
   Select,
   Space,
   Table,
-  Tag
+  Tag,
 } from "antd";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
-import { deleteApi, post } from "../../api/crud-api";
-import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
+import { deleteApi, get } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { useAuthStore } from "../../stores/authStore";
 
 export default function _TableGrid({
-  model,
   trigger,
   onClickEdit,
   roleOptions = [],
   ...props
 }) {
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
+  const { user } = useAuthStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -47,30 +48,17 @@ export default function _TableGrid({
     };
   }, [searchText, debouncedSearch]);
 
-  const KEY = `all-${model}`;
-
   const {
-    isLoading,
-    isError,
     data: fetchData,
+    isError,
+    isLoading,
     refetch,
   } = useQuery({
-    queryKey: [KEY, debouncedSearchText, selectedRole],
+    queryKey: ["users", debouncedSearchText, selectedRole],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
-        where: {
-          ...(debouncedSearchText && {
-            OR: [
-              { name: { contains: debouncedSearchText, mode: "insensitive" } },
-              { email: { contains: debouncedSearchText, mode: "insensitive" } },
-            ],
-          }),
-          ...(selectedRole ? { role_id: selectedRole } : {}),
-        },
-        include: {
-          role: true,
-        },
-      }),
+      get(
+        `${endpoints.user}?search_text=${debouncedSearchText}&role_id=${selectedRole}`
+      ),
   });
 
   useEffect(() => {
@@ -80,7 +68,7 @@ export default function _TableGrid({
   }, [trigger]);
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
+    mutationFn: async (id: any) => await deleteApi(`${endpoints.user}/${id}`),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();
@@ -89,10 +77,6 @@ export default function _TableGrid({
       messageApi?.error("Something went wrong");
     },
   });
-
-  const handleDeleteClient = (id: any) => {
-    deleteMutation.mutate(id);
-  };
 
   const columns = [
     {
@@ -119,7 +103,7 @@ export default function _TableGrid({
       key: "actions",
       render: (record: any) => (
         <Space>
-          {record?.email !== import.meta.env.VITE_Root_Admin && (
+          {record?.email !== user?.company_email && (
             <>
               <Button onClick={() => onClickEdit(record)} type="link">
                 <EditOutlined />
@@ -127,7 +111,7 @@ export default function _TableGrid({
               <Popconfirm
                 title="Delete this item?"
                 description="This action cannot be undone"
-                onConfirm={() => handleDeleteClient(record.id)}
+                onConfirm={() => deleteMutation.mutate(record.id)}
                 okText="Yes"
                 cancelText="No"
               >

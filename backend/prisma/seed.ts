@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   const hash = bcryptjs.hashSync('123456', 10);
 
+  // Super Admin permissions
   const adminPermissions = [
     'plans',
     'consumers',
@@ -36,8 +37,33 @@ async function main() {
         })),
       },
     },
+    include: {
+      permissions: true,
+    },
   });
 
+  // If updating, ensure permissions are linked
+  if (adminRole.permissions.length === 0) {
+    await Promise.all(
+      createdPermissions.map((perm) =>
+        prisma.superAdminRolePermission.upsert({
+          where: {
+            role_id_permission_id: {
+              role_id: adminRole.id,
+              permission_id: perm.id,
+            },
+          },
+          update: {},
+          create: {
+            role_id: adminRole.id,
+            permission_id: perm.id,
+          },
+        }),
+      ),
+    );
+  }
+
+  // Super Admin user
   await prisma.superAdmin.upsert({
     where: { email: 'admin@example.com' },
     update: {},
@@ -49,7 +75,18 @@ async function main() {
     },
   });
 
-  // Seed default permissions
+  // Plans
+  // Create only ONE Plan
+  const enterprisePlan = await prisma.plan.upsert({
+    where: { name: 'Enterprise' },
+    update: { price: 50 },
+    create: {
+      name: 'Enterprise',
+      price: 50,
+    },
+  });
+
+  // Consumer permissions
   const consumerPermissions = [
     'create_invoice',
     'view_report',
@@ -67,72 +104,39 @@ async function main() {
     ),
   );
 
-  // Seed default plans
-  const basicPlan = await prisma.plan.create({
-    data: {
-      name: 'Basic',
-      price: 10,
-    },
-  });
-
-  const proPlan = await prisma.plan.create({
-    data: {
-      name: 'Pro',
-      price: 30,
-    },
-  });
-
-  const enterprisePlan = await prisma.plan.create({
-    data: {
-      name: 'Enterprise',
-      price: 50,
-    },
-  });
-
-  // Seed PlanPermissions
+  // Map permissions for easier access
   const permissionMap = Object.fromEntries(
     permissions.map((p) => [p.action, p.id]),
   );
 
-  await prisma.planPermission.createMany({
-    data: [
-      // Basic Plan Permissions
-      { plan_id: basicPlan.id, permission_id: permissionMap['view_report'] },
-      { plan_id: basicPlan.id, permission_id: permissionMap['profile'] },
+  // Assign ALL permissions to the ONLY plan
+  await Promise.all(
+    consumerPermissions.map((action) =>
+      prisma.planPermission.upsert({
+        where: {
+          plan_id_permission_id: {
+            plan_id: enterprisePlan.id,
+            permission_id: permissionMap[action],
+          },
+        },
+        update: {},
+        create: {
+          plan_id: enterprisePlan.id,
+          permission_id: permissionMap[action],
+        },
+      }),
+    ),
+  );
 
-      // Pro Plan Permissions
-      { plan_id: proPlan.id, permission_id: permissionMap['view_report'] },
-      { plan_id: proPlan.id, permission_id: permissionMap['create_invoice'] },
-      { plan_id: proPlan.id, permission_id: permissionMap['profile'] },
-
-      // Enterprise Plan Permissions
-      {
-        plan_id: enterprisePlan.id,
-        permission_id: permissionMap['view_report'],
-      },
-      {
-        plan_id: enterprisePlan.id,
-        permission_id: permissionMap['create_invoice'],
-      },
-      {
-        plan_id: enterprisePlan.id,
-        permission_id: permissionMap['manage_users'],
-      },
-      {
-        plan_id: enterprisePlan.id,
-        permission_id: permissionMap['profile'],
-      },
-      {
-        plan_id: enterprisePlan.id,
-        permission_id: permissionMap['users'],
-      },
-    ],
-    skipDuplicates: true,
-  });
-
-  // Create Consumer for Enterprise Plan
-  const consumer1 = await prisma.consumer.create({
-    data: {
+  // Create Consumer assigned to the only plan
+  const consumer1 = await prisma.consumer.upsert({
+    where: { subdomain: 'consumer1' },
+    update: {
+      company_name: 'Possbuzz',
+      email: 'admin@consumer1.com',
+      plan_id: enterprisePlan.id,
+    },
+    create: {
       company_name: 'Possbuzz',
       subdomain: 'consumer1',
       email: 'admin@consumer1.com',
@@ -140,81 +144,94 @@ async function main() {
     },
   });
 
-  // Create Roles
-  const [roleAdmin, roleUser] = await Promise.all([
-    prisma.role.create({
-      data: {
+  // Create Admin Role for Consumer
+  const adminConsumerRole = await prisma.role.upsert({
+    where: {
+      consumer_id_name: {
         consumer_id: consumer1.id,
         name: 'Admin',
       },
-    }),
-    prisma.role.create({
-      data: {
-        consumer_id: consumer1.id,
-        name: 'User',
-      },
-    }),
-  ]);
-
-  // Create Users
-  const [user1, user2] = await Promise.all([
-    prisma.user.create({
-      data: {
-        consumer_id: consumer1.id,
-        email: 'user1@consumer1.com',
-        name: 'User One',
-        password: hash,
-        role_id: roleAdmin.id,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        consumer_id: consumer1.id,
-        email: 'user2@consumer2.com',
-        name: 'User Two',
-        password: hash,
-        role_id: roleUser.id,
-      },
-    }),
-  ]);
-
-  // Assign Permissions to Admin Role
-  await prisma.rolePermission.createMany({
-    data: [
-      { role_id: roleAdmin.id, permission_id: permissionMap['view_report'] },
-      { role_id: roleAdmin.id, permission_id: permissionMap['create_invoice'] },
-      { role_id: roleAdmin.id, permission_id: permissionMap['manage_users'] },
-      { role_id: roleAdmin.id, permission_id: permissionMap['profile'] },
-      { role_id: roleAdmin.id, permission_id: permissionMap['users'] },
-    ],
-    skipDuplicates: true,
+    },
+    update: {},
+    create: {
+      consumer_id: consumer1.id,
+      name: 'Admin',
+    },
   });
 
-  // Assign Permissions to User Role (limited)
-  await prisma.rolePermission.createMany({
-    data: [
-      { role_id: roleUser.id, permission_id: permissionMap['view_report'] },
-      { role_id: roleAdmin.id, permission_id: permissionMap['profile'] },
-    ],
-    skipDuplicates: true,
+  // Assign all plan permissions to the admin role
+  await Promise.all(
+    permissions.map((permission) =>
+      prisma.rolePermission.upsert({
+        where: {
+          role_id_permission_id: {
+            role_id: adminConsumerRole.id,
+            permission_id: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          role_id: adminConsumerRole.id,
+          permission_id: permission.id,
+        },
+      }),
+    ),
+  );
+
+  // Create Admin User
+  await prisma.user.upsert({
+    where: { email: 'admin@consumer1.com' },
+    update: {
+      consumer_id: consumer1.id,
+      name: 'Consumer Admin',
+      password: hash,
+      role_id: adminConsumerRole.id,
+    },
+    create: {
+      consumer_id: consumer1.id,
+      email: 'admin@consumer1.com',
+      name: 'Consumer Admin',
+      password: hash,
+      role_id: adminConsumerRole.id,
+    },
   });
 
-  // Billing History
-  await prisma.billingHistory.createMany({
-    data: [
-      {
+  await prisma.billingHistory.upsert({
+    where: {
+      consumer_id_billing_month: {
         consumer_id: consumer1.id,
-        amount: 100.0,
-        reference: 'Invoice #12345',
         billing_month: '2025-03',
       },
-      {
+    },
+    update: {
+      amount: 100.0,
+      billing_month: '2025-03',
+    },
+    create: {
+      consumer_id: consumer1.id,
+      amount: 100.0,
+      reference: 'Invoice #12345',
+      billing_month: '2025-03',
+    },
+  });
+
+  await prisma.billingHistory.upsert({
+    where: {
+      consumer_id_billing_month: {
         consumer_id: consumer1.id,
-        amount: 250.0,
-        reference: 'Invoice #67890',
         billing_month: '2025-04',
       },
-    ],
+    },
+    update: {
+      amount: 250.0,
+      billing_month: '2025-04',
+    },
+    create: {
+      consumer_id: consumer1.id,
+      amount: 250.0,
+      reference: 'Invoice #67890',
+      billing_month: '2025-04',
+    },
   });
 
   console.log('🌱 Seeding complete!');

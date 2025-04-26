@@ -5,7 +5,8 @@ import { routes } from "./routes";
 
 function App() {
   const routing = useRoutes(routes);
-   <Suspense
+  return (
+    <Suspense
       fallback={
         <div className="h-screen flex justify-center items-center">
           <Spin size="large" />
