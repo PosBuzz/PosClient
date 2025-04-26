@@ -63,7 +63,7 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       key: "actions",
       render: (record: any) => (
         <Space>
-          {record?.name !== "admin" && (
+          {record?.name?.toLowerCase() !== "admin" && (
             <>
               <Button onClick={() => onClickEdit(record)} type={"link"}>
                 <EditOutlined />
