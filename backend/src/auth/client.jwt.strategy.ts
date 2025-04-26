@@ -32,12 +32,23 @@ export class JwtClientStrategy extends PassportStrategy(
             },
           },
         },
+        consumer: {
+          select: {
+            plan_id: true,
+          },
+        },
       },
     });
 
     if (!user) throw new Error('Client user not found');
 
-    const { password, created_at, updated_at, ...userWithoutPassword } = user;
+    const {
+      password,
+      created_at,
+      updated_at,
+      consumer,
+      ...userWithoutPassword
+    } = user;
 
     // Extract permission actions from role
     const permissions = user.role.permissions.map((rp) => rp.permission.action);
@@ -46,6 +57,7 @@ export class JwtClientStrategy extends PassportStrategy(
       ...userWithoutPassword,
       permissions, // attach permissions to request.user
       role: user.role.name,
+      plan_id: user.consumer.plan_id,
     };
   }
 }

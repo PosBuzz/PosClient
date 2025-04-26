@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
@@ -21,9 +23,23 @@ import { UsersService } from '../services/users.service';
 
 @HasPermissions([ConsumerPermission.users])
 @UseGuards(ClientAuthGuard, PermissionsGuard)
-@Controller('admin/users')
+@Controller('consumer/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+  @Get('plan-permissions')
+  permissionOptions(@Req() req: Request) {
+    return this.usersService.permissionOptions(Number(req?.user?.plan_id));
+  }
+
+  @Get('roles')
+  getRoles(@Req() req: Request) {
+    return this.usersService.getRoles(Number(req?.user?.consumer_id));
+  }
+
+  @Delete('roles/:id')
+  deleteRole(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.usersService.deleteRole(id, Number(req?.user?.consumer_id));
+  }
 
   @Post()
   createUser(@Body() dto: CreateUserDto, @Req() req: Request) {

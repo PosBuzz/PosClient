@@ -55,6 +55,7 @@ async function main() {
     'view_report',
     'manage_users',
     'profile',
+    'users',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
@@ -121,6 +122,10 @@ async function main() {
         plan_id: enterprisePlan.id,
         permission_id: permissionMap['profile'],
       },
+      {
+        plan_id: enterprisePlan.id,
+        permission_id: permissionMap['users'],
+      },
     ],
     skipDuplicates: true,
   });
@@ -180,6 +185,7 @@ async function main() {
       { role_id: roleAdmin.id, permission_id: permissionMap['create_invoice'] },
       { role_id: roleAdmin.id, permission_id: permissionMap['manage_users'] },
       { role_id: roleAdmin.id, permission_id: permissionMap['profile'] },
+      { role_id: roleAdmin.id, permission_id: permissionMap['users'] },
     ],
     skipDuplicates: true,
   });

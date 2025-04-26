@@ -10,6 +10,38 @@ import { UpdateUserDto } from '../dtos/update-user.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  async permissionOptions(plan_id: number) {
+    const permissions = await this.prisma.planPermission.findMany({
+      where: { plan_id },
+      include: {
+        permission: true,
+      },
+    });
+
+    return permissions.map((p) => {
+      return { label: p.permission.action, value: p.permission.id };
+    });
+  }
+
+  async getRoles(consumer_id: number) {
+    return await this.prisma.role.findMany({
+      where: { consumer_id },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+  }
+
+  async deleteRole(id: number, consumer_id: number) {
+    return await this.prisma.role.delete({
+      where: { consumer_id, id },
+    });
+  }
+
   async createRole(dto: CreateRoleDto, consumer_id: number) {
     return this.prisma.role.create({
       data: {

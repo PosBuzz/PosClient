@@ -1,9 +1,11 @@
-import { DashboardOutlined } from "@ant-design/icons";
+import { DashboardOutlined, SettingOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useDarkMode from "./hooks/useDarkMode";
 import { useAuthStore } from "./stores/authStore";
+import { Permissions } from "./constants/permissions";
+import { GrUserAdmin } from "react-icons/gr";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -48,19 +50,24 @@ const SideBar: React.FC = () => {
       icon: <DashboardOutlined />,
       label: <span title="Dashboard">Dashboard</span>,
     },
-    // {
-    //   label: <span title="Settings">Settings</span>,
-    //   key: "/settings",
-    //   icon: <GrUserAdmin />,
-    //   children: [
-    //     {
-    //       label: <span title="Account and Security">Account & Security</span>,
-    //       key: "/account&security",
-    //       permissions: [Permissions.profile],
-    //     },
-    //   ],
-    //   permissions: [Permissions.profile],
-    // },
+    {
+      label: <span title="Settings">Settings</span>,
+      key: "/settings",
+      icon: <SettingOutlined />,
+      children: [
+        {
+          label: <span title="Roles">Roles</span>,
+          key: "/roles",
+          permissions: [Permissions.users],
+        },
+        {
+          label: <span title="Users">Users</span>,
+          key: "/users",
+          permissions: [Permissions.users],
+        },
+      ],
+      permissions: [Permissions.users],
+    },
   ];
 
   const hasPermission = (required: string[] = []) => {

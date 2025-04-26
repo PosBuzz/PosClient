@@ -12,9 +12,12 @@ export default function RequirePermission({
 }) {
   const { user } = useAuthStore();
 
-
   if (!user) {
-    return <Spin/>
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-112px)]">
+        <Spin />
+      </div>
+    );
   }
   // Check if the user has the required permission
   if (permission && !user?.permissions?.includes(permission)) {
