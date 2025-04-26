@@ -135,11 +135,11 @@ export default function _TableGrid({
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
     onSuccess: () => {
-      messageApi.success("Deleted Successfully");
+      messageApi?.success("Deleted Successfully");
       refetch();
     },
     onError: () => {
-      messageApi.error("Something went wrong");
+      messageApi?.error("Something went wrong");
     },
   });
 

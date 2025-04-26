@@ -30,10 +30,10 @@ function BackupRestorePage() {
       a.click();
       a.remove();
 
-      messageApi.success("Full database backup completed successfully");
+      messageApi?.success("Full database backup completed successfully");
     } catch (error) {
       console.error("Backup failed:", error);
-      messageApi.error("Database backup failed");
+      messageApi?.error("Database backup failed");
     } finally {
       setLoading(false);
     }
@@ -50,10 +50,10 @@ function BackupRestorePage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      messageApi.success("Database restored successfully");
+      messageApi?.success("Database restored successfully");
     } catch (error) {
       console.error("Restore failed:", error);
-      messageApi.error("Database restore failed");
+      messageApi?.error("Database restore failed");
     } finally {
       setRestoreLoading(false);
     }

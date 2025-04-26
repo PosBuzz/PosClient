@@ -8,16 +8,16 @@ import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import ThemeDropdown from "./components/ThemeDropdown";
-import { useAuth } from "./contexts/AuthContext";
 import useDarkMode from "./hooks/useDarkMode";
 import SideBar from "./Sidebar";
+import { useAuthStore } from "./stores/authStore";
 
 const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
   const navigate = useNavigate();
 
-  const { logout, user } = useAuth();
+  const { logout, user } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const isDarkMode = useDarkMode();

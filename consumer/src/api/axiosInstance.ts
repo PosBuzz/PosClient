@@ -1,46 +1,47 @@
+// axiosInstance.ts
 import axios from "axios";
 import { endpoints } from "./endpoints";
-
-function getCookie(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
+import { useAuthStore } from "../stores/authStore";
 
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
   withCredentials: true,
-  headers: {
-    "X-CSRF-TOKEN": getCookie("XSRF-TOKEN"),
-  },
 });
 
-// Separate instance for refresh token call (no interceptors)
+// Dynamic CSRF Token injection before every request
+axiosInstance.interceptors.request.use((config) => {
+  const csrfToken = useAuthStore.getState().csrfToken; // <-- Access store without hook
+  
+  if (csrfToken) {
+    config.headers["X-CSRF-TOKEN"] = csrfToken;
+  }
+
+  return config;
+});
+
+// Separate instance for refresh token call
 const refreshInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
   withCredentials: true,
-  headers: {
-    "X-CSRF-TOKEN": getCookie("XSRF-TOKEN"),
-  },
 });
 
+// Same for refreshInstance if needed
+refreshInstance.interceptors.request.use((config) => {
+  const csrfToken = useAuthStore.getState().csrfToken;
+
+  if (csrfToken) {
+    config.headers["X-CSRF-TOKEN"] = csrfToken;
+  }
+
+  return config;
+});
+
+// Response interceptor (your existing code)
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
   reject: (reason?: any) => void;
 }> = [];
-
-// const processQueue = (error: any, token: string | null = null) => {
-//   failedQueue.forEach((promise) => {
-//     if (token) {
-//       promise.resolve(token);
-//     } else {
-//       promise.reject(error);
-//     }
-//   });
-//   failedQueue = [];
-// };
 
 axiosInstance.interceptors.response.use(
   (res) => res,

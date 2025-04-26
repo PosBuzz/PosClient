@@ -3,25 +3,27 @@ import { Button, Card, Form, Input, Space, Typography } from "antd";
 import { patch } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
-import { useAuth } from "../../contexts/AuthContext";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Text } = Typography;
 
 function index() {
   const [form] = Form.useForm();
-  const messageApi = useAntdMessage();
-  const {user: userData} =  useAuth()
+  const { messageApi } = useMessageStore();
+  const { user: userData } = useAuthStore();
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(endpoints.changePassword, data),
     onSuccess: (response) => {
-      messageApi.success("Password changed successfully!");
+      messageApi?.success("Password changed successfully!");
       form.resetFields();
     },
     onError: (err) => {
-      messageApi.error((err as any)?.response?.data?.message || "An error occurred");
+      messageApi?.error(
+        (err as any)?.response?.data?.message || "An error occurred"
+      );
     },
   });
 

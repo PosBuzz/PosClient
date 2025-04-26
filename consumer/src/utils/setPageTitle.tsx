@@ -1,10 +1,5 @@
-import { Helmet } from "react-helmet-async"
-
+import { Helmet } from "@dr.pogodin/react-helmet";
 
 export const setPageTitle = (title: string) => {
-  return (
-      <Helmet>
-          <title>{title}</title> {/*TODO postfix app name*/}
-      </Helmet>
-  )
-}
+  return <Helmet title={title} />;
+};

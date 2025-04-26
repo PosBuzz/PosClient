@@ -19,14 +19,14 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      messageApi.success("Login successful");
+      messageApi?.success("Login successful");
 
       // Navigate to the desired page or fallback to "/"
       const from =
         (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(from);
     } catch (err) {
-      messageApi.error("Login failed");
+      messageApi?.error("Login failed");
     } finally {
       setLoading(false);
     }

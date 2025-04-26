@@ -1,7 +1,7 @@
+import { Spin } from "antd";
 import { JSX } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { Spin } from "antd";
+import { useAuthStore } from "../stores/authStore";
 
 export default function RequirePermission({
   children,
@@ -10,7 +10,7 @@ export default function RequirePermission({
   children: JSX.Element;
   permission?: string;
 }) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
 
   if (!user) {

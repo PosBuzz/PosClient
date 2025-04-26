@@ -1,21 +1,16 @@
 import { Button, Card, Form, Input } from "antd";
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { useAntdMessage } from "../../contexts/MessageContext";
 import useDarkMode from "../../hooks/useDarkMode";
+import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
 
 export default function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isDarkMode = useDarkMode();
-  const messageApi = useAntdMessage();
-
-  // Redirect if the user is already authenticated
-  if (isAuthenticated) {
-    return <Navigate to="/" />;
-  }
+  const { messageApi } = useMessageStore();
 
   const [loading, setLoading] = useState(false);
 
@@ -24,18 +19,23 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      messageApi.success("Login successful");
+      messageApi?.success("Login successful");
 
       // Navigate to the desired page or fallback to "/"
       const from =
         (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(from);
     } catch (err) {
-      messageApi.error("Login failed");
+      messageApi?.error("Login failed");
     } finally {
       setLoading(false);
     }
   };
+
+  // Redirect if the user is already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/" />;
+  }
 
   return (
     <div

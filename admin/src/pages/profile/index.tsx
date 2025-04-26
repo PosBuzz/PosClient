@@ -17,11 +17,11 @@ function index() {
     mutationFn: async (data: any) =>
       await patch(endpoints.changePassword, data),
     onSuccess: (response) => {
-      messageApi.success("Password changed successfully!");
+      messageApi?.success("Password changed successfully!");
       form.resetFields();
     },
     onError: (err) => {
-      messageApi.error((err as any)?.response?.data?.message || "An error occurred");
+      messageApi?.error((err as any)?.response?.data?.message || "An error occurred");
     },
   });
 
