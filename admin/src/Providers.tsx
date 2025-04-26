@@ -1,19 +1,19 @@
 // src/ThemeWrapper.tsx
+import "@ant-design/v5-patch-for-react-19";
+import { HelmetProvider } from "@dr.pogodin/react-helmet";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConfigProvider, theme } from "antd";
-import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-import { AuthProvider } from "./contexts/AuthContext";
-import { AntdMessageProvider } from "./contexts/MessageContext";
+import { AuthLoader } from "./components/AuthLoader";
+import { MessageProvider } from "./components/MessageProvider";
 import useDarkMode from "./hooks/useDarkMode";
-import "@ant-design/v5-patch-for-react-19";
-import "./index.css";
 import useInitTheme from "./hooks/useInitTheme";
+import "./index.css";
 
 const queryClient = new QueryClient();
 
-const Provider = () => {
+const Providers = () => {
   useInitTheme();
   const isDarkMode = useDarkMode();
 
@@ -52,11 +52,10 @@ const Provider = () => {
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <BrowserRouter>
-            <AntdMessageProvider>
-              <AuthProvider>
-                <App />
-              </AuthProvider>
-            </AntdMessageProvider>
+            <MessageProvider>
+              <AuthLoader />
+              <App />
+            </MessageProvider>
           </BrowserRouter>
         </HelmetProvider>
       </QueryClientProvider>
@@ -64,4 +63,4 @@ const Provider = () => {
   );
 };
 
-export default Provider;
+export default Providers;

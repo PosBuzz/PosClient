@@ -3,15 +3,15 @@ import { Button, Card, Form, Input, Space, Typography } from "antd";
 import { patch } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
-import { useAuth } from "../../contexts/AuthContext";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Text } = Typography;
 
 function index() {
   const [form] = Form.useForm();
-  const messageApi = useAntdMessage();
-  const {user: userData} =  useAuth()
+ const { messageApi } = useMessageStore();
+  const {user: userData} =  useAuthStore()
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>

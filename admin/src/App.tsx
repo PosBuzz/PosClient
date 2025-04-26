@@ -1,7 +1,7 @@
+import { Spin } from "antd";
 import { Suspense } from "react";
 import { useRoutes } from "react-router-dom";
 import { routes } from "./routes";
-import { Spin } from "antd";
 
 function App() {
   const routing = useRoutes(routes);

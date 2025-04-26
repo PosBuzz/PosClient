@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import { GrUserAdmin } from "react-icons/gr";
 import { MdSubscriptions } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
-import useDarkMode from "./hooks/useDarkMode";
 import { AdminPermission } from "./constants/adminPermissions";
+import useDarkMode from "./hooks/useDarkMode";
+import { useAuthStore } from "./stores/authStore";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -15,7 +15,8 @@ const SideBar: React.FC = () => {
   const location = useLocation();
   const isDarkMode = useDarkMode();
 
-  const { user } = useAuth();
+  const { user } = useAuthStore();
+  
 
   useEffect(() => {
     const currentKey = location.pathname + location.search || "";

@@ -20,7 +20,7 @@ import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 const { Option } = Select;
 
 export default function _TableGrid({
@@ -33,7 +33,7 @@ export default function _TableGrid({
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 

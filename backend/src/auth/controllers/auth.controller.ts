@@ -25,9 +25,7 @@ export class AuthController {
   getCsrfToken(@Req() req: Request, @Res() res: Response): void {
     // Set the CSRF token in an HTTP-only cookie
     res.cookie('XSRF-TOKEN', req.csrfToken(), {
-      httpOnly: false,
-      secure: true, // Set to true in production to use HTTPS
-      sameSite: 'none',
+      httpOnly: true,
     });
 
     // You can also send the CSRF token in the response body, if necessary

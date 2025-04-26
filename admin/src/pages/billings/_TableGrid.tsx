@@ -6,7 +6,7 @@ import { Button, Popconfirm, Space, Table } from "antd";
 import { useEffect } from "react";
 import { deleteApi } from "../../api/crud-api";
 import { getUrlForModel } from "../../api/endpoints";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
 export default function _TableGrid({
@@ -19,7 +19,7 @@ export default function _TableGrid({
   refetch,
   ...props
 }) {
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   useEffect(() => {
     if (trigger) {

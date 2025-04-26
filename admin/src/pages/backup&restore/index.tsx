@@ -4,7 +4,7 @@ import { useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle"; // Assuming this is still being used
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const title = "Database Management"
@@ -12,7 +12,7 @@ const title = "Database Management"
 function BackupRestorePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [restoreLoading, setRestoreLoading] = useState<boolean>(false);
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const handleBackup = async () => {
     setLoading(true);

@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { models } from "../../constants/Models";
-import { useAntdMessage } from "../../contexts/MessageContext";
 import useModelOptions from "../../hooks/useModelOptions";
+import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -19,7 +19,7 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.role, data),

@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { getUrlForModel } from "../../api/endpoints";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -20,7 +20,7 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const consumer_id = Form.useWatch("consumer_id", form);
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(getUrlForModel(model), data),

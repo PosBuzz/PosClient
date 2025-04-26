@@ -4,7 +4,7 @@ import { Button, Drawer, Form, Input, Select } from "antd";
 import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -18,7 +18,7 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const checkSubdomain = async (value: string) => {
     const response = await get(`${endpoints.checkSubdomain}?value=${value}`);

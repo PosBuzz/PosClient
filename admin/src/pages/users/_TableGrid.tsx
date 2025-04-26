@@ -19,7 +19,7 @@ import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
-import { useAntdMessage } from "../../contexts/MessageContext";
+import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({
   model,
@@ -30,7 +30,7 @@ export default function _TableGrid({
 }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
-  const messageApi = useAntdMessage();
+ const { messageApi } = useMessageStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
