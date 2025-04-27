@@ -70,7 +70,7 @@ const SideBar: React.FC = () => {
       label: (
         <span title="Billing and Subscription">Billing & Subscriptions</span>
       ),
-      permissions: [AdminPermission.billings],
+      permissions: [AdminPermission.billing],
     },
     {
       label: <span title="Settings">Settings</span>,

@@ -52,7 +52,7 @@ export const routes = [
       {
         path: "billings",
         element: (
-          <RequirePermission permission={AdminPermission.billings}>
+          <RequirePermission permission={AdminPermission.billing}>
             <Billings />
           </RequirePermission>
         ),

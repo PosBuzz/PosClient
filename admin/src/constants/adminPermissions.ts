@@ -1,7 +1,7 @@
 export const AdminPermission = {
   plans: "plans",
   consumers: "consumers",
-  billings: "billings",
+  billing: "billing",
   users: "users",
   backupRestore: "backup&restore",
   profile: "profile",
