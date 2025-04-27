@@ -10,7 +10,7 @@ export default function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDarkMode = useDarkMode();
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,9 @@ export default function LoginPage() {
         (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(from);
     } catch (err) {
-      messageApi?.error("Login failed");
+      messageApi?.error(
+        (err as any)?.response?.data?.message || "Login failed"
+      );
     } finally {
       setLoading(false);
     }

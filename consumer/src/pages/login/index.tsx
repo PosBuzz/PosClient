@@ -26,7 +26,7 @@ export default function LoginPage() {
         (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(from);
     } catch (err) {
-      messageApi?.error("Login failed");
+      messageApi?.error((err as any)?.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }

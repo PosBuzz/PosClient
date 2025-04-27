@@ -20,7 +20,7 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const consumer_id = Form.useWatch("consumer_id", form);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(getUrlForModel(model), data),
@@ -56,7 +56,7 @@ export default function DrawerForm({
     const payload = {
       consumer_id: formValues.consumer_id,
       amount: +formValues.amount,
-      billing_month: dayjs(formValues.billing_month).format("YYYY-MM"),
+      billing_date: dayjs(formValues.billing_date).toISOString(),
       reference: formValues.reference,
     };
 
@@ -75,25 +75,12 @@ export default function DrawerForm({
     console.log("Failed:", errorInfo);
   };
 
-  const disabledBillingMonths = fetchData
-    ?.filter((bill: any) => bill.consumer_id === consumer_id)
-    ?.map((bill: any) =>
-      dayjs(bill.billing_month).startOf("month").toISOString()
-    );
-
-  const isMonthDisabled = (current: dayjs.Dayjs) => {
-    if (!current) return false;
-    return disabledBillingMonths?.some((disabledMonth: string) =>
-      current.isSame(dayjs(disabledMonth), "month")
-    );
-  };
-
   useEffect(() => {
     if (isEditing && editedItem) {
       form.setFieldsValue({
         consumer_id: editedItem.consumer_id,
         amount: editedItem.amount,
-        billing_month: dayjs(editedItem.billing_month),
+        billing_date: dayjs(editedItem.billing_date),
         reference: editedItem.reference,
       });
     } else {
@@ -146,14 +133,13 @@ export default function DrawerForm({
             />
           </Form.Item>
           <Form.Item
-            label="Billing Month"
-            name="billing_month"
+            label="Billing Date"
+            name="billing_date"
             rules={[{ required: true, message: "This field is required" }]}
           >
             <DatePicker
               style={{ width: "100%" }}
-              picker="month"
-              disabledDate={isMonthDisabled}
+              // disabledDate={isMonthDisabled}
               disabled={!consumer_id}
             />
           </Form.Item>
@@ -171,7 +157,11 @@ export default function DrawerForm({
             <Input type="number" />
           </Form.Item>
 
-          <Form.Item label="Reference" name="reference">
+          <Form.Item
+            label="Reference"
+            name="reference"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
             <Input />
           </Form.Item>
 

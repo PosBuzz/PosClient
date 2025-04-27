@@ -13,7 +13,7 @@ import {
   Select,
   Space,
   Table,
-  Tag
+  Tag,
 } from "antd";
 import dayjs from "dayjs";
 import { debounce } from "lodash";
@@ -33,7 +33,7 @@ export default function _TableGrid({
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -98,12 +98,18 @@ export default function _TableGrid({
                   selectedStatus === "active"
                     ? {
                         some: {
-                          billing_month: dayjs().format("YYYY-MM"),
+                          billing_date: {
+                            gte: dayjs().subtract(1, "month").toISOString(),
+                            lte: dayjs().toISOString(),
+                          },
                         },
                       }
                     : {
                         none: {
-                          billing_month: dayjs().format("YYYY-MM"),
+                          billing_date: {
+                            gte: dayjs().subtract(1, "month").toISOString(),
+                            lte: dayjs().toISOString(),
+                          },
                         },
                       },
               }
@@ -119,7 +125,10 @@ export default function _TableGrid({
           plan: true,
           billing_logs: {
             where: {
-              billing_month: dayjs().format("YYYY-MM"),
+              billing_date: {
+                gte: dayjs().subtract(1, "month").toISOString(),
+                lte: dayjs().toISOString(),
+              },
             },
           },
         },

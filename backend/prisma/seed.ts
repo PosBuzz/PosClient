@@ -198,39 +198,39 @@ async function main() {
 
   await prisma.billingHistory.upsert({
     where: {
-      consumer_id_billing_month: {
+      consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_month: '2025-03',
+        billing_date: new Date('2025-03-01T00:00:00Z'), // Exact date for March 2025
       },
     },
     update: {
       amount: 100.0,
-      billing_month: '2025-03',
+      billing_date: new Date('2025-03-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
       amount: 100.0,
       reference: 'Invoice #12345',
-      billing_month: '2025-03',
+      billing_date: new Date('2025-03-01T00:00:00Z'),
     },
   });
 
   await prisma.billingHistory.upsert({
     where: {
-      consumer_id_billing_month: {
+      consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_month: '2025-04',
+        billing_date: new Date('2025-04-01T00:00:00Z'), // Exact date for April 2025
       },
     },
     update: {
       amount: 250.0,
-      billing_month: '2025-04',
+      billing_date: new Date('2025-04-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
       amount: 250.0,
       reference: 'Invoice #67890',
-      billing_month: '2025-04',
+      billing_date: new Date('2025-04-01T00:00:00Z'),
     },
   });
 

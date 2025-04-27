@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { deleteApi } from "../../api/crud-api";
 import { getUrlForModel } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import dayjs from "dayjs";
 
 // @ts-ignore
 export default function _TableGrid({
@@ -54,9 +55,10 @@ export default function _TableGrid({
       key: "amount",
     },
     {
-      title: "Billing Month",
-      dataIndex: "billing_month",
-      key: "billing_month",
+      title: "Billing date",
+      dataIndex: "billing_date",
+      render: (billing_date) => dayjs(billing_date).format("DD-MM-YYYY"),
+      key: "billing_date",
     },
     {
       title: "Reference",

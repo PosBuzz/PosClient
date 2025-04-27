@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class AuthService {
@@ -55,23 +56,47 @@ export class AuthService {
       where: { email },
     });
 
-    if (superAdmin && (await bcrypt.compare(pass, superAdmin.password))) {
-      return superAdmin;
+    if (!superAdmin) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    return null;
+    if (!(await bcrypt.compare(pass, superAdmin.password))) {
+      throw new HttpException("Password doesn't match", HttpStatus.FORBIDDEN);
+    }
+    return superAdmin;
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        consumer: {
+          select: {
+            billing_logs: {
+              where: {
+                billing_date: {
+                  gte: dayjs().subtract(1, 'month').toISOString(),
+                  lte: dayjs().toISOString(),
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      return user;
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    return null;
+    if (!user.consumer.billing_logs.length) {
+      throw new HttpException('Billing cycle failed', HttpStatus.FORBIDDEN);
+    }
+    if (!(await bcrypt.compare(pass, user.password))) {
+      throw new HttpException("Password doesn't match", HttpStatus.FORBIDDEN);
+    }
+
+    return user;
   }
 
   async clientRefreshToken(refreshToken: string) {
