@@ -133,13 +133,13 @@ async function main() {
     where: { subdomain: 'consumer1' },
     update: {
       company_name: 'Possbuzz',
-      email: 'admin@consumer1.com',
+      email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
     },
     create: {
       company_name: 'Possbuzz',
       subdomain: 'consumer1',
-      email: 'admin@consumer1.com',
+      email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
     },
   });
@@ -180,7 +180,7 @@ async function main() {
 
   // Create Admin User
   await prisma.user.upsert({
-    where: { email: 'admin@consumer1.com' },
+    where: { email: 'consumer@example.com' },
     update: {
       consumer_id: consumer1.id,
       name: 'Consumer Admin',
@@ -189,7 +189,7 @@ async function main() {
     },
     create: {
       consumer_id: consumer1.id,
-      email: 'admin@consumer1.com',
+      email: 'consumer@example.com',
       name: 'Consumer Admin',
       password: hash,
       role_id: adminConsumerRole.id,

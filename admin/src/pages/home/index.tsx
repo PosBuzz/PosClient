@@ -45,8 +45,8 @@ function Index() {
   return (
     <>
       <PageTitle
-        title={"Home"}
-        breadcrumbs={[{ title: "Dashboard", href: "/" }, { title: "Home" }]}
+        title={"Dashboard"}
+        breadcrumbs={[]}
       />
 
       <>
