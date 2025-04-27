@@ -9,7 +9,10 @@ async function main() {
   // Super Admin permissions
   const adminPermissions = [
     'plans',
-    'consumers',
+    'show_consumers',
+    'add_consumers',
+    'modify_consumers',
+    'delete_consumers',
     'billing',
     'users',
     'backup&restore',

@@ -8,11 +8,19 @@ import useModelOptions from "../../hooks/useModelOptions";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
+import { useAuthStore } from "../../stores/authStore";
+import { AdminPermission } from "../../constants/adminPermissions";
 
 const model = models.Consumer;
 const title = "Consumers";
 
 const Consumers = () => {
+  const { user } = useAuthStore();
+
+  const hasPermission = (permission) => {
+    return user?.permissions?.includes(permission);
+  };
+
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,9 +81,11 @@ const Consumers = () => {
           },
         ]}
         rightSection={
-          <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
-            Add New
-          </Button>
+          hasPermission(AdminPermission.add_consumers) && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
+              Add New
+            </Button>
+          )
         }
       />
 
@@ -86,6 +96,7 @@ const Consumers = () => {
             model={model}
             onClickEdit={onClickEdit}
             planOptions={planOptions}
+            hasPermission={hasPermission}
           />
         </Col>
       </Row>

@@ -16,7 +16,6 @@ const SideBar: React.FC = () => {
   const isDarkMode = useDarkMode();
 
   const { user } = useAuthStore();
-  
 
   useEffect(() => {
     const currentKey = location.pathname + location.search || "";
@@ -62,7 +61,7 @@ const SideBar: React.FC = () => {
       key: "/consumers",
       icon: <UserOutlined />,
       label: <span title="Consumers">Consumers</span>,
-      permissions: [AdminPermission.consumers],
+      permissions: [AdminPermission.show_consumers],
     },
     {
       key: "/billings",

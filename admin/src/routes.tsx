@@ -36,7 +36,7 @@ export const routes = [
       {
         path: "consumers",
         element: (
-          <RequirePermission permission={AdminPermission.consumers}>
+          <RequirePermission permission={AdminPermission.show_consumers}>
             <Consumers />
           </RequirePermission>
         ),

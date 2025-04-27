@@ -18,17 +18,18 @@ import { ConsumerService } from '../services/consumer.service';
 import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
 import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 
-@HasPermissions([AdminPermission.consumers])
 @UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/consumers')
 export class ConsumerController {
   constructor(private readonly consumerService: ConsumerService) {}
 
+  @HasPermissions([AdminPermission.add_consumers])
   @Post()
   create(@Body() dto: CreateConsumerDto) {
     return this.consumerService.create(dto);
   }
 
+  @HasPermissions([AdminPermission.modify_consumers])
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

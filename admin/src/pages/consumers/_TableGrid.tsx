@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { AdminPermission } from "../../constants/adminPermissions";
 const { Option } = Select;
 
 export default function _TableGrid({
@@ -28,6 +29,7 @@ export default function _TableGrid({
   trigger,
   onClickEdit,
   planOptions = [],
+  hasPermission,
   ...props
 }) {
   const [searchText, setSearchText] = useState("");
@@ -209,24 +211,30 @@ export default function _TableGrid({
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
-        <Space>
-          <Button onClick={() => onClickEdit(record)} type="link">
-            <EditOutlined />
-          </Button>
-          <Popconfirm
-            title="Delete this item?"
-            description="This action cannot be undone"
-            onConfirm={() => handleDeleteClient(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger type="link">
-              <DeleteOutlined />
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
+      render: (record: any) => {
+        return (
+          <Space>
+            {hasPermission(AdminPermission.modify_consumers) && (
+              <Button onClick={() => onClickEdit(record)} type="link">
+                <EditOutlined />
+              </Button>
+            )}
+            {hasPermission(AdminPermission.delete_consumers) && (
+              <Popconfirm
+                title="Delete this item?"
+                description="This action cannot be undone"
+                onConfirm={() => handleDeleteClient(record.id)}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button danger type="link">
+                  <DeleteOutlined />
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
