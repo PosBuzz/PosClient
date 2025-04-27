@@ -18,7 +18,7 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const checkSubdomain = async (value: string) => {
     const response = await get(`${endpoints.checkSubdomain}?value=${value}`);
@@ -60,6 +60,12 @@ export default function DrawerForm({
       plan_id: formValues.plan_id, // dropdown or input
       email: formValues.email,
       password: formValues.password,
+      secondary_email: formValues?.secondary_email
+        ? formValues.secondary_email
+        : null,
+      business_category: formValues?.business_category
+        ? formValues.secondary_email
+        : null,
     };
 
     if (isEditing && editedItem) {
@@ -84,6 +90,9 @@ export default function DrawerForm({
         name: editedItem.users?.find((user: any) => user.role?.name === "Admin")
           ?.name,
         email: editedItem.email,
+        secondary_email: editedItem?.secondary_email,
+        business_category: editedItem?.secondary_email,
+
         phone: editedItem.phone,
         address: editedItem.address,
         subdomain: editedItem.subdomain,
@@ -121,6 +130,10 @@ export default function DrawerForm({
             <Input />
           </Form.Item>
 
+          <Form.Item label="Business Category" name="business_category">
+            <Input />
+          </Form.Item>
+
           <Form.Item label="Phone" name="phone">
             <Input />
           </Form.Item>
@@ -136,7 +149,8 @@ export default function DrawerForm({
               { required: true, message: "This field is required" },
               {
                 validator: async (_, value) => {
-                  if (!value || editedItem?.subdomain === value) return Promise.resolve(); // Skip validation if the field is empty
+                  if (!value || editedItem?.subdomain === value)
+                    return Promise.resolve(); // Skip validation if the field is empty
                   try {
                     const availabilty = await checkSubdomain(value);
                     if (!availabilty) {
@@ -157,7 +171,11 @@ export default function DrawerForm({
             <Input />
           </Form.Item>
 
-          <Form.Item label="Plan" name="plan_id">
+          <Form.Item
+            label="Plan"
+            name="plan_id"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
             <Select
               size="middle"
               allowClear
@@ -176,7 +194,7 @@ export default function DrawerForm({
           </Form.Item>
 
           <Form.Item
-            label="User Name"
+            label="Owner Name"
             name="name"
             rules={[{ required: true, message: "This field is required" }]}
           >
@@ -184,10 +202,14 @@ export default function DrawerForm({
           </Form.Item>
 
           <Form.Item
-            label="Email"
+            label="Primary Email"
             name="email"
             rules={[{ required: true, message: "This field is required" }]}
           >
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Secondary Email" name="secondary_email">
             <Input />
           </Form.Item>
 

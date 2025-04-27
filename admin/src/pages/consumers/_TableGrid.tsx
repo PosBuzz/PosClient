@@ -80,6 +80,12 @@ export default function _TableGrid({
                     },
                   },
                   {
+                    secondary_email: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
                     phone: {
                       contains: debouncedSearchText,
                       mode: "insensitive",
@@ -87,6 +93,12 @@ export default function _TableGrid({
                   },
                   {
                     subdomain: {
+                      contains: debouncedSearchText,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    business_category: {
                       contains: debouncedSearchText,
                       mode: "insensitive",
                     },
@@ -165,7 +177,7 @@ export default function _TableGrid({
       key: "company_name",
     },
     {
-      title: "User Name",
+      title: "Owner Name",
       render: (record: any) => {
         const adminUser = record.users?.find(
           (user: any) => user.role?.name === "Admin"
@@ -175,9 +187,19 @@ export default function _TableGrid({
       key: "user_name",
     },
     {
+      title: "Business Category",
+      dataIndex: "business_category",
+      key: "business_category",
+    },
+    {
       title: "Email",
       dataIndex: "email",
       key: "email",
+    },
+    {
+      title: "Secondary Email",
+      dataIndex: "secondary_email",
+      key: "secondary_email",
     },
     {
       title: "Phone",
@@ -248,7 +270,7 @@ export default function _TableGrid({
         <Col xs={24} md={12} lg={8}>
           <Input
             allowClear
-            placeholder="Search name, email, phone or subdomain"
+            placeholder="Search name, email, secondary email, phone, business category or subdomain"
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}

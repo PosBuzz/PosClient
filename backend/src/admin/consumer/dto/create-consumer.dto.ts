@@ -24,4 +24,10 @@ export class CreateConsumerDto {
 
   @IsOptional()
   phone: string;
+
+  @IsOptional()
+  secondary_email: string;
+
+  @IsOptional()
+  business_category: string;
 }

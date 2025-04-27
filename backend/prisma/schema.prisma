@@ -56,15 +56,17 @@ model SuperAdminRolePermission {
 }
 
 model Consumer {
-  id           Int      @id @default(autoincrement())
-  company_name String
-  email        String
-  phone        String?
-  address      String?
-  subdomain    String   @unique
-  plan_id      Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  company_name      String
+  business_category String?
+  secondary_email   String?
+  email             String
+  phone             String?
+  address           String?
+  subdomain         String   @unique
+  plan_id           Int
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
   // Relations
   plan         Plan             @relation(fields: [plan_id], references: [id], onDelete: Restrict)
