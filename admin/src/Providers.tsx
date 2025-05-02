@@ -10,6 +10,10 @@ import { MessageProvider } from "./components/MessageProvider";
 import useDarkMode from "./hooks/useDarkMode";
 import useInitTheme from "./hooks/useInitTheme";
 import "./index.css";
+import dayjs from "dayjs";
+
+import isBetween from "dayjs/plugin/isBetween";
+dayjs.extend(isBetween);
 
 const queryClient = new QueryClient();
 

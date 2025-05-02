@@ -132,19 +132,13 @@ export default function _TableGrid({
         },
         include: {
           users: {
-            include: {
+            select : {
+              name: true,
               role: true,
             },
           },
           plan: true,
-          billing_logs: {
-            where: {
-              billing_date: {
-                gte: dayjs().subtract(1, "month").toISOString(),
-                lte: dayjs().toISOString(),
-              },
-            },
-          },
+          billing_logs: true,
         },
       }),
   });
@@ -223,11 +217,22 @@ export default function _TableGrid({
     },
     {
       title: "Status",
-      render: (record: any) => (
-        <Tag color={record.billing_logs?.length ? "success" : "error"}>
-          {record.billing_logs?.length ? "Active" : "Inactive"}
-        </Tag>
-      ),
+      render: (record: any) => {
+        const isActive = record.billing_logs?.some((log: any) =>
+          dayjs(log.billing_date).isBetween(
+            dayjs().subtract(1, "month"),
+            dayjs(),
+            null,
+            "[]"
+          )
+        );
+
+        return (
+          <Tag color={isActive ? "success" : "error"}>
+            {isActive ? "Active" : "Inactive"}
+          </Tag>
+        );
+      },
       key: "status",
     },
     {

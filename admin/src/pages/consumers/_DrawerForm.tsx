@@ -64,7 +64,7 @@ export default function DrawerForm({
         ? formValues.secondary_email
         : null,
       business_category: formValues?.business_category
-        ? formValues.secondary_email
+        ? formValues.business_category
         : null,
     };
 
@@ -91,7 +91,7 @@ export default function DrawerForm({
           ?.name,
         email: editedItem.email,
         secondary_email: editedItem?.secondary_email,
-        business_category: editedItem?.secondary_email,
+        business_category: editedItem?.business_category,
 
         phone: editedItem.phone,
         address: editedItem.address,
