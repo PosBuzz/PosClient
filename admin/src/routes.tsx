@@ -14,6 +14,7 @@ const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const BackupRestore = lazy(() => import("./pages/backup&restore"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
+const Test = lazy(() => import("./pages/test"));
 
 export const routes = [
   {
@@ -90,5 +91,9 @@ export const routes = [
         ),
       },
     ],
+  },
+  {
+    path: "test",
+    element: <Test />,
   },
 ];
