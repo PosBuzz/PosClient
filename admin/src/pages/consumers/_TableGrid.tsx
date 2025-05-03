@@ -2,6 +2,7 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
+  FileExcelOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -27,6 +28,8 @@ import {
 } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { AdminPermission } from "../../constants/adminPermissions";
+import axiosInstance from "../../api/axiosInstance";
+import { saveAs } from "file-saver";
 const { Option } = Select;
 
 export default function _TableGrid({
@@ -151,7 +154,7 @@ export default function _TableGrid({
   const getBillingHistory = async (consumer_id: any, openInNewTab: boolean) => {
     try {
       // Form the URL
-      const url = `${endpoints.downloadBillingHistory}/${consumer_id}`;
+      const url = `${endpoints.downloadBillingHistoryPDF}/${consumer_id}`;
 
       if (openInNewTab) {
         // Open in a new tab - this won't trigger a download but will open the PDF in the browser
@@ -185,7 +188,7 @@ export default function _TableGrid({
 
       // Get the filename from the Content-Disposition header if available
       let filename = "Billing-History.pdf";
-      const contentDisposition = response.headers.get("content-disposition");
+      const contentDisposition = response.headers["content-disposition"];
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
         if (filenameMatch) {
@@ -210,6 +213,30 @@ export default function _TableGrid({
     } catch (error) {
       console.error("Error downloading billing history PDF:", error);
       throw error;
+    }
+  };
+
+  const downloadBillingHistoryExcel = async (consumer_id: number) => {
+    try {
+      const response = await axiosInstance.get(
+        `${endpoints.downloadBillingHistoryExcel}/${consumer_id}`, // or your actual route
+        {
+          responseType: "blob", // Important for binary file
+        }
+      );
+
+      let filename = `billing-history-${consumer_id}.xlsx`;
+      const contentDisposition = response.headers["content-disposition"];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      saveAs(response.data, filename);
+    } catch (error) {
+      console.error("Failed to download Excel file", error);
+      alert("Failed to download file. Please try again.");
     }
   };
 
@@ -311,6 +338,12 @@ export default function _TableGrid({
       render: (record: any) => {
         return (
           <Space>
+            <Button
+              onClick={() => downloadBillingHistoryExcel(record.id)}
+              type="link"
+            >
+              <FileExcelOutlined />
+            </Button>
             <Button
               onClick={() => getBillingHistory(record.id, true)}
               type="link"

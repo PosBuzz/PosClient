@@ -1,7 +1,5 @@
-// Install required packages:
-// npm install pdfkit @types/pdfkit
-
 import { Injectable } from '@nestjs/common';
+import * as XLSX from 'xlsx';
 import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 
@@ -42,9 +40,69 @@ interface Consumer {
 
 @Injectable()
 export class BillingService {
-  async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
-    console.log(consumer);
+  async generateBillingHistoryExcel(consumer: Consumer): Promise<Buffer> {
+    const sortedLogs = [...consumer.billing_logs].sort(
+      (a, b) =>
+        new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
+    );
 
+    // Calculate total amount
+    const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
+
+    // Create rows: header + data
+    const excelData = [
+      ['No.', 'Billing Date', 'Reference', 'Amount'],
+      ...sortedLogs.map((log, index) => [
+        index + 1,
+        new Date(log.billing_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        log.reference,
+        log.amount,
+      ]),
+      // Add total row
+      ['', '', 'Total', totalAmount],
+    ];
+
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Billing History');
+
+    // Create summary sheet for company info
+    const owner = consumer.users.find((user) => user.role?.name === 'Admin');
+    const infoData = [
+      ['Company Name', consumer.company_name || 'N/A'],
+      ['Email', consumer.email || 'N/A'],
+      ['Secondary Email', consumer.secondary_email || 'N/A'],
+      ['Phone', consumer.phone || 'N/A'],
+      ['Address', consumer.address || 'N/A'],
+      ['Subdomain', consumer.subdomain || 'N/A'],
+      [
+        'Client Since',
+        new Date(consumer.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      ],
+      ['Owner Name', owner?.name || 'N/A'],
+    ];
+    const infoSheet = XLSX.utils.aoa_to_sheet(infoData);
+    XLSX.utils.book_append_sheet(workbook, infoSheet, 'Company Info');
+
+    // Generate Excel buffer
+    const buffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    });
+
+    return buffer;
+  }
+
+  async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
     return new Promise((resolve) => {
       const chunks: Buffer[] = [];
       const doc = new PDFDocument({
@@ -197,7 +255,7 @@ export class BillingService {
       tableLeft,
       tableTop,
       colWidths,
-      ['ID', 'Billing Date', 'Reference', 'Amount'],
+      ['No.', 'Billing Date', 'Reference', 'Amount'],
       rowHeight,
       true,
     );

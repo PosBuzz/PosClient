@@ -15,10 +15,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class BillingController {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly billingPdfService: BillingService,
+    private readonly billingService: BillingService,
   ) {}
 
-  @Get('history/:consumerId')
+  @Get('history/pdf/:consumerId')
   async getBillingHistoryPdf(
     @Param('consumerId') consumerId: string,
     @Res() res: Response,
@@ -49,7 +49,7 @@ export class BillingController {
 
       // Generate PDF
       const pdfBuffer =
-        await this.billingPdfService.generateBillingHistoryPdf(consumer);
+        await this.billingService.generateBillingHistoryPdf(consumer);
 
       // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
@@ -65,6 +65,58 @@ export class BillingController {
       throw new HttpException(
         {
           message: 'Failed to generate billing history PDF',
+          error,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Get('history/excel/:consumerId')
+  async downloadExcel(
+    @Param('consumerId') consumerId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const consumer = await this.prismaService.consumer.findUnique({
+        where: { id: Number(consumerId) },
+        include: {
+          users: {
+            where: {
+              role: {
+                name: 'Admin',
+              },
+            },
+            select: {
+              name: true,
+              role: true,
+            },
+          },
+          billing_logs: true,
+        },
+      });
+
+      if (!consumer) {
+        throw new NotFoundException(`Consumer with ID ${consumerId} not found`);
+      }
+
+      const buffer =
+        await this.billingService.generateBillingHistoryExcel(consumer);
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${consumer.company_name}-billing-history.xlsx"`,
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+      res.send(buffer);
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Failed to generate billing history Excel',
           error,
         },
         HttpStatus.BAD_REQUEST,
