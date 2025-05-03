@@ -4,7 +4,7 @@ export const getUrlForModel = (model: string, id: any = null) => {
   }
   return `crud?model=${model}`;
 };
-
+export const baseUrlWithPrefix = `${import.meta.env.VITE_API_BASE_URL}/api/v1`;
 export const API_CRUD_FIND_WHERE = "crud/find-where";
 
 export const endpoints = {
@@ -21,4 +21,5 @@ export const endpoints = {
   role: "/admin/users/roles",
   backup: "/admin/backup",
   restore: "/admin/restore",
+  downloadBillingHistory: `${baseUrlWithPrefix}/admin/billing/history`,
 };
