@@ -31,11 +31,11 @@ function Index() {
 
   if (fetchData) {
     fetchData.forEach((consumer: any) => {
-      const hasActiveBill = consumer.billing_logs.some(
+      const hasActiveBill = consumer?.billing_logs.some(
         (log: any) => log.billing_month === currentMonth
       );
       if (hasActiveBill) {
-        const planName = consumer.plan?.name || "Unknown";
+        const planName = consumer?.plan?.name || "Unknown";
         activeUsersByPlan[planName] = (activeUsersByPlan[planName] || 0) + 1;
         totalActiveUsers++;
       }
