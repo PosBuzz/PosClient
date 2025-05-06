@@ -123,24 +123,28 @@ export class BillingInvoicesService {
   }
 
   async generateInvoicePdf(billing: Billing): Promise<Buffer> {
+    const formatDate = (date: Date) =>
+      new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
-  
+
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (err) => reject(err));
-  
+
       const gray = '#666666';
       const dark = '#333333';
       const accent = '#007ACC';
-  
+
       // ====== Header ======
-      doc
-        .fillColor(accent)
-        .fontSize(26)
-        .text('INVOICE', { align: 'right' });
-  
+      doc.fillColor(accent).fontSize(26).text('INVOICE', { align: 'right' });
+
       doc
         .moveDown()
         .moveTo(50, doc.y)
@@ -148,9 +152,9 @@ export class BillingInvoicesService {
         .strokeColor('#CCCCCC')
         .lineWidth(1)
         .stroke();
-  
+
       doc.moveDown(1.5);
-  
+
       // ====== Company Info ======
       doc.fillColor(dark).fontSize(14).text('Billed To:', { underline: true });
       doc
@@ -161,24 +165,26 @@ export class BillingInvoicesService {
         .text(`Email: ${billing.consumer.email}`)
         .text(`Phone: ${billing.consumer.phone || 'N/A'}`)
         .text(`Address: ${billing.consumer.address || 'N/A'}`);
-  
+
       doc.moveDown(1.2);
-  
+
       // ====== Invoice Details ======
-      doc.fillColor(dark).fontSize(14).text('Invoice Details', { underline: true });
+      doc
+        .fillColor(dark)
+        .fontSize(14)
+        .text('Invoice Details', { underline: true });
       doc
         .fontSize(12)
         .fillColor(gray)
-        .text(`Invoice ID: ${billing.id}`)
         .text(`Reference: ${billing.reference || 'N/A'}`)
-        .text(`Billing Date: ${new Date(billing.billing_date).toDateString()}`)
-        .text(`Created At: ${new Date(billing.created_at).toDateString()}`)
+        .text(`Billing Date: ${formatDate(billing.billing_date)}`)
+        .text(`Created At: ${formatDate(billing.created_at)}`)
         .text(`Plan: ${billing.plan.name}`)
         .text(`Plan Price: $${billing.plan.price}`)
         .text(`Amount Charged: $${billing.amount}`);
-  
+
       doc.moveDown(1.5);
-  
+
       // ====== Footer ======
       doc
         .moveTo(50, doc.y)
@@ -187,16 +193,15 @@ export class BillingInvoicesService {
         .lineWidth(1)
         .stroke()
         .moveDown();
-  
+
       doc
         .fontSize(10)
         .fillColor('#999999')
         .text('Thank you for your business!', { align: 'center' });
-  
+
       doc.end();
     });
   }
-  
 
   async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
     return new Promise((resolve) => {
