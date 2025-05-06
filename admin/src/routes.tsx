@@ -93,7 +93,7 @@ export const routes = [
     ],
   },
   {
-    path: "test",
+    path: "/test",
     element: <Test />,
   },
 ];

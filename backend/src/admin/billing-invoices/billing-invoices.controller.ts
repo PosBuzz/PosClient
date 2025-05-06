@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { BillingInvoicesService } from './billing-invoices.service';
@@ -27,13 +28,13 @@ export class BillingInvoicesController {
 
   @Get('history/pdf/:consumerId')
   async getBillingHistoryPdf(
-    @Param('consumerId') consumerId: string,
+    @Param('consumerId', ParseIntPipe) consumerId: number,
     @Res() res: Response,
   ) {
     try {
       // Fetch consumer data with users and billing logs
       const consumer = await this.prismaService.consumer.findUnique({
-        where: { id: Number(consumerId) },
+        where: { id: consumerId },
         include: {
           users: {
             where: {
@@ -79,14 +80,62 @@ export class BillingInvoicesController {
     }
   }
 
+  @Get('invoice/pdf/:billingId')
+  async generateInvoicePdf(
+    @Param('billingId', ParseIntPipe) billingId: number,
+    @Res() res: Response,
+  ) {
+    try {
+      const billing = await this.prismaService.billingHistory.findUnique({
+        where: { id: billingId },
+        include: {
+          consumer: {
+            include: {
+              users: {
+                where: { role: { name: 'Admin' } },
+                select: { name: true, role: true },
+              },
+            },
+          },
+          plan: true,
+        },
+      });
+
+      if (!billing) {
+        throw new NotFoundException('Billing history not found');
+      }
+
+      // Generate PDF as Buffer
+      const pdfBuffer =
+        await this.billingInvoicesService.generateInvoicePdf(billing);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename=invoice-${billing.id}.pdf`,
+      );
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Failed to generate invoice PDF',
+          error,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Get('history/excel/:consumerId')
   async downloadExcel(
-    @Param('consumerId') consumerId: string,
+    @Param('consumerId', ParseIntPipe) consumerId: number,
     @Res() res: Response,
   ) {
     try {
       const consumer = await this.prismaService.consumer.findUnique({
-        where: { id: Number(consumerId) },
+        where: { id: consumerId },
         include: {
           users: {
             where: {

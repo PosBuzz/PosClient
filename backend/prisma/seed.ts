@@ -208,10 +208,12 @@ async function main() {
     },
     update: {
       amount: 100.0,
+      plan_id: enterprisePlan.id,
       billing_date: new Date('2025-03-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
+      plan_id: enterprisePlan.id,
       amount: 100.0,
       reference: 'Invoice #12345',
       billing_date: new Date('2025-03-01T00:00:00Z'),
@@ -226,11 +228,13 @@ async function main() {
       },
     },
     update: {
+      plan_id: enterprisePlan.id,
       amount: 250.0,
       billing_date: new Date('2025-04-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
+      plan_id: enterprisePlan.id,
       amount: 250.0,
       reference: 'Invoice #67890',
       billing_date: new Date('2025-04-01T00:00:00Z'),

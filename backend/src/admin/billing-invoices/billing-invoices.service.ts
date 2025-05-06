@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import { Response } from 'express';
 import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 
@@ -36,6 +37,26 @@ interface Consumer {
   updated_at: Date;
   users: User[];
   billing_logs: BillingLog[];
+}
+
+interface Plan {
+  name: string;
+  id: number;
+  price: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface Billing {
+  id: number;
+  consumer_id: number;
+  amount: number;
+  reference: string;
+  billing_date: Date;
+  created_at: Date;
+  updated_at: Date;
+  consumer: Partial<Consumer>;
+  plan: Plan;
 }
 
 @Injectable()
@@ -100,6 +121,82 @@ export class BillingInvoicesService {
 
     return Buffer.from(buffer);
   }
+
+  async generateInvoicePdf(billing: Billing): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err) => reject(err));
+  
+      const gray = '#666666';
+      const dark = '#333333';
+      const accent = '#007ACC';
+  
+      // ====== Header ======
+      doc
+        .fillColor(accent)
+        .fontSize(26)
+        .text('INVOICE', { align: 'right' });
+  
+      doc
+        .moveDown()
+        .moveTo(50, doc.y)
+        .lineTo(545, doc.y)
+        .strokeColor('#CCCCCC')
+        .lineWidth(1)
+        .stroke();
+  
+      doc.moveDown(1.5);
+  
+      // ====== Company Info ======
+      doc.fillColor(dark).fontSize(14).text('Billed To:', { underline: true });
+      doc
+        .fontSize(12)
+        .fillColor(gray)
+        .text(`Company: ${billing.consumer.company_name}`)
+        .text(`Owner Name: ${billing.consumer.users?.[0]?.name || 'N/A'}`)
+        .text(`Email: ${billing.consumer.email}`)
+        .text(`Phone: ${billing.consumer.phone || 'N/A'}`)
+        .text(`Address: ${billing.consumer.address || 'N/A'}`);
+  
+      doc.moveDown(1.2);
+  
+      // ====== Invoice Details ======
+      doc.fillColor(dark).fontSize(14).text('Invoice Details', { underline: true });
+      doc
+        .fontSize(12)
+        .fillColor(gray)
+        .text(`Invoice ID: ${billing.id}`)
+        .text(`Reference: ${billing.reference || 'N/A'}`)
+        .text(`Billing Date: ${new Date(billing.billing_date).toDateString()}`)
+        .text(`Created At: ${new Date(billing.created_at).toDateString()}`)
+        .text(`Plan: ${billing.plan.name}`)
+        .text(`Plan Price: $${billing.plan.price}`)
+        .text(`Amount Charged: $${billing.amount}`);
+  
+      doc.moveDown(1.5);
+  
+      // ====== Footer ======
+      doc
+        .moveTo(50, doc.y)
+        .lineTo(545, doc.y)
+        .strokeColor('#CCCCCC')
+        .lineWidth(1)
+        .stroke()
+        .moveDown();
+  
+      doc
+        .fontSize(10)
+        .fillColor('#999999')
+        .text('Thank you for your business!', { align: 'center' });
+  
+      doc.end();
+    });
+  }
+  
 
   async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
     return new Promise((resolve) => {

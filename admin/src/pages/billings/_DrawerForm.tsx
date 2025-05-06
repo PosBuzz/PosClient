@@ -20,6 +20,8 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const consumer_id = Form.useWatch("consumer_id", form);
+  const selectedConsumer = consumers?.find((i) => i.id === consumer_id);
+
   const { messageApi } = useMessageStore();
 
   const createData = useMutation({
@@ -55,6 +57,7 @@ export default function DrawerForm({
   const onFinish = async (formValues: any) => {
     const payload = {
       consumer_id: formValues.consumer_id,
+      plan_id: selectedConsumer?.plan.id,
       amount: +formValues.amount,
       billing_date: dayjs(formValues.billing_date).toISOString(),
       reference: formValues.reference,
@@ -89,7 +92,6 @@ export default function DrawerForm({
   }, [isEditing, editedItem, form]);
 
   useEffect(() => {
-    const selectedConsumer = consumers?.find((i) => i.id === consumer_id);
     if (selectedConsumer && !isEditing) {
       form.setFieldValue("amount", selectedConsumer?.plan.price);
     }
