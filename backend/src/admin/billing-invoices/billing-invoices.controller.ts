@@ -6,16 +6,23 @@ import {
   NotFoundException,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { BillingService } from './billing.service';
+import { BillingInvoicesService } from './billing-invoices.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
+import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 
+@HasPermissions([AdminPermission.billing])
+@UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/billing')
-export class BillingController {
+export class BillingInvoicesController {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly billingService: BillingService,
+    private readonly billingInvoicesService: BillingInvoicesService,
   ) {}
 
   @Get('history/pdf/:consumerId')
@@ -49,7 +56,7 @@ export class BillingController {
 
       // Generate PDF
       const pdfBuffer =
-        await this.billingService.generateBillingHistoryPdf(consumer);
+        await this.billingInvoicesService.generateBillingHistoryPdf(consumer);
 
       // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
@@ -101,7 +108,7 @@ export class BillingController {
       }
 
       const buffer =
-        await this.billingService.generateBillingHistoryExcel(consumer);
+        await this.billingInvoicesService.generateBillingHistoryExcel(consumer);
 
       res.setHeader(
         'Content-Disposition',

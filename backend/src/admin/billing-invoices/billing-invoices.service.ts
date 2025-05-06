@@ -39,23 +39,22 @@ interface Consumer {
 }
 
 @Injectable()
-export class BillingService {
-  
+export class BillingInvoicesService {
   async generateBillingHistoryExcel(consumer: Consumer): Promise<Buffer> {
     const sortedLogs = [...consumer.billing_logs].sort(
       (a, b) =>
         new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
     );
-  
+
     const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
-  
+
     const workbook = new ExcelJS.Workbook();
-  
+
     // Create "Billing History" sheet
     const billingSheet = workbook.addWorksheet('Billing History');
-  
+
     billingSheet.addRow(['No.', 'Billing Date', 'Reference', 'Amount']);
-  
+
     sortedLogs.forEach((log, index) => {
       billingSheet.addRow([
         index + 1,
@@ -68,14 +67,14 @@ export class BillingService {
         log.amount,
       ]);
     });
-  
+
     billingSheet.addRow(['', '', 'Total', totalAmount]);
-  
+
     // Create "Company Info" sheet
     const infoSheet = workbook.addWorksheet('Company Info');
-  
+
     const owner = consumer.users.find((user) => user.role?.name === 'Admin');
-  
+
     const infoData = [
       ['Company Name', consumer.company_name || 'N/A'],
       ['Email', consumer.email || 'N/A'],
@@ -93,15 +92,14 @@ export class BillingService {
       ],
       ['Owner Name', owner?.name || 'N/A'],
     ];
-  
+
     infoData.forEach((row) => infoSheet.addRow(row));
-  
+
     // Generate Excel buffer
     const buffer = await workbook.xlsx.writeBuffer();
-  
+
     return Buffer.from(buffer);
   }
-  
 
   async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
     return new Promise((resolve) => {
