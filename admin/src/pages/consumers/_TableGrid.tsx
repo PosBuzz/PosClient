@@ -163,28 +163,12 @@ export default function _TableGrid({
       }
 
       // Initiate download
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          // Add any authentication headers if needed
-          // 'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      // Check if the request was successful
-      if (!response.ok) {
-        // Handle error based on status code
-        if (response.status === 404) {
-          throw new Error(`Consumer with ID ${consumer_id} not found`);
+      const response = await axiosInstance.get(
+        url, 
+        {
+          responseType: "blob",
         }
-        throw new Error(`Failed to download PDF: ${response.statusText}`);
-      }
-
-      // Get the blob from the response
-      const blob = await response.blob();
-
-      // Create a URL for the blob
-      const downloadUrl = window.URL.createObjectURL(blob);
+      );
 
       // Get the filename from the Content-Disposition header if available
       let filename = "Billing-History.pdf";
@@ -196,20 +180,7 @@ export default function _TableGrid({
         }
       }
 
-      // Create a temporary anchor element and trigger the download
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
-
-      console.log(
-        `Billing history PDF for consumer ${consumer_id} downloaded successfully`
-      );
+      saveAs(response.data, filename);
     } catch (error) {
       console.error("Error downloading billing history PDF:", error);
       throw error;
@@ -348,7 +319,7 @@ export default function _TableGrid({
                   <FileExcelOutlined />
                 </Button>
                 <Button
-                  onClick={() => getBillingHistory(record.id, true)}
+                  onClick={() => getBillingHistory(record.id, false)}
                   type="link"
                 >
                   <DownloadOutlined />

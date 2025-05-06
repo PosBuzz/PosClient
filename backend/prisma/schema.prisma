@@ -83,13 +83,14 @@ model Consumer {
 }
 
 model Plan {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  price       Float
-  created_at  DateTime         @default(now())
-  updated_at  DateTime         @updatedAt
-  consumers   Consumer[]
-  permissions PlanPermission[]
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  price          Float
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+  consumers      Consumer[]
+  permissions    PlanPermission[]
+  BillingHistory BillingHistory[]
 
   @@map("plans")
 }
@@ -107,6 +108,7 @@ model PlanPermission {
 model BillingHistory {
   id           Int      @id @default(autoincrement())
   consumer_id  Int
+  plan_id      Int
   amount       Float
   reference    String
   billing_date DateTime
@@ -114,6 +116,7 @@ model BillingHistory {
   updated_at   DateTime @updatedAt
 
   consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
   @@unique([consumer_id, billing_date])
   @@index([consumer_id])
