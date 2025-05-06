@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 
@@ -40,19 +40,24 @@ interface Consumer {
 
 @Injectable()
 export class BillingService {
+  
   async generateBillingHistoryExcel(consumer: Consumer): Promise<Buffer> {
     const sortedLogs = [...consumer.billing_logs].sort(
       (a, b) =>
         new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
     );
-
-    // Calculate total amount
+  
     const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
-
-    // Create rows: header + data
-    const excelData = [
-      ['No.', 'Billing Date', 'Reference', 'Amount'],
-      ...sortedLogs.map((log, index) => [
+  
+    const workbook = new ExcelJS.Workbook();
+  
+    // Create "Billing History" sheet
+    const billingSheet = workbook.addWorksheet('Billing History');
+  
+    billingSheet.addRow(['No.', 'Billing Date', 'Reference', 'Amount']);
+  
+    sortedLogs.forEach((log, index) => {
+      billingSheet.addRow([
         index + 1,
         new Date(log.billing_date).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -61,18 +66,16 @@ export class BillingService {
         }),
         log.reference,
         log.amount,
-      ]),
-      // Add total row
-      ['', '', 'Total', totalAmount],
-    ];
-
-    // Create worksheet and workbook
-    const worksheet = XLSX.utils.aoa_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Billing History');
-
-    // Create summary sheet for company info
+      ]);
+    });
+  
+    billingSheet.addRow(['', '', 'Total', totalAmount]);
+  
+    // Create "Company Info" sheet
+    const infoSheet = workbook.addWorksheet('Company Info');
+  
     const owner = consumer.users.find((user) => user.role?.name === 'Admin');
+  
     const infoData = [
       ['Company Name', consumer.company_name || 'N/A'],
       ['Email', consumer.email || 'N/A'],
@@ -90,17 +93,15 @@ export class BillingService {
       ],
       ['Owner Name', owner?.name || 'N/A'],
     ];
-    const infoSheet = XLSX.utils.aoa_to_sheet(infoData);
-    XLSX.utils.book_append_sheet(workbook, infoSheet, 'Company Info');
-
+  
+    infoData.forEach((row) => infoSheet.addRow(row));
+  
     // Generate Excel buffer
-    const buffer = XLSX.write(workbook, {
-      type: 'buffer',
-      bookType: 'xlsx',
-    });
-
-    return buffer;
+    const buffer = await workbook.xlsx.writeBuffer();
+  
+    return Buffer.from(buffer);
   }
+  
 
   async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
     return new Promise((resolve) => {

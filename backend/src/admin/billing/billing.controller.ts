@@ -114,10 +114,11 @@ export class BillingController {
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
       res.send(buffer);
     } catch (error) {
+      console.log(error);
+
       throw new HttpException(
         {
           message: 'Failed to generate billing history Excel',
-          error,
         },
         HttpStatus.BAD_REQUEST,
       );
