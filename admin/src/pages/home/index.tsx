@@ -32,7 +32,7 @@ function Index() {
   if (fetchData) {
     fetchData.forEach((consumer: any) => {
       const hasActiveBill = consumer?.billing_logs.some(
-        (log: any) => log.billing_month === currentMonth
+        (log: any) => log?.billing_month === currentMonth
       );
       if (hasActiveBill) {
         const planName = consumer?.plan?.name || "Unknown";
