@@ -1,6 +1,6 @@
 export enum AdminPermission {
   plans = 'plans',
-  billings = 'billings',
+  billing = 'billing',
   backupRestore = 'backup&restore',
   profile = 'profile',
   add_consumers = 'add_consumers',

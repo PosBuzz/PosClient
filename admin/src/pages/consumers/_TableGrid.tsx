@@ -338,18 +338,23 @@ export default function _TableGrid({
       render: (record: any) => {
         return (
           <Space>
-            <Button
-              onClick={() => downloadBillingHistoryExcel(record.id)}
-              type="link"
-            >
-              <FileExcelOutlined />
-            </Button>
-            <Button
-              onClick={() => getBillingHistory(record.id, true)}
-              type="link"
-            >
-              <DownloadOutlined />
-            </Button>
+            {hasPermission(AdminPermission.modify_consumers) && (
+              <>
+                {" "}
+                <Button
+                  onClick={() => downloadBillingHistoryExcel(record.id)}
+                  type="link"
+                >
+                  <FileExcelOutlined />
+                </Button>
+                <Button
+                  onClick={() => getBillingHistory(record.id, true)}
+                  type="link"
+                >
+                  <DownloadOutlined />
+                </Button>
+              </>
+            )}
             {hasPermission(AdminPermission.modify_consumers) && (
               <Button onClick={() => onClickEdit(record)} type="link">
                 <EditOutlined />
