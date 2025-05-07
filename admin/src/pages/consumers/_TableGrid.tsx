@@ -319,7 +319,7 @@ export default function _TableGrid({
                   <FileExcelOutlined />
                 </Button>
                 <Button
-                  onClick={() => getBillingHistory(record.id, false)}
+                  onClick={() => getBillingHistory(record.id, true)}
                   type="link"
                 >
                   <DownloadOutlined />

@@ -5,11 +5,13 @@ import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 
 interface BillingLog {
+  created_at: string | number | Date;
   id: number;
   consumer_id: number;
   amount: number;
   reference: string;
   billing_date: Date;
+  plan: Plan;
 }
 
 interface Role {
@@ -74,22 +76,38 @@ export class BillingInvoicesService {
     // Create "Billing History" sheet
     const billingSheet = workbook.addWorksheet('Billing History');
 
-    billingSheet.addRow(['No.', 'Billing Date', 'Reference', 'Amount']);
+    // Add header row with Created On
+    billingSheet.addRow([
+      'No.',
+      'Created On',
+      'Billing Date',
+      'Reference',
+      'Plan Name',
+      'Amount',
+    ]);
 
+    // Add billing logs
     sortedLogs.forEach((log, index) => {
       billingSheet.addRow([
         index + 1,
+        new Date(log.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
         new Date(log.billing_date).toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
         }),
         log.reference,
+        log.plan?.name || 'N/A',
         log.amount,
       ]);
     });
 
-    billingSheet.addRow(['', '', 'Total', totalAmount]);
+    // Add total row
+    billingSheet.addRow(['', '', '', '', 'Total', totalAmount,]);
 
     // Create "Company Info" sheet
     const infoSheet = workbook.addWorksheet('Company Info');
@@ -344,9 +362,11 @@ export class BillingInvoicesService {
     // Column widths
     const colWidths = {
       id: 40,
-      date: 140,
-      reference: 180,
-      amount: 120,
+      createdOn: 100,
+      date: 100,
+      reference: 120,
+      plan: 80,
+      amount: 60,
     };
 
     // Draw table header
@@ -356,7 +376,7 @@ export class BillingInvoicesService {
       tableLeft,
       tableTop,
       colWidths,
-      ['No.', 'Billing Date', 'Reference', 'Amount'],
+      ['No.', 'Created On', 'Billing Date', 'Reference', 'Plan Name', 'Amount'],
       rowHeight,
       true,
     );
@@ -386,7 +406,14 @@ export class BillingInvoicesService {
           tableLeft,
           currentY,
           colWidths,
-          ['#', 'Billing Date', 'Reference', 'Amount'],
+          [
+            '#',
+            'Created On',
+            'Billing Date',
+            'Reference',
+            'Plan Name',
+            'Amount',
+          ],
           rowHeight,
           true,
         );
@@ -399,6 +426,12 @@ export class BillingInvoicesService {
         day: 'numeric',
       });
 
+      const createdOn = new Date(log.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
       const amount = `$${log.amount.toFixed(2)}`;
 
       this.drawTableRow(
@@ -406,7 +439,14 @@ export class BillingInvoicesService {
         tableLeft,
         currentY,
         colWidths,
-        [(i + 1).toString(), date, log.reference, amount],
+        [
+          (i + 1).toString(),
+          createdOn, // Add Created On
+          date,
+          log.reference,
+          log.plan?.name || 'N/A',
+          amount,
+        ],
         rowHeight,
         false,
         i % 2 === 0,
@@ -435,13 +475,22 @@ export class BillingInvoicesService {
     doc: PDFKit.PDFDocument,
     x: number,
     y: number,
-    colWidths: { id: number; date: number; reference: number; amount: number },
+    colWidths: {
+      id: number;
+      date: number;
+      reference: number;
+      plan: number;
+      amount: number;
+    },
     texts: string[],
     height: number,
     isHeader: boolean = false,
     isEvenRow: boolean = false,
   ): void {
-    const tableWidth = doc.page.width - 100;
+    const tableWidth = Object.values(colWidths).reduce(
+      (sum, width) => sum + width,
+      0,
+    );
 
     // Draw background for alternating rows or header
     if (isHeader) {
@@ -473,9 +522,11 @@ export class BillingInvoicesService {
       const textX = currentX + 5; // Add padding
       const textY = y + height / 2 - 5; // Center text vertically
 
-      // Align amount to the right
+      // Align the Amount column (last column) to the right
       const textOptions =
-        i === 3 ? { width: width - 10, align: 'right' as const } : {};
+        i === texts.length - 1
+          ? { width: width - 10, align: 'right' as const } // Adjust padding for right alignment
+          : { width: width - 10, align: 'left' as const }; // Default alignment for other columns
 
       doc.text(text, textX, textY, textOptions);
       currentX += width;

@@ -47,7 +47,11 @@ export class BillingInvoicesController {
               role: true,
             },
           },
-          billing_logs: true,
+          billing_logs: {
+            include: {
+              plan: true,
+            },
+          },
         },
       });
 
@@ -148,7 +152,11 @@ export class BillingInvoicesController {
               role: true,
             },
           },
-          billing_logs: true,
+          billing_logs: {
+            include: {
+              plan: true,
+            },
+          },
         },
       });
 
