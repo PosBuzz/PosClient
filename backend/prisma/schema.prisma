@@ -60,6 +60,7 @@ model Consumer {
   company_name      String
   business_category String?
   secondary_email   String?
+  max_branch        Int      @default(1)
   email             String
   phone             String?
   address           String?
@@ -172,4 +173,150 @@ model RolePermission {
 
   @@id([role_id, permission_id])
   @@map("role_permissions")
+}
+
+// enums
+enum ProductType {
+  STANDARD
+  DIGITAL
+  SERVICE
+}
+
+enum TaxMethod {
+  EXCLUSIVE
+  INCLUSIVE
+}
+
+enum BarcodeSymbology {
+  CODE128
+  EAN13
+  EAN8
+  UPC
+}
+
+// main product table
+model product {
+  id               Int         @id @default(autoincrement())
+  name             String
+  code             String      @unique
+  type             ProductType
+  category_id      Int
+  brand_id         Int
+  product_unit_id  Int
+  sale_unit_id     Int?
+  cost             Float
+  price            Float
+  wholesale_price  Float?
+  purchase_unit_id Int?
+  image_url        String?
+  description      String?
+
+  // flags
+  featured    Boolean @default(false)
+  in_stock    Boolean @default(true)
+  sell_online Boolean @default(false)
+
+  // optional
+  daily_sale_objective Float?
+  alert_quantity       Float?
+  product_tax          String?
+  tax_method           TaxMethod?
+
+  // relations
+  category          category               @relation(fields: [category_id], references: [id])
+  brand             brand                  @relation(fields: [brand_id], references: [id])
+  unit              unit                   @relation("product_unit", fields: [product_unit_id], references: [id])
+  sale_unit         unit?                  @relation("sale_unit", fields: [sale_unit_id], references: [id])
+  purchase_unit     unit?                  @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
+  variants          product_variant[]
+  branch_prices     product_branch_price[]
+  serial_numbers    product_serial[]
+  promotional_price promotional_price?
+  tags              product_tag[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+// variant
+model product_variant {
+  id         Int     @id @default(autoincrement())
+  product_id Int
+  option     String
+  value      String
+  item_code  String?
+  cost       Float?
+  price      Float?
+
+  product product @relation(fields: [product_id], references: [id])
+}
+
+// per branch pricing
+model product_branch_price {
+  id         Int   @id @default(autoincrement())
+  product_id Int
+  branch_id  Int
+  price      Float
+
+  product product @relation(fields: [product_id], references: [id])
+  branch  branch  @relation(fields: [branch_id], references: [id])
+}
+
+// serial/IMEI
+model product_serial {
+  id         Int    @id @default(autoincrement())
+  product_id Int
+  serial     String @unique
+
+  product product @relation(fields: [product_id], references: [id])
+}
+
+// promotional price
+model promotional_price {
+  id         Int       @id @default(autoincrement())
+  product_id Int       @unique
+  price      Float
+  starts_at  DateTime
+  ends_at    DateTime?
+
+  product product @relation(fields: [product_id], references: [id])
+}
+
+// tags
+model product_tag {
+  id         Int    @id @default(autoincrement())
+  product_id Int
+  tag        String
+
+  product product @relation(fields: [product_id], references: [id])
+}
+
+// unit
+model unit {
+  id        Int       @id @default(autoincrement())
+  name      String
+  products  product[] @relation("product_unit")
+  sales     product[] @relation("sale_unit")
+  purchases product[] @relation("purchase_unit")
+}
+
+// category
+model category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products product[]
+}
+
+// brand
+model brand {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products product[]
+}
+
+// branch
+model branch {
+  id     Int                    @id @default(autoincrement())
+  name   String
+  prices product_branch_price[]
 }
