@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ChangePasswordService } from './change-password.service';
 import { ChangePasswordController } from './change-password.controller';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { ChangePasswordService } from './change-password.service';
 
 @Module({
-  imports: [PrismaModule],
   controllers: [ChangePasswordController],
   providers: [ChangePasswordService],
 })
