@@ -20,9 +20,11 @@ export const post = async (endpoint: string, data: any) => {
 };
 
 export const patch = async (endpoint: string, data: any) => {
-  return await axiosInstance.patch(endpoint, data);
+  const response = await axiosInstance.patch(endpoint, data);
+  return response.data;
 };
 
 export const deleteApi = async (endpoint: string) => {
-  return await axiosInstance.delete(endpoint);
+  const response = await axiosInstance.delete(endpoint);
+  return response.data;
 };

@@ -1,89 +1,175 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Select, Tooltip } from "antd";
-import axios from "axios";
-import { useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Select, Tooltip, Form, Modal, Input, message } from "antd";
+import { useState, useMemo } from "react";
+import { productApi } from "../../api/product-api";
 
 interface CommonSelectorProps {
   value?: number;
   onChange?: (value: number) => void;
   disabled?: boolean;
-  type: "category" | "brand" | "unit";
-  subtype?: "product" | "purchase" | "sale";
+  type: "category" | "brand" | "unit" | "tag";
+  mode?: "tags" | "multiple";
 }
-
-interface OptionType {
-  id: number;
-  name: string;
-}
-
-const fetchOptions = async (
-  type: string,
-  subtype?: string
-): Promise<OptionType[]> => {
-  if (type === "unit") {
-    return axios.get(`/api/units?subtype=${subtype}`).then((res) => res.data);
-  }
-
-  switch (type) {
-    case "category":
-      return axios.get("/api/categories").then((res) => res.data);
-    case "brand":
-      return axios.get("/api/brands").then((res) => res.data);
-    default:
-      return [];
-  }
-};
 
 export default function CommonSelector({
   value,
   onChange,
   disabled,
   type,
-  subtype,
+  mode,
 }: CommonSelectorProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
-  const { data: options1 = [], isLoading } = useQuery({
-    queryFn: () => fetchOptions(type, subtype),
-    queryKey: ["selector", type, subtype],
+  // Fetch options based on type
+  const { data: options = [], isLoading } = useQuery({
+    queryKey: ["selector", type],
+    queryFn: async () => {
+      switch (type) {
+        case "category":
+          return await productApi.getCategories();
+        case "brand":
+          return await productApi.getBrands();
+        case "unit":
+          return await productApi.getUnits();
+        case "tag":
+          return await productApi.getTags();
+        default:
+          return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const options = [
-    { name: "test 1", id: 1 },
-    { name: "test 2", id: 2 },
-    { name: "test 3", id: 3 },
-    { name: "test 4", id: 4 },
-  ];
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (value: string) => {
+      switch (type) {
+        case "category":
+          return await productApi.createCategory(value);
+        case "brand":
+          return await productApi.createBrand(value);
+        case "unit":
+          return await productApi.createUnit(value);
+        case "tag":
+          return await productApi.createTag(value);
+        default:
+          throw new Error(`Creating ${type} is not supported`);
+      }
+    },
+    onSuccess: (newItem) => {
+      // Invalidate the query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      message.success(`${type} created successfully`);
+      setIsModalOpen(false);
+      form.resetFields();
+
+      // Auto-select the newly created item
+      if (onChange && newItem.id) {
+        onChange(newItem.id);
+      }
+    },
+    onError: (error) => {
+      message.error(
+        `Failed to create ${type}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      switch (type) {
+        case "category":
+          return await productApi.deleteCategory(id);
+        case "brand":
+          return await productApi.deleteBrand(id);
+        case "unit":
+          return await productApi.deleteUnit(id);
+        case "tag":
+          return await productApi.deleteTag(id);
+        default:
+          throw new Error(`Deleting ${type} is not supported`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      message.success(`${type} deleted successfully`);
+    },
+    onError: (error) => {
+      message.error(
+        `Failed to delete ${type}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: number; value: string }) => {
+      switch (type) {
+        case "category":
+          return await productApi.updateCategory(id, value);
+        case "brand":
+          return await productApi.updateBrand(id, value);
+        case "unit":
+          return await productApi.updateUnit(id, value);
+        case "tag":
+          return await productApi.updateTag(id, value);
+        default:
+          throw new Error(`Updating ${type} is not supported`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      message.success(`${type} updated successfully`);
+      setEditModalOpen(false);
+    },
+    onError: (error) => {
+      message.error(
+        `Failed to update ${type}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    },
+  });
 
   const handleAddNew = () => {
-    const modalType = {
-      category: () => console.log("Open Category Modal"),
-      brand: () => console.log("Open Brand Modal"),
-      unit: () => console.log("Open Unit Modal"),
-    };
-
-    modalType[type]?.();
+    setIsModalOpen(true);
   };
 
-  const handleEdit = (item: OptionType) => {
-    const editType = {
-      category: () => console.log("Edit Category", item),
-      brand: () => console.log("Edit Brand", item),
-      unit: () => console.log("Edit Unit", item),
-    };
+  const handleCreateSubmit = async (values: { name: string }) => {
+    createMutation.mutate(values.name);
+  };
 
-    editType[type]?.();
+  // Edit functionality
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentEdit, setCurrentEdit] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+
+  const handleEdit = (item: any) => {
+    setCurrentEdit({ id: item.id, name: item.name });
+    setEditModalOpen(true);
+    editForm.setFieldsValue({ name: item.name });
+  };
+
+  const [editForm] = Form.useForm();
+
+  const handleEditSubmit = (values: { name: string }) => {
+    if (currentEdit) {
+      updateMutation.mutate({ id: currentEdit.id, value: values.name });
+    }
   };
 
   const handleDelete = (id: number) => {
-    const deleteType = {
-      category: () => console.log("Delete Category", id),
-      brand: () => console.log("Delete Brand", id),
-      unit: () => console.log("Delete Unit", id),
-    };
-
-    deleteType[type]?.();
+    deleteMutation.mutate(id);
   };
 
   const mergedOptions = useMemo(
@@ -114,7 +200,7 @@ export default function CommonSelector({
         ),
         value: opt.id,
       })),
-    [options]
+    [options, type]
   );
 
   return (
@@ -126,6 +212,7 @@ export default function CommonSelector({
         </Tooltip>
       </div>
       <Select
+        mode={mode}
         showSearch
         placeholder={`Select ${type}`}
         optionFilterProp="label"
@@ -136,9 +223,52 @@ export default function CommonSelector({
         className="w-full"
         options={mergedOptions}
         filterOption={(input, option) =>
-          (option?.label as string).toLowerCase().includes(input.toLowerCase())
+          (option?.label as any)?.props?.children[0]?.props?.children
+            .toLowerCase()
+            .includes(input.toLowerCase())
         }
       />
+
+      {/* Create Modal */}
+      <Modal
+        title={`Create a new ${type}`}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        okText="Create"
+        okButtonProps={{ loading: createMutation.isPending }}
+        onOk={() => form.submit()}
+      >
+        <Form form={form} layout="vertical" onFinish={handleCreateSubmit}>
+          <Form.Item
+            name="name"
+            label={`${type} Name`}
+            rules={[{ required: true, message: `Please enter ${type} name` }]}
+          >
+            <Input placeholder={`Enter ${type} name`} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        className="z-50!"
+        title={`Edit ${type}`}
+        open={editModalOpen}
+        onCancel={() => setEditModalOpen(false)}
+        okText="Update"
+        okButtonProps={{ loading: updateMutation.isPending }}
+        onOk={() => editForm.submit()}
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
+          <Form.Item
+            name="name"
+            label={`${type} Name`}
+            rules={[{ required: true, message: `Please enter ${type} name` }]}
+          >
+            <Input placeholder={`Enter ${type} name`} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

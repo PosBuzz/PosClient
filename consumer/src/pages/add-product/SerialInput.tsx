@@ -1,28 +1,47 @@
-import { Input, Button } from "antd";
-import { useState } from "react";
+import { Form, Input, Button, Space, Alert } from "antd";
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 
 export default function SerialInput() {
-  const [serials, setSerials] = useState<string[]>([""]);
-
-  const handleChange = (index: number, value: string) => {
-    const newSerials = [...serials];
-    newSerials[index] = value;
-    setSerials(newSerials);
-  };
-
-  const addSerial = () => setSerials([...serials, ""]);
-
   return (
-    <div className="space-y-2">
-      {serials.map((serial, i) => (
-        <Input
-          key={i}
-          placeholder={`Serial ${i + 1}`}
-          value={serial}
-          onChange={(e) => handleChange(i, e.target.value)}
-        />
-      ))}
-      <Button onClick={addSerial}>Add Serial</Button>
+    <div className="space-y-4">
+      <Alert 
+        message="Serial Numbers / IMEI" 
+        description="For products with unique identifiers like serial numbers or IMEI codes."
+        type="info" 
+        showIcon 
+        className="mb-4"
+      />
+      
+      <Form.List name="serials">
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name, ...restField }) => (
+              <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                <Form.Item
+                  {...restField}
+                  name={name}
+                  rules={[{ required: true, message: 'Please enter serial number' }]}
+                  style={{ width: '100%', marginBottom: 0 }}
+                >
+                  <Input placeholder={`Serial/IMEI #${name + 1}`} />
+                </Form.Item>
+                <MinusCircleOutlined onClick={() => remove(name)} className="text-red-500" />
+              </Space>
+            ))}
+            <Form.Item>
+              <Button 
+                type="dashed" 
+                onClick={() => add()} 
+                block 
+                icon={<PlusOutlined />}
+                className="mt-2"
+              >
+                Add Serial Number
+              </Button>
+            </Form.Item>
+          </>
+        )}
+      </Form.List>
     </div>
   );
 }

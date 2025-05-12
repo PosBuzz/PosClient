@@ -195,7 +195,7 @@ enum BarcodeSymbology {
 }
 
 // main product table
-model product {
+model Product {
   id               Int         @id @default(autoincrement())
   name             String
   code             String      @unique
@@ -223,23 +223,23 @@ model product {
   tax_method           TaxMethod?
 
   // relations
-  category          category               @relation(fields: [category_id], references: [id])
-  brand             brand                  @relation(fields: [brand_id], references: [id])
-  unit              unit                   @relation("product_unit", fields: [product_unit_id], references: [id])
-  sale_unit         unit?                  @relation("sale_unit", fields: [sale_unit_id], references: [id])
-  purchase_unit     unit?                  @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
-  variants          product_variant[]
-  branch_prices     product_branch_price[]
-  serial_numbers    product_serial[]
-  promotional_price promotional_price?
-  tags              product_tag[]
+  category          Category               @relation(fields: [category_id], references: [id])
+  brand             Brand                  @relation(fields: [brand_id], references: [id])
+  unit              Unit                   @relation("product_unit", fields: [product_unit_id], references: [id])
+  sale_unit         Unit?                  @relation("sale_unit", fields: [sale_unit_id], references: [id])
+  purchase_unit     Unit?                  @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
+  variants          ProductVariant[]
+  branch_prices     ProductBranchPrice[]
+  serial_numbers    ProductSerial[]
+  promotional_price PromotionalPrice?
+  tags              ProductTag[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
 // variant
-model product_variant {
+model ProductVariant {
   id         Int     @id @default(autoincrement())
   product_id Int
   option     String
@@ -248,75 +248,83 @@ model product_variant {
   cost       Float?
   price      Float?
 
-  product product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 }
 
 // per branch pricing
-model product_branch_price {
+model ProductBranchPrice {
   id         Int   @id @default(autoincrement())
   product_id Int
   branch_id  Int
   price      Float
 
-  product product @relation(fields: [product_id], references: [id])
-  branch  branch  @relation(fields: [branch_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
+  branch  Branch  @relation(fields: [branch_id], references: [id])
 }
 
 // serial/IMEI
-model product_serial {
+model ProductSerial {
   id         Int    @id @default(autoincrement())
   product_id Int
   serial     String @unique
 
-  product product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 }
 
 // promotional price
-model promotional_price {
+model PromotionalPrice {
   id         Int       @id @default(autoincrement())
   product_id Int       @unique
   price      Float
   starts_at  DateTime
   ends_at    DateTime?
 
-  product product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 }
 
 // tags
-model product_tag {
-  id         Int    @id @default(autoincrement())
-  product_id Int
-  tag        String
+model Tag {
+  id       Int               @id @default(autoincrement())
+  name     String            @unique
+  products ProductTag[]
+}
 
-  product product @relation(fields: [product_id], references: [id])
+// product-tag relation (many-to-many)
+model ProductTag {
+  product_id Int
+  tag_id     Int
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, tag_id])
 }
 
 // unit
-model unit {
+model Unit {
   id        Int       @id @default(autoincrement())
   name      String
-  products  product[] @relation("product_unit")
-  sales     product[] @relation("sale_unit")
-  purchases product[] @relation("purchase_unit")
+  products  Product[] @relation("product_unit")
+  sales     Product[] @relation("sale_unit")
+  purchases Product[] @relation("purchase_unit")
 }
 
 // category
-model category {
+model Category {
   id       Int       @id @default(autoincrement())
   name     String
-  products product[]
+  products Product[]
 }
 
 // brand
-model brand {
+model Brand {
   id       Int       @id @default(autoincrement())
   name     String
-  products product[]
+  products Product[]
 }
 
 // branch
-model branch {
+model Branch {
   id     Int                    @id @default(autoincrement())
   name   String
-  prices product_branch_price[]
+  prices ProductBranchPrice[]
 }
