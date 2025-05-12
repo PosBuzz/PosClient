@@ -6,7 +6,24 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsDateString,
+  ValidateNested,
+  IsObject,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// Add DTO for promotional price
+export class PromotionalPriceDto {
+  @IsNumber()
+  price: number;
+
+  @IsDateString()
+  starts_at: Date;
+
+  @IsOptional()
+  @IsDateString()
+  ends_at?: Date;
+}
 
 export class CreateProductDto {
   @IsString()
@@ -83,20 +100,30 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
+  tags?: number[];
 
   @IsOptional()
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductVariantDto)
   variants?: CreateProductVariantDto[];
 
   @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductBranchPriceDto)
   branch_prices?: CreateProductBranchPriceDto[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   serials?: string[];
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PromotionalPriceDto)
+  promotional_price?: PromotionalPriceDto;
 }
 
 export class CreateProductVariantDto {
