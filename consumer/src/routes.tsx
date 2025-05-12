@@ -10,6 +10,7 @@ const Home = lazy(() => import("./pages/dashboard"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
+const AddProduct = lazy(() => import("./pages/add-product"));
 
 export const routes = [
   {
@@ -50,6 +51,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.users}>
             <Users />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "add-product",
+        element: (
+          <RequirePermission>
+            <AddProduct />
           </RequirePermission>
         ),
       },
