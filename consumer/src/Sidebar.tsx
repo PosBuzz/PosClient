@@ -1,4 +1,4 @@
-import { DashboardOutlined, SettingOutlined } from "@ant-design/icons";
+import { DashboardOutlined, ProductOutlined, SettingOutlined } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -67,6 +67,11 @@ const SideBar: React.FC = () => {
         },
       ],
       permissions: [Permissions.users],
+    },
+    {
+      key: "/add-product",
+      icon: <ProductOutlined />,
+      label: <span title="Add Product">Add Product</span>,
     },
   ];
 

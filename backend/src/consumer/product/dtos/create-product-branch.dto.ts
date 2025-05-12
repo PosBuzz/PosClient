@@ -1,0 +1,128 @@
+import { ProductType, TaxMethod } from '@prisma/client';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
+export class CreateProductDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  code: string;
+
+  @IsEnum(ProductType)
+  type: ProductType;
+
+  @IsNumber()
+  category_id: number;
+
+  @IsNumber()
+  brand_id: number;
+
+  @IsNumber()
+  product_unit_id: number;
+
+  @IsOptional()
+  @IsNumber()
+  sale_unit_id?: number;
+
+  @IsNumber()
+  cost: number;
+
+  @IsNumber()
+  price: number;
+
+  @IsOptional()
+  @IsNumber()
+  wholesale_price?: number;
+
+  @IsOptional()
+  @IsNumber()
+  purchase_unit_id?: number;
+
+  @IsOptional()
+  @IsString()
+  image_url?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  featured?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  in_stock?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  sell_online?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  daily_sale_objective?: number;
+
+  @IsOptional()
+  @IsNumber()
+  alert_quantity?: number;
+
+  @IsOptional()
+  @IsString()
+  product_tax?: string;
+
+  @IsOptional()
+  @IsEnum(TaxMethod)
+  tax_method?: TaxMethod;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @IsArray()
+  variants?: CreateProductVariantDto[];
+
+  @IsOptional()
+  branch_prices?: CreateProductBranchPriceDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  serials?: string[];
+}
+
+export class CreateProductVariantDto {
+  @IsString()
+  option: string;
+
+  @IsString()
+  value: string;
+
+  @IsOptional()
+  @IsString()
+  item_code?: string;
+
+  @IsOptional()
+  @IsNumber()
+  cost?: number;
+
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+}
+
+export class CreateProductBranchPriceDto {
+  @IsNumber()
+  branch_id: number;
+
+  @IsNumber()
+  price: number;
+}
