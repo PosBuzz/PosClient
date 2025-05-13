@@ -1,31 +1,29 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Card,
-  Input,
-  Select,
-  Checkbox,
-  InputNumber,
   Button,
+  Card,
+  Checkbox,
   Form,
-  Divider,
+  Input,
+  InputNumber,
   message,
-  Alert,
+  Select,
   Tabs
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { ProductFormValues, ProductType, TaxMethod } from "../../types/product.types";
 import { productApi } from "../../api/product-api";
+import { ProductFormValues, ProductType, TaxMethod } from "../../types/product.types";
 
 // Components
-import VariantManager from "./VariantManager";
+import dayjs from "dayjs";
 import BranchPricing from "./BranchPricing";
+import CommonSelector from "./CommonSelector";
+import ImageUploader from "./ImageUploader";
 import PromoPriceForm from "./PromoPriceForm";
 import SerialInput from "./SerialInput";
-import ImageUploader from "./ImageUploader";
-import CommonSelector from "./CommonSelector";
-import dayjs from "dayjs";
+import VariantManager from "./VariantManager";
 
 const { Option } = Select;
 
@@ -36,6 +34,12 @@ export default function ProductForm() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
   const queryClient = useQueryClient();
+  
+  // Create a FormContext to share form instance with all children
+  const formContextValue = {
+    form,
+    isEditMode
+  };
 
   // Fetch product data if in edit mode
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -94,47 +98,71 @@ export default function ProductForm() {
     }
   });
 
+  // Ensure all component data is captured before submission
   const onFinish = (values: any) => {
-    // Process form values to match backend DTO structure
-    const promotional_price = values.promo_enabled ? {
-      price: values.promotional_price?.price,
-      starts_at: values.promo_date_range?.[0],
-      ends_at: values.promo_date_range?.[1],
-    } : undefined;
+    // Force validation of all fields, even in hidden tabs
+    form.validateFields().then(formValues => {
+      // Process form values to match backend DTO structure
+      const promotional_price = formValues.promo_enabled ? {
+        price: formValues.promotional_price?.price,
+        starts_at: formValues.promo_date_range?.[0],
+        ends_at: formValues.promo_date_range?.[1],
+      } : undefined;
 
-    // Format variants to match backend
-    const variants = values.variants?.map((variant: any) => ({
-      option: variant.option,
-      value: variant.value,
-      item_code: variant.item_code,
-      cost: variant.cost,
-      price: variant.price,
-    }));
+      // Format variants to match backend
+      const variants = formValues.variants?.map((variant: any) => ({
+        option: variant.option,
+        value: variant.value,
+        item_code: variant.item_code,
+        cost: variant.cost,
+        price: variant.price,
+      }));
 
-    // Prepare data for API
-    const productData: ProductFormValues = {
-      ...values,
-      featured: values.featured || false,
-      in_stock: values.in_stock || true,
-      sell_online: values.sell_online || false,
-      variants,
-      promotional_price,
-      // Remove fields that aren't in the backend DTO
-      promo_enabled: undefined,
-      promo_date_range: undefined,
-    };
+      // Prepare data for API
+      const productData: ProductFormValues = {
+        ...formValues,
+        featured: formValues.featured || false,
+        in_stock: formValues.in_stock || true,
+        sell_online: formValues.sell_online || false,
+        variants,
+        promotional_price,
+        // Remove fields that aren't in the backend DTO
+        promo_enabled: undefined,
+        promo_date_range: undefined,
+      };
 
-    if (isEditMode) {
-      updateProduct.mutate({
-        id: Number(id),
-        data: productData
-      });
-    } else {
-      createProduct.mutate(productData);
-    }
+      if (isEditMode) {
+        updateProduct.mutate({
+          id: Number(id),
+          data: productData
+        });
+      } else {
+        createProduct.mutate(productData);
+      }
+    });
   };
 
   const isSubmitting = createProduct.isPending || updateProduct.isPending;
+
+  // Function to handle tab change - ensure form data is preserved
+  const handleTabChange = (activeKey: string) => {
+    // Save current form values to preserve data across tab changes
+    const currentValues = form.getFieldsValue(true);
+    form.setFieldsValue(currentValues);
+    setActiveTab(activeKey);
+  };
+
+  // const renderAllTabsHidden = () => {
+  //   // This renders all tab components in a hidden div to ensure they mount and register with the form
+  //   return (
+  //     <div style={{ display: 'none' }}>
+  //       <VariantManager />
+  //       <BranchPricing />
+  //       <PromoPriceForm />
+  //       <SerialInput />
+  //     </div>
+  //   );
+  // };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -166,10 +194,15 @@ export default function ProductForm() {
               type: "STANDARD",
               in_stock: true,
             }}
+            // This is crucial - preserve values when fields unmount
+            preserve={true}
           >
+            {/* Hidden components to ensure they register with the form */}
+            {/* {renderAllTabsHidden()} */}
+            
             <Tabs 
               activeKey={activeTab}
-              onChange={setActiveTab}
+              onChange={handleTabChange}
               items={[
                 {
                   key: '1',

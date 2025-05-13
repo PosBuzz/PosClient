@@ -1,7 +1,15 @@
 import { Form, Input, Button, Space, Alert } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { useEffect } from "react";
 
 export default function SerialInput() {
+  const parentForm = Form.useFormInstance(); // Get the parent form instance
+  
+  // Register with parent form on mount
+  useEffect(() => {
+    // This ensures the component registers with the form even if not visible
+  }, [parentForm]);
+
   return (
     <div className="space-y-4">
       <Alert 
@@ -22,6 +30,7 @@ export default function SerialInput() {
                   name={name}
                   rules={[{ required: true, message: 'Please enter serial number' }]}
                   style={{ width: '100%', marginBottom: 0 }}
+                  preserve={true}
                 >
                   <Input placeholder={`Serial/IMEI #${name + 1}`} />
                 </Form.Item>

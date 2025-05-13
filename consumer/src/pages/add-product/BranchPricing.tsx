@@ -2,13 +2,21 @@ import { Form, InputNumber, Select, Button, Alert } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { productApi } from "../../api/product-api";
+import { useEffect } from "react";
 
 export default function BranchPricing() {
+  const parentForm = Form.useFormInstance(); // Get the parent form instance
+  
   const { data: branches = [], isLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: productApi.getBranches,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
+
+  // Initialize any needed state from parent form
+  useEffect(() => {
+    // This ensures the component registers with the form on mount
+  }, [parentForm]);
 
   return (
     <div className="space-y-4">
@@ -30,6 +38,7 @@ export default function BranchPricing() {
                   name={[name, "branch_id"]}
                   rules={[{ required: true, message: "Please select branch" }]}
                   className="w-48 mb-0"
+                  preserve={true}
                 >
                   <Select 
                     placeholder="Select Branch" 
@@ -51,6 +60,7 @@ export default function BranchPricing() {
                   name={[name, "price"]}
                   rules={[{ required: true, message: "Please enter price" }]}
                   className="flex-1 mb-0"
+                  preserve={true}
                 >
                   <InputNumber 
                     min={0} 

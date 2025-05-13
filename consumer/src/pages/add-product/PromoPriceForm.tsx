@@ -1,9 +1,24 @@
 import { DatePicker, InputNumber, Form, Alert } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 
 export default function PromoPriceForm() {
+  const [form] = Form.useForm();
+  const parentForm = Form.useFormInstance(); // Get the parent form instance
   const [enabled, setEnabled] = useState(false);
+  
+  // Initialize state based on form values
+  useEffect(() => {
+    const formValues = parentForm.getFieldValue(['promo_enabled']);
+    if (formValues !== undefined) {
+      setEnabled(formValues);
+    }
+  }, [parentForm]);
+  
+  // When enabled state changes, update the form field
+  useEffect(() => {
+    parentForm.setFieldValue('promo_enabled', enabled);
+  }, [enabled, parentForm]);
 
   return (
     <div className="space-y-4">
@@ -15,7 +30,7 @@ export default function PromoPriceForm() {
         className="mb-4"
       />
 
-      <Form.Item name="promo_enabled" valuePropName="checked">
+      <Form.Item name="promo_enabled" valuePropName="checked" noStyle>
         <div className="flex items-center mb-4">
           <input
             type="checkbox"
@@ -28,11 +43,12 @@ export default function PromoPriceForm() {
       </Form.Item>
       
       {enabled && (
-        <div className="space-y-4 p-4 border rounded bg-gray-50">
+        <div className="space-y-4 p-4 border rounded">
           <Form.Item 
             name={["promotional_price", "price"]} 
             label="Promotional Price"
             rules={[{ required: enabled, message: "Please enter promotional price" }]}
+            preserve={true}
           >
             <InputNumber 
               placeholder="Promotional Price" 
@@ -47,6 +63,7 @@ export default function PromoPriceForm() {
             name="promo_date_range"
             label="Promotion Date Range"
             rules={[{ required: enabled, message: "Please select promotion date range" }]}
+            preserve={true}
             getValueProps={(value) => ({
               value: value ? [dayjs(value[0]), dayjs(value[1])] : undefined,
             })}
