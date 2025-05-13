@@ -1,8 +1,18 @@
-import { Button, Input, InputNumber, Form, Alert } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
-import { ProductVariant } from "../../types/product.types";
+import { Alert, Button, Form, Input, InputNumber } from "antd";
+import { useEffect } from "react";
 
 export default function VariantManager() {
+  const parentForm = Form.useFormInstance(); // Get the parent form instance
+  
+  // Initialize any internal state from the parent form if needed
+  useEffect(() => {
+    // This runs when the component mounts, ensuring it's registered with the form
+    const currentVariants = parentForm.getFieldValue('variants') || [];
+    // If there's any initialization needed based on current variant data
+    // you can do it here
+  }, [parentForm]);
+
   return (
     <div className="space-y-4">
       <Alert 
@@ -17,13 +27,14 @@ export default function VariantManager() {
         {(fields, { add, remove }) => (
           <>
             {fields.map(({ key, name, ...restField }) => (
-              <div key={key} className="space-y-2 p-4 border rounded bg-gray-50">
+              <div key={key} className="space-y-2 p-4 border rounded">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Form.Item
                     {...restField}
                     name={[name, "option"]}
                     label="Variant Type"
                     rules={[{ required: true, message: 'Please enter variant type' }]}
+                    preserve={true}
                   >
                     <Input placeholder="e.g. Size, Color, Material" />
                   </Form.Item>
@@ -32,6 +43,7 @@ export default function VariantManager() {
                     {...restField}
                     name={[name, "item_code"]}
                     label="Item Code"
+                    preserve={true}
                   >
                     <Input placeholder="Optional unique code for this variant" />
                   </Form.Item>
@@ -42,6 +54,7 @@ export default function VariantManager() {
                     label="Values (comma separated)"
                     rules={[{ required: true, message: 'Please enter variant values' }]}
                     className="md:col-span-2"
+                    preserve={true}
                   >
                     <Input.TextArea 
                       placeholder="e.g. Small,Medium,Large or Red,Blue,Green" 
@@ -53,6 +66,7 @@ export default function VariantManager() {
                     {...restField}
                     name={[name, "cost"]}
                     label="Cost"
+                    preserve={true}
                   >
                     <InputNumber 
                       className="w-full" 
@@ -67,6 +81,7 @@ export default function VariantManager() {
                     {...restField}
                     name={[name, "price"]}
                     label="Price"
+                    preserve={true}
                   >
                     <InputNumber 
                       className="w-full" 
