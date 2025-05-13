@@ -25,14 +25,14 @@ export default function BranchPricing() {
         description="Set different prices for each branch. Leave empty to use the default product price."
         type="info" 
         showIcon 
-        className="mb-4"
+        className="mb-4!"
       />
       
       <Form.List name="branch_prices">
         {(fields, { add, remove }) => (
           <>
             {fields.map(({ key, name, ...restField }) => (
-              <div key={key} className="flex items-center space-x-4 mb-2">
+              <div key={key} className="flex items-center space-x-4! mb-2">
                 <Form.Item
                   {...restField}
                   name={[name, "branch_id"]}

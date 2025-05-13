@@ -1,42 +1,83 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Patch,
+  Delete,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { CreateProductDto } from '../dtos/create-product-branch.dto';
 import { CreateCategoryDto } from '../dtos/create-category.dto';
 import { CreateUnitDto } from '../dtos/create-unit.dto';
 import { ProductService } from '../services/product.service';
-import { CreateBranchDto } from '../dtos/create-product.dto';
+import { CreateBranchDto } from '../dtos/create-product.1dto';
 import { CreateBrandDto } from '../dtos/create-brand.dto';
 import { CreateTagDto } from '../dtos/create-tag.dto';
 import { UpdateEntityDto } from '../dtos/update-entity.dto';
-
+import { ClientAuthGuard } from 'src/auth/guards/client.auth.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { Request } from 'express';
+// @HasPermissions([ConsumerPermission.profile])
+@UseGuards(ClientAuthGuard, PermissionsGuard)
 @Controller('consumer')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   // Existing product creation endpoint
   @Post('products')
-  async create(@Body() createProductDto: CreateProductDto) {
-    return this.productService.createProduct(createProductDto);
+  async create(
+    @Body() createProductDto: CreateProductDto,
+    @Req() req: Request,
+  ) {
+    return this.productService.createProduct(createProductDto, req.user.id);
+  }
+
+  @Get('products')
+  async getAllProducts(
+    @Req() req: Request,
+    @Query('search') search?: string,
+    @Query('category_id') category_id?: string,
+    @Query('brand_id') brand_id?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.productService.getAllProducts(req.user.id, {
+      search,
+      category_id: category_id ? +category_id : undefined,
+      brand_id: brand_id ? +brand_id : undefined,
+      page: page ? +page : undefined,
+      limit: limit ? +limit : undefined,
+    });
   }
 
   // Get a single product
   @Get('products/:id')
-  async getProduct(@Param('id') id: string) {
-    return this.productService.getProduct(+id);
+  async getProduct(@Param('id') id: string, @Req() req: Request) {
+    return this.productService.getProduct(+id, req.user.id);
   }
 
   // Update a product
   @Patch('products/:id')
   async updateProduct(
     @Param('id') id: string,
-    @Body() updateProductDto: Partial<CreateProductDto>
+    @Body() updateProductDto: Partial<CreateProductDto>,
+    @Req() req: Request,
   ) {
-    return this.productService.updateProduct(+id, updateProductDto);
+    return this.productService.updateProduct(
+      +id,
+      updateProductDto,
+      req.user.id,
+    );
   }
 
   // Delete a product
   @Delete('products/:id')
-  async deleteProduct(@Param('id') id: string) {
-    return this.productService.deleteProduct(+id);
+  async deleteProduct(@Param('id') id: string, @Req() req: Request) {
+    return this.productService.deleteProduct(+id, req.user.id);
   }
 
   // Product variants endpoints
@@ -48,16 +89,13 @@ export class ProductController {
   @Post('products/:productId/variants')
   async createVariant(
     @Param('productId') productId: string,
-    @Body() variantData: any
+    @Body() variantData: any,
   ) {
     return this.productService.createVariant(+productId, variantData);
   }
 
   @Patch('variants/:id')
-  async updateVariant(
-    @Param('id') id: string,
-    @Body() variantData: any
-  ) {
+  async updateVariant(@Param('id') id: string, @Body() variantData: any) {
     return this.productService.updateVariant(+id, variantData);
   }
 
@@ -75,7 +113,7 @@ export class ProductController {
   @Post('products/:productId/branch-prices')
   async createBranchPrice(
     @Param('productId') productId: string,
-    @Body() branchPriceData: any
+    @Body() branchPriceData: any,
   ) {
     return this.productService.createBranchPrice(+productId, branchPriceData);
   }
@@ -83,7 +121,7 @@ export class ProductController {
   @Patch('branch-prices/:id')
   async updateBranchPrice(
     @Param('id') id: string,
-    @Body() branchPriceData: any
+    @Body() branchPriceData: any,
   ) {
     return this.productService.updateBranchPrice(+id, branchPriceData);
   }
@@ -102,7 +140,7 @@ export class ProductController {
   @Post('products/:productId/serials')
   async createSerial(
     @Param('productId') productId: string,
-    @Body() serialData: { serial: string }
+    @Body() serialData: { serial: string },
   ) {
     return this.productService.createSerial(+productId, serialData.serial);
   }
@@ -110,7 +148,7 @@ export class ProductController {
   @Patch('serials/:id')
   async updateSerial(
     @Param('id') id: string,
-    @Body() serialData: { serial: string }
+    @Body() serialData: { serial: string },
   ) {
     return this.productService.updateSerial(+id, serialData.serial);
   }
@@ -129,7 +167,7 @@ export class ProductController {
   @Post('products/:productId/promotional-price')
   async createPromotionalPrice(
     @Param('productId') productId: string,
-    @Body() promoData: any
+    @Body() promoData: any,
   ) {
     return this.productService.createPromotionalPrice(+productId, promoData);
   }
@@ -137,7 +175,7 @@ export class ProductController {
   @Patch('products/:productId/promotional-price')
   async updatePromotionalPrice(
     @Param('productId') productId: string,
-    @Body() promoData: any
+    @Body() promoData: any,
   ) {
     return this.productService.updatePromotionalPrice(+productId, promoData);
   }
@@ -156,7 +194,7 @@ export class ProductController {
   @Post('products/:productId/tags')
   async addProductTag(
     @Param('productId') productId: string,
-    @Body() tagData: { tag: string }
+    @Body() tagData: { tag: string },
   ) {
     return this.productService.addProductTag(+productId, tagData.tag);
   }
@@ -164,68 +202,80 @@ export class ProductController {
   @Delete('products/:productId/tags/:tagId')
   async removeProductTag(
     @Param('productId') productId: string,
-    @Param('tagId') tagId: string
+    @Param('tagId') tagId: string,
   ) {
     return this.productService.removeProductTag(+productId, +tagId);
   }
 
   // Existing create entity endpoints
   @Post('create-branch')
-  async createBranch(@Body() createBranchDto: CreateBranchDto) {
-    return this.productService.createBranch(createBranchDto.name);
+  async createBranch(
+    @Body() createBranchDto: CreateBranchDto,
+    @Req() req: Request,
+  ) {
+    return this.productService.createBranch(createBranchDto.name, req.user.id);
   }
 
   @Post('create-category')
-  async createCategory(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.productService.createCategory(createCategoryDto.name);
+  async createCategory(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @Req() req: Request,
+  ) {
+    return this.productService.createCategory(
+      createCategoryDto.name,
+      req.user.id,
+    );
   }
 
   @Post('create-brand')
-  async createBrand(@Body() createBrandDto: CreateBrandDto) {
-    return this.productService.createBrand(createBrandDto.name);
+  async createBrand(
+    @Body() createBrandDto: CreateBrandDto,
+    @Req() req: Request,
+  ) {
+    return this.productService.createBrand(createBrandDto.name, req.user.id);
   }
 
   @Post('create-unit')
-  async createUnit(@Body() createUnitDto: CreateUnitDto) {
-    return this.productService.createUnit(createUnitDto.name);
+  async createUnit(@Body() createUnitDto: CreateUnitDto, @Req() req: Request) {
+    return this.productService.createUnit(createUnitDto.name, req.user.id);
   }
 
   @Post('create-tag')
-  async createTag(@Body() createTagDto: CreateTagDto) {
-    return this.productService.createTag(createTagDto.name);
+  async createTag(@Body() createTagDto: CreateTagDto, @Req() req: Request) {
+    return this.productService.createTag(createTagDto.name, req.user.id);
   }
 
   // Get entity endpoints
   @Get('get-branches')
-  async getBranches() {
-    return this.productService.getBranches();
+  async getBranches(@Req() req: Request) {
+    return this.productService.getBranches(req.user.id);
   }
 
   @Get('get-categories')
-  async getCategories() {
-    return this.productService.getCategories();
+  async getCategories(@Req() req: Request) {
+    return this.productService.getCategories(req.user.id);
   }
 
   @Get('get-brands')
-  async getBrands() {
-    return this.productService.getBrands();
+  async getBrands(@Req() req: Request) {
+    return this.productService.getBrands(req.user.id);
   }
 
   @Get('get-units')
-  async getUnits() {
-    return this.productService.getUnits();
+  async getUnits(@Req() req: Request) {
+    return this.productService.getUnits(req.user.id);
   }
 
   @Get('get-tags')
-  async getTags() {
-    return this.productService.getTags();
+  async getTags(@Req() req: Request) {
+    return this.productService.getTags(req.user.id);
   }
 
   // Update entity endpoints
   @Patch('brands/:id')
   async updateBrand(
     @Param('id') id: string,
-    @Body() updateDto: UpdateEntityDto
+    @Body() updateDto: UpdateEntityDto,
   ) {
     return this.productService.updateBrand(+id, updateDto.name);
   }
@@ -233,7 +283,7 @@ export class ProductController {
   @Patch('categories/:id')
   async updateCategory(
     @Param('id') id: string,
-    @Body() updateDto: UpdateEntityDto
+    @Body() updateDto: UpdateEntityDto,
   ) {
     return this.productService.updateCategory(+id, updateDto.name);
   }
@@ -241,7 +291,7 @@ export class ProductController {
   @Patch('units/:id')
   async updateUnit(
     @Param('id') id: string,
-    @Body() updateDto: UpdateEntityDto
+    @Body() updateDto: UpdateEntityDto,
   ) {
     return this.productService.updateUnit(+id, updateDto.name);
   }
@@ -249,16 +299,13 @@ export class ProductController {
   @Patch('branches/:id')
   async updateBranch(
     @Param('id') id: string,
-    @Body() updateDto: UpdateEntityDto
+    @Body() updateDto: UpdateEntityDto,
   ) {
     return this.productService.updateBranch(+id, updateDto.name);
   }
 
   @Patch('tags/:id')
-  async updateTag(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateEntityDto
-  ) {
+  async updateTag(@Param('id') id: string, @Body() updateDto: UpdateEntityDto) {
     return this.productService.updateTag(+id, updateDto.name);
   }
 

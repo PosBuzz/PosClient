@@ -4,25 +4,25 @@ import { useEffect } from "react";
 
 export default function VariantManager() {
   const parentForm = Form.useFormInstance(); // Get the parent form instance
-  
+
   // Initialize any internal state from the parent form if needed
   useEffect(() => {
     // This runs when the component mounts, ensuring it's registered with the form
-    const currentVariants = parentForm.getFieldValue('variants') || [];
+    const currentVariants = parentForm.getFieldValue("variants") || [];
     // If there's any initialization needed based on current variant data
     // you can do it here
   }, [parentForm]);
 
   return (
     <div className="space-y-4">
-      <Alert 
-        message="Product Variants" 
+      <Alert
+        message="Product Variants"
         description="Define different versions of this product (e.g., sizes, colors). Each variant can have its own item code, cost, and price."
-        type="info" 
-        showIcon 
-        className="mb-4"
+        type="info"
+        showIcon
+        className="mb-4!"
       />
-      
+
       <Form.List name="variants">
         {(fields, { add, remove }) => (
           <>
@@ -33,12 +33,14 @@ export default function VariantManager() {
                     {...restField}
                     name={[name, "option"]}
                     label="Variant Type"
-                    rules={[{ required: true, message: 'Please enter variant type' }]}
+                    rules={[
+                      { required: true, message: "Please enter variant type" },
+                    ]}
                     preserve={true}
                   >
                     <Input placeholder="e.g. Size, Color, Material" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     {...restField}
                     name={[name, "item_code"]}
@@ -47,63 +49,61 @@ export default function VariantManager() {
                   >
                     <Input placeholder="Optional unique code for this variant" />
                   </Form.Item>
-                  
+
                   <Form.Item
                     {...restField}
                     name={[name, "value"]}
                     label="Values (comma separated)"
-                    rules={[{ required: true, message: 'Please enter variant values' }]}
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter variant values",
+                      },
+                    ]}
                     className="md:col-span-2"
                     preserve={true}
                   >
-                    <Input.TextArea 
-                      placeholder="e.g. Small,Medium,Large or Red,Blue,Green" 
+                    <Input.TextArea
+                      placeholder="e.g. Small,Medium,Large or Red,Blue,Green"
                       rows={2}
                     />
                   </Form.Item>
-                  
+
                   <Form.Item
                     {...restField}
                     name={[name, "cost"]}
                     label="Cost"
                     preserve={true}
                   >
-                    <InputNumber 
-                      className="w-full" 
-                      min={0} 
-                      placeholder="Cost" 
-                      formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                    <InputNumber
+                      type="number"
+                      className="w-full!"
+                      min={0}
+                      prefix="$"
                     />
                   </Form.Item>
-                  
+
                   <Form.Item
                     {...restField}
                     name={[name, "price"]}
                     label="Price"
                     preserve={true}
                   >
-                    <InputNumber 
-                      className="w-full" 
-                      min={0} 
-                      placeholder="Price" 
-                      formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-                    />
+                    <InputNumber className="w-full!" min={0} prefix="$" />
                   </Form.Item>
                 </div>
-                <Button 
-                  danger 
-                  icon={<DeleteOutlined />} 
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
                   onClick={() => remove(name)}
                 >
                   Remove Variant
                 </Button>
               </div>
             ))}
-            <Button 
-              type="dashed" 
-              onClick={() => add()} 
+            <Button
+              type="dashed"
+              onClick={() => add()}
               className="w-full"
               icon={<span className="mr-2">+</span>}
             >

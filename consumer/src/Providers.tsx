@@ -10,6 +10,7 @@ import { MessageProvider } from "./components/MessageProvider";
 import useDarkMode from "./hooks/useDarkMode";
 import useInitTheme from "./hooks/useInitTheme";
 import "./index.css";
+import { ModalProvider } from "./components/ModalProvider";
 
 const queryClient = new QueryClient();
 
@@ -53,8 +54,10 @@ const Providers = () => {
         <HelmetProvider>
           <BrowserRouter>
             <MessageProvider>
-              <AuthLoader />
-              <App />
+              <ModalProvider>
+                <AuthLoader />
+                <App />
+              </ModalProvider>
             </MessageProvider>
           </BrowserRouter>
         </HelmetProvider>

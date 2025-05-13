@@ -10,6 +10,8 @@ const Home = lazy(() => import("./pages/dashboard"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
+const Products = lazy(() => import("./pages/products"));
+const ViewProduct = lazy(() => import("./pages/view-product"));
 const AddProduct = lazy(() => import("./pages/add-product"));
 
 export const routes = [
@@ -55,7 +57,23 @@ export const routes = [
         ),
       },
       {
-        path: "add-product",
+        path: "products",
+        element: (
+          <RequirePermission>
+            <Products />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "products/view/:id",
+        element: (
+          <RequirePermission>
+            <ViewProduct />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "products/add",
         element: (
           <RequirePermission>
             <AddProduct />
