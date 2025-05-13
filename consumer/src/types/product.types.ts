@@ -110,22 +110,20 @@ export interface Tag {
 }
 
 // Request/Response types for better type safety
-export interface ProductListResponse {
-  products: Product[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
 export interface ProductListParams {
   page?: number;
   limit?: number;
   search?: string;
   category_id?: number;
   brand_id?: number;
-  type?: ProductType;
-  in_stock?: boolean;
-  featured?: boolean;
-  sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+}
+
+export interface ProductListResponse {
+  data: Product[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

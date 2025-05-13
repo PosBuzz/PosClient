@@ -1,11 +1,14 @@
-import { DashboardOutlined, ProductOutlined, SettingOutlined } from "@ant-design/icons";
+import {
+  DashboardOutlined,
+  ProductOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Permissions } from "./constants/permissions";
 import useDarkMode from "./hooks/useDarkMode";
 import { useAuthStore } from "./stores/authStore";
-import { Permissions } from "./constants/permissions";
-import { GrUserAdmin } from "react-icons/gr";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -69,9 +72,27 @@ const SideBar: React.FC = () => {
       permissions: [Permissions.users],
     },
     {
-      key: "/add-product",
+      label: <span title="Products">Products</span>,
+      key: "products",
       icon: <ProductOutlined />,
-      label: <span title="Add Product">Add Product</span>,
+      children: [
+        {
+          label: <span title="All Products">All Products</span>,
+          key: "/products",
+        },
+        {
+          label: <span title="Add Product">Add Product</span>,
+          key: "/products/add",
+        },
+        // {
+        //   label: <span title="Categories">Categories</span>,
+        //   key: "/products/categories",
+        // },
+        // {
+        //   label: <span title="Brands">Brands</span>,
+        //   key: "/products/brands",
+        // },
+      ],
     },
   ];
 

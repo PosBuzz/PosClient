@@ -13,7 +13,7 @@ export interface User {
 declare global {
   namespace Express {
     interface Request {
-      user?: User; // Add the user property to the Request interface
+      user: User; 
       csrfToken: () => string;
     }
   }

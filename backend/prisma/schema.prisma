@@ -74,6 +74,12 @@ model Consumer {
   users        User[]
   roles        Role[]
   billing_logs BillingHistory[]
+  Product      Product[]
+  Tag          Tag[]
+  Unit         Unit[]
+  Category     Category[]
+  Brand        Brand[]
+  Branch       Branch[]
 
   @@index([email])
   @@index([company_name])
@@ -200,6 +206,7 @@ model Product {
   name             String
   code             String      @unique
   type             ProductType
+  consumer_id      Int
   category_id      Int
   brand_id         Int
   product_unit_id  Int
@@ -219,15 +226,16 @@ model Product {
   // optional
   daily_sale_objective Float?
   alert_quantity       Float?
-  product_tax          String?
+  product_tax          Int?
   tax_method           TaxMethod?
 
   // relations
-  category          Category               @relation(fields: [category_id], references: [id])
-  brand             Brand                  @relation(fields: [brand_id], references: [id])
-  unit              Unit                   @relation("product_unit", fields: [product_unit_id], references: [id])
-  sale_unit         Unit?                  @relation("sale_unit", fields: [sale_unit_id], references: [id])
-  purchase_unit     Unit?                  @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
+  consumer          Consumer             @relation(fields: [consumer_id], references: [id])
+  category          Category             @relation(fields: [category_id], references: [id])
+  brand             Brand                @relation(fields: [brand_id], references: [id])
+  unit              Unit                 @relation("product_unit", fields: [product_unit_id], references: [id])
+  sale_unit         Unit?                @relation("sale_unit", fields: [sale_unit_id], references: [id])
+  purchase_unit     Unit?                @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
   variants          ProductVariant[]
   branch_prices     ProductBranchPrice[]
   serial_numbers    ProductSerial[]
@@ -248,7 +256,7 @@ model ProductVariant {
   cost       Float?
   price      Float?
 
-  product Product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
 // per branch pricing
@@ -258,8 +266,8 @@ model ProductBranchPrice {
   branch_id  Int
   price      Float
 
-  product Product @relation(fields: [product_id], references: [id])
-  branch  Branch  @relation(fields: [branch_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 }
 
 // serial/IMEI
@@ -268,7 +276,7 @@ model ProductSerial {
   product_id Int
   serial     String @unique
 
-  product Product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
 // promotional price
@@ -279,14 +287,19 @@ model PromotionalPrice {
   starts_at  DateTime
   ends_at    DateTime?
 
-  product Product @relation(fields: [product_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 }
 
 // tags
 model Tag {
-  id       Int               @id @default(autoincrement())
-  name     String            @unique
-  products ProductTag[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer     @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products    ProductTag[]
+
+  @@unique([name, consumer_id])
+  @@index([consumer_id])
 }
 
 // product-tag relation (many-to-many)
@@ -301,30 +314,50 @@ model ProductTag {
 
 // unit
 model Unit {
-  id        Int       @id @default(autoincrement())
-  name      String
-  products  Product[] @relation("product_unit")
-  sales     Product[] @relation("sale_unit")
-  purchases Product[] @relation("purchase_unit")
+  id          Int       @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products    Product[] @relation("product_unit")
+  sales       Product[] @relation("sale_unit")
+  purchases   Product[] @relation("purchase_unit")
+
+  @@unique([name, consumer_id])
+  @@index([consumer_id])
 }
 
 // category
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String
-  products Product[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products    Product[]
+
+  @@unique([name, consumer_id])
+  @@index([consumer_id])
 }
 
 // brand
 model Brand {
-  id       Int       @id @default(autoincrement())
-  name     String
-  products Product[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products    Product[]
+
+  @@unique([name, consumer_id])
+  @@index([consumer_id])
 }
 
 // branch
 model Branch {
-  id     Int                    @id @default(autoincrement())
-  name   String
-  prices ProductBranchPrice[]
+  id          Int                  @id @default(autoincrement())
+  name        String
+  consumer_id Int
+  consumer    Consumer             @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  prices      ProductBranchPrice[]
+
+  @@unique([name, consumer_id])
+  @@index([consumer_id])
 }

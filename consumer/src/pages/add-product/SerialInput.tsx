@@ -17,7 +17,7 @@ export default function SerialInput() {
         description="For products with unique identifiers like serial numbers or IMEI codes."
         type="info" 
         showIcon 
-        className="mb-4"
+        className="mb-4!"
       />
       
       <Form.List name="serials">

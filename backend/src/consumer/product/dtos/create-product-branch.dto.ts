@@ -91,8 +91,8 @@ export class CreateProductDto {
   alert_quantity?: number;
 
   @IsOptional()
-  @IsString()
-  product_tax?: string;
+  @IsNumber()
+  product_tax?: number;
 
   @IsOptional()
   @IsEnum(TaxMethod)

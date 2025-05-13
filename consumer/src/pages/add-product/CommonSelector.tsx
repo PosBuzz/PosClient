@@ -62,6 +62,8 @@ export default function CommonSelector({
     onSuccess: (newItem) => {
       // Invalidate the query to refresh the data
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
       message.success(`${type} created successfully`);
       setIsModalOpen(false);
       form.resetFields();
@@ -98,6 +100,8 @@ export default function CommonSelector({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
       message.success(`${type} deleted successfully`);
     },
     onError: (error) => {
@@ -127,6 +131,8 @@ export default function CommonSelector({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
       message.success(`${type} updated successfully`);
       setEditModalOpen(false);
     },

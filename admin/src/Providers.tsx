@@ -13,6 +13,7 @@ import "./index.css";
 import dayjs from "dayjs";
 
 import isBetween from "dayjs/plugin/isBetween";
+import { ModalProvider } from "./components/ModalProvider";
 dayjs.extend(isBetween);
 
 const queryClient = new QueryClient();
@@ -57,8 +58,10 @@ const Providers = () => {
         <HelmetProvider>
           <BrowserRouter>
             <MessageProvider>
-              <AuthLoader />
-              <App />
+              <ModalProvider>
+                <AuthLoader />
+                <App />
+              </ModalProvider>
             </MessageProvider>
           </BrowserRouter>
         </HelmetProvider>
