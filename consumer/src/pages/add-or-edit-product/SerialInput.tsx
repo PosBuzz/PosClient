@@ -1,5 +1,5 @@
-import { Form, Input, Button, Space, Alert } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { Alert, Button, Form, Input, Space } from "antd";
 import { useEffect } from "react";
 
 export default function SerialInput() {

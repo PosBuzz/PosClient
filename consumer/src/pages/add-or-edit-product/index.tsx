@@ -6,8 +6,8 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Select,
+  Spin,
   Tabs,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
@@ -22,14 +22,16 @@ import {
 
 // Components
 import dayjs from "dayjs";
+import ImageInput from "../../components/ImageInput";
+import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
+import { getUrlFromUploadComponent } from "../../utils/upload";
 import BranchPricing from "./BranchPricing";
 import CommonSelector from "./CommonSelector";
-import ImageUploader from "./ImageUploader";
 import PromoPriceForm from "./PromoPriceForm";
 import SerialInput from "./SerialInput";
 import VariantManager from "./VariantManager";
-import PageTitle from "../../components/PageTitle";
-import { useMessageStore } from "../../stores/messageStore";
+import CenterLoader from "../../components/CenterLoader";
 
 const { Option } = Select;
 
@@ -42,21 +44,67 @@ export default function ProductForm() {
   const queryClient = useQueryClient();
   const { messageApi } = useMessageStore();
 
-  // Fetch product data if in edit mode
+  // Fetch product data if in edit mode without onSuccess
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
     queryKey: ["product", id],
     queryFn: () => productApi.getProduct(Number(id)),
     enabled: isEditMode,
   });
 
-  // Set form values when product data is loaded in edit mode
+  // Use useEffect to populate the form when product data is available
   useEffect(() => {
-    if (isEditMode && productData) {
-      // Format data for the form
+    if (productData && isEditMode) {
+      // Transform data for form consumption
       const formData = {
         ...productData,
+        // Handle specific fields that need transformation
+
+        // Product basics
+        name: productData.name,
+        code: productData.code,
+        description: productData.description,
+        image_url: [
+          {
+            uid: "-1",
+            status: "done",
+            thumbUrl: productData.image_url,
+          },
+        ],
+
+        // Categories and relations
+        category_id: productData.category_id,
+        brand_id: productData.brand_id,
+        product_unit_id: productData.product_unit_id,
+        sale_unit_id: productData.sale_unit_id,
+        purchase_unit_id: productData.purchase_unit_id,
+
+        // Pricing
+        cost: productData.cost,
+        price: productData.price,
+        wholesale_price: productData.wholesale_price,
+
+        // Settings
+        type: productData.type || ProductType.STANDARD,
+        tax_method: productData.tax_method,
+        product_tax: productData.product_tax,
+        alert_quantity: productData.alert_quantity,
+        daily_sale_objective: productData.daily_sale_objective,
+
+        // Checkboxes
+        featured: Boolean(productData.featured),
+        sell_online: Boolean(productData.sell_online),
+        in_stock: productData.in_stock !== false, // default to true if undefined
+
+        // Handle arrays
+        tags: productData.tags ? productData.tags.map((tag) => tag.id) : [],
+        variants: productData.variants || [],
+        branch_prices: productData.branch_prices || [],
+        serials: productData.serial_numbers
+          ? productData.serial_numbers.map((s) => s.serial)
+          : [],
+
         // Handle promotional pricing
-        promo_enabled: Boolean(productData.promotional_price),
+        promo_enabled: productData.promo_enabled,
         promotional_price: productData.promotional_price
           ? {
               price: productData.promotional_price.price,
@@ -74,12 +122,12 @@ export default function ProductForm() {
 
       form.setFieldsValue(formData);
     }
-  }, [form, isEditMode, productData]);
+  }, [productData, isEditMode, form]);
 
   // Create product mutation
   const createProduct = useMutation({
     mutationFn: productApi.createProduct,
-    onSuccess: (data) => {
+    onSuccess: () => {
       messageApi?.success("Product created successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       form.resetFields();
@@ -101,7 +149,7 @@ export default function ProductForm() {
       id: number;
       data: Partial<ProductFormValues>;
     }) => productApi.updateProduct(id, data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       messageApi?.success("Product updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", id] });
@@ -122,13 +170,17 @@ export default function ProductForm() {
       const promotional_price = formValues.promo_enabled
         ? {
             price: formValues.promotional_price?.price,
-            starts_at: formValues.promo_date_range?.[0],
-            ends_at: formValues.promo_date_range?.[1],
+            starts_at: formValues.promo_date_range?.[0].toISOString(),
+            ends_at: formValues.promo_date_range?.[1]?.toISOString(),
           }
         : undefined;
 
+      // Get image URL from the upload component
+      const image_url = getUrlFromUploadComponent(formValues, "image_url");
+
       // Format variants to match backend
       const variants = formValues.variants?.map((variant: any) => ({
+        ...(variant.id ? { id: variant.id } : {}), // Include ID if it exists (for updates)
         option: variant.option,
         value: variant.value,
         item_code: variant.item_code,
@@ -136,20 +188,33 @@ export default function ProductForm() {
         price: variant.price,
       }));
 
+      // Format branch prices
+      const branch_prices = formValues.branch_prices?.map((bp: any) => ({
+        ...(bp.id ? { id: bp.id } : {}), // Include ID if it exists (for updates)
+        branch_id: bp.branch_id,
+        price: bp.price,
+      }));
+
+      // Format serials if they exist
+      const serials = formValues.serials || [];
+
       // Prepare data for API
       const productData: ProductFormValues = {
         ...formValues,
+        image_url, // Use the extracted image URL
         featured: formValues.featured || false,
-        in_stock: formValues.in_stock || true,
+        in_stock: formValues.in_stock !== false,
         sell_online: formValues.sell_online || false,
         variants,
+        branch_prices,
+        serials,
         promotional_price,
-        // Remove fields that aren't in the backend DTO
-        promo_enabled: undefined,
+
+        // remove it
         promo_date_range: undefined,
       };
 
-      if (isEditMode) {
+      if (isEditMode && id) {
         updateProduct.mutate({
           id: Number(id),
           data: productData,
@@ -170,7 +235,7 @@ export default function ProductForm() {
     setActiveTab(activeKey);
   };
 
-  const title = "Add Product";
+  const title = isEditMode ? "Edit Product" : "Add Product";
 
   return (
     <>
@@ -199,11 +264,9 @@ export default function ProductForm() {
           </Button>
         }
       />
-      <Card
-        className="shadow-md my-6"
-      >
+      <Card className="shadow-md my-6">
         {isEditMode && isLoadingProduct ? (
-          <div className="py-8 text-center">Loading product data...</div>
+          <CenterLoader />
         ) : (
           <Form
             form={form}
@@ -217,9 +280,6 @@ export default function ProductForm() {
             // This is crucial - preserve values when fields unmount
             preserve={true}
           >
-            {/* Hidden components to ensure they register with the form */}
-            {/* {renderAllTabsHidden()} */}
-
             <Tabs
               activeKey={activeTab}
               onChange={handleTabChange}
@@ -306,10 +366,8 @@ export default function ProductForm() {
                           </div>
                         </div>
 
-                        <div className="col-span-1">
-                          <Form.Item name="image_url" label="Product Image">
-                            <ImageUploader />
-                          </Form.Item>
+                        <div className="col-span-1 flex flex-col justify-between">
+                          <ImageInput name="image_url" label="Product Image" />
 
                           <Form.Item name="tags" label="Tags">
                             <CommonSelector type="tag" mode="multiple" />
@@ -517,19 +575,6 @@ export default function ProductForm() {
                 },
               ]}
             />
-
-            {/* <div className="flex justify-end mt-6 space-x-2">
-              <Button onClick={() => navigate('/products')}>
-                Cancel
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={isSubmitting}
-              >
-                {isEditMode ? "Update Product" : "Save Product"}
-              </Button>
-            </div> */}
           </Form>
         )}
       </Card>

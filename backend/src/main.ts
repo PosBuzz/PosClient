@@ -1,5 +1,4 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as csurf from 'csurf';
 import { ValidationPipe } from '@nestjs/common';
@@ -55,16 +54,6 @@ async function bootstrap() {
 
   // Enable shutdown hooks
   app.enableShutdownHooks();
-
-  // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Trace API')
-    .setDescription('description')
-    .setVersion('1.0.0')
-    .addTag('trace')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-doc', app, document);
 
   // Global filters for Prisma exceptions
   const { httpAdapter } = app.get(HttpAdapterHost);

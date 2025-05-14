@@ -5,12 +5,9 @@ import { useEffect } from "react";
 export default function VariantManager() {
   const parentForm = Form.useFormInstance(); // Get the parent form instance
 
-  // Initialize any internal state from the parent form if needed
+  // Register with parent form on mount
   useEffect(() => {
-    // This runs when the component mounts, ensuring it's registered with the form
-    const currentVariants = parentForm.getFieldValue("variants") || [];
-    // If there's any initialization needed based on current variant data
-    // you can do it here
+    // This ensures the component registers with the form even if not visible
   }, [parentForm]);
 
   return (
