@@ -24,10 +24,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 
 const ProductsTable = () => {
+  const { messageApi } = useMessageStore();
   // Input state (tracks what the user is typing)
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
@@ -122,11 +124,11 @@ const ProductsTable = () => {
   const deleteProductMutation = useMutation({
     mutationFn: productApi.deleteProduct,
     onSuccess: () => {
-      message.success("Product deleted successfully");
+      messageApi?.success("Product deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error) => {
-      message.error("Failed to delete product");
+      messageApi?.error("Failed to delete product");
       console.error(error);
     },
   });
