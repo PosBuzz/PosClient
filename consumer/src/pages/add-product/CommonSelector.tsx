@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, Tooltip, Form, Modal, Input, message } from "antd";
 import { useState, useMemo } from "react";
 import { productApi } from "../../api/product-api";
+import { useMessageStore } from "../../stores/messageStore";
 
 interface CommonSelectorProps {
   value?: number;
@@ -22,6 +23,8 @@ export default function CommonSelector({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
+
+  const { messageApi } = useMessageStore();
 
   // Fetch options based on type
   const { data: options = [], isLoading } = useQuery({
@@ -64,7 +67,7 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      message.success(`${type} created successfully`);
+      messageApi?.success(`${type} created successfully`);
       setIsModalOpen(false);
       form.resetFields();
 
@@ -74,7 +77,7 @@ export default function CommonSelector({
       }
     },
     onError: (error) => {
-      message.error(
+      messageApi?.error(
         `Failed to create ${type}: ${
           error instanceof Error ? error.message : String(error)
         }`
@@ -102,10 +105,10 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      message.success(`${type} deleted successfully`);
+      messageApi?.success(`${type} deleted successfully`);
     },
     onError: (error) => {
-      message.error(
+      messageApi?.error(
         `Failed to delete ${type}: ${
           error instanceof Error ? error.message : String(error)
         }`
@@ -133,11 +136,11 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      message.success(`${type} updated successfully`);
+      messageApi?.success(`${type} updated successfully`);
       setEditModalOpen(false);
     },
     onError: (error) => {
-      message.error(
+      messageApi?.error(
         `Failed to update ${type}: ${
           error instanceof Error ? error.message : String(error)
         }`

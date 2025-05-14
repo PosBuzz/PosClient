@@ -80,6 +80,14 @@ export const routes = [
           </RequirePermission>
         ),
       },
+      {
+        path: "products/edit/:id",
+        element: (
+          <RequirePermission>
+            <AddProduct />
+          </RequirePermission>
+        ),
+      },
     ],
   },
 ];

@@ -3,11 +3,14 @@ import { LoadingOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import type { UploadChangeParam } from "antd/es/upload";
 import type { RcFile, UploadFile, UploadProps } from "antd/es/upload/interface";
+import { useMessageStore } from "../../stores/messageStore";
 
 interface ImageUploaderProps {
   value?: string;
   onChange?: (url: string) => void;
 }
+
+const { messageApi } = useMessageStore();
 
 const getBase64 = (img: RcFile, callback: (url: string) => void) => {
   const reader = new FileReader();
@@ -18,11 +21,11 @@ const getBase64 = (img: RcFile, callback: (url: string) => void) => {
 const beforeUpload = (file: RcFile) => {
   const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
   if (!isJpgOrPng) {
-    message.error("You can only upload JPG/PNG file!");
+    messageApi?.error("You can only upload JPG/PNG file!");
   }
   const isLt2M = file.size / 1024 / 1024 < 2;
   if (!isLt2M) {
-    message.error("Image must be smaller than 2MB!");
+    messageApi?.error("Image must be smaller than 2MB!");
   }
   return isJpgOrPng && isLt2M;
 };

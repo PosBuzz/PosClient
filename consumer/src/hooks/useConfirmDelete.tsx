@@ -29,7 +29,7 @@ export const useConfirmDelete = ({
           await onConfirm();
         } catch (error) {
           console.error("Delete operation failed:", error);
-          Modal.error({
+          modal.error({
             title: "Operation Failed",
             content: "Failed to delete. Please try again later.",
           });

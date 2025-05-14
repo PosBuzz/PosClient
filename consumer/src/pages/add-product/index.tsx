@@ -29,6 +29,7 @@ import PromoPriceForm from "./PromoPriceForm";
 import SerialInput from "./SerialInput";
 import VariantManager from "./VariantManager";
 import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 
@@ -39,6 +40,7 @@ export default function ProductForm() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
   const queryClient = useQueryClient();
+  const { messageApi } = useMessageStore();
 
   // Fetch product data if in edit mode
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -78,13 +80,13 @@ export default function ProductForm() {
   const createProduct = useMutation({
     mutationFn: productApi.createProduct,
     onSuccess: (data) => {
-      message.success("Product created successfully!");
+      messageApi?.success("Product created successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       form.resetFields();
       navigate("/products");
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         `Failed to create product: ${error?.message || "Unknown error"}`
       );
     },
@@ -100,13 +102,13 @@ export default function ProductForm() {
       data: Partial<ProductFormValues>;
     }) => productApi.updateProduct(id, data),
     onSuccess: (data) => {
-      message.success("Product updated successfully!");
+      messageApi?.success("Product updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", id] });
       navigate("/products");
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         `Failed to update product: ${error?.message || "Unknown error"}`
       );
     },
