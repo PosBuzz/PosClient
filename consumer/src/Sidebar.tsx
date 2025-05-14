@@ -54,6 +54,21 @@ const SideBar: React.FC = () => {
       label: <span title="Dashboard">Dashboard</span>,
     },
     {
+      label: <span title="Products">Products</span>,
+      key: "products",
+      icon: <ProductOutlined />,
+      children: [
+        {
+          label: <span title="All Products">View Products</span>,
+          key: "/products",
+        },
+        {
+          label: <span title="Add Product">Add Product</span>,
+          key: "/products/add",
+        },
+      ],
+    },
+    {
       label: <span title="Settings">Settings</span>,
       key: "/settings",
       icon: <SettingOutlined />,
@@ -70,29 +85,6 @@ const SideBar: React.FC = () => {
         },
       ],
       permissions: [Permissions.users],
-    },
-    {
-      label: <span title="Products">Products</span>,
-      key: "products",
-      icon: <ProductOutlined />,
-      children: [
-        {
-          label: <span title="All Products">All Products</span>,
-          key: "/products",
-        },
-        {
-          label: <span title="Add Product">Add Product</span>,
-          key: "/products/add",
-        },
-        // {
-        //   label: <span title="Categories">Categories</span>,
-        //   key: "/products/categories",
-        // },
-        // {
-        //   label: <span title="Brands">Brands</span>,
-        //   key: "/products/brands",
-        // },
-      ],
     },
   ];
 

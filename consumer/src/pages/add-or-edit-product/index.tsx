@@ -7,8 +7,7 @@ import {
   Input,
   InputNumber,
   Select,
-  Spin,
-  Tabs,
+  Tabs
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
@@ -22,16 +21,16 @@ import {
 
 // Components
 import dayjs from "dayjs";
+import CenterLoader from "../../components/CenterLoader";
 import ImageInput from "../../components/ImageInput";
 import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
-import { getUrlFromUploadComponent } from "../../utils/upload";
+import { getImageUrlForCloudinaryImage } from "../../utils/upload";
 import BranchPricing from "./BranchPricing";
 import CommonSelector from "./CommonSelector";
 import PromoPriceForm from "./PromoPriceForm";
 import SerialInput from "./SerialInput";
 import VariantManager from "./VariantManager";
-import CenterLoader from "../../components/CenterLoader";
 
 const { Option } = Select;
 
@@ -176,7 +175,7 @@ export default function ProductForm() {
         : undefined;
 
       // Get image URL from the upload component
-      const image_url = getUrlFromUploadComponent(formValues, "image_url");
+      const image_url = getImageUrlForCloudinaryImage(formValues, "image_url");
 
       // Format variants to match backend
       const variants = formValues.variants?.map((variant: any) => ({

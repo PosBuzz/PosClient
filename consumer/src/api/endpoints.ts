@@ -15,30 +15,6 @@ export const endpoints = {
   updateProduct: (id: number) => `/consumer/products/${id}`,
   deleteProduct: (id: number) => `/consumer/products/${id}`,
   
-  // Product variants
-  productVariants: (productId: number) => `/consumer/products/${productId}/variants`,
-  getVariant: (variantId: number) => `/consumer/variants/${variantId}`,
-  updateVariant: (variantId: number) => `/consumer/variants/${variantId}`,
-  deleteVariant: (variantId: number) => `/consumer/variants/${variantId}`,
-  
-  // Product branch prices
-  productBranchPrices: (productId: number) => `/consumer/products/${productId}/branch-prices`,
-  updateBranchPrice: (branchPriceId: number) => `/consumer/branch-prices/${branchPriceId}`,
-  deleteBranchPrice: (branchPriceId: number) => `/consumer/branch-prices/${branchPriceId}`,
-  
-  // Product serials
-  productSerials: (productId: number) => `/consumer/products/${productId}/serials`,
-  updateSerial: (serialId: number) => `/consumer/serials/${serialId}`,
-  deleteSerial: (serialId: number) => `/consumer/serials/${serialId}`,
-  
-  // Promotional prices
-  getPromotionalPrice: (productId: number) => `/consumer/products/${productId}/promotional-price`,
-  updatePromotionalPrice: (productId: number) => `/consumer/products/${productId}/promotional-price`,
-  deletePromotionalPrice: (productId: number) => `/consumer/products/${productId}/promotional-price`,
-  
-  // Product tags
-  productTags: (productId: number) => `/consumer/products/${productId}/tags`,
-  
   // Master data endpoints
   getBrands: "/consumer/get-brands",
   getCategories: "/consumer/get-categories",
@@ -66,7 +42,4 @@ export const endpoints = {
   deleteUnit: (id: number) => `/consumer/units/${id}`,
   deleteBranch: (id: number) => `/consumer/branches/${id}`,
   deleteTag: (id: number) => `/consumer/tags/${id}`,
-  
-  // Image upload
-  uploadImage: "/consumer/upload-image",
 };

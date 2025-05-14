@@ -3,81 +3,66 @@ export const uploadToCloudinary = async (file) => {
   try {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', import.meta.env.VITE_UPLOAD_PRESET);
-      formData.append('folder', 'posbuzz');
-      
-      fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      })
-        .then(response => response.json())
-        .then(result => {
+      formData.append("file", file);
+      formData.append("upload_preset", import.meta.env.VITE_UPLOAD_PRESET);
+      formData.append("folder", "posbuzz");
+
+      fetch(
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_CLOUD_NAME
+        }/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      )
+        .then((response) => response.json())
+        .then((result) => {
+          // Check if eager transformations exist and use the first one's secure_url if available
+          const eagerSecureUrl = result.eager && result.eager.length > 0 
+            ? result.eager[0].secure_url 
+            : null;
+            
           resolve({
             success: true,
             data: {
-              secure_url: result.secure_url,
+              secure_url: eagerSecureUrl || result.secure_url, // Prefer eager URL if available
               url: result.url,
-              public_id: result.public_id
-            }
+              public_id: result.public_id,
+              // Include the full eager array for more flexibility if needed
+              eager: result.eager || [],
+            },
           });
         })
-        .catch(error => {
+        .catch((error) => {
           reject({
             success: false,
-            error: error.message
+            error: error.message,
           });
         });
     });
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
+    console.error("Error uploading to Cloudinary:", error);
     throw error;
   }
-};
-
-export const getUrlFromUploadComponent = (formValues, fileInputName) => {
-  if (formValues[fileInputName] && Array.isArray(formValues[fileInputName])) {
-    const file = formValues[fileInputName][0];
-    if (
-      file &&
-      file.status === 'done' &&
-      file.response &&
-      file.response.success &&
-      file.response?.data?.secure_url
-    ) {
-      return file.response?.data?.secure_url;
-    } else if (
-      file &&
-      file.status === 'done' &&
-      file.response &&
-      file.response.success &&
-      file.response?.data?.url
-    ) {
-      return file.response?.data?.url;
-    } else if (file && file.thumbUrl) {
-      return file.thumbUrl;
-    }
-  }
-
-  return null;
 };
 
 export const getImageUrlForCloudinaryImage = (formValues, fileInputName) => {
   if (formValues[fileInputName] && Array.isArray(formValues[fileInputName])) {
     const file = formValues[fileInputName][0];
     if (
-      file && 
-      file.status === 'done' && 
-      file.response && 
-      file.response.success && 
+      file &&
+      file.status === "done" &&
+      file.response &&
+      file.response.success &&
       file.response?.data?.secure_url
     ) {
       return file.response?.data?.secure_url;
     } else if (
-      file && 
-      file.status === 'done' && 
-      file.response && 
-      file.response.success && 
+      file &&
+      file.status === "done" &&
+      file.response &&
+      file.response.success &&
       file.response?.data?.url
     ) {
       return file.response?.data?.url;
@@ -89,24 +74,27 @@ export const getImageUrlForCloudinaryImage = (formValues, fileInputName) => {
   return null;
 };
 
-export const getImageUrlForCloudinaryImageMultiple = (formValues, fileInputName) => {
+export const getImageUrlForCloudinaryImageMultiple = (
+  formValues,
+  fileInputName
+) => {
   if (formValues[fileInputName] && Array.isArray(formValues[fileInputName])) {
     // Map over all files and extract the URL or thumbUrl
     const urls = formValues[fileInputName]
       .map((file) => {
         if (
-          file && 
-          file.status === 'done' && 
-          file.response && 
-          file.response.success && 
+          file &&
+          file.status === "done" &&
+          file.response &&
+          file.response.success &&
           file.response?.data?.secure_url
         ) {
           return file.response?.data?.secure_url;
         } else if (
-          file && 
-          file.status === 'done' && 
-          file.response && 
-          file.response.success && 
+          file &&
+          file.status === "done" &&
+          file.response &&
+          file.response.success &&
           file.response?.data?.url
         ) {
           return file.response?.data?.url;
@@ -127,24 +115,24 @@ export const getImageUrlForCloudinaryImageMultiple = (formValues, fileInputName)
 export const fileUploadProps = {
   customRequest: async (options: any) => {
     const { file, onSuccess, onError, onProgress } = options;
-    
+
     try {
       // Handle progress updates
       if (onProgress) {
         const updateProgress = (percent: number) => {
           onProgress({ percent });
         };
-        
+
         // Simulate progress for better UX
         const progressInterval = setInterval(() => {
           updateProgress(Math.random() * 100);
-        }, 200);
-        
+        }, 1000);
+
         const result = await uploadToCloudinary(file);
-        
+
         clearInterval(progressInterval);
         updateProgress(100);
-        
+
         if (onSuccess) {
           onSuccess(result, file);
         }
@@ -159,5 +147,5 @@ export const fileUploadProps = {
         onError(error);
       }
     }
-  }
+  },
 };
