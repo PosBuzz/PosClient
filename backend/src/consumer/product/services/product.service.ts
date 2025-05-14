@@ -286,9 +286,11 @@ export class ProductService {
 
     // Handle promotional price if provided
     if (promotional_price) {
-      const existingPromo = await this.prismaService.promotionalPrice.findFirst({
-        where: { product_id: id },
-      });
+      const existingPromo = await this.prismaService.promotionalPrice.findFirst(
+        {
+          where: { product_id: id },
+        },
+      );
 
       if (existingPromo) {
         // Update existing promotional price
@@ -424,83 +426,7 @@ export class ProductService {
     return { success: true, message: 'Product deleted successfully' };
   }
 
-  // Get product tags with the updated many-to-many relationship
-  async getProductTags(productId: number) {
-    const productTags = await this.prismaService.productTag.findMany({
-      where: { product_id: productId },
-      include: { tag: true },
-    });
-
-    return productTags.map((pt) => ({
-      id: pt.tag_id,
-      name: pt.tag.name,
-    }));
-  }
-
-  // Add a tag to a product with the updated many-to-many relationship
-  async addProductTag(productId: number, tagName: string) {
-    // Find or create the tag
-    let tag = await this.prismaService.tag.findFirst({
-      where: { name: tagName },
-    });
-
-    if (!tag) {
-      // Get consumer_id from the product
-      const product = await this.prismaService.product.findUnique({
-        where: { id: productId },
-        select: { consumer_id: true },
-      });
-
-      if (!product) {
-        throw new NotFoundException(`Product with ID ${productId} not found`);
-      }
-
-      tag = await this.prismaService.tag.create({
-        data: {
-          name: tagName,
-          consumer_id: product.consumer_id,
-        },
-      });
-    }
-
-    // Check if the relationship already exists
-    const existingRelation = await this.prismaService.productTag.findFirst({
-      where: {
-        product_id: productId,
-        tag_id: tag.id,
-      },
-    });
-
-    if (existingRelation) {
-      return { id: tag.id, name: tag.name };
-    }
-
-    // Create the relationship
-    await this.prismaService.productTag.create({
-      data: {
-        product_id: productId,
-        tag_id: tag.id,
-      },
-    });
-
-    return { id: tag.id, name: tag.name };
-  }
-
-  // Remove a tag from a product with the updated many-to-many relationship
-  async removeProductTag(productId: number, tagId: number) {
-    await this.prismaService.productTag.delete({
-      where: {
-        product_id_tag_id: {
-          product_id: productId,
-          tag_id: tagId,
-        },
-      },
-    });
-
-    return { success: true };
-  }
-
-  // Get all tags (updated to use the new tag model)
+  // tags
   async getTags(consumer_id: number) {
     return this.prismaService.tag.findMany({
       where: { consumer_id },
@@ -508,7 +434,6 @@ export class ProductService {
     });
   }
 
-  // Create a tag (updated to use the new tag model)
   async createTag(tagData: string, consumer_id: number) {
     return this.prismaService.tag.create({
       data: {
@@ -518,7 +443,6 @@ export class ProductService {
     });
   }
 
-  // Update a tag (updated to use the new tag model)
   async updateTag(id: number, name: string) {
     return this.prismaService.tag.update({
       where: { id },
@@ -526,7 +450,6 @@ export class ProductService {
     });
   }
 
-  // Delete a tag (updated to use the new tag model)
   async deleteTag(id: number) {
     // This will automatically delete all product_tag relations due to onDelete: Cascade
     await this.prismaService.tag.delete({
@@ -536,31 +459,7 @@ export class ProductService {
     return { success: true };
   }
 
-  // Other methods remain the same but update references to model names if needed
-  async getBranches(consumer_id: number) {
-    return this.prismaService.branch.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async getCategories(consumer_id: number) {
-    return this.prismaService.category.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async getBrands(consumer_id: number) {
-    return this.prismaService.brand.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async getUnits(consumer_id: number) {
-    return this.prismaService.unit.findMany({
-      where: { consumer_id },
-    });
-  }
-
+  // Branches
   async createBranch(branchName: string, consumer_id: number) {
     return this.prismaService.branch.create({
       data: {
@@ -570,15 +469,27 @@ export class ProductService {
     });
   }
 
-  async createCategory(categoryName: string, consumer_id: number) {
-    return this.prismaService.category.create({
-      data: {
-        name: categoryName,
-        consumer_id, // Properly add consumer_id
-      },
+  async getBranches(consumer_id: number) {
+    return this.prismaService.branch.findMany({
+      where: { consumer_id },
     });
   }
 
+  async updateBranch(id: number, name: string) {
+    return this.prismaService.branch.update({
+      where: { id },
+      data: { name },
+    });
+  }
+
+  async deleteBranch(id: number) {
+    await this.prismaService.branch.delete({
+      where: { id },
+    });
+    return { success: true };
+  }
+
+  // Brands
   async createBrand(brandName: string, consumer_id: number) {
     return this.prismaService.brand.create({
       data: {
@@ -588,38 +499,14 @@ export class ProductService {
     });
   }
 
-  async createUnit(unitName: string, consumer_id: number) {
-    return this.prismaService.unit.create({
-      data: {
-        name: unitName,
-        consumer_id, // Properly add consumer_id
-      },
+  async getBrands(consumer_id: number) {
+    return this.prismaService.brand.findMany({
+      where: { consumer_id },
     });
   }
 
   async updateBrand(id: number, name: string) {
     return this.prismaService.brand.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async updateCategory(id: number, name: string) {
-    return this.prismaService.category.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async updateUnit(id: number, name: string) {
-    return this.prismaService.unit.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async updateBranch(id: number, name: string) {
-    return this.prismaService.branch.update({
       where: { id },
       data: { name },
     });
@@ -632,11 +519,27 @@ export class ProductService {
     return { success: true };
   }
 
-  async deleteCategory(id: number) {
-    await this.prismaService.category.delete({
-      where: { id },
+  // Units
+  async createUnit(unitName: string, consumer_id: number) {
+    return this.prismaService.unit.create({
+      data: {
+        name: unitName,
+        consumer_id, // Properly add consumer_id
+      },
     });
-    return { success: true };
+  }
+
+  async getUnits(consumer_id: number) {
+    return this.prismaService.unit.findMany({
+      where: { consumer_id },
+    });
+  }
+
+  async updateUnit(id: number, name: string) {
+    return this.prismaService.unit.update({
+      where: { id },
+      data: { name },
+    });
   }
 
   async deleteUnit(id: number) {
@@ -646,149 +549,32 @@ export class ProductService {
     return { success: true };
   }
 
-  async deleteBranch(id: number) {
-    await this.prismaService.branch.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  async getVariants(productId: number) {
-    return this.prismaService.productVariant.findMany({
-      where: { product_id: productId },
-    });
-  }
-
-  async createVariant(productId: number, variantData: any) {
-    return this.prismaService.productVariant.create({
+  // Category
+  async createCategory(categoryName: string, consumer_id: number) {
+    return this.prismaService.category.create({
       data: {
-        ...variantData,
-        product: { connect: { id: productId } },
+        name: categoryName,
+        consumer_id, // Properly add consumer_id
       },
     });
   }
 
-  async updateVariant(id: number, variantData: any) {
-    return this.prismaService.productVariant.update({
+  async getCategories(consumer_id: number) {
+    return this.prismaService.category.findMany({
+      where: { consumer_id },
+    });
+  }
+
+  async updateCategory(id: number, name: string) {
+    return this.prismaService.category.update({
       where: { id },
-      data: variantData,
+      data: { name },
     });
   }
 
-  async deleteVariant(id: number) {
-    await this.prismaService.productVariant.delete({
+  async deleteCategory(id: number) {
+    await this.prismaService.category.delete({
       where: { id },
-    });
-    return { success: true };
-  }
-
-  async getBranchPrices(productId: number) {
-    return this.prismaService.productBranchPrice.findMany({
-      where: { product_id: productId },
-      include: { branch: true },
-    });
-  }
-
-  async createBranchPrice(productId: number, branchPriceData: any) {
-    return this.prismaService.productBranchPrice.create({
-      data: {
-        price: branchPriceData.price,
-        product: { connect: { id: productId } },
-        branch: { connect: { id: branchPriceData.branch_id } },
-      },
-      include: { branch: true },
-    });
-  }
-
-  async updateBranchPrice(id: number, branchPriceData: any) {
-    return this.prismaService.productBranchPrice.update({
-      where: { id },
-      data: {
-        price: branchPriceData.price,
-        ...(branchPriceData.branch_id
-          ? { branch: { connect: { id: branchPriceData.branch_id } } }
-          : {}),
-      },
-      include: { branch: true },
-    });
-  }
-
-  async deleteBranchPrice(id: number) {
-    await this.prismaService.productBranchPrice.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  async getSerials(productId: number) {
-    return this.prismaService.productSerial.findMany({
-      where: { product_id: productId },
-    });
-  }
-
-  async createSerial(productId: number, serial: string) {
-    return this.prismaService.productSerial.create({
-      data: {
-        serial,
-        product: { connect: { id: productId } },
-      },
-    });
-  }
-
-  async updateSerial(id: number, serial: string) {
-    return this.prismaService.productSerial.update({
-      where: { id },
-      data: { serial },
-    });
-  }
-
-  async deleteSerial(id: number) {
-    await this.prismaService.productSerial.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  async getPromotionalPrice(productId: number) {
-    return this.prismaService.promotionalPrice.findFirst({
-      where: { product_id: productId },
-    });
-  }
-
-  async createPromotionalPrice(productId: number, promoData: any) {
-    // Delete any existing promotional price
-    await this.prismaService.promotionalPrice.deleteMany({
-      where: { product_id: productId },
-    });
-
-    return this.prismaService.promotionalPrice.create({
-      data: {
-        price: promoData.price,
-        starts_at: promoData.starts_at,
-        ends_at: promoData.ends_at,
-        product: { connect: { id: productId } },
-      },
-    });
-  }
-
-  async updatePromotionalPrice(productId: number, promoData: any) {
-    const existingPromo = await this.prismaService.promotionalPrice.findFirst({
-      where: { product_id: productId },
-    });
-
-    if (!existingPromo) {
-      return this.createPromotionalPrice(productId, promoData);
-    }
-
-    return this.prismaService.promotionalPrice.update({
-      where: { id: existingPromo.id },
-      data: promoData,
-    });
-  }
-
-  async deletePromotionalPrice(productId: number) {
-    await this.prismaService.promotionalPrice.deleteMany({
-      where: { product_id: productId },
     });
     return { success: true };
   }

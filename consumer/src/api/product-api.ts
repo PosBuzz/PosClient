@@ -38,87 +38,6 @@ export const productApi = {
     return deleteApi(endpoints.deleteProduct(id));
   },
   
-  // Variant operations
-  getVariants: async (productId: number): Promise<ProductVariant[]> => {
-    return get(endpoints.productVariants(productId));
-  },
-  
-  createVariant: async (productId: number, variant: Omit<ProductVariant, 'id' | 'product_id'>): Promise<ProductVariant> => {
-    return post(endpoints.productVariants(productId), variant);
-  },
-  
-  updateVariant: async (variantId: number, variant: Partial<Omit<ProductVariant, 'id' | 'product_id'>>): Promise<ProductVariant> => {
-    return patch(endpoints.updateVariant(variantId), variant);
-  },
-  
-  deleteVariant: async (variantId: number): Promise<void> => {
-    return deleteApi(endpoints.deleteVariant(variantId));
-  },
-  
-  // Branch price operations
-  getBranchPrices: async (productId: number): Promise<BranchPrice[]> => {
-    return get(endpoints.productBranchPrices(productId));
-  },
-  
-  createBranchPrice: async (productId: number, branchPrice: Omit<BranchPrice, 'id' | 'product_id'>): Promise<BranchPrice> => {
-    return post(endpoints.productBranchPrices(productId), branchPrice);
-  },
-  
-  updateBranchPrice: async (branchPriceId: number, branchPrice: Partial<Omit<BranchPrice, 'id' | 'product_id'>>): Promise<BranchPrice> => {
-    return patch(endpoints.updateBranchPrice(branchPriceId), branchPrice);
-  },
-  
-  deleteBranchPrice: async (branchPriceId: number): Promise<void> => {
-    return deleteApi(endpoints.deleteBranchPrice(branchPriceId));
-  },
-  
-  // Serial operations
-  getSerials: async (productId: number): Promise<ProductSerial[]> => {
-    return get(endpoints.productSerials(productId));
-  },
-  
-  createSerial: async (productId: number, serial: string): Promise<ProductSerial> => {
-    return post(endpoints.productSerials(productId), { serial });
-  },
-  
-  updateSerial: async (serialId: number, serial: string): Promise<ProductSerial> => {
-    return patch(endpoints.updateSerial(serialId), { serial });
-  },
-  
-  deleteSerial: async (serialId: number): Promise<void> => {
-    return deleteApi(endpoints.deleteSerial(serialId));
-  },
-  
-  // Promotional price operations
-  getPromotionalPrice: async (productId: number): Promise<PromotionalPrice | null> => {
-    return get(endpoints.getPromotionalPrice(productId));
-  },
-  
-  createPromotionalPrice: async (productId: number, promo: Omit<PromotionalPrice, 'id' | 'product_id'>): Promise<PromotionalPrice> => {
-    return post(endpoints.getPromotionalPrice(productId), promo);
-  },
-  
-  updatePromotionalPrice: async (productId: number, promo: Partial<Omit<PromotionalPrice, 'id' | 'product_id'>>): Promise<PromotionalPrice> => {
-    return patch(endpoints.updatePromotionalPrice(productId), promo);
-  },
-  
-  deletePromotionalPrice: async (productId: number): Promise<void> => {
-    return deleteApi(endpoints.deletePromotionalPrice(productId));
-  },
-  
-  // Tag operations
-  getProductTags: async (productId: number): Promise<string[]> => {
-    return get(endpoints.productTags(productId));
-  },
-  
-  addProductTag: async (productId: number, tag: string): Promise<void> => {
-    return post(endpoints.productTags(productId), { tag });
-  },
-  
-  removeProductTag: async (productId: number, tagId: number): Promise<void> => {
-    return deleteApi(`${endpoints.productTags(productId)}/${tagId}`);
-  },
-  
   // Master data operations - Categories
   getCategories: async (): Promise<Category[]> => {
     return get(endpoints.getCategories);
@@ -202,16 +121,5 @@ export const productApi = {
   
   deleteTag: async (id: number): Promise<void> => {
     return deleteApi(endpoints.deleteTag(id));
-  },
-  
-  // Image upload
-  uploadImage: async (file: File): Promise<{ url: string }> => {
-    const formData = new FormData();
-    formData.append('image', file);
-    return post(endpoints.uploadImage, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
   },
 };
