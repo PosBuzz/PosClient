@@ -217,6 +217,7 @@ model Product {
   purchase_unit_id Int?
   image_url        String?
   description      String?
+  promo_enabled    Boolean     @default(false)
 
   // flags
   featured    Boolean @default(false)
@@ -307,7 +308,7 @@ model ProductTag {
   product_id Int
   tag_id     Int
   product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Restrict)
 
   @@id([product_id, tag_id])
 }

@@ -242,6 +242,7 @@ export class ProductService {
       branch_prices,
       serials,
       tags,
+      promotional_price, // Extract promotional_price from DTO
       ...productData
     } = updateProductDto;
 
@@ -277,11 +278,40 @@ export class ProductService {
       updateData.purchase_unit = { connect: { id: purchase_unit_id } };
     }
 
-    // Update the product
+    // Update the product (without promotional_price)
     const updatedProduct = await this.prismaService.product.update({
       where: { id },
       data: updateData,
     });
+
+    // Handle promotional price if provided
+    if (promotional_price) {
+      const existingPromo = await this.prismaService.promotionalPrice.findFirst({
+        where: { product_id: id },
+      });
+
+      if (existingPromo) {
+        // Update existing promotional price
+        await this.prismaService.promotionalPrice.update({
+          where: { id: existingPromo.id },
+          data: {
+            price: promotional_price.price,
+            starts_at: promotional_price.starts_at,
+            ends_at: promotional_price.ends_at,
+          },
+        });
+      } else {
+        // Create new promotional price
+        await this.prismaService.promotionalPrice.create({
+          data: {
+            price: promotional_price.price,
+            starts_at: promotional_price.starts_at,
+            ends_at: promotional_price.ends_at,
+            product: { connect: { id } },
+          },
+        });
+      }
+    }
 
     // Handle variants if provided
     if (variants) {

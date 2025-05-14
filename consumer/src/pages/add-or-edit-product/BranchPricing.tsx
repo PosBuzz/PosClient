@@ -1,8 +1,8 @@
-import { Form, InputNumber, Select, Button, Alert } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { productApi } from "../../api/product-api";
+import { Alert, Button, Form, InputNumber, Select } from "antd";
 import { useEffect } from "react";
+import { productApi } from "../../api/product-api";
 
 export default function BranchPricing() {
   const parentForm = Form.useFormInstance(); // Get the parent form instance

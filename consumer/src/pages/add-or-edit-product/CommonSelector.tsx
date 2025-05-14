@@ -1,13 +1,14 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Select, Tooltip, Form, Modal, Input, message } from "antd";
-import { useState, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Form, Input, Modal, Select, Tooltip } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { productApi } from "../../api/product-api";
 import { useMessageStore } from "../../stores/messageStore";
+import { useConfirmDelete } from "../../hooks/useConfirmDelete";
 
 interface CommonSelectorProps {
-  value?: number;
-  onChange?: (value: number) => void;
+  value?: number | number[];
+  onChange?: (value: number | number[]) => void;
   disabled?: boolean;
   type: "category" | "brand" | "unit" | "tag";
   mode?: "tags" | "multiple";
@@ -23,6 +24,15 @@ export default function CommonSelector({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
+  const inputRef = useRef<React.ElementRef<typeof Input>>(null);
+  const editInputRef = useRef<React.ElementRef<typeof Input>>(null);
+
+  // Edit functionality
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentEdit, setCurrentEdit] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const { messageApi } = useMessageStore();
 
@@ -73,7 +83,16 @@ export default function CommonSelector({
 
       // Auto-select the newly created item
       if (onChange && newItem.id) {
-        onChange(newItem.id);
+        if (mode === "tags" || mode === "multiple") {
+          // For multiple selection, merge with existing values
+          const newValues = Array.isArray(value)
+            ? [...value, newItem.id]
+            : [newItem.id];
+          onChange(newValues);
+        } else {
+          // For single selection
+          onChange(newItem.id);
+        }
       }
     },
     onError: (error) => {
@@ -101,18 +120,19 @@ export default function CommonSelector({
           throw new Error(`Deleting ${type} is not supported`);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      messageApi?.success(`${type} deleted successfully`);
-    },
-    onError: (error) => {
-      messageApi?.error(
-        `Failed to delete ${type}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+
+      // Remove deleted item from selection if it's selected
+      if (onChange && value) {
+        if (Array.isArray(value)) {
+          onChange(value.filter((id) => id !== deletedId));
+        } else if (value === deletedId) {
+          onChange(undefined as any);
+        }
+      }
     },
   });
 
@@ -152,16 +172,27 @@ export default function CommonSelector({
     setIsModalOpen(true);
   };
 
+  // Focus on input when modal opens
+  useEffect(() => {
+    if (isModalOpen && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [isModalOpen]);
+
+  // Focus on edit input when edit modal opens
+  useEffect(() => {
+    if (editModalOpen && editInputRef.current) {
+      setTimeout(() => {
+        editInputRef.current?.focus();
+      }, 100);
+    }
+  }, [editModalOpen]);
+
   const handleCreateSubmit = async (values: { name: string }) => {
     createMutation.mutate(values.name);
   };
-
-  // Edit functionality
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [currentEdit, setCurrentEdit] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
 
   const handleEdit = (item: any) => {
     setCurrentEdit({ id: item.id, name: item.name });
@@ -177,40 +208,64 @@ export default function CommonSelector({
     }
   };
 
+  // Create a ref to hold the ID since state might not be updated in time for the callback
+  const deleteIdRef = useRef<number | null>(null);
+
+  const { showDeleteConfirm } = useConfirmDelete({
+    title: `Delete ${type}`,
+    content: `Are you sure you want to delete this ${type}? This action cannot be undone.`,
+    onConfirm: async () => {
+      const idToDelete = deleteIdRef.current;
+      if (idToDelete !== null) {
+        await deleteMutation.mutateAsync(idToDelete);
+      }
+    },
+  });
+
   const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+    deleteIdRef.current = id; // Store the ID in a ref for reliable access
+    showDeleteConfirm();
   };
 
-  const mergedOptions = useMemo(
-    () =>
-      options.map((opt) => ({
-        label: (
-          <div className="flex items-center justify-between">
-            <span>{opt.name}</span>
-            <span className="space-x-1">
-              <Tooltip title="Edit">
-                <EditOutlined
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(opt);
-                  }}
-                />
-              </Tooltip>
-              <Tooltip title="Delete">
-                <DeleteOutlined
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(opt.id);
-                  }}
-                />
-              </Tooltip>
-            </span>
-          </div>
-        ),
-        value: opt.id,
-      })),
-    [options, type]
-  );
+  // Create option labels for dropdown and selection
+  const mergedOptions = useMemo(() => {
+    // Map for dropdown options (with edit/delete buttons)
+    return options.map((opt) => ({
+      // Full option with buttons for dropdown
+      label: (
+        <div className="flex items-center justify-between w-full">
+          <span>{opt.name}</span>
+          <span className="flex items-center space-x-2 ml-2">
+            <Tooltip title="Edit">
+              <EditOutlined
+                className="text-blue-500 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(opt);
+                }}
+              />
+            </Tooltip>
+            <Tooltip title="Delete">
+              <DeleteOutlined
+                className="text-red-500 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(opt.id);
+                }}
+              />
+            </Tooltip>
+          </span>
+        </div>
+      ),
+      value: opt.id,
+      // This is used for tag rendering in multi-select mode
+      tagRender: () => (
+        <span className="ant-select-selection-item">
+          <span>{opt.name}</span>
+        </span>
+      ),
+    }));
+  }, [options, value]);
 
   return (
     <div className="w-full">
@@ -231,10 +286,21 @@ export default function CommonSelector({
         disabled={disabled}
         className="w-full"
         options={mergedOptions}
-        filterOption={(input, option) =>
-          (option?.label as any)?.props?.children[0]?.props?.children
-            .toLowerCase()
-            .includes(input.toLowerCase())
+        maxTagCount="responsive"
+        dropdownStyle={{ zIndex: 1050 }}
+        listHeight={250}
+        optionLabelProp="children"
+        labelRender={(selectedValue) => {
+          const option = options.find((opt) => opt.id === selectedValue.value);
+          return option ? option.name : "";
+        }}
+        filterOption={(input, option) => {
+          const label = option?.label as any;
+          const text = label?.props?.children[0]?.props?.children || "";
+          return text.toString().toLowerCase().includes(input.toLowerCase());
+        }}
+        getPopupContainer={(triggerNode) =>
+          triggerNode.parentNode as HTMLElement
         }
       />
 
@@ -246,6 +312,7 @@ export default function CommonSelector({
         okText="Create"
         okButtonProps={{ loading: createMutation.isPending }}
         onOk={() => form.submit()}
+        zIndex={1060}
       >
         <Form form={form} layout="vertical" onFinish={handleCreateSubmit}>
           <Form.Item
@@ -253,20 +320,20 @@ export default function CommonSelector({
             label={`${type} Name`}
             rules={[{ required: true, message: `Please enter ${type} name` }]}
           >
-            <Input placeholder={`Enter ${type} name`} />
+            <Input ref={inputRef} placeholder={`Enter ${type} name`} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Edit Modal */}
       <Modal
-        className="z-50!"
         title={`Edit ${type}`}
         open={editModalOpen}
         onCancel={() => setEditModalOpen(false)}
         okText="Update"
         okButtonProps={{ loading: updateMutation.isPending }}
         onOk={() => editForm.submit()}
+        zIndex={1060}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
           <Form.Item
@@ -274,7 +341,7 @@ export default function CommonSelector({
             label={`${type} Name`}
             rules={[{ required: true, message: `Please enter ${type} name` }]}
           >
-            <Input placeholder={`Enter ${type} name`} />
+            <Input ref={editInputRef} placeholder={`Enter ${type} name`} />
           </Form.Item>
         </Form>
       </Modal>

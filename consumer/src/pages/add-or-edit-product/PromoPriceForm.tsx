@@ -1,25 +1,15 @@
-import { DatePicker, InputNumber, Form, Alert, Checkbox } from "antd";
-import { useState, useEffect } from "react";
+import { Alert, Checkbox, DatePicker, Form, InputNumber } from "antd";
 import dayjs from "dayjs";
+import { useEffect } from "react";
 
 export default function PromoPriceForm() {
-  const [form] = Form.useForm();
-  const parentForm = Form.useFormInstance(); // Get the parent form instance
-  const [enabled, setEnabled] = useState(false);
+  const parentForm = Form.useFormInstance();
+  const enabled = Form.useWatch("promo_enabled")
 
-  // Initialize state based on form values
+  // Register with parent form on mount
   useEffect(() => {
-    const formValues = parentForm.getFieldValue(["promo_enabled"]);
-    if (formValues !== undefined) {
-      setEnabled(formValues);
-    }
+    // This ensures the component registers with the form even if not visible
   }, [parentForm]);
-
-  // When enabled state changes, update the form field
-  useEffect(() => {
-    parentForm.setFieldValue("promo_enabled", enabled);
-  }, [enabled, parentForm]);
-
   return (
     <div className="space-y-4">
       <Alert
@@ -33,7 +23,6 @@ export default function PromoPriceForm() {
       <Form.Item name="promo_enabled" valuePropName="checked" noStyle>
         <Checkbox
           checked={enabled}
-          onChange={(e) => setEnabled(e.target.checked)}
         >
           Enable Promotional Pricing
         </Checkbox>

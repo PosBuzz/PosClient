@@ -12,7 +12,7 @@ const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const Products = lazy(() => import("./pages/products"));
 const ViewProduct = lazy(() => import("./pages/view-product"));
-const AddProduct = lazy(() => import("./pages/add-product"));
+const AddOrEditProduct = lazy(() => import("./pages/add-or-edit-product"));
 
 export const routes = [
   {
@@ -76,7 +76,7 @@ export const routes = [
         path: "products/add",
         element: (
           <RequirePermission>
-            <AddProduct />
+            <AddOrEditProduct />
           </RequirePermission>
         ),
       },
@@ -84,7 +84,7 @@ export const routes = [
         path: "products/edit/:id",
         element: (
           <RequirePermission>
-            <AddProduct />
+            <AddOrEditProduct />
           </RequirePermission>
         ),
       },
