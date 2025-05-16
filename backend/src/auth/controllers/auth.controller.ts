@@ -16,7 +16,6 @@ import { ClientAuthGuard } from '../guards/client.auth.guard';
 import { AuthService } from '../services/auth.service';
 import { Throttle } from '@nestjs/throttler';
 
-
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -75,7 +74,10 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     }); // 7 days
 
-    return res.send({ message: 'Login successful' });
+    return res.send({
+      access_token,
+      message: 'Login successful',
+    });
   }
 
   @Post('admin-refresh-token')
@@ -148,7 +150,7 @@ export class AuthController {
         httpOnly: true,
         maxAge: 15 * 60 * 1000,
       }); // 15 minutes
-      return res.send({ message: 'Token refreshed' });
+      return res.send({ access_token, message: 'Token refreshed' });
     } catch (error) {
       res.clearCookie('client_access_token', { httpOnly: true });
       res.clearCookie('client_refresh_token', { httpOnly: true });

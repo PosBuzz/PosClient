@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ConsumerModule } from './consumer/consumer.module';
+import { AiServicesModule } from './ai-services/ai-services.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ConsumerModule } from './consumer/consumer.module';
     AdminModule,
     AuthModule,
     ConsumerModule,
+    AiServicesModule,
   ],
   controllers: [AppController],
   providers: [
