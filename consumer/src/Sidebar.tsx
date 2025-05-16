@@ -61,10 +61,12 @@ const SideBar: React.FC = () => {
         {
           label: <span title="All Products">View Products</span>,
           key: "/products",
+          permissions: [Permissions.view_product],
         },
         {
           label: <span title="Add Product">Add Product</span>,
           key: "/products/add",
+          permissions: [Permissions.add_product],
         },
       ],
     },

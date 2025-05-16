@@ -1,23 +1,22 @@
 import {
-    DeleteOutlined,
-    EditOutlined,
-    EyeOutlined,
-    PlusOutlined,
-    SearchOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-    Button,
-    Card,
-    Col,
-    Input,
-    Popconfirm,
-    Row,
-    Select,
-    Space,
-    Table,
-    Tag,
-    message
+  Button,
+  Card,
+  Col,
+  Input,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
 } from "antd";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
@@ -25,16 +24,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
+import { useAuthStore } from "../../stores/authStore";
+import { Permissions } from "../../constants/permissions";
 
 const { Option } = Select;
 
 const ProductsTable = () => {
+  const { user } = useAuthStore();
+
+  const hasPermission = (permission) => {
+    return user?.permissions?.includes(permission);
+  };
+
   const { messageApi } = useMessageStore();
   // Input state (tracks what the user is typing)
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
-  
+
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [brandFilter, setBrandFilter] = useState(null);
   const [pagination, setPagination] = useState({
@@ -58,10 +65,10 @@ const ProductsTable = () => {
       debouncedSearch.cancel(); // Cleanup on unmount
     };
   }, [searchText, debouncedSearch]);
-  
+
   // Reset pagination when filters change
   useEffect(() => {
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   }, [debouncedSearchText, categoryFilter, brandFilter]);
 
   // Build query parameters for product list
@@ -100,10 +107,7 @@ const ProductsTable = () => {
   };
 
   // TanStack Query for products
-  const {
-    data: productsData,
-    isLoading: productsLoading,
-  } = useQuery({
+  const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ["products", getQueryParams()],
     queryFn: () => productApi.getProducts(getQueryParams()),
   });
@@ -210,29 +214,33 @@ const ProductsTable = () => {
             icon={<EyeOutlined />}
             onClick={() => handleView(record.id)}
           />
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record.id)}
-            size="small"
-          />
-          <Popconfirm
-            title="Are you sure you want to delete this product?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
+          {hasPermission(Permissions.edit_product) && (
             <Button
               type="primary"
-              danger
-              icon={<DeleteOutlined />}
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record.id)}
               size="small"
-              loading={
-                deleteProductMutation.isPending &&
-                deleteProductMutation.variables === record.id
-              }
             />
-          </Popconfirm>
+          )}
+          {hasPermission(Permissions.delete_product) && (
+            <Popconfirm
+              title="Are you sure you want to delete this product?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                loading={
+                  deleteProductMutation.isPending &&
+                  deleteProductMutation.variables === record.id
+                }
+              />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -254,11 +262,13 @@ const ProductsTable = () => {
           },
         ]}
         rightSection={
-          <Link to={"/products/add"}>
-            <Button icon={<PlusOutlined />} type="primary">
-              Add Products
-            </Button>
-          </Link>
+          hasPermission(Permissions.add_product) && (
+            <Link to={"/products/add"}>
+              <Button icon={<PlusOutlined />} type="primary">
+                Add Products
+              </Button>
+            </Link>
+          )
         }
       />
       <Card>

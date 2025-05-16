@@ -91,11 +91,12 @@ async function main() {
 
   // Consumer permissions
   const consumerPermissions = [
-    'create_invoice',
-    'view_report',
-    'manage_users',
     'profile',
     'users',
+    'add_product',
+    'edit_product',
+    'view_product',
+    'delete_product',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>

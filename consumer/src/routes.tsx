@@ -59,7 +59,7 @@ export const routes = [
       {
         path: "products",
         element: (
-          <RequirePermission>
+          <RequirePermission permission={Permissions.view_product}>
             <Products />
           </RequirePermission>
         ),
@@ -67,7 +67,7 @@ export const routes = [
       {
         path: "products/view/:id",
         element: (
-          <RequirePermission>
+          <RequirePermission permission={Permissions.view_product}>
             <ViewProduct />
           </RequirePermission>
         ),
@@ -75,7 +75,7 @@ export const routes = [
       {
         path: "products/add",
         element: (
-          <RequirePermission>
+          <RequirePermission permission={Permissions.add_product}>
             <AddOrEditProduct />
           </RequirePermission>
         ),
@@ -83,7 +83,7 @@ export const routes = [
       {
         path: "products/edit/:id",
         element: (
-          <RequirePermission>
+          <RequirePermission permission={Permissions.edit_product}>
             <AddOrEditProduct />
           </RequirePermission>
         ),

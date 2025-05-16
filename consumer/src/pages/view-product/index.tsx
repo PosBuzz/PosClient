@@ -1,34 +1,36 @@
 import {
-    ArrowLeftOutlined,
-    BarcodeOutlined,
-    ClockCircleOutlined,
-    DeleteOutlined,
-    DollarOutlined,
-    EditOutlined,
-    ShopOutlined,
-    TagOutlined,
+  ArrowLeftOutlined,
+  BarcodeOutlined,
+  ClockCircleOutlined,
+  DeleteOutlined,
+  DollarOutlined,
+  EditOutlined,
+  ShopOutlined,
+  TagOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Divider,
-    Image,
-    Row,
-    Space,
-    Statistic,
-    Table,
-    Tabs,
-    Tag,
-    Typography
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  Image,
+  Row,
+  Space,
+  Statistic,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
 } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
 import { useConfirmDelete } from "../../hooks/useConfirmDelete";
 import { formatCurrency, formatDate } from "../../utils/formatters";
+import { useAuthStore } from "../../stores/authStore";
+import { Permissions } from "../../constants/permissions";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -37,6 +39,12 @@ const ProductDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productId = parseInt(id || "0");
+
+  const { user } = useAuthStore();
+
+  const hasPermission = (permission) => {
+    return user?.permissions?.includes(permission);
+  };
 
   // Fetch product details
   const {
@@ -52,7 +60,8 @@ const ProductDetailsPage = () => {
   // Delete confirmation
   const { showDeleteConfirm } = useConfirmDelete({
     title: "Delete Product",
-    content: "Are you sure you want to delete this product? This action cannot be undone.",
+    content:
+      "Are you sure you want to delete this product? This action cannot be undone.",
     onConfirm: async () => {
       await productApi.deleteProduct(productId);
       navigate("/products");
@@ -74,8 +83,8 @@ const ProductDetailsPage = () => {
         <Text type="danger">
           Failed to load product details. Please try again later.
         </Text>
-        <Button 
-          type="primary" 
+        <Button
+          type="primary"
           onClick={() => navigate("/products")}
           icon={<ArrowLeftOutlined />}
           style={{ marginTop: 16 }}
@@ -88,22 +97,30 @@ const ProductDetailsPage = () => {
 
   // Determine product status badges
   const getProductStatusBadges = () => {
-    const badges = [];
-    
+    const badges: React.ReactNode[] = [];
+
     if (product.featured) {
-      badges.push(<Tag color="gold" key="featured">Featured</Tag>);
+      badges.push(
+        <Tag color="gold" key="featured">
+          Featured
+        </Tag>
+      );
     }
-    
+
     if (product.sell_online) {
-      badges.push(<Tag color="blue" key="online">Online</Tag>);
+      badges.push(
+        <Tag color="blue" key="online">
+          Online
+        </Tag>
+      );
     }
-    
+
     badges.push(
       <Tag color={product.in_stock ? "green" : "red"} key="stock">
         {product.in_stock ? "In Stock" : "Out of Stock"}
       </Tag>
     );
-    
+
     return badges;
   };
 
@@ -181,19 +198,23 @@ const ProductDetailsPage = () => {
         ]}
         rightSection={
           <Space>
-            <Link to={`/products/edit/${productId}`}>
-              <Button type="primary" icon={<EditOutlined />}>
-                Edit Product
+            {hasPermission(Permissions.edit_product) && (
+              <Link to={`/products/edit/${productId}`}>
+                <Button type="primary" icon={<EditOutlined />}>
+                  Edit Product
+                </Button>
+              </Link>
+            )}
+            {hasPermission(Permissions.edit_product) && (
+              <Button
+                danger
+                type="primary"
+                icon={<DeleteOutlined />}
+                onClick={showDeleteConfirm}
+              >
+                Delete
               </Button>
-            </Link>
-            <Button 
-              danger 
-              type="primary" 
-              icon={<DeleteOutlined />}
-              onClick={showDeleteConfirm}
-            >
-              Delete
-            </Button>
+            )}
           </Space>
         }
       />
@@ -209,13 +230,13 @@ const ProductDetailsPage = () => {
                 fallback="https://placehold.co/600x400?text=No+Image"
               />
             ) : (
-              <div 
-                style={{ 
-                  height: "300px", 
-                  display: "flex", 
-                  justifyContent: "center", 
+              <div
+                style={{
+                  height: "300px",
+                  display: "flex",
+                  justifyContent: "center",
                   alignItems: "center",
-                  background: "#f5f5f5"
+                  background: "#f5f5f5",
                 }}
               >
                 <Text type="secondary">No Image Available</Text>
@@ -223,9 +244,9 @@ const ProductDetailsPage = () => {
             )}
           </Card>
 
-          <Card 
-            title="Pricing Information" 
-            style={{ marginTop: 16 }} 
+          <Card
+            title="Pricing Information"
+            style={{ marginTop: 16 }}
             extra={<DollarOutlined />}
           >
             <Descriptions column={1} bordered size="small">
@@ -247,7 +268,9 @@ const ProductDetailsPage = () => {
               )}
               {product.tax_method && (
                 <Descriptions.Item label="Tax Method">
-                  {product.tax_method === "INCLUSIVE" ? "Inclusive" : "Exclusive"}
+                  {product.tax_method === "INCLUSIVE"
+                    ? "Inclusive"
+                    : "Exclusive"}
                 </Descriptions.Item>
               )}
             </Descriptions>
@@ -275,11 +298,7 @@ const ProductDetailsPage = () => {
             )}
           </Card>
 
-          <Card 
-            title="Tags" 
-            style={{ marginTop: 16 }}
-            extra={<TagOutlined />}
-          >
+          <Card title="Tags" style={{ marginTop: 16 }} extra={<TagOutlined />}>
             {product.tags && product.tags.length > 0 ? (
               <Space wrap>
                 {product.tags.map((tag) => (
@@ -296,16 +315,10 @@ const ProductDetailsPage = () => {
 
         <Col xs={24} md={16}>
           <Card>
-            <Space 
-              direction="vertical" 
-              size="large" 
-              style={{ width: "100%" }}
-            >
+            <Space direction="vertical" size="large" style={{ width: "100%" }}>
               <div>
                 <Title level={3}>{product.name}</Title>
-                <Space size="middle">
-                  {getProductStatusBadges()}
-                </Space>
+                <Space size="middle">{getProductStatusBadges()}</Space>
               </div>
 
               <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
@@ -357,13 +370,13 @@ const ProductDetailsPage = () => {
           </Card>
 
           <Tabs defaultActiveKey="variants" style={{ marginTop: 16 }}>
-            <TabPane 
+            <TabPane
               tab={
                 <span>
                   <TagOutlined />
                   Variants
                 </span>
-              } 
+              }
               key="variants"
             >
               <Card bordered={false}>
@@ -381,13 +394,13 @@ const ProductDetailsPage = () => {
               </Card>
             </TabPane>
 
-            <TabPane 
+            <TabPane
               tab={
                 <span>
                   <ShopOutlined />
                   Branch Prices
                 </span>
-              } 
+              }
               key="branchPrices"
             >
               <Card bordered={false}>
@@ -405,13 +418,13 @@ const ProductDetailsPage = () => {
               </Card>
             </TabPane>
 
-            <TabPane 
+            <TabPane
               tab={
                 <span>
                   <BarcodeOutlined />
                   Serial Numbers
                 </span>
-              } 
+              }
               key="serials"
             >
               <Card bordered={false}>
