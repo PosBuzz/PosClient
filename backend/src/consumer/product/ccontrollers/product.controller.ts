@@ -21,6 +21,8 @@ import { UpdateEntityDto } from '../dtos/update-entity.dto';
 import { ClientAuthGuard } from 'src/auth/guards/client.auth.guard';
 import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 import { Request } from 'express';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 // @HasPermissions([ConsumerPermission.profile])
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @Controller('consumer')
@@ -28,6 +30,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   // Existing product creation endpoint
+  @HasPermissions([ConsumerPermission.add_product])
   @Post('products')
   async create(
     @Body() createProductDto: CreateProductDto,
@@ -36,6 +39,7 @@ export class ProductController {
     return this.productService.createProduct(createProductDto, req.user.id);
   }
 
+  @HasPermissions([ConsumerPermission.view_product])
   @Get('products')
   async getAllProducts(
     @Req() req: Request,
@@ -55,12 +59,13 @@ export class ProductController {
   }
 
   // Get a single product
+  @HasPermissions([ConsumerPermission.view_product])
   @Get('products/:id')
   async getProduct(@Param('id') id: string, @Req() req: Request) {
     return this.productService.getProduct(+id, req.user.id);
   }
 
-  // Update a product
+  @HasPermissions([ConsumerPermission.edit_product])
   @Patch('products/:id')
   async updateProduct(
     @Param('id') id: string,
@@ -75,12 +80,17 @@ export class ProductController {
   }
 
   // Delete a product
+  @HasPermissions([ConsumerPermission.delete_product])
   @Delete('products/:id')
   async deleteProduct(@Param('id') id: string, @Req() req: Request) {
     return this.productService.deleteProduct(+id, req.user.id);
   }
 
   // Existing create entity endpoints
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Post('create-branch')
   async createBranch(
     @Body() createBranchDto: CreateBranchDto,
@@ -89,6 +99,10 @@ export class ProductController {
     return this.productService.createBranch(createBranchDto.name, req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Post('create-category')
   async createCategory(
     @Body() createCategoryDto: CreateCategoryDto,
@@ -100,6 +114,10 @@ export class ProductController {
     );
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Post('create-brand')
   async createBrand(
     @Body() createBrandDto: CreateBrandDto,
@@ -108,43 +126,75 @@ export class ProductController {
     return this.productService.createBrand(createBrandDto.name, req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Post('create-unit')
   async createUnit(@Body() createUnitDto: CreateUnitDto, @Req() req: Request) {
     return this.productService.createUnit(createUnitDto.name, req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Post('create-tag')
   async createTag(@Body() createTagDto: CreateTagDto, @Req() req: Request) {
     return this.productService.createTag(createTagDto.name, req.user.id);
   }
 
   // Get entity endpoints
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Get('get-branches')
   async getBranches(@Req() req: Request) {
     return this.productService.getBranches(req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Get('get-categories')
   async getCategories(@Req() req: Request) {
     return this.productService.getCategories(req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Get('get-brands')
   async getBrands(@Req() req: Request) {
     return this.productService.getBrands(req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Get('get-units')
   async getUnits(@Req() req: Request) {
     return this.productService.getUnits(req.user.id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Get('get-tags')
   async getTags(@Req() req: Request) {
     return this.productService.getTags(req.user.id);
   }
 
   // Update entity endpoints
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Patch('brands/:id')
   async updateBrand(
     @Param('id') id: string,
@@ -153,6 +203,10 @@ export class ProductController {
     return this.productService.updateBrand(+id, updateDto.name);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Patch('categories/:id')
   async updateCategory(
     @Param('id') id: string,
@@ -161,6 +215,10 @@ export class ProductController {
     return this.productService.updateCategory(+id, updateDto.name);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Patch('units/:id')
   async updateUnit(
     @Param('id') id: string,
@@ -169,6 +227,10 @@ export class ProductController {
     return this.productService.updateUnit(+id, updateDto.name);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Patch('branches/:id')
   async updateBranch(
     @Param('id') id: string,
@@ -177,32 +239,56 @@ export class ProductController {
     return this.productService.updateBranch(+id, updateDto.name);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Patch('tags/:id')
   async updateTag(@Param('id') id: string, @Body() updateDto: UpdateEntityDto) {
     return this.productService.updateTag(+id, updateDto.name);
   }
 
   // Delete entity endpoints
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Delete('brands/:id')
   async deleteBrand(@Param('id') id: string) {
     return this.productService.deleteBrand(+id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Delete('categories/:id')
   async deleteCategory(@Param('id') id: string) {
     return this.productService.deleteCategory(+id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Delete('units/:id')
   async deleteUnit(@Param('id') id: string) {
     return this.productService.deleteUnit(+id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Delete('branches/:id')
   async deleteBranch(@Param('id') id: string) {
     return this.productService.deleteBranch(+id);
   }
 
+  @HasPermissions([
+    ConsumerPermission.add_product,
+    ConsumerPermission.edit_product,
+  ])
   @Delete('tags/:id')
   async deleteTag(@Param('id') id: string) {
     return this.productService.deleteTag(+id);
