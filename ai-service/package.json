@@ -1,0 +1,16 @@
+{
+  "name": "ai-service",
+  "version": "1.0.0",
+  "description": "AI service for PosBuzz",
+  "main": "index.js",
+  "scripts": {
+    "dev": "python run.py",
+    "start": "python run.py",
+    "build": "echo \"No build step required for Python service\" && exit 0",
+    "lint": "flake8 .",
+    "test": "pytest"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
+}
