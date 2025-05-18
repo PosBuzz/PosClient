@@ -1,10 +1,9 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 import datetime
 import requests
 from bs4 import BeautifulSoup
 import time
-import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,6 @@ class DuckDuckGoService:
         
     def connect(self):
         """No connection needed for this service"""
-        logger.info("DuckDuckGo search service initialized with result caching")
         return True
             
     async def get_search_context(self, product: str, limit: int = 5) -> Dict[str, Any]:
@@ -32,7 +30,6 @@ class DuckDuckGoService:
             cache_entry = self.search_cache[product_key]
             # Check if cache is still valid
             if (time.time() - cache_entry['timestamp']) < self.cache_ttl:
-                logger.info(f"Using cached search results for '{product}'")
                 return cache_entry['context']
         
         try:
@@ -42,8 +39,7 @@ class DuckDuckGoService:
             
             response = requests.get(url, headers=self.headers)
             if response.status_code != 200:
-                logger.warning(f"DuckDuckGo search failed with status {response.status_code}")
-                return {"queries": [], "timestamp": datetime.datetime.now().isoformat()}
+                return self._get_fallback_context(product, limit)
             
             # Parse the results
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -53,6 +49,11 @@ class DuckDuckGoService:
             for result in results[:limit]:
                 if result.text:
                     queries.append(result.text.strip())
+            
+            # If we didn't get enough results, add generic ones
+            if len(queries) < limit:
+                generic = self._get_fallback_context(product, limit - len(queries))["queries"]
+                queries.extend(generic)
             
             # Create context object
             context = {
@@ -67,9 +68,23 @@ class DuckDuckGoService:
             }
             
             return context
-        except Exception as e:
-            logger.error(f"Error fetching DuckDuckGo search data: {e}")
-            return {"queries": [], "timestamp": datetime.datetime.now().isoformat()}
+        except Exception:
+            return self._get_fallback_context(product, limit)
+    
+    def _get_fallback_context(self, product: str, limit: int = 5) -> Dict[str, Any]:
+        """Generate fallback context when DuckDuckGo fails"""
+        queries = [
+            f"Best {product} brands in Bangladesh",
+            f"{product} features and benefits",
+            f"How to choose quality {product}",
+            f"{product} price comparison",
+            f"Popular {product} types in market"
+        ]
+        
+        return {
+            "queries": queries[:limit],
+            "timestamp": datetime.datetime.now().isoformat()
+        }
 
 # Create singleton instance
 duckduckgo_service = DuckDuckGoService()

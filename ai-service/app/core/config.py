@@ -10,7 +10,7 @@ class Settings:
     PORT: int = int(os.getenv("PORT", 8000))
     DEBUG: bool = os.getenv("DEBUG", "True") == "True"
 
-    # JWT settings - MUST match your NestJS backend
+    # JWT settings
     JWT_SECRET: str = os.getenv(
         "JWT_SECRET", "655a41e13d92ebe879e8fae73a575c1e25eb8cc1e4ddf78f6a19f91cdfb78"
     )
@@ -26,8 +26,9 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     CACHE_TTL: int = int(os.getenv("CACHE_TTL", 86400))  # Default: 1 day
+    CACHE_REDIS_ENABLED: bool = os.getenv("CACHE_REDIS_ENABLED", "True") == "True"
 
-    # Search settings
+    # Search settings - default to DuckDuckGo
     SEARCH_ENGINE: str = os.getenv("SEARCH_ENGINE", "duckduckgo")
     GOOGLE_SEARCH_API_KEY: str = os.getenv("GOOGLE_SEARCH_API_KEY", "")
     GOOGLE_SEARCH_CX: str = os.getenv("GOOGLE_SEARCH_CX", "")
