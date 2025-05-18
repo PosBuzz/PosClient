@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api.v1 import endpoints
 from app.core.rabbitmq import rabbitmq_manager
+from app.core.cache import description_cache
+from app.services.service_factory import search_service
 from app.rabbitmq.handlers import handle_generate_description
 import logging
 
@@ -36,6 +38,15 @@ async def startup_event():
         
         # Register message handlers
         rabbitmq_manager.register_handler("generate_description", handle_generate_description)
+        
+        # Initialize cache
+        await description_cache.connect()
+        
+        # Initialize search service
+        search_service.connect()
+        
+        # Show cache status on startup
+        await description_cache.debug_cache_state()
         
         logger.info("Application startup complete")
     except Exception as e:

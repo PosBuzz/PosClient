@@ -21,5 +21,16 @@ class Settings:
         "RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"
     )
 
+    # Cache settings
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
+    CACHE_TTL: int = int(os.getenv("CACHE_TTL", 86400))  # Default: 1 day
+
+    # Search settings
+    SEARCH_ENGINE: str = os.getenv("SEARCH_ENGINE", "duckduckgo")
+    GOOGLE_SEARCH_API_KEY: str = os.getenv("GOOGLE_SEARCH_API_KEY", "")
+    GOOGLE_SEARCH_CX: str = os.getenv("GOOGLE_SEARCH_CX", "")
+
 
 settings = Settings()
