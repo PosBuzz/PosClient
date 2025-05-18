@@ -4,25 +4,32 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
+import { ConfigService } from '../../config/config.service';
 
 const exec = promisify(execCb);
 
 @Injectable()
 export class BackupRestoreService {
+  constructor(private readonly configService: ConfigService) {}
+
   async createBackup(): Promise<string> {
     const fileName = `backup_${Date.now()}.sql`;
     const tmpDir = os.tmpdir();
     const filePath = path.join(tmpDir, fileName);
 
-    const pgDumpPath = `"C:\\Users\\istia\\AppData\\Local\\com.tinyapp.DBngin\\Binaries\\postgresql\\17.0\\bin\\pg_dump.exe"`;
+    const pgDumpPath = `"${this.configService.pgDumpPath}"`;
+    const dbHost = this.configService.dbHost;
+    const dbPort = this.configService.dbPort;
+    const dbUsername = this.configService.dbUsername;
+    const dbName = this.configService.dbName;
 
-    let dumpCommand = `${pgDumpPath} --host ${process.env.DB_HOST} --port 5432 --username "${process.env.DB_USERNAME}" --role "${process.env.DB_USERNAME}" --format plain --file "${filePath}" "${process.env.DB_NAME}"`;
+    let dumpCommand = `${pgDumpPath} --host ${dbHost} --port ${dbPort} --username "${dbUsername}" --role "${dbUsername}" --format plain --file "${filePath}" "${dbName}"`;
     dumpCommand += ` --clean --if-exists --column-inserts --no-owner`;
 
     await exec(dumpCommand, {
       env: {
         ...process.env,
-        PGPASSWORD: process.env.DB_PASS,
+        PGPASSWORD: this.configService.dbPassword,
       },
     });
 
@@ -34,12 +41,18 @@ export class BackupRestoreService {
   }
 
   async restoreBackup(filePath: string): Promise<void> {
-    const psqlPath = `"C:\\Users\\istia\\AppData\\Local\\com.tinyapp.DBngin\\Binaries\\postgresql\\17.0\\bin\\psql.exe"`;
+    const psqlPath = `"${this.configService.psqlPath}"`;
+    const dbHost = this.configService.dbHost;
+    const dbUsername = this.configService.dbUsername;
+    const dbName = this.configService.dbName;
 
     await exec(
-      `${psqlPath} -U ${process.env.DB_USERNAME} -h ${process.env.DB_HOST} -d ${process.env.DB_NAME} -f "${filePath}"`,
+      `${psqlPath} -U ${dbUsername} -h ${dbHost} -d ${dbName} -f "${filePath}"`,
       {
-        env: { ...process.env, PGPASSWORD: process.env.DB_PASS },
+        env: {
+          ...process.env,
+          PGPASSWORD: this.configService.dbPassword,
+        },
       },
     );
 
