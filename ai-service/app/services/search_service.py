@@ -55,8 +55,12 @@ class SearchService:
     
     def _get_mock_context(self, product: str, limit: int = 5) -> Dict[str, Any]:
         """Generate mock search context when API is unavailable"""
-        # Same mock implementation as before
-        # ...
+        # Provide a simple mock implementation
+        mock_queries = [f"{product} feature {i+1}" for i in range(limit)]
+        return {
+            "queries": mock_queries,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
     
     def _stabilize_context(self, context):
         """Remove or standardize unstable elements from context"""

@@ -6,21 +6,24 @@ from app.core.cache import description_cache
 from app.services.service_factory import search_service
 from app.rabbitmq.handlers import handle_generate_description
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
-# Configure logging
+# Configure logging - only INFO and higher in prod
+logging_level = logging.DEBUG if settings.DEBUG else logging.INFO
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+logging.getLogger('aio_pika').setLevel(logging.WARNING)
+logging.getLogger('aiormq').setLevel(logging.WARNING)
+
 app = FastAPI(title=settings.APP_NAME)
 
-# Include routes without the /api/v1 prefix
+# Include routes
 app.include_router(endpoints.router)
-
-# Include routes with the /api/v1 prefix
 app.include_router(endpoints.router, prefix="/api/v1")
 
 
@@ -29,25 +32,34 @@ def root():
     return {"message": "Welcome to the AI microservice!"}
 
 
+async def periodic_cache_cleanup():
+    """Run cache cleanup at regular intervals"""
+    while True:
+        try:
+            await asyncio.sleep(3600)  # Clean up every hour
+            await description_cache.cleanup()
+        except Exception as e:
+            logger.error(f"Error during cache cleanup: {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
     try:
         # Connect to RabbitMQ
         await rabbitmq_manager.connect()
-        
+
         # Register message handlers
-        rabbitmq_manager.register_handler("generate_description", handle_generate_description)
-        
-        # Initialize cache
+        rabbitmq_manager.register_handler(
+            "generate_description", handle_generate_description)
+
+        # Initialize cache and search service
         await description_cache.connect()
-        
-        # Initialize search service
         search_service.connect()
-        
-        # Show cache status on startup
-        await description_cache.debug_cache_state()
-        
+
+        # Start background task for periodic cache cleanup
+        asyncio.create_task(periodic_cache_cleanup())
+
         logger.info("Application startup complete")
     except Exception as e:
         logger.error(f"Error during startup: {str(e)}")
