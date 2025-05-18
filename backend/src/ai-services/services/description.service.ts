@@ -26,7 +26,7 @@ export class DescriptionService {
   ): Promise<string> {
     try {
       const requestId = uuidv4();
-      
+
       try {
         // Send message to RabbitMQ and wait for response
         const response = await this.rabbitMQService.sendMessage(
@@ -35,10 +35,11 @@ export class DescriptionService {
           {
             requestId,
             product: dto.product,
+            force_refresh: dto.force_refresh,
             jwt,
           },
-          true, // Wait for response
-          60000, // 60 second timeout - increased to allow AI processing time
+          true,
+          60000,
         );
 
         return response.description;
@@ -47,7 +48,11 @@ export class DescriptionService {
         this.logger.warn(
           `RabbitMQ processing failed: ${error.message}, falling back to direct HTTP call`,
         );
-        return await this.generateDescriptionViaHttp(dto.product, jwt);
+        return await this.generateDescriptionViaHttp(
+          dto.product,
+          jwt,
+          dto.force_refresh,
+        );
       }
     } catch (error) {
       this.logger.error(`Failed to generate description: ${error.message}`);
@@ -55,15 +60,20 @@ export class DescriptionService {
     }
   }
 
+  // Also update the HTTP fallback method signature to include forceRefresh
   private async generateDescriptionViaHttp(
     product: string,
     jwt: string,
+    force_refresh: boolean = false,
   ): Promise<string> {
     try {
       const response = await firstValueFrom(
         this.httpService.post(
           `${this.aiServiceUrl}/generate-description`,
-          { product },
+          {
+            product,
+            force_refresh,
+          },
           {
             headers: {
               Authorization: `Bearer ${jwt}`,

@@ -13,6 +13,16 @@ async def handle_generate_description(data, publish_callback=None):
         product = data.get('product')
         request_id = data.get('requestId')
         jwt_token = data.get('jwt')
+        
+        # Fix the boolean conversion issue
+        force_refresh = False
+        if 'force_refresh' in data:
+            # Handle different ways force_refresh might be provided
+            force_refresh_value = data.get('force_refresh')
+            if isinstance(force_refresh_value, bool):
+                force_refresh = force_refresh_value
+            elif isinstance(force_refresh_value, str):
+                force_refresh = force_refresh_value.lower() in ('true', 't', 'yes', 'y', '1')
 
         if not product or not request_id:
             logger.error("Missing required fields in message")
@@ -32,7 +42,7 @@ async def handle_generate_description(data, publish_callback=None):
                 pass  # Continue for resilience
 
         # Generate description
-        description = await generate_description(product)
+        description = await generate_description(product, force_refresh=force_refresh)
 
         # Send back the result
         if publish_callback:
