@@ -42,8 +42,8 @@ async def handle_generate_description(data, publish_callback=None):
                 logger.error(f"Invalid JWT in message: {str(e)}")
                 # Continue processing in this case for resilience
 
-        # Generate description
-        description = generate_description(product)
+        # Generate description - ADD AWAIT HERE
+        description = await generate_description(product)
 
         # Send back the result using the callback if provided
         if publish_callback:
@@ -61,3 +61,17 @@ async def handle_generate_description(data, publish_callback=None):
             
     except Exception as e:
         logger.error(f"Error generating description: {str(e)}")
+        # If there's an error, try to send an error response
+        if publish_callback and request_id:
+            try:
+                await publish_callback(
+                    exchange_name='ai_tasks',
+                    routing_key='description_responses',
+                    message={
+                        'requestId': request_id,
+                        'error': str(e)
+                    }
+                )
+                logger.info(f"Error response sent for request: {request_id}")
+            except Exception as publish_error:
+                logger.error(f"Failed to send error response: {str(publish_error)}")

@@ -6,3 +6,8 @@ python-jose
 langchain-ollama
 pydantic
 pydantic-settings
+redis
+google-api-python-client
+google-auth
+requests 
+beautifulsoup4
