@@ -46,6 +46,13 @@ async def periodic_cache_cleanup():
 async def startup_event():
     """Initialize services on startup"""
     try:
+        # Banner with app name
+        app_name = settings.APP_NAME
+        logger.info("=" * 50)
+        logger.info(f"Starting {app_name}")
+        logger.info(f"Environment: {settings.ENVIRONMENT}")
+        logger.info("=" * 50)
+        
         # Connect to RabbitMQ
         await rabbitmq_manager.connect()
 
@@ -56,6 +63,12 @@ async def startup_event():
         # Initialize cache and search service
         await description_cache.connect()
         search_service.connect()
+
+        # Log cache status
+        cache_stats = await description_cache.get_cache_stats()
+        logger.info("Cache configuration:")
+        for key, value in cache_stats.items():
+            logger.info(f"  {key}: {value}")
 
         # Start background task for periodic cache cleanup
         asyncio.create_task(periodic_cache_cleanup())
