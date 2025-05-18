@@ -22,7 +22,15 @@ class DescriptionCache:
         
     async def connect(self):
         """Connect to Redis cache"""
+        redis_enabled = getattr(settings, "CACHE_REDIS_ENABLED", True)
+        if not redis_enabled:
+            logger.info("Redis cache is disabled in configuration")
+            self.redis_client = None
+            logger.info("Using in-memory cache only (Redis disabled)")
+            return
+            
         try:
+            logger.info(f"Connecting to Redis at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
             self.redis_client = redis.Redis(
                 host=settings.REDIS_HOST,
                 port=settings.REDIS_PORT,
@@ -35,9 +43,20 @@ class DescriptionCache:
             )
             # Test connection
             self.redis_client.ping()
-        except Exception:
+            logger.info(f"✅ Successfully connected to Redis at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+            
+            # Log cache configuration
+            logger.info(f"Cache TTL: {self.cache_ttl} seconds")
+            if self.use_in_memory_fallback:
+                logger.info(f"In-memory fallback cache is enabled (max {self.in_memory_max_size} items)")
+            else:
+                logger.info("In-memory fallback cache is disabled")
+                
+        except Exception as e:
             # Fallback to memory cache if Redis is unavailable
             self.redis_client = None
+            logger.warning(f"⚠️ Failed to connect to Redis: {str(e)}")
+            logger.info("Using in-memory cache as fallback")
     
     def generate_key(self, product: str, context: Dict) -> str:
         """Generate a unique cache key based on product and context queries"""
@@ -162,6 +181,26 @@ class DescriptionCache:
         for key in keys_to_remove:
             del self.in_memory_cache[key]
             del self.in_memory_timestamps[key]
+            
+        if keys_to_remove:
+            logger.info(f"Cleaned up {len(keys_to_remove)} expired items from in-memory cache")
+            
+    async def get_cache_stats(self):
+        """Return cache statistics for monitoring"""
+        stats = {
+            "in_memory_items": len(self.in_memory_cache),
+            "in_memory_enabled": self.use_in_memory_fallback,
+            "redis_connected": self.redis_client is not None,
+        }
+        
+        if self.redis_client:
+            try:
+                keys = await self._try_redis_operation(self.redis_client.keys, "*")
+                stats["redis_keys"] = len(keys) if keys is not None else "error"
+            except Exception:
+                stats["redis_keys"] = "error"
+                
+        return stats
 
 # Create singleton instance
 description_cache = DescriptionCache()
