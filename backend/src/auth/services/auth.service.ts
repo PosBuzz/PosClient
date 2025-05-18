@@ -3,18 +3,20 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as dayjs from 'dayjs';
+import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private readonly configService: ConfigService,
   ) {}
 
   async loginSuperAdmin(superAdmin: { email: string; id: number }) {
     const payload = { email: superAdmin.email, sub: superAdmin.id };
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d', // Refresh token validity
+      expiresIn: this.configService.jwtRefreshExpiration, // Refresh token validity
     });
 
     // Save refresh token in the database
@@ -24,7 +26,9 @@ export class AuthService {
     });
 
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: this.configService.jwtExpiration,
+      }),
       refresh_token: refreshToken,
     };
   }
@@ -36,7 +40,7 @@ export class AuthService {
       consumer_id: user.consumer_id,
     };
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '7d', // Refresh token validity
+      expiresIn: this.configService.jwtRefreshExpiration, // Refresh token validity
     });
 
     // Save refresh token in the database
@@ -46,7 +50,9 @@ export class AuthService {
     });
 
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: this.configService.jwtExpiration,
+      }),
       refresh_token: refreshToken,
     };
   }
@@ -117,7 +123,7 @@ export class AuthService {
         sub: payload.sub,
         consumer_id: payload.consumer_id,
       },
-      { expiresIn: '15m' },
+      { expiresIn: this.configService.jwtExpiration },
     );
 
     return { access_token: newAccessToken };
@@ -140,7 +146,7 @@ export class AuthService {
         email: payload.email,
         sub: payload.sub,
       },
-      { expiresIn: '15m' },
+      { expiresIn: this.configService.jwtExpiration },
     );
 
     return { access_token: newAccessToken };

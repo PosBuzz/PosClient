@@ -17,6 +17,9 @@ export class DescriptionController {
   ) {
     // Get JWT from cookie rather than the authorization header
     const jwt = req.cookies['client_access_token'];
+
+    console.log(jwt);
+    
     
     // Pass the validated client user to the service
     const description = await this.descriptionService.generateDescription(
