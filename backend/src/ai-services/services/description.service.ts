@@ -26,46 +26,24 @@ export class DescriptionService {
   ): Promise<string> {
     try {
       const requestId = uuidv4();
-
-      this.logger.debug(
-        `Generating description for product: ${dto.product}, requestId: ${requestId}`,
-      );
-
-      // Debug JWT
-      if (jwt) {
-        const crypto = require('crypto');
-        const tokenHash = crypto
-          .createHash('md5')
-          .update(jwt || '')
-          .digest('hex');
-
-        this.logger.debug(
-          `Before RabbitMQ - JWT token first 20 chars: ${jwt?.substring(0, 20)}...`,
-        );
-        this.logger.debug(`Before RabbitMQ - JWT token length: ${jwt?.length}`);
-        this.logger.debug(`Before RabbitMQ - JWT token hash: ${tokenHash}`);
-      }
-
+      
       try {
-        // Send message to RabbitMQ and WAIT for response
+        // Send message to RabbitMQ and wait for response
         const response = await this.rabbitMQService.sendMessage(
           'ai_tasks',
           'generate_description',
           {
             requestId,
             product: dto.product,
-            jwt: jwt,
+            jwt,
           },
           true, // Wait for response
-          30000, // 30 second timeout
+          60000, // 60 second timeout - increased to allow AI processing time
         );
 
-        this.logger.debug('Response received from RabbitMQ');
-
-        // Return the generated description
         return response.description;
       } catch (error) {
-        // If error is a timeout, fall back to HTTP
+        // If RabbitMQ fails, fall back to HTTP
         this.logger.warn(
           `RabbitMQ processing failed: ${error.message}, falling back to direct HTTP call`,
         );
@@ -82,16 +60,9 @@ export class DescriptionService {
     jwt: string,
   ): Promise<string> {
     try {
-      this.logger.debug(
-        `Generating description directly via HTTP for product: ${product}`,
-      );
-      this.logger.debug(
-        `Making HTTP request to: ${this.aiServiceUrl}/api/v1/generate-description`,
-      );
-
       const response = await firstValueFrom(
         this.httpService.post(
-          `${this.aiServiceUrl}/api/v1/generate-description`,
+          `${this.aiServiceUrl}/generate-description`,
           { product },
           {
             headers: {
