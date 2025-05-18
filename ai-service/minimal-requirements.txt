@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-dotenv
+aio-pika
+python-jose
+langchain-ollama
+pydantic
+pydantic-settings
