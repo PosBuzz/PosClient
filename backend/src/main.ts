@@ -1,24 +1,25 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import * as csurf from 'csurf';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClientExceptionFilter } from 'prisma-client-exception/prisma-client-exception.filter';
 import { PrismaClientValidationExceptionFilter } from 'prisma-client-exception/prisma-client-validation-exception.filter';
 import { AppModule } from './app.module';
+import { ConfigService } from './config/config.service';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  
+  // Get config service
+  const configService = app.get(ConfigService);
 
   // CORS Configuration for credentials and allowed origins
   const options = {
-    origin: [
-      'http://localhost:3001',
-      'http://localhost:3000',
-      'http://localhost:5173',
-    ],
+    origin: configService.corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -61,8 +62,11 @@ async function bootstrap() {
   app.useGlobalFilters(new PrismaClientValidationExceptionFilter(httpAdapter));
 
   // Start the server on the specified port
-  const PORT = process.env.PORT || 80;
+  const PORT = configService.port;
   await app.listen(PORT);
+  
+  logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Environment: ${configService.nodeEnv}`);
 }
 
 bootstrap();

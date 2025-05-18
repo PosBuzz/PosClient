@@ -1,5 +1,11 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
-
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { DescriptionService } from '../services/description.service';
 import { GenerateDescriptionDto } from '../dto/generate-description.dto';
@@ -8,21 +14,22 @@ import { ClientAuthGuard } from 'src/auth/guards/client.auth.guard';
 @UseGuards(ClientAuthGuard)
 @Controller('ai/auto-description')
 export class DescriptionController {
+  private readonly logger = new Logger(DescriptionController.name);
+  
   constructor(private readonly descriptionService: DescriptionService) {}
 
   @Post()
-  async generateAutoDescription(
-    @Body() dto: GenerateDescriptionDto,
+  async generateDescription(
     @Req() req: Request,
+    @Body() dto: GenerateDescriptionDto,
   ) {
-    // Get JWT from cookie rather than the authorization header
-    const jwt = req.cookies['client_access_token'];
-    
-    // Pass the validated client user to the service
-    const description = await this.descriptionService.generateDescription(
-      dto,
-      jwt,
-    );
-    return { description };
+    try {
+      const jwt = req.cookies['client_access_token'];
+      const result = await this.descriptionService.generateDescription(dto, jwt);
+      return { description: result };
+    } catch (error) {
+      this.logger.error(`Error generating description: ${error.message}`);
+      throw error;
+    }
   }
 }
