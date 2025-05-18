@@ -3,6 +3,7 @@ import hashlib
 import time
 from typing import Dict, Optional, Any
 import redis
+from redis.exceptions import ConnectionError
 from app.core.config import settings
 import logging
 
@@ -13,9 +14,11 @@ class DescriptionCache:
         self.redis_client = None
         self.cache_ttl = settings.CACHE_TTL  # Time in seconds (e.g. 86400 for 1 day)
         self.in_memory_cache = {}  # Fallback cache
+        self.in_memory_timestamps = {}  # Track when items were added
         self.connection_retry_limit = 3
         self.retry_delay = 1  # seconds
         self.use_in_memory_fallback = True
+        self.in_memory_max_size = 1000  # Maximum items
         
     async def connect(self):
         """Connect to Redis cache"""
@@ -32,30 +35,22 @@ class DescriptionCache:
             )
             # Test connection
             self.redis_client.ping()
-            logger.info("Connected to Redis cache")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+        except Exception:
             # Fallback to memory cache if Redis is unavailable
             self.redis_client = None
-            logger.info("Using in-memory cache as fallback")
     
     def generate_key(self, product: str, context: Dict) -> str:
-        """Generate a unique cache key based on product and context queries (ignoring timestamps)"""
+        """Generate a unique cache key based on product and context queries"""
         try:
             # Extract just the queries for consistent cache keys
             query_list = sorted(context.get('queries', []))
-            
-            # Standardize the queries (lowercase, trim)
             query_list = [q.lower().strip() for q in query_list]
             
             context_str = json.dumps(query_list, sort_keys=True)
             combined = f"{product.lower().strip()}:{context_str}"
             
-            key = hashlib.md5(combined.encode()).hexdigest()
-            logger.debug(f"Generated key '{key}' from product '{product}' and {len(query_list)} queries")
-            return key
-        except Exception as e:
-            logger.error(f"Error generating cache key: {e}")
+            return hashlib.md5(combined.encode()).hexdigest()
+        except Exception:
             # Fallback to simple key
             return hashlib.md5(product.lower().encode()).hexdigest()
     
@@ -65,13 +60,10 @@ class DescriptionCache:
             try:
                 if self.redis_client:
                     return operation(*args, **kwargs)
-            except redis.exceptions.ConnectionError as e:
-                logger.warning(f"Redis connection error (attempt {attempt+1}): {e}")
-                # Try to reconnect
+            except ConnectionError:
                 await self.connect()
                 time.sleep(self.retry_delay)
-            except Exception as e:
-                logger.error(f"Redis error: {e}")
+            except Exception:
                 break
                 
         return None
@@ -87,12 +79,19 @@ class DescriptionCache:
                 )
                 if redis_result:
                     return json.loads(redis_result)
-            except Exception as e:
-                logger.error(f"Cache retrieval error: {e}")
+            except Exception:
+                pass
         
-        # Fall back to in-memory if Redis fails and fallback is enabled
+        # Fall back to in-memory cache
         if self.use_in_memory_fallback and key in self.in_memory_cache:
-            logger.info(f"Using in-memory cache for key: {key}")
+            # Check if the entry has expired
+            if key in self.in_memory_timestamps:
+                if time.time() - self.in_memory_timestamps[key] > self.cache_ttl:
+                    # Entry has expired, remove it
+                    del self.in_memory_cache[key]
+                    del self.in_memory_timestamps[key]
+                    return None
+            
             return self.in_memory_cache.get(key)
             
         return None
@@ -101,7 +100,16 @@ class DescriptionCache:
         """Store description in cache"""
         # Always update in-memory cache for fallback
         if self.use_in_memory_fallback:
+            # Check if we need to evict an item
+            if len(self.in_memory_cache) >= self.in_memory_max_size:
+                # Find oldest item
+                if self.in_memory_timestamps:
+                    oldest_key = min(self.in_memory_timestamps.items(), key=lambda x: x[1])[0]
+                    del self.in_memory_cache[oldest_key]
+                    del self.in_memory_timestamps[oldest_key]
+                    
             self.in_memory_cache[key] = value
+            self.in_memory_timestamps[key] = time.time()
             
         # Try Redis if available
         if self.redis_client:
@@ -113,10 +121,10 @@ class DescriptionCache:
                     json.dumps(value)
                 )
                 return redis_result is not None
-            except Exception as e:
-                logger.error(f"Cache storage error: {e}")
+            except Exception:
+                pass
                 
-        return self.use_in_memory_fallback  # Return True if we stored it in memory
+        return self.use_in_memory_fallback
             
     async def invalidate(self, key: str) -> bool:
         """Invalidate a cache entry"""
@@ -125,6 +133,8 @@ class DescriptionCache:
         # Remove from in-memory cache
         if self.use_in_memory_fallback and key in self.in_memory_cache:
             del self.in_memory_cache[key]
+            if key in self.in_memory_timestamps:
+                del self.in_memory_timestamps[key]
             success = True
             
         # Try Redis if available
@@ -135,34 +145,23 @@ class DescriptionCache:
                     key
                 )
                 return redis_result is not None
-            except Exception as e:
-                logger.error(f"Cache invalidation error: {e}")
+            except Exception:
+                pass
                 
         return success
     
-    async def debug_cache_state(self):
-        """Log the current state of the cache for debugging"""
-        memory_keys = list(self.in_memory_cache.keys())
-        logger.info(f"In-memory cache contains {len(memory_keys)} items")
+    async def cleanup(self):
+        """Remove expired items from in-memory cache"""
+        now = time.time()
+        keys_to_remove = []
         
-        if len(memory_keys) > 0:
-            logger.info(f"Sample keys: {memory_keys[:5]}")
-            logger.info(f"Sample item: {json.dumps(list(self.in_memory_cache.values())[0], indent=2)[:300]}...")
-            
-        if self.redis_client:
-            try:
-                # Get all keys matching our pattern
-                redis_keys = self.redis_client.keys("*")
-                logger.info(f"Redis cache contains {len(redis_keys)} items")
-                if len(redis_keys) > 0:
-                    logger.info(f"Sample Redis keys: {redis_keys[:5]}")
-                    sample_data = self.redis_client.get(redis_keys[0])
-                    if sample_data:
-                        logger.info(f"Sample Redis data: {sample_data[:300]}...")
-            except Exception as e:
-                logger.error(f"Error getting Redis keys: {e}")
-        else:
-            logger.warning("Redis client not available")
+        for key, timestamp in self.in_memory_timestamps.items():
+            if now - timestamp > self.cache_ttl:
+                keys_to_remove.append(key)
+                
+        for key in keys_to_remove:
+            del self.in_memory_cache[key]
+            del self.in_memory_timestamps[key]
 
 # Create singleton instance
 description_cache = DescriptionCache()
