@@ -2,6 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { GenerateDescriptionDto } from '../dto/generate-description.dto';
+import { SubmitFeedbackDto } from '../dto/submit-feedback.dto'; // Import the new DTO
 import { v4 as uuidv4 } from 'uuid';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from 'src/config/config.service';
@@ -85,6 +86,38 @@ export class DescriptionService {
       return response.data.description;
     } catch (error) {
       this.logger.error(`HTTP fallback failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Add the new method for submitting feedback
+  async submitFeedback(
+    dto: SubmitFeedbackDto,
+    jwt: string,
+  ): Promise<boolean> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.aiServiceUrl}/feedback`,
+          {
+            product: dto.product,
+            description: dto.description,
+            rating: dto.rating,
+            comment: dto.comment,
+            user_edited_description: dto.user_edited_description,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          },
+        ),
+      );
+
+      this.logger.log(`Feedback submitted for product: ${dto.product}`);
+      return response.data.success;
+    } catch (error) {
+      this.logger.error(`Failed to submit feedback: ${error.message}`);
       throw error;
     }
   }

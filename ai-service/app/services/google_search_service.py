@@ -47,7 +47,7 @@ class GoogleSearchService:
         
         try:
             # Format the query to be more POS-relevant
-            query = f"{product} features details bangladesh"
+            query = f"{product} commonly available in Bangladesh"
             
             # Call Google Custom Search API
             url = "https://www.googleapis.com/customsearch/v1"
