@@ -3,6 +3,10 @@ from app.core.config import settings
 from app.api.v1 import endpoints
 from app.core.rabbitmq import rabbitmq_manager
 from app.core.cache import description_cache
+from app.core.vector_store import vector_store
+from app.core.feedback import feedback_manager
+from app.core.history import history_manager
+from app.core.background_learning import background_learner
 from app.services.service_factory import search_service
 from app.rabbitmq.handlers import handle_generate_description
 import logging
@@ -36,10 +40,12 @@ async def periodic_cache_cleanup():
     """Run cache cleanup at regular intervals"""
     while True:
         try:
-            await asyncio.sleep(3600)  # Clean up every hour
+            await asyncio.sleep(3600)  # Run every hour
             await description_cache.cleanup()
+            logger.info("Completed periodic cache cleanup")
         except Exception as e:
-            logger.error(f"Error during cache cleanup: {e}")
+            logger.error(f"Error during cache cleanup: {str(e)}")
+            await asyncio.sleep(300)  # Wait 5 minutes before retrying
 
 
 @app.on_event("startup")
@@ -60,9 +66,17 @@ async def startup_event():
         rabbitmq_manager.register_handler(
             "generate_description", handle_generate_description)
 
-        # Initialize cache and search service
+        # Initialize all services
         await description_cache.connect()
         search_service.connect()
+        vector_store.connect()  
+        feedback_manager.initialize()
+        history_manager.initialize()
+        
+        # Import here to avoid circular imports
+        from app.llm.generate import generate_description
+        # Pass function reference to background learner
+        background_learner.initialize(generate_description_func=generate_description)
 
         # Log cache status
         cache_stats = await description_cache.get_cache_stats()
@@ -70,7 +84,7 @@ async def startup_event():
         for key, value in cache_stats.items():
             logger.info(f"  {key}: {value}")
 
-        # Start background task for periodic cache cleanup
+        # Start background tasks
         asyncio.create_task(periodic_cache_cleanup())
 
         logger.info("Application startup complete")
