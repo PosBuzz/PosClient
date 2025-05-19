@@ -26,12 +26,40 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     CACHE_TTL: int = int(os.getenv("CACHE_TTL", 86400))  # Default: 1 day
-    CACHE_REDIS_ENABLED: bool = os.getenv("CACHE_REDIS_ENABLED", "True") == "True"
+    CACHE_REDIS_ENABLED: bool = os.getenv(
+        "CACHE_REDIS_ENABLED", "True") == "True"
 
     # Search settings - default to DuckDuckGo
     SEARCH_ENGINE: str = os.getenv("SEARCH_ENGINE", "duckduckgo")
     GOOGLE_SEARCH_API_KEY: str = os.getenv("GOOGLE_SEARCH_API_KEY", "")
     GOOGLE_SEARCH_CX: str = os.getenv("GOOGLE_SEARCH_CX", "")
+
+    # ChromaDB settings
+    CHROMA_DB_DIR: str = os.getenv("CHROMA_DB_DIR", "./data/chroma_db")
+    CHROMA_TELEMETRY: bool = os.getenv("CHROMA_TELEMETRY", "False") == "True"
+    CHROMA_COLLECTION_SHARDING: bool = os.getenv("CHROMA_COLLECTION_SHARDING", "True") == "True"
+    
+    # Performance settings
+    MAX_BACKGROUND_BATCH_SIZE: int = int(os.getenv("MAX_BACKGROUND_BATCH_SIZE", "5"))
+    FEEDBACK_MAX_FILES: int = int(os.getenv("FEEDBACK_MAX_FILES", "10000"))
+    
+    # Optimization settings
+    VECTOR_STORE_CACHE_TTL: int = int(os.getenv("VECTOR_STORE_CACHE_TTL", "3600"))  # Default: 1 hour
+    BACKGROUND_LEARNING_INTERVAL: int = int(os.getenv("BACKGROUND_LEARNING_INTERVAL", "43200"))  # Default: 12 hours
+
+    # Feedback settings
+    FEEDBACK_CACHE_TTL: int = int(os.getenv("FEEDBACK_CACHE_TTL", "3600"))  # Default: 1 hour
+    FEEDBACK_ANALYSIS_INTERVAL: int = int(os.getenv("FEEDBACK_ANALYSIS_INTERVAL", "86400"))  # Default: 24 hours
+    FEEDBACK_CLEANUP_INTERVAL: int = int(os.getenv("FEEDBACK_CLEANUP_INTERVAL", "604800"))  # Default: 7 days
+    FEEDBACK_QUALITY_THRESHOLD: int = int(os.getenv("FEEDBACK_QUALITY_THRESHOLD", "4"))  # Default: 4 stars
+
+    # History settings
+    HISTORY_CLEANUP_INTERVAL: int = int(os.getenv("HISTORY_CLEANUP_INTERVAL", "604800"))  # Default: 7 days
+    HISTORY_VERSIONS_TO_KEEP: int = int(os.getenv("HISTORY_VERSIONS_TO_KEEP", "3"))  # Default: keep 3 versions
+
+    # LLM settings
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3:8b-instruct-q8_0")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
 
 
 settings = Settings()

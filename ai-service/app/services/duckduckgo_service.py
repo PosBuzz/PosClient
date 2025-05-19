@@ -34,7 +34,7 @@ class DuckDuckGoService:
         
         try:
             # Format the query
-            query = f"{product} features bangladesh"
+            query = f"{product} commonly available in Bangladesh"
             url = f"https://html.duckduckgo.com/html/?q={query}"
             
             response = requests.get(url, headers=self.headers)
