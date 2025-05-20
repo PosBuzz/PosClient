@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from app.llm.generate import generate_description
 from app.core.auth import verify_jwt
 from app.core.feedback import feedback_manager
@@ -9,13 +10,12 @@ router = APIRouter()
 class ProductInput(BaseModel):
     product: str
     force_refresh: bool = False
-
 class FeedbackInput(BaseModel):
     product: str
     description: str
     rating: int  # 1-5 scale
-    comment: str = None
-    user_edited_description: str = None
+    comment: Optional[str] = None
+    user_edited_description: Optional[str] = None
 
 @router.post("/generate-description")
 async def generate(input_data: ProductInput, user_data=Depends(verify_jwt)):
