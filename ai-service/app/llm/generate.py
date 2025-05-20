@@ -34,7 +34,7 @@ context_prompt = PromptTemplate.from_template(
     1. Maximum 30 words
     2. Focus only on product features and type
     3. No marketing language or flowery descriptions
-    4. No mentions of websites, stores, or specific locations
+    4. No mentions of websites, stores, or specific locations  where it be can found
     5. Simple, factual information only
     6. No pricing information
     7. Analyze the whole context and give most relevant result
@@ -63,7 +63,7 @@ basic_prompt = PromptTemplate.from_template(
     1. Maximum 30 words
     2. Focus only on product features and type
     3. No marketing language or flowery descriptions
-    4. No mentions of websites, stores, or specific locations
+    4. No mentions of websites, stores, or specific locations where it can be found
     5. Simple, factual information only
     6. No pricing information
     7. Analyze the whole context and give most relevant result
@@ -121,7 +121,6 @@ async def get_similar_examples(product: str) -> str:
 
 
 async def generate_description(product: str, force_refresh: bool = False):
-    """Generate with parallel context fetching"""
     try:
         # Start all async operations in parallel
         cache_task = description_cache.get(
@@ -131,17 +130,30 @@ async def generate_description(product: str, force_refresh: bool = False):
         history_task = history_manager.get_latest_version(product)
 
         # Wait for all results simultaneously
-        cached_result, search_context, similar_examples, latest_version = await asyncio.gather(
+        results = await asyncio.gather(
             cache_task, search_task, similar_examples_task, history_task,
             return_exceptions=True
         )
+        
+        # Process results (handle exceptions for each task)
+        cached_result = results[0] if not isinstance(results[0], Exception) else None
+        search_context = results[1] if not isinstance(results[1], Exception) else {}
+        similar_examples = results[2] if not isinstance(results[2], Exception) else ""
+        latest_version = results[3] if not isinstance(results[3], Exception) else None
+
+        # Log search context details
+        if isinstance(search_context, Exception):
+            logger.error(f"Error getting search context: {str(search_context)}")
+        else:
+            queries = search_context.get('queries', [])
+            logger.info(f"Search service returned {len(queries)} queries for '{product}': {queries}")
 
         # Process results (handle exceptions for each task)
         if not isinstance(cached_result, Exception) and not force_refresh and cached_result:
             return cached_result['description']
 
         # Generate cache key based on product and context
-        cache_key = description_cache.generate_key(product, search_context)
+        cache_key = description_cache.generate_key(product, search_context if isinstance(search_context, dict) else {})
 
         # Check cache first unless force refresh is specified
         if not force_refresh:
@@ -159,15 +171,15 @@ async def generate_description(product: str, force_refresh: bool = False):
         # Generate a new description
         logger.info(f"Generating new description for: {product}")
 
-        # Get similar examples
-        similar_examples = await get_similar_examples(product)
+        # Use the similar_examples result from gather
         logger.info(
             f"Found {len(similar_examples) > 0} similar examples for: {product}")
 
         # First try to get the latest high-quality version from history
         latest_version = None
         try:
-            latest_version = await history_manager.get_latest_version(product)
+            if not isinstance(history_task, Exception):
+                latest_version = await history_task if asyncio.iscoroutine(history_task) else history_task
         except Exception as e:
             logger.warning(f"Error getting latest version: {str(e)}")
 
@@ -197,9 +209,10 @@ async def generate_description(product: str, force_refresh: bool = False):
                 logger.error(f"Error using latest version: {str(e)}")
 
         # Use context if available
-        if search_context and search_context.get('queries'):
+        if isinstance(search_context, dict) and search_context.get('queries'):
             # Use only the top 5 most relevant search terms
-            top_queries = search_context.get('queries')[:5]
+            queries = search_context.get('queries') or []
+            top_queries = queries[:5]
             search_terms = "\n".join([f"- {query}" for query in top_queries])
 
             # Log the terms we're using
@@ -241,8 +254,9 @@ async def generate_description(product: str, force_refresh: bool = False):
         logger.info(f"Cached new description for: {product}")
 
         # Add to vector store for continuous learning - do this in the background
-        asyncio.create_task(add_to_learning_systems(
-            product, description, search_context))
+        if isinstance(search_context, dict):
+            asyncio.create_task(add_to_learning_systems(
+                product, description, search_context))
 
         return description
     except Exception as e:
