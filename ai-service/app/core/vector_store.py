@@ -7,6 +7,7 @@ from app.core.config import settings
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 import numpy as np
+from langchain_huggingface import HuggingFaceEmbeddings  # Updated import path
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 class VectorStore:
     def __init__(self):
         self.client = None
+        self.embedder = None
         self.collections = {}  # Multiple collections for partitioning
         self.persist_directory = os.path.abspath(settings.CHROMA_DB_DIR)
         self.similarity_cache = {}  # In-memory cache for similarity results
@@ -225,6 +227,26 @@ class VectorStore:
         # Also clear the lru_cache
         self.find_similar.cache_clear()
         logger.info("Vector store similarity cache cleared")
+
+    def _initialize_embeddings(self):
+        """Initialize the local embeddings model"""
+        try:
+            # Detect if CUDA is available
+            device = "cuda:0" if settings.USE_GPU else "cpu"
+            
+            # Use a small, efficient model for embeddings
+            self.embedder = HuggingFaceEmbeddings(
+                model_name=settings.EMBEDDING_MODEL,
+                model_kwargs={'device': device},
+                encode_kwargs={'normalize_embeddings': True}  # Normalize for cosine similarity
+            )
+            logger.info(f"✅ Initialized local embeddings model ({settings.EMBEDDING_MODEL}) on {device}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize embeddings: {str(e)}")
+            # Fall back to ChromaDB's default embeddings
+            self.embedder = None
+            return False
 
 
 # Create singleton instance

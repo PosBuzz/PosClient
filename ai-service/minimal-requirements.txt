@@ -13,3 +13,4 @@ requests
 beautifulsoup4
 numpy
 chromadb
+langchain-huggingface
