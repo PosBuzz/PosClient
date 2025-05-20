@@ -2,7 +2,7 @@ import logging
 import asyncio
 import datetime
 import os
-import sqlite3
+import aiosqlite
 from typing import List
 from app.core.config import settings  # Import settings module
 
@@ -28,32 +28,34 @@ class BackgroundLearner:
         if generate_description_func:
             self.generate_description_func = generate_description_func
 
-        # Initialize SQLite database
-        try:
-            self.conn = sqlite3.connect(self.db_path)
-            cursor = self.conn.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS products (
-                    product TEXT PRIMARY KEY,
-                    last_updated TEXT,
-                    generation_count INTEGER DEFAULT 1,
-                    added_timestamp TEXT
-                )
-            ''')
-            self.conn.commit()
-            logger.info("Background learner database initialized")
-
-            # Close connection - we'll reopen as needed
-            self.conn.close()
-            self.conn = None
-        except Exception as e:
-            logger.error(
-                f"Error initializing background learner database: {str(e)}")
-
-        # Schedule background task
-        asyncio.create_task(self._periodic_learning())
+        # Schedule background task - we'll initialize the DB in the task
+        asyncio.create_task(self._initialize_db())
+        
         logger.info("Background learner initialized")
         return True
+
+    async def _initialize_db(self):
+        """Initialize the database asynchronously"""
+        try:
+            # Initialize SQLite database
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.cursor()
+                await cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS products (
+                        product TEXT PRIMARY KEY,
+                        last_updated TEXT,
+                        generation_count INTEGER DEFAULT 1,
+                        added_timestamp TEXT
+                    )
+                ''')
+                await conn.commit()
+            
+            logger.info("Background learner database initialized")
+            
+            # Start the periodic learning task
+            asyncio.create_task(self._periodic_learning())
+        except Exception as e:
+            logger.error(f"Error initializing background learner database: {str(e)}")
 
     async def add_popular_product(self, product: str) -> bool:
         """Add a product to the popular products database"""
@@ -62,30 +64,29 @@ class BackgroundLearner:
                 return False
 
             # Connect to DB
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.cursor()
 
-            # Check if product already exists
-            now = datetime.datetime.now().isoformat()
-            cursor.execute(
-                "SELECT product, generation_count FROM products WHERE product = ?", (product.lower().strip(),))
-            result = cursor.fetchone()
+                # Check if product already exists
+                now = datetime.datetime.now().isoformat()
+                await cursor.execute(
+                    "SELECT product, generation_count FROM products WHERE product = ?", (product.lower().strip(),))
+                result = await cursor.fetchone()
 
-            if result:
-                # Update existing product record
-                cursor.execute(
-                    "UPDATE products SET generation_count = generation_count + 1, last_updated = ? WHERE product = ?",
-                    (now, product.lower().strip())
-                )
-            else:
-                # Insert new product
-                cursor.execute(
-                    "INSERT INTO products (product, last_updated, generation_count, added_timestamp) VALUES (?, ?, 1, ?)",
-                    (product.lower().strip(), now, now)
-                )
+                if result:
+                    # Update existing product record
+                    await cursor.execute(
+                        "UPDATE products SET generation_count = generation_count + 1, last_updated = ? WHERE product = ?",
+                        (now, product.lower().strip())
+                    )
+                else:
+                    # Insert new product
+                    await cursor.execute(
+                        "INSERT INTO products (product, last_updated, generation_count, added_timestamp) VALUES (?, ?, 1, ?)",
+                        (product.lower().strip(), now, now)
+                    )
 
-            conn.commit()
-            conn.close()
+                await conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error adding popular product: {str(e)}")
@@ -94,23 +95,23 @@ class BackgroundLearner:
     async def _get_products_needing_update(self, limit: int = 5) -> List[str]:
         """Get products that need updates based on various criteria"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.cursor()
 
-            # Query products not updated in the last 7 days, ordered by popularity
-            seven_days_ago = (datetime.datetime.now() -
-                              datetime.timedelta(days=7)).isoformat()
+                # Query products not updated in the last 7 days, ordered by popularity
+                seven_days_ago = (datetime.datetime.now() -
+                                  datetime.timedelta(days=7)).isoformat()
 
-            cursor.execute("""
-                SELECT product FROM products 
-                WHERE last_updated < ? 
-                ORDER BY generation_count DESC
-                LIMIT ?
-            """, (seven_days_ago, limit))
+                await cursor.execute("""
+                    SELECT product FROM products 
+                    WHERE last_updated < ? 
+                    ORDER BY generation_count DESC
+                    LIMIT ?
+                """, (seven_days_ago, limit))
 
-            result = [row[0] for row in cursor.fetchall()]
-            conn.close()
-            return result
+                rows = await cursor.fetchall()
+                result = [row[0] for row in rows]
+                return result
         except Exception as e:
             logger.error(f"Error getting products for update: {str(e)}")
             return []
@@ -156,14 +157,13 @@ class BackgroundLearner:
                     logger.info(f"Background learner refreshed: '{product}'")
 
                     # Update last_updated timestamp
-                    conn = sqlite3.connect(self.db_path)
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "UPDATE products SET last_updated = ? WHERE product = ?",
-                        (datetime.datetime.now().isoformat(), product)
-                    )
-                    conn.commit()
-                    conn.close()
+                    async with aiosqlite.connect(self.db_path) as conn:
+                        cursor = await conn.cursor()
+                        await cursor.execute(
+                            "UPDATE products SET last_updated = ? WHERE product = ?",
+                            (datetime.datetime.now().isoformat(), product)
+                        )
+                        await conn.commit()
                 except Exception as e:
                     logger.error(
                         f"Error learning product '{product}': {str(e)}")
@@ -181,21 +181,20 @@ class BackgroundLearner:
         """Pregenerate descriptions for trending products during off-peak hours"""
         try:
             # Get top 20 most requested products from the last week
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            conn = aiosqlite.connect(self.db_path)
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.cursor()
 
-            one_week_ago = (datetime.datetime.now() -
-                            datetime.timedelta(days=7)).isoformat()
-            cursor.execute("""
-                SELECT product FROM products 
-                WHERE last_updated < ? 
-                ORDER BY generation_count DESC
-                LIMIT 20
-            """, (one_week_ago,))
+                one_week_ago = (datetime.datetime.now() -
+                                datetime.timedelta(days=7)).isoformat()
+                await cursor.execute("""
+                    SELECT product FROM products 
+                    WHERE last_updated < ? 
+                    ORDER BY generation_count DESC
+                    LIMIT 20
+                """, (one_week_ago,))
 
-            trending_products = [row[0] for row in cursor.fetchall()]
-            conn.close()
-
+                trending_products = [row[0] for row in await cursor.fetchall()]
             # Generate descriptions in the background
             for product in trending_products:
                 try:

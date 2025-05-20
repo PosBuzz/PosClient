@@ -1,8 +1,7 @@
 import logging
 from typing import Dict, Any, List
 import datetime
-import requests
-import json
+import aiohttp  # Use aiohttp for async HTTP requests
 import time
 import os
 
@@ -58,13 +57,12 @@ class GoogleSearchService:
                 "num": limit  # Request 'limit' results
             }
             
-            response = requests.get(url, params=params)
-            
-            if response.status_code != 200:
-                logger.error(f"Google Search API error: {response.status_code}, {response.text}")
-                return {"queries": [], "timestamp": datetime.datetime.now().isoformat()}
-                
-            data = response.json()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status != 200:
+                        logger.error(f"Google Search API error: {response.status}, {await response.text()}")
+                        return {"queries": [], "timestamp": datetime.datetime.now().isoformat()}
+                    data = await response.json()
             
             # Extract information from all results
             queries = []

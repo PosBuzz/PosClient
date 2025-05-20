@@ -1,3 +1,4 @@
+import datetime
 import logging
 from typing import List, Dict, Any, Optional
 import os
@@ -15,10 +16,11 @@ logger = logging.getLogger(__name__)
 class ChromaEmbeddingAdapter:
     def __init__(self, embedding_function):
         self.embedding_function = embedding_function
+        self.name = "huggingface_embedding_adapter"
         
     def __call__(self, input: List[str]) -> List[List[float]]:
         """Adapt LangChain embedding function to ChromaDB's expected signature"""
-        return self.embedding_function(input)
+        return self.embedding_function.embed_documents(input)
 
 class VectorStore:
     def __init__(self):
@@ -39,21 +41,38 @@ class VectorStore:
             # Initialize local embedding model first
             logger.info("Initializing embedding model...")
             self._initialize_embeddings()
-            
+
+            # Connect to ChromaDB
             logger.info(f"Connecting to ChromaDB at {self.persist_directory}")
             self.client = chromadb.PersistentClient(
                 path=self.persist_directory,
                 settings=ChromaSettings(
-                    anonymized_telemetry=settings.CHROMA_TELEMETRY
+                    anonymized_telemetry=settings.CHROMA_TELEMETRY,
+                    allow_reset=False
                 )
             )
-
-            # Default collection is still created for backwards compatibility
-            self.collections["main"] = self._create_collection("product_descriptions")
-            logger.info(f"✅ Successfully connected to ChromaDB")
+            
+            # Initialize the main collection with default embeddings first
+            # We'll use the embeddings directly later when adding documents
+            for collection_key in ["main", "a_e", "f_j", "k_o", "p_t", "u_z"]:
+                try:
+                    self.collections[collection_key] = self.client.get_or_create_collection(
+                        name=f"product_descriptions_{collection_key}",
+                        metadata={
+                            "hnsw:space": "cosine",
+                            "hnsw:construction_ef": 128,
+                            "hnsw:search_ef": 100,
+                            "hnsw:M": 64
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Error creating collection {collection_key}: {str(e)}")
+                
+            logger.info("✅ Successfully connected to ChromaDB")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to ChromaDB: {str(e)}")
+            self.client = None
             return False
 
     def _get_collection_for_product(self, product: str):
@@ -109,54 +128,49 @@ class VectorStore:
                               metadata: Optional[Dict[str, Any]] = None):
         """Add product description to vector store using partitioning"""
         if not self.client:
-            if not self.connect():
-                logger.error("Failed to connect to vector store")
-                return False
-
-        try:
-            # Prepare document and metadata
-            document = f"Product: {product}\nDescription: {description}"
-
-            # Build metadata including context
-            meta = {
-                "product": product,
-                "timestamp": metadata.get("timestamp") if metadata else None
-            }
-
-            # Add context keywords to metadata
-            if context and "queries" in context:
-                meta["context_keywords"] = ", ".join(
-                    context.get("queries", [])[:5])
-                    
-            # Add additional metadata
-            if metadata:
-                for key, value in metadata.items():
-                    if key not in meta and value is not None:
-                        meta[key] = value
-
-            # Get appropriate collection
-            collection = self._get_collection_for_product(product)
-
-            # Add document to collection with product_id as ID
-            collection.add(
-                documents=[document],
-                metadatas=[meta],
-                ids=[product_id]
-            )
-            
-            # Invalidate any cached similarity results for this product
-            cache_key = product.lower().strip()
-            if cache_key in self.similarity_cache:
-                del self.similarity_cache[cache_key]
-
-            logger.info(
-                f"Added description for {product} to vector store with ID: {product_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Error adding to vector store: {str(e)}")
+            logger.error("ChromaDB client not initialized")
             return False
 
-    @lru_cache(maxsize=100)  # Cache recent results in memory
+        try:
+            collection = self._get_collection_for_product(product)
+            if not collection:
+                logger.error(f"Failed to get collection for product: {product}")
+                return False
+                
+            # Generate embeddings using our embedding model
+            if self.embedder:
+                embedding = self.embedder.embed_documents([description])[0]
+            else:
+                # Let ChromaDB handle embeddings
+                embedding = None
+                
+            # Create metadata
+            if metadata is None:
+                metadata = {}
+                
+            metadata.update({
+                "product": product,
+                "added_at": datetime.datetime.now().isoformat(),
+                "context_type": str(type(context).__name__),
+                "context_length": len(str(context)) if context else 0
+            })
+            
+            # Add to collection, providing the pre-generated embedding if available
+            collection.upsert(
+                ids=[product_id],
+                documents=[description],
+                embeddings=[embedding] if embedding else None,
+                metadatas=[metadata]
+            )
+            
+            logger.info(f"Added description for {product} to vector store")
+            return True
+        except Exception as e:
+            logger.error(f"Error adding description to vector store: {str(e)}")
+            return False
+
+    # Remove the lru_cache decorator and implement our own caching mechanism
+    # @lru_cache(maxsize=100)  # Remove this line - it causes coroutine reuse errors
     async def find_similar(self, product: str, limit: int = 3) -> List[Dict[str, Any]]:
         """Find similar product descriptions with caching"""
         if not self.client:
@@ -167,14 +181,14 @@ class VectorStore:
         try:
             cache_key = product.lower().strip()
             
-            # Check memory cache first
+            # Check memory cache first - this is our manually implemented cache, not lru_cache
             if cache_key in self.similarity_cache:
                 cache_entry = self.similarity_cache[cache_key]
                 # Check if cache is still fresh
                 if time.time() - cache_entry['timestamp'] < self.cache_ttl:
                     logger.info(f"Using cached similarity results for: {product}")
                     return cache_entry['results']
-            
+        
             # Log the embedding process if we have a local embedder
             if self.embedder:
                 logger.info(f"Generating embeddings for query: {product}")
@@ -182,7 +196,7 @@ class VectorStore:
                 embeddings = self.embedder.embed_documents([product])
                 embed_time = time.time() - embed_start
                 logger.info(f"Embedding generated in {embed_time:.3f}s with dimension: {len(embeddings[0])}")
-        
+    
             # Search each collection and combine results
             all_results = []
             
@@ -204,7 +218,7 @@ class VectorStore:
                         })
             except Exception as e:
                 logger.warning(f"Error querying primary collection: {str(e)}")
-            
+        
             # If we don't have enough results, try main collection as backup
             if len(all_results) < limit and "main" in self.collections:
                 try:
@@ -223,7 +237,7 @@ class VectorStore:
                             })
                 except Exception as e:
                     logger.warning(f"Error querying main collection: {str(e)}")
-            
+        
             # Store in memory cache
             self.similarity_cache[cache_key] = {
                 'timestamp': time.time(),
@@ -240,56 +254,48 @@ class VectorStore:
     async def clear_cache(self):
         """Clear the similarity cache"""
         self.similarity_cache = {}
-        # Also clear the lru_cache
-        self.find_similar.cache_clear()
+        # No need to clear lru_cache anymore since we're not using it
         logger.info("Vector store similarity cache cleared")
 
     def _initialize_embeddings(self):
         """Initialize the local embeddings model with detailed logging"""
         try:
-            import os
-            from huggingface_hub import scan_cache_dir
-            
-            # Log cache location
-            cache_dir = os.path.join(os.environ["USERPROFILE"], ".cache", "huggingface", "hub") if os.name == 'nt' else os.path.expanduser("~/.cache/huggingface/hub")
+            # Check if embedding model is already downloaded
+            cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
             if os.path.exists(cache_dir):
                 logger.info(f"HuggingFace cache directory exists at: {cache_dir}")
-                
-                # Scan cache to see what models are available
-                cache_info = scan_cache_dir()
-                models = [repo.repo_id for repo in cache_info.repos]
+                models = os.listdir(cache_dir)
                 logger.info(f"Models in cache: {models}")
-            else:
-                logger.info(f"HuggingFace cache directory not found at: {cache_dir}")
-            
-            # Detect if CUDA is available
-            device = "cuda:0" if settings.USE_GPU else "cpu"
+        
+            # Log device information
+            device = "cuda" if settings.USE_GPU else "cpu"
             logger.info(f"Initializing embedding model on device: {device}")
             
-            # Use a small, efficient model for embeddings
-            model_name = settings.EMBEDDING_MODEL
-            logger.info(f"Loading embedding model: {model_name}")
+            # Log which model we're loading
+            logger.info(f"Loading embedding model: {settings.EMBEDDING_MODEL}")
             
             start_time = time.time()
+            
+            # Initialize HuggingFace embeddings
             self.embedder = HuggingFaceEmbeddings(
-                model_name=model_name,
-                model_kwargs={'device': device},
-                encode_kwargs={'normalize_embeddings': True}
+                model_name=settings.EMBEDDING_MODEL,
+                model_kwargs={"device": device},
+                encode_kwargs={"normalize_embeddings": True}
             )
-            load_time = time.time() - start_time
             
-            # Test the embedder with a simple example
-            test_text = "This is a test sentence"
-            start_time = time.time()
-            test_embedding = self.embedder.embed_documents([test_text])
-            embed_time = time.time() - start_time
+            end_time = time.time()
+            logger.info(f"✅ Embedding model loaded successfully in {end_time - start_time:.2f}s")
             
-            logger.info(f"✅ Embedding model loaded successfully in {load_time:.2f}s")
-            logger.info(f"✅ Test embedding generated in {embed_time:.2f}s with dimension: {len(test_embedding[0])}")
+            # Test the embeddings with a simple example
+            test_start = time.time()
+            test_embedding = self.embedder.embed_documents(["Test embedding to verify functionality"])
+            test_end = time.time()
+            
+            logger.info(f"✅ Test embedding generated in {test_end - test_start:.2f}s with dimension: {len(test_embedding[0])}")
+            
             return True
         except Exception as e:
             logger.error(f"Failed to initialize embeddings: {str(e)}")
-            # Fall back to ChromaDB's default embeddings
             self.embedder = None
             return False
 
@@ -303,52 +309,23 @@ class VectorStore:
     def _create_collection(self, name: str):
         """Create a collection with optimized settings"""
         try:
-            # Ensure client is initialized
             if self.client is None:
-                connected = self.connect()
-                if not connected or self.client is None:
-                    logger.error("ChromaDB client is not initialized and failed to connect.")
-                    raise RuntimeError("ChromaDB client is not initialized.")
-
-            # For collections, use our embedder if available
-            if self.embedder:
-                logger.info(f"Creating collection {name} with custom embedding function")
-                # Pass the embedding function directly as a callable
-                return self.client.get_or_create_collection(
-                    name=name,
-                    metadata={
-                        "hnsw:space": "cosine",
-                        "hnsw:construction_ef": 128,
-                        "hnsw:search_ef": 100,
-                        "hnsw:M": 64
-                    },
-                    embedding_function=self.embedder.embed_documents,  # type: ignore[arg-type]
-                )
-            else:
-                # Use default embeddings
-                logger.info(f"Creating collection {name} with default embeddings")
-                return self.client.get_or_create_collection(
-                    name=name,
-                    metadata={
-                        "hnsw:space": "cosine",
-                        "hnsw:construction_ef": 128,
-                        "hnsw:search_ef": 100,
-                        "hnsw:M": 64
-                    }
-                )
+                logger.error("ChromaDB client not initialized")
+                return None
+            
+            # Just use default embeddings for collection - we'll provide embeddings manually
+            logger.info(f"Creating collection {name} with default embeddings")
+            return self.client.get_or_create_collection(
+                name=name,
+                metadata={
+                    "hnsw:space": "cosine",
+                    "hnsw:construction_ef": 128, 
+                    "hnsw:search_ef": 100,
+                    "hnsw:M": 64
+                }
+            )
         except Exception as e:
             logger.error(f"Error creating collection {name}: {str(e)}")
-            # Try without custom embeddings as fallback
-            try:
-                logger.info(f"Trying to create collection {name} with default embeddings")
-                if self.client is None:
-                    connected = self.connect()
-                    if not connected or self.client is None:
-                        logger.error("ChromaDB client is not initialized and failed to connect.")
-                        raise RuntimeError("ChromaDB client is not initialized.")
-                return self.client.get_or_create_collection(name=name)
-            except Exception as e2:
-                logger.error(f"Failed to create collection with default settings: {str(e2)}")
-                raise
+            return None
 # Create singleton instance
 vector_store = VectorStore()
