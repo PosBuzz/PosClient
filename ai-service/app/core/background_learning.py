@@ -199,9 +199,12 @@ class BackgroundLearner:
             # Generate descriptions in the background
             for product in trending_products:
                 try:
-                    await self.generate_description_func(product, force_refresh=True)
-                    logger.info(
-                        f"Pregenerated description for trending product: {product}")
+                    if self.generate_description_func is not None:
+                        await self.generate_description_func(product, force_refresh=True)
+                        logger.info(
+                            f"Pregenerated description for trending product: {product}")
+                    else:
+                        logger.warning("generate_description_func is not set, skipping product pregeneration.")
                     await asyncio.sleep(30)  # Space out generations
                 except Exception as e:
                     logger.error(
