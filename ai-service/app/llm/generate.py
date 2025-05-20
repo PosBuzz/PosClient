@@ -88,40 +88,36 @@ def generate_product_id(product: str) -> str:
 
 
 async def get_similar_examples(product: str) -> str:
-    """Get examples of similar product descriptions with caching"""
-    cache_key = product.lower().strip()
-
-    # Check memory cache first
-    if cache_key in similar_examples_cache:
-        cache_entry = similar_examples_cache[cache_key]
-        if time.time() - cache_entry['timestamp'] < similar_examples_ttl:
-            return cache_entry['result']
-
-    # Fetch from vector store if not in cache
-    similar_descriptions = await vector_store.find_similar(product, limit=3)
-
-    if not similar_descriptions:
-        result = ""
-    else:
-        # Format examples
-        example_texts = []
-        for item in similar_descriptions:
-            example_texts.append(item["document"])
-
-        if example_texts:
-            result = similar_examples_template.format(
-                examples="\n\n".join(example_texts)
-            )
-        else:
-            result = ""
-
-    # Store in cache
-    similar_examples_cache[cache_key] = {
-        'timestamp': time.time(),
-        'result': result
-    }
-
-    return result
+    """Get similar examples from the vector store"""
+    try:
+        logger.info(f"Finding similar examples for: {product}")
+        start_time = time.time()
+        
+        # Make sure embeddings are initialized
+        vector_store.ensure_embeddings_initialized()
+        
+        results = await vector_store.find_similar(product, limit=3)
+        elapsed = time.time() - start_time
+        logger.info(f"Found {len(results)} similar examples in {elapsed:.3f}s")
+        
+        # Format examples for the prompt
+        if not results:
+            return "No similar examples found."
+        
+        examples = []
+        for result in results:
+            doc = result.get("document", "")
+            if doc and "Description:" in doc:
+                parts = doc.split("Description:")
+                if len(parts) > 1:
+                    product_part = parts[0].replace("Product:", "").strip()
+                    desc_part = parts[1].strip()
+                    examples.append(f"Example: '{product_part}' -> '{desc_part}'")
+        
+        return "\n".join(examples)
+    except Exception as e:
+        logger.error(f"Error getting similar examples: {str(e)}")
+        return "Error retrieving similar examples."
 
 
 async def generate_description(product: str, force_refresh: bool = False):
