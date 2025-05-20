@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Any
 import datetime
-import requests
 from bs4 import BeautifulSoup
 import time
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +37,14 @@ class DuckDuckGoService:
             query = f"{product} commonly available in Bangladesh"
             url = f"https://html.duckduckgo.com/html/?q={query}"
             
-            response = requests.get(url, headers=self.headers)
-            if response.status_code != 200:
-                return self._get_fallback_context(product, limit)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers) as response:
+                    if response.status != 200:
+                        return self._get_fallback_context(product, limit)
+                    text = await response.text()
             
             # Parse the results
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(text, 'html.parser')
             results = soup.find_all('a', class_='result__a')
             
             queries = []

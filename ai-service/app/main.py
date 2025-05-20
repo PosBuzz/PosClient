@@ -48,6 +48,17 @@ async def periodic_cache_cleanup():
             await asyncio.sleep(300)  # Wait 5 minutes before retrying
 
 
+def safe_background_task(coro):
+    async def wrapper():
+        while True:
+            try:
+                await coro()
+            except Exception as e:
+                logger.error(f"Background task crashed: {e}")
+                await asyncio.sleep(60)
+    return wrapper
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
@@ -71,7 +82,7 @@ async def startup_event():
         search_service.connect()
         vector_store.connect()  
         feedback_manager.initialize()
-        history_manager.initialize()
+        await history_manager.initialize()
         
         # Import here to avoid circular imports
         from app.llm.generate import generate_description
@@ -85,7 +96,7 @@ async def startup_event():
             logger.info(f"  {key}: {value}")
 
         # Start background tasks
-        asyncio.create_task(periodic_cache_cleanup())
+        asyncio.create_task(safe_background_task(periodic_cache_cleanup)())
 
         logger.info("Application startup complete")
     except Exception as e:

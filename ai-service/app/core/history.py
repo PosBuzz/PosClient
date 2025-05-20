@@ -5,8 +5,8 @@ import os
 import asyncio
 from typing import Dict, Any, List, Optional
 import hashlib
-import sqlite3
-from app.core.config import settings  # Change this line
+import aiosqlite  # Use aiosqlite for async DB operations
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,34 +18,28 @@ class HistoryManager:
         self.latest_versions_cache = {}
         self.cache_ttl = settings.VECTOR_STORE_CACHE_TTL  # Use value from settings for consistency
         
-    def initialize(self):
+    async def initialize(self):
         """Initialize the history system with SQLite for better scalability"""
         try:
             os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             
             # Create SQLite database for version history
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Create tables
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS versions (
-                    id TEXT PRIMARY KEY,
-                    product TEXT,
-                    description TEXT,
-                    context TEXT,
-                    version_id TEXT,
-                    timestamp TEXT,
-                    UNIQUE(product, version_id)
-                )
-            ''')
-            
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_versions_product ON versions (product)
-            ''')
-            
-            conn.commit()
-            conn.close()
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute('''
+                    CREATE TABLE IF NOT EXISTS versions (
+                        id TEXT PRIMARY KEY,
+                        product TEXT,
+                        description TEXT,
+                        context TEXT,
+                        version_id TEXT,
+                        timestamp TEXT,
+                        UNIQUE(product, version_id)
+                    )
+                ''')
+                await conn.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_versions_product ON versions (product)
+                ''')
+                await conn.commit()
             
             logger.info(f"History manager initialized with SQLite at {self.db_path}")
             
@@ -78,21 +72,19 @@ class HistoryManager:
             record_id = f"{hashlib.md5(f'{product_key}:{version_id}'.encode()).hexdigest()}"
             
             # Store in database
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO versions (id, product, description, context, version_id, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    record_id, 
-                    product_key, 
-                    description, 
-                    context_json, 
-                    version_id, 
-                    datetime.datetime.now().isoformat()
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
+                    "INSERT INTO versions (id, product, description, context, version_id, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        record_id, 
+                        product_key, 
+                        description, 
+                        context_json, 
+                        version_id, 
+                        datetime.datetime.now().isoformat()
+                    )
                 )
-            )
-            conn.commit()
-            conn.close()
+                await conn.commit()
             
             # Invalidate cache
             if product_key in self.latest_versions_cache:
@@ -114,17 +106,13 @@ class HistoryManager:
             product_key = product.lower().strip()
             
             # Query database
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row  # This enables column access by name
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "SELECT * FROM versions WHERE product = ? ORDER BY timestamp DESC LIMIT ?", 
-                (product_key, limit)
-            )
-            
-            rows = cursor.fetchall()
-            conn.close()
+            async with aiosqlite.connect(self.db_path) as conn:
+                conn.row_factory = aiosqlite.Row
+                cursor = await conn.execute(
+                    "SELECT * FROM versions WHERE product = ? ORDER BY timestamp DESC LIMIT ?", 
+                    (product_key, limit)
+                )
+                rows = await cursor.fetchall()
             
             # Format results
             versions = []
@@ -183,47 +171,40 @@ class HistoryManager:
                 await asyncio.sleep(3600)  # Wait an hour before retrying
             
     async def _cleanup_old_versions(self):
-        """Clean up old versions, keeping only the latest 3 per product"""
+        """Clean up old versions, keeping only the latest N per product"""
         logger.info("Starting version history cleanup")
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            # Get distinct products
-            cursor.execute("SELECT DISTINCT product FROM versions")
-            products = [row[0] for row in cursor.fetchall()]
-            
-            total_deleted = 0
-            
-            # For each product, keep only the latest 3 versions
-            for product in products:
-                try:
-                    # Get all versions for this product
-                    cursor.execute(
-                        "SELECT id FROM versions WHERE product = ? ORDER BY timestamp DESC",
-                        (product,)
-                    )
-                    versions = [row[0] for row in cursor.fetchall()]
-                    
-                    # If we have more than the configured number to keep, delete the oldest ones
-                    if len(versions) > self.versions_to_keep:
-                        versions_to_keep = versions[:self.versions_to_keep]
-                        placeholders = ', '.join(['?' for _ in versions_to_keep])
-                        
-                        cursor.execute(
-                            f"DELETE FROM versions WHERE product = ? AND id NOT IN ({placeholders})",
-                            [product] + versions_to_keep
+            async with aiosqlite.connect(self.db_path) as conn:
+                cursor = await conn.execute("SELECT DISTINCT product FROM versions")
+                products = [row[0] async for row in cursor]
+                
+                total_deleted = 0
+                
+                # For each product, keep only the latest N versions
+                for product in products:
+                    try:
+                        cursor2 = await conn.execute(
+                            "SELECT id FROM versions WHERE product = ? ORDER BY timestamp DESC",
+                            (product,)
                         )
+                        versions = [row[0] async for row in cursor2]
                         
-                        deleted_count = cursor.rowcount
-                        total_deleted += deleted_count
-                        
-                        logger.debug(f"Deleted {deleted_count} old versions for product '{product}'")
-                except Exception as e:
-                    logger.error(f"Error cleaning up versions for product {product}: {str(e)}")
-            
-            conn.commit()
-            conn.close()
+                        # If we have more than the configured number to keep, delete the oldest ones
+                        if len(versions) > self.versions_to_keep:
+                            versions_to_keep = versions[:self.versions_to_keep]
+                            placeholders = ', '.join(['?' for _ in versions_to_keep])
+                            query = f"DELETE FROM versions WHERE product = ? AND id NOT IN ({placeholders})"
+                            await conn.execute(
+                                query,
+                                [product] + versions_to_keep
+                            )
+                            deleted_count = conn.total_changes
+                            total_deleted += deleted_count
+                            logger.debug(f"Deleted {deleted_count} old versions for product '{product}'")
+                    except Exception as e:
+                        logger.error(f"Error cleaning up versions for product {product}: {str(e)}")
+                
+                await conn.commit()
             
             # Clear cache after cleanup
             self.latest_versions_cache = {}
