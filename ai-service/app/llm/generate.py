@@ -1,3 +1,4 @@
+import asyncio
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
 import logging
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 llm = OllamaLLM(
     model=settings.LLM_MODEL,
     temperature=settings.LLM_TEMPERATURE,
+    num_gpu=settings.LLM_NUM_GPU,
+    num_thread=settings.LLM_NUM_THREAD,
+    num_ctx=settings.LLM_NUM_CTX,
+    repeat_penalty=settings.LLM_REPEAT_PENALTY
 )
 
 # Updated prompt template with examples from similar products
@@ -85,13 +90,13 @@ def generate_product_id(product: str) -> str:
 async def get_similar_examples(product: str) -> str:
     """Get examples of similar product descriptions with caching"""
     cache_key = product.lower().strip()
-    
+
     # Check memory cache first
     if cache_key in similar_examples_cache:
         cache_entry = similar_examples_cache[cache_key]
         if time.time() - cache_entry['timestamp'] < similar_examples_ttl:
             return cache_entry['result']
-    
+
     # Fetch from vector store if not in cache
     similar_descriptions = await vector_store.find_similar(product, limit=3)
 
@@ -109,28 +114,35 @@ async def get_similar_examples(product: str) -> str:
             )
         else:
             result = ""
-    
+
     # Store in cache
     similar_examples_cache[cache_key] = {
         'timestamp': time.time(),
         'result': result
     }
-    
+
     return result
 
 
 async def generate_description(product: str, force_refresh: bool = False):
-    """Generate product description with optimized caching and continual learning"""
+    """Generate with parallel context fetching"""
     try:
-        logger.info(f"Generating description for '{product}' (force_refresh: {force_refresh})")
-        
-        # Get search context from selected service
-        search_context = await search_service.get_search_context(product)
+        # Start all async operations in parallel
+        cache_task = description_cache.get(
+            description_cache.generate_key(product, {}))
+        search_task = search_service.get_search_context(product)
+        similar_examples_task = get_similar_examples(product)
+        history_task = history_manager.get_latest_version(product)
 
-        # Log number of search results
-        if search_context and "queries" in search_context:
-            logger.info(
-                f"Found {len(search_context['queries'])} search context items for: {product}")
+        # Wait for all results simultaneously
+        cached_result, search_context, similar_examples, latest_version = await asyncio.gather(
+            cache_task, search_task, similar_examples_task, history_task,
+            return_exceptions=True
+        )
+
+        # Process results (handle exceptions for each task)
+        if not isinstance(cached_result, Exception) and not force_refresh and cached_result:
+            return cached_result['description']
 
         # Generate cache key based on product and context
         cache_key = description_cache.generate_key(product, search_context)
@@ -155,7 +167,7 @@ async def generate_description(product: str, force_refresh: bool = False):
         similar_examples = await get_similar_examples(product)
         logger.info(
             f"Found {len(similar_examples) > 0} similar examples for: {product}")
-        
+
         # First try to get the latest high-quality version from history
         latest_version = None
         try:
@@ -169,11 +181,11 @@ async def generate_description(product: str, force_refresh: bool = False):
                 version_time = datetime.datetime.fromisoformat(
                     latest_version.get('timestamp', '2020-01-01T00:00:00'))
                 now = datetime.datetime.now()
-                
+
                 if (now - version_time).days < 30:
                     logger.info(f"Using latest version for: {product}")
                     description = latest_version.get('description')
-                    
+
                     # Still store in cache for faster retrieval
                     cache_data = {
                         "description": description,
@@ -181,9 +193,9 @@ async def generate_description(product: str, force_refresh: bool = False):
                         "context": search_context,
                         "timestamp": datetime.datetime.now().isoformat()
                     }
-                    
+
                     await description_cache.set(cache_key, cache_data)
-                    
+
                     return description
             except Exception as e:
                 logger.error(f"Error using latest version: {str(e)}")
@@ -233,7 +245,8 @@ async def generate_description(product: str, force_refresh: bool = False):
         logger.info(f"Cached new description for: {product}")
 
         # Add to vector store for continuous learning - do this in the background
-        asyncio.create_task(add_to_learning_systems(product, description, search_context))
+        asyncio.create_task(add_to_learning_systems(
+            product, description, search_context))
 
         return description
     except Exception as e:
@@ -246,7 +259,7 @@ async def add_to_learning_systems(product: str, description: str, search_context
     try:
         # Generate a stable ID
         product_id = generate_product_id(product)
-        
+
         # Add to vector store
         await vector_store.add_description(
             product_id=product_id,
@@ -266,7 +279,7 @@ async def add_to_learning_systems(product: str, description: str, search_context
 
         # Add to popular products list for background learning
         await background_learner.add_popular_product(product)
-        
+
         logger.info(f"Successfully added '{product}' to learning systems")
     except Exception as e:
         logger.error(f"Error adding to learning systems: {str(e)}")
@@ -278,24 +291,24 @@ async def cleanup_caches():
     while True:
         try:
             await asyncio.sleep(similar_examples_ttl)
-            
+
             # Clear expired similar examples cache entries
             current_time = time.time()
             expired_keys = []
-            
+
             for key, cache_entry in similar_examples_cache.items():
                 if current_time - cache_entry['timestamp'] >= similar_examples_ttl:
                     expired_keys.append(key)
-                    
+
             for key in expired_keys:
                 del similar_examples_cache[key]
-                
-            logger.debug(f"Cleaned up {len(expired_keys)} expired similar example cache entries")
-            
+
+            logger.debug(
+                f"Cleaned up {len(expired_keys)} expired similar example cache entries")
+
         except Exception as e:
             logger.error(f"Error in cache cleanup: {str(e)}")
             await asyncio.sleep(300)
 
 # Start the cache cleanup task when this module is imported
-import asyncio
 asyncio.create_task(cleanup_caches())

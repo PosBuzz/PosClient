@@ -60,6 +60,14 @@ class Settings:
     # LLM settings
     LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3:8b-instruct-q8_0")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
+    LLM_NUM_GPU: int = int(os.getenv("LLM_num_gpu", "0"))
+    LLM_NUM_CTX: int = int(os.getenv("LLM_NUM_CTX", "512"))
+    LLM_NUM_THREAD: int = int(os.getenv("LLM_NUM_THREAD", "8"))
+    LLM_REPEAT_PENALTY: float = float(os.getenv("LLM_REPEAT_PENALTY", "1.1"))
+
+    # Vector embedding settings
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    USE_GPU: bool = os.getenv("USE_GPU", "False") == "True"
 
 
 settings = Settings()
