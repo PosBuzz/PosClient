@@ -59,7 +59,7 @@ class HistoryManager:
     async def store_version(self, 
                            product: str, 
                            description: str, 
-                           context: Dict[str, Any]) -> str:
+                           context: Dict[str, Any]) -> Optional[str]:
         """Store a new version of a product description in SQLite"""
         try:
             if not product:
