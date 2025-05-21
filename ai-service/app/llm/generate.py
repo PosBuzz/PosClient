@@ -100,6 +100,13 @@ async def get_similar_examples(product: str) -> str:
         elapsed = time.time() - start_time
         logger.info(f"Found {len(results)} similar examples in {elapsed:.3f}s")
         
+        # Enhanced debug logging to see the full result format
+        if results:
+            logger.debug(f"First result format: {results[0]}")
+            # Log the actual document content for debugging
+            doc = results[0].get("document", "")
+            logger.debug(f"Document content: '{doc}'")
+        
         # Format examples for the prompt
         if not results:
             return "No similar examples found."
@@ -107,14 +114,37 @@ async def get_similar_examples(product: str) -> str:
         examples = []
         for result in results:
             doc = result.get("document", "")
-            if doc and "Description:" in doc:
-                parts = doc.split("Description:")
-                if len(parts) > 1:
-                    product_part = parts[0].replace("Product:", "").strip()
-                    desc_part = parts[1].strip()
-                    examples.append(f"Example: '{product_part}' -> '{desc_part}'")
+            logger.debug(f"Processing document: '{doc}'")
+            
+            if doc:
+                # Try different parsing approaches
+                if "Description:" in doc:
+                    parts = doc.split("Description:")
+                    if len(parts) > 1:
+                        product_part = parts[0].replace("Product:", "").strip()
+                        desc_part = parts[1].strip()
+                        examples.append(f"Example: '{product_part}' -> '{desc_part}'")
+                        logger.debug(f"Extracted example with standard format")
+                elif ":" in doc:
+                    # Alternative parsing if the format is different
+                    parts = doc.split(":", 1)  # Split on first colon only
+                    if len(parts) > 1:
+                        product_part = parts[0].strip()
+                        desc_part = parts[1].strip()
+                        examples.append(f"Example: '{product_part}' -> '{desc_part}'")
+                        logger.debug(f"Extracted example with alternative format")
+                else:
+                    # If the document appears to be just the description
+                    logger.debug(f"Document doesn't contain expected format, using as-is")
+                    examples.append(f"Example: similar product -> '{doc}'")
         
-        return "\n".join(examples)
+        # Check if we successfully parsed any examples
+        if examples:
+            logger.debug(f"Successfully parsed {len(examples)} examples")
+            return "\n".join(examples)
+        else:
+            logger.debug(f"No examples could be parsed from {len(results)} results")
+            return "No similar examples found."
     except Exception as e:
         logger.error(f"Error getting similar examples: {str(e)}")
         return "Error retrieving similar examples."
@@ -122,12 +152,20 @@ async def get_similar_examples(product: str) -> str:
 
 async def generate_description(product: str, force_refresh: bool = False):
     try:
+        logger.info(f"Force Refresh {force_refresh}")
+        
+        # Clear vector store cache if force refreshing
+        if force_refresh:
+            await vector_store.clear_cache()
+            
         # Start all async operations in parallel
         cache_task = description_cache.get(
             description_cache.generate_key(product, {}))
         search_task = search_service.get_search_context(product)
         similar_examples_task = get_similar_examples(product)
         history_task = history_manager.get_latest_version(product)
+
+        # logger.info(similar_examples)
 
         # Wait for all results simultaneously
         results = await asyncio.gather(
@@ -172,14 +210,16 @@ async def generate_description(product: str, force_refresh: bool = False):
         logger.info(f"Generating new description for: {product}")
 
         # Use the similar_examples result from gather
-        logger.info(
-            f"Found {len(similar_examples) > 0} similar examples for: {product}")
+        if similar_examples and similar_examples != "No similar examples found." and similar_examples != "Error retrieving similar examples.":
+            logger.info(f"Using {similar_examples.count('Example:') or 0} similar examples for: {product}")
+        else:
+            logger.info(f"No usable similar examples found for: {product}")
 
         # First try to get the latest high-quality version from history
         latest_version = None
         try:
-            if not isinstance(history_task, Exception):
-                latest_version = await history_task if asyncio.iscoroutine(history_task) else history_task
+            if not isinstance(results[3], Exception):
+                latest_version = results[3]  # Already awaited by asyncio.gather
         except Exception as e:
             logger.warning(f"Error getting latest version: {str(e)}")
 
