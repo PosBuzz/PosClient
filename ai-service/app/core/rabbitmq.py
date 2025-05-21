@@ -61,7 +61,7 @@ class RabbitMQManager:
                 body=message_body,
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT
             ),
-            routing_key=routing_key
+            routing_key="description_responses"  # Ensure this matches with binding
         )
         
         logger.info(f"Sent message to {routing_key}, requestId: {message.get('requestId')}")

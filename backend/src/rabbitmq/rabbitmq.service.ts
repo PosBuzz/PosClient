@@ -63,11 +63,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.channel.assertExchange('ai_tasks', 'direct', { durable: true });
     
     // Declare queues
-    await this.channel.assertQueue('generate_description', { durable: true });
+    await this.channel.assertQueue('generate_description_queue', { durable: true });
     await this.channel.assertQueue('description_responses', { durable: true });
     
     // Bind queues to exchange
-    await this.channel.bindQueue('generate_description', 'ai_tasks', 'generate_description');
+    await this.channel.bindQueue('generate_description_queue', 'ai_tasks', 'generate_description');
     await this.channel.bindQueue('description_responses', 'ai_tasks', 'description_responses');
   }
 

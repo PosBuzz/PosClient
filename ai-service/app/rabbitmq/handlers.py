@@ -17,7 +17,6 @@ async def handle_generate_description(data, publish_callback=None):
         # Fix the boolean conversion issue
         force_refresh = False
         if 'force_refresh' in data:
-            # Handle different ways force_refresh might be provided
             force_refresh_value = data.get('force_refresh')
             if isinstance(force_refresh_value, bool):
                 force_refresh = force_refresh_value
@@ -44,7 +43,7 @@ async def handle_generate_description(data, publish_callback=None):
         # Generate description
         description = await generate_description(product, force_refresh=force_refresh)
 
-        # Send back the result
+        # Send back the result IMMEDIATELY
         if publish_callback:
             await publish_callback(
                 exchange_name='ai_tasks',
@@ -54,6 +53,10 @@ async def handle_generate_description(data, publish_callback=None):
                     'description': description
                 }
             )
+            logger.info(f"Sent response for requestId: {request_id}")
+            
+            # The learning systems are already handled in the generate_description function
+            # No need for additional processing here
         else:
             logger.warning("No publish callback provided, cannot send response")
             
