@@ -132,6 +132,19 @@ class VectorStore:
             return False
 
         try:
+            # Check if we should update rather than insert a duplicate
+            if not product_id.endswith(('_edited', '_highquality')):
+                collection = self._get_collection_for_product(product)
+                existing_entries = collection.get(
+                    where={"product": product},
+                    limit=1
+                )
+                
+                if existing_entries and len(existing_entries['ids']) > 0:
+                    # Update existing entry instead of adding duplicate
+                    logger.info(f"Updating existing vector store entry for {product}")
+                    product_id = existing_entries['ids'][0]
+        
             collection = self._get_collection_for_product(product)
             if not collection:
                 logger.error(f"Failed to get collection for product: {product}")
