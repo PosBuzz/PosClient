@@ -1,20 +1,16 @@
-import { get, post, patch, deleteApi } from "./crud-api";
-import { endpoints } from "./endpoints";
 import {
-  ProductFormValues,
+  Branch,
+  Brand,
+  Category,
   Product,
+  ProductFormValues,
   ProductListParams,
   ProductListResponse,
-  Category,
-  Brand,
-  Unit,
-  Branch,
   Tag,
-  ProductVariant,
-  BranchPrice,
-  ProductSerial,
-  PromotionalPrice,
+  Unit
 } from "../types/product.types";
+import { deleteApi, get, patch, post } from "./crud-api";
+import { endpoints } from "./endpoints";
 
 export const productApi = {
   // Product CRUD operations

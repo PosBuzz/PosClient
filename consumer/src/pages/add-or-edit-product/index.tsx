@@ -7,7 +7,7 @@ import {
   Input,
   InputNumber,
   Select,
-  Tabs
+  Tabs,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
@@ -31,6 +31,7 @@ import CommonSelector from "./CommonSelector";
 import PromoPriceForm from "./PromoPriceForm";
 import SerialInput from "./SerialInput";
 import VariantManager from "./VariantManager";
+import AiDescriptionGenerator from "../../components/AiDescriptionGenerator";
 
 const { Option } = Select;
 
@@ -42,6 +43,11 @@ export default function ProductForm() {
   const [activeTab, setActiveTab] = useState("1");
   const queryClient = useQueryClient();
   const { messageApi } = useMessageStore();
+
+  const productName = Form.useWatch("name", form);
+  const currentDescription = Form.useWatch("description", form);
+
+  const [description, setDescription] = useState("");
 
   // Fetch product data if in edit mode without onSuccess
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -233,6 +239,11 @@ export default function ProductForm() {
     form.setFieldsValue(currentValues);
     setActiveTab(activeKey);
   };
+  useEffect(() => {
+    form.setFieldValue("description", description);
+  }, [description]);
+
+  console.log(description);
 
   const title = isEditMode ? "Edit Product" : "Add Product";
 
@@ -465,12 +476,33 @@ export default function ProductForm() {
                         </Form.Item>
                       </div>
 
-                      <Form.Item name="description" label="Product Description">
-                        <TextArea
-                          rows={4}
-                          placeholder="Enter detailed product description"
-                        />
-                      </Form.Item>
+                      <div className="relative">
+                        <Form.Item
+                          name="description"
+                          required
+                          label={
+                            <div className="flex items-center w-full gap-1">
+                              <span className="flex-grow">
+                                Product Description
+                              </span>
+                            </div>
+                          }
+                        >
+                          <TextArea
+                            rows={4}
+                            placeholder="Enter detailed product description"
+                          />
+                        </Form.Item>
+                        <div className="absolute top-1 right-1">
+                          <AiDescriptionGenerator
+                            productName={productName || ""}
+                            currentDescription={currentDescription}
+                            onDescriptionGenerated={(desc) =>
+                              setDescription(desc)
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
                   ),
                 },
