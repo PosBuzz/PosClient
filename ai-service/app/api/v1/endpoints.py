@@ -19,7 +19,7 @@ class FeedbackInput(BaseModel):
 
 @router.post("/generate-description")
 async def generate(input_data: ProductInput, user_data=Depends(verify_jwt)):
-    description = await generate_description(
+    description = generate_description(
         input_data.product, 
         force_refresh=input_data.force_refresh
     )
