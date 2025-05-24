@@ -70,16 +70,19 @@ model Consumer {
   updated_at        DateTime @updatedAt
 
   // Relations
-  plan         Plan             @relation(fields: [plan_id], references: [id], onDelete: Restrict)
-  users        User[]
-  roles        Role[]
-  billing_logs BillingHistory[]
-  Product      Product[]
-  Tag          Tag[]
-  Unit         Unit[]
-  Category     Category[]
-  Brand        Brand[]
-  Branch       Branch[]
+  plan             Plan               @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+  users            User[]
+  roles            Role[]
+  billing_logs     BillingHistory[]
+  Product          Product[]
+  Tag              Tag[]
+  Unit             Unit[]
+  Category         Category[]
+  Brand            Brand[]
+  Branch           Branch[]
+  Vendor           Vendor[]
+  VariantAttribute VariantAttribute[]
+  Promotion        Promotion[]
 
   @@index([email])
   @@index([company_name])
@@ -142,8 +145,11 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  role                Role                  @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  InventoryTransfer   InventoryTransfer[]
+  InventoryAdjustment InventoryAdjustment[]
+  PriceHistory        PriceHistory[]
 
   @@index([consumer_id])
   @@map("users")
@@ -181,184 +187,340 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-// enums
-enum ProductType {
-  STANDARD
-  DIGITAL
-  SERVICE
-}
-
-enum TaxMethod {
-  EXCLUSIVE
-  INCLUSIVE
-}
-
-enum BarcodeSymbology {
-  CODE128
-  EAN13
-  EAN8
-  UPC
-}
-
-// main product table
 model Product {
-  id               Int         @id @default(autoincrement())
-  name             String
-  code             String      @unique
-  type             ProductType
-  consumer_id      Int
-  category_id      Int
-  brand_id         Int
-  product_unit_id  Int
-  sale_unit_id     Int?
-  cost             Float
-  price            Float
-  wholesale_price  Float?
-  purchase_unit_id Int?
-  image_url        String?
-  description      String?
-  promo_enabled    Boolean     @default(false)
+  id           Int            @id @default(autoincrement())
+  consumer_id  Int
+  name         String
+  code         String?
+  description  String?
+  category_id  Int?
+  brand_id     Int?
+  tags         TagOnProduct[]
+  has_variants Boolean        @default(false)
+  tax_method   String         @default("exclusive") // inclusive, exclusive
+  tax          Int            @default(0) // percentage as integer (e.g., 15 for 15%)
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+  deleted_at   DateTime?
 
-  // flags
-  featured    Boolean @default(false)
-  in_stock    Boolean @default(true)
-  sell_online Boolean @default(false)
+  // Relations
+  consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  category Category?        @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  brand    Brand?           @relation(fields: [brand_id], references: [id], onDelete: SetNull)
+  variants ProductVariant[]
 
-  // optional
-  daily_sale_objective Float?
-  alert_quantity       Float?
-  product_tax          Int?
-  tax_method           TaxMethod?
-
-  // relations
-  consumer          Consumer             @relation(fields: [consumer_id], references: [id])
-  category          Category             @relation(fields: [category_id], references: [id])
-  brand             Brand                @relation(fields: [brand_id], references: [id])
-  unit              Unit                 @relation("product_unit", fields: [product_unit_id], references: [id])
-  sale_unit         Unit?                @relation("sale_unit", fields: [sale_unit_id], references: [id])
-  purchase_unit     Unit?                @relation("purchase_unit", fields: [purchase_unit_id], references: [id])
-  variants          ProductVariant[]
-  branch_prices     ProductBranchPrice[]
-  serial_numbers    ProductSerial[]
-  promotional_price PromotionalPrice?
-  tags              ProductTag[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  @@unique([consumer_id, code])
+  @@index([consumer_id, deleted_at])
+  @@index([category_id])
+  @@index([brand_id])
+  @@map("products")
 }
 
-// variant
 model ProductVariant {
-  id         Int     @id @default(autoincrement())
-  product_id Int
-  option     String
-  value      String
-  item_code  String?
-  cost       Float?
-  price      Float?
+  id               Int       @id @default(autoincrement())
+  product_id       Int
+  name             String
+  sku              String?
+  barcode          String?
+  cost_price       Decimal   @db.Decimal(10, 2)
+  regular_price    Decimal   @db.Decimal(10, 2)
+  wholesale_price  Decimal?  @db.Decimal(10, 2)
+  sale_unit_id     Int
+  purchase_unit_id Int
+  warranty_period  Int?      // warranty period in months only
+  image            String?   // single image URL for variant
+  is_default       Boolean   @default(false)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  deleted_at       DateTime?
 
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  // Relations
+  product          Product            @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  sale_unit        Unit               @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
+  purchase_unit    Unit               @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
+  inventory_items  InventoryBatch[]
+  price_history    PriceHistory[]
+  promotions       PromotionProduct[]
+  VariantAttribute VariantAttribute[]
+
+  @@index([product_id])
+  @@index([barcode])
+  @@map("product_variants")
 }
 
-// per branch pricing
-model ProductBranchPrice {
-  id         Int   @id @default(autoincrement())
-  product_id Int
-  branch_id  Int
-  price      Float
+model Unit {
+  id                Int      @id @default(autoincrement())
+  consumer_id       Int
+  name              String
+  code              String?
+  base_unit_id      Int?
+  conversion_factor Decimal? @db.Decimal(10, 4)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  branch  Branch  @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  // Relations
+  consumer          Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  base_unit         Unit?            @relation("UnitConversion", fields: [base_unit_id], references: [id])
+  derived_units     Unit[]           @relation("UnitConversion")
+  sale_variants     ProductVariant[] @relation("SaleUnit")
+  purchase_variants ProductVariant[] @relation("PurchaseUnit")
+
+  @@unique([consumer_id, name])
+  @@map("units")
 }
 
-// serial/IMEI
-model ProductSerial {
-  id         Int    @id @default(autoincrement())
-  product_id Int
-  serial     String @unique
-
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-}
-
-// promotional price
-model PromotionalPrice {
-  id         Int       @id @default(autoincrement())
-  product_id Int       @unique
-  price      Float
-  starts_at  DateTime
-  ends_at    DateTime?
-
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-}
-
-// tags
-model Tag {
-  id          Int          @id @default(autoincrement())
-  name        String
+model Category {
+  id          Int      @id @default(autoincrement())
   consumer_id Int
-  consumer    Consumer     @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products    ProductTag[]
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  @@unique([name, consumer_id])
-  @@index([consumer_id])
+  // Relations
+  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("categories")
 }
 
-// product-tag relation (many-to-many)
-model ProductTag {
+model Brand {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  logo        String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([consumer_id, name])
+  @@map("brands")
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products TagOnProduct[]
+
+  @@unique([consumer_id, name])
+  @@map("tags")
+}
+
+model TagOnProduct {
   product_id Int
   tag_id     Int
   product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Restrict)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@id([product_id, tag_id])
+  @@map("tag_on_products")
 }
 
-// unit
-model Unit {
-  id          Int       @id @default(autoincrement())
-  name        String
-  consumer_id Int
-  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products    Product[] @relation("product_unit")
-  sales       Product[] @relation("sale_unit")
-  purchases   Product[] @relation("purchase_unit")
-
-  @@unique([name, consumer_id])
-  @@index([consumer_id])
-}
-
-// category
-model Category {
-  id          Int       @id @default(autoincrement())
-  name        String
-  consumer_id Int
-  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products    Product[]
-
-  @@unique([name, consumer_id])
-  @@index([consumer_id])
-}
-
-// brand
-model Brand {
-  id          Int       @id @default(autoincrement())
-  name        String
-  consumer_id Int
-  consumer    Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products    Product[]
-
-  @@unique([name, consumer_id])
-  @@index([consumer_id])
-}
-
-// branch
 model Branch {
-  id          Int                  @id @default(autoincrement())
-  name        String
+  id          Int      @id @default(autoincrement())
   consumer_id Int
-  consumer    Consumer             @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  prices      ProductBranchPrice[]
+  name        String
+  address     String?
+  email       String?
+  phone       String?
+  is_main     Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  @@unique([name, consumer_id])
-  @@index([consumer_id])
+  // Relations
+  consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  inventory           InventoryBatch[]
+  transfers_from      InventoryTransfer[]   @relation("SourceBranch")
+  transfers_to        InventoryTransfer[]   @relation("DestinationBranch")
+  PromotionBranch     PromotionBranch[]
+  InventoryAdjustment InventoryAdjustment[]
+
+  @@unique([consumer_id, name])
+  @@map("branches")
+}
+
+model InventoryBatch {
+  id           Int       @id @default(autoincrement())
+  variant_id   Int
+  branch_id    Int? // Changed to optional - null means "central inventory"
+  batch_number String
+  quantity     Int
+  cost_price   Decimal   @db.Decimal(10, 2)
+  vendor_id    Int?
+  expiry_date  DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  // Relations
+  variant             ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  branch              Branch?                 @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  vendor              Vendor?                 @relation(fields: [vendor_id], references: [id], onDelete: SetNull)
+  transfers           InventoryTransferItem[]
+  InventoryAdjustment InventoryAdjustment[]
+
+  @@index([variant_id, branch_id])
+  @@index([batch_number])
+  @@index([expiry_date])
+  @@map("inventory_batches")
+}
+
+model InventoryTransfer {
+  id                    Int       @id @default(autoincrement())
+  source_branch_id      Int
+  destination_branch_id Int
+  status                String    @default("pending") // pending, completed, cancelled
+  transfer_date         DateTime  @default(now())
+  completed_date        DateTime?
+  notes                 String?
+  created_by_user_id    Int?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  // Relations
+  source_branch      Branch                  @relation("SourceBranch", fields: [source_branch_id], references: [id], onDelete: Restrict)
+  destination_branch Branch                  @relation("DestinationBranch", fields: [destination_branch_id], references: [id], onDelete: Restrict)
+  created_by_user    User?                   @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  items              InventoryTransferItem[]
+
+  @@map("inventory_transfers")
+}
+
+model InventoryTransferItem {
+  id          Int @id @default(autoincrement())
+  transfer_id Int
+  batch_id    Int
+  quantity    Int
+
+  // Relations
+  transfer InventoryTransfer @relation(fields: [transfer_id], references: [id], onDelete: Cascade)
+  batch    InventoryBatch    @relation(fields: [batch_id], references: [id], onDelete: Restrict)
+
+  @@map("inventory_transfer_items")
+}
+
+model InventoryAdjustment {
+  id                 Int      @id @default(autoincrement())
+  variant_id         Int
+  branch_id          Int? // Changed to optional - null for central inventory
+  batch_id           Int?
+  quantity_change    Int // positive for additions, negative for reductions
+  reason             String
+  notes              String?
+  created_by_user_id Int?
+  created_at         DateTime @default(now())
+
+  // Relations
+  batch           InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  branch          Branch?         @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  created_by_user User?           @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@map("inventory_adjustments")
+}
+
+model Vendor {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  contact     String?
+  phone       String?
+  email       String?
+  address     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  batches  InventoryBatch[]
+
+  @@unique([consumer_id, name])
+  @@map("vendors")
+}
+
+model VariantAttribute {
+  id         Int    @id @default(autoincrement())
+  variant_id Int
+  name       String
+  value      String
+
+  // Relations
+  variant    ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  Consumer   Consumer?      @relation(fields: [consumerId], references: [id])
+  consumerId Int?
+
+  @@unique([variant_id, name])
+  @@map("variant_attributes")
+}
+
+model PriceHistory {
+  id                 Int      @id @default(autoincrement())
+  variant_id         Int
+  cost_price         Decimal  @db.Decimal(10, 2)
+  regular_price      Decimal  @db.Decimal(10, 2)
+  wholesale_price    Decimal? @db.Decimal(10, 2)
+  effective_date     DateTime @default(now())
+  created_by_user_id Int?
+
+  // Relations
+  variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([variant_id, effective_date])
+  @@map("price_history")
+}
+
+model Promotion {
+  id              Int       @id @default(autoincrement())
+  consumer_id     Int
+  name            String
+  description     String?
+  discount_type   String // percentage, fixed_amount
+  discount_value  Decimal   @db.Decimal(10, 2)
+  start_date      DateTime
+  end_date        DateTime?
+  is_active       Boolean   @default(true)
+  min_purchase    Decimal?  @db.Decimal(10, 2)
+  branch_specific Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // Relations
+  consumer Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products PromotionProduct[]
+  branches PromotionBranch[]
+
+  @@index([consumer_id, is_active])
+  @@index([start_date, end_date])
+  @@map("promotions")
+}
+
+model PromotionProduct {
+  promotion_id Int
+  variant_id   Int
+
+  // Relations
+  promotion Promotion      @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  @@id([promotion_id, variant_id])
+  @@map("promotion_products")
+}
+
+model PromotionBranch {
+  promotion_id Int
+  branch_id    Int
+
+  // Relations
+  promotion Promotion @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
+  branch    Branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@id([promotion_id, branch_id])
+  @@map("promotion_branches")
 }

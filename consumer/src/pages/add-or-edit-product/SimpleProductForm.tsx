@@ -1,0 +1,326 @@
+import React, { useEffect, useCallback } from "react";
+import {
+  InputNumber,
+  Row,
+  Col,
+  Card,
+  Space,
+  Typography,
+  Input,
+  Button,
+} from "antd";
+import {
+  DollarOutlined,
+  SettingOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  MinusCircleOutlined,
+  PictureOutlined,
+} from "@ant-design/icons";
+import { ProductVariant, VariantAttribute } from "../../types/product.types";
+import CommonSelector from "./CommonSelector";
+import ImageInput from "../../components/ImageInput";
+
+const { Title, Text } = Typography;
+
+interface SimpleProductFormProps {
+  variant: ProductVariant;
+  updateVariant: (variantData: Partial<ProductVariant>) => void;
+  productName?: string;
+}
+
+export default function SimpleProductForm({
+  variant,
+  updateVariant,
+  productName,
+}: SimpleProductFormProps) {
+  // Sync variant name with product name
+  useEffect(() => {
+    if (productName && variant.name !== productName) {
+      updateVariant({ name: productName, is_default: true });
+    }
+  }, [productName, variant.name, updateVariant]);
+
+  const handleFieldChange = useCallback(
+    <K extends keyof ProductVariant>(field: K, value: ProductVariant[K]) => {
+      updateVariant({ [field]: value });
+    },
+    [updateVariant]
+  );
+
+  const updateVariantAttribute = (
+    attrIndex: number,
+    field: keyof VariantAttribute,
+    value: string
+  ) => {
+    const newAttributes = [...(variant.attributes || [])];
+    newAttributes[attrIndex] = { ...newAttributes[attrIndex], [field]: value };
+    updateVariant({ attributes: newAttributes });
+  };
+
+  const addVariantAttribute = () => {
+    const newAttributes = [
+      ...(variant.attributes || []),
+      { name: "", value: "" },
+    ];
+    updateVariant({ attributes: newAttributes });
+  };
+
+  const removeVariantAttribute = (attrIndex: number) => {
+    const newAttributes = (variant.attributes || []).filter(
+      (_, i) => i !== attrIndex
+    );
+    updateVariant({ attributes: newAttributes });
+  };
+
+  return (
+    <div className="space-y-6!">
+      {/* Pricing Information */}
+      <Card
+        title={
+          <Space>
+            <DollarOutlined />
+            <span>Pricing</span>
+          </Space>
+        }
+        size="small"
+        className="border-green-200"
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Cost Price <span className="text-red-500">*</span>
+              </label>
+              <InputNumber
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                className="w-full!"
+                prefix="$"
+                value={variant.cost_price}
+                onChange={(value) => handleFieldChange("cost_price", value)}
+              />
+            </div>
+          </Col>
+          <Col xs={24} md={8}>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Regular Price <span className="text-red-500">*</span>
+              </label>
+              <InputNumber
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                className="w-full!"
+                prefix="$"
+                value={variant.regular_price}
+                onChange={(value) => handleFieldChange("regular_price", value)}
+              />
+            </div>
+          </Col>
+          <Col xs={24} md={8}>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Wholesale Price
+              </label>
+              <InputNumber
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                className="w-full!"
+                prefix="$"
+                value={variant.wholesale_price}
+                onChange={(value) =>
+                  handleFieldChange("wholesale_price", value)
+                }
+              />
+            </div>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Units */}
+      <Card
+        title={
+          <Space>
+            <SettingOutlined />
+            <span>Units & Warranty</span>
+          </Space>
+        }
+        size="small"
+        className="border-blue-200"
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <CommonSelector
+              label="Sale Unit"
+              type="unit"
+              value={variant.sale_unit_id}
+              onChange={(value) =>
+                handleFieldChange("sale_unit_id", value as number)
+              }
+            />
+          </Col>
+          <Col xs={24} md={8}>
+            <CommonSelector
+              label="Purchase Unit"
+              type="unit"
+              value={variant.purchase_unit_id}
+              onChange={(value) =>
+                handleFieldChange("purchase_unit_id", value as number)
+              }
+            />
+          </Col>
+          <Col xs={24} md={8}>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Warranty Period (Months)
+              </label>
+              <InputNumber
+                placeholder="12"
+                min={0}
+                className="w-full!"
+                value={variant.warranty_period}
+                onChange={(value) =>
+                  handleFieldChange("warranty_period", value)
+                }
+                addonAfter="Months"
+              />
+            </div>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Product Image */}
+      <Card
+        title={
+          <Space>
+            <PictureOutlined />
+            <span>Product Image</span>
+          </Space>
+        }
+        size="small"
+        className="border-purple-200"
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24}>
+            <ImageInput
+              name="product-image"
+              label="Product Image"
+              value={variant.image ? [variant.image] : []}
+              onChange={(urls) => handleFieldChange("image", urls[0] || "")}
+              maxCount={1}
+              useForm={false}
+            />
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Additional Information */}
+      <Card
+        title={
+          <Space>
+            <InfoCircleOutlined />
+            <span>Additional Information</span>
+          </Space>
+        }
+        size="small"
+        className="border-orange-200"
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            <div>
+              <label className="block text-sm font-medium mb-1">SKU</label>
+              <Input
+                placeholder="Enter SKU"
+                value={variant.sku || ""}
+                onChange={(e) => handleFieldChange("sku", e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Barcode</label>
+              <Input
+                placeholder="Enter barcode"
+                value={variant.barcode || ""}
+                onChange={(e) => handleFieldChange("barcode", e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </Col>
+        </Row>
+
+        {/* Attributes Section */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <Text strong>Product Attributes</Text>
+            <Button
+              type="dashed"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={addVariantAttribute}
+            >
+              Add Attribute
+            </Button>
+          </div>
+
+          {(variant.attributes || []).length === 0 ? (
+            <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded">
+              <Text type="secondary">No attributes added</Text>
+              <div className="mt-2">
+                <Text type="secondary" className="text-xs">
+                  Add attributes like Color, Size, Material, etc.
+                </Text>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3!">
+              {(variant.attributes || []).map((attr, attrIndex) => (
+                <Row key={attrIndex} gutter={12} align="middle">
+                  <Col xs={10}>
+                    <Input
+                      placeholder="Attribute name (e.g., Color)"
+                      value={attr.name}
+                      onChange={(e) =>
+                        updateVariantAttribute(
+                          attrIndex,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Col>
+                  <Col xs={10}>
+                    <Input
+                      placeholder="Attribute value (e.g., Red)"
+                      value={attr.value}
+                      onChange={(e) =>
+                        updateVariantAttribute(
+                          attrIndex,
+                          "value",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </Col>
+                  <Col xs={4}>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<MinusCircleOutlined />}
+                      onClick={() => removeVariantAttribute(attrIndex)}
+                      title="Remove attribute"
+                    />
+                  </Col>
+                </Row>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
