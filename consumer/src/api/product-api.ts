@@ -3,32 +3,60 @@ import {
   Brand,
   Category,
   Product,
-  ProductFormValues,
-  ProductListParams,
+  ProductFormData,
   ProductListResponse,
   Tag,
-  Unit
+  Unit,
 } from "../types/product.types";
+import axiosInstance from "./axiosInstance";
 import { deleteApi, get, patch, post } from "./crud-api";
 import { endpoints } from "./endpoints";
 
 export const productApi = {
   // Product CRUD operations
-  getProducts: async (params?: ProductListParams): Promise<ProductListResponse> => {
-    return get(endpoints.products, { params });
+  getProducts: async (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    categoryIds?: number[];
+    brandIds?: number[];
+    tagIds?: number[];
+  }): Promise<ProductListResponse> => {
+    // Convert arrays to comma-separated strings for the API
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+
+    // Convert number arrays to comma-separated strings
+    if (params.categoryIds && params.categoryIds.length > 0) {
+      queryParams.append("categoryIds", params.categoryIds.join(","));
+    }
+    if (params.brandIds && params.brandIds.length > 0) {
+      queryParams.append("brandIds", params.brandIds.join(","));
+    }
+    if (params.tagIds && params.tagIds.length > 0) {
+      queryParams.append("tagIds", params.tagIds.join(","));
+    }
+
+    const response = await axiosInstance.get(
+      `/consumer/products?${queryParams.toString()}`
+    );
+    return response.data;
   },
 
   getProduct: async (id: number): Promise<Product> => {
     return get(endpoints.getProduct(id));
   },
 
-  createProduct: async (productData: ProductFormValues): Promise<Product> => {
+  createProduct: async (productData: ProductFormData): Promise<Product> => {
     return post(endpoints.products, productData);
   },
 
   updateProduct: async (
     id: number,
-    productData: Partial<ProductFormValues>
+    productData: Partial<ProductFormData>
   ): Promise<Product> => {
     return patch(endpoints.updateProduct(id), productData);
   },
