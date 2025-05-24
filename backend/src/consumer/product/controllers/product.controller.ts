@@ -36,17 +36,22 @@ export class ProductController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('search') search?: string,
-    @Query('categoryId') categoryId?: number,
-    @Query('brandId') brandId?: number,
-    @Query('tagId') tagId?: number,
+    @Query('categoryIds') categoryIds?: string, // Accept as comma-separated string
+    @Query('brandIds') brandIds?: string,       // Accept as comma-separated string
+    @Query('tagIds') tagIds?: string,           // Accept as comma-separated string
   ) {
+    // Parse comma-separated strings to number arrays
+    const parseCategoryIds = categoryIds ? categoryIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
+    const parseBrandIds = brandIds ? brandIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
+    const parseTagIds = tagIds ? tagIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
+
     return this.productService.findAll(Number(req?.user.consumer_id), {
       page,
       limit,
       search,
-      categoryId,
-      brandId,
-      tagId,
+      categoryIds: parseCategoryIds,
+      brandIds: parseBrandIds,
+      tagIds: parseTagIds,
     });
   }
 

@@ -1,29 +1,33 @@
 import {
-    AlertOutlined,
-    DollarOutlined,
-    InfoCircleOutlined,
-    MinusCircleOutlined,
-    PictureOutlined,
-    PlusOutlined,
-    SettingOutlined,
-    BarcodeOutlined,
+  AlertOutlined,
+  DollarOutlined,
+  InfoCircleOutlined,
+  MinusCircleOutlined,
+  PictureOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  BarcodeOutlined,
 } from "@ant-design/icons";
 import {
-    Button,
-    Card,
-    Col,
-    Input,
-    InputNumber,
-    Row,
-    Space,
-    Typography,
-    Select,
-    Badge,
-    Divider,
+  Button,
+  Card,
+  Col,
+  Input,
+  InputNumber,
+  Row,
+  Space,
+  Typography,
+  Select,
+  Badge,
+  Divider,
 } from "antd";
 import { useCallback, useEffect } from "react";
 import ImageInput from "../../components/ImageInput";
-import { ProductVariant, VariantAttribute, ProductSerial } from "../../types/product.types";
+import {
+  ProductVariant,
+  VariantAttribute,
+  ProductSerial,
+} from "../../types/product.types";
 import CommonSelector from "./CommonSelector";
 
 const { Text } = Typography;
@@ -187,7 +191,7 @@ export default function SimpleProductForm({
             <CommonSelector
               label="Sale Unit"
               type="unit"
-              value={variant.sale_unit_id ?? undefined}
+              value={Number(variant.sale_unit_id) || undefined}
               onChange={(value) =>
                 handleFieldChange("sale_unit_id", value as number)
               }
@@ -197,7 +201,7 @@ export default function SimpleProductForm({
             <CommonSelector
               label="Purchase Unit"
               type="unit"
-              value={variant.purchase_unit_id ?? undefined}
+              value={Number(variant.purchase_unit_id) || undefined}
               onChange={(value) =>
                 handleFieldChange("purchase_unit_id", value as number)
               }

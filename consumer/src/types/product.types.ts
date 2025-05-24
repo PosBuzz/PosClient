@@ -1,39 +1,3 @@
-export enum TaxMethod {
-  EXCLUSIVE = "exclusive",
-  INCLUSIVE = "inclusive",
-}
-
-export interface VariantAttribute {
-  id?: number;
-  name: string;
-  value: string;
-}
-
-export interface ProductSerial {
-  id?: number;
-  serial_number: string;
-  status?: 'available' | 'sold' | 'defective' | 'returned';
-  notes?: string;
-}
-
-export interface ProductVariant {
-  id?: number;
-  name: string;
-  sku?: string;
-  barcode?: string;
-  cost_price: number | null | string;
-  regular_price: number | null | string;
-  wholesale_price?: number | null | string;
-  sale_unit_id: number | null | string;
-  purchase_unit_id: number | null | string;
-  warranty_period?: number | null | string;
-  image?: string;
-  is_default?: boolean;
-  alert_quantity?: number; // Low stock alert threshold
-  attributes?: VariantAttribute[];
-  serials?: ProductSerial[];
-}
-
 export interface ProductFormData {
   name: string;
   code?: string;
@@ -44,31 +8,237 @@ export interface ProductFormData {
   has_variants: boolean;
   tax_method: TaxMethod;
   tax: number;
-  daily_sale_objective?: number; // Daily sales target for this product
+  daily_sale_objective: number;
   variants: ProductVariant[];
 }
 
-// Legacy interface for backward compatibility
-export interface ProductFormValues {
+export interface ProductVariant {
   id?: number;
   name: string;
-  code: string | undefined;
-  category_id: number | undefined;
-  brand_id: number | undefined;
-  description?: string;
-  has_variants: boolean;
-  tax?: number;
-  tax_method?: TaxMethod;
-  daily_sale_objective?: number;
-  variants?: ProductVariant[];
-  serials?: string[];
-  tags?: string[];
+  sku?: string;
+  barcode?: string;
+  cost_price: number | string | null;
+  regular_price: number | string | null;
+  wholesale_price?: number | string | null;
+  sale_unit_id?: number;
+  purchase_unit_id?: number;
+  warranty_period?: number;
+  image?: string;
+  is_default?: boolean;
+  alert_quantity: number;
+  attributes: ProductAttribute[];
+  serials?: ProductSerial[];
 }
 
-export interface Product extends ProductFormValues {
+export interface ProductAttribute {
+  id?: number;
+  name: string;
+  value: string;
+}
+
+export interface ProductSerial {
+  id?: number;
+  serial_number: string;
+  status?: "available" | "sold" | "defective" | "returned";
+  notes?: string;
+}
+
+export enum TaxMethod {
+  INCLUSIVE = "inclusive",
+  EXCLUSIVE = "exclusive",
+}
+
+export interface ProductListFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryIds?: number[];
+  brandIds?: number[];
+  tagIds?: number[];
+}
+
+export interface ProductListResponse {
+  data: Product[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface Product {
   id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  category_id?: number;
+  brand_id?: number;
+  has_variants: boolean;
+  tax_method: string;
+  tax: number;
+  daily_sale_objective: number;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
+
+  // Relations
+  category?: {
+    id: number;
+    name: string;
+  };
+  brand?: {
+    id: number;
+    name: string;
+    logo?: string;
+  };
+  consumer?: {
+    id: number;
+    company_name: string;
+    subdomain: string;
+  };
+  tags?: {
+    tag: {
+      id: number;
+      name: string;
+    };
+  }[];
+  variants?: ProductVariantDetailed[];
+
+  // Calculated metrics (only in detailed view)
+  metrics?: {
+    total_variants: number;
+    total_stock_all_variants: number;
+    total_serials_all_variants: number;
+    available_serials_all_variants: number;
+    variants_with_low_stock: number;
+    variants_with_expiring_inventory: number;
+    has_active_promotions: boolean;
+    price_range: {
+      min_regular_price: number;
+      max_regular_price: number;
+      min_cost_price: number;
+      max_cost_price: number;
+    };
+  };
+}
+
+export interface ProductVariantDetailed
+  extends Omit<ProductVariant, "serials"> {
+  // Unit information
+  sale_unit?: {
+    id: number;
+    name: string;
+    code: string;
+    conversion_factor?: number;
+    base_unit?: {
+      id: number;
+      name: string;
+      code: string;
+    };
+  };
+  purchase_unit?: {
+    id: number;
+    name: string;
+    code: string;
+    conversion_factor?: number;
+    base_unit?: {
+      id: number;
+      name: string;
+      code: string;
+    };
+  };
+
+  // Inventory information
+  inventory_items?: {
+    quantity: number;
+    branch?: {
+      id: number;
+      name: string;
+      is_main: boolean;
+      address?: string;
+    };
+    vendor?: {
+      id: number;
+      name: string;
+      contact?: string;
+      phone?: string;
+      email?: string;
+    };
+    created_at: string;
+    expiry_date?: string;
+    batch_number?: string;
+  }[];
+
+  // Serial numbers with full details
+  serials: {
+    id: number;
+    serial_number: string;
+    status: string;
+    sold_date?: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    batch?: {
+      id: number;
+      batch_number: string;
+      expiry_date?: string;
+    };
+  }[];
+
+  // Price history
+  price_history?: {
+    id: number;
+    cost_price: string;
+    regular_price: string;
+    wholesale_price?: string;
+    effective_date: string;
+    created_by_user?: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  }[];
+
+  // Active promotions
+  promotions?: {
+    promotion: {
+      id: number;
+      name: string;
+      description?: string;
+      discount_type: string;
+      discount_value: number;
+      start_date: string;
+      end_date?: string;
+      min_purchase?: number;
+      branch_specific: boolean;
+      branches?: {
+        branch: {
+          id: number;
+          name: string;
+        };
+      }[];
+    };
+  }[];
+
+  // Calculated metrics
+  total_stock?: number;
+  stock_by_branch?: Record<string, number>;
+  is_low_stock?: boolean;
+  serials_summary?: Record<string, number>;
+  available_serials_count?: number;
+  sold_serials_count?: number;
+  defective_serials_count?: number;
+  returned_serials_count?: number;
+  price_change_percentage?: number;
+  has_expiring_inventory?: boolean;
+  expiring_inventory_count?: number;
+  expiring_inventory?: {
+    batch_number?: string;
+    quantity: number;
+    expiry_date: string;
+    branch_name: string;
+  }[];
 }
 
 export interface Vendor {
@@ -104,21 +274,8 @@ export interface Tag {
   name: string;
 }
 
-// Request/Response types for better type safety
-export interface ProductListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  category_id?: number;
-  brand_id?: number;
-}
-
-export interface ProductListResponse {
-  data: Product[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
+export interface VariantAttribute {
+  id?: number;
+  name: string;
+  value: string;
 }
