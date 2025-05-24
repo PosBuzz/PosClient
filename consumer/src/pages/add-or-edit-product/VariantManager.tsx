@@ -21,7 +21,11 @@ import {
   Select,
   Divider,
 } from "antd";
-import { ProductVariant, VariantAttribute, ProductSerial } from "../../types/product.types";
+import {
+  ProductVariant,
+  VariantAttribute,
+  ProductSerial,
+} from "../../types/product.types";
 import CommonSelector from "./CommonSelector";
 import ImageInput from "../../components/ImageInput";
 
@@ -278,7 +282,7 @@ export default function VariantManager({
                     <CommonSelector
                       label="Sale Unit"
                       type="unit"
-                      value={variant.sale_unit_id ?? undefined}
+                      value={Number(variant.sale_unit_id) ?? undefined}
                       onChange={(value) =>
                         updateVariant(index, { sale_unit_id: value as number })
                       }
@@ -288,7 +292,7 @@ export default function VariantManager({
                     <CommonSelector
                       label="Purchase Unit"
                       type="unit"
-                      value={variant.purchase_unit_id ?? undefined}
+                      value={Number(variant.purchase_unit_id) ?? undefined}
                       onChange={(value) =>
                         updateVariant(index, {
                           purchase_unit_id: value as number,
@@ -363,7 +367,10 @@ export default function VariantManager({
                       <BarcodeOutlined />
                       Serial Numbers
                       {(variant.serials || []).length > 0 && (
-                        <Badge count={(variant.serials || []).length} color="green" />
+                        <Badge
+                          count={(variant.serials || []).length}
+                          color="green"
+                        />
                       )}
                     </Space>
                   </Text>
@@ -443,7 +450,9 @@ export default function VariantManager({
                             type="text"
                             danger
                             icon={<MinusCircleOutlined />}
-                            onClick={() => removeVariantSerial(index, serialIndex)}
+                            onClick={() =>
+                              removeVariantSerial(index, serialIndex)
+                            }
                             title="Remove serial number"
                           />
                         </Col>

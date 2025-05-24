@@ -86,7 +86,7 @@ export default function BasicInformationTab({
         <Form.Item
           name="description"
           label={
-            <div className="flex items-center justify-between w-full!">
+            <div className="flex items-center gap-2 justify-between w-full!">
               <span>Description</span>
               <AiDescriptionGenerator
                 productName={formData.name}

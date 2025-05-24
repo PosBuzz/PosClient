@@ -1,9 +1,10 @@
-import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Form, Spin, Tabs } from "antd";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { Button, Card, Form, Tabs } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productApi } from "../../api/product-api";
+import CenterLoader from "../../components/CenterLoader";
+import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
 import {
   ProductFormData,
@@ -12,8 +13,6 @@ import {
 } from "../../types/product.types";
 import BasicInformationTab from "./BasicInformationTab";
 import VariantsTab from "./VariantsTab";
-import PageTitle from "../../components/PageTitle";
-import CenterLoader from "../../components/CenterLoader";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
@@ -111,11 +110,11 @@ export default function ProductForm() {
             cost_price: null,
             regular_price: null,
             wholesale_price: null,
-            sale_unit_id: null,
-            purchase_unit_id: null,
+            sale_unit_id: undefined,
+            purchase_unit_id: undefined,
             sku: "",
             barcode: "",
-            warranty_period: null,
+            warranty_period: undefined,
             image: "",
             alert_quantity: 0,
             attributes: [],
@@ -139,11 +138,11 @@ export default function ProductForm() {
         cost_price: null,
         regular_price: null,
         wholesale_price: null,
-        sale_unit_id: null,
-        purchase_unit_id: null,
+        sale_unit_id: undefined,
+        purchase_unit_id: undefined,
         sku: "",
         barcode: "",
-        warranty_period: null,
+        warranty_period: undefined,
         image: "",
         alert_quantity: 0,
         attributes: [],
@@ -197,11 +196,11 @@ export default function ProductForm() {
         cost_price: null,
         regular_price: null,
         wholesale_price: null,
-        sale_unit_id: null,
-        purchase_unit_id: null,
+        sale_unit_id: undefined,
+        purchase_unit_id: undefined,
         sku: "",
         barcode: "",
-        warranty_period: null,
+        warranty_period: undefined,
         image: "",
         alert_quantity: 0,
         attributes: [],
@@ -254,11 +253,11 @@ export default function ProductForm() {
             cost_price: null,
             regular_price: null,
             wholesale_price: null,
-            sale_unit_id: null,
-            purchase_unit_id: null,
+            sale_unit_id: undefined,
+            purchase_unit_id: undefined,
             sku: "",
             barcode: "",
-            warranty_period: null,
+            warranty_period: undefined,
             image: "",
             alert_quantity: 0,
             attributes: [],
@@ -282,11 +281,11 @@ export default function ProductForm() {
               cost_price: null,
               regular_price: null,
               wholesale_price: null,
-              sale_unit_id: null,
-              purchase_unit_id: null,
+              sale_unit_id: undefined,
+              purchase_unit_id: undefined,
               sku: "",
               barcode: "",
-              warranty_period: null,
+              warranty_period: undefined,
               image: "",
               alert_quantity: 0,
               attributes: [],
@@ -348,9 +347,9 @@ export default function ProductForm() {
           cost_price: null,
           regular_price: null,
           wholesale_price: null,
-          sale_unit_id: null,
-          purchase_unit_id: null,
-          warranty_period: null,
+          sale_unit_id: undefined,
+          purchase_unit_id: undefined,
+          warranty_period: undefined,
           image: "",
           is_default: true,
           alert_quantity: 0,
@@ -417,9 +416,7 @@ export default function ProductForm() {
       );
       queryClient.invalidateQueries({ queryKey: ["products"] });
 
-      if (!isEditMode) {
-        navigate(`/products`);
-      }
+      navigate(`/products`);
     },
     onError: (error: any) => {
       console.error("Save error:", error);
