@@ -1,6 +1,7 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsDecimal, IsUrl } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsDecimal, IsUrl, Min, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { VariantAttributeDto } from './variant-attribute.dto';
+import { CreateProductSerialDto } from './product-serial.dto';
 
 export class CreateProductVariantDto {
   @IsString()
@@ -41,7 +42,6 @@ export class CreateProductVariantDto {
   
   @IsOptional()
   @IsString()
-  @IsUrl()
   image?: string; // single image URL
   
   @IsOptional()
@@ -49,6 +49,17 @@ export class CreateProductVariantDto {
   is_default?: boolean;
   
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  alert_quantity?: number = 0; // Low stock alert threshold
+  
+  @IsOptional()
   @Type(() => VariantAttributeDto)
   attributes?: VariantAttributeDto[];
+  
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductSerialDto)
+  serials?: CreateProductSerialDto[];
 }

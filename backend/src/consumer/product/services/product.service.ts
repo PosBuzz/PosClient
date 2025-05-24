@@ -35,6 +35,7 @@ export class ProductService {
         has_variants: dto.has_variants,
         tax_method: dto.tax_method || 'exclusive',
         tax: dto.tax || 0,
+        daily_sale_objective: dto.daily_sale_objective || 0,
       },
     });
 
@@ -168,6 +169,9 @@ export class ProductService {
             sale_unit: true,
             purchase_unit: true,
             VariantAttribute: true,
+            serials: {  // Add this line
+              orderBy: { created_at: 'desc' },
+            },
             inventory_items: {
               include: {
                 branch: true,
@@ -205,6 +209,7 @@ export class ProductService {
         has_variants: dto.has_variants,
         tax_method: dto.tax_method,
         tax: dto.tax,
+        daily_sale_objective: dto.daily_sale_objective,
       },
     });
 

@@ -20,9 +20,10 @@ export class ProductVariantService {
         wholesale_price: dto.wholesale_price,
         sale_unit_id: dto.sale_unit_id,
         purchase_unit_id: dto.purchase_unit_id,
-        warranty_period: dto.warranty_period, // warranty in months only
-        image: dto.image, // single image URL
+        warranty_period: dto.warranty_period,
+        image: dto.image,
         is_default: dto.is_default || false,
+        alert_quantity: dto.alert_quantity || 0,
       },
     });
 
@@ -51,6 +52,22 @@ export class ProductVariantService {
       );
     }
 
+    // Create serial numbers if provided
+    if (dto.serials && dto.serials.length > 0) {
+      await Promise.all(
+        dto.serials.map(serialDto =>
+          this.prisma.productSerial.create({
+            data: {
+              variant_id: variant.id,
+              serial_number: serialDto.serial_number,
+              status: serialDto.status || 'available',
+              notes: serialDto.notes,
+            },
+          })
+        )
+      );
+    }
+
     return this.findOne(variant.id);
   }
 
@@ -61,9 +78,23 @@ export class ProductVariantService {
         sale_unit: true,
         purchase_unit: true,
         VariantAttribute: true,
+        serials: {
+          orderBy: { created_at: 'desc' },
+        },
         price_history: {
           take: 1,
           orderBy: { effective_date: 'desc' },
+        },
+        inventory_items: {
+          select: {
+            quantity: true,
+            branch_id: true,
+            branch: {
+              select: {
+                name: true,
+              },
+            },
+          },
         },
       },
     });
@@ -72,7 +103,16 @@ export class ProductVariantService {
       throw new NotFoundException(`Product variant with ID ${id} not found`);
     }
 
-    return variant;
+    // Calculate total stock and add alert status
+    const totalStock = variant.inventory_items.reduce((sum, item) => sum + item.quantity, 0);
+    const isLowStock = variant.alert_quantity && variant.alert_quantity > 0 && totalStock <= variant.alert_quantity;
+
+    return {
+      ...variant,
+      total_stock: totalStock,
+      is_low_stock: isLowStock,
+      available_serials_count: variant.serials.filter(s => s.status === 'available').length,
+    };
   }
 
   async update(id: number, dto: UpdateProductVariantDto) {
@@ -105,9 +145,10 @@ export class ProductVariantService {
         wholesale_price: dto.wholesale_price,
         sale_unit_id: dto.sale_unit_id,
         purchase_unit_id: dto.purchase_unit_id,
-        warranty_period: dto.warranty_period, // warranty in months only
-        image: dto.image, // single image URL
+        warranty_period: dto.warranty_period,
+        image: dto.image,
         is_default: dto.is_default,
+        alert_quantity: dto.alert_quantity,
       },
     });
 
@@ -130,24 +171,50 @@ export class ProductVariantService {
     }
 
     // Update attributes if provided
-    if (dto.attributes && dto.attributes.length > 0) {
+    if (dto.attributes !== undefined) {
       // Delete existing attributes
       await this.prisma.variantAttribute.deleteMany({
         where: { variant_id: id },
       });
 
-      // Create new attributes
-      await Promise.all(
-        dto.attributes.map(attr =>
-          this.prisma.variantAttribute.create({
-            data: {
-              variant_id: id,
-              name: attr.name,
-              value: attr.value,
-            },
-          })
-        )
-      );
+      // Create new attributes if any provided
+      if (dto.attributes.length > 0) {
+        await Promise.all(
+          dto.attributes.map(attr =>
+            this.prisma.variantAttribute.create({
+              data: {
+                variant_id: id,
+                name: attr.name,
+                value: attr.value,
+              },
+            })
+          )
+        );
+      }
+    }
+
+    // Update serials if provided
+    if (dto.serials !== undefined) {
+      // Delete existing serials
+      await this.prisma.productSerial.deleteMany({
+        where: { variant_id: id },
+      });
+
+      // Create new serials if any provided
+      if (dto.serials.length > 0) {
+        await Promise.all(
+          dto.serials.map(serialDto =>
+            this.prisma.productSerial.create({
+              data: {
+                variant_id: id,
+                serial_number: serialDto.serial_number,
+                status: serialDto.status || 'available',
+                notes: serialDto.notes,
+              },
+            })
+          )
+        );
+      }
     }
 
     return this.findOne(id);

@@ -9,20 +9,29 @@ export interface VariantAttribute {
   value: string;
 }
 
+export interface ProductSerial {
+  id?: number;
+  serial_number: string;
+  status?: 'available' | 'sold' | 'defective' | 'returned';
+  notes?: string;
+}
+
 export interface ProductVariant {
   id?: number;
   name: string;
   sku?: string;
   barcode?: string;
-  cost_price: number | null;
-  regular_price: number | null;
-  wholesale_price?: number | null;
-  sale_unit_id: number | null;
-  purchase_unit_id: number | null;
-  warranty_period?: number | null;
+  cost_price: number | null | string;
+  regular_price: number | null | string;
+  wholesale_price?: number | null | string;
+  sale_unit_id: number | null | string;
+  purchase_unit_id: number | null | string;
+  warranty_period?: number | null | string;
   image?: string;
   is_default?: boolean;
+  alert_quantity?: number; // Low stock alert threshold
   attributes?: VariantAttribute[];
+  serials?: ProductSerial[];
 }
 
 export interface ProductFormData {
@@ -35,6 +44,7 @@ export interface ProductFormData {
   has_variants: boolean;
   tax_method: TaxMethod;
   tax: number;
+  daily_sale_objective?: number; // Daily sales target for this product
   variants: ProductVariant[];
 }
 
@@ -42,13 +52,14 @@ export interface ProductFormData {
 export interface ProductFormValues {
   id?: number;
   name: string;
-  code: string;
-  category_id: number;
-  brand_id: number;
+  code: string | undefined;
+  category_id: number | undefined;
+  brand_id: number | undefined;
   description?: string;
   has_variants: boolean;
   tax?: number;
   tax_method?: TaxMethod;
+  daily_sale_objective?: number;
   variants?: ProductVariant[];
   serials?: string[];
   tags?: string[];
