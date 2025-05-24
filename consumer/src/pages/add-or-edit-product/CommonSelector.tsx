@@ -1,9 +1,9 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Form, Input, Modal, Select, Tooltip } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { productApi } from "../../api/product-api";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { Select, Button, Modal, Form, Input, Space, Popconfirm, Tooltip } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMessageStore } from "../../stores/messageStore";
+import { productApi } from "../../api/product-api";
 import { useConfirmDelete } from "../../hooks/useConfirmDelete";
 
 interface CommonSelectorProps {
@@ -12,6 +12,7 @@ interface CommonSelectorProps {
   disabled?: boolean;
   type: "category" | "brand" | "unit" | "tag";
   mode?: "tags" | "multiple";
+  label: string;
 }
 
 export default function CommonSelector({
@@ -20,6 +21,7 @@ export default function CommonSelector({
   disabled,
   type,
   mode,
+  label,
 }: CommonSelectorProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -33,6 +35,7 @@ export default function CommonSelector({
     id: number;
     name: string;
   } | null>(null);
+  const [editForm] = Form.useForm();
 
   const { messageApi } = useMessageStore();
 
@@ -77,27 +80,28 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      messageApi?.success(`${type} created successfully`);
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      
+      messageApi?.success(`${label} created successfully`);
       setIsModalOpen(false);
       form.resetFields();
 
       // Auto-select the newly created item
       if (onChange && newItem.id) {
         if (mode === "tags" || mode === "multiple") {
-          // For multiple selection, merge with existing values
           const newValues = Array.isArray(value)
             ? [...value, newItem.id]
             : [newItem.id];
           onChange(newValues);
         } else {
-          // For single selection
           onChange(newItem.id);
         }
       }
     },
     onError: (error) => {
       messageApi?.error(
-        `Failed to create ${type}: ${
+        `Failed to create ${label.toLowerCase()}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
@@ -124,6 +128,8 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
 
       // Remove deleted item from selection if it's selected
       if (onChange && value) {
@@ -133,6 +139,15 @@ export default function CommonSelector({
           onChange(undefined as any);
         }
       }
+
+      messageApi?.success(`${label} deleted successfully`);
+    },
+    onError: (error) => {
+      messageApi?.error(
+        `Failed to delete ${label.toLowerCase()}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     },
   });
 
@@ -156,21 +171,22 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["selector", type] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      messageApi?.success(`${type} updated successfully`);
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      
+      messageApi?.success(`${label} updated successfully`);
       setEditModalOpen(false);
+      setCurrentEdit(null);
+      editForm.resetFields();
     },
     onError: (error) => {
       messageApi?.error(
-        `Failed to update ${type}: ${
+        `Failed to update ${label.toLowerCase()}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
     },
   });
-
-  const handleAddNew = () => {
-    setIsModalOpen(true);
-  };
 
   // Focus on input when modal opens
   useEffect(() => {
@@ -200,8 +216,6 @@ export default function CommonSelector({
     editForm.setFieldsValue({ name: item.name });
   };
 
-  const [editForm] = Form.useForm();
-
   const handleEditSubmit = (values: { name: string }) => {
     if (currentEdit) {
       updateMutation.mutate({ id: currentEdit.id, value: values.name });
@@ -212,8 +226,8 @@ export default function CommonSelector({
   const deleteIdRef = useRef<number | null>(null);
 
   const { showDeleteConfirm } = useConfirmDelete({
-    title: `Delete ${type}`,
-    content: `Are you sure you want to delete this ${type}? This action cannot be undone.`,
+    title: `Delete ${label}`,
+    content: `Are you sure you want to delete this ${label.toLowerCase()}? This action cannot be undone.`,
     onConfirm: async () => {
       const idToDelete = deleteIdRef.current;
       if (idToDelete !== null) {
@@ -227,18 +241,38 @@ export default function CommonSelector({
     showDeleteConfirm();
   };
 
-  // Create option labels for dropdown and selection
+  // Convert values for tags mode (numbers to strings) to fix the warning
+  const convertedValue = useMemo(() => {
+    if (mode === "tags" || mode === "multiple") {
+      return Array.isArray(value) 
+        ? value.map(v => String(v)) 
+        : value !== undefined ? [String(value)] : [];
+    }
+    return value;
+  }, [value, mode]);
+
+  const handleChange = (newValue: any) => {
+    if (mode === "tags" || mode === "multiple") {
+      // Convert string values back to numbers
+      const numberValues = Array.isArray(newValue) 
+        ? newValue.map((v: string) => parseInt(v, 10)).filter(v => !isNaN(v))
+        : [];
+      onChange?.(numberValues);
+    } else {
+      onChange?.(newValue);
+    }
+  };
+
+  // Create option labels for dropdown
   const mergedOptions = useMemo(() => {
-    // Map for dropdown options (with edit/delete buttons)
     return options.map((opt) => ({
-      // Full option with buttons for dropdown
       label: (
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between group">
           <span>{opt.name}</span>
-          <span className="flex items-center space-x-2 ml-2">
+          <Space className="opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip title="Edit">
               <EditOutlined
-                className="text-blue-500 cursor-pointer"
+                className="text-blue-500 cursor-pointer hover:text-blue-700"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleEdit(opt);
@@ -247,104 +281,137 @@ export default function CommonSelector({
             </Tooltip>
             <Tooltip title="Delete">
               <DeleteOutlined
-                className="text-red-500 cursor-pointer"
+                className="text-red-500 cursor-pointer hover:text-red-700"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(opt.id);
                 }}
               />
             </Tooltip>
-          </span>
+          </Space>
         </div>
       ),
-      value: opt.id,
-      // This is used for tag rendering in multi-select mode
-      tagRender: () => (
-        <span className="ant-select-selection-item">
-          <span>{opt.name}</span>
-        </span>
-      ),
+      // Convert to string for tags mode to fix the warning
+      value: mode === "tags" || mode === "multiple" ? String(opt.id) : opt.id,
+      originalData: opt,
     }));
-  }, [options, value]);
+  }, [options, mode]);
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-medium capitalize">Select {type}</span>
-        <Tooltip title={`Add new ${type}`}>
-          <PlusOutlined onClick={handleAddNew} className="cursor-pointer" />
-        </Tooltip>
+    <>
+      <div>
+        <label className="block text-sm font-medium mb-1">{label}</label>
+        <Select
+          mode={mode}
+          value={convertedValue}
+          onChange={handleChange}
+          placeholder={`Select ${label.toLowerCase()}`}
+          loading={isLoading}
+          disabled={disabled}
+          className="w-full"
+          allowClear
+          showSearch
+          optionFilterProp="children"
+          maxTagCount="responsive"
+          dropdownStyle={{ zIndex: 1050 }}
+          listHeight={250}
+          optionLabelProp="children"
+          labelRender={(selectedValue) => {
+            const optionId = mode === "tags" || mode === "multiple" 
+              ? parseInt(String(selectedValue.value), 10) 
+              : selectedValue.value;
+            const option = options.find((opt) => opt.id === optionId);
+            return option ? option.name : "";
+          }}
+          filterOption={(input, option) => {
+            const label = option?.label as any;
+            const text = label?.props?.children[0]?.props?.children || "";
+            return text.toString().toLowerCase().includes(input.toLowerCase());
+          }}
+          getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement}
+          dropdownRender={(menu) => (
+            <>
+              {menu}
+              <div className="border-t border-gray-200 p-2">
+                <Button
+                  type="text"
+                  icon={<PlusOutlined />}
+                  onClick={() => setIsModalOpen(true)}
+                  className="w-full text-left"
+                >
+                  Add new {label.toLowerCase()}
+                </Button>
+              </div>
+            </>
+          )}
+          options={mergedOptions}
+        />
       </div>
-      <Select
-        mode={mode}
-        showSearch
-        placeholder={`Select ${type}`}
-        optionFilterProp="label"
-        loading={isLoading}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className="w-full"
-        options={mergedOptions}
-        maxTagCount="responsive"
-        dropdownStyle={{ zIndex: 1050 }}
-        listHeight={250}
-        optionLabelProp="children"
-        labelRender={(selectedValue) => {
-          const option = options.find((opt) => opt.id === selectedValue.value);
-          return option ? option.name : "";
-        }}
-        filterOption={(input, option) => {
-          const label = option?.label as any;
-          const text = label?.props?.children[0]?.props?.children || "";
-          return text.toString().toLowerCase().includes(input.toLowerCase());
-        }}
-        getPopupContainer={(triggerNode) =>
-          triggerNode.parentNode as HTMLElement
-        }
-      />
 
-      {/* Create Modal */}
+      {/* Add New Modal */}
       <Modal
-        title={`Create a new ${type}`}
+        title={`Add New ${label}`}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        okText="Create"
-        okButtonProps={{ loading: createMutation.isPending }}
         onOk={() => form.submit()}
+        onCancel={() => {
+          setIsModalOpen(false);
+          form.resetFields();
+        }}
+        confirmLoading={createMutation.isPending}
+        okText="Create"
         zIndex={1060}
       >
         <Form form={form} layout="vertical" onFinish={handleCreateSubmit}>
           <Form.Item
             name="name"
-            label={`${type} Name`}
-            rules={[{ required: true, message: `Please enter ${type} name` }]}
+            label={`${label} Name`}
+            rules={[
+              { required: true, message: `Please enter ${label.toLowerCase()} name` },
+              { min: 2, message: `${label} name must be at least 2 characters` },
+            ]}
           >
-            <Input ref={inputRef} placeholder={`Enter ${type} name`} />
+            <Input
+              ref={inputRef}
+              placeholder={`Enter ${label.toLowerCase()} name`}
+              onPressEnter={() => form.submit()}
+              maxLength={50}
+            />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Edit Modal */}
       <Modal
-        title={`Edit ${type}`}
+        title={`Edit ${label}`}
         open={editModalOpen}
-        onCancel={() => setEditModalOpen(false)}
-        okText="Update"
-        okButtonProps={{ loading: updateMutation.isPending }}
         onOk={() => editForm.submit()}
+        onCancel={() => {
+          setEditModalOpen(false);
+          setCurrentEdit(null);
+          editForm.resetFields();
+        }}
+        confirmLoading={updateMutation.isPending}
+        okText="Update"
         zIndex={1060}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
           <Form.Item
             name="name"
-            label={`${type} Name`}
-            rules={[{ required: true, message: `Please enter ${type} name` }]}
+            label={`${label} Name`}
+            rules={[
+              { required: true, message: `Please enter ${label.toLowerCase()} name` },
+              { min: 2, message: `${label} name must be at least 2 characters` },
+            ]}
           >
-            <Input ref={editInputRef} placeholder={`Enter ${type} name`} />
+            <Input
+              ref={editInputRef}
+              placeholder={`Enter ${label.toLowerCase()} name`}
+              onPressEnter={() => editForm.submit()}
+              maxLength={50}
+            />
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }
