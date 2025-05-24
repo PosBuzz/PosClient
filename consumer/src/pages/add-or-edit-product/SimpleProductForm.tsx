@@ -1,27 +1,33 @@
-import React, { useEffect, useCallback } from "react";
 import {
-  InputNumber,
-  Row,
-  Col,
-  Card,
-  Space,
-  Typography,
-  Input,
-  Button,
-} from "antd";
-import {
-  DollarOutlined,
-  SettingOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-  MinusCircleOutlined,
-  PictureOutlined,
+    AlertOutlined,
+    DollarOutlined,
+    InfoCircleOutlined,
+    MinusCircleOutlined,
+    PictureOutlined,
+    PlusOutlined,
+    SettingOutlined,
+    BarcodeOutlined,
 } from "@ant-design/icons";
-import { ProductVariant, VariantAttribute } from "../../types/product.types";
-import CommonSelector from "./CommonSelector";
+import {
+    Button,
+    Card,
+    Col,
+    Input,
+    InputNumber,
+    Row,
+    Space,
+    Typography,
+    Select,
+    Badge,
+    Divider,
+} from "antd";
+import { useCallback, useEffect } from "react";
 import ImageInput from "../../components/ImageInput";
+import { ProductVariant, VariantAttribute, ProductSerial } from "../../types/product.types";
+import CommonSelector from "./CommonSelector";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
+const { Option } = Select;
 
 interface SimpleProductFormProps {
   variant: ProductVariant;
@@ -71,6 +77,31 @@ export default function SimpleProductForm({
       (_, i) => i !== attrIndex
     );
     updateVariant({ attributes: newAttributes });
+  };
+
+  const updateVariantSerial = (
+    serialIndex: number,
+    field: keyof ProductSerial,
+    value: string
+  ) => {
+    const newSerials = [...(variant.serials || [])];
+    newSerials[serialIndex] = { ...newSerials[serialIndex], [field]: value };
+    updateVariant({ serials: newSerials });
+  };
+
+  const addVariantSerial = () => {
+    const newSerials = [
+      ...(variant.serials || []),
+      { serial_number: "", status: "available" as const },
+    ];
+    updateVariant({ serials: newSerials });
+  };
+
+  const removeVariantSerial = (serialIndex: number) => {
+    const newSerials = (variant.serials || []).filter(
+      (_, i) => i !== serialIndex
+    );
+    updateVariant({ serials: newSerials });
   };
 
   return (
@@ -140,39 +171,39 @@ export default function SimpleProductForm({
         </Row>
       </Card>
 
-      {/* Units */}
+      {/* Units & Inventory */}
       <Card
         title={
           <Space>
             <SettingOutlined />
-            <span>Units & Warranty</span>
+            <span>Units, Warranty & Inventory</span>
           </Space>
         }
         size="small"
         className="border-blue-200"
       >
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <CommonSelector
               label="Sale Unit"
               type="unit"
-              value={variant.sale_unit_id}
+              value={variant.sale_unit_id ?? undefined}
               onChange={(value) =>
                 handleFieldChange("sale_unit_id", value as number)
               }
             />
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <CommonSelector
               label="Purchase Unit"
               type="unit"
-              value={variant.purchase_unit_id}
+              value={variant.purchase_unit_id ?? undefined}
               onChange={(value) =>
                 handleFieldChange("purchase_unit_id", value as number)
               }
             />
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={6}>
             <div>
               <label className="block text-sm font-medium mb-1">
                 Warranty Period (Months)
@@ -187,6 +218,29 @@ export default function SimpleProductForm({
                 }
                 addonAfter="Months"
               />
+            </div>
+          </Col>
+          <Col xs={24} md={6}>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                <Space>
+                  <AlertOutlined />
+                  Alert Quantity
+                </Space>
+              </label>
+              <InputNumber
+                placeholder="10"
+                min={0}
+                className="w-full!"
+                value={variant.alert_quantity}
+                onChange={(value) =>
+                  handleFieldChange("alert_quantity", value || 0)
+                }
+                addonAfter="units"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Get alerts when stock is low
+              </div>
             </div>
           </Col>
         </Row>
@@ -217,6 +271,101 @@ export default function SimpleProductForm({
         </Row>
       </Card>
 
+      {/* Serial Numbers */}
+      <Card
+        title={
+          <Space>
+            <BarcodeOutlined />
+            <span>Serial Numbers</span>
+            {(variant.serials || []).length > 0 && (
+              <Badge count={(variant.serials || []).length} color="green" />
+            )}
+          </Space>
+        }
+        size="small"
+        className="border-indigo-200"
+      >
+        <div className="mb-3">
+          <div className="flex items-center justify-between">
+            <Text type="secondary" className="text-sm">
+              Track individual items with serial numbers
+            </Text>
+            <Button
+              type="dashed"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={addVariantSerial}
+            >
+              Add Serial
+            </Button>
+          </div>
+        </div>
+
+        {(variant.serials || []).length === 0 ? (
+          <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded">
+            <BarcodeOutlined className="text-2xl text-gray-400 mb-2" />
+            <Text type="secondary">No serial numbers added</Text>
+            <div className="mt-1">
+              <Text type="secondary" className="text-xs">
+                Add serial numbers for inventory tracking
+              </Text>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3!">
+            {(variant.serials || []).map((serial, serialIndex) => (
+              <Row key={serialIndex} gutter={12} align="middle">
+                <Col xs={8}>
+                  <Input
+                    placeholder="Serial number"
+                    value={serial.serial_number}
+                    onChange={(e) =>
+                      updateVariantSerial(
+                        serialIndex,
+                        "serial_number",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Col>
+                <Col xs={6}>
+                  <Select
+                    value={serial.status}
+                    onChange={(value) =>
+                      updateVariantSerial(serialIndex, "status", value)
+                    }
+                    className="w-full"
+                  >
+                    <Option value="available">Available</Option>
+                    <Option value="sold">Sold</Option>
+                    <Option value="defective">Defective</Option>
+                    <Option value="returned">Returned</Option>
+                  </Select>
+                </Col>
+                <Col xs={8}>
+                  <Input
+                    placeholder="Notes (optional)"
+                    value={serial.notes || ""}
+                    onChange={(e) =>
+                      updateVariantSerial(serialIndex, "notes", e.target.value)
+                    }
+                  />
+                </Col>
+                <Col xs={2}>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<MinusCircleOutlined />}
+                    onClick={() => removeVariantSerial(serialIndex)}
+                    title="Remove serial number"
+                  />
+                </Col>
+              </Row>
+            ))}
+          </div>
+        )}
+      </Card>
+
       {/* Additional Information */}
       <Card
         title={
@@ -236,7 +385,7 @@ export default function SimpleProductForm({
                 placeholder="Enter SKU"
                 value={variant.sku || ""}
                 onChange={(e) => handleFieldChange("sku", e.target.value)}
-                className="w-full"
+                className="w-full!"
               />
             </div>
           </Col>
@@ -247,11 +396,13 @@ export default function SimpleProductForm({
                 placeholder="Enter barcode"
                 value={variant.barcode || ""}
                 onChange={(e) => handleFieldChange("barcode", e.target.value)}
-                className="w-full"
+                className="w-full!"
               />
             </div>
           </Col>
         </Row>
+
+        <Divider />
 
         {/* Attributes Section */}
         <div className="mt-6">

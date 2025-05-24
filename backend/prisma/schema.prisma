@@ -188,20 +188,21 @@ model RolePermission {
 }
 
 model Product {
-  id           Int            @id @default(autoincrement())
-  consumer_id  Int
-  name         String
-  code         String?
-  description  String?
-  category_id  Int?
-  brand_id     Int?
-  tags         TagOnProduct[]
-  has_variants Boolean        @default(false)
-  tax_method   String         @default("exclusive") // inclusive, exclusive
-  tax          Int            @default(0) // percentage as integer (e.g., 15 for 15%)
-  created_at   DateTime       @default(now())
-  updated_at   DateTime       @updatedAt
-  deleted_at   DateTime?
+  id                   Int            @id @default(autoincrement())
+  consumer_id          Int
+  name                 String
+  code                 String?
+  description          String?
+  category_id          Int?
+  brand_id             Int?
+  tags                 TagOnProduct[]
+  has_variants         Boolean        @default(false)
+  tax_method           String         @default("exclusive") // inclusive, exclusive
+  tax                  Int            @default(0) // percentage as integer (e.g., 15 for 15%)
+  daily_sale_objective Int?           @default(0) // Daily sales target for this product
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  deleted_at           DateTime?
 
   // Relations
   consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -214,6 +215,27 @@ model Product {
   @@index([category_id])
   @@index([brand_id])
   @@map("products")
+}
+
+model ProductSerial {
+  id              Int       @id @default(autoincrement())
+  variant_id      Int
+  serial_number   String
+  status          String    @default("available") // available, sold, defective, returned
+  batch_id        Int?      // Link to inventory batch if needed
+  sold_date       DateTime?
+  notes           String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // Relations
+  variant ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  batch   InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@unique([variant_id, serial_number])
+  @@index([variant_id, status])
+  @@index([serial_number])
+  @@map("product_serials")
 }
 
 model ProductVariant {
@@ -230,6 +252,7 @@ model ProductVariant {
   warranty_period  Int?      // warranty period in months only
   image            String?   // single image URL for variant
   is_default       Boolean   @default(false)
+  alert_quantity   Int?      @default(0) // Low stock alert threshold
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
   deleted_at       DateTime?
@@ -242,6 +265,7 @@ model ProductVariant {
   price_history    PriceHistory[]
   promotions       PromotionProduct[]
   VariantAttribute VariantAttribute[]
+  serials          ProductSerial[]
 
   @@index([product_id])
   @@index([barcode])
@@ -365,6 +389,7 @@ model InventoryBatch {
   vendor              Vendor?                 @relation(fields: [vendor_id], references: [id], onDelete: SetNull)
   transfers           InventoryTransferItem[]
   InventoryAdjustment InventoryAdjustment[]
+  serials          ProductSerial[]
 
   @@index([variant_id, branch_id])
   @@index([batch_number])

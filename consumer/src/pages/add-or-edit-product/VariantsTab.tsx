@@ -1,7 +1,5 @@
-import React from "react";
-import { Alert } from "antd";
-import VariantManager from "./VariantManager";
 import SimpleProductForm from "./SimpleProductForm";
+import VariantManager from "./VariantManager";
 
 interface VariantsTabProps {
   formData: any;
@@ -24,7 +22,7 @@ export default function VariantsTab({
   const variants = formData.variants || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6!">
       {formData.has_variants ? (
         <VariantManager
           variants={variants}

@@ -1,23 +1,24 @@
 import {
-    DollarCircleOutlined,
-    ProductOutlined,
-    SettingOutlined,
-    TagsOutlined,
+  DollarCircleOutlined,
+  ProductOutlined,
+  SettingOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 import {
-    Card,
-    Col,
-    Form,
-    Input,
-    InputNumber,
-    Row,
-    Select,
-    Space,
-    Switch
+  Card,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+  Switch,
 } from "antd";
 import { ProductFormData, TaxMethod } from "../../types/product.types";
 import AiDescriptionGenerator from "./AiDescriptionGenerator";
 import CommonSelector from "./CommonSelector";
+import { GrTarget } from "react-icons/gr";
 
 const { TextArea } = Input;
 
@@ -85,7 +86,7 @@ export default function BasicInformationTab({
         <Form.Item
           name="description"
           label={
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full!">
               <span>Description</span>
               <AiDescriptionGenerator
                 productName={formData.name}
@@ -158,6 +159,47 @@ export default function BasicInformationTab({
                 }
               />
             </Form.Item>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Sales Objective */}
+      <Card
+        title={
+          <Space>
+            <GrTarget />
+            <span>Sales Target</span>
+          </Space>
+        }
+        size="small"
+        className="border-purple-200"
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="daily_sale_objective"
+              label="Daily Sales Objective"
+              tooltip="Target quantity to sell per day"
+            >
+              <InputNumber
+                placeholder="0"
+                min={0}
+                className="w-full!"
+                addonAfter="units/day"
+                value={formData.daily_sale_objective}
+                onChange={(value) =>
+                  updateFormField("daily_sale_objective", value || 0)
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <div className="flex items-center h-full">
+              <div className="text-sm text-gray-600">
+                Set a daily sales target to track performance and get
+                notifications when targets are not met.
+              </div>
+            </div>
           </Col>
         </Row>
       </Card>

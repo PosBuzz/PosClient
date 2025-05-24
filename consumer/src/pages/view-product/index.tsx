@@ -7,6 +7,9 @@ import {
   EditOutlined,
   ShopOutlined,
   TagOutlined,
+  SettingOutlined,
+  AlertOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -23,6 +26,8 @@ import {
   Tabs,
   Tag,
   Typography,
+  Badge,
+  Tooltip,
 } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { productApi } from "../../api/product-api";
@@ -95,41 +100,188 @@ const ProductDetailsPage = () => {
     );
   }
 
+  // Get the main variant (default variant for simple products)
+  const mainVariant = product.variants?.find((v) => v.is_default) || product.variants?.[0];
+
   // Determine product status badges
   const getProductStatusBadges = () => {
     const badges: React.ReactNode[] = [];
 
-    if (product.featured) {
+    if (product.has_variants) {
       badges.push(
-        <Tag color="gold" key="featured">
-          Featured
+        <Tag color="purple" key="variants">
+          Has Variants
+        </Tag>
+      );
+    } else {
+      badges.push(
+        <Tag color="blue" key="simple">
+          Simple Product
         </Tag>
       );
     }
 
-    if (product.sell_online) {
-      badges.push(
-        <Tag color="blue" key="online">
-          Online
-        </Tag>
-      );
-    }
+    // Calculate total stock across all variants
+    const totalStock =
+      product.variants?.reduce((total, variant) => {
+        return (
+          total +
+          (variant.inventory_items?.reduce((sum, item) => sum + item.quantity, 0) || 0)
+        );
+      }, 0) || 0;
 
     badges.push(
-      <Tag color={product.in_stock ? "green" : "red"} key="stock">
-        {product.in_stock ? "In Stock" : "Out of Stock"}
+      <Tag color={totalStock > 0 ? "green" : "red"} key="stock">
+        {totalStock > 0 ? `${totalStock} in stock` : "Out of stock"}
       </Tag>
     );
 
     return badges;
   };
 
-  // Variant columns
+  // Variant columns for the variants table
   const variantColumns = [
     {
-      title: "Option",
-      dataIndex: "option",
-      key: "option",
+      title: "Variant Name",
+      dataIndex: "name",
+      key: "name",
+      render: (name, record) => (
+        <Space>
+          {record.is_default && <Badge status="success" text="Default" />}
+          <Text strong={record.is_default}>{name}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      key: "sku",
+      render: (sku) => sku || <Text type="secondary">N/A</Text>,
+    },
+    {
+      title: "Barcode",
+      dataIndex: "barcode",
+      key: "barcode",
+      render: (barcode) => barcode || <Text type="secondary">N/A</Text>,
+    },
+    {
+      title: "Cost Price",
+      dataIndex: "cost_price",
+      key: "cost_price",
+      render: (cost) => formatCurrency(parseFloat(cost)),
+    },
+    {
+      title: "Regular Price",
+      dataIndex: "regular_price",
+      key: "regular_price",
+      render: (price) => formatCurrency(parseFloat(price)),
+    },
+    {
+      title: "Wholesale Price",
+      dataIndex: "wholesale_price",
+      key: "wholesale_price",
+      render: (price) => (price ? formatCurrency(parseFloat(price)) : <Text type="secondary">N/A</Text>),
+    },
+    {
+      title: "Stock",
+      key: "stock",
+      render: (_, record) => {
+        const totalStock = record.inventory_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        const isLowStock = record.alert_quantity && totalStock <= record.alert_quantity;
+
+        return (
+          <Space>
+            <Text style={{ color: isLowStock ? "#ff4d4f" : totalStock > 0 ? "#52c41a" : "#8c8c8c" }}>
+              {totalStock}
+            </Text>
+            {isLowStock && (
+              <Tooltip title="Low stock alert">
+                <AlertOutlined style={{ color: "#ff4d4f" }} />
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: "Serials",
+      key: "serials",
+      render: (_, record) => {
+        const availableSerials = record.serials?.filter((s) => s.status === "available").length || 0;
+        const totalSerials = record.serials?.length || 0;
+
+        if (totalSerials === 0) {
+          return <Text type="secondary">No serials</Text>;
+        }
+
+        return (
+          <Tooltip title={`${availableSerials} available out of ${totalSerials} total`}>
+            <Badge count={totalSerials} showZero color={availableSerials > 0 ? "green" : "red"}>
+              <BarcodeOutlined />
+            </Badge>
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
+  // Serial numbers columns
+  const serialColumns = [
+    {
+      title: "Serial Number",
+      dataIndex: "serial_number",
+      key: "serial_number",
+      render: (serial) => (
+        <Text code style={{ fontSize: "12px" }}>
+          {serial}
+        </Text>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const colors = {
+          available: "green",
+          sold: "blue",
+          defective: "red",
+          returned: "orange",
+        };
+        return <Tag color={colors[status] || "default"}>{status?.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: "Notes",
+      dataIndex: "notes",
+      key: "notes",
+      render: (notes) => notes || <Text type="secondary">-</Text>,
+    },
+    {
+      title: "Variant",
+      key: "variant",
+      render: (_, record) => {
+        // Find the variant this serial belongs to
+        const variant = product.variants?.find((v) =>
+          v.serials?.some((s) => s.id === record.id)
+        );
+        return variant ? variant.name : <Text type="secondary">Unknown</Text>;
+      },
+    },
+    {
+      title: "Added Date",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (date) => (date ? formatDate(date) : <Text type="secondary">-</Text>),
+    },
+  ];
+
+  // Attributes columns
+  const attributeColumns = [
+    {
+      title: "Attribute",
+      dataIndex: "name",
+      key: "name",
     },
     {
       title: "Value",
@@ -137,47 +289,34 @@ const ProductDetailsPage = () => {
       key: "value",
     },
     {
-      title: "Item Code",
-      dataIndex: "item_code",
-      key: "item_code",
-    },
-    {
-      title: "Cost",
-      dataIndex: "cost",
-      key: "cost",
-      render: (cost) => formatCurrency(cost),
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-      render: (price) => formatCurrency(price),
+      title: "Variant",
+      key: "variant",
+      render: (_, record) => {
+        const variant = product.variants?.find((v) =>
+          v.VariantAttribute?.some((attr) => attr.id === record.id)
+        );
+        return variant ? variant.name : <Text type="secondary">Unknown</Text>;
+      },
     },
   ];
 
-  // Branch price columns
-  const branchPriceColumns = [
-    {
-      title: "Branch",
-      dataIndex: ["branch", "name"],
-      key: "branch",
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-      render: (price) => formatCurrency(price),
-    },
-  ];
+  // Collect all serials from all variants
+  const allSerials =
+    product.variants?.flatMap((variant) =>
+      variant.serials?.map((serial) => ({
+        ...serial,
+        variant_name: variant.name,
+      })) || []
+    ) || [];
 
-  // Serial columns
-  const serialColumns = [
-    {
-      title: "Serial Number",
-      dataIndex: "serial",
-      key: "serial",
-    },
-  ];
+  // Collect all attributes from all variants
+  const allAttributes =
+    product.variants?.flatMap((variant) =>
+      variant.VariantAttribute?.map((attr) => ({
+        ...attr,
+        variant_name: variant.name,
+      })) || []
+    ) || [];
 
   return (
     <>
@@ -221,10 +360,11 @@ const ProductDetailsPage = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
+          {/* Product Image */}
           <Card bodyStyle={{ padding: 0 }} className="product-image-card">
-            {product.image_url ? (
+            {mainVariant?.image ? (
               <Image
-                src={product.image_url}
+                src={mainVariant.image}
                 alt={product.name}
                 style={{ width: "100%" }}
                 fallback="https://placehold.co/600x400?text=No+Image"
@@ -239,71 +379,49 @@ const ProductDetailsPage = () => {
                   background: "#f5f5f5",
                 }}
               >
-                <Text type="secondary">No Image Available</Text>
+                <Space direction="vertical" align="center">
+                  <PictureOutlined style={{ fontSize: "48px", color: "#d9d9d9" }} />
+                  <Text type="secondary">No Image Available</Text>
+                </Space>
               </div>
             )}
           </Card>
 
+          {/* Pricing Information */}
           <Card
             title="Pricing Information"
             style={{ marginTop: 16 }}
             extra={<DollarOutlined />}
           >
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Cost Price">
-                {formatCurrency(product.cost)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Selling Price">
-                {formatCurrency(product.price)}
-              </Descriptions.Item>
-              {product.wholesale_price && (
-                <Descriptions.Item label="Wholesale Price">
-                  {formatCurrency(product.wholesale_price)}
+            {mainVariant ? (
+              <Descriptions column={1} bordered size="small">
+                <Descriptions.Item label="Cost Price">
+                  {formatCurrency(parseFloat(mainVariant.cost_price))}
                 </Descriptions.Item>
-              )}
-              {product.product_tax && (
+                <Descriptions.Item label="Regular Price">
+                  {formatCurrency(parseFloat(mainVariant.regular_price))}
+                </Descriptions.Item>
+                {mainVariant.wholesale_price && (
+                  <Descriptions.Item label="Wholesale Price">
+                    {formatCurrency(parseFloat(mainVariant.wholesale_price))}
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item label="Tax">
-                  {product.product_tax}%
+                  {product.tax}% ({product.tax_method})
                 </Descriptions.Item>
-              )}
-              {product.tax_method && (
-                <Descriptions.Item label="Tax Method">
-                  {product.tax_method === "INCLUSIVE"
-                    ? "Inclusive"
-                    : "Exclusive"}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            {product.promotional_price && (
-              <>
-                <Divider plain>Promotional Price</Divider>
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Statistic
-                    title="Promo Price"
-                    value={product.promotional_price.price}
-                    precision={2}
-                    prefix="$"
-                    valueStyle={{ color: "#f5222d" }}
-                  />
-                  <Text type="secondary">
-                    <ClockCircleOutlined /> Valid from{" "}
-                    {formatDate(product.promotional_price.starts_at)}
-                    {product.promotional_price.ends_at
-                      ? ` to ${formatDate(product.promotional_price.ends_at)}`
-                      : " onwards"}
-                  </Text>
-                </Space>
-              </>
+              </Descriptions>
+            ) : (
+              <Text type="secondary">No pricing information available</Text>
             )}
           </Card>
 
+          {/* Tags */}
           <Card title="Tags" style={{ marginTop: 16 }} extra={<TagOutlined />}>
             {product.tags && product.tags.length > 0 ? (
               <Space wrap>
-                {product.tags.map((tag) => (
-                  <Tag key={tag.id} color="blue">
-                    {tag.name}
+                {product.tags.map((tagRelation) => (
+                  <Tag key={tagRelation.tag.id} color="blue">
+                    {tagRelation.tag.name}
                   </Tag>
                 ))}
               </Space>
@@ -314,6 +432,7 @@ const ProductDetailsPage = () => {
         </Col>
 
         <Col xs={24} md={16}>
+          {/* Basic Product Information */}
           <Card>
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
               <div>
@@ -325,11 +444,8 @@ const ProductDetailsPage = () => {
                 <Descriptions.Item label="Product Code">
                   <Space>
                     <BarcodeOutlined />
-                    {product.code}
+                    {product.code || "N/A"}
                   </Space>
-                </Descriptions.Item>
-                <Descriptions.Item label="Type">
-                  {product.type}
                 </Descriptions.Item>
                 <Descriptions.Item label="Category">
                   {product.category?.name || "N/A"}
@@ -337,44 +453,35 @@ const ProductDetailsPage = () => {
                 <Descriptions.Item label="Brand">
                   {product.brand?.name || "N/A"}
                 </Descriptions.Item>
-                <Descriptions.Item label="Product Unit">
-                  {product.unit?.name || "N/A"}
+                <Descriptions.Item label="Has Variants">
+                  {product.has_variants ? "Yes" : "No"}
                 </Descriptions.Item>
-                <Descriptions.Item label="Sale Unit">
-                  {product.sale_unit?.name || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Purchase Unit">
-                  {product.purchase_unit?.name || "N/A"}
-                </Descriptions.Item>
-                {product.alert_quantity && (
-                  <Descriptions.Item label="Alert Quantity">
-                    {product.alert_quantity}
-                  </Descriptions.Item>
-                )}
                 {product.daily_sale_objective && (
                   <Descriptions.Item label="Daily Sale Objective">
                     {product.daily_sale_objective}
                   </Descriptions.Item>
                 )}
+                <Descriptions.Item label="Created">
+                  {formatDate(product.created_at)}
+                </Descriptions.Item>
               </Descriptions>
 
               {product.description && (
                 <>
                   <Divider orientation="left">Description</Divider>
-                  <div className="product-description">
-                    {product.description}
-                  </div>
+                  <div className="product-description">{product.description}</div>
                 </>
               )}
             </Space>
           </Card>
 
+          {/* Tabs for detailed information */}
           <Tabs defaultActiveKey="variants" style={{ marginTop: 16 }}>
             <TabPane
               tab={
                 <span>
-                  <TagOutlined />
-                  Variants
+                  <SettingOutlined />
+                  Variants ({product.variants?.length || 0})
                 </span>
               }
               key="variants"
@@ -387,6 +494,7 @@ const ProductDetailsPage = () => {
                     rowKey="id"
                     pagination={false}
                     size="small"
+                    scroll={{ x: 800 }}
                   />
                 ) : (
                   <Text type="secondary">No variants available</Text>
@@ -397,23 +505,23 @@ const ProductDetailsPage = () => {
             <TabPane
               tab={
                 <span>
-                  <ShopOutlined />
-                  Branch Prices
+                  <BarcodeOutlined />
+                  Serial Numbers ({allSerials.length})
                 </span>
               }
-              key="branchPrices"
+              key="serials"
             >
               <Card bordered={false}>
-                {product.branch_prices && product.branch_prices.length > 0 ? (
+                {allSerials.length > 0 ? (
                   <Table
-                    dataSource={product.branch_prices}
-                    columns={branchPriceColumns}
+                    dataSource={allSerials}
+                    columns={serialColumns}
                     rowKey="id"
-                    pagination={false}
+                    pagination={{ pageSize: 10, showSizeChanger: true }}
                     size="small"
                   />
                 ) : (
-                  <Text type="secondary">No branch prices available</Text>
+                  <Text type="secondary">No serial numbers available</Text>
                 )}
               </Card>
             </TabPane>
@@ -421,23 +529,23 @@ const ProductDetailsPage = () => {
             <TabPane
               tab={
                 <span>
-                  <BarcodeOutlined />
-                  Serial Numbers
+                  <TagOutlined />
+                  Attributes ({allAttributes.length})
                 </span>
               }
-              key="serials"
+              key="attributes"
             >
               <Card bordered={false}>
-                {product.serial_numbers && product.serial_numbers.length > 0 ? (
+                {allAttributes.length > 0 ? (
                   <Table
-                    dataSource={product.serial_numbers}
-                    columns={serialColumns}
+                    dataSource={allAttributes}
+                    columns={attributeColumns}
                     rowKey="id"
                     pagination={false}
                     size="small"
                   />
                 ) : (
-                  <Text type="secondary">No serial numbers available</Text>
+                  <Text type="secondary">No attributes available</Text>
                 )}
               </Card>
             </TabPane>

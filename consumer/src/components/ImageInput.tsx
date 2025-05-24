@@ -183,14 +183,14 @@ const ImageInput: React.FC<ImageInputProps> = ({
   if (useForm) {
     return (
       <Form.Item
-        label={l}
+        label={l ?? ""}
         name={name}
         valuePropName="fileList"
         getValueFromEvent={normFile}
         rules={[
           {
             required: required,
-            message: `Please upload ${l.toLowerCase()}`,
+            message: `Please upload ${l?.toLowerCase()}`,
           },
         ]}
       >
