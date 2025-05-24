@@ -3,6 +3,8 @@ import {
   PlusOutlined,
   SettingOutlined,
   MinusCircleOutlined,
+  AlertOutlined,
+  BarcodeOutlined,
 } from "@ant-design/icons";
 import {
   Alert,
@@ -16,12 +18,15 @@ import {
   Row,
   Space,
   Typography,
+  Select,
+  Divider,
 } from "antd";
-import { ProductVariant, VariantAttribute } from "../../types/product.types";
+import { ProductVariant, VariantAttribute, ProductSerial } from "../../types/product.types";
 import CommonSelector from "./CommonSelector";
 import ImageInput from "../../components/ImageInput";
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 interface VariantManagerProps {
   variants: ProductVariant[];
@@ -80,6 +85,35 @@ export default function VariantManager({
       (_, i) => i !== attrIndex
     );
     updateVariant(variantIndex, { attributes: newAttributes });
+  };
+
+  const updateVariantSerial = (
+    variantIndex: number,
+    serialIndex: number,
+    field: keyof ProductSerial,
+    value: string
+  ) => {
+    const variant = variants[variantIndex];
+    const newSerials = [...(variant.serials || [])];
+    newSerials[serialIndex] = { ...newSerials[serialIndex], [field]: value };
+    updateVariant(variantIndex, { serials: newSerials });
+  };
+
+  const addVariantSerial = (variantIndex: number) => {
+    const variant = variants[variantIndex];
+    const newSerials = [
+      ...(variant.serials || []),
+      { serial_number: "", status: "available" as const },
+    ];
+    updateVariant(variantIndex, { serials: newSerials });
+  };
+
+  const removeVariantSerial = (variantIndex: number, serialIndex: number) => {
+    const variant = variants[variantIndex];
+    const newSerials = (variant.serials || []).filter(
+      (_, i) => i !== serialIndex
+    );
+    updateVariant(variantIndex, { serials: newSerials });
   };
 
   return (
@@ -191,7 +225,7 @@ export default function VariantManager({
                       placeholder="0.00"
                       min={0}
                       precision={2}
-                      className="w-full"
+                      className="w-full!"
                       prefix="$"
                       value={variant.cost_price}
                       onChange={(value) =>
@@ -207,7 +241,7 @@ export default function VariantManager({
                       placeholder="0.00"
                       min={0}
                       precision={2}
-                      className="w-full"
+                      className="w-full!"
                       prefix="$"
                       value={variant.regular_price}
                       onChange={(value) =>
@@ -223,7 +257,7 @@ export default function VariantManager({
                       placeholder="0.00"
                       min={0}
                       precision={2}
-                      className="w-full"
+                      className="w-full!"
                       prefix="$"
                       value={variant.wholesale_price}
                       onChange={(value) =>
@@ -234,23 +268,23 @@ export default function VariantManager({
                 </Row>
               </div>
 
-              {/* Units & Warranty */}
+              {/* Units, Warranty & Inventory */}
               <div>
                 <Text strong className="block mb-3">
-                  Units & Warranty
+                  Units, Warranty & Inventory
                 </Text>
                 <Row gutter={16}>
-                  <Col xs={24} md={8}>
+                  <Col xs={24} md={6}>
                     <CommonSelector
                       label="Sale Unit"
                       type="unit"
-                      value={variant.sale_unit_id}
+                      value={variant.sale_unit_id ?? undefined}
                       onChange={(value) =>
                         updateVariant(index, { sale_unit_id: value as number })
                       }
                     />
                   </Col>
-                  <Col xs={24} md={8}>
+                  <Col xs={24} md={6}>
                     <CommonSelector
                       label="Purchase Unit"
                       type="unit"
@@ -262,20 +296,41 @@ export default function VariantManager({
                       }
                     />
                   </Col>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
+                  <Col xs={24} md={6}>
+                    <label className="block text-sm font-medium mb-1 w-full!">
                       Warranty Period (Months)
                     </label>
                     <InputNumber
+                      style={{ width: "100%" }}
                       placeholder="12"
                       min={0}
-                      className="w-full"
                       value={variant.warranty_period}
                       onChange={(value) =>
                         updateVariant(index, { warranty_period: value })
                       }
                       addonAfter="Months"
                     />
+                  </Col>
+                  <Col xs={24} md={6}>
+                    <label className="block text-sm font-medium mb-1 w-full!">
+                      <Space>
+                        <AlertOutlined />
+                        Alert Quantity
+                      </Space>
+                    </label>
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      placeholder="10"
+                      min={0}
+                      value={variant.alert_quantity}
+                      onChange={(value) =>
+                        updateVariant(index, { alert_quantity: value || 0 })
+                      }
+                      addonAfter="units"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Get alerts when stock is low
+                    </div>
                   </Col>
                 </Row>
               </div>
@@ -299,6 +354,106 @@ export default function VariantManager({
                   </Col>
                 </Row>
               </div>
+
+              {/* Serial Numbers */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Text strong>
+                    <Space>
+                      <BarcodeOutlined />
+                      Serial Numbers
+                      {(variant.serials || []).length > 0 && (
+                        <Badge count={(variant.serials || []).length} color="green" />
+                      )}
+                    </Space>
+                  </Text>
+                  <Button
+                    type="dashed"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={() => addVariantSerial(index)}
+                  >
+                    Add Serial
+                  </Button>
+                </div>
+
+                {(variant.serials || []).length === 0 ? (
+                  <div className="text-center py-4 border-2 border-dashed border-gray-300 rounded">
+                    <BarcodeOutlined className="text-2xl text-gray-400 mb-2" />
+                    <Text type="secondary">No serial numbers added</Text>
+                    <div className="mt-1">
+                      <Text type="secondary" className="text-xs">
+                        Add serial numbers for inventory tracking
+                      </Text>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3!">
+                    {(variant.serials || []).map((serial, serialIndex) => (
+                      <Row key={serialIndex} gutter={12} align="middle">
+                        <Col xs={8}>
+                          <Input
+                            placeholder="Serial number"
+                            value={serial.serial_number}
+                            onChange={(e) =>
+                              updateVariantSerial(
+                                index,
+                                serialIndex,
+                                "serial_number",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </Col>
+                        <Col xs={6}>
+                          <Select
+                            value={serial.status}
+                            onChange={(value) =>
+                              updateVariantSerial(
+                                index,
+                                serialIndex,
+                                "status",
+                                value
+                              )
+                            }
+                            className="w-full"
+                          >
+                            <Option value="available">Available</Option>
+                            <Option value="sold">Sold</Option>
+                            <Option value="defective">Defective</Option>
+                            <Option value="returned">Returned</Option>
+                          </Select>
+                        </Col>
+                        <Col xs={8}>
+                          <Input
+                            placeholder="Notes (optional)"
+                            value={serial.notes || ""}
+                            onChange={(e) =>
+                              updateVariantSerial(
+                                index,
+                                serialIndex,
+                                "notes",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </Col>
+                        <Col xs={2}>
+                          <Button
+                            type="text"
+                            danger
+                            icon={<MinusCircleOutlined />}
+                            onClick={() => removeVariantSerial(index, serialIndex)}
+                            title="Remove serial number"
+                          />
+                        </Col>
+                      </Row>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Divider />
 
               {/* Attributes */}
               <div>

@@ -36,6 +36,7 @@ export default function ProductForm() {
     has_variants: false,
     tax_method: TaxMethod.EXCLUSIVE,
     tax: 0,
+    daily_sale_objective: 0,
     variants: [],
   });
 
@@ -61,6 +62,7 @@ export default function ProductForm() {
         tax_method:
           (productData.tax_method as TaxMethod) || TaxMethod.EXCLUSIVE,
         tax: Number(productData.tax) || 0,
+        daily_sale_objective: Number(productData.daily_sale_objective) || 0,
         variants:
           productData.variants?.map((variant: any) => ({
             id: variant.id,
@@ -81,11 +83,19 @@ export default function ProductForm() {
             warranty_period: variant.warranty_period,
             image: variant.image || "",
             is_default: variant.is_default,
+            alert_quantity: variant.alert_quantity || 0,
             attributes:
               variant.VariantAttribute?.map((attr: any) => ({
                 id: attr.id,
                 name: attr.name,
                 value: attr.value,
+              })) || [],
+            serials:
+              variant.serials?.map((serial: any) => ({
+                id: serial.id, // Add id field for existing serials
+                serial_number: serial.serial_number,
+                status: serial.status || "available",
+                notes: serial.notes || "",
               })) || [],
           })) || [],
       };
@@ -107,7 +117,9 @@ export default function ProductForm() {
             barcode: "",
             warranty_period: null,
             image: "",
+            alert_quantity: 0,
             attributes: [],
+            serials: [],
           },
         ];
       }
@@ -133,7 +145,9 @@ export default function ProductForm() {
         barcode: "",
         warranty_period: null,
         image: "",
+        alert_quantity: 0,
         attributes: [],
+        serials: [],
       };
 
       const newFormData = { ...formData, variants: [defaultVariant] };
@@ -189,7 +203,9 @@ export default function ProductForm() {
         barcode: "",
         warranty_period: null,
         image: "",
+        alert_quantity: 0,
         attributes: [],
+        serials: [],
       };
 
       const newVariants = [...prev.variants, newVariant];
@@ -244,7 +260,9 @@ export default function ProductForm() {
             barcode: "",
             warranty_period: null,
             image: "",
+            alert_quantity: 0,
             attributes: [],
+            serials: [],
           },
         ];
       } else if (checked) {
@@ -270,7 +288,9 @@ export default function ProductForm() {
               barcode: "",
               warranty_period: null,
               image: "",
+              alert_quantity: 0,
               attributes: [],
+              serials: [],
             },
           ];
         } else {
@@ -320,7 +340,7 @@ export default function ProductForm() {
       let variants = values.variants || [];
 
       if (variants.length === 0) {
-        // Create a default variant if none exists (this shouldn't happen with our logic, but just in case)
+        // Create a default variant if none exists
         const defaultVariant: ProductVariant = {
           name: values.has_variants ? "Variant 1" : values.name || "Default",
           sku: "",
@@ -333,6 +353,7 @@ export default function ProductForm() {
           warranty_period: null,
           image: "",
           is_default: true,
+          alert_quantity: 0,
           attributes: [],
         };
         variants = [defaultVariant];
@@ -353,24 +374,33 @@ export default function ProductForm() {
         has_variants: values.has_variants,
         tax_method: values.tax_method,
         tax: values.tax,
+        daily_sale_objective: values.daily_sale_objective || 0,
         variants: variants.map((variant, index) => ({
           ...(variant.id && { id: variant.id }), // Include ID only for existing variants
           name: variant.name,
           sku: variant.sku || undefined,
           barcode: variant.barcode || undefined,
-          cost_price: variant.cost_price || "0.00",
+          cost_price: variant.cost_price?.toString() || "0.00",
           regular_price: variant.regular_price?.toString() || "0.00",
           wholesale_price: variant.wholesale_price?.toString() || undefined,
           sale_unit_id: variant.sale_unit_id,
           purchase_unit_id: variant.purchase_unit_id,
           warranty_period: variant.warranty_period || undefined,
           image: variant.image || undefined,
-          is_default: !values.has_variants || index === 0, // For simple products, always default. For variants, only first is default
+          is_default: !values.has_variants || index === 0,
+          alert_quantity: variant.alert_quantity || 0,
           attributes: (variant.attributes || [])
             .filter((attr) => attr.name && attr.value)
             .map((attr) => ({
               name: attr.name,
               value: attr.value,
+            })),
+          serials: (variant.serials || [])
+            .filter((serial) => serial.serial_number)
+            .map((serial) => ({
+              serial_number: serial.serial_number,
+              status: serial.status || "available",
+              notes: serial.notes || undefined,
             })),
         })),
       };
@@ -388,7 +418,7 @@ export default function ProductForm() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
 
       if (!isEditMode) {
-        navigate(`/products/${data.id}/edit`);
+        navigate(`/products`);
       }
     },
     onError: (error: any) => {
@@ -520,6 +550,7 @@ export default function ProductForm() {
             activeKey={activeTab}
             onChange={setActiveTab}
             items={tabItems}
+            className="min-h-[500px]"
           />
         </Card>
       </Form>

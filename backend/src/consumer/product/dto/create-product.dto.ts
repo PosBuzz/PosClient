@@ -43,6 +43,11 @@ export class CreateProductDto {
   @Max(100)
   tax?: number = 0;
   
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  daily_sale_objective?: number = 0;
+  
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
