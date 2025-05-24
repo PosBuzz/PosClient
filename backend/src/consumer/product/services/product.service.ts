@@ -1,211 +1,184 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateProductDto } from '../dtos/create-product-branch.dto';
-import { UpdateEntityDto } from '../dtos/update-entity.dto';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { ProductVariantService } from './product-variant.service';
+import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private variantService: ProductVariantService
+  ) {}
 
-  // Create product with updated tag handling
-  async createProduct(createProductDto: CreateProductDto, consumer_id: number) {
-    const {
-      category_id,
-      brand_id,
-      product_unit_id,
-      sale_unit_id,
-      purchase_unit_id,
-      variants,
-      branch_prices,
-      serials,
-      promotional_price,
-      tags,
-      ...productData
-    } = createProductDto;
-
-    if (!consumer_id || !category_id) {
-      throw new HttpException('Invalid input data', HttpStatus.BAD_REQUEST);
+  async create(consumerId: number, dto: CreateProductDto) {
+    // Validate that at least one variant is provided
+    if (!dto.variants || dto.variants.length === 0) {
+      throw new BadRequestException('At least one variant is required');
     }
 
-    // Create the product using unchecked input (direct IDs)
-    const product = await this.prismaService.product.create({
+    // For non-variant products, ensure only one variant is provided
+    if (!dto.has_variants && dto.variants.length > 1) {
+      throw new BadRequestException('Simple products can only have one variant');
+    }
+
+    // Create the product
+    const product = await this.prisma.product.create({
       data: {
-        ...productData,
-        consumer_id,
-        category_id,
-        brand_id,
-        product_unit_id,
-        sale_unit_id,
-        purchase_unit_id,
+        consumer_id: consumerId,
+        name: dto.name,
+        code: dto.code,
+        description: dto.description,
+        category_id: dto.category_id,
+        brand_id: dto.brand_id,
+        has_variants: dto.has_variants,
+        tax_method: dto.tax_method || 'exclusive',
+        tax: dto.tax || 0,
       },
     });
 
-    // Create variants if provided
-    if (variants && variants.length > 0) {
-      await Promise.all(
-        variants.map((variant) =>
-          this.prismaService.productVariant.create({
-            data: {
-              option: variant.option,
-              value: variant.value,
-              item_code: variant.item_code,
-              cost: variant.cost,
-              price: variant.price,
-              product: { connect: { id: product.id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Create branch prices if provided
-    if (branch_prices && branch_prices.length > 0) {
-      await Promise.all(
-        branch_prices.map((branchPrice) =>
-          this.prismaService.productBranchPrice.create({
-            data: {
-              price: branchPrice.price,
-              product: { connect: { id: product.id } },
-              branch: { connect: { id: branchPrice.branch_id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Create serials if provided
-    if (serials && serials.length > 0) {
-      await Promise.all(
-        serials.map((serial) =>
-          this.prismaService.productSerial.create({
-            data: {
-              serial,
-              product: { connect: { id: product.id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Create promotional price if provided
-    if (promotional_price && typeof promotional_price === 'object') {
-      await this.prismaService.promotionalPrice.create({
-        data: {
-          price: promotional_price.price,
-          starts_at: promotional_price.starts_at,
-          ends_at: promotional_price.ends_at,
-          product: { connect: { id: product.id } },
-        },
-      });
-    }
-
-    // Handle tags with the new many-to-many relationship
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-      // For each tag name, find or create the tag and connect it to the product
-      await Promise.all(
-        tags.map(async (tag_id) => {
-          // Create the product-tag relationship
-          return this.prismaService.productTag.create({
+    // Add tags if provided
+    if (dto.tag_ids && dto.tag_ids.length > 0) {
+      await this.prisma.$transaction(
+        dto.tag_ids.map(tagId =>
+          this.prisma.tagOnProduct.create({
             data: {
               product_id: product.id,
-              tag_id,
+              tag_id: tagId,
             },
-          });
-        }),
+          })
+        )
       );
     }
 
-    return this.getProduct(product.id, consumer_id);
+    // Create variants
+    // For simple products, mark the variant as default
+    if (!dto.has_variants) {
+      dto.variants[0].is_default = true;
+    }
+
+    await Promise.all(
+      dto.variants.map(variantDto => this.variantService.create(product.id, variantDto))
+    );
+
+    return this.findOne(product.id, consumerId);
   }
 
-  async getAllProducts(
-    consumer_id: number,
-    query?: {
-      search?: string;
-      category_id?: number;
-      brand_id?: number;
-      page?: number;
-      limit?: number;
-    },
-  ) {
-    const page = query?.page || 1;
-    const limit = query?.limit || 10;
+  async findAll(consumerId: number, options: { 
+    page?: number, 
+    limit?: number, 
+    search?: string,
+    categoryId?: number,
+    brandId?: number,
+    tagId?: number
+  } = {}) {
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '', 
+      categoryId,
+      brandId,
+      tagId
+    } = options;
+    
     const skip = (page - 1) * limit;
-
-    // Build the where clause based on filters
-    const where: any = {
-      consumer_id,
+    
+    // Build the where clause properly for Prisma
+    const whereClause: any = {
+      consumer_id: consumerId,
+      deleted_at: null,
     };
-
-    if (query?.search) {
-      where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { code: { contains: query.search, mode: 'insensitive' } },
+    
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' as any } },
+        { code: { contains: search, mode: 'insensitive' as any } },
       ];
     }
-
-    if (query?.category_id) {
-      where.category_id = query.category_id;
+    
+    if (categoryId) {
+      whereClause.category_id = parseInt(categoryId.toString());
+    }
+    
+    if (brandId) {
+      whereClause.brand_id = parseInt(brandId.toString());
+    }
+    
+    if (tagId) {
+      whereClause.tags = { some: { tag_id: parseInt(tagId.toString()) } };
     }
 
-    if (query?.brand_id) {
-      where.brand_id = query.brand_id;
-    }
-
-    // Get total count for pagination
-    const totalCount = await this.prismaService.product.count({ where });
-
-    // Get the products with essential relations
-    const products = await this.prismaService.product.findMany({
-      where,
-      include: {
-        category: { select: { name: true } },
-        brand: { select: { name: true } },
-        unit: { select: { name: true } },
-      },
-      skip,
-      take: limit,
-      orderBy: { created_at: 'desc' },
-    });
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where: whereClause,
+        include: {
+          category: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          variants: {
+            include: {
+              sale_unit: true,
+              price_history: {
+                take: 1,
+                orderBy: { effective_date: 'desc' },
+              },
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.product.count({ where: whereClause }),
+    ]);
 
     return {
       data: products,
       meta: {
-        total: totalCount,
+        total,
         page,
         limit,
-        totalPages: Math.ceil(totalCount / limit),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
 
-  // Get a single product with updated tag handling and security
-  async getProduct(id: number, consumer_id: number) {
-    const product = await this.prismaService.product.findFirst({
+  async findOne(id: number, consumerId: number) {
+    const product = await this.prisma.product.findFirst({
       where: {
         id,
-        consumer_id, // Add consumer_id to ensure tenant isolation
+        consumer_id: consumerId,
+        deleted_at: null,
       },
       include: {
-        variants: true,
-        branch_prices: {
-          include: { branch: true },
-        },
-        serial_numbers: true,
-        promotional_price: true,
-        tags: {
-          include: { tag: true },
-        },
         category: true,
         brand: true,
-        unit: true,
-        sale_unit: true,
-        purchase_unit: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        variants: {
+          include: {
+            sale_unit: true,
+            purchase_unit: true,
+            VariantAttribute: true,
+            inventory_items: {
+              include: {
+                branch: true,
+              },
+            },
+            price_history: {
+              take: 1,
+              orderBy: { effective_date: 'desc' },
+            },
+          },
+        },
       },
     });
 
@@ -213,369 +186,94 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    // Transform the tags for frontend consumption
-    const transformedProduct = {
-      ...product,
-      tags:
-        product.tags?.map((pt) => ({
-          id: pt.tag_id,
-          name: pt.tag.name, // Use tag.tag instead of tag.name
-        })) || [],
-    };
-
-    return transformedProduct;
+    return product;
   }
 
-  // Update product with updated tag handling
-  async updateProduct(
-    id: number,
-    updateProductDto: Partial<CreateProductDto>,
-    consumer_id: number,
-  ) {
-    const {
-      category_id,
-      brand_id,
-      product_unit_id,
-      sale_unit_id,
-      purchase_unit_id,
-      variants,
-      branch_prices,
-      serials,
-      tags,
-      promotional_price, // Extract promotional_price from DTO
-      ...productData
-    } = updateProductDto;
+  async update(id: number, dto: UpdateProductDto, consumerId: number) {
+    // First check if product exists and belongs to this consumer
+    await this.findOne(id, consumerId);
 
-    // Check if product exists and belongs to this consumer
-    const existingProduct = await this.prismaService.product.findFirst({
-      where: {
-        id,
-        consumer_id,
+    // Update the product
+    await this.prisma.product.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        code: dto.code,
+        description: dto.description,
+        category_id: dto.category_id,
+        brand_id: dto.brand_id,
+        has_variants: dto.has_variants,
+        tax_method: dto.tax_method,
+        tax: dto.tax,
       },
     });
 
-    if (!existingProduct) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-
-    // Prepare update data
-    const updateData: any = { ...productData };
-
-    // Handle relations
-    if (category_id) {
-      updateData.category = { connect: { id: category_id } };
-    }
-    if (brand_id) {
-      updateData.brand = { connect: { id: brand_id } };
-    }
-    if (product_unit_id) {
-      updateData.unit = { connect: { id: product_unit_id } };
-    }
-    if (sale_unit_id) {
-      updateData.sale_unit = { connect: { id: sale_unit_id } };
-    }
-    if (purchase_unit_id) {
-      updateData.purchase_unit = { connect: { id: purchase_unit_id } };
-    }
-
-    // Update the product (without promotional_price)
-    const updatedProduct = await this.prismaService.product.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Handle promotional price if provided
-    if (promotional_price) {
-      const existingPromo = await this.prismaService.promotionalPrice.findFirst(
-        {
-          where: { product_id: id },
-        },
-      );
-
-      if (existingPromo) {
-        // Update existing promotional price
-        await this.prismaService.promotionalPrice.update({
-          where: { id: existingPromo.id },
-          data: {
-            price: promotional_price.price,
-            starts_at: promotional_price.starts_at,
-            ends_at: promotional_price.ends_at,
-          },
-        });
-      } else {
-        // Create new promotional price
-        await this.prismaService.promotionalPrice.create({
-          data: {
-            price: promotional_price.price,
-            starts_at: promotional_price.starts_at,
-            ends_at: promotional_price.ends_at,
-            product: { connect: { id } },
-          },
-        });
-      }
-    }
-
-    // Handle variants if provided
-    if (variants) {
-      // Delete existing variants
-      await this.prismaService.productVariant.deleteMany({
+    // Update tags if provided
+    if (dto.tag_ids) {
+      // Remove existing tags
+      await this.prisma.tagOnProduct.deleteMany({
         where: { product_id: id },
       });
 
-      // Create new variants
-      await Promise.all(
-        variants.map((variant) =>
-          this.prismaService.productVariant.create({
-            data: {
-              option: variant.option,
-              value: variant.value,
-              item_code: variant.item_code,
-              cost: variant.cost,
-              price: variant.price,
-              product: { connect: { id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Handle branch prices if provided
-    if (branch_prices) {
-      // Delete existing branch prices
-      await this.prismaService.productBranchPrice.deleteMany({
-        where: { product_id: id },
-      });
-
-      // Create new branch prices
-      await Promise.all(
-        branch_prices.map((branchPrice) =>
-          this.prismaService.productBranchPrice.create({
-            data: {
-              price: branchPrice.price,
-              product: { connect: { id } },
-              branch: { connect: { id: branchPrice.branch_id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Handle serials if provided
-    if (serials) {
-      // Delete existing serials
-      await this.prismaService.productSerial.deleteMany({
-        where: { product_id: id },
-      });
-
-      // Create new serials
-      await Promise.all(
-        serials.map((serial) =>
-          this.prismaService.productSerial.create({
-            data: {
-              serial,
-              product: { connect: { id } },
-            },
-          }),
-        ),
-      );
-    }
-
-    // Handle tags with many-to-many relationship
-    if (tags && Array.isArray(tags)) {
-      // Delete existing product-tag relationships
-      await this.prismaService.productTag.deleteMany({
-        where: { product_id: id },
-      });
-
-      // Create new tag connections
-      if (tags.length > 0) {
-        await Promise.all(
-          tags.map(async (tag_id) => {
-            return this.prismaService.productTag.create({
+      // Add new tags
+      if (dto.tag_ids.length > 0) {
+        await this.prisma.$transaction(
+          dto.tag_ids.map(tagId =>
+            this.prisma.tagOnProduct.create({
               data: {
                 product_id: id,
-                tag_id,
+                tag_id: tagId,
               },
-            });
-          }),
+            })
+          )
         );
       }
     }
 
-    return this.getProduct(id, consumer_id);
-  }
-
-  async deleteProduct(id: number, consumer_id: number) {
-    // Check if product exists and belongs to this consumer
-    const product = await this.prismaService.product.findFirst({
-      where: {
-        id,
-        consumer_id,
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+    // Update existing variants
+    if (dto.variants && dto.variants.length > 0) {
+      // Process each variant
+      await Promise.all(
+        dto.variants.map(async variantDto => {
+          // If variant has ID, update it
+          if ('id' in variantDto && variantDto.id) {
+            await this.variantService.update(variantDto.id, variantDto);
+          } else {
+            // Create new variant - need to ensure all required fields exist
+            if (!variantDto.name || !variantDto.cost_price || !variantDto.regular_price || 
+                !variantDto.sale_unit_id || !variantDto.purchase_unit_id) {
+              throw new BadRequestException('New variants require all required fields');
+            }
+            
+            // Safe cast to CreateProductVariantDto since we've verified required fields
+            await this.variantService.create(id, variantDto as unknown as CreateProductVariantDto);
+          }
+        })
+      );
     }
 
-    // Delete the product and all related records
-    await this.prismaService.product.delete({
+    // Delete variants if requested
+    if (dto.variant_ids_to_delete && dto.variant_ids_to_delete.length > 0) {
+      await Promise.all(
+        dto.variant_ids_to_delete.map(variantId => 
+          this.variantService.remove(variantId)
+        )
+      );
+    }
+
+    return this.findOne(id, consumerId);
+  }
+
+  async remove(id: number, consumerId: number) {
+    // First check if product exists and belongs to this consumer
+    await this.findOne(id, consumerId);
+
+    // Soft delete - set deleted_at timestamp
+    await this.prisma.product.update({
       where: { id },
+      data: { deleted_at: new Date() },
     });
 
     return { success: true, message: 'Product deleted successfully' };
-  }
-
-  // tags
-  async getTags(consumer_id: number) {
-    return this.prismaService.tag.findMany({
-      where: { consumer_id },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  async createTag(tagData: string, consumer_id: number) {
-    return this.prismaService.tag.create({
-      data: {
-        name: tagData,
-        consumer_id, // Make sure this is passed correctly
-      },
-    });
-  }
-
-  async updateTag(id: number, name: string) {
-    return this.prismaService.tag.update({
-      where: { id },
-      data: { name }, // Support both field names for flexibility
-    });
-  }
-
-  async deleteTag(id: number) {
-    // This will automatically delete all product_tag relations due to onDelete: Cascade
-    await this.prismaService.tag.delete({
-      where: { id },
-    });
-
-    return { success: true };
-  }
-
-  // Branches
-  async createBranch(branchName: string, consumer_id: number) {
-    return this.prismaService.branch.create({
-      data: {
-        name: branchName,
-        consumer_id, // Properly add consumer_id
-      },
-    });
-  }
-
-  async getBranches(consumer_id: number) {
-    return this.prismaService.branch.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async updateBranch(id: number, name: string) {
-    return this.prismaService.branch.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async deleteBranch(id: number) {
-    await this.prismaService.branch.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  // Brands
-  async createBrand(brandName: string, consumer_id: number) {
-    return this.prismaService.brand.create({
-      data: {
-        name: brandName,
-        consumer_id, // Properly add consumer_id
-      },
-    });
-  }
-
-  async getBrands(consumer_id: number) {
-    return this.prismaService.brand.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async updateBrand(id: number, name: string) {
-    return this.prismaService.brand.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async deleteBrand(id: number) {
-    await this.prismaService.brand.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  // Units
-  async createUnit(unitName: string, consumer_id: number) {
-    return this.prismaService.unit.create({
-      data: {
-        name: unitName,
-        consumer_id, // Properly add consumer_id
-      },
-    });
-  }
-
-  async getUnits(consumer_id: number) {
-    return this.prismaService.unit.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async updateUnit(id: number, name: string) {
-    return this.prismaService.unit.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async deleteUnit(id: number) {
-    await this.prismaService.unit.delete({
-      where: { id },
-    });
-    return { success: true };
-  }
-
-  // Category
-  async createCategory(categoryName: string, consumer_id: number) {
-    return this.prismaService.category.create({
-      data: {
-        name: categoryName,
-        consumer_id, // Properly add consumer_id
-      },
-    });
-  }
-
-  async getCategories(consumer_id: number) {
-    return this.prismaService.category.findMany({
-      where: { consumer_id },
-    });
-  }
-
-  async updateCategory(id: number, name: string) {
-    return this.prismaService.category.update({
-      where: { id },
-      data: { name },
-    });
-  }
-
-  async deleteCategory(id: number) {
-    await this.prismaService.category.delete({
-      where: { id },
-    });
-    return { success: true };
   }
 }

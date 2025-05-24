@@ -1,614 +1,528 @@
+import { ArrowLeftOutlined, SaveOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Card,
-  Checkbox,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Tabs,
-} from "antd";
-import TextArea from "antd/es/input/TextArea";
-import { useEffect, useState } from "react";
+import { Button, Card, Form, Spin, Tabs } from "antd";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productApi } from "../../api/product-api";
+import { useMessageStore } from "../../stores/messageStore";
 import {
-  ProductFormValues,
-  ProductType,
+  ProductFormData,
+  ProductVariant,
   TaxMethod,
 } from "../../types/product.types";
-
-// Components
-import dayjs from "dayjs";
-import CenterLoader from "../../components/CenterLoader";
-import ImageInput from "../../components/ImageInput";
+import BasicInformationTab from "./BasicInformationTab";
+import VariantsTab from "./VariantsTab";
 import PageTitle from "../../components/PageTitle";
-import { useMessageStore } from "../../stores/messageStore";
-import { getImageUrlForCloudinaryImage } from "../../utils/upload";
-import BranchPricing from "./BranchPricing";
-import CommonSelector from "./CommonSelector";
-import PromoPriceForm from "./PromoPriceForm";
-import SerialInput from "./SerialInput";
-import VariantManager from "./VariantManager";
-import AiDescriptionGenerator from "../../components/AiDescriptionGenerator";
-
-const { Option } = Select;
+import CenterLoader from "../../components/CenterLoader";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<ProductFormData>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("1");
+  const [activeTab, setActiveTab] = useState("basic");
   const queryClient = useQueryClient();
   const { messageApi } = useMessageStore();
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const productName = Form.useWatch("name", form);
-  const currentDescription = Form.useWatch("description", form);
+  // Central state with proper typing
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: "",
+    code: "",
+    description: "",
+    category_id: undefined,
+    brand_id: undefined,
+    tag_ids: [],
+    has_variants: false,
+    tax_method: TaxMethod.EXCLUSIVE,
+    tax: 0,
+    variants: [],
+  });
 
-  const [description, setDescription] = useState("");
-
-  // Fetch product data if in edit mode without onSuccess
+  // Fetch product data if in edit mode
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
     queryKey: ["product", id],
-    queryFn: () => productApi.getProduct(Number(id)),
+    queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
+    staleTime: 60 * 1000,
   });
 
-  // Use useEffect to populate the form when product data is available
+  // Initialize form data
   useEffect(() => {
-    if (productData && isEditMode) {
-      // Transform data for form consumption
-      const formData = {
-        ...productData,
-        // Handle specific fields that need transformation
-
-        // Product basics
-        name: productData.name,
-        code: productData.code,
-        description: productData.description,
-        image_url: [
-          {
-            uid: "-1",
-            status: "done",
-            thumbUrl: productData.image_url,
-          },
-        ],
-
-        // Categories and relations
+    if (productData && isEditMode && !isInitialized) {
+      const newFormData: ProductFormData = {
+        name: productData.name || "",
+        code: productData.code || "",
+        description: productData.description || "",
         category_id: productData.category_id,
         brand_id: productData.brand_id,
-        product_unit_id: productData.product_unit_id,
-        sale_unit_id: productData.sale_unit_id,
-        purchase_unit_id: productData.purchase_unit_id,
-
-        // Pricing
-        cost: productData.cost,
-        price: productData.price,
-        wholesale_price: productData.wholesale_price,
-
-        // Settings
-        type: productData.type || ProductType.STANDARD,
-        tax_method: productData.tax_method,
-        product_tax: productData.product_tax,
-        alert_quantity: productData.alert_quantity,
-        daily_sale_objective: productData.daily_sale_objective,
-
-        // Checkboxes
-        featured: Boolean(productData.featured),
-        sell_online: Boolean(productData.sell_online),
-        in_stock: productData.in_stock !== false, // default to true if undefined
-
-        // Handle arrays
-        tags: productData.tags ? productData.tags.map((tag) => tag.id) : [],
-        variants: productData.variants || [],
-        branch_prices: productData.branch_prices || [],
-        serials: productData.serial_numbers
-          ? productData.serial_numbers.map((s) => s.serial)
-          : [],
-
-        // Handle promotional pricing
-        promo_enabled: productData.promo_enabled,
-        promotional_price: productData.promotional_price
-          ? {
-              price: productData.promotional_price.price,
-            }
-          : undefined,
-        promo_date_range: productData.promotional_price
-          ? [
-              dayjs(productData.promotional_price.starts_at),
-              productData.promotional_price.ends_at
-                ? dayjs(productData.promotional_price.ends_at)
-                : null,
-            ]
-          : undefined,
+        tag_ids: productData.tags?.map((tag: any) => tag.tag.id) || [],
+        has_variants: productData.has_variants || false,
+        tax_method:
+          (productData.tax_method as TaxMethod) || TaxMethod.EXCLUSIVE,
+        tax: Number(productData.tax) || 0,
+        variants:
+          productData.variants?.map((variant: any) => ({
+            id: variant.id,
+            name: variant.name,
+            sku: variant.sku || "",
+            barcode: variant.barcode || "",
+            cost_price: variant.cost_price
+              ? parseFloat(variant.cost_price)
+              : null,
+            regular_price: variant.regular_price
+              ? parseFloat(variant.regular_price)
+              : null,
+            wholesale_price: variant.wholesale_price
+              ? parseFloat(variant.wholesale_price)
+              : null,
+            sale_unit_id: variant.sale_unit_id,
+            purchase_unit_id: variant.purchase_unit_id,
+            warranty_period: variant.warranty_period,
+            image: variant.image || "",
+            is_default: variant.is_default,
+            attributes:
+              variant.VariantAttribute?.map((attr: any) => ({
+                id: attr.id,
+                name: attr.name,
+                value: attr.value,
+              })) || [],
+          })) || [],
       };
 
+      // Ensure at least one variant exists even for edit mode
+      if (newFormData.variants.length === 0) {
+        newFormData.variants = [
+          {
+            name: newFormData.has_variants
+              ? "Variant 1"
+              : newFormData.name || "Default",
+            is_default: true,
+            cost_price: null,
+            regular_price: null,
+            wholesale_price: null,
+            sale_unit_id: null,
+            purchase_unit_id: null,
+            sku: "",
+            barcode: "",
+            warranty_period: null,
+            image: "",
+            attributes: [],
+          },
+        ];
+      }
+
+      setFormData(newFormData);
+      form.setFieldsValue(newFormData);
+      setIsInitialized(true);
+    } else if (
+      !isEditMode &&
+      formData.variants.length === 0 &&
+      !isInitialized
+    ) {
+      // Initialize with default variant for new products
+      const defaultVariant: ProductVariant = {
+        name: "Default",
+        is_default: true,
+        cost_price: null,
+        regular_price: null,
+        wholesale_price: null,
+        sale_unit_id: null,
+        purchase_unit_id: null,
+        sku: "",
+        barcode: "",
+        warranty_period: null,
+        image: "",
+        attributes: [],
+      };
+
+      const newFormData = { ...formData, variants: [defaultVariant] };
+      setFormData(newFormData);
+      setIsInitialized(true);
+    }
+  }, [productData, isEditMode, form, isInitialized, formData]);
+
+  // Optimized field update handler
+  const updateFormField = useCallback(
+    <K extends keyof ProductFormData>(field: K, value: ProductFormData[K]) => {
+      setFormData((prev) => {
+        if (prev[field] === value) return prev;
+        const newData = { ...prev, [field]: value };
+        return newData;
+      });
+    },
+    []
+  );
+
+  // Sync form values when formData changes
+  useEffect(() => {
+    if (isInitialized) {
       form.setFieldsValue(formData);
     }
-  }, [productData, isEditMode, form]);
+  }, [formData, form, isInitialized]);
 
-  // Create product mutation
-  const createProduct = useMutation({
-    mutationFn: productApi.createProduct,
-    onSuccess: () => {
-      messageApi?.success("Product created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      form.resetFields();
-      navigate("/products");
+  // Variant management handlers with proper numbering
+  const updateVariant = useCallback(
+    (index: number, variantData: Partial<ProductVariant>) => {
+      setFormData((prev) => {
+        const newVariants = [...prev.variants];
+        if (newVariants[index]) {
+          newVariants[index] = { ...newVariants[index], ...variantData };
+          return { ...prev, variants: newVariants };
+        }
+        return prev;
+      });
     },
-    onError: (error: any) => {
-      messageApi?.error(
-        `Failed to create product: ${error?.message || "Unknown error"}`
-      );
-    },
-  });
+    []
+  );
 
-  // Update product mutation
-  const updateProduct = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: Partial<ProductFormValues>;
-    }) => productApi.updateProduct(id, data),
-    onSuccess: () => {
-      messageApi?.success("Product updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
-      navigate("/products");
-    },
-    onError: (error: any) => {
-      messageApi?.error(
-        `Failed to update product: ${error?.message || "Unknown error"}`
-      );
-    },
-  });
-
-  // Ensure all component data is captured before submission
-  const onFinish = (values: any) => {
-    // Force validation of all fields, even in hidden tabs
-    form.validateFields().then((formValues) => {
-      // Process form values to match backend DTO structure
-      const promotional_price = formValues.promo_enabled
-        ? {
-            price: formValues.promotional_price?.price,
-            starts_at: formValues.promo_date_range?.[0].toISOString(),
-            ends_at: formValues.promo_date_range?.[1]?.toISOString(),
-          }
-        : undefined;
-
-      // Get image URL from the upload component
-      const image_url = getImageUrlForCloudinaryImage(formValues, "image_url");
-
-      // Format variants to match backend
-      const variants = formValues.variants?.map((variant: any) => ({
-        ...(variant.id ? { id: variant.id } : {}), // Include ID if it exists (for updates)
-        option: variant.option,
-        value: variant.value,
-        item_code: variant.item_code,
-        cost: variant.cost,
-        price: variant.price,
-      }));
-
-      // Format branch prices
-      const branch_prices = formValues.branch_prices?.map((bp: any) => ({
-        ...(bp.id ? { id: bp.id } : {}), // Include ID if it exists (for updates)
-        branch_id: bp.branch_id,
-        price: bp.price,
-      }));
-
-      // Format serials if they exist
-      const serials = formValues.serials || [];
-
-      // Prepare data for API
-      const productData: ProductFormValues = {
-        ...formValues,
-        image_url, // Use the extracted image URL
-        featured: formValues.featured || false,
-        in_stock: formValues.in_stock !== false,
-        sell_online: formValues.sell_online || false,
-        variants,
-        branch_prices,
-        serials,
-        promotional_price,
-
-        // remove it
-        promo_date_range: undefined,
+  const addVariant = useCallback(() => {
+    setFormData((prev) => {
+      const newVariant: ProductVariant = {
+        name: `Variant ${prev.variants.length + 1}`,
+        cost_price: null,
+        regular_price: null,
+        wholesale_price: null,
+        sale_unit_id: null,
+        purchase_unit_id: null,
+        sku: "",
+        barcode: "",
+        warranty_period: null,
+        image: "",
+        attributes: [],
       };
 
-      if (isEditMode && id) {
-        updateProduct.mutate({
-          id: Number(id),
-          data: productData,
-        });
-      } else {
-        createProduct.mutate(productData);
-      }
+      const newVariants = [...prev.variants, newVariant];
+      return { ...prev, variants: newVariants };
     });
-  };
 
-  const isSubmitting = createProduct.isPending || updateProduct.isPending;
+    return formData.variants.length;
+  }, [formData.variants.length]);
 
-  // Function to handle tab change - ensure form data is preserved
-  const handleTabChange = (activeKey: string) => {
-    // Save current form values to preserve data across tab changes
-    const currentValues = form.getFieldsValue(true);
-    form.setFieldsValue(currentValues);
-    setActiveTab(activeKey);
-  };
+  const deleteVariant = useCallback((index: number) => {
+    setFormData((prev) => {
+      if (prev.variants.length <= 1) return prev;
+
+      // Remove the variant at the specified index
+      const newVariants = prev.variants.filter((_, i) => i !== index);
+
+      // Renumber the remaining variants to maintain sequential numbering
+      const renumberedVariants = newVariants.map((variant, i) => ({
+        ...variant,
+        name: prev.has_variants ? `Variant ${i + 1}` : variant.name,
+      }));
+
+      return { ...prev, variants: renumberedVariants };
+    });
+  }, []);
+
+  const handleVariantToggle = useCallback((checked: boolean) => {
+    setFormData((prev) => {
+      let newVariants = [...prev.variants];
+
+      if (!checked && newVariants.length > 1) {
+        // When switching to simple product, keep only the first variant and rename it to match product name
+        newVariants = [
+          {
+            ...newVariants[0],
+            name: prev.name || "Default",
+            is_default: true,
+          },
+        ];
+      } else if (checked && newVariants.length === 0) {
+        // If no variants exist, create first variant
+        newVariants = [
+          {
+            name: "Variant 1",
+            is_default: true,
+            cost_price: null,
+            regular_price: null,
+            wholesale_price: null,
+            sale_unit_id: null,
+            purchase_unit_id: null,
+            sku: "",
+            barcode: "",
+            warranty_period: null,
+            image: "",
+            attributes: [],
+          },
+        ];
+      } else if (checked) {
+        // Renumber existing variants when switching to variant mode
+        newVariants = newVariants.map((variant, index) => ({
+          ...variant,
+          name: `Variant ${index + 1}`,
+          is_default: index === 0, // Only first variant is default
+        }));
+      } else {
+        // For simple product, ensure we have exactly one variant that matches the product name
+        if (newVariants.length === 0) {
+          newVariants = [
+            {
+              name: prev.name || "Default",
+              is_default: true,
+              cost_price: null,
+              regular_price: null,
+              wholesale_price: null,
+              sale_unit_id: null,
+              purchase_unit_id: null,
+              sku: "",
+              barcode: "",
+              warranty_period: null,
+              image: "",
+              attributes: [],
+            },
+          ];
+        } else {
+          // Update the first (and only) variant's name to match product name
+          newVariants[0] = {
+            ...newVariants[0],
+            name: prev.name || "Default",
+            is_default: true,
+          };
+        }
+      }
+
+      return {
+        ...prev,
+        has_variants: checked,
+        variants: newVariants,
+      };
+    });
+  }, []);
+
+  // Update variant name when product name changes for simple products
   useEffect(() => {
-    form.setFieldValue("description", description);
-  }, [description]);
+    if (
+      !formData.has_variants &&
+      formData.variants.length > 0 &&
+      formData.name
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        variants: [
+          {
+            ...prev.variants[0],
+            name: prev.name,
+            is_default: true,
+          },
+        ],
+      }));
+    }
+  }, [formData.name, formData.has_variants]);
 
-  console.log(description);
+  // Save mutation with proper payload formatting
+  const saveProductMutation = useMutation({
+    mutationFn: async (values: ProductFormData) => {
+      console.log("Form data before submission:", values);
 
-  const title = isEditMode ? "Edit Product" : "Add Product";
+      // Ensure we always have at least one variant (required by backend)
+      let variants = values.variants || [];
+
+      if (variants.length === 0) {
+        // Create a default variant if none exists (this shouldn't happen with our logic, but just in case)
+        const defaultVariant: ProductVariant = {
+          name: values.has_variants ? "Variant 1" : values.name || "Default",
+          sku: "",
+          barcode: "",
+          cost_price: null,
+          regular_price: null,
+          wholesale_price: null,
+          sale_unit_id: null,
+          purchase_unit_id: null,
+          warranty_period: null,
+          image: "",
+          is_default: true,
+          attributes: [],
+        };
+        variants = [defaultVariant];
+
+        messageApi?.error(
+          "Please fill in all required variant fields before submitting"
+        );
+        return Promise.reject(new Error("Missing variant data"));
+      }
+
+      const submitData = {
+        name: values.name,
+        code: values.code || undefined,
+        description: values.description || undefined,
+        category_id: values.category_id || undefined,
+        brand_id: values.brand_id || undefined,
+        tag_ids: values.tag_ids || [],
+        has_variants: values.has_variants,
+        tax_method: values.tax_method,
+        tax: values.tax,
+        variants: variants.map((variant, index) => ({
+          ...(variant.id && { id: variant.id }), // Include ID only for existing variants
+          name: variant.name,
+          sku: variant.sku || undefined,
+          barcode: variant.barcode || undefined,
+          cost_price: variant.cost_price || "0.00",
+          regular_price: variant.regular_price?.toString() || "0.00",
+          wholesale_price: variant.wholesale_price?.toString() || undefined,
+          sale_unit_id: variant.sale_unit_id,
+          purchase_unit_id: variant.purchase_unit_id,
+          warranty_period: variant.warranty_period || undefined,
+          image: variant.image || undefined,
+          is_default: !values.has_variants || index === 0, // For simple products, always default. For variants, only first is default
+          attributes: (variant.attributes || [])
+            .filter((attr) => attr.name && attr.value)
+            .map((attr) => ({
+              name: attr.name,
+              value: attr.value,
+            })),
+        })),
+      };
+
+      console.log("Submit data with variants:", submitData);
+
+      return isEditMode
+        ? productApi.updateProduct(Number(id), submitData)
+        : productApi.createProduct(submitData);
+    },
+    onSuccess: (data) => {
+      messageApi?.success(
+        `Product ${isEditMode ? "updated" : "created"} successfully`
+      );
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      if (!isEditMode) {
+        navigate(`/products/${data.id}/edit`);
+      }
+    },
+    onError: (error: any) => {
+      console.error("Save error:", error);
+      messageApi?.error(
+        `Failed to ${isEditMode ? "update" : "create"} product: ${
+          error.response?.data?.message || error.message || "Unknown error"
+        }`
+      );
+    },
+  });
+
+  // Form submission with proper validation
+  const handleSubmit = useCallback(
+    async (values: ProductFormData) => {
+      console.log("Handle submit called with:", values);
+
+      if (!values.name?.trim()) {
+        messageApi?.error("Product name is required");
+        return;
+      }
+
+      // Ensure we have the latest formData with variants
+      const currentFormData = { ...formData };
+
+      // Check if variants exist and have length
+      if (!currentFormData.variants || currentFormData.variants.length === 0) {
+        messageApi?.error("At least one variant is required");
+        return;
+      }
+
+      // Validate required fields for each variant
+      for (let i = 0; i < currentFormData.variants.length; i++) {
+        const variant = currentFormData.variants[i];
+        if (
+          !variant.cost_price ||
+          !variant.regular_price ||
+          !variant.sale_unit_id ||
+          !variant.purchase_unit_id
+        ) {
+          const variantLabel = currentFormData.has_variants
+            ? `Variant ${i + 1}`
+            : "Product";
+          messageApi?.error(
+            `${variantLabel} is missing required fields (cost price, regular price, sale unit, purchase unit)`
+          );
+          return;
+        }
+      }
+
+      // Use formData instead of form values to ensure we have the latest state
+      await saveProductMutation.mutateAsync(currentFormData);
+    },
+    [saveProductMutation, messageApi, formData]
+  );
+
+  // Memoized tab items
+  const tabItems = useMemo(
+    () => [
+      {
+        key: "basic",
+        label: "Basic Information",
+        children: (
+          <BasicInformationTab
+            formData={formData}
+            updateFormField={updateFormField}
+            onDescriptionGenerated={(description) =>
+              updateFormField("description", description)
+            }
+            onVariantToggle={handleVariantToggle}
+          />
+        ),
+      },
+      {
+        key: "variants",
+        label: formData.has_variants ? "Variants" : "Product Details",
+        children: (
+          <VariantsTab
+            formData={formData}
+            updateVariant={updateVariant}
+            addVariant={addVariant}
+            deleteVariant={deleteVariant}
+          />
+        ),
+      },
+    ],
+    [
+      formData,
+      updateFormField,
+      handleVariantToggle,
+      updateVariant,
+      addVariant,
+      deleteVariant,
+    ]
+  );
+
+  if (isLoadingProduct) {
+    return <CenterLoader />;
+  }
 
   return (
     <>
       <PageTitle
-        title={title}
+        title={isEditMode ? "Edit Product" : "Add New Product"}
         breadcrumbs={[
-          {
-            title: "Dashboard",
-            href: "/",
-          },
-          {
-            title: "Products",
-            href: "/products",
-          },
-          {
-            title: title,
-          },
+          { title: "Dashboard", href: "/" },
+          { title: "Products", href: "/products" },
+          { title: isEditMode ? "Edit Product" : "Add New Product" },
         ]}
         rightSection={
           <Button
             type="primary"
-            loading={isSubmitting}
+            loading={saveProductMutation.isPending}
             onClick={() => form.submit()}
           >
             {isEditMode ? "Update Product" : "Save Product"}
           </Button>
         }
       />
-      <Card className="shadow-md my-6">
-        {isEditMode && isLoadingProduct ? (
-          <CenterLoader />
-        ) : (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            className="px-1"
-            initialValues={{
-              type: "STANDARD",
-              in_stock: true,
-            }}
-            // This is crucial - preserve values when fields unmount
-            preserve={true}
-          >
-            <Tabs
-              activeKey={activeTab}
-              onChange={handleTabChange}
-              items={[
-                {
-                  key: "1",
-                  label: "Basic Info",
-                  children: (
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2">
-                          <Form.Item
-                            name="name"
-                            label="Product Name"
-                            rules={[
-                              {
-                                required: true,
-                                message: "Please enter product name",
-                              },
-                            ]}
-                          >
-                            <Input placeholder="Enter product name" />
-                          </Form.Item>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Form.Item
-                              name="code"
-                              label="Product Code/SKU"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please enter product code",
-                                },
-                              ]}
-                            >
-                              <Input placeholder="Enter unique product code" />
-                            </Form.Item>
-
-                            <Form.Item
-                              name="type"
-                              label="Product Type"
-                              rules={[{ required: true }]}
-                            >
-                              <Select placeholder="Select Type">
-                                <Option value={ProductType.STANDARD}>
-                                  Standard
-                                </Option>
-                                <Option value={ProductType.DIGITAL}>
-                                  Digital
-                                </Option>
-                                <Option value={ProductType.SERVICE}>
-                                  Service
-                                </Option>
-                              </Select>
-                            </Form.Item>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Form.Item
-                              name="category_id"
-                              label="Category"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a category",
-                                },
-                              ]}
-                            >
-                              <CommonSelector type="category" />
-                            </Form.Item>
-
-                            <Form.Item
-                              name="brand_id"
-                              label="Brand"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a brand",
-                                },
-                              ]}
-                            >
-                              <CommonSelector type="brand" />
-                            </Form.Item>
-                          </div>
-                        </div>
-
-                        <div className="col-span-1 flex flex-col justify-between">
-                          <ImageInput name="image_url" label="Product Image" />
-
-                          <Form.Item name="tags" label="Tags">
-                            <CommonSelector type="tag" mode="multiple" />
-                          </Form.Item>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <Form.Item
-                          name="product_unit_id"
-                          label="Product Unit"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please select product unit",
-                            },
-                          ]}
-                        >
-                          <CommonSelector type="unit" />
-                        </Form.Item>
-
-                        <Form.Item
-                          name="purchase_unit_id"
-                          label="Purchase Unit"
-                        >
-                          <CommonSelector type="unit" />
-                        </Form.Item>
-
-                        <Form.Item name="sale_unit_id" label="Sale Unit">
-                          <CommonSelector type="unit" />
-                        </Form.Item>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <Form.Item
-                          name="cost"
-                          label="Cost Price"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please enter cost price",
-                            },
-                          ]}
-                        >
-                          <InputNumber
-                            className="w-full!"
-                            min={0}
-                            placeholder="Product cost"
-                            formatter={(value) =>
-                              `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) =>
-                              value!.replace(/\$\s?|(,*)/g, "")
-                            }
-                          />
-                        </Form.Item>
-
-                        <Form.Item
-                          name="price"
-                          label="Selling Price"
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please enter selling price",
-                            },
-                          ]}
-                        >
-                          <InputNumber
-                            className="w-full!"
-                            min={0}
-                            placeholder="Regular selling price"
-                            formatter={(value) =>
-                              `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) =>
-                              value!.replace(/\$\s?|(,*)/g, "")
-                            }
-                          />
-                        </Form.Item>
-
-                        <Form.Item
-                          name="wholesale_price"
-                          label="Wholesale Price"
-                        >
-                          <InputNumber
-                            className="w-full!"
-                            min={0}
-                            placeholder="Optional wholesale price"
-                            formatter={(value) =>
-                              `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) =>
-                              value!.replace(/\$\s?|(,*)/g, "")
-                            }
-                          />
-                        </Form.Item>
-                      </div>
-
-                      <div className="relative">
-                        <Form.Item
-                          name="description"
-                          required
-                          label={
-                            <div className="flex items-center w-full gap-1">
-                              <span className="flex-grow">
-                                Product Description
-                              </span>
-                            </div>
-                          }
-                        >
-                          <TextArea
-                            rows={4}
-                            placeholder="Enter detailed product description"
-                          />
-                        </Form.Item>
-                        <div className="absolute top-1 right-1">
-                          <AiDescriptionGenerator
-                            productName={productName || ""}
-                            currentDescription={currentDescription}
-                            onDescriptionGenerated={(desc) =>
-                              setDescription(desc)
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "2",
-                  label: "Inventory & Settings",
-                  children: (
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Form.Item
-                          name="daily_sale_objective"
-                          label="Daily Sales Target"
-                        >
-                          <InputNumber
-                            type="number"
-                            className="w-full!"
-                            min={0}
-                            placeholder="Optional target"
-                          />
-                        </Form.Item>
-
-                        <Form.Item
-                          name="alert_quantity"
-                          label="Low Stock Alert"
-                        >
-                          <InputNumber
-                            className="w-full!"
-                            min={0}
-                            placeholder="Alert quantity"
-                          />
-                        </Form.Item>
-
-                        <Form.Item name="product_tax" label="Product Tax">
-                          <InputNumber
-                            type="number"
-                            className="w-full!"
-                            min={0}
-                            placeholder="Tax % or fixed amount"
-                          />
-                        </Form.Item>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Form.Item name="tax_method" label="Tax Method">
-                          <Select allowClear placeholder="Select tax method">
-                            <Option value={TaxMethod.EXCLUSIVE}>
-                              Exclusive
-                            </Option>
-                            <Option value={TaxMethod.INCLUSIVE}>
-                              Inclusive
-                            </Option>
-                          </Select>
-                        </Form.Item>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                        <Form.Item name="featured" valuePropName="checked">
-                          <Checkbox>Featured Product</Checkbox>
-                        </Form.Item>
-
-                        <Form.Item name="sell_online" valuePropName="checked">
-                          <Checkbox>Sell Online</Checkbox>
-                        </Form.Item>
-
-                        <Form.Item name="in_stock" valuePropName="checked">
-                          <Checkbox>In Stock</Checkbox>
-                        </Form.Item>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "3",
-                  label: "Variants & Branch Pricing",
-                  children: (
-                    <div className="p-4">
-                      <Card title="Product Variants" className="mb-6">
-                        <VariantManager />
-                      </Card>
-
-                      <Card title="Branch-specific Pricing">
-                        <BranchPricing />
-                      </Card>
-                    </div>
-                  ),
-                },
-                {
-                  key: "4",
-                  label: "Additional Options",
-                  children: (
-                    <div className="p-4">
-                      <Card title="Promotional Pricing" className="mb-6">
-                        <PromoPriceForm />
-                      </Card>
-
-                      <Card title="Serial Numbers / IMEI">
-                        <SerialInput />
-                      </Card>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </Form>
-        )}
-      </Card>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        initialValues={formData}
+      >
+        <Card className="shadow-sm">
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+          />
+        </Card>
+      </Form>
     </>
   );
 }

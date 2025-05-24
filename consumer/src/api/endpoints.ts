@@ -11,23 +11,43 @@ export const endpoints = {
 
   // Product management
   products: "/consumer/products",
+  productCount: "/consumer/products/count",
   getProduct: (id: number) => `/consumer/products/${id}`,
   updateProduct: (id: number) => `/consumer/products/${id}`,
   deleteProduct: (id: number) => `/consumer/products/${id}`,
+  configureProduct: (id: number) => `/consumer/products/${id}/configure`,
+  bulkCreateProducts: "/consumer/products/bulk-create",
+
+  // Product variants
+  getProductVariants: (productId: number) => `/consumer/products/${productId}/variants`,
+  addProductVariant: (productId: number) => `/consumer/products/${productId}/variants`,
+  updateVariant: (variantId: number) => `/consumer/products/variants/${variantId}`,
+  deleteVariant: (variantId: number) => `/consumer/products/variants/${variantId}`,
+
+  // Inventory management
+  updateVariantInventory: (variantId: number) => `/consumer/products/variants/${variantId}/inventory`,
+
+  // Tags and branch pricing
+  updateProductTags: (productId: number) => `/consumer/products/${productId}/tags`,
+  updateBranchPrices: (productId: number) => `/consumer/products/${productId}/branch-prices`,
+
+  // Batch management
+  createProductBatch: (productId: number) => `/consumer/products/${productId}/batches`,
+  getProductBatches: (productId: number) => `/consumer/products/${productId}/batches`,
 
   // Master data endpoints
-  getBrands: "/consumer/get-brands",
-  getCategories: "/consumer/get-categories",
-  getUnits: "/consumer/get-units",
-  getBranches: "/consumer/get-branches",
-  getTags: "/consumer/get-tags",
+  getBrands: "/consumer/brands",
+  getCategories: "/consumer/categories",
+  getUnits: "/consumer/units",
+  getBranches: "/consumer/branches",
+  getTags: "/consumer/tags",
 
   // Create master data
-  createBrand: "/consumer/create-brand",
-  createCategory: "/consumer/create-category",
-  createUnit: "/consumer/create-unit",
-  createBranch: "/consumer/create-branch",
-  createTag: "/consumer/create-tag",
+  createBrand: "/consumer/brands",
+  createCategory: "/consumer/categories",
+  createUnit: "/consumer/units",
+  createBranch: "/consumer/branches",
+  createTag: "/consumer/tags",
 
   // Update master data
   updateBrand: (id: number) => `/consumer/brands/${id}`,
@@ -43,6 +63,13 @@ export const endpoints = {
   deleteBranch: (id: number) => `/consumer/branches/${id}`,
   deleteTag: (id: number) => `/consumer/tags/${id}`,
 
+  // Vendor management
+  getVendors: "/consumer/vendors",
+  createVendor: "/consumer/vendors",
+  updateVendor: (id: number) => `/consumer/vendors/${id}`,
+  deleteVendor: (id: number) => `/consumer/vendors/${id}`,
+
+  // AI Services
   generateDescription: "/ai/auto-description",
   submitFeedback: "/ai/description-feedback",
 };
