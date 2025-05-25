@@ -1,14 +1,17 @@
 import { BarcodeOutlined } from "@ant-design/icons";
 import { Card, Descriptions, Divider, Space, Tag, Typography } from "antd";
 import { formatDate } from "../../../utils/formatters";
+import useDarkMode from "../../../hooks/useDarkMode";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 interface ProductBasicInfoProps {
   product: any;
 }
 
 const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
+  const isDarkMode = useDarkMode();
+
   // Determine product status badges
   const getProductStatusBadges = () => {
     const badges: React.ReactNode[] = [];
@@ -16,7 +19,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
     if (product.has_variants) {
       badges.push(
         <Tag color="purple" key="variants">
-          Has Variants
+          Has Variants ({product.variants?.length || 0})
         </Tag>
       );
     } else {
@@ -32,7 +35,10 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
       product.variants?.reduce((total, variant) => {
         return (
           total +
-          (variant.inventory_items?.reduce((sum, item) => sum + item.quantity, 0) || 0)
+          (variant.inventory_items?.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          ) || 0)
         );
       }, 0) || 0;
 
@@ -43,14 +49,20 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
     );
 
     // Calculate total serials
-    const totalSerials = product.variants?.reduce((total, variant) => {
-      return total + (variant.serials?.length || 0);
-    }, 0) || 0;
+    const totalSerials =
+      product.variants?.reduce((total, variant) => {
+        return total + (variant.serials?.length || 0);
+      }, 0) || 0;
 
     if (totalSerials > 0) {
-      const availableSerials = product.variants?.reduce((total, variant) => {
-        return total + (variant.serials?.filter(s => s.status === 'available').length || 0);
-      }, 0) || 0;
+      const availableSerials =
+        product.variants?.reduce((total, variant) => {
+          return (
+            total +
+            (variant.serials?.filter((s) => s.status === "available").length ||
+              0)
+          );
+        }, 0) || 0;
 
       badges.push(
         <Tag color={availableSerials > 0 ? "cyan" : "orange"} key="serials">
@@ -59,15 +71,68 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
       );
     }
 
+    // Check for low stock alerts
+    const lowStockVariants =
+      product.variants?.filter((variant) => {
+        const variantStock =
+          variant.inventory_items?.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          ) || 0;
+        return variant.alert_quantity && variantStock <= variant.alert_quantity;
+      }).length || 0;
+
+    if (lowStockVariants > 0) {
+      badges.push(
+        <Tag color="red" key="lowstock">
+          {lowStockVariants} variant{lowStockVariants > 1 ? "s" : ""} low stock
+        </Tag>
+      );
+    }
+
+    // Check for products with expiring inventory
+    const hasExpiringInventory = product.variants?.some((variant) =>
+      variant.inventory_items?.some((item) => {
+        if (!item.expiry_date) return false;
+        const expiryDate = new Date(item.expiry_date);
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        return expiryDate <= thirtyDaysFromNow;
+      })
+    );
+
+    if (hasExpiringInventory) {
+      badges.push(
+        <Tag color="orange" key="expiring">
+          Expiring Stock
+        </Tag>
+      );
+    }
+
     return badges;
   };
+
+  // Calculate price range for multi-variant products
+  const getPriceRange = () => {
+    if (!product.variants || product.variants.length === 0) return null;
+
+    const prices = product.variants.map((v) => parseFloat(v.regular_price));
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    return { minPrice, maxPrice };
+  };
+
+  const priceRange = getPriceRange();
 
   return (
     <Card>
       <Space direction="vertical" size="large" style={{ width: "100%" }}>
         <div>
           <Title level={3}>{product.name}</Title>
-          <Space size="middle" wrap>{getProductStatusBadges()}</Space>
+          <Space size="middle" wrap>
+            {getProductStatusBadges()}
+          </Space>
         </div>
 
         <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
@@ -78,25 +143,62 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
             </Space>
           </Descriptions.Item>
           <Descriptions.Item label="Category">
-            {product.category?.name || "N/A"}
+            {product.category?.name || "Uncategorized"}
           </Descriptions.Item>
           <Descriptions.Item label="Brand">
-            {product.brand?.name || "N/A"}
+            {product.brand?.name || "No Brand"}
           </Descriptions.Item>
-          <Descriptions.Item label="Has Variants">
-            {product.has_variants ? "Yes" : "No"}
+          <Descriptions.Item label="Product Type">
+            {product.has_variants ? "Variable Product" : "Simple Product"}
           </Descriptions.Item>
           <Descriptions.Item label="Total Variants">
             {product.variants?.length || 0}
           </Descriptions.Item>
-          <Descriptions.Item label="Tax Method">
-            {product.tax_method || "N/A"}
+          <Descriptions.Item label="Tax Configuration">
+            <Space direction="vertical" size="small">
+              <Text>
+                {product.tax}% ({product.tax_method})
+              </Text>
+            </Space>
           </Descriptions.Item>
-          {product.daily_sale_objective && (
-            <Descriptions.Item label="Daily Sale Objective">
-              {product.daily_sale_objective}
+          {priceRange && product.has_variants && (
+            <Descriptions.Item label="Price Range" span={2}>
+              <Text>
+                ${priceRange.minPrice.toFixed(2)} - $
+                {priceRange.maxPrice.toFixed(2)}
+              </Text>
             </Descriptions.Item>
           )}
+          {product.daily_sale_objective > 0 && (
+            <Descriptions.Item label="Daily Sales Target">
+              <Space>
+                <Text strong>{product.daily_sale_objective}</Text>
+                <Text type="secondary">units/day</Text>
+              </Space>
+            </Descriptions.Item>
+          )}
+          <Descriptions.Item label="Total Stock">
+            <Text strong>
+              {product.variants?.reduce((total, variant) => {
+                return (
+                  total +
+                  (variant.inventory_items?.reduce(
+                    (sum, item) => sum + item.quantity,
+                    0
+                  ) || 0)
+                );
+              }, 0) || 0}{" "}
+              units
+            </Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Total Serials">
+            <Text>
+              {product.variants?.reduce(
+                (total, variant) => total + (variant.serials?.length || 0),
+                0
+              ) || 0}
+            </Text>
+          </Descriptions.Item>
           <Descriptions.Item label="Created">
             {formatDate(product.created_at)}
           </Descriptions.Item>
@@ -108,12 +210,11 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
         {product.description && (
           <>
             <Divider orientation="left">Description</Divider>
-            <div className="product-description" style={{ 
-              padding: "12px", 
-              background: "#fafafa", 
-              borderRadius: "6px",
-              lineHeight: "1.6"
-            }}>
+            <div
+              className={`product-description ${
+                isDarkMode ? "bg-black" : "bg-[#F5F5F5]"
+              } p-4 rounded-lg leading-relaxed`}
+            >
               {product.description}
             </div>
           </>
