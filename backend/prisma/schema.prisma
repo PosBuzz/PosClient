@@ -218,15 +218,15 @@ model Product {
 }
 
 model ProductSerial {
-  id              Int       @id @default(autoincrement())
-  variant_id      Int
-  serial_number   String
-  status          String    @default("available") // available, sold, defective, returned
-  batch_id        Int?      // Link to inventory batch if needed
-  sold_date       DateTime?
-  notes           String?
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  variant_id    Int
+  serial_number String
+  status        String    @default("available") // available, sold, defective, returned
+  batch_id      Int? // Link to inventory batch if needed
+  sold_date     DateTime?
+  notes         String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
   // Relations
   variant ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Cascade)
@@ -249,8 +249,8 @@ model ProductVariant {
   wholesale_price  Decimal?  @db.Decimal(10, 2)
   sale_unit_id     Int
   purchase_unit_id Int
-  warranty_period  Int?      // warranty period in months only
-  image            String?   // single image URL for variant
+  warranty_period  Int? // warranty period in months only
+  image            String? // single image URL for variant
   is_default       Boolean   @default(false)
   alert_quantity   Int?      @default(0) // Low stock alert threshold
   created_at       DateTime  @default(now())
@@ -389,7 +389,7 @@ model InventoryBatch {
   vendor              Vendor?                 @relation(fields: [vendor_id], references: [id], onDelete: SetNull)
   transfers           InventoryTransferItem[]
   InventoryAdjustment InventoryAdjustment[]
-  serials          ProductSerial[]
+  serials             ProductSerial[]
 
   @@index([variant_id, branch_id])
   @@index([batch_number])
