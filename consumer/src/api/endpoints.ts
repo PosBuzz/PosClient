@@ -15,25 +15,6 @@ export const endpoints = {
   getProduct: (id: number) => `/consumer/products/${id}`,
   updateProduct: (id: number) => `/consumer/products/${id}`,
   deleteProduct: (id: number) => `/consumer/products/${id}`,
-  configureProduct: (id: number) => `/consumer/products/${id}/configure`,
-  bulkCreateProducts: "/consumer/products/bulk-create",
-
-  // Product variants
-  getProductVariants: (productId: number) => `/consumer/products/${productId}/variants`,
-  addProductVariant: (productId: number) => `/consumer/products/${productId}/variants`,
-  updateVariant: (variantId: number) => `/consumer/products/variants/${variantId}`,
-  deleteVariant: (variantId: number) => `/consumer/products/variants/${variantId}`,
-
-  // Inventory management
-  updateVariantInventory: (variantId: number) => `/consumer/products/variants/${variantId}/inventory`,
-
-  // Tags and branch pricing
-  updateProductTags: (productId: number) => `/consumer/products/${productId}/tags`,
-  updateBranchPrices: (productId: number) => `/consumer/products/${productId}/branch-prices`,
-
-  // Batch management
-  createProductBatch: (productId: number) => `/consumer/products/${productId}/batches`,
-  getProductBatches: (productId: number) => `/consumer/products/${productId}/batches`,
 
   // Master data endpoints
   getBrands: "/consumer/brands",
@@ -68,6 +49,31 @@ export const endpoints = {
   createVendor: "/consumer/vendors",
   updateVendor: (id: number) => `/consumer/vendors/${id}`,
   deleteVendor: (id: number) => `/consumer/vendors/${id}`,
+
+  // Inventory Management
+  inventorySummary: "/consumer/inventory/summary",
+  inventoryProducts: "/consumer/inventory/products",
+  inventoryProductVariants: (productId: number) => `/consumer/inventory/products/${productId}/variants`,
+  inventoryVariantStock: (variantId: number) => `/consumer/inventory/variants/${variantId}/stock`,
+  
+  // Batch Management
+  inventoryBatches: "/consumer/inventory/batches",
+  inventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
+  createInventoryBatch: "/consumer/inventory/batches",
+  updateInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
+  deleteInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
+  
+  // Transfer Management
+  inventoryTransfers: "/consumer/inventory/transfers",
+  inventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}`,
+  createInventoryTransfer: "/consumer/inventory/transfers",
+  completeTransfer: (id: number) => `/consumer/inventory/transfers/${id}/complete`,
+  cancelTransfer: (id: number) => `/consumer/inventory/transfers/${id}/cancel`,
+  
+  // Adjustment Management
+  inventoryAdjustments: "/consumer/inventory/adjustments",
+  inventoryAdjustment: (id: number) => `/consumer/inventory/adjustments/${id}`,
+  createInventoryAdjustment: "/consumer/inventory/adjustments",
 
   // AI Services
   generateDescription: "/ai/auto-description",

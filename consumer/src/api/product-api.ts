@@ -116,23 +116,6 @@ export const productApi = {
     return deleteApi(endpoints.deleteUnit(id));
   },
 
-  // Master data operations - Branches
-  getBranches: async (): Promise<Branch[]> => {
-    return get(endpoints.getBranches);
-  },
-
-  createBranch: async (name: string): Promise<Branch> => {
-    return post(endpoints.createBranch, { name });
-  },
-
-  updateBranch: async (id: number, name: string): Promise<Branch> => {
-    return patch(endpoints.updateBranch(id), { name });
-  },
-
-  deleteBranch: async (id: number): Promise<void> => {
-    return deleteApi(endpoints.deleteBranch(id));
-  },
-
   // Master data operations - Tags
   getTags: async (): Promise<Tag[]> => {
     return get(endpoints.getTags);
@@ -148,22 +131,5 @@ export const productApi = {
 
   deleteTag: async (id: number): Promise<void> => {
     return deleteApi(endpoints.deleteTag(id));
-  },
-
-  // Vendor management
-  getVendors: async (): Promise<any[]> => {
-    return get(endpoints.getVendors);
-  },
-
-  createVendor: async (vendorData: any): Promise<any> => {
-    return post(endpoints.createVendor, vendorData);
-  },
-
-  updateVendor: async (id: number, vendorData: any): Promise<any> => {
-    return patch(endpoints.updateVendor(id), vendorData);
-  },
-
-  deleteVendor: async (id: number): Promise<void> => {
-    return deleteApi(endpoints.deleteVendor(id));
   },
 };
