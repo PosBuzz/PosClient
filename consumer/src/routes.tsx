@@ -13,6 +13,7 @@ const Users = lazy(() => import("./pages/users"));
 const Products = lazy(() => import("./pages/products"));
 const ViewProduct = lazy(() => import("./pages/view-product"));
 const AddOrEditProduct = lazy(() => import("./pages/add-or-edit-product"));
+const AddEditBatch = lazy(() => import("./pages/add-or-edit-inventory"));
 
 export const routes = [
   {
@@ -85,6 +86,23 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.edit_product}>
             <AddOrEditProduct />
+          </RequirePermission>
+        ),
+      },
+      // Inventory Management Routes
+      {
+        path: "inventory/batches/add",
+        element: (
+          <RequirePermission permission={Permissions.add_product}>
+            <AddEditBatch />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "inventory/batches/edit/:id",
+        element: (
+          <RequirePermission permission={Permissions.edit_product}>
+            <AddEditBatch />
           </RequirePermission>
         ),
       },

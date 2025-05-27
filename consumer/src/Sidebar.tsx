@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Permissions } from "./constants/permissions";
 import useDarkMode from "./hooks/useDarkMode";
 import { useAuthStore } from "./stores/authStore";
+import { MdOutlineInventory } from "react-icons/md";
 
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -66,6 +67,18 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Add Product">Add Product</span>,
           key: "/products/add",
+          permissions: [Permissions.add_product],
+        },
+      ],
+    },
+    {
+      label: <span title="Inventory">Inventory</span>,
+      key: "inventory",
+      icon: <MdOutlineInventory />,
+      children: [
+        {
+          label: <span title="Add Batch">Add Batch</span>,
+          key: "/inventory/batches/add",
           permissions: [Permissions.add_product],
         },
       ],
