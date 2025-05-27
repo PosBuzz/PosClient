@@ -8,6 +8,7 @@ import { UnitModule } from './unit/unit.module';
 import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ProductModule } from './product/product.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProductModule } from './product/product.module';
     BranchModule,
     VendorModule,
     ProductModule,
+    InventoryModule,
   ],
 })
 export class ConsumerModule {}
