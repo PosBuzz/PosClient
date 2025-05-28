@@ -22,28 +22,7 @@ export const productApi = {
     brandIds?: number[];
     tagIds?: number[];
   }): Promise<ProductListResponse> => {
-    // Convert arrays to comma-separated strings for the API
-    const queryParams = new URLSearchParams();
-
-    if (params.page) queryParams.append("page", params.page.toString());
-    if (params.limit) queryParams.append("limit", params.limit.toString());
-    if (params.search) queryParams.append("search", params.search);
-
-    // Convert number arrays to comma-separated strings
-    if (params.categoryIds && params.categoryIds.length > 0) {
-      queryParams.append("categoryIds", params.categoryIds.join(","));
-    }
-    if (params.brandIds && params.brandIds.length > 0) {
-      queryParams.append("brandIds", params.brandIds.join(","));
-    }
-    if (params.tagIds && params.tagIds.length > 0) {
-      queryParams.append("tagIds", params.tagIds.join(","));
-    }
-
-    const response = await axiosInstance.get(
-      `/consumer/products?${queryParams.toString()}`
-    );
-    return response.data;
+    return get(endpoints.products, params);
   },
 
   getProduct: async (id: number): Promise<Product> => {
