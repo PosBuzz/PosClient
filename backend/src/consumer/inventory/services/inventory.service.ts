@@ -5,6 +5,11 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class InventoryService {
   constructor(private prisma: PrismaService) {}
 
+  // Add helper method
+  private getBranchName(branch: { id: number; name: string } | null): string {
+    return branch?.name || 'Warehouse';
+  }
+
   async getInventorySummary(consumerId: number, branchId?: number) {
     const whereClause: any = {
       variant: {
@@ -464,7 +469,7 @@ export class InventoryService {
         id: transfer.transfer.id,
         date: transfer.transfer.created_at,
         quantity_change: -transfer.quantity,
-        reason: `Transfer to ${transfer.transfer.destination_branch.name}`,
+        reason: `Transfer to ${this.getBranchName(transfer.transfer.destination_branch)}`,
         notes: transfer.transfer.notes,
         batch_number: transfer.batch.batch_number,
         branch: transfer.transfer.source_branch,
@@ -475,7 +480,7 @@ export class InventoryService {
         id: transfer.transfer.id,
         date: transfer.transfer.created_at,
         quantity_change: transfer.quantity,
-        reason: `Transfer from ${transfer.transfer.source_branch.name}`,
+        reason: `Transfer from ${this.getBranchName(transfer.transfer.source_branch)}`,
         notes: transfer.transfer.notes,
         batch_number: transfer.batch.batch_number,
         branch: transfer.transfer.destination_branch,

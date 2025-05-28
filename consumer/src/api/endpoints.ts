@@ -67,9 +67,10 @@ export const endpoints = {
   inventoryTransfers: "/consumer/inventory/transfers",
   inventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}`,
   createInventoryTransfer: "/consumer/inventory/transfers",
-  completeTransfer: (id: number) => `/consumer/inventory/transfers/${id}/complete`,
-  cancelTransfer: (id: number) => `/consumer/inventory/transfers/${id}/cancel`,
-  
+  completeInventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}/complete`,
+  cancelInventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}/cancel`,
+  branchBatches: (branchId: number) => `/consumer/inventory/batches?branch_id=${branchId}`,
+
   // Adjustment Management
   inventoryAdjustments: "/consumer/inventory/adjustments",
   inventoryAdjustment: (id: number) => `/consumer/inventory/adjustments/${id}`,

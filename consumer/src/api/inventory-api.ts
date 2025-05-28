@@ -74,6 +74,59 @@ export interface Vendor {
   address?: string;
 }
 
+export interface TransferItem {
+  batch_id: number;
+  quantity: number;
+}
+
+export interface CreateTransferData {
+  source_branch_id: number;
+  destination_branch_id: number;
+  notes?: string;
+  items: TransferItem[];
+}
+
+export interface InventoryTransfer {
+  id: number;
+  source_branch_id: number;
+  destination_branch_id: number;
+  status: "pending" | "completed" | "cancelled";
+  notes?: string;
+  created_at: string;
+  completed_date?: string;
+  source_branch: {
+    id: number;
+    name: string;
+  };
+  destination_branch: {
+    id: number;
+    name: string;
+  };
+  created_by_user: {
+    id: number;
+    name: string;
+  };
+  items: {
+    id: number;
+    batch_id: number;
+    quantity: number;
+    batch: {
+      id: number;
+      batch_number: string;
+      cost_price: string;
+      variant_id: number;
+      variant: {
+        id: number;
+        name: string;
+        product: {
+          id: number;
+          name: string;
+        };
+      };
+    };
+  }[];
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
@@ -106,7 +159,7 @@ export const inventoryApi = {
     page?: number;
     limit?: number;
     search?: string;
-    branch_id?: number;
+    branch_id?: number | null;
     variant_id?: number;
   }): Promise<PaginatedResponse<InventoryBatch>> => {
     return get(endpoints.inventoryBatches, params);
@@ -167,5 +220,43 @@ export const inventoryApi = {
 
   deleteVendor: async (id: number): Promise<void> => {
     return deleteApi(endpoints.deleteVendor(id));
+  },
+
+  // Transfers
+  getTransfers: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    branch_id?: number;
+  }): Promise<PaginatedResponse<InventoryTransfer>> => {
+    return get(endpoints.inventoryTransfers, params);
+  },
+
+  getTransfer: async (id: number): Promise<InventoryTransfer> => {
+    return get(endpoints.inventoryTransfer(id));
+  },
+
+  createTransfer: async (data: CreateTransferData): Promise<InventoryTransfer> => {
+    return post(endpoints.createInventoryTransfer, data);
+  },
+
+  completeTransfer: async (id: number): Promise<InventoryTransfer> => {
+    return patch(endpoints.completeInventoryTransfer(id), {});
+  },
+
+  cancelTransfer: async (id: number): Promise<InventoryTransfer> => {
+    return patch(endpoints.cancelInventoryTransfer(id), {});
+  },
+
+  // Get batches for a specific branch (for transfer selection)
+  getBranchBatches: async (
+    branchId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+    }
+  ): Promise<PaginatedResponse<InventoryBatch>> => {
+    return get(endpoints.branchBatches(branchId), params);
   },
 };
