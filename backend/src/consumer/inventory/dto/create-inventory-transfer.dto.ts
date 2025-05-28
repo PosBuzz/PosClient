@@ -1,5 +1,5 @@
 import { IsInt, IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class TransferItemDto {
   @IsInt()
@@ -12,13 +12,23 @@ export class TransferItemDto {
 }
 
 export class CreateInventoryTransferDto {
-  @IsInt()
-  @Type(() => Number)
-  source_branch_id: number;
+  @Transform(({ value }) => {
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return null;
+    }
+    return Number(value);
+  })
+  @IsOptional()
+  source_branch_id: number | null;
 
-  @IsInt()
-  @Type(() => Number)
-  destination_branch_id: number;
+  @Transform(({ value }) => {
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return null;
+    }
+    return Number(value);
+  })
+  @IsOptional()
+  destination_branch_id: number | null;
 
   @IsOptional()
   @IsString()

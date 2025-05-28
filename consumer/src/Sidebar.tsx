@@ -11,6 +11,15 @@ import useDarkMode from "./hooks/useDarkMode";
 import { useAuthStore } from "./stores/authStore";
 import { MdOutlineInventory } from "react-icons/md";
 
+// Define menu items with required permissions - MOVED OUTSIDE COMPONENT
+interface MenuItem {
+  key: string;
+  icon?: React.ReactNode;
+  label: React.ReactNode;
+  children?: MenuItem[];
+  permissions?: string[];
+}
+
 const SideBar: React.FC = () => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
@@ -20,34 +29,6 @@ const SideBar: React.FC = () => {
 
   const { user } = useAuthStore();
 
-  useEffect(() => {
-    const currentKey = location.pathname + location.search || "";
-    setSelectedKeys([currentKey]);
-
-    const parentKey = menuItems.find((item) =>
-      item?.children?.some((child) => child.key === currentKey)
-    )?.key;
-
-    if (parentKey) {
-      setOpenKeys([parentKey]);
-    } else {
-      setOpenKeys([]);
-    }
-  }, [location.pathname, location.search]);
-
-  const onOpenChange = (keys: string[]) => {
-    setOpenKeys(keys);
-  };
-
-  // Define menu items with required permissions
-  interface MenuItem {
-    key: string;
-    icon?: React.ReactNode;
-    label: React.ReactNode;
-    children?: MenuItem[];
-    permissions?: string[];
-  }
-
   const menuItems: MenuItem[] = [
     {
       key: "/",
@@ -56,7 +37,7 @@ const SideBar: React.FC = () => {
     },
     {
       label: <span title="Products">Products</span>,
-      key: "products",
+      key: "/products",
       icon: <ProductOutlined />,
       children: [
         {
@@ -73,17 +54,27 @@ const SideBar: React.FC = () => {
     },
     {
       label: <span title="Inventory">Inventory</span>,
-      key: "inventory",
+      key: "/inventory",
       icon: <MdOutlineInventory />,
       children: [
         {
-          label: <span title="Add Batch">Batches</span>,
+          label: <span title="Batches">Batches</span>,
           key: "/inventory/batches",
           permissions: [Permissions.add_product],
         },
         {
           label: <span title="Add Batch">Add Batch</span>,
           key: "/inventory/batches/add",
+          permissions: [Permissions.add_product],
+        },
+        {
+          label: <span title="Inventory Transfer">Inventory Transfer</span>,
+          key: "/inventory/transfers",
+          permissions: [Permissions.add_product],
+        },
+        {
+          label: <span title="Add Transfer">Add Transfer</span>,
+          key: "/inventory/transfers/add",
           permissions: [Permissions.add_product],
         },
       ],
@@ -108,6 +99,42 @@ const SideBar: React.FC = () => {
     },
   ];
 
+  useEffect(() => {
+    const currentPath = location.pathname;
+    setSelectedKeys([currentPath]);
+
+    // Find parent key with improved logic
+    let parentKey: string | undefined;
+
+    // Check if current path is a child of any parent menu item
+    parentKey = menuItems.find((item) => {
+      if (!item.children) return false;
+
+      // Check if any child matches exactly
+      const exactChildMatch = item.children.some(
+        (child) => child.key === currentPath
+      );
+      if (exactChildMatch) return true;
+
+      // Check if current path starts with the parent path (for nested routes)
+      if (item.key !== "/" && currentPath.startsWith(item.key)) {
+        return true;
+      }
+
+      return false;
+    })?.key;
+
+    if (parentKey) {
+      setOpenKeys([parentKey]);
+    } else {
+      setOpenKeys([]);
+    }
+  }, [location.pathname]);
+
+  const onOpenChange = (keys: string[]) => {
+    setOpenKeys(keys);
+  };
+
   const hasPermission = (required: string[] = []) => {
     if (!required.length) return true;
     return required.some((perm) => user?.permissions?.includes(perm));
@@ -120,7 +147,8 @@ const SideBar: React.FC = () => {
       children: item.children
         ? item.children.filter((child) => hasPermission(child.permissions))
         : undefined,
-    }));
+    }))
+    .filter((item) => !item.children || item.children.length > 0); // Remove parent items with no visible children
 
   return (
     <Menu
