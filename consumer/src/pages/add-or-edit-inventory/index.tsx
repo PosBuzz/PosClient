@@ -2,7 +2,7 @@ import {
   CalendarOutlined,
   DollarOutlined,
   ReloadOutlined,
-  SaveOutlined
+  SaveOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -28,7 +28,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   CreateBatchData,
   inventoryApi,
-  ProductVariant
+  ProductVariant,
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -80,7 +80,7 @@ export default function AddEditInventory() {
     onSuccess: () => {
       message.success("Inventory added successfully");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
-      navigate("/inventory");
+      navigate("/inventory/batches");
     },
     onError: (error: any) => {
       message.error(error.response?.data?.message || "Failed to add inventory");
@@ -98,7 +98,7 @@ export default function AddEditInventory() {
     onSuccess: () => {
       message.success("Inventory updated successfully");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
-      navigate("/inventory");
+      navigate("/inventory/batches");
     },
     onError: (error: any) => {
       message.error(
@@ -177,7 +177,7 @@ export default function AddEditInventory() {
       vendor_id: values.vendor_id,
       expiry_date: values.expiry_date
         ? values.expiry_date.format("YYYY-MM-DD")
-        : undefined,
+        : null,
     };
 
     if (isEdit && id) {
@@ -200,7 +200,7 @@ export default function AddEditInventory() {
         title={isEdit ? "Edit Inventory" : "Add New Inventory"}
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Inventory", href: "/inventory" },
+          { title: "Inventory", href: "/inventory/batches" },
           { title: isEdit ? "Edit Inventory" : "Add New Inventory" },
         ]}
       />
@@ -447,7 +447,9 @@ export default function AddEditInventory() {
           {/* Action Buttons */}
           <div style={{ textAlign: "right" }}>
             <Space>
-              <Button onClick={() => navigate("/inventory")}>Cancel</Button>
+              <Button onClick={() => navigate("/inventory/batches")}>
+                Cancel
+              </Button>
               <Button
                 type="primary"
                 htmlType="submit"

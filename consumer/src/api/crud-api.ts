@@ -1,9 +1,14 @@
 import axiosInstance from "./axiosInstance";
 import { AxiosRequestConfig } from "axios";
 
-export const get = async (endpoint: string, config?: AxiosRequestConfig) => {
+export const get = async (endpoint: string, params?: any, config?: AxiosRequestConfig) => {
   try {
-    const response = await axiosInstance.get(endpoint, config);
+    const requestConfig: AxiosRequestConfig = {
+      ...config,
+      params: params
+    };
+    
+    const response = await axiosInstance.get(endpoint, requestConfig);
     return response.data;
   } catch (error) {
     console.error("GET request failed:", endpoint, error);

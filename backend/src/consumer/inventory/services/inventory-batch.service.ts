@@ -190,7 +190,7 @@ export class InventoryBatchService {
         quantity: dto.quantity,
         cost_price: dto.cost_price,
         vendor_id: dto.vendor_id,
-        expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : undefined,
+        expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
       },
       include: {
         variant: {
