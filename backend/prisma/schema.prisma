@@ -399,20 +399,19 @@ model InventoryBatch {
 
 model InventoryTransfer {
   id                    Int       @id @default(autoincrement())
-  source_branch_id      Int
-  destination_branch_id Int
-  status                String    @default("pending") // pending, completed, cancelled
-  transfer_date         DateTime  @default(now())
-  completed_date        DateTime?
+  source_branch_id      Int?
+  destination_branch_id Int?
+  status                String    @default("pending")
   notes                 String?
-  created_by_user_id    Int?
+  created_by_user_id    Int
   created_at            DateTime  @default(now())
+  completed_date        DateTime?
   updated_at            DateTime  @updatedAt
 
   // Relations
-  source_branch      Branch                  @relation("SourceBranch", fields: [source_branch_id], references: [id], onDelete: Restrict)
-  destination_branch Branch                  @relation("DestinationBranch", fields: [destination_branch_id], references: [id], onDelete: Restrict)
-  created_by_user    User?                   @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  source_branch      Branch?                 @relation("SourceBranch", fields: [source_branch_id], references: [id])
+  destination_branch Branch?                 @relation("DestinationBranch", fields: [destination_branch_id], references: [id])
+  created_by_user    User                    @relation(fields: [created_by_user_id], references: [id])
   items              InventoryTransferItem[]
 
   @@map("inventory_transfers")

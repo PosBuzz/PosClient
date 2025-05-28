@@ -7,23 +7,33 @@ export class InventoryTransferService {
   constructor(private prisma: PrismaService) {}
 
   async create(consumerId: number, userId: number, dto: CreateInventoryTransferDto) {
-    // Verify both branches belong to consumer
-    const [sourceBranch, destinationBranch] = await Promise.all([
-      this.prisma.branch.findFirst({
-        where: { id: dto.source_branch_id, consumer_id: consumerId },
-      }),
-      this.prisma.branch.findFirst({
-        where: { id: dto.destination_branch_id, consumer_id: consumerId },
-      }),
-    ]);
-
-    if (!sourceBranch) {
-      throw new NotFoundException('Source branch not found');
-    }
-    if (!destinationBranch) {
-      throw new NotFoundException('Destination branch not found');
+    // Validate source branch (if not warehouse)
+    if (dto.source_branch_id !== null) {
+      const sourceBranch = await this.prisma.branch.findFirst({
+        where: { 
+          id: dto.source_branch_id, 
+          consumer_id: consumerId 
+        },
+      });
+      if (!sourceBranch) {
+        throw new NotFoundException('Source branch not found');
+      }
     }
 
+    // Validate destination branch (if not warehouse)
+    if (dto.destination_branch_id !== null) {
+      const destinationBranch = await this.prisma.branch.findFirst({
+        where: { 
+          id: dto.destination_branch_id, 
+          consumer_id: consumerId 
+        },
+      });
+      if (!destinationBranch) {
+        throw new NotFoundException('Destination branch not found');
+      }
+    }
+
+    // Check if source and destination are the same
     if (dto.source_branch_id === dto.destination_branch_id) {
       throw new BadRequestException('Source and destination branches cannot be the same');
     }
@@ -33,7 +43,7 @@ export class InventoryTransferService {
       const batch = await this.prisma.inventoryBatch.findFirst({
         where: {
           id: item.batch_id,
-          branch_id: dto.source_branch_id,
+          branch_id: dto.source_branch_id, // This handles null for warehouse
           variant: {
             product: { consumer_id: consumerId },
           },
@@ -41,7 +51,8 @@ export class InventoryTransferService {
       });
 
       if (!batch) {
-        throw new NotFoundException(`Batch with ID ${item.batch_id} not found in source branch`);
+        const branchName = dto.source_branch_id ? 'source branch' : 'warehouse';
+        throw new NotFoundException(`Batch with ID ${item.batch_id} not found in ${branchName}`);
       }
 
       if (batch.quantity < item.quantity) {
@@ -94,30 +105,45 @@ export class InventoryTransferService {
     status?: string;
     branch_id?: number;
   } = {}) {
-    const { page = 1, limit = 10, status, branch_id } = options;
+    const page = options.page || 1;
+    const limit = options.limit || 10;
     const skip = (page - 1) * limit;
 
-    const whereClause: any = {
+    const where: any = {
       OR: [
-        { source_branch: { consumer_id: consumerId } },
-        { destination_branch: { consumer_id: consumerId } },
+        {
+          source_branch: {
+            consumer_id: consumerId,
+          },
+        },
+        {
+          destination_branch: {
+            consumer_id: consumerId,
+          },
+        },
+        {
+          source_branch_id: null, // Include warehouse transfers
+        },
+        {
+          destination_branch_id: null, // Include warehouse transfers
+        },
       ],
     };
 
-    if (status) {
-      whereClause.status = status;
+    if (options.status) {
+      where.status = options.status;
     }
 
-    if (branch_id) {
-      whereClause.OR = [
-        { source_branch_id: branch_id, source_branch: { consumer_id: consumerId } },
-        { destination_branch_id: branch_id, destination_branch: { consumer_id: consumerId } },
+    if (options.branch_id) {
+      where.OR = [
+        { source_branch_id: options.branch_id },
+        { destination_branch_id: options.branch_id },
       ];
     }
 
     const [transfers, total] = await Promise.all([
       this.prisma.inventoryTransfer.findMany({
-        where: whereClause,
+        where,
         include: {
           source_branch: { select: { id: true, name: true } },
           destination_branch: { select: { id: true, name: true } },
@@ -136,20 +162,20 @@ export class InventoryTransferService {
             },
           },
         },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
-        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.inventoryTransfer.count({ where: whereClause }),
+      this.prisma.inventoryTransfer.count({ where }),
     ]);
 
     return {
       data: transfers,
       meta: {
+        current_page: page,
+        per_page: limit,
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        last_page: Math.ceil(total / limit),
       },
     };
   }
@@ -159,8 +185,22 @@ export class InventoryTransferService {
       where: {
         id,
         OR: [
-          { source_branch: { consumer_id: consumerId } },
-          { destination_branch: { consumer_id: consumerId } },
+          {
+            source_branch: {
+              consumer_id: consumerId,
+            },
+          },
+          {
+            destination_branch: {
+              consumer_id: consumerId,
+            },
+          },
+          {
+            source_branch_id: null,
+          },
+          {
+            destination_branch_id: null,
+          },
         ],
       },
       include: {
@@ -184,7 +224,7 @@ export class InventoryTransferService {
     });
 
     if (!transfer) {
-      throw new NotFoundException(`Transfer with ID ${id} not found`);
+      throw new NotFoundException('Transfer not found');
     }
 
     return transfer;
@@ -197,10 +237,11 @@ export class InventoryTransferService {
       throw new BadRequestException('Transfer is not in pending status');
     }
 
-    // Start transaction
-    return await this.prisma.$transaction(async (prisma) => {
-      // Update source batches (reduce quantity)
+    // Start transaction to move inventory
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // Update each batch
       for (const item of transfer.items) {
+        // Reduce quantity from source batch
         await prisma.inventoryBatch.update({
           where: { id: item.batch_id },
           data: {
@@ -210,22 +251,45 @@ export class InventoryTransferService {
           },
         });
 
-        // Create new batch in destination branch
-        await prisma.inventoryBatch.create({
-          data: {
+        // Create or update batch in destination
+        const existingDestinationBatch = await prisma.inventoryBatch.findFirst({
+          where: {
             variant_id: item.batch.variant_id,
             branch_id: transfer.destination_branch_id,
-            batch_number: `${item.batch.batch_number}-TRF-${transfer.id}`,
-            quantity: item.quantity,
+            batch_number: item.batch.batch_number,
             cost_price: item.batch.cost_price,
-            vendor_id: item.batch.vendor_id,
             expiry_date: item.batch.expiry_date,
           },
         });
+
+        if (existingDestinationBatch) {
+          // Update existing batch
+          await prisma.inventoryBatch.update({
+            where: { id: existingDestinationBatch.id },
+            data: {
+              quantity: {
+                increment: item.quantity,
+              },
+            },
+          });
+        } else {
+          // Create new batch
+          await prisma.inventoryBatch.create({
+            data: {
+              variant_id: item.batch.variant_id,
+              branch_id: transfer.destination_branch_id,
+              batch_number: item.batch.batch_number,
+              quantity: item.quantity,
+              cost_price: item.batch.cost_price,
+              vendor_id: item.batch.vendor_id,
+              expiry_date: item.batch.expiry_date,
+            },
+          });
+        }
       }
 
       // Update transfer status
-      const updatedTransfer = await prisma.inventoryTransfer.update({
+      return await prisma.inventoryTransfer.update({
         where: { id },
         data: {
           status: 'completed',
@@ -250,21 +314,23 @@ export class InventoryTransferService {
           },
         },
       });
-
-      return updatedTransfer;
     });
+
+    return result;
   }
 
   async cancelTransfer(id: number, consumerId: number) {
     const transfer = await this.findOne(id, consumerId);
 
     if (transfer.status !== 'pending') {
-      throw new BadRequestException('Only pending transfers can be cancelled');
+      throw new BadRequestException('Transfer is not in pending status');
     }
 
     const updatedTransfer = await this.prisma.inventoryTransfer.update({
       where: { id },
-      data: { status: 'cancelled' },
+      data: {
+        status: 'cancelled',
+      },
       include: {
         source_branch: { select: { id: true, name: true } },
         destination_branch: { select: { id: true, name: true } },
