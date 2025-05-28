@@ -1,10 +1,10 @@
 import {
-  ArrowLeftOutlined,
   CalendarOutlined,
   DollarOutlined,
   ReloadOutlined,
-  SaveOutlined,
+  SaveOutlined
 } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Button,
@@ -22,16 +22,17 @@ import {
   Spin,
   Typography,
 } from "antd";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CreateBatchData,
   inventoryApi,
-  ProductVariant,
-  ProductForInventory,
+  ProductVariant
 } from "../../api/inventory-api";
+import CenterLoader from "../../components/CenterLoader";
+import PageTitle from "../../components/PageTitle";
+import VendorSelector from "../../components/VendorSelector";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -41,36 +42,34 @@ export default function AddEditInventory() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
   const queryClient = useQueryClient();
-  
+
   const [form] = Form.useForm();
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    null
+  );
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null
+  );
+
+  // Watch form values for real-time summary updates
+  const quantity = Form.useWatch("quantity", form) || 0;
+  const costPrice = Form.useWatch("cost_price", form) || 0;
 
   // Queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['inventory-products'],
+    queryKey: ["inventory-products"],
     queryFn: () => inventoryApi.getProductsForInventory(),
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
-    queryKey: ['product-variants', selectedProductId],
+    queryKey: ["product-variants", selectedProductId],
     queryFn: () => inventoryApi.getVariants(selectedProductId!),
     enabled: !!selectedProductId,
   });
 
-  const { data: vendors = [] } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: () => inventoryApi.getVendors(),
-  });
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: () => inventoryApi.getBranches(),
-  });
-
   // Load existing batch for edit
   const { data: existingBatch, isLoading: batchLoading } = useQuery({
-    queryKey: ['batch', id],
+    queryKey: ["batch", id],
     queryFn: () => inventoryApi.getBatch(parseInt(id!)),
     enabled: isEdit && !!id,
   });
@@ -80,7 +79,7 @@ export default function AddEditInventory() {
     mutationFn: inventoryApi.createBatch,
     onSuccess: () => {
       message.success("Inventory added successfully");
-      queryClient.invalidateQueries({ queryKey: ['batches'] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
       navigate("/inventory");
     },
     onError: (error: any) => {
@@ -89,15 +88,22 @@ export default function AddEditInventory() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateBatchData> }) =>
-      inventoryApi.updateBatch(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<CreateBatchData>;
+    }) => inventoryApi.updateBatch(id, data),
     onSuccess: () => {
       message.success("Inventory updated successfully");
-      queryClient.invalidateQueries({ queryKey: ['batches'] });
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
       navigate("/inventory");
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || "Failed to update inventory");
+      message.error(
+        error.response?.data?.message || "Failed to update inventory"
+      );
     },
   });
 
@@ -111,7 +117,9 @@ export default function AddEditInventory() {
         quantity: existingBatch.quantity,
         cost_price: parseFloat(existingBatch.cost_price),
         vendor_id: existingBatch.vendor_id,
-        expiry_date: existingBatch.expiry_date ? dayjs(existingBatch.expiry_date) : null,
+        expiry_date: existingBatch.expiry_date
+          ? dayjs(existingBatch.expiry_date)
+          : null,
       });
 
       // Set selected product and variant for display
@@ -141,11 +149,11 @@ export default function AddEditInventory() {
   };
 
   const handleVariantSelect = (variantId: number) => {
-    const variant = variants.find(v => v.id === variantId);
+    const variant = variants.find((v) => v.id === variantId);
     if (!variant) return;
 
     setSelectedVariant(variant);
-    
+
     // Auto-generate batch number
     if (!isEdit) {
       const timestamp = Date.now().toString().slice(-6);
@@ -180,36 +188,22 @@ export default function AddEditInventory() {
   };
 
   if (batchLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: 50 }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <CenterLoader />;
   }
 
   const submitLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/inventory")}
-          style={{ marginBottom: 16 }}
-        >
-          Back to Inventory
-        </Button>
-        <Title level={2}>
-          {isEdit ? "Update Inventory" : "Add New Inventory"}
-        </Title>
-        <Text type="secondary">
-          {isEdit
-            ? "Update existing inventory details"
-            : "Add new stock to your inventory"}
-        </Text>
-      </div>
+      <PageTitle
+        title={isEdit ? "Edit Inventory" : "Add New Inventory"}
+        breadcrumbs={[
+          { title: "Dashboard", href: "/" },
+          { title: "Inventory", href: "/inventory" },
+          { title: isEdit ? "Edit Inventory" : "Add New Inventory" },
+        ]}
+      />
 
       <Card title="Inventory Details">
         <Form
@@ -234,7 +228,9 @@ export default function AddEditInventory() {
                   showSearch
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                    (option?.children as string)
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                 >
                   {products.map((product) => (
@@ -250,7 +246,12 @@ export default function AddEditInventory() {
               <Form.Item
                 name="variant_id"
                 label="Product Variant"
-                rules={[{ required: true, message: "Please select a product variant" }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a product variant",
+                  },
+                ]}
               >
                 <Select
                   placeholder="Select a variant"
@@ -260,14 +261,18 @@ export default function AddEditInventory() {
                   showSearch
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                    (option?.children as string)
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   notFoundContent={
-                    !selectedProductId 
-                      ? "Please select a product first" 
-                      : variantsLoading 
-                        ? <Spin size="small" /> 
-                        : "No variants found"
+                    !selectedProductId ? (
+                      "Please select a product first"
+                    ) : variantsLoading ? (
+                      <Spin size="small" />
+                    ) : (
+                      "No variants found"
+                    )
                   }
                 >
                   {variants.map((variant) => (
@@ -286,7 +291,9 @@ export default function AddEditInventory() {
               message={
                 <div>
                   <Text strong>Selected: </Text>
-                  {products.find(p => p.id === selectedProductId)?.name} - {selectedVariant.name}
+                  {
+                    products.find((p) => p.id === selectedProductId)?.name
+                  } - {selectedVariant.name}
                 </div>
               }
               type="info"
@@ -313,7 +320,10 @@ export default function AddEditInventory() {
                       size="small"
                       icon={<ReloadOutlined />}
                       onClick={() =>
-                        form.setFieldValue("batch_number", generateBatchNumber())
+                        form.setFieldValue(
+                          "batch_number",
+                          generateBatchNumber()
+                        )
                       }
                       title="Generate reference number"
                       disabled={!selectedVariant}
@@ -398,37 +408,14 @@ export default function AddEditInventory() {
                 label="Supplier/Vendor"
                 extra="Who did you purchase this from?"
               >
-                <Select
-                  placeholder="Select supplier/vendor"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  {vendors.map((vendor) => (
-                    <Option key={vendor.id} value={vendor.id}>
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{vendor.name}</div>
-                        {vendor.contact && (
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            Contact: {vendor.contact}
-                          </Text>
-                        )}
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
+                <VendorSelector />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* Summary Section */}
+          {/* Summary Section - Now updates in real-time */}
           {selectedVariant && (
-            <Card
-              size="small"
-            >
+            <Card size="small">
               <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
                 Summary
               </Title>
@@ -437,26 +424,19 @@ export default function AddEditInventory() {
                   <Text type="secondary">Product:</Text>
                   <br />
                   <Text strong>
-                    {products.find(p => p.id === selectedProductId)?.name} - {selectedVariant.name}
+                    {products.find((p) => p.id === selectedProductId)?.name} -{" "}
+                    {selectedVariant.name}
                   </Text>
                 </Col>
                 <Col span={8}>
                   <Text type="secondary">Quantity Adding:</Text>
                   <br />
-                  <Text strong>
-                    {form.getFieldValue("quantity") || 0} units
-                  </Text>
+                  <Text strong>{quantity} units</Text>
                 </Col>
                 <Col span={8}>
                   <Text type="secondary">Total Cost:</Text>
                   <br />
-                  <Text strong>
-                    $
-                    {(
-                      (form.getFieldValue("cost_price") || 0) *
-                      (form.getFieldValue("quantity") || 0)
-                    ).toFixed(2)}
-                  </Text>
+                  <Text strong>${(costPrice * quantity).toFixed(2)}</Text>
                 </Col>
               </Row>
             </Card>
@@ -473,7 +453,6 @@ export default function AddEditInventory() {
                 htmlType="submit"
                 loading={submitLoading}
                 icon={<SaveOutlined />}
-                size="large"
               >
                 {isEdit ? "Update Inventory" : "Add to Inventory"}
               </Button>
@@ -481,6 +460,6 @@ export default function AddEditInventory() {
           </div>
         </Form>
       </Card>
-    </div>
+    </>
   );
 }
