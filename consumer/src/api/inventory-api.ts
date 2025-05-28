@@ -140,4 +140,32 @@ export const inventoryApi = {
     const params = search ? { search } : {};
     return get(endpoints.getVendors, params);
   },
+
+  // Vendor CRUD operations
+  createVendor: async (data: {
+    name: string;
+    contact?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+  }): Promise<Vendor> => {
+    return post(endpoints.createVendor, data);
+  },
+
+  updateVendor: async (
+    id: number,
+    data: {
+      name: string;
+      contact?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+    }
+  ): Promise<Vendor> => {
+    return patch(endpoints.updateVendor(id), data);
+  },
+
+  deleteVendor: async (id: number): Promise<void> => {
+    return deleteApi(endpoints.deleteVendor(id));
+  },
 };
