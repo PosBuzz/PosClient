@@ -77,6 +77,11 @@ const SideBar: React.FC = () => {
       icon: <MdOutlineInventory />,
       children: [
         {
+          label: <span title="Add Batch">Batches</span>,
+          key: "/inventory/batches",
+          permissions: [Permissions.add_product],
+        },
+        {
           label: <span title="Add Batch">Add Batch</span>,
           key: "/inventory/batches/add",
           permissions: [Permissions.add_product],
