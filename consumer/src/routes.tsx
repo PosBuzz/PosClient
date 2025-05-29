@@ -19,6 +19,8 @@ const InventoryTransfers = lazy(() => import("./pages/inventory-transfers"));
 const AddInventoryTransfers = lazy(
   () => import("./pages/create-inventory-transfer")
 );
+const Vendors = lazy(() => import("./pages/vendors"));
+const Branches = lazy(() => import("./pages/branches"));
 
 export const routes = [
   {
@@ -59,6 +61,22 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.users}>
             <Users />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "branches",
+        element: (
+          <RequirePermission permission={Permissions.branches}>
+            <Branches />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "vendors",
+        element: (
+          <RequirePermission permission={Permissions.vendors}>
+            <Vendors />
           </RequirePermission>
         ),
       },

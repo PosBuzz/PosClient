@@ -1,0 +1,143 @@
+import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, Popconfirm, Space, Table, Tag } from "antd";
+import { useEffect } from "react";
+import { deleteApi, get } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
+import { useMessageStore } from "../../stores/messageStore";
+
+// @ts-ignore
+export default function _TableGrid({ trigger, onClickEdit, ...props }) {
+  const { messageApi } = useMessageStore();
+
+  const {
+    data: fetchData,
+    refetch,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["branches"],
+    queryFn: () => get(endpoints.getBranches),
+  });
+
+  useEffect(() => {
+    if (trigger) {
+      refetch();
+    }
+  }, [trigger]);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: any) => await deleteApi(endpoints.deleteBranch(id)),
+    onSuccess: () => {
+      messageApi?.success("Branch deleted successfully");
+      refetch();
+    },
+    onError: (error: any) => {
+      messageApi?.error(
+        error.response?.data?.message || "Failed to delete branch"
+      );
+    },
+  });
+
+  const columns = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text: string, record: any) => (
+        <div className="flex gap-4 items-center">
+          <div>{text}</div>
+          {record.is_main && <Tag color="gold">Main Branch</Tag>}
+        </div>
+      ),
+    },
+    {
+      title: "Phone",
+      dataIndex: "phone",
+      key: "phone",
+      render: (phone: string) =>
+        phone ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <PhoneOutlined style={{ color: "#666" }} />
+            {phone}
+          </div>
+        ) : (
+          <span style={{ color: "#999" }}>No phone</span>
+        ),
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (email: string) =>
+        email ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <MailOutlined style={{ color: "#666" }} />
+            {email}
+          </div>
+        ) : (
+          <span style={{ color: "#999" }}>No email</span>
+        ),
+    },
+    {
+      title: "Address",
+      dataIndex: "address",
+      key: "address",
+      render: (address: string) =>
+        address || <span style={{ color: "#999" }}>No address</span>,
+    },
+    {
+      title: "Created Date",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (date: string) => {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString();
+      },
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (record: any) => (
+        <Space>
+          <Button onClick={() => onClickEdit(record)} type="link">
+            <EditOutlined />
+          </Button>
+          {!record.is_main && (
+            <Popconfirm
+              title="Delete this branch?"
+              description="This action cannot be undone. All inventory in this branch will be moved to warehouse."
+              onConfirm={() => deleteMutation.mutate(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button danger type="link" loading={deleteMutation.isPending}>
+                <DeleteOutlined />
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  if (isError) {
+    return <p>Failed to load branches</p>;
+  }
+
+  return (
+    <Table
+      rowKey="id"
+      scroll={{ x: true }}
+      loading={isLoading}
+      columns={columns}
+      dataSource={fetchData}
+      pagination={{
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total, range) =>
+          `${range[0]}-${range[1]} of ${total} branches`,
+      }}
+    />
+  );
+}
