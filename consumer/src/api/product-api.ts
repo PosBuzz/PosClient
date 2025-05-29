@@ -1,14 +1,12 @@
 import {
-  Branch,
   Brand,
   Category,
   Product,
   ProductFormData,
   ProductListResponse,
   Tag,
-  Unit,
+  Unit
 } from "../types/product.types";
-import axiosInstance from "./axiosInstance";
 import { deleteApi, get, patch, post } from "./crud-api";
 import { endpoints } from "./endpoints";
 
