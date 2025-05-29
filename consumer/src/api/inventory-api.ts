@@ -189,9 +189,8 @@ export const inventoryApi = {
     return get(endpoints.getBranches);
   },
 
-  getVendors: async (search?: string): Promise<Vendor[]> => {
-    const params = search ? { search } : {};
-    return get(endpoints.getVendors, params);
+  getVendors: async (): Promise<Vendor[]> => {
+    return get(endpoints.getVendors);
   },
 
   // Vendor CRUD operations
@@ -236,7 +235,9 @@ export const inventoryApi = {
     return get(endpoints.inventoryTransfer(id));
   },
 
-  createTransfer: async (data: CreateTransferData): Promise<InventoryTransfer> => {
+  createTransfer: async (
+    data: CreateTransferData
+  ): Promise<InventoryTransfer> => {
     return post(endpoints.createInventoryTransfer, data);
   },
 

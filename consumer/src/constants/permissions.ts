@@ -5,4 +5,6 @@ export const Permissions = {
   edit_product: "edit_product",
   view_product: "view_product",
   delete_product: "delete_product",
+  vendors: "vendors",
+  branches: "branches",
 };

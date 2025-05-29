@@ -44,7 +44,6 @@ export default function ProductForm() {
     queryKey: ["product", id],
     queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
-    staleTime: 60 * 1000,
   });
 
   // Initialize form data
