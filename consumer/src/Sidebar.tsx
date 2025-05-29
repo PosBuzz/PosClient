@@ -77,6 +77,11 @@ const SideBar: React.FC = () => {
           key: "/inventory/transfers/add",
           permissions: [Permissions.add_product],
         },
+        {
+          label: <span title="Vendors">Vendors</span>,
+          key: "/vendors",
+          permissions: [Permissions.vendors],
+        },
       ],
     },
     {
@@ -84,6 +89,11 @@ const SideBar: React.FC = () => {
       key: "/settings",
       icon: <SettingOutlined />,
       children: [
+        {
+          label: <span title="Branches">Branches</span>,
+          key: "/Branches",
+          permissions: [Permissions.branches],
+        },
         {
           label: <span title="Roles">Roles</span>,
           key: "/roles",

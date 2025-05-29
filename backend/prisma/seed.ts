@@ -97,14 +97,8 @@ async function main() {
     'edit_product',
     'view_product',
     'delete_product',
-    'add_purchase',
-    'edit_purchase',
-    'view_purchase',
-    'delete_purchase',
-    'add_branch',
-    'edit_branch',
-    'view_branch',
-    'delete_branch',
+    'branches',
+    'vendors',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
