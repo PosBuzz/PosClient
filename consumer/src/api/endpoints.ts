@@ -5,9 +5,15 @@ export const endpoints = {
   logout: "/auth/client-logout",
   refreshToken: "/auth/client-refresh-token",
   changePassword: "/consumer/change-password",
-  role: "/consumer/users/roles",
-  user: "/consumer/users",
   planPermissions: "/consumer/users/plan-permissions",
+  
+  user: "/consumer/users",
+  updateUser: (id: number) => `/consumer/users/users/${id}`,
+  deleteUser: (id: number) => `/consumer/users/users/${id}`,
+
+  role: "/consumer/users/roles",
+  updateRole: (id: number) => `/consumer/users/roles/${id}`,
+  deleteRole: (id: number) => `/consumer/users/roles/${id}`,
 
   // Product management
   products: "/consumer/products",
@@ -53,23 +59,28 @@ export const endpoints = {
   // Inventory Management
   inventorySummary: "/consumer/inventory/summary",
   inventoryProducts: "/consumer/inventory/products",
-  inventoryProductVariants: (productId: number) => `/consumer/inventory/products/${productId}/variants`,
-  inventoryVariantStock: (variantId: number) => `/consumer/inventory/variants/${variantId}/stock`,
-  
+  inventoryProductVariants: (productId: number) =>
+    `/consumer/inventory/products/${productId}/variants`,
+  inventoryVariantStock: (variantId: number) =>
+    `/consumer/inventory/variants/${variantId}/stock`,
+
   // Batch Management
   inventoryBatches: "/consumer/inventory/batches",
   inventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
   createInventoryBatch: "/consumer/inventory/batches",
   updateInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
   deleteInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
-  
+
   // Transfer Management
   inventoryTransfers: "/consumer/inventory/transfers",
   inventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}`,
   createInventoryTransfer: "/consumer/inventory/transfers",
-  completeInventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}/complete`,
-  cancelInventoryTransfer: (id: number) => `/consumer/inventory/transfers/${id}/cancel`,
-  branchBatches: (branchId: number) => `/consumer/inventory/batches?branch_id=${branchId}`,
+  completeInventoryTransfer: (id: number) =>
+    `/consumer/inventory/transfers/${id}/complete`,
+  cancelInventoryTransfer: (id: number) =>
+    `/consumer/inventory/transfers/${id}/cancel`,
+  branchBatches: (branchId: number) =>
+    `/consumer/inventory/batches?branch_id=${branchId}`,
 
   // Adjustment Management
   inventoryAdjustments: "/consumer/inventory/adjustments",

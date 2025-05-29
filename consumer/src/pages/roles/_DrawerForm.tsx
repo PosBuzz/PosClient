@@ -32,7 +32,7 @@ export default function DrawerForm({
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
-      await patch(`${endpoints.role}/${data.id}`, data),
+      await patch(endpoints.updateRole(data.id), data),
     onSuccess: (response) => {
       messageApi?.success("Updated Successfully");
       form.resetFields();
