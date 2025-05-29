@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
 import { useEffect } from "react";
 import { deleteApi, get } from "../../api/crud-api";
-import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
@@ -29,7 +29,7 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
   }, [trigger]);
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(`${endpoints.role}/${id}`),
+    mutationFn: async (id: any) => await deleteApi(endpoints.deleteRole(id)),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();

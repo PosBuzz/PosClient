@@ -17,7 +17,7 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.user, data),
@@ -33,7 +33,7 @@ export default function DrawerForm({
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
-      await patch(`${endpoints.user}/${data.id}`, data),
+      await patch(endpoints.updateUser(data.id), data),
     onSuccess: (response) => {
       messageApi?.success("Updated Successfully");
       form.resetFields();

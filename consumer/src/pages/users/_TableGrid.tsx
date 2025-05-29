@@ -56,9 +56,10 @@ export default function _TableGrid({
   } = useQuery({
     queryKey: ["users", debouncedSearchText, selectedRole],
     queryFn: () =>
-      get(
-        `${endpoints.user}?search_text=${debouncedSearchText}&role_id=${selectedRole}`
-      ),
+      get(endpoints.user, {
+        search_text: debouncedSearchText,
+        role_id: selectedRole,
+      }),
   });
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function _TableGrid({
   }, [trigger]);
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(`${endpoints.user}/${id}`),
+    mutationFn: async (id: any) => await deleteApi(endpoints.deleteUser(id)),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();
