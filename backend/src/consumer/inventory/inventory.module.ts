@@ -7,6 +7,7 @@ import { InventoryService } from './services/inventory.service';
 import { InventoryBatchService } from './services/inventory-batch.service';
 import { InventoryTransferService } from './services/inventory-transfer.service';
 import { InventoryAdjustmentService } from './services/inventory-adjustment.service';
+import { InventoryHelperService } from './services/inventory-helper.service';
 
 @Module({
   controllers: [
@@ -20,6 +21,7 @@ import { InventoryAdjustmentService } from './services/inventory-adjustment.serv
     InventoryBatchService,
     InventoryTransferService,
     InventoryAdjustmentService,
+    InventoryHelperService  ,
   ],
 })
 export class InventoryModule {}

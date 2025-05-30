@@ -32,6 +32,7 @@ import {
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -49,6 +50,8 @@ export default function AddInventoryTransfer() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+
+  const { messageApi } = useMessageStore();
   
   const [sourceBranchId, setSourceBranchId] = useState<number | null>(null);
   const [destinationBranchId, setDestinationBranchId] = useState<number | null>(null);
@@ -75,12 +78,12 @@ export default function AddInventoryTransfer() {
   const createMutation = useMutation({
     mutationFn: inventoryApi.createTransfer,
     onSuccess: () => {
-      message.success("Transfer created successfully");
+      messageApi?.success("Transfer created successfully");
       queryClient.invalidateQueries({ queryKey: ["transfers"] });
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || "Failed to create transfer");
+      messageApi?.error(error.response?.data?.message || "Failed to create transfer");
     },
   });
 
@@ -93,7 +96,7 @@ export default function AddInventoryTransfer() {
     const existingItem = selectedItems.find(item => item.batch_id === batch.id);
     
     if (existingItem) {
-      message.warning("This batch is already added");
+      messageApi?.warning("This batch is already added");
       return;
     }
 
@@ -122,12 +125,12 @@ export default function AddInventoryTransfer() {
 
   const handleSubmit = async (values: any) => {
     if (!sourceBranchId || !destinationBranchId) {
-      message.error("Please select both source and destination branches");
+      messageApi?.error("Please select both source and destination branches");
       return;
     }
 
     if (selectedItems.length === 0) {
-      message.error("Please add at least one item to transfer");
+      messageApi?.error("Please add at least one item to transfer");
       return;
     }
 
@@ -137,7 +140,7 @@ export default function AddInventoryTransfer() {
     );
 
     if (invalidItems.length > 0) {
-      message.error("Please check the quantities for all items");
+      messageApi?.error("Please check the quantities for all items");
       return;
     }
 
@@ -316,7 +319,6 @@ export default function AddInventoryTransfer() {
                   showSearch
                   optionFilterProp="children"
                 >
-                  <Option value={null}>Warehouse</Option>
                   {branches.map((branch) => (
                     <Option key={branch.id} value={branch.id}>
                       {branch.name}
@@ -342,7 +344,6 @@ export default function AddInventoryTransfer() {
                   showSearch
                   optionFilterProp="children"
                 >
-                  <Option value={null}>Warehouse</Option>
                   {branches
                     .filter(branch => branch.id !== sourceBranchId)
                     .map((branch) => (

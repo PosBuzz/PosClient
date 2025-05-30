@@ -1,14 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { InventoryHelperService } from './inventory-helper.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
-
-  // Add helper method
-  private getBranchName(branch: { id: number; name: string } | null): string {
-    return branch?.name || 'Warehouse';
-  }
+  constructor(
+    private prisma: PrismaService,
+    private inventoryHelper: InventoryHelperService
+  ) {}
 
   async getInventorySummary(consumerId: number, branchId?: number) {
     const whereClause: any = {
@@ -461,7 +460,7 @@ export class InventoryService {
         reason: adj.reason,
         notes: adj.notes,
         batch_number: adj.batch?.batch_number,
-        branch: adj.branch,
+        location: this.inventoryHelper.getLocationName(adj.branch),
         user: adj.created_by_user,
       })),
       ...transfersOut.map((transfer) => ({
@@ -469,10 +468,10 @@ export class InventoryService {
         id: transfer.transfer.id,
         date: transfer.transfer.created_at,
         quantity_change: -transfer.quantity,
-        reason: `Transfer to ${this.getBranchName(transfer.transfer.destination_branch)}`,
+        reason: `Transfer to ${this.inventoryHelper.getLocationName(transfer.transfer.destination_branch)}`,
         notes: transfer.transfer.notes,
         batch_number: transfer.batch.batch_number,
-        branch: transfer.transfer.source_branch,
+        location: this.inventoryHelper.getLocationName(transfer.transfer.source_branch),
         user: transfer.transfer.created_by_user,
       })),
       ...transfersIn.map((transfer) => ({
@@ -480,10 +479,10 @@ export class InventoryService {
         id: transfer.transfer.id,
         date: transfer.transfer.created_at,
         quantity_change: transfer.quantity,
-        reason: `Transfer from ${this.getBranchName(transfer.transfer.source_branch)}`,
+        reason: `Transfer from ${this.inventoryHelper.getLocationName(transfer.transfer.source_branch)}`,
         notes: transfer.transfer.notes,
         batch_number: transfer.batch.batch_number,
-        branch: transfer.transfer.destination_branch,
+        location: this.inventoryHelper.getLocationName(transfer.transfer.destination_branch),
         user: transfer.transfer.created_by_user,
       })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

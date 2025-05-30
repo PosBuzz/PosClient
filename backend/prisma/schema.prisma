@@ -258,14 +258,15 @@ model ProductVariant {
   deleted_at       DateTime?
 
   // Relations
-  product          Product            @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  sale_unit        Unit               @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
-  purchase_unit    Unit               @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
-  inventory_items  InventoryBatch[]
-  price_history    PriceHistory[]
-  promotions       PromotionProduct[]
-  VariantAttribute VariantAttribute[]
-  serials          ProductSerial[]
+  product             Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  sale_unit           Unit                  @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
+  purchase_unit       Unit                  @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
+  inventory_items     InventoryBatch[]
+  price_history       PriceHistory[]
+  promotions          PromotionProduct[]
+  VariantAttribute    VariantAttribute[]
+  serials             ProductSerial[]
+  InventoryAdjustment InventoryAdjustment[]
 
   @@index([product_id])
   @@index([barcode])
@@ -349,15 +350,16 @@ model TagOnProduct {
 }
 
 model Branch {
-  id          Int      @id @default(autoincrement())
-  consumer_id Int
-  name        String
-  address     String?
-  email       String?
-  phone       String?
-  is_main     Boolean  @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  consumer_id  Int
+  name         String
+  address      String?
+  email        String?
+  phone        String?
+  is_main      Boolean  @default(false)
+  is_warehouse Boolean  @default(false) // Add this field
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   // Relations
   consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -374,7 +376,7 @@ model Branch {
 model InventoryBatch {
   id           Int       @id @default(autoincrement())
   variant_id   Int
-  branch_id    Int? // Changed to optional - null means "central inventory"
+  branch_id    Int
   batch_number String
   quantity     Int
   cost_price   Decimal   @db.Decimal(10, 2)
@@ -385,7 +387,7 @@ model InventoryBatch {
 
   // Relations
   variant             ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
-  branch              Branch?                 @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  branch              Branch                  @relation(fields: [branch_id], references: [id])
   vendor              Vendor?                 @relation(fields: [vendor_id], references: [id], onDelete: SetNull)
   transfers           InventoryTransferItem[]
   InventoryAdjustment InventoryAdjustment[]
@@ -399,8 +401,8 @@ model InventoryBatch {
 
 model InventoryTransfer {
   id                    Int       @id @default(autoincrement())
-  source_branch_id      Int?
-  destination_branch_id Int?
+  source_branch_id      Int
+  destination_branch_id Int
   status                String    @default("pending")
   notes                 String?
   created_by_user_id    Int
@@ -409,8 +411,8 @@ model InventoryTransfer {
   updated_at            DateTime  @updatedAt
 
   // Relations
-  source_branch      Branch?                 @relation("SourceBranch", fields: [source_branch_id], references: [id])
-  destination_branch Branch?                 @relation("DestinationBranch", fields: [destination_branch_id], references: [id])
+  source_branch      Branch                  @relation("SourceBranch", fields: [source_branch_id], references: [id])
+  destination_branch Branch                  @relation("DestinationBranch", fields: [destination_branch_id], references: [id])
   created_by_user    User                    @relation(fields: [created_by_user_id], references: [id])
   items              InventoryTransferItem[]
 
@@ -425,7 +427,7 @@ model InventoryTransferItem {
 
   // Relations
   transfer InventoryTransfer @relation(fields: [transfer_id], references: [id], onDelete: Cascade)
-  batch    InventoryBatch    @relation(fields: [batch_id], references: [id], onDelete: Restrict)
+  batch    InventoryBatch    @relation(fields: [batch_id], references: [id], onDelete: Cascade)
 
   @@map("inventory_transfer_items")
 }
@@ -433,8 +435,8 @@ model InventoryTransferItem {
 model InventoryAdjustment {
   id                 Int      @id @default(autoincrement())
   variant_id         Int
-  branch_id          Int? // Changed to optional - null for central inventory
-  batch_id           Int?
+  branch_id          Int
+  batch_id           Int
   quantity_change    Int // positive for additions, negative for reductions
   reason             String
   notes              String?
@@ -442,9 +444,10 @@ model InventoryAdjustment {
   created_at         DateTime @default(now())
 
   // Relations
-  batch           InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
-  branch          Branch?         @relation(fields: [branch_id], references: [id], onDelete: SetNull)
-  created_by_user User?           @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  batch           InventoryBatch @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+  branch          Branch         @relation(fields: [branch_id], references: [id])
+  created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
 
   @@map("inventory_adjustments")
 }

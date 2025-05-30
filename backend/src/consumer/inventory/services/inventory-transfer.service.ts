@@ -1,36 +1,36 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
+import { InventoryHelperService } from './inventory-helper.service';
 
 @Injectable()
 export class InventoryTransferService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private inventoryHelper: InventoryHelperService
+  ) {}
 
   async create(consumerId: number, userId: number, dto: CreateInventoryTransferDto) {
-    // Validate source branch (if not warehouse)
-    if (dto.source_branch_id !== null) {
-      const sourceBranch = await this.prisma.branch.findFirst({
-        where: { 
-          id: dto.source_branch_id, 
-          consumer_id: consumerId 
-        },
-      });
-      if (!sourceBranch) {
-        throw new NotFoundException('Source branch not found');
-      }
+    // Validate source branch
+    const sourceBranch = await this.prisma.branch.findFirst({
+      where: { 
+        id: dto.source_branch_id, 
+        consumer_id: consumerId 
+      },
+    });
+    if (!sourceBranch) {
+      throw new NotFoundException('Source branch not found');
     }
 
-    // Validate destination branch (if not warehouse)
-    if (dto.destination_branch_id !== null) {
-      const destinationBranch = await this.prisma.branch.findFirst({
-        where: { 
-          id: dto.destination_branch_id, 
-          consumer_id: consumerId 
-        },
-      });
-      if (!destinationBranch) {
-        throw new NotFoundException('Destination branch not found');
-      }
+    // Validate destination branch
+    const destinationBranch = await this.prisma.branch.findFirst({
+      where: { 
+        id: dto.destination_branch_id, 
+        consumer_id: consumerId 
+      },
+    });
+    if (!destinationBranch) {
+      throw new NotFoundException('Destination branch not found');
     }
 
     // Check if source and destination are the same
@@ -43,7 +43,7 @@ export class InventoryTransferService {
       const batch = await this.prisma.inventoryBatch.findFirst({
         where: {
           id: item.batch_id,
-          branch_id: dto.source_branch_id, // This handles null for warehouse
+          branch_id: dto.source_branch_id,
           variant: {
             product: { consumer_id: consumerId },
           },
@@ -51,7 +51,7 @@ export class InventoryTransferService {
       });
 
       if (!batch) {
-        const branchName = dto.source_branch_id ? 'source branch' : 'warehouse';
+        const branchName = this.inventoryHelper.getLocationName(sourceBranch);
         throw new NotFoundException(`Batch with ID ${item.batch_id} not found in ${branchName}`);
       }
 
@@ -77,8 +77,8 @@ export class InventoryTransferService {
         },
       },
       include: {
-        source_branch: { select: { id: true, name: true } },
-        destination_branch: { select: { id: true, name: true } },
+        source_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
         created_by_user: { select: { id: true, name: true } },
         items: {
           include: {
@@ -121,12 +121,6 @@ export class InventoryTransferService {
             consumer_id: consumerId,
           },
         },
-        {
-          source_branch_id: null, // Include warehouse transfers
-        },
-        {
-          destination_branch_id: null, // Include warehouse transfers
-        },
       ],
     };
 
@@ -134,7 +128,7 @@ export class InventoryTransferService {
       where.status = options.status;
     }
 
-    if (options.branch_id) {
+    if (options.branch_id !== undefined) {
       where.OR = [
         { source_branch_id: options.branch_id },
         { destination_branch_id: options.branch_id },
@@ -145,8 +139,8 @@ export class InventoryTransferService {
       this.prisma.inventoryTransfer.findMany({
         where,
         include: {
-          source_branch: { select: { id: true, name: true } },
-          destination_branch: { select: { id: true, name: true } },
+          source_branch: { select: { id: true, name: true, is_warehouse: true } },
+          destination_branch: { select: { id: true, name: true, is_warehouse: true } },
           created_by_user: { select: { id: true, name: true } },
           items: {
             include: {
@@ -195,17 +189,11 @@ export class InventoryTransferService {
               consumer_id: consumerId,
             },
           },
-          {
-            source_branch_id: null,
-          },
-          {
-            destination_branch_id: null,
-          },
         ],
       },
       include: {
-        source_branch: { select: { id: true, name: true } },
-        destination_branch: { select: { id: true, name: true } },
+        source_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
         created_by_user: { select: { id: true, name: true } },
         items: {
           include: {
@@ -231,7 +219,46 @@ export class InventoryTransferService {
   }
 
   async completeTransfer(id: number, consumerId: number) {
-    const transfer = await this.findOne(id, consumerId);
+    // Get transfer with items included
+    const transfer = await this.prisma.inventoryTransfer.findFirst({
+      where: {
+        id,
+        OR: [
+          {
+            source_branch: {
+              consumer_id: consumerId,
+            },
+          },
+          {
+            destination_branch: {
+              consumer_id: consumerId,
+            },
+          },
+        ],
+      },
+      include: {
+        source_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+        created_by_user: { select: { id: true, name: true } },
+        items: {
+          include: {
+            batch: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!transfer) {
+      throw new NotFoundException('Transfer not found');
+    }
 
     if (transfer.status !== 'pending') {
       throw new BadRequestException('Transfer is not in pending status');
@@ -259,6 +286,7 @@ export class InventoryTransferService {
             batch_number: item.batch.batch_number,
             cost_price: item.batch.cost_price,
             expiry_date: item.batch.expiry_date,
+            vendor_id: item.batch.vendor_id,
           },
         });
 
@@ -273,7 +301,7 @@ export class InventoryTransferService {
             },
           });
         } else {
-          // Create new batch
+          // Create new batch in destination
           await prisma.inventoryBatch.create({
             data: {
               variant_id: item.batch.variant_id,
@@ -296,8 +324,8 @@ export class InventoryTransferService {
           completed_date: new Date(),
         },
         include: {
-          source_branch: { select: { id: true, name: true } },
-          destination_branch: { select: { id: true, name: true } },
+          source_branch: { select: { id: true, name: true, is_warehouse: true } },
+          destination_branch: { select: { id: true, name: true, is_warehouse: true } },
           created_by_user: { select: { id: true, name: true } },
           items: {
             include: {
@@ -332,8 +360,8 @@ export class InventoryTransferService {
         status: 'cancelled',
       },
       include: {
-        source_branch: { select: { id: true, name: true } },
-        destination_branch: { select: { id: true, name: true } },
+        source_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
         created_by_user: { select: { id: true, name: true } },
         items: {
           include: {
