@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 
@@ -6,18 +10,22 @@ import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 export class InventoryAdjustmentService {
   constructor(private prisma: PrismaService) {}
 
-  async create(consumerId: number, userId: number, dto: CreateInventoryAdjustmentDto) {
-    // Verify variant belongs to consumer
-    const variant = await this.prisma.productVariant.findFirst({
-      where: {
-        id: dto.variant_id,
-        product: { consumer_id: consumerId },
-      },
-    });
+  async create(
+    consumerId: number,
+    userId: number,
+    dto: CreateInventoryAdjustmentDto,
+  ) {
+      // Verify variant belongs to consumer
+      const variant = await this.prisma.productVariant.findFirst({
+        where: {
+          id: dto.variant_id,
+          product: { consumer_id: consumerId },
+        },
+      });
 
-    if (!variant) {
-      throw new NotFoundException('Product variant not found');
-    }
+      if (!variant) {
+        throw new NotFoundException('Product variant not found');
+      }
 
     // Verify branch belongs to consumer (if provided)
     if (dto.branch_id) {
@@ -33,9 +41,11 @@ export class InventoryAdjustmentService {
       }
     }
 
-    // If batch_id is provided, verify it exists and belongs to the correct branch/variant
-    if (dto.batch_id) {
-      const batch = await this.prisma.inventoryBatch.findFirst({
+    // Start transaction
+    return await this.prisma.$transaction(async (prisma) => {
+
+      // If batch_id is provided, verify it exists and belongs to the correct branch/variant
+      const batch = await prisma.inventoryBatch.findFirst({
         where: {
           id: dto.batch_id,
           variant_id: dto.variant_id,
@@ -44,19 +54,21 @@ export class InventoryAdjustmentService {
       });
 
       if (!batch) {
-        throw new NotFoundException('Batch not found for the specified variant and branch');
+        throw new NotFoundException(
+          'Batch not found for the specified variant and branch',
+        );
       }
 
       // For negative adjustments, check if sufficient quantity exists
-      if (dto.quantity_change < 0 && batch.quantity < Math.abs(dto.quantity_change)) {
-        throw new NotFoundException(
-          `Insufficient quantity in batch. Available: ${batch.quantity}, Requested: ${Math.abs(dto.quantity_change)}`
+      if (
+        dto.quantity_change < 0 &&
+        batch.quantity < Math.abs(dto.quantity_change)
+      ) {
+        throw new BadRequestException(
+          `Insufficient quantity in batch. Available: ${batch.quantity}, Requested: ${Math.abs(dto.quantity_change)}`,
         );
       }
-    }
 
-    // Start transaction
-    return await this.prisma.$transaction(async (prisma) => {
       // Create adjustment record
       const adjustment = await prisma.inventoryAdjustment.create({
         data: {
@@ -83,28 +95,29 @@ export class InventoryAdjustmentService {
         },
       });
 
-      // Update batch quantity if batch_id is provided
-      if (dto.batch_id) {
-        await prisma.inventoryBatch.update({
-          where: { id: dto.batch_id },
-          data: {
-            quantity: {
-              increment: dto.quantity_change,
-            },
+      // Update batch quantity
+      await prisma.inventoryBatch.update({
+        where: { id: dto.batch_id },
+        data: {
+          quantity: {
+            increment: dto.quantity_change,
           },
-        });
-      }
+        },
+      });
 
       return adjustment;
     });
   }
 
-  async findAll(consumerId: number, options: {
-    page?: number;
-    limit?: number;
-    variant_id?: number;
-    branch_id?: number;
-  } = {}) {
+  async findAll(
+    consumerId: number,
+    options: {
+      page?: number;
+      limit?: number;
+      variant_id?: number;
+      branch_id?: number;
+    } = {},
+  ) {
     const { page = 1, limit = 10, variant_id, branch_id } = options;
     const skip = (page - 1) * limit;
 

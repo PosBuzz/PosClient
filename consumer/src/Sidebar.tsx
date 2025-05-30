@@ -78,6 +78,16 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.add_product],
         },
         {
+          label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
+          key: "/inventory/adjustments",
+          permissions: [Permissions.add_product],
+        },
+        {
+          label: <span title="Add Adjustment">Add Adjustment</span>,
+          key: "/inventory/adjustments/add",
+          permissions: [Permissions.add_product],
+        },
+        {
           label: <span title="Vendors">Vendors</span>,
           key: "/vendors",
           permissions: [Permissions.vendors],

@@ -15,12 +15,11 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Row,
   Select,
   Space,
   Spin,
-  Typography,
+  Typography
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -33,6 +32,7 @@ import {
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import VendorSelector from "../../components/VendorSelector";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -42,6 +42,7 @@ export default function AddEditInventory() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
   const queryClient = useQueryClient();
+  const { messageApi } = useMessageStore();
 
   const [form] = Form.useForm();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
@@ -67,6 +68,11 @@ export default function AddEditInventory() {
     enabled: !!selectedProductId,
   });
 
+  const { data: branches = [] } = useQuery({
+    queryKey: ["branches"],
+    queryFn: () => inventoryApi.getBranches(),
+  });
+
   // Load existing batch for edit
   const { data: existingBatch, isLoading: batchLoading } = useQuery({
     queryKey: ["batch", id],
@@ -78,12 +84,14 @@ export default function AddEditInventory() {
   const createMutation = useMutation({
     mutationFn: inventoryApi.createBatch,
     onSuccess: () => {
-      message.success("Inventory added successfully");
+      messageApi?.success("Inventory added successfully");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || "Failed to add inventory");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to add inventory"
+      );
     },
   });
 
@@ -96,12 +104,12 @@ export default function AddEditInventory() {
       data: Partial<CreateBatchData>;
     }) => inventoryApi.updateBatch(id, data),
     onSuccess: () => {
-      message.success("Inventory updated successfully");
+      messageApi?.success("Inventory updated successfully");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         error.response?.data?.message || "Failed to update inventory"
       );
     },
@@ -112,6 +120,7 @@ export default function AddEditInventory() {
     if (existingBatch) {
       form.setFieldsValue({
         product_id: existingBatch.variant.product.id,
+        branch_id: existingBatch.branch.id,
         variant_id: existingBatch.variant.id,
         batch_number: existingBatch.batch_number,
         quantity: existingBatch.quantity,
@@ -164,13 +173,13 @@ export default function AddEditInventory() {
 
   const handleSubmit = async (values: any) => {
     if (!selectedVariant) {
-      message.error("Please select a product variant");
+      messageApi?.error("Please select a product variant");
       return;
     }
 
     const batchData: CreateBatchData = {
       variant_id: selectedVariant.id,
-      branch_id: null, // Always warehouse
+      branch_id: values.branch_id,
       batch_number: values.batch_number,
       quantity: values.quantity,
       cost_price: values.cost_price.toString(),
@@ -305,6 +314,21 @@ export default function AddEditInventory() {
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item
+                name="branch_id"
+                label="Branch"
+                rules={[{ required: true, message: "Please elect branch" }]}
+              >
+                <Select placeholder="Select branch">
+                  {branches.map((branch) => (
+                    <Option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
                 name="batch_number"
                 label="Reference Number"
                 rules={[
@@ -314,6 +338,7 @@ export default function AddEditInventory() {
               >
                 <Input
                   placeholder="Enter reference number"
+                  disabled={isEdit}
                   suffix={
                     <Button
                       type="link"
@@ -326,32 +351,9 @@ export default function AddEditInventory() {
                         )
                       }
                       title="Generate reference number"
-                      disabled={!selectedVariant}
+                      disabled={!selectedVariant || isEdit}
                     />
                   }
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                name="quantity"
-                label="Quantity"
-                rules={[
-                  { required: true, message: "Please enter quantity" },
-                  {
-                    type: "number",
-                    min: 1,
-                    message: "Quantity must be at least 1",
-                  },
-                ]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Enter quantity to add"
-                  min={1}
-                  precision={0}
-                  addonAfter="units"
                 />
               </Form.Item>
             </Col>
@@ -384,6 +386,32 @@ export default function AddEditInventory() {
 
             <Col span={12}>
               <Form.Item
+                name="quantity"
+                label="Quantity"
+                rules={[
+                  { required: true, message: "Please enter quantity" },
+                  {
+                    type: "number",
+                    min: 1,
+                    message: "Quantity must be at least 1",
+                  },
+                ]}
+              >
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="Enter quantity to add"
+                  min={1}
+                  precision={0}
+                  addonAfter="units"
+                  disabled={isEdit}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item
                 name="expiry_date"
                 label="Expiry Date"
                 extra="Leave empty if product doesn't expire"
@@ -399,10 +427,8 @@ export default function AddEditInventory() {
                 />
               </Form.Item>
             </Col>
-          </Row>
 
-          <Row gutter={24}>
-            <Col span={24}>
+            <Col span={12}>
               <Form.Item
                 name="vendor_id"
                 label="Supplier/Vendor"

@@ -6,15 +6,13 @@ export class CreateInventoryAdjustmentDto {
   @Type(() => Number)
   variant_id: number;
 
-  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  branch_id?: number;
+  branch_id: number;
 
-  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  batch_id?: number;
+  batch_id: number;
 
   @IsInt()
   @Type(() => Number)

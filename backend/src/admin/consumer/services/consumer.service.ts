@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
@@ -14,8 +10,8 @@ export class ConsumerService {
 
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
-
-    return this.prisma.$transaction(async (tx) => {
+     
+    this.prisma.$transaction(async (tx) => {
       // Step 1: Create the consumer
       const consumer = await tx.consumer.create({
         data: {
@@ -55,6 +51,18 @@ export class ConsumerService {
           permission_id: p.permission_id,
         })),
         skipDuplicates: true,
+      });
+
+      await tx.branch.create({
+        data: {
+          consumer_id: consumer.id,
+          name: 'Warehouse',
+          address: 'Central Warehouse',
+          email: consumer.email,
+          phone: consumer.phone,
+          is_main: false,
+          is_warehouse: true,
+        },
       });
 
       return {

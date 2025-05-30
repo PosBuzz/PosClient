@@ -11,7 +11,7 @@ export interface InventorySummary {
 export interface InventoryBatch {
   id: number;
   variant_id: number;
-  branch_id?: number;
+  branch_id: number;
   batch_number: string;
   quantity: number;
   cost_price: string;
@@ -28,7 +28,7 @@ export interface InventoryBatch {
       name: string;
     };
   };
-  branch?: {
+  branch: {
     id: number;
     name: string;
   };
@@ -40,7 +40,7 @@ export interface InventoryBatch {
 
 export interface CreateBatchData {
   variant_id: number;
-  branch_id?: number | null;
+  branch_id: number | null;
   batch_number: string;
   quantity: number;
   cost_price: string;
@@ -125,6 +125,47 @@ export interface InventoryTransfer {
       };
     };
   }[];
+}
+
+export interface InventoryAdjustment {
+  id: number;
+  variant_id: number;
+  branch_id: number;
+  batch_id?: number;
+  quantity_change: number;
+  reason: string;
+  notes?: string;
+  created_at: string;
+  batch?: {
+    id: number;
+    batch_number: string;
+    cost_price: string;
+    variant: {
+      id: number;
+      name: string;
+      product: {
+        id: number;
+        name: string;
+      };
+    };
+  };
+  branch?: {
+    id: number;
+    name: string;
+  };
+  created_by_user: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface CreateAdjustmentData {
+  variant_id: number;
+  branch_id: number;
+  batch_id: number;
+  quantity_change: number;
+  reason: string;
+  notes?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -259,5 +300,22 @@ export const inventoryApi = {
     }
   ): Promise<PaginatedResponse<InventoryBatch>> => {
     return get(endpoints.branchBatches(branchId), params);
+  },
+
+  getAdjustments: async (params?: {
+    page?: number;
+    limit?: number;
+    variant_id?: number;
+    branch_id?: number;
+  }): Promise<PaginatedResponse<InventoryAdjustment>> => {
+    return get(endpoints.inventoryAdjustments, params);
+  },
+
+  getAdjustment: async (id: number): Promise<InventoryAdjustment> => {
+    return get(endpoints.inventoryAdjustment(id));
+  },
+
+  createAdjustment: async (data: CreateAdjustmentData): Promise<InventoryAdjustment> => {
+    return post(endpoints.createInventoryAdjustment, data);
   },
 };

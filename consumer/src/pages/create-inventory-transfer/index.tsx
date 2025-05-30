@@ -5,10 +5,12 @@ import {
   SaveOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
+  Divider,
   Form,
   Input,
   InputNumber,
@@ -18,22 +20,19 @@ import {
   Space,
   Table,
   Typography,
-  Alert,
-  Divider,
 } from "antd";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  inventoryApi,
   CreateTransferData,
+  inventoryApi,
   InventoryBatch,
-  Branch,
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
@@ -49,9 +48,11 @@ export default function AddInventoryTransfer() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
-  
-  const [sourceBranchId, setSourceBranchId] = useState<number | null>(null);
-  const [destinationBranchId, setDestinationBranchId] = useState<number | null>(null);
+
+  const { messageApi } = useMessageStore();
+
+  const [sourceBranchId, setSourceBranchId] = useState<number>();
+  const [destinationBranchId, setDestinationBranchId] = useState<number>();
   const [selectedItems, setSelectedItems] = useState<TransferItem[]>([]);
   const [searchText, setSearchText] = useState("");
 
@@ -79,32 +80,36 @@ export default function AddInventoryTransfer() {
         limit: 100,
       });
     },
-    enabled: sourceBranchId !== undefined, // Enable when sourceBranchId is set (including null)
+    enabled: sourceBranchId !== undefined,
   });
 
   // Create transfer mutation
   const createMutation = useMutation({
     mutationFn: inventoryApi.createTransfer,
     onSuccess: () => {
-      message.success("Transfer created successfully");
+      messageApi?.success("Transfer created successfully");
       queryClient.invalidateQueries({ queryKey: ["transfers"] });
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || "Failed to create transfer");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to create transfer"
+      );
     },
   });
 
-  const handleSourceBranchChange = (branchId: number | null) => {
+  const handleSourceBranchChange = (branchId: number) => {
     setSourceBranchId(branchId);
     setSelectedItems([]); // Clear selected items when source changes
   };
 
   const handleAddItem = (batch: InventoryBatch) => {
-    const existingItem = selectedItems.find(item => item.batch_id === batch.id);
-    
+    const existingItem = selectedItems.find(
+      (item) => item.batch_id === batch.id
+    );
+
     if (existingItem) {
-      message.warning("This batch is already added");
+      messageApi?.warning("This batch is already added");
       return;
     }
 
@@ -120,12 +125,12 @@ export default function AddInventoryTransfer() {
   };
 
   const handleRemoveItem = (key: string) => {
-    setSelectedItems(selectedItems.filter(item => item.key !== key));
+    setSelectedItems(selectedItems.filter((item) => item.key !== key));
   };
 
   const handleQuantityChange = (key: string, quantity: number) => {
     setSelectedItems(
-      selectedItems.map(item =>
+      selectedItems.map((item) =>
         item.key === key ? { ...item, quantity } : item
       )
     );
@@ -133,35 +138,35 @@ export default function AddInventoryTransfer() {
 
   const handleSubmit = async (values: any) => {
     if (sourceBranchId === undefined || destinationBranchId === undefined) {
-      message.error("Please select both source and destination branches");
+      messageApi?.error("Please select both source and destination branches");
       return;
     }
 
     if (sourceBranchId === destinationBranchId) {
-      message.error("Source and destination branches cannot be the same");
+      messageApi?.error("Source and destination branches cannot be the same");
       return;
     }
 
     if (selectedItems.length === 0) {
-      message.error("Please add at least one item to transfer");
+      messageApi?.error("Please add at least one item to transfer");
       return;
     }
 
     // Validate quantities
     const invalidItems = selectedItems.filter(
-      item => item.quantity <= 0 || item.quantity > item.max_quantity
+      (item) => item.quantity <= 0 || item.quantity > item.max_quantity
     );
 
     if (invalidItems.length > 0) {
-      message.error("Please check the quantities for all items");
+      messageApi?.error("Please check the quantities for all items");
       return;
     }
 
     const transferData: CreateTransferData = {
-      source_branch_id: sourceBranchId, // This can be null for warehouse
-      destination_branch_id: destinationBranchId, // This can be null for warehouse
+      source_branch_id: sourceBranchId,
+      destination_branch_id: destinationBranchId,
       notes: values.notes,
-      items: selectedItems.map(item => ({
+      items: selectedItems.map((item) => ({
         batch_id: item.batch_id,
         quantity: item.quantity,
       })),
@@ -177,9 +182,7 @@ export default function AddInventoryTransfer() {
       key: "product",
       render: (_, record: InventoryBatch) => (
         <div>
-          <div style={{ fontWeight: 500 }}>
-            {record.variant.product.name}
-          </div>
+          <div style={{ fontWeight: 500 }}>{record.variant.product.name}</div>
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {record.variant.name}
           </Text>
@@ -213,7 +216,7 @@ export default function AddInventoryTransfer() {
           size="small"
           icon={<PlusOutlined />}
           onClick={() => handleAddItem(record)}
-          disabled={selectedItems.some(item => item.batch_id === record.id)}
+          disabled={selectedItems.some((item) => item.batch_id === record.id)}
         >
           Add
         </Button>
@@ -296,9 +299,8 @@ export default function AddInventoryTransfer() {
   );
 
   // Helper function to get branch name
-  const getBranchName = (branchId: number | null) => {
-    if (branchId === null) return "Warehouse";
-    return branches.find(b => b.id === branchId)?.name || "Unknown";
+  const getBranchName = (branchId: number) => {
+    return branches.find((b) => b.id === branchId)?.name || "Unknown";
   };
 
   return (
@@ -329,7 +331,9 @@ export default function AddInventoryTransfer() {
             <Col span={10}>
               <Form.Item
                 label="Source Branch"
-                rules={[{ required: true, message: "Please select source branch" }]}
+                rules={[
+                  { required: true, message: "Please select source branch" },
+                ]}
               >
                 <Select
                   placeholder="Select source branch"
@@ -338,7 +342,6 @@ export default function AddInventoryTransfer() {
                   showSearch
                   optionFilterProp="children"
                 >
-                  <Option value={null}>Warehouse</Option>
                   {branches.map((branch) => (
                     <Option key={branch.id} value={branch.id}>
                       {branch.name}
@@ -355,7 +358,12 @@ export default function AddInventoryTransfer() {
             <Col span={10}>
               <Form.Item
                 label="Destination Branch"
-                rules={[{ required: true, message: "Please select destination branch" }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select destination branch",
+                  },
+                ]}
               >
                 <Select
                   placeholder="Select destination branch"
@@ -364,9 +372,8 @@ export default function AddInventoryTransfer() {
                   showSearch
                   optionFilterProp="children"
                 >
-                  <Option value={null}>Warehouse</Option>
                   {branches
-                    .filter(branch => branch.id !== sourceBranchId)
+                    .filter((branch) => branch.id !== sourceBranchId)
                     .map((branch) => (
                       <Option key={branch.id} value={branch.id}>
                         {branch.name}
@@ -390,7 +397,7 @@ export default function AddInventoryTransfer() {
         </Card>
 
         {/* Available Inventory */}
-        {sourceBranchId !== undefined && (
+        {sourceBranchId !== null && (
           <Card
             title={`Available Inventory - ${getBranchName(sourceBranchId)}`}
             style={{ marginBottom: 24 }}
@@ -413,9 +420,10 @@ export default function AddInventoryTransfer() {
               size="small"
               scroll={{ y: 300 }}
               locale={{
-                emptyText: sourceBranchId === null 
-                  ? "No inventory found in warehouse" 
-                  : "No inventory found in this branch"
+                emptyText:
+                  sourceBranchId === null
+                    ? "No inventory found in warehouse"
+                    : "No inventory found in this branch",
               }}
             />
           </Card>
@@ -444,7 +452,10 @@ export default function AddInventoryTransfer() {
                   <div>
                     <Text strong>Total Units: </Text>
                     <Text>
-                      {selectedItems.reduce((sum, item) => sum + item.quantity, 0)}
+                      {selectedItems.reduce(
+                        (sum, item) => sum + item.quantity,
+                        0
+                      )}
                     </Text>
                   </div>
                   <div>
