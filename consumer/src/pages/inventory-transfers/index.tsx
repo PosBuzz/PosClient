@@ -31,6 +31,7 @@ import { inventoryApi, InventoryTransfer } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -40,6 +41,7 @@ export default function InventoryTransfersPage() {
   const queryClient = useQueryClient();
 
   const { modal } = useModalStore();
+  const { messageApi } = useMessageStore();
 
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -93,11 +95,11 @@ export default function InventoryTransfersPage() {
   const completeMutation = useMutation({
     mutationFn: inventoryApi.completeTransfer,
     onSuccess: () => {
-      message.success("Transfer completed successfully");
+      messageApi?.success("Transfer completed successfully");
       queryClient.invalidateQueries({ queryKey: ["transfers"] });
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         error.response?.data?.message || "Failed to complete transfer"
       );
     },
@@ -106,18 +108,18 @@ export default function InventoryTransfersPage() {
   const cancelMutation = useMutation({
     mutationFn: inventoryApi.cancelTransfer,
     onSuccess: () => {
-      message.success("Transfer cancelled successfully");
+      messageApi?.success("Transfer cancelled successfully");
       queryClient.invalidateQueries({ queryKey: ["transfers"] });
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         error.response?.data?.message || "Failed to cancel transfer"
       );
     },
   });
 
   const handleView = (transfer: InventoryTransfer) => {
-    modal.info({
+    modal?.info({
       title: "Transfer Details",
       width: 800,
       content: (
@@ -422,7 +424,6 @@ export default function InventoryTransfersPage() {
               allowClear
               loading={branchesLoading}
             >
-              <Option value={undefined}>Warehouse</Option>
               {branches.map((branch) => (
                 <Option key={branch.id} value={branch.id}>
                   {branch.name}

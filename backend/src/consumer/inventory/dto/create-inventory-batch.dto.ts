@@ -1,15 +1,14 @@
-import { IsInt, IsString, IsOptional, IsDateString, IsDecimal, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateInventoryBatchDto {
   @IsInt()
   @Type(() => Number)
   variant_id: number;
 
-  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  branch_id?: number;
+  branch_id: number;
 
   @IsString()
   batch_number: string;

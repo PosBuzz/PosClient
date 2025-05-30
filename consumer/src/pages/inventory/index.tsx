@@ -33,6 +33,8 @@ import { useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import { useModalStore } from "../../stores/modalStore";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -40,6 +42,8 @@ const { Option } = Select;
 export default function InventoryPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { modal } = useModalStore();
+  const { messageApi } = useMessageStore();
 
   // Input state (tracks what the user is typing)
   const [searchText, setSearchText] = useState("");
@@ -104,12 +108,12 @@ export default function InventoryPage() {
   const deleteMutation = useMutation({
     mutationFn: inventoryApi.deleteBatch,
     onSuccess: () => {
-      message.success("Batch deleted successfully");
+      messageApi?.success("Batch deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-summary"] });
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || "Failed to delete batch");
+      messageApi?.error(error.response?.data?.message || "Failed to delete batch");
     },
   });
 
@@ -151,7 +155,7 @@ export default function InventoryPage() {
   };
 
   const handleView = (batch: InventoryBatch) => {
-    Modal.info({
+    modal?.info({
       title: "Batch Details",
       width: 600,
       content: (
@@ -316,8 +320,14 @@ export default function InventoryPage() {
       title: "Branch",
       key: "branch",
       render: (_, record) => (
-        <Tag color={record.branch ? "blue" : "default"}>
-          {record.branch?.name || "Warehouse"}
+        <Tag
+          color={
+            record.branch.name.toLocaleLowerCase().trim() === "warehouse"
+              ? "default  "
+              : "blue"
+          }
+        >
+          {record.branch.name}
         </Tag>
       ),
     },
@@ -514,7 +524,6 @@ export default function InventoryPage() {
               allowClear
               loading={branchesLoading}
             >
-              <Option value={undefined}>Warehouse</Option>
               {branches.map((branch) => (
                 <Option key={branch.id} value={branch.id}>
                   {branch.name}
@@ -566,10 +575,7 @@ export default function InventoryPage() {
                 )}
 
                 {selectedBranch !== undefined && (
-                  <Tag
-                    closable
-                    onClose={() => setSelectedBranch(undefined)}
-                  >
+                  <Tag closable onClose={() => setSelectedBranch(undefined)}>
                     Branch:{" "}
                     {branches.find((b) => b.id === selectedBranch)?.name ||
                       "Warehouse"}
