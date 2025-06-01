@@ -210,27 +210,83 @@ export class ProductVariantService {
           )
         );
       }
-    }    // Update serials if provided and inventory preservation is not enabled
-    if (dto.serials !== undefined && !dto.preserve_inventory) {
-      // Delete existing serials
-      await this.prisma.productSerial.deleteMany({
-        where: { variant_id: id },
-      });
+    }    // Handle serial number updates properly for edit mode
+    if (dto.serials !== undefined) {
+      if (dto.preserve_inventory) {
+        // In edit mode, handle serials intelligently
+        const existingSerials = await this.prisma.productSerial.findMany({
+          where: { variant_id: id },
+        });
 
-      // Create new serials if any provided
-      if (dto.serials.length > 0) {
-        await Promise.all(
-          dto.serials.map(serialDto =>
-            this.prisma.productSerial.create({
-              data: {
-                variant_id: id,
-                serial_number: serialDto.serial_number,
-                status: serialDto.status || 'available',
-                notes: serialDto.notes,
-              },
-            })
-          )
+        // Separate new and existing serials
+        const serialsWithId = dto.serials.filter(s => s.id);
+        const serialsWithoutId = dto.serials.filter(s => !s.id);
+
+        // Update existing serials
+        if (serialsWithId.length > 0) {
+          await Promise.all(
+            serialsWithId.map(serialDto =>
+              this.prisma.productSerial.update({
+                where: { id: serialDto.id },
+                data: {
+                  serial_number: serialDto.serial_number,
+                  status: serialDto.status || 'available',
+                  notes: serialDto.notes,
+                },
+              })
+            )
+          );
+        }
+
+        // Create new serials
+        if (serialsWithoutId.length > 0) {
+          await Promise.all(
+            serialsWithoutId.map(serialDto =>
+              this.prisma.productSerial.create({
+                data: {
+                  variant_id: id,
+                  serial_number: serialDto.serial_number,
+                  status: serialDto.status || 'available',
+                  notes: serialDto.notes,
+                },
+              })
+            )
+          );
+        }
+
+        // Delete serials that are no longer present
+        const incomingSerialIds = serialsWithId.map(s => s.id).filter(Boolean);
+        const serialsToDelete = existingSerials.filter(
+          existing => !incomingSerialIds.includes(existing.id)
         );
+
+        if (serialsToDelete.length > 0) {
+          await this.prisma.productSerial.deleteMany({
+            where: {
+              id: { in: serialsToDelete.map(s => s.id) },
+            },
+          });
+        }
+      } else {
+        // Non-edit mode: delete all and recreate (original behavior)
+        await this.prisma.productSerial.deleteMany({
+          where: { variant_id: id },
+        });
+
+        if (dto.serials.length > 0) {
+          await Promise.all(
+            dto.serials.map(serialDto =>
+              this.prisma.productSerial.create({
+                data: {
+                  variant_id: id,
+                  serial_number: serialDto.serial_number,
+                  status: serialDto.status || 'available',
+                  notes: serialDto.notes,
+                },
+              })
+            )
+          );
+        }
       }
     }
 
