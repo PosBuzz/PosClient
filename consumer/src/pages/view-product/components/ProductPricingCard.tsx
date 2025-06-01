@@ -13,14 +13,6 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
   const mainVariant =
     product.variants?.find((v) => v.is_default) || product.variants?.[0];
 
-  // Calculate profit margin
-  const calculateProfitMargin = (costPrice: string, regularPrice: string) => {
-    const cost = parseFloat(costPrice);
-    const regular = parseFloat(regularPrice);
-    if (cost === 0) return 0;
-    return (((regular - cost) / cost) * 100).toFixed(1);
-  };
-
   // Get price range for multi-variant products
   const getPriceRange = () => {
     if (!product.variants || product.variants.length <= 1) return null;
@@ -28,16 +20,11 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
     const regularPrices = product.variants.map((v) =>
       parseFloat(v.regular_price)
     );
-    const costPrices = product.variants.map((v) => parseFloat(v.cost_price));
 
     return {
       regular: {
         min: Math.min(...regularPrices),
         max: Math.max(...regularPrices),
-      },
-      cost: {
-        min: Math.min(...costPrices),
-        max: Math.max(...costPrices),
       },
     };
   };
@@ -53,24 +40,8 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
       {mainVariant ? (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Cost Price">
-              {formatCurrency(parseFloat(mainVariant.cost_price))}
-            </Descriptions.Item>
             <Descriptions.Item label="Regular Price">
-              <Space wrap>
-                {formatCurrency(parseFloat(mainVariant.regular_price))}
-                {mainVariant.cost_price && (
-                  <Tooltip title="Profit margin">
-                    <Tag className="flex! justify-between items-center gap-2" color="green" icon={<FaArrowTrendUp />}>
-                      {calculateProfitMargin(
-                        mainVariant.cost_price,
-                        mainVariant.regular_price
-                      )}
-                      %
-                    </Tag>
-                  </Tooltip>
-                )}
-              </Space>
+              {formatCurrency(parseFloat(mainVariant.regular_price))}
             </Descriptions.Item>
             {mainVariant.wholesale_price && (
               <Descriptions.Item label="Wholesale Price">
@@ -115,10 +86,6 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
                 <Descriptions.Item label="Regular Price Range">
                   {formatCurrency(priceRange.regular.min)} -{" "}
                   {formatCurrency(priceRange.regular.max)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Cost Price Range">
-                  {formatCurrency(priceRange.cost.min)} -{" "}
-                  {formatCurrency(priceRange.cost.max)}
                 </Descriptions.Item>
               </Descriptions>
             </>

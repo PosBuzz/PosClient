@@ -30,7 +30,7 @@ function Index() {
   let totalActiveUsers = 0;
 
   if (fetchData) {
-    fetchData.forEach((consumer: any) => {
+    fetchData?.forEach((consumer: any) => {
       const hasActiveBill = consumer?.billing_logs.some(
         (log: any) => log?.billing_month === currentMonth
       );

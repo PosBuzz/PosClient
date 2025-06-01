@@ -14,12 +14,11 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Row,
   Select,
   Space,
   Table,
-  Typography,
+  Typography
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -299,7 +298,8 @@ export default function AddInventoryTransfer() {
   );
 
   // Helper function to get branch name
-  const getBranchName = (branchId: number) => {
+  const getBranchName = (branchId: number | undefined) => {
+    if (branchId === undefined) return "Unknown";
     return branches.find((b) => b.id === branchId)?.name || "Unknown";
   };
 
@@ -481,7 +481,6 @@ export default function AddInventoryTransfer() {
               htmlType="submit"
               loading={createMutation.isPending}
               icon={<SaveOutlined />}
-              size="large"
               disabled={selectedItems.length === 0}
             >
               Create Transfer

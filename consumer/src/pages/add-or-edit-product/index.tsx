@@ -67,9 +67,6 @@ export default function ProductForm() {
             name: variant.name,
             sku: variant.sku || "",
             barcode: variant.barcode || "",
-            cost_price: variant.cost_price
-              ? parseFloat(variant.cost_price)
-              : null,
             regular_price: variant.regular_price
               ? parseFloat(variant.regular_price)
               : null,
@@ -106,7 +103,6 @@ export default function ProductForm() {
               ? "Variant 1"
               : newFormData.name || "Default",
             is_default: true,
-            cost_price: null,
             regular_price: null,
             wholesale_price: null,
             sale_unit_id: undefined,
@@ -134,7 +130,6 @@ export default function ProductForm() {
       const defaultVariant: ProductVariant = {
         name: "Default",
         is_default: true,
-        cost_price: null,
         regular_price: null,
         wholesale_price: null,
         sale_unit_id: undefined,
@@ -192,7 +187,6 @@ export default function ProductForm() {
     setFormData((prev) => {
       const newVariant: ProductVariant = {
         name: `Variant ${prev.variants.length + 1}`,
-        cost_price: null,
         regular_price: null,
         wholesale_price: null,
         sale_unit_id: undefined,
@@ -249,7 +243,6 @@ export default function ProductForm() {
           {
             name: "Variant 1",
             is_default: true,
-            cost_price: null,
             regular_price: null,
             wholesale_price: null,
             sale_unit_id: undefined,
@@ -277,7 +270,6 @@ export default function ProductForm() {
             {
               name: prev.name || "Default",
               is_default: true,
-              cost_price: null,
               regular_price: null,
               wholesale_price: null,
               sale_unit_id: undefined,
@@ -343,7 +335,6 @@ export default function ProductForm() {
           name: values.has_variants ? "Variant 1" : values.name || "Default",
           sku: "",
           barcode: "",
-          cost_price: null,
           regular_price: null,
           wholesale_price: null,
           sale_unit_id: undefined,
@@ -378,7 +369,6 @@ export default function ProductForm() {
           name: variant.name,
           sku: variant.sku || undefined,
           barcode: variant.barcode || undefined,
-          cost_price: variant.cost_price?.toString() || "0.00",
           regular_price: variant.regular_price?.toString() || "0.00",
           wholesale_price: variant.wholesale_price?.toString() || undefined,
           sale_unit_id: variant.sale_unit_id,
@@ -450,7 +440,6 @@ export default function ProductForm() {
       for (let i = 0; i < currentFormData.variants.length; i++) {
         const variant = currentFormData.variants[i];
         if (
-          !variant.cost_price ||
           !variant.regular_price ||
           !variant.sale_unit_id ||
           !variant.purchase_unit_id

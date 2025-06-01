@@ -5,6 +5,7 @@ import {
   MinusCircleOutlined,
   AlertOutlined,
   BarcodeOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import {
   Alert,
@@ -12,6 +13,7 @@ import {
   Button,
   Card,
   Col,
+  Form,
   Input,
   InputNumber,
   Popconfirm,
@@ -19,7 +21,7 @@ import {
   Space,
   Typography,
   Select,
-  Divider,
+  Tooltip,
 } from "antd";
 import {
   ProductVariant,
@@ -37,6 +39,7 @@ interface VariantManagerProps {
   updateVariant: (index: number, variantData: Partial<ProductVariant>) => void;
   addVariant: () => number;
   deleteVariant: (index: number) => void;
+  productName?: string;
 }
 
 export default function VariantManager({
@@ -44,16 +47,17 @@ export default function VariantManager({
   updateVariant,
   addVariant,
   deleteVariant,
+  productName,
 }: VariantManagerProps) {
   if (variants.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <Alert
           message="No variants added"
           description="Add your first variant to get started"
           type="info"
           showIcon
-          className="mb-6"
+          className="mb-4"
         />
         <Button type="primary" onClick={addVariant} icon={<PlusOutlined />}>
           Add First Variant
@@ -61,6 +65,41 @@ export default function VariantManager({
       </div>
     );
   }
+
+  // Auto-generate SKU for variant
+  const generateSKU = (variantIndex: number) => {
+    const baseName = productName || `Variant${variantIndex + 1}`;
+    const timestamp = Date.now().toString().slice(-6);
+    const prefix = baseName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 3)
+      .padEnd(3, "0");
+    const sku = `${prefix}-V${variantIndex + 1}-${timestamp}`;
+    updateVariant(variantIndex, { sku });
+  };
+
+  // Auto-generate barcode for variant
+  const generateBarcode = (variantIndex: number) => {
+    const countryCode = "123";
+    const manufacturerCode = Math.floor(Math.random() * 100000)
+      .toString()
+      .padStart(5, "0");
+    const productCode = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+    const baseNumber = countryCode + manufacturerCode + productCode;
+
+    // Calculate EAN-13 check digit
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      const digit = parseInt(baseNumber[i]);
+      sum += i % 2 === 0 ? digit : digit * 3;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    const barcode = baseNumber + checkDigit;
+    updateVariant(variantIndex, { barcode });
+  };
 
   const updateVariantAttribute = (
     variantIndex: number,
@@ -121,37 +160,34 @@ export default function VariantManager({
   };
 
   return (
-    <div className="space-y-6!">
-      <div className="flex items-center justify-between">
-        <Title level={4} className="mb-0">
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <Title level={4} style={{ margin: 0 }}>
           <Space>
             <SettingOutlined />
             Product Variants
             <Badge count={variants.length} showZero color="blue" />
           </Space>
         </Title>
-        <Button type="dashed" onClick={addVariant} icon={<PlusOutlined />}>
+        <Button type="dashed" onClick={addVariant} icon={<PlusOutlined />} size="small">
           Add Variant
         </Button>
       </div>
 
-      <div className="space-y-6!">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {variants.map((variant, index) => (
           <Card
             key={`variant-${index}`}
             size="small"
-            className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow"
             title={
-              <div className="flex items-center justify-between">
-                <Space>
-                  <Text strong className="text-lg">
-                    Variant {index + 1}
-                  </Text>
-                </Space>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Text strong style={{ fontSize: 14 }}>
+                  Variant {index + 1}
+                </Text>
                 {variants.length > 1 && (
                   <Popconfirm
                     title="Delete variant"
-                    description="Are you sure you want to delete this variant?"
+                    description="Are you sure?"
                     onConfirm={() => deleteVariant(index)}
                     okText="Yes"
                     cancelText="No"
@@ -161,375 +197,340 @@ export default function VariantManager({
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
-                    >
-                      Delete
-                    </Button>
+                    />
                   </Popconfirm>
                 )}
               </div>
             }
           >
-            <div className="space-y-6!">
-              {/* Basic Information */}
-              <div>
-                <Text strong className="block mb-3">
-                  Basic Information
-                </Text>
-                <Row gutter={16}>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      Variant Name <span className="text-red-500">*</span>
-                    </label>
+            <Form layout="vertical" size="small">
+              {/* Row 1: Variant Name, SKU, Barcode */}
+              <Row gutter={8}>
+                <Col xs={24} sm={8}>
+                  <Form.Item 
+                    label="Variant Name" 
+                    required
+                    style={{ marginBottom: 8 }}
+                  >
                     <Input
                       placeholder={`Variant ${index + 1} name`}
                       value={variant.name}
-                      onChange={(e) =>
-                        updateVariant(index, { name: e.target.value })
-                      }
+                      onChange={(e) => updateVariant(index, { name: e.target.value })}
                     />
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      SKU
-                    </label>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item 
+                    label="SKU" 
+                    style={{ marginBottom: 8 }}
+                  >
                     <Input
-                      placeholder="Variant SKU"
-                      value={variant.sku}
-                      onChange={(e) =>
-                        updateVariant(index, { sku: e.target.value })
+                      placeholder="Auto-generate or enter SKU"
+                      value={variant.sku || ""}
+                      onChange={(e) => updateVariant(index, { sku: e.target.value })}
+                      suffix={
+                        <Tooltip title="Generate SKU">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<ReloadOutlined />}
+                            onClick={() => generateSKU(index)}
+                          />
+                        </Tooltip>
                       }
                     />
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      Barcode
-                    </label>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item 
+                    label={
+                      <Space>
+                        <BarcodeOutlined />
+                        Barcode
+                      </Space>
+                    }
+                    style={{ marginBottom: 8 }}
+                  >
                     <Input
-                      placeholder="Barcode"
-                      value={variant.barcode}
-                      onChange={(e) =>
-                        updateVariant(index, { barcode: e.target.value })
+                      placeholder="Auto-generate or enter barcode"
+                      value={variant.barcode || ""}
+                      onChange={(e) => updateVariant(index, { barcode: e.target.value })}
+                      suffix={
+                        <Tooltip title="Generate EAN-13">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<ReloadOutlined />}
+                            onClick={() => generateBarcode(index)}
+                          />
+                        </Tooltip>
                       }
                     />
-                  </Col>
-                </Row>
-              </div>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-              {/* Pricing */}
-              <div>
-                <Text strong className="block mb-3">
-                  Pricing
-                </Text>
-                <Row gutter={16}>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      Cost Price <span className="text-red-500">*</span>
-                    </label>
+              {/* Row 2: Pricing */}
+              <Row gutter={4}>
+                <Col xs={24} sm={4}>
+                  <Form.Item 
+                    label="Regular Price" 
+                    required
+                    style={{ marginBottom: 8 }}
+                  >
                     <InputNumber
                       placeholder="0.00"
                       min={0}
                       precision={2}
-                      className="w-full!"
-                      prefix="$"
-                      value={variant.cost_price}
-                      onChange={(value) =>
-                        updateVariant(index, { cost_price: value })
-                      }
-                    />
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      Regular Price <span className="text-red-500">*</span>
-                    </label>
-                    <InputNumber
-                      placeholder="0.00"
-                      min={0}
-                      precision={2}
-                      className="w-full!"
+                      style={{ width: "100%" }}
                       prefix="$"
                       value={variant.regular_price}
-                      onChange={(value) =>
-                        updateVariant(index, { regular_price: value })
-                      }
+                      onChange={(value) => updateVariant(index, { regular_price: value })}
                     />
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <label className="block text-sm font-medium mb-1">
-                      Wholesale Price
-                    </label>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={4}>
+                  <Form.Item 
+                    label="Wholesale Price" 
+                    style={{ marginBottom: 8 }}
+                  >
                     <InputNumber
                       placeholder="0.00"
                       min={0}
                       precision={2}
-                      className="w-full!"
+                      style={{ width: "100%" }}
                       prefix="$"
                       value={variant.wholesale_price}
-                      onChange={(value) =>
-                        updateVariant(index, { wholesale_price: value })
-                      }
+                      onChange={(value) => updateVariant(index, { wholesale_price: value })}
                     />
-                  </Col>
-                </Row>
-              </div>
-
-              {/* Units, Warranty & Inventory */}
-              <div>
-                <Text strong className="block mb-3">
-                  Units, Warranty & Inventory
-                </Text>
-                <Row gutter={16}>
-                  <Col xs={24} md={6}>
-                    <CommonSelector
-                      label="Sale Unit"
-                      type="unit"
-                      value={Number(variant.sale_unit_id) ?? undefined}
-                      onChange={(value) =>
-                        updateVariant(index, { sale_unit_id: value as number })
-                      }
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <CommonSelector
-                      label="Purchase Unit"
-                      type="unit"
-                      value={Number(variant.purchase_unit_id) ?? undefined}
-                      onChange={(value) =>
-                        updateVariant(index, {
-                          purchase_unit_id: value as number,
-                        })
-                      }
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <label className="block text-sm font-medium mb-1 w-full!">
-                      Warranty Period (Months)
-                    </label>
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      placeholder="12"
-                      min={0}
-                      value={variant.warranty_period}
-                      onChange={(value) =>
-                        updateVariant(index, { warranty_period: value })
-                      }
-                      addonAfter="Months"
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <label className="block text-sm font-medium mb-1 w-full!">
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={4}>
+                  <Form.Item 
+                    label={
                       <Space>
                         <AlertOutlined />
                         Alert Quantity
                       </Space>
-                    </label>
+                    }
+                    style={{ marginBottom: 8 }}
+                  >
                     <InputNumber
-                      style={{ width: "100%" }}
                       placeholder="10"
                       min={0}
+                      style={{ width: "100%" }}
                       value={variant.alert_quantity}
-                      onChange={(value) =>
-                        updateVariant(index, { alert_quantity: value || 0 })
-                      }
+                      onChange={(value) => updateVariant(index, { alert_quantity: value || 0 })}
                       addonAfter="units"
                     />
-                    <div className="text-xs text-gray-500 mt-1">
-                      Get alerts when stock is low
-                    </div>
-                  </Col>
-                </Row>
-              </div>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={4}>
+                    <CommonSelector
+                      label="Sale Unit"
+                      type="unit"
+                      value={Number(variant.sale_unit_id) || undefined}
+                      onChange={(value) => updateVariant(index, { sale_unit_id: value as number })}
+                      size="small"
+                    />
+                </Col>
+                <Col xs={24} sm={4}>
+                    <CommonSelector
+                      label="Purchase Unit"
+                      type="unit"
+                      value={Number(variant.purchase_unit_id) || undefined}
+                      onChange={(value) => updateVariant(index, { purchase_unit_id: value as number })}
+                      size="small"
+                    />
+                </Col>
+                <Col xs={24} sm={4}>
+                  <Form.Item 
+                    label="Warranty Period" 
+                    style={{ marginBottom: 8 }}
+                  >
+                    <InputNumber
+                      placeholder="12"
+                      min={0}
+                      style={{ width: "100%" }}
+                      value={variant.warranty_period}
+                      onChange={(value) => updateVariant(index, { warranty_period: value })}
+                      addonAfter="months"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-              {/* Image */}
-              <div>
-                <Text strong className="block mb-3">
-                  Variant Image
-                </Text>
-                <Row>
-                  <Col xs={24}>
+              {/* Row 4: Image */}
+              <Row>
+                <Col span={4}>
+                  <Form.Item 
+                    label="Variant Image" 
+                    style={{ marginBottom: 8 }}
+                  >
                     <ImageInput
                       name={`variant-image-${index}`}
+                      label=""
                       value={variant.image ? [variant.image] : []}
-                      onChange={(urls) =>
-                        updateVariant(index, { image: urls[0] || "" })
-                      }
+                      onChange={(urls) => updateVariant(index, { image: urls[0] || "" })}
                       maxCount={1}
                       useForm={false}
+                      listType="text"
                     />
-                  </Col>
-                </Row>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+
+            {/* Attributes - Compact Section */}
+            {(variant.attributes || []).length > 0 ? (
+              <Card
+                size="small"
+                style={{ marginTop: 12 }}
+                title={
+                  <Space>
+                    <Text strong style={{ fontSize: 12 }}>
+                      Attributes ({(variant.attributes || []).length})
+                    </Text>
+                    <Button
+                      type="dashed"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => addVariantAttribute(index)}
+                    >
+                      Add
+                    </Button>
+                  </Space>
+                }
+              >
+                {(variant.attributes || []).map((attr, attrIndex) => (
+                  <Row key={attrIndex} gutter={4} align="middle" style={{ marginBottom: 4 }}>
+                    <Col xs={10}>
+                      <Input
+                        placeholder="Name"
+                        value={attr.name}
+                        size="small"
+                        onChange={(e) =>
+                          updateVariantAttribute(index, attrIndex, "name", e.target.value)
+                        }
+                      />
+                    </Col>
+                    <Col xs={10}>
+                      <Input
+                        placeholder="Value"
+                        value={attr.value}
+                        size="small"
+                        onChange={(e) =>
+                          updateVariantAttribute(index, attrIndex, "value", e.target.value)
+                        }
+                      />
+                    </Col>
+                    <Col xs={4}>
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => removeVariantAttribute(index, attrIndex)}
+                      />
+                    </Col>
+                  </Row>
+                ))}
+              </Card>
+            ) : (
+              <div style={{ marginTop: 12 }}>
+                <Button
+                  type="dashed"
+                  size="small"
+                  block
+                  onClick={() => addVariantAttribute(index)}
+                >
+                  <PlusOutlined /> Add Attribute
+                </Button>
               </div>
+            )}
 
-              {/* Serial Numbers */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Text strong>
-                    <Space>
-                      <BarcodeOutlined />
-                      Serial Numbers
-                      {(variant.serials || []).length > 0 && (
-                        <Badge
-                          count={(variant.serials || []).length}
-                          color="green"
-                        />
-                      )}
-                    </Space>
-                  </Text>
-                  <Button
-                    type="dashed"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={() => addVariantSerial(index)}
-                  >
-                    Add Serial
-                  </Button>
-                </div>
-
-                {(variant.serials || []).length === 0 ? (
-                  <div className="text-center py-4 border-2 border-dashed border-gray-300 rounded">
-                    <BarcodeOutlined className="text-2xl text-gray-400 mb-2" />
-                    <Text type="secondary">No serial numbers added</Text>
-                    <div className="mt-1">
-                      <Text type="secondary" className="text-xs">
-                        Add serial numbers for inventory tracking
-                      </Text>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3!">
-                    {(variant.serials || []).map((serial, serialIndex) => (
-                      <Row key={serialIndex} gutter={12} align="middle">
-                        <Col xs={8}>
-                          <Input
-                            placeholder="Serial number"
-                            value={serial.serial_number}
-                            onChange={(e) =>
-                              updateVariantSerial(
-                                index,
-                                serialIndex,
-                                "serial_number",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Col>
-                        <Col xs={6}>
-                          <Select
-                            value={serial.status}
-                            onChange={(value) =>
-                              updateVariantSerial(
-                                index,
-                                serialIndex,
-                                "status",
-                                value
-                              )
-                            }
-                            className="w-full"
-                          >
-                            <Option value="available">Available</Option>
-                            <Option value="sold">Sold</Option>
-                            <Option value="defective">Defective</Option>
-                            <Option value="returned">Returned</Option>
-                          </Select>
-                        </Col>
-                        <Col xs={8}>
-                          <Input
-                            placeholder="Notes (optional)"
-                            value={serial.notes || ""}
-                            onChange={(e) =>
-                              updateVariantSerial(
-                                index,
-                                serialIndex,
-                                "notes",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Col>
-                        <Col xs={2}>
-                          <Button
-                            type="text"
-                            danger
-                            icon={<MinusCircleOutlined />}
-                            onClick={() =>
-                              removeVariantSerial(index, serialIndex)
-                            }
-                            title="Remove serial number"
-                          />
-                        </Col>
-                      </Row>
-                    ))}
-                  </div>
-                )}
+            {/* Serial Numbers - Compact Section */}
+            {(variant.serials || []).length > 0 ? (
+              <Card
+                size="small"
+                style={{ marginTop: 8}}
+                title={
+                  <Space>
+                    <Text strong style={{ fontSize: 12 }}>
+                      Serial Numbers ({(variant.serials || []).length})
+                    </Text>
+                    <Button
+                      type="dashed"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => addVariantSerial(index)}
+                    >
+                      Add
+                    </Button>
+                  </Space>
+                }
+              >
+                {(variant.serials || []).map((serial, serialIndex) => (
+                  <Row key={serialIndex} gutter={4} align="middle" style={{ marginBottom: 4 }}>
+                    <Col xs={8}>
+                      <Input
+                        placeholder="Serial #"
+                        value={serial.serial_number}
+                        size="small"
+                        onChange={(e) =>
+                          updateVariantSerial(index, serialIndex, "serial_number", e.target.value)
+                        }
+                      />
+                    </Col>
+                    <Col xs={6}>
+                      <Select
+                        value={serial.status}
+                        onChange={(value) =>
+                          updateVariantSerial(index, serialIndex, "status", value)
+                        }
+                        style={{ width: "100%" }}
+                        size="small"
+                      >
+                        <Option value="available">Available</Option>
+                        <Option value="sold">Sold</Option>
+                        <Option value="defective">Defective</Option>
+                        <Option value="returned">Returned</Option>
+                      </Select>
+                    </Col>
+                    <Col xs={8}>
+                      <Input
+                        placeholder="Notes"
+                        value={serial.notes || ""}
+                        size="small"
+                        onChange={(e) =>
+                          updateVariantSerial(index, serialIndex, "notes", e.target.value)
+                        }
+                      />
+                    </Col>
+                    <Col xs={2}>
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => removeVariantSerial(index, serialIndex)}
+                      />
+                    </Col>
+                  </Row>
+                ))}
+              </Card>
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                <Button
+                  type="dashed"
+                  size="small"
+                  block
+                  onClick={() => addVariantSerial(index)}
+                >
+                  <BarcodeOutlined /> Add Serial Number
+                </Button>
               </div>
-
-              <Divider />
-
-              {/* Attributes */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Text strong>Attributes</Text>
-                  <Button
-                    type="dashed"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={() => addVariantAttribute(index)}
-                  >
-                    Add Attribute
-                  </Button>
-                </div>
-
-                {(variant.attributes || []).length === 0 ? (
-                  <div className="text-center py-4 border-2 border-dashed border-gray-300 rounded">
-                    <Text type="secondary">No attributes added</Text>
-                  </div>
-                ) : (
-                  <div className="space-y-3!">
-                    {(variant.attributes || []).map((attr, attrIndex) => (
-                      <Row key={attrIndex} gutter={12} align="middle">
-                        <Col xs={10}>
-                          <Input
-                            placeholder="Attribute name (e.g., Color)"
-                            value={attr.name}
-                            onChange={(e) =>
-                              updateVariantAttribute(
-                                index,
-                                attrIndex,
-                                "name",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Col>
-                        <Col xs={10}>
-                          <Input
-                            placeholder="Attribute value (e.g., Red)"
-                            value={attr.value}
-                            onChange={(e) =>
-                              updateVariantAttribute(
-                                index,
-                                attrIndex,
-                                "value",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Col>
-                        <Col xs={4}>
-                          <Button
-                            type="text"
-                            danger
-                            icon={<MinusCircleOutlined />}
-                            onClick={() =>
-                              removeVariantAttribute(index, attrIndex)
-                            }
-                          />
-                        </Col>
-                      </Row>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </Card>
         ))}
       </div>
