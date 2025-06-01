@@ -30,6 +30,7 @@ interface BasicInformationTabProps {
   ) => void;
   onDescriptionGenerated: (description: string) => void;
   onVariantToggle: (checked: boolean) => void;
+  isEditMode?: boolean;
 }
 
 export default function BasicInformationTab({
@@ -37,6 +38,7 @@ export default function BasicInformationTab({
   updateFormField,
   onDescriptionGenerated,
   onVariantToggle,
+  isEditMode,
 }: BasicInformationTabProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -90,7 +92,15 @@ export default function BasicInformationTab({
         <Form.Item
           name="description"
           label={
-            <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", width: "100%" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
               <span>Description</span>
               <AiDescriptionGenerator
                 productName={formData.name}
@@ -273,38 +283,40 @@ export default function BasicInformationTab({
       </Row>
 
       {/* Compact Product Configuration */}
-      <Card
-        title={
-          <Space size={4}>
-            <SettingOutlined />
-            <span style={{ fontSize: 12 }}>Product Type</span>
-          </Space>
-        }
-        size="small"
-        bodyStyle={{ padding: 12 }}
-      >
-        <Form.Item
-          name="has_variants"
-          label="Variant Setting"
-          style={{ marginBottom: 0 }}
-          tooltip="Choose product type"
+      {!isEditMode && (
+        <Card
+          title={
+            <Space size={4}>
+              <SettingOutlined />
+              <span style={{ fontSize: 12 }}>Product Type</span>
+            </Space>
+          }
+          size="small"
+          bodyStyle={{ padding: 12 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Switch
-              size="small"
-              checkedChildren="Has Variants"
-              unCheckedChildren="Simple Product"
-              checked={formData.has_variants}
-              onChange={onVariantToggle}
-            />
-            <span style={{ fontSize: 11, color: "#666" }}>
-              {formData.has_variants
-                ? "Multiple variants (size, color, etc.)"
-                : "Single product with no variants"}
-            </span>
-          </div>
-        </Form.Item>
-      </Card>
+          <Form.Item
+            name="has_variants"
+            label="Variant Setting"
+            style={{ marginBottom: 0 }}
+            tooltip="Choose product type"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                size="small"
+                checkedChildren="Has Variants"
+                unCheckedChildren="Simple Product"
+                checked={formData.has_variants}
+                onChange={onVariantToggle}
+              />
+              <span style={{ fontSize: 11, color: "#666" }}>
+                {formData.has_variants
+                  ? "Multiple variants (size, color, etc.)"
+                  : "Single product with no variants"}
+              </span>
+            </div>
+          </Form.Item>
+        </Card>
+      )}
     </div>
   );
 }

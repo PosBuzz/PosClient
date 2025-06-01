@@ -477,6 +477,7 @@ export default function ProductForm() {
         label: "Basic Information",
         children: (
           <BasicInformationTab
+             isEditMode={isEditMode}
             formData={formData}
             updateFormField={updateFormField}
             onDescriptionGenerated={(description) =>

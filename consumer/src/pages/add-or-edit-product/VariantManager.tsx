@@ -154,7 +154,7 @@ export default function VariantManager({
     ];
     updateVariant(variantIndex, { serials: newSerials });
   };
-  
+
   const removeVariantSerial = (variantIndex: number, serialIndex: number) => {
     const variant = variants[variantIndex];
     const newSerials = (variant.serials || []).filter(
@@ -463,7 +463,13 @@ export default function VariantManager({
                 <Row gutter={[4, 2]}>
                   {(variant.attributes || []).map((attr, attrIndex) => (
                     <Col xs={24} sm={12} md={8} key={attrIndex}>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 4,
+                          alignItems: "center",
+                        }}
+                      >
                         <Input
                           placeholder="Name"
                           value={attr.name}
@@ -497,7 +503,9 @@ export default function VariantManager({
                           danger
                           size="small"
                           icon={<MinusCircleOutlined />}
-                          onClick={() => removeVariantAttribute(index, attrIndex)}
+                          onClick={() =>
+                            removeVariantAttribute(index, attrIndex)
+                          }
                           style={{ minWidth: 24, height: 24 }}
                         />
                       </div>
@@ -569,7 +577,12 @@ export default function VariantManager({
                       <Select
                         value={serial.status}
                         onChange={(value) =>
-                          updateVariantSerial(index, serialIndex, "status", value)
+                          updateVariantSerial(
+                            index,
+                            serialIndex,
+                            "status",
+                            value
+                          )
                         }
                         style={{ width: "100%" }}
                         size="small"
@@ -625,26 +638,13 @@ export default function VariantManager({
 
             {/* Compact Inventory/Batch Section - Hidden in Edit Mode */}
             {!isEditMode && (
-              <Card
-                size="small"
-                style={{ marginTop: 6 }}
-                title={
-                  <Space size={4}>
-                    <Text strong style={{ fontSize: 11 }}>
-                      Inventory Batches ({(variant.batches || []).length})
-                    </Text>
-                  </Space>
+              <BatchAddingForm
+                batches={variant.batches || []}
+                onBatchesChange={(batches) =>
+                  handleVariantBatchesChange(index, batches)
                 }
-                bodyStyle={{ padding: 8 }}
-              >
-                <BatchAddingForm
-                  batches={variant.batches || []}
-                  onBatchesChange={(batches) =>
-                    handleVariantBatchesChange(index, batches)
-                  }
-                  variantName={variant.name}
-                />
-              </Card>
+                variantName={variant.name}
+              />
             )}
           </Card>
         ))}
