@@ -29,7 +29,7 @@ import {
 } from "../../types/product.types";
 import CommonSelector from "./CommonSelector";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface SimpleProductFormProps {
@@ -150,219 +150,183 @@ export default function SimpleProductForm({
     },
     [updateVariant]
   );
+
+  const parentForm = Form.useFormInstance();
+
+  useEffect(() => {}, [parentForm]);
+
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>        <div style={{ marginBottom: 8 }}>
-          <Form layout="vertical" size="small">{/* Row 1: Product Name (readonly), SKU, Barcode */}
-            <Row gutter={8}>
-              <Col xs={24} sm={8}>
-                <Form.Item 
-                  name={`variants.0.name`}
-                  label="Product Name" 
-                  style={{ marginBottom: 8 }}
-                >
-                  <Input
-                    value={variant.name || productName}
-                    disabled
-                    placeholder="Product name will sync from basic info"
-                    size="small"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item 
-                  name={`variants.0.sku`} 
-                  label="SKU" 
-                  style={{ marginBottom: 8 }}
-                >
-                  <Input
-                    placeholder="Auto-generate or enter SKU"
-                    value={variant.sku || ""}
-                    onChange={(e) => handleFieldChange("sku", e.target.value)}
-                    size="small"
-                    suffix={
-                      <Tooltip title="Generate SKU">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<ReloadOutlined />}
-                          onClick={generateSKU}
-                        />
-                      </Tooltip>
-                    }
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={`variants.0.barcode`}
-                  label={
-                    <Space>
-                      <BarcodeOutlined />
-                      Barcode
-                    </Space>
-                  }
-                  style={{ marginBottom: 8 }}
-                >
-                  <Input
-                    placeholder="Auto-generate or enter barcode"
-                    value={variant.barcode || ""}
-                    onChange={(e) =>
-                      handleFieldChange("barcode", e.target.value)
-                    }
-                    size="small"
-                    suffix={
-                      <Tooltip title="Generate EAN-13">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<ReloadOutlined />}
-                          onClick={generateBarcode}
-                        />
-                      </Tooltip>
-                    }
-                  />
-                </Form.Item>
-              </Col>
-            </Row>            {/* Row 2: Pricing & Inventory */}
-            <Row gutter={4}>
-              <Col xs={24} sm={4}>
-                <Form.Item
-                  name={`variants.0.regular_price`}
-                  label="Regular Price"
-                  required
-                  style={{ marginBottom: 8 }}
-                  rules={[
-                    { required: true, message: "Regular price is required" },
-                    { type: "number", min: 0, message: "Price must be greater than 0" }
-                  ]}
-                >
-                  <InputNumber
-                    type="number"
-                    placeholder="0.00"
-                    min={0}
-                    precision={2}
-                    style={{ width: "100%" }}
-                    prefix="$"
-                    value={variant.regular_price}
-                    onChange={(value) =>
-                      handleFieldChange("regular_price", value)
-                    }
-                    size="small"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item 
-                  name={`variants.0.wholesale_price`}
-                  label="Wholesale Price" 
-                  style={{ marginBottom: 8 }}
-                >
-                  <InputNumber
-                    type="number"
-                    placeholder="0.00"
-                    min={0}
-                    precision={2}
-                    style={{ width: "100%" }}
-                    prefix="$"
-                    value={variant.wholesale_price}
-                    onChange={(value) =>
-                      handleFieldChange("wholesale_price", value)
-                    }
-                    size="small"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item
-                  name={`variants.0.alert_quantity`}
-                  label={
-                    <Space>
-                      <AlertOutlined />
-                      Alert Quantity
-                    </Space>
-                  }
-                  style={{ marginBottom: 8 }}
-                >
-                  <InputNumber
-                    type="number"
-                    placeholder="10"
-                    min={0}
-                    style={{ width: "100%" }}
-                    value={variant.alert_quantity}
-                    onChange={(value) =>
-                      handleFieldChange("alert_quantity", value || 0)
-                    }
-                    addonAfter="units"
-                    size="small"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={4}>
-                <CommonSelector
-                  label="Sale Unit"
-                  type="unit"
-                  value={Number(variant.sale_unit_id) || undefined}
-                  onChange={(value) =>
-                    handleFieldChange("sale_unit_id", value as number)
-                  }
-                  size="small"
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ marginBottom: 8 }}>
+          {/* Row 1: Product Name (readonly), SKU, Barcode */}
+          <Row gutter={8}>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Product Name" style={{ marginBottom: 8 }}>
+                <Input
+                
+                  value={variant.name || productName}
+                  disabled
+                  placeholder="Product name will sync from basic info"
                 />
-              </Col>
-              <Col xs={24} sm={4}>
-                <CommonSelector
-                  label="Purchase Unit"
-                  type="unit"
-                  value={Number(variant.purchase_unit_id) || undefined}
-                  onChange={(value) =>
-                    handleFieldChange("purchase_unit_id", value as number)
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="SKU" style={{ marginBottom: 8 }}>
+                <Input
+                  placeholder="Auto-generate or enter SKU"
+                  value={variant.sku || ""}
+                  onChange={(e) => handleFieldChange("sku", e.target.value)}
+                  suffix={
+                    <Tooltip title="Generate SKU">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ReloadOutlined />}
+                        onClick={generateSKU}
+                      />
+                    </Tooltip>
                   }
-                  size="small"
                 />
-              </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item 
-                  name={`variants.0.warranty_period`}
-                  label="Warranty Period" 
-                  style={{ marginBottom: 8 }}
-                >
-                  <InputNumber
-                    type="number"
-                    placeholder="12"
-                    min={0}
-                    style={{ width: "100%" }}
-                    value={variant.warranty_period}
-                    onChange={(value) =>
-                      handleFieldChange("warranty_period", value || undefined)
-                    }
-                    addonAfter="months"
-                    size="small"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>            {/* Row 3: Image */}
-            <Row>
-              <Col span={4}>
-                <Form.Item 
-                  name={`variants.0.image`}
-                  label="Product Image" 
-                  style={{ marginBottom: 8 }}
-                >
-                  <ImageInput
-                    name="product-image"
-                    label=""
-                    value={variant.image ? [variant.image] : []}
-                    onChange={(urls) =>
-                      handleFieldChange("image", urls[0] || "")
-                    }
-                    maxCount={1}
-                    useForm={false}
-                    listType="text"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item
+                label={
+                  <Space>
+                    <BarcodeOutlined />
+                    Barcode
+                  </Space>
+                }
+                style={{ marginBottom: 8 }}
+              >
+                <Input
+                  placeholder="Auto-generate or enter barcode"
+                  value={variant.barcode || ""}
+                  onChange={(e) => handleFieldChange("barcode", e.target.value)}
+                  suffix={
+                    <Tooltip title="Generate EAN-13">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ReloadOutlined />}
+                        onClick={generateBarcode}
+                      />
+                    </Tooltip>
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          {/* Row 2: Pricing & Inventory */}
+          <Row gutter={4}>
+            <Col xs={24} sm={4}>
+              <Form.Item
+                label="Regular Price"
+                required
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber
+                  placeholder="0.00"
+                  min={0}
+                  precision={2}
+                  style={{ width: "100%" }}
+                  prefix="$"
+                  value={variant.regular_price}
+                  onChange={(value) =>
+                    handleFieldChange("regular_price", value)
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={4}>
+              <Form.Item label="Wholesale Price" style={{ marginBottom: 8 }}>
+                <InputNumber
+                  placeholder="0.00"
+                  min={0}
+                  precision={2}
+                  style={{ width: "100%" }}
+                  prefix="$"
+                  value={variant.wholesale_price}
+                  onChange={(value) =>
+                    handleFieldChange("wholesale_price", value)
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={4}>
+              <Form.Item
+                label={
+                  <Space>
+                    <AlertOutlined />
+                    Alert Quantity
+                  </Space>
+                }
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber
+                  placeholder="10"
+                  min={0}
+                  style={{ width: "100%" }}
+                  value={variant.alert_quantity}
+                  onChange={(value) =>
+                    handleFieldChange("alert_quantity", value || 0)
+                  }
+                  addonAfter="units"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={4}>
+              <CommonSelector
+                label="Sale Unit"
+                type="unit"
+                value={Number(variant.sale_unit_id) || undefined}
+                onChange={(value) =>
+                  handleFieldChange("sale_unit_id", value as number)
+                }
+              />
+            </Col>
+            <Col xs={24} sm={4}>
+              <CommonSelector
+                label="Purchase Unit"
+                type="unit"
+                value={Number(variant.purchase_unit_id) || undefined}
+                onChange={(value) =>
+                  handleFieldChange("purchase_unit_id", value as number)
+                }
+              />
+            </Col>
+            <Col xs={24} sm={4}>
+              <Form.Item label="Warranty Period" style={{ marginBottom: 8 }}>
+                <InputNumber
+                  placeholder="12"
+                  min={0}
+                  style={{ width: "100%" }}
+                  value={variant.warranty_period}
+                  onChange={(value) =>
+                    handleFieldChange("warranty_period", value || undefined)
+                  }
+                  addonAfter="months"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          {/* Row 3: Image */}
+          <Row>
+            <Col span={4}>
+              <Form.Item label="Product Image" style={{ marginBottom: 8 }}>
+                <ImageInput
+                  name="product-image"
+                  label=""
+                  value={variant.image ? [variant.image] : []}
+                  onChange={(urls) => handleFieldChange("image", urls[0] || "")}
+                  maxCount={1}
+                  useForm={false}
+                  listType="text"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           {/* Attributes - Compact Section */}
           {(variant.attributes || []).length > 0 ? (
             <Card

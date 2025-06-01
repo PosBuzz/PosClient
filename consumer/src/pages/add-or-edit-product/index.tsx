@@ -538,6 +538,7 @@ export default function ProductForm() {
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={formData}
+        size="small"
       >
         <Card className="shadow-sm">
           <Tabs

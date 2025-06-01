@@ -36,21 +36,19 @@ export interface BatchData {
 }
 
 interface BatchAddingFormProps {
-  variantId?: number;
   variantName?: string;
   batches: BatchData[];
   onBatchesChange: (batches: BatchData[]) => void;
   disabled?: boolean;
-  size?: 'small' | 'default';
+  size?: "small" | "default";
 }
 
 export default function BatchAddingForm({
-  variantId,
   variantName,
   batches,
   onBatchesChange,
   disabled = false,
-  size = 'default',
+  size = "default",
 }: BatchAddingFormProps) {
   // Queries
   const { data: branches = [] } = useQuery({
@@ -93,16 +91,23 @@ export default function BatchAddingForm({
   };
 
   // Calculate totals
-  const totalQuantity = batches.reduce((sum, batch) => sum + (batch.quantity || 0), 0);
-  const totalCost = batches.reduce((sum, batch) => sum + ((batch.cost_price || 0) * (batch.quantity || 0)), 0);
+  const totalQuantity = batches.reduce(
+    (sum, batch) => sum + (batch.quantity || 0),
+    0
+  );
+  const totalCost = batches.reduce(
+    (sum, batch) => sum + (batch.cost_price || 0) * (batch.quantity || 0),
+    0
+  );
 
   if (batches.length === 0) {
     return (
       <Card size={size} style={{ marginTop: 12 }}>
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+        <div style={{ textAlign: "center", padding: "10px 0" }}>
           <Text type="secondary">No inventory batches added</Text>
           <br />
           <Button
+            size={size}
             type="dashed"
             icon={<PlusOutlined />}
             onClick={addBatch}
@@ -122,7 +127,7 @@ export default function BatchAddingForm({
       style={{ marginTop: 12 }}
       title={
         <Space>
-          <Text strong style={{ fontSize: size === 'small' ? 12 : 14 }}>
+          <Text strong style={{ fontSize: size === "small" ? 12 : 14 }}>
             Inventory Batches ({batches.length})
           </Text>
           <Button
@@ -137,10 +142,17 @@ export default function BatchAddingForm({
         </Space>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {batches.map((batch, index) => (
           <Card key={index} size="small">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
               <Text strong>Batch {index + 1}</Text>
               {batches.length > 1 && (
                 <Button
@@ -164,7 +176,7 @@ export default function BatchAddingForm({
                   <Select
                     placeholder="Select branch"
                     value={batch.branch_id}
-                    onChange={(value) => updateBatch(index, 'branch_id', value)}
+                    onChange={(value) => updateBatch(index, "branch_id", value)}
                     disabled={disabled}
                     size={size}
                   >
@@ -186,7 +198,9 @@ export default function BatchAddingForm({
                   <Input
                     placeholder="Enter reference number"
                     value={batch.batch_number}
-                    onChange={(e) => updateBatch(index, 'batch_number', e.target.value)}
+                    onChange={(e) =>
+                      updateBatch(index, "batch_number", e.target.value)
+                    }
                     disabled={disabled}
                     size={size}
                     suffix={
@@ -194,7 +208,13 @@ export default function BatchAddingForm({
                         type="link"
                         size="small"
                         icon={<ReloadOutlined />}
-                        onClick={() => updateBatch(index, 'batch_number', generateBatchNumber(variantName))}
+                        onClick={() =>
+                          updateBatch(
+                            index,
+                            "batch_number",
+                            generateBatchNumber(variantName)
+                          )
+                        }
                         disabled={disabled}
                         title="Generate reference number"
                       />
@@ -212,12 +232,15 @@ export default function BatchAddingForm({
                   required
                 >
                   <InputNumber
+                    type="number"
                     placeholder="Enter quantity"
                     min={1}
                     precision={0}
                     style={{ width: "100%" }}
                     value={batch.quantity}
-                    onChange={(value) => updateBatch(index, 'quantity', value || 1)}
+                    onChange={(value) =>
+                      updateBatch(index, "quantity", value || 1)
+                    }
                     disabled={disabled}
                     size={size}
                     addonAfter="units"
@@ -232,12 +255,15 @@ export default function BatchAddingForm({
                   required
                 >
                   <InputNumber
+                    type="number"
                     placeholder="Enter cost price"
                     min={0}
                     precision={2}
                     style={{ width: "100%" }}
                     value={batch.cost_price}
-                    onChange={(value) => updateBatch(index, 'cost_price', value || 0)}
+                    onChange={(value) =>
+                      updateBatch(index, "cost_price", value || 0)
+                    }
                     disabled={disabled}
                     size={size}
                     prefix={<DollarOutlined />}
@@ -246,12 +272,11 @@ export default function BatchAddingForm({
               </Col>
 
               <Col xs={24} sm={8}>
-                <Form.Item
-                  label="Total Cost"
-                  style={{ marginBottom: 8 }}
-                >
+                <Form.Item label="Total Cost" style={{ marginBottom: 8 }}>
                   <Input
-                    value={`$${((batch.cost_price || 0) * (batch.quantity || 0)).toFixed(2)}`}
+                    value={`$${(
+                      (batch.cost_price || 0) * (batch.quantity || 0)
+                    ).toFixed(2)}`}
                     disabled
                     size={size}
                   />
@@ -261,32 +286,34 @@ export default function BatchAddingForm({
 
             <Row gutter={8}>
               <Col xs={24} sm={12}>
-                <Form.Item
-                  label="Expiry Date"
-                  style={{ marginBottom: 8 }}
-                >
+                <Form.Item label="Expiry Date" style={{ marginBottom: 8 }}>
                   <DatePicker
                     style={{ width: "100%" }}
                     placeholder="Select expiry date"
                     format="YYYY-MM-DD"
                     value={batch.expiry_date ? dayjs(batch.expiry_date) : null}
-                    onChange={(date) => updateBatch(index, 'expiry_date', date ? date.format('YYYY-MM-DD') : undefined)}
+                    onChange={(date) =>
+                      updateBatch(
+                        index,
+                        "expiry_date",
+                        date ? date.format("YYYY-MM-DD") : undefined
+                      )
+                    }
                     disabled={disabled}
                     size={size}
-                    disabledDate={(current) => current && current < dayjs().startOf("day")}
+                    disabledDate={(current) =>
+                      current && current < dayjs().startOf("day")
+                    }
                     suffixIcon={<CalendarOutlined />}
                   />
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item
-                  label="Supplier/Vendor"
-                  style={{ marginBottom: 8 }}
-                >
+                <Form.Item label="Supplier/Vendor" style={{ marginBottom: 8 }}>
                   <VendorSelector
                     value={batch.vendor_id}
-                    onChange={(value) => updateBatch(index, 'vendor_id', value)}
+                    onChange={(value) => updateBatch(index, "vendor_id", value)}
                     disabled={disabled}
                     size={size}
                   />
