@@ -1,4 +1,3 @@
-// src/ThemeWrapper.tsx
 import "@ant-design/v5-patch-for-react-19";
 import { HelmetProvider } from "@dr.pogodin/react-helmet";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

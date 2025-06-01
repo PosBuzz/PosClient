@@ -202,7 +202,6 @@ model Product {
   daily_sale_objective Int?           @default(0) // Daily sales target for this product
   created_at           DateTime       @default(now())
   updated_at           DateTime       @updatedAt
-  deleted_at           DateTime?
 
   // Relations
   consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -211,7 +210,6 @@ model Product {
   variants ProductVariant[]
 
   @@unique([consumer_id, code])
-  @@index([consumer_id, deleted_at])
   @@index([category_id])
   @@index([brand_id])
   @@map("products")
@@ -244,7 +242,6 @@ model ProductVariant {
   name             String
   sku              String?
   barcode          String?
-  cost_price       Decimal   @db.Decimal(10, 2)
   regular_price    Decimal   @db.Decimal(10, 2)
   wholesale_price  Decimal?  @db.Decimal(10, 2)
   sale_unit_id     Int
@@ -377,7 +374,7 @@ model InventoryBatch {
   id           Int       @id @default(autoincrement())
   variant_id   Int
   branch_id    Int
-  batch_number String
+  batch_number String    
   quantity     Int
   cost_price   Decimal   @db.Decimal(10, 2)
   vendor_id    Int?
@@ -427,7 +424,7 @@ model InventoryTransferItem {
 
   // Relations
   transfer InventoryTransfer @relation(fields: [transfer_id], references: [id], onDelete: Cascade)
-  batch    InventoryBatch    @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+  batch    InventoryBatch    @relation(fields: [batch_id], references: [id])
 
   @@map("inventory_transfer_items")
 }
@@ -445,7 +442,7 @@ model InventoryAdjustment {
 
   // Relations
   variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
-  batch           InventoryBatch @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+  batch           InventoryBatch @relation(fields: [batch_id], references: [id])
   branch          Branch         @relation(fields: [branch_id], references: [id])
   created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
 
@@ -489,7 +486,6 @@ model VariantAttribute {
 model PriceHistory {
   id                 Int      @id @default(autoincrement())
   variant_id         Int
-  cost_price         Decimal  @db.Decimal(10, 2)
   regular_price      Decimal  @db.Decimal(10, 2)
   wholesale_price    Decimal? @db.Decimal(10, 2)
   effective_date     DateTime @default(now())

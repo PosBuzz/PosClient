@@ -18,10 +18,6 @@ export class CreateProductVariantDto {
   
   @IsNotEmpty()
   @IsDecimal({ decimal_digits: '2' })
-  cost_price: string;
-  
-  @IsNotEmpty()
-  @IsDecimal({ decimal_digits: '2' })
   regular_price: string;
   
   @IsOptional()

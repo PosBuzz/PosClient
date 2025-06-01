@@ -15,7 +15,6 @@ export class ProductVariantService {
         name: dto.name,
         sku: dto.sku,
         barcode: dto.barcode,
-        cost_price: dto.cost_price,
         regular_price: dto.regular_price,
         wholesale_price: dto.wholesale_price,
         sale_unit_id: dto.sale_unit_id,
@@ -31,7 +30,6 @@ export class ProductVariantService {
     await this.prisma.priceHistory.create({
       data: {
         variant_id: variant.id,
-        cost_price: dto.cost_price,
         regular_price: dto.regular_price,
         wholesale_price: dto.wholesale_price,
       },
@@ -123,7 +121,6 @@ export class ProductVariantService {
     const currentVariant = await this.prisma.productVariant.findUnique({
       where: { id },
       select: {
-        cost_price: true,
         regular_price: true,
         wholesale_price: true,
       },
@@ -140,7 +137,6 @@ export class ProductVariantService {
         name: dto.name,
         sku: dto.sku,
         barcode: dto.barcode,
-        cost_price: dto.cost_price,
         regular_price: dto.regular_price,
         wholesale_price: dto.wholesale_price,
         sale_unit_id: dto.sale_unit_id,
@@ -154,7 +150,6 @@ export class ProductVariantService {
 
     // Create new price history if prices changed
     const priceChanged =
-      (dto.cost_price && dto.cost_price !== currentVariant.cost_price.toString()) ||
       (dto.regular_price && dto.regular_price !== currentVariant.regular_price.toString()) ||
       (dto.wholesale_price && 
         dto.wholesale_price !== (currentVariant.wholesale_price ? currentVariant.wholesale_price.toString() : undefined));
@@ -163,7 +158,6 @@ export class ProductVariantService {
       await this.prisma.priceHistory.create({
         data: {
           variant_id: id,
-          cost_price: dto.cost_price || currentVariant.cost_price.toString(),
           regular_price: dto.regular_price || currentVariant.regular_price.toString(),
           wholesale_price: dto.wholesale_price || currentVariant.wholesale_price?.toString(),
         },

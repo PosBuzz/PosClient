@@ -10,7 +10,7 @@ export class ConsumerService {
 
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
-     
+
     this.prisma.$transaction(async (tx) => {
       // Step 1: Create the consumer
       const consumer = await tx.consumer.create({
@@ -62,6 +62,18 @@ export class ConsumerService {
           phone: consumer.phone,
           is_main: false,
           is_warehouse: true,
+        },
+      });
+
+      await tx.branch.create({
+        data: {
+          consumer_id: consumer.id,
+          name: 'Main Branch',
+          address: 'Main Branch',
+          email: consumer.email,
+          phone: consumer.phone,
+          is_main: true,
+          is_warehouse: false,
         },
       });
 

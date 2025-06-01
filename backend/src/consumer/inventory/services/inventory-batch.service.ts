@@ -186,27 +186,10 @@ export class InventoryBatchService {
     const updatedBatch = await this.prisma.inventoryBatch.update({
       where: { id },
       data: {
-        batch_number: dto.batch_number,
-        quantity: dto.quantity,
         cost_price: dto.cost_price,
         branch_id: dto.branch_id,
         vendor_id: dto.vendor_id,
         expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
-      },
-      include: {
-        variant: {
-          include: {
-            product: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-        branch: {
-          select: { id: true, name: true },
-        },
-        vendor: {
-          select: { id: true, name: true },
-        },
       },
     });
 

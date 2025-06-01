@@ -13,6 +13,7 @@ interface CommonSelectorProps {
   type: "category" | "brand" | "unit" | "tag";
   mode?: "tags" | "multiple";
   label: string;
+  size?: "large" | "small" | "middle";
 }
 
 export default function CommonSelector({
@@ -22,6 +23,7 @@ export default function CommonSelector({
   type,
   mode,
   label,
+  size,
 }: CommonSelectorProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -81,7 +83,7 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["brands"] });
       queryClient.invalidateQueries({ queryKey: ["units"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      
+
       messageApi?.success(`${label} created successfully`);
       setIsModalOpen(false);
       form.resetFields();
@@ -172,7 +174,7 @@ export default function CommonSelector({
       queryClient.invalidateQueries({ queryKey: ["brands"] });
       queryClient.invalidateQueries({ queryKey: ["units"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      
+
       messageApi?.success(`${label} updated successfully`);
       setEditModalOpen(false);
       setCurrentEdit(null);
@@ -243,9 +245,11 @@ export default function CommonSelector({
   // Convert values for tags mode (numbers to strings) to fix the warning
   const convertedValue = useMemo(() => {
     if (mode === "tags" || mode === "multiple") {
-      return Array.isArray(value) 
-        ? value.map(v => String(v)) 
-        : value !== undefined ? [String(value)] : [];
+      return Array.isArray(value)
+        ? value.map((v) => String(v))
+        : value !== undefined
+        ? [String(value)]
+        : [];
     }
     return value;
   }, [value, mode]);
@@ -253,8 +257,8 @@ export default function CommonSelector({
   const handleChange = (newValue: any) => {
     if (mode === "tags" || mode === "multiple") {
       // Convert string values back to numbers
-      const numberValues = Array.isArray(newValue) 
-        ? newValue.map((v: string) => parseInt(v, 10)).filter(v => !isNaN(v))
+      const numberValues = Array.isArray(newValue)
+        ? newValue.map((v: string) => parseInt(v, 10)).filter((v) => !isNaN(v))
         : [];
       onChange?.(numberValues);
     } else {
@@ -299,8 +303,9 @@ export default function CommonSelector({
   return (
     <>
       <div>
-        <label className="block text-sm font-medium mb-1">{label}</label>
+        <label className="mb-2 block text-sm font-medium">{label}</label>
         <Select
+          size={size}
           mode={mode}
           value={convertedValue}
           onChange={handleChange}
@@ -316,9 +321,10 @@ export default function CommonSelector({
           listHeight={250}
           optionLabelProp="children"
           labelRender={(selectedValue) => {
-            const optionId = mode === "tags" || mode === "multiple" 
-              ? parseInt(String(selectedValue.value), 10) 
-              : selectedValue.value;
+            const optionId =
+              mode === "tags" || mode === "multiple"
+                ? parseInt(String(selectedValue.value), 10)
+                : selectedValue.value;
             const option = options.find((opt) => opt.id === optionId);
             return option ? option.name : "";
           }}
@@ -327,7 +333,9 @@ export default function CommonSelector({
             const text = label?.props?.children[0]?.props?.children || "";
             return text.toString().toLowerCase().includes(input.toLowerCase());
           }}
-          getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement}
+          getPopupContainer={(triggerNode) =>
+            triggerNode.parentNode as HTMLElement
+          }
           dropdownRender={(menu) => (
             <>
               {menu}
@@ -365,8 +373,14 @@ export default function CommonSelector({
             name="name"
             label={`${label} Name`}
             rules={[
-              { required: true, message: `Please enter ${label.toLowerCase()} name` },
-              { min: 2, message: `${label} name must be at least 2 characters` },
+              {
+                required: true,
+                message: `Please enter ${label.toLowerCase()} name`,
+              },
+              {
+                min: 2,
+                message: `${label} name must be at least 2 characters`,
+              },
             ]}
           >
             <Input
@@ -398,8 +412,14 @@ export default function CommonSelector({
             name="name"
             label={`${label} Name`}
             rules={[
-              { required: true, message: `Please enter ${label.toLowerCase()} name` },
-              { min: 2, message: `${label} name must be at least 2 characters` },
+              {
+                required: true,
+                message: `Please enter ${label.toLowerCase()} name`,
+              },
+              {
+                min: 2,
+                message: `${label} name must be at least 2 characters`,
+              },
             ]}
           >
             <Input

@@ -359,24 +359,6 @@ export class InventoryTransferService {
       data: {
         status: 'cancelled',
       },
-      include: {
-        source_branch: { select: { id: true, name: true, is_warehouse: true } },
-        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
-        created_by_user: { select: { id: true, name: true } },
-        items: {
-          include: {
-            batch: {
-              include: {
-                variant: {
-                  include: {
-                    product: { select: { id: true, name: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     });
 
     return updatedTransfer;

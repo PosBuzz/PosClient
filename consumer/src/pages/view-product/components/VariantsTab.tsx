@@ -63,10 +63,6 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
             <Text strong>Regular: </Text>
             <Text>{formatCurrency(parseFloat(record.regular_price))}</Text>
           </div>
-          <div>
-            <Text type="secondary">Cost: </Text>
-            <Text type="secondary">{formatCurrency(parseFloat(record.cost_price))}</Text>
-          </div>
           {record.wholesale_price && (
             <div>
               <Text type="secondary">Wholesale: </Text>
@@ -261,10 +257,6 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
                   <Text style={{ fontSize: "12px" }}>
                     <CalendarOutlined /> {formatDate(priceRecord.effective_date)} - 
                     Regular: {formatCurrency(parseFloat(priceRecord.regular_price))}, 
-                    Cost: {formatCurrency(parseFloat(priceRecord.cost_price))}
-                    {priceRecord.wholesale_price && 
-                      `, Wholesale: ${formatCurrency(parseFloat(priceRecord.wholesale_price))}`
-                    }
                   </Text>
                 </div>
               ))}
