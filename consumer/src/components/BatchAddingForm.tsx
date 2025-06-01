@@ -147,7 +147,7 @@ export default function BatchAddingForm({
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {batches.map((batch, index) => (
-          <Card key={index} size="small" bodyStyle={{ padding: 8 }}>
+          <Card key={index} bordered={false} size="small" bodyStyle={{ padding: 0 }}>
             {/* Compact header */}
             <div
               style={{
@@ -160,17 +160,15 @@ export default function BatchAddingForm({
               <Text strong style={{ fontSize: 11 }}>
                 Batch {index + 1}
               </Text>
-              {batches.length > 1 && (
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<MinusCircleOutlined />}
-                  onClick={() => removeBatch(index)}
-                  disabled={disabled}
-                  style={{ height: 20, minWidth: 20 }}
-                />
-              )}
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<MinusCircleOutlined />}
+                onClick={() => removeBatch(index)}
+                disabled={disabled}
+                style={{ height: 20, minWidth: 20 }}
+              />
             </div>
 
             <Row gutter={[4, 2]}>
