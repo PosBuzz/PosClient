@@ -1,5 +1,5 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Form, Upload } from "antd";
+import { Button, Form, Upload } from "antd";
 import React, { useEffect, useState } from "react";
 import { useMessageStore } from "../stores/messageStore";
 import { fileUploadProps } from "../utils/upload";
@@ -12,6 +12,7 @@ interface ImageInputProps {
   maxCount?: number;
   required?: boolean;
   useForm?: boolean; // Whether to use Form.Item wrapper
+  listType?: "text" | "picture-circle" | "picture-card" | "picture";
 }
 
 const ImageInput: React.FC<ImageInputProps> = ({
@@ -22,6 +23,7 @@ const ImageInput: React.FC<ImageInputProps> = ({
   maxCount = 1,
   required = false,
   useForm = true,
+  listType = "picture-card",
 }) => {
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
@@ -135,7 +137,7 @@ const ImageInput: React.FC<ImageInputProps> = ({
       name="file"
       {...fileUploadProps}
       maxCount={maxCount}
-      listType="picture-card"
+      listType={listType}
       beforeUpload={beforeUpload}
       onChange={handleChange}
       fileList={fileList}
@@ -163,6 +165,8 @@ const ImageInput: React.FC<ImageInputProps> = ({
     >
       {fileList.length >= maxCount ? null : loading ? (
         "Uploading..."
+      ) : listType === "text" ? (
+        <Button icon={<UploadOutlined />}>Click to Upload</Button>
       ) : (
         <span
           style={{

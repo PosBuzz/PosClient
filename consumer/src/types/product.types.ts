@@ -17,7 +17,6 @@ export interface ProductVariant {
   name: string;
   sku?: string;
   barcode?: string;
-  cost_price: number | string | null;
   regular_price: number | string | null;
   wholesale_price?: number | string | null;
   sale_unit_id?: number;
@@ -117,8 +116,6 @@ export interface Product {
     price_range: {
       min_regular_price: number;
       max_regular_price: number;
-      min_cost_price: number;
-      max_cost_price: number;
     };
   };
 }
@@ -189,7 +186,6 @@ export interface ProductVariantDetailed
   // Price history
   price_history?: {
     id: number;
-    cost_price: string;
     regular_price: string;
     wholesale_price?: string;
     effective_date: string;

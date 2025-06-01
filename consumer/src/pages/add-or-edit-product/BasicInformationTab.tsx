@@ -71,7 +71,7 @@ export default function BasicInformationTab({
           <Col xs={24} lg={12}>
             <Form.Item
               name="code"
-              label="Product Code/SKU"
+              label="Product Code"
               tooltip="Unique identifier for this product"
             >
               <Input

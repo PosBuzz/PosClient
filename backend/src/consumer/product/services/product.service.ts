@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
@@ -9,7 +13,7 @@ import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 export class ProductService {
   constructor(
     private prisma: PrismaService,
-    private variantService: ProductVariantService
+    private variantService: ProductVariantService,
   ) {}
 
   async create(consumerId: number, dto: CreateProductDto) {
@@ -20,7 +24,9 @@ export class ProductService {
 
     // For non-variant products, ensure only one variant is provided
     if (!dto.has_variants && dto.variants.length > 1) {
-      throw new BadRequestException('Simple products can only have one variant');
+      throw new BadRequestException(
+        'Simple products can only have one variant',
+      );
     }
 
     // Create the product
@@ -42,14 +48,14 @@ export class ProductService {
     // Add tags if provided
     if (dto.tag_ids && dto.tag_ids.length > 0) {
       await this.prisma.$transaction(
-        dto.tag_ids.map(tagId =>
+        dto.tag_ids.map((tagId) =>
           this.prisma.tagOnProduct.create({
             data: {
               product_id: product.id,
               tag_id: tagId,
             },
-          })
-        )
+          }),
+        ),
       );
     }
 
@@ -60,37 +66,41 @@ export class ProductService {
     }
 
     await Promise.all(
-      dto.variants.map(variantDto => this.variantService.create(product.id, variantDto))
+      dto.variants.map((variantDto) =>
+        this.variantService.create(product.id, variantDto),
+      ),
     );
 
     return this.findOne(product.id, consumerId);
   }
 
-  async findAll(consumerId: number, options: { 
-    page?: number, 
-    limit?: number, 
-    search?: string,
-    categoryIds?: number[],  // Updated to support multiple
-    brandIds?: number[],     // Updated to support multiple
-    tagIds?: number[]        // Updated to support multiple
-  } = {}) {
-    const { 
-      page = 1, 
-      limit = 10, 
-      search = '', 
+  async findAll(
+    consumerId: number,
+    options: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      categoryIds?: number[]; // Updated to support multiple
+      brandIds?: number[]; // Updated to support multiple
+      tagIds?: number[]; // Updated to support multiple
+    } = {},
+  ) {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
       categoryIds,
       brandIds,
-      tagIds
+      tagIds,
     } = options;
-    
+
     const skip = (page - 1) * limit;
-    
+
     // Build the where clause properly for Prisma
     const whereClause: any = {
       consumer_id: consumerId,
-      deleted_at: null,
     };
-    
+
     if (search) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' as any } },
@@ -98,23 +108,23 @@ export class ProductService {
         { description: { contains: search, mode: 'insensitive' as any } },
       ];
     }
-    
+
     // Handle multiple categories
     if (categoryIds && categoryIds.length > 0) {
       whereClause.category_id = { in: categoryIds };
     }
-    
+
     // Handle multiple brands
     if (brandIds && brandIds.length > 0) {
       whereClause.brand_id = { in: brandIds };
     }
-    
+
     // Handle multiple tags
     if (tagIds && tagIds.length > 0) {
-      whereClause.tags = { 
-        some: { 
-          tag_id: { in: tagIds } 
-        } 
+      whereClause.tags = {
+        some: {
+          tag_id: { in: tagIds },
+        },
       };
     }
 
@@ -122,18 +132,18 @@ export class ProductService {
       this.prisma.product.findMany({
         where: whereClause,
         include: {
-          category: { 
-            select: { 
-              id: true, 
-              name: true 
-            } 
-          },
-          brand: { 
-            select: { 
-              id: true, 
+          category: {
+            select: {
+              id: true,
               name: true,
-              logo: true
-            } 
+            },
+          },
+          brand: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+            },
           },
           tags: {
             include: {
@@ -181,15 +191,11 @@ export class ProductService {
                 orderBy: { effective_date: 'desc' },
                 select: {
                   regular_price: true,
-                  cost_price: true,
                   wholesale_price: true,
                 },
               },
             },
-            orderBy: [
-              { is_default: 'desc' },
-              { created_at: 'asc' },
-            ],
+            orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
           },
         },
         skip,
@@ -215,7 +221,6 @@ export class ProductService {
       where: {
         id,
         consumer_id: consumerId,
-        deleted_at: null,
       },
       include: {
         // Basic product relations
@@ -239,7 +244,7 @@ export class ProductService {
             subdomain: true,
           },
         },
-        
+
         // Tags relation
         tags: {
           include: {
@@ -251,7 +256,7 @@ export class ProductService {
             },
           },
         },
-        
+
         // Complete variant information
         variants: {
           include: {
@@ -286,7 +291,7 @@ export class ProductService {
                 },
               },
             },
-            
+
             // Variant attributes
             VariantAttribute: {
               select: {
@@ -295,7 +300,7 @@ export class ProductService {
                 value: true,
               },
             },
-            
+
             // Serial numbers with full details
             serials: {
               orderBy: { created_at: 'desc' },
@@ -316,7 +321,7 @@ export class ProductService {
                 },
               },
             },
-            
+
             // Complete inventory information
             inventory_items: {
               include: {
@@ -340,7 +345,7 @@ export class ProductService {
               },
               orderBy: { created_at: 'desc' },
             },
-            
+
             // Complete price history
             price_history: {
               include: {
@@ -355,17 +360,14 @@ export class ProductService {
               orderBy: { effective_date: 'desc' },
               take: 10, // Get last 10 price changes
             },
-            
+
             // Active promotions for this variant
             promotions: {
               where: {
                 promotion: {
                   is_active: true,
                   start_date: { lte: new Date() },
-                  OR: [
-                    { end_date: null },
-                    { end_date: { gte: new Date() } },
-                  ],
+                  OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
                 },
               },
               include: {
@@ -397,7 +399,7 @@ export class ProductService {
           },
           orderBy: [
             { is_default: 'desc' }, // Default variants first
-            { created_at: 'asc' },  // Then by creation order
+            { created_at: 'asc' }, // Then by creation order
           ],
         },
       },
@@ -410,47 +412,67 @@ export class ProductService {
     // Calculate additional metrics for each variant
     const enrichedProduct = {
       ...product,
-      variants: product.variants.map(variant => {
+      variants: product.variants.map((variant) => {
         // Calculate total stock across all branches
-        const totalStock = variant.inventory_items.reduce((sum, item) => sum + item.quantity, 0);
-        
+        const totalStock = variant.inventory_items.reduce(
+          (sum, item) => sum + item.quantity,
+          0,
+        );
+
         // Calculate stock by branch
-        const stockByBranch = variant.inventory_items.reduce((acc, item) => {
-          const branchName = item.branch?.name || 'Central Inventory';
-          acc[branchName] = (acc[branchName] || 0) + item.quantity;
-          return acc;
-        }, {} as Record<string, number>);
-        
+        const stockByBranch = variant.inventory_items.reduce(
+          (acc, item) => {
+            const branchName = item.branch?.name || 'Central Inventory';
+            acc[branchName] = (acc[branchName] || 0) + item.quantity;
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
+
         // Calculate serial status summary
-        const serialsSummary = variant.serials.reduce((acc, serial) => {
-          acc[serial.status] = (acc[serial.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
+        const serialsSummary = variant.serials.reduce(
+          (acc, serial) => {
+            acc[serial.status] = (acc[serial.status] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
+
         // Check if stock is low
-        const isLowStock = variant.alert_quantity && variant.alert_quantity > 0 && totalStock <= variant.alert_quantity;
-        
+        const isLowStock =
+          variant.alert_quantity &&
+          variant.alert_quantity > 0 &&
+          totalStock <= variant.alert_quantity;
+
         // Get current and previous prices
         const currentPrice = variant.price_history[0];
         const previousPrice = variant.price_history[1];
-        
+
         // Calculate price change percentage
         let priceChangePercentage: number | null = null;
         if (currentPrice && previousPrice) {
-          const currentRegular = parseFloat(currentPrice.regular_price.toString());
-          const previousRegular = parseFloat(previousPrice.regular_price.toString());
-          priceChangePercentage = ((currentRegular - previousRegular) / previousRegular) * 100;
+          const currentRegular = parseFloat(
+            currentPrice.regular_price.toString(),
+          );
+          const previousRegular = parseFloat(
+            previousPrice.regular_price.toString(),
+          );
+          priceChangePercentage =
+            ((currentRegular - previousRegular) / previousRegular) * 100;
         }
-        
+
         // Get expiring inventory (within 30 days)
         const now = new Date();
-        const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
-        const expiringInventory = variant.inventory_items.filter(item => 
-          item.expiry_date && 
-          new Date(item.expiry_date) <= thirtyDaysFromNow &&
-          new Date(item.expiry_date) > now
+        const thirtyDaysFromNow = new Date(
+          now.getTime() + 30 * 24 * 60 * 60 * 1000,
         );
-        
+        const expiringInventory = variant.inventory_items.filter(
+          (item) =>
+            item.expiry_date &&
+            new Date(item.expiry_date) <= thirtyDaysFromNow &&
+            new Date(item.expiry_date) > now,
+        );
+
         return {
           ...variant,
           // Calculated metrics
@@ -465,7 +487,7 @@ export class ProductService {
           price_change_percentage: priceChangePercentage,
           has_expiring_inventory: expiringInventory.length > 0,
           expiring_inventory_count: expiringInventory.length,
-          expiring_inventory: expiringInventory.map(item => ({
+          expiring_inventory: expiringInventory.map((item) => ({
             batch_number: item.batch_number,
             quantity: item.quantity,
             expiry_date: item.expiry_date,
@@ -478,17 +500,38 @@ export class ProductService {
     // Calculate product-level metrics
     const productMetrics = {
       total_variants: enrichedProduct.variants.length,
-      total_stock_all_variants: enrichedProduct.variants.reduce((sum, v) => sum + v.total_stock, 0),
-      total_serials_all_variants: enrichedProduct.variants.reduce((sum, v) => sum + v.serials.length, 0),
-      available_serials_all_variants: enrichedProduct.variants.reduce((sum, v) => sum + v.available_serials_count, 0),
-      variants_with_low_stock: enrichedProduct.variants.filter(v => v.is_low_stock).length,
-      variants_with_expiring_inventory: enrichedProduct.variants.filter(v => v.has_expiring_inventory).length,
-      has_active_promotions: enrichedProduct.variants.some(v => v.promotions.length > 0),
+      total_stock_all_variants: enrichedProduct.variants.reduce(
+        (sum, v) => sum + v.total_stock,
+        0,
+      ),
+      total_serials_all_variants: enrichedProduct.variants.reduce(
+        (sum, v) => sum + v.serials.length,
+        0,
+      ),
+      available_serials_all_variants: enrichedProduct.variants.reduce(
+        (sum, v) => sum + v.available_serials_count,
+        0,
+      ),
+      variants_with_low_stock: enrichedProduct.variants.filter(
+        (v) => v.is_low_stock,
+      ).length,
+      variants_with_expiring_inventory: enrichedProduct.variants.filter(
+        (v) => v.has_expiring_inventory,
+      ).length,
+      has_active_promotions: enrichedProduct.variants.some(
+        (v) => v.promotions.length > 0,
+      ),
       price_range: {
-        min_regular_price: Math.min(...enrichedProduct.variants.map(v => parseFloat(v.regular_price.toString()))),
-        max_regular_price: Math.max(...enrichedProduct.variants.map(v => parseFloat(v.regular_price.toString()))),
-        min_cost_price: Math.min(...enrichedProduct.variants.map(v => parseFloat(v.cost_price.toString()))),
-        max_cost_price: Math.max(...enrichedProduct.variants.map(v => parseFloat(v.cost_price.toString()))),
+        min_regular_price: Math.min(
+          ...enrichedProduct.variants.map((v) =>
+            parseFloat(v.regular_price.toString()),
+          ),
+        ),
+        max_regular_price: Math.max(
+          ...enrichedProduct.variants.map((v) =>
+            parseFloat(v.regular_price.toString()),
+          ),
+        ),
       },
     };
 
@@ -528,14 +571,14 @@ export class ProductService {
       // Add new tags
       if (dto.tag_ids.length > 0) {
         await this.prisma.$transaction(
-          dto.tag_ids.map(tagId =>
+          dto.tag_ids.map((tagId) =>
             this.prisma.tagOnProduct.create({
               data: {
                 product_id: id,
                 tag_id: tagId,
               },
-            })
-          )
+            }),
+          ),
         );
       }
     }
@@ -544,30 +587,39 @@ export class ProductService {
     if (dto.variants && dto.variants.length > 0) {
       // Process each variant
       await Promise.all(
-        dto.variants.map(async variantDto => {
+        dto.variants.map(async (variantDto) => {
           // If variant has ID, update it
           if ('id' in variantDto && variantDto.id) {
             await this.variantService.update(variantDto.id, variantDto);
           } else {
             // Create new variant - need to ensure all required fields exist
-            if (!variantDto.name || !variantDto.cost_price || !variantDto.regular_price || 
-                !variantDto.sale_unit_id || !variantDto.purchase_unit_id) {
-              throw new BadRequestException('New variants require all required fields');
+            if (
+              !variantDto.name ||
+              !variantDto.regular_price ||
+              !variantDto.sale_unit_id ||
+              !variantDto.purchase_unit_id
+            ) {
+              throw new BadRequestException(
+                'New variants require all required fields',
+              );
             }
-            
+
             // Safe cast to CreateProductVariantDto since we've verified required fields
-            await this.variantService.create(id, variantDto as unknown as CreateProductVariantDto);
+            await this.variantService.create(
+              id,
+              variantDto as unknown as CreateProductVariantDto,
+            );
           }
-        })
+        }),
       );
     }
 
     // Delete variants if requested
     if (dto.variant_ids_to_delete && dto.variant_ids_to_delete.length > 0) {
       await Promise.all(
-        dto.variant_ids_to_delete.map(variantId => 
-          this.variantService.remove(variantId)
-        )
+        dto.variant_ids_to_delete.map((variantId) =>
+          this.variantService.remove(variantId),
+        ),
       );
     }
 
@@ -579,9 +631,8 @@ export class ProductService {
     await this.findOne(id, consumerId);
 
     // Soft delete - set deleted_at timestamp
-    await this.prisma.product.update({
+    await this.prisma.product.delete({
       where: { id },
-      data: { deleted_at: new Date() },
     });
 
     return { success: true, message: 'Product deleted successfully' };
