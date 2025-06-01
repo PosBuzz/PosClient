@@ -2,6 +2,7 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsDecimal, IsUrl
 import { Type } from 'class-transformer';
 import { VariantAttributeDto } from './variant-attribute.dto';
 import { CreateProductSerialDto } from './product-serial.dto';
+import { CreateProductBatchDto } from './product-batch.dto';
 
 export class CreateProductVariantDto {
   @IsString()
@@ -52,10 +53,15 @@ export class CreateProductVariantDto {
   @IsOptional()
   @Type(() => VariantAttributeDto)
   attributes?: VariantAttributeDto[];
-  
-  @IsOptional()
+    @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductSerialDto)
   serials?: CreateProductSerialDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductBatchDto)
+  batches?: CreateProductBatchDto[];
 }

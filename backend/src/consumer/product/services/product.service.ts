@@ -540,7 +540,6 @@ export class ProductService {
       metrics: productMetrics,
     };
   }
-
   async update(id: number, dto: UpdateProductDto, consumerId: number) {
     // First check if product exists and belongs to this consumer
     await this.findOne(id, consumerId);
@@ -590,7 +589,12 @@ export class ProductService {
         dto.variants.map(async (variantDto) => {
           // If variant has ID, update it
           if ('id' in variantDto && variantDto.id) {
-            await this.variantService.update(variantDto.id, variantDto);
+            // In edit mode, preserve inventory by setting the preserve_inventory flag
+            const updateVariantDto = dto.is_edit_mode 
+              ? { ...variantDto, preserve_inventory: true }
+              : variantDto;
+            
+            await this.variantService.update(variantDto.id, updateVariantDto);
           } else {
             // Create new variant - need to ensure all required fields exist
             if (
