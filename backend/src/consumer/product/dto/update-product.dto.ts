@@ -5,6 +5,7 @@ import {
   IsArray,
   ValidateNested,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateProductVariantDto } from './update-product-variant.dto';
@@ -23,4 +24,8 @@ export class UpdateProductDto extends OmitType(CreateProductDto, ['variants'] as
   @IsArray()
   @IsNumber({}, { each: true })
   variant_ids_to_delete?: number[];
+
+  @IsOptional()
+  @IsBoolean()
+  is_edit_mode?: boolean; // Flag to indicate this is an edit operation (preserves inventory)
 }

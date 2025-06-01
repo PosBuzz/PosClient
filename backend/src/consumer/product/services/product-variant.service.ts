@@ -66,6 +66,25 @@ export class ProductVariantService {
       );
     }
 
+    // Create inventory batches if provided
+    if (dto.batches && dto.batches.length > 0) {
+      await Promise.all(
+        dto.batches.map(batchDto =>
+          this.prisma.inventoryBatch.create({
+            data: {
+              variant_id: variant.id,
+              branch_id: batchDto.branch_id,
+              batch_number: batchDto.batch_number,
+              quantity: batchDto.quantity,
+              cost_price: batchDto.cost_price,
+              vendor_id: batchDto.vendor_id,
+              expiry_date: batchDto.expiry_date ? new Date(batchDto.expiry_date) : null,
+            },
+          })
+        )
+      );
+    }
+
     return this.findOne(variant.id);
   }
 
@@ -84,15 +103,21 @@ export class ProductVariantService {
           orderBy: { effective_date: 'desc' },
         },
         inventory_items: {
-          select: {
-            quantity: true,
-            branch_id: true,
+          include: {
             branch: {
               select: {
+                id: true,
+                name: true,
+              },
+            },
+            vendor: {
+              select: {
+                id: true,
                 name: true,
               },
             },
           },
+          orderBy: { created_at: 'desc' },
         },
       },
     });
@@ -185,10 +210,8 @@ export class ProductVariantService {
           )
         );
       }
-    }
-
-    // Update serials if provided
-    if (dto.serials !== undefined) {
+    }    // Update serials if provided and inventory preservation is not enabled
+    if (dto.serials !== undefined && !dto.preserve_inventory) {
       // Delete existing serials
       await this.prisma.productSerial.deleteMany({
         where: { variant_id: id },
@@ -204,6 +227,33 @@ export class ProductVariantService {
                 serial_number: serialDto.serial_number,
                 status: serialDto.status || 'available',
                 notes: serialDto.notes,
+              },
+            })
+          )
+        );
+      }
+    }
+
+    // Update batches if provided and inventory preservation is not enabled
+    if (dto.batches !== undefined && !dto.preserve_inventory) {
+      // Delete existing batches for this variant
+      await this.prisma.inventoryBatch.deleteMany({
+        where: { variant_id: id },
+      });
+
+      // Create new batches if any provided
+      if (dto.batches.length > 0) {
+        await Promise.all(
+          dto.batches.map(batchDto =>
+            this.prisma.inventoryBatch.create({
+              data: {
+                variant_id: id,
+                branch_id: batchDto.branch_id,
+                batch_number: batchDto.batch_number,
+                quantity: batchDto.quantity,
+                cost_price: batchDto.cost_price,
+                vendor_id: batchDto.vendor_id,
+                expiry_date: batchDto.expiry_date ? new Date(batchDto.expiry_date) : null,
               },
             })
           )
