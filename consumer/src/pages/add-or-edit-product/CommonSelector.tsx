@@ -9,7 +9,9 @@ import { useMessageStore } from "../../stores/messageStore";
 interface CommonSelectorProps {
   value?: number | number[];
   onChange?: (value: number | number[]) => void;
+  isForm?: boolean;
   disabled?: boolean;
+  required?: boolean;
   type: "category" | "brand" | "unit" | "tag";
   mode?: "tags" | "multiple";
   label: string;
@@ -24,6 +26,8 @@ export default function CommonSelector({
   mode,
   label,
   size,
+  required,
+  isForm,
 }: CommonSelectorProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -302,58 +306,119 @@ export default function CommonSelector({
 
   return (
     <>
-      <div>
-        <label className="mb-3 block text-sm font-medium">{label}</label>
-        <Select
-          size={size}
-          mode={mode}
-          value={convertedValue}
-          onChange={handleChange}
-          placeholder={`Select ${label.toLowerCase()}`}
-          loading={isLoading}
-          disabled={disabled}
-          className="w-full"
-          allowClear
-          showSearch
-          optionFilterProp="children"
-          maxTagCount="responsive"
-          dropdownStyle={{ zIndex: 1050 }}
-          listHeight={250}
-          optionLabelProp="children"
-          labelRender={(selectedValue) => {
-            const optionId =
-              mode === "tags" || mode === "multiple"
-                ? parseInt(String(selectedValue.value), 10)
-                : selectedValue.value;
-            const option = options.find((opt) => opt.id === optionId);
-            return option ? option.name : "";
-          }}
-          filterOption={(input, option) => {
-            const label = option?.label as any;
-            const text = label?.props?.children[0]?.props?.children || "";
-            return text.toString().toLowerCase().includes(input.toLowerCase());
-          }}
-          getPopupContainer={(triggerNode) =>
-            triggerNode.parentNode as HTMLElement
-          }
-          dropdownRender={(menu) => (
-            <>
-              {menu}
-              <div className="border-t border-gray-200 p-2">
-                <Button
-                  type="text"
-                  icon={<PlusOutlined />}
-                  onClick={() => setIsModalOpen(true)}
-                  className="w-full text-left"
-                >
-                  Add new {label.toLowerCase()}
-                </Button>
-              </div>
-            </>
-          )}
-          options={mergedOptions}
-        />
-      </div>
+      {isForm ? (
+        <Form.Item label={label} required={required}>
+          <Select
+            size={size}
+            mode={mode}
+            value={convertedValue}
+            onChange={handleChange}
+            placeholder={`Select ${label.toLowerCase()}`}
+            loading={isLoading}
+            disabled={disabled}
+            className="w-full"
+            allowClear
+            showSearch
+            optionFilterProp="children"
+            maxTagCount="responsive"
+            dropdownStyle={{ zIndex: 1050 }}
+            listHeight={250}
+            optionLabelProp="children"
+            labelRender={(selectedValue) => {
+              const optionId =
+                mode === "tags" || mode === "multiple"
+                  ? parseInt(String(selectedValue.value), 10)
+                  : selectedValue.value;
+              const option = options.find((opt) => opt.id === optionId);
+              return option ? option.name : "";
+            }}
+            filterOption={(input, option) => {
+              const label = option?.label as any;
+              const text = label?.props?.children[0]?.props?.children || "";
+              return text
+                .toString()
+                .toLowerCase()
+                .includes(input.toLowerCase());
+            }}
+            getPopupContainer={(triggerNode) =>
+              triggerNode.parentNode as HTMLElement
+            }
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <div className="border-t border-gray-200 p-2">
+                  <Button
+                    type="text"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsModalOpen(true)}
+                    className="w-full text-left"
+                  >
+                    Add new {label.toLowerCase()}
+                  </Button>
+                </div>
+              </>
+            )}
+            options={mergedOptions}
+          />
+        </Form.Item>
+      ) : (
+        <div>
+          {" "}
+          <label className="mb-3 block text-sm font-medium">{label}</label>
+          <Select
+            size={size}
+            mode={mode}
+            value={convertedValue}
+            onChange={handleChange}
+            placeholder={`Select ${label.toLowerCase()}`}
+            loading={isLoading}
+            disabled={disabled}
+            className="w-full"
+            allowClear
+            showSearch
+            optionFilterProp="children"
+            maxTagCount="responsive"
+            dropdownStyle={{ zIndex: 1050 }}
+            listHeight={250}
+            optionLabelProp="children"
+            labelRender={(selectedValue) => {
+              const optionId =
+                mode === "tags" || mode === "multiple"
+                  ? parseInt(String(selectedValue.value), 10)
+                  : selectedValue.value;
+              const option = options.find((opt) => opt.id === optionId);
+              return option ? option.name : "";
+            }}
+            filterOption={(input, option) => {
+              const label = option?.label as any;
+              const text = label?.props?.children[0]?.props?.children || "";
+              return text
+                .toString()
+                .toLowerCase()
+                .includes(input.toLowerCase());
+            }}
+            getPopupContainer={(triggerNode) =>
+              triggerNode.parentNode as HTMLElement
+            }
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <div className="border-t border-gray-200 p-2">
+                  <Button
+                    type="text"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsModalOpen(true)}
+                    className="w-full text-left"
+                  >
+                    Add new {label.toLowerCase()}
+                  </Button>
+                </div>
+              </>
+            )}
+            options={mergedOptions}
+          />
+        </div>
+      )}
 
       {/* Add New Modal */}
       <Modal

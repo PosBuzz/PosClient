@@ -159,7 +159,7 @@ export default function SimpleProductForm({
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {/* Row 1: Product Name, SKU, Barcode - More compact */}
         <Row gutter={[6, 4]}>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={3}>
             <Form.Item label="Product Name" style={{ marginBottom: 4 }}>
               <Input
                 size="small"
@@ -169,7 +169,7 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={3}>
             <Form.Item label="SKU" style={{ marginBottom: 4 }}>
               <Input
                 size="small"
@@ -189,7 +189,7 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={3}>
             <Form.Item
               label={
                 <Space size={2}>
@@ -217,17 +217,14 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-        </Row>
-
-        {/* Row 2: Pricing, Alert, Units, Warranty - All in one compact row */}
-        <Row gutter={[4, 4]}>
-          <Col xs={12} sm={4}>
+          <Col xs={12} sm={2}>
             <Form.Item
               label="Regular Price"
               required
               style={{ marginBottom: 4 }}
             >
               <InputNumber
+                type="number"
                 size="small"
                 placeholder="0.00"
                 min={0}
@@ -235,15 +232,14 @@ export default function SimpleProductForm({
                 style={{ width: "100%" }}
                 prefix="$"
                 value={variant.regular_price}
-                onChange={(value) =>
-                  handleFieldChange("regular_price", value)
-                }
+                onChange={(value) => handleFieldChange("regular_price", value)}
               />
             </Form.Item>
           </Col>
-          <Col xs={12} sm={4}>
+          <Col xs={12} sm={2}>
             <Form.Item label="Wholesale Price" style={{ marginBottom: 4 }}>
               <InputNumber
+                type="number"
                 size="small"
                 placeholder="0.00"
                 min={0}
@@ -257,7 +253,33 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-          <Col xs={12} sm={4}>
+          <Col xs={12} sm={3}>
+            <CommonSelector
+              isForm={true}
+              required={true}
+              label="Sale Unit"
+              type="unit"
+              value={Number(variant.sale_unit_id) || undefined}
+              onChange={(value) =>
+                handleFieldChange("sale_unit_id", value as number)
+              }
+              size="small"
+            />
+          </Col>
+          <Col xs={12} sm={3}>
+            <CommonSelector
+              isForm={true}
+              required={true}
+              label="Purchase Unit"
+              type="unit"
+              value={Number(variant.purchase_unit_id) || undefined}
+              onChange={(value) =>
+                handleFieldChange("purchase_unit_id", value as number)
+              }
+              size="small"
+            />
+          </Col>
+          <Col xs={12} sm={2}>
             <Form.Item
               label={
                 <Space size={2}>
@@ -268,6 +290,7 @@ export default function SimpleProductForm({
               style={{ marginBottom: 4 }}
             >
               <InputNumber
+                type="number"
                 size="small"
                 placeholder="10"
                 min={0}
@@ -280,31 +303,10 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-          <Col xs={12} sm={4}>
-            <CommonSelector
-              label="Sale Unit"
-              type="unit"
-              value={Number(variant.sale_unit_id) || undefined}
-              onChange={(value) =>
-                handleFieldChange("sale_unit_id", value as number)
-              }
-              size="small"
-            />
-          </Col>
-          <Col xs={12} sm={4}>
-            <CommonSelector
-              label="Purchase Unit"
-              type="unit"
-              value={Number(variant.purchase_unit_id) || undefined}
-              onChange={(value) =>
-                handleFieldChange("purchase_unit_id", value as number)
-              }
-              size="small"
-            />
-          </Col>
-          <Col xs={12} sm={4}>
+          <Col xs={12} sm={3}>
             <Form.Item label="Warranty" style={{ marginBottom: 4 }}>
               <InputNumber
+                type="number"
                 size="small"
                 placeholder="12"
                 min={0}
@@ -313,12 +315,11 @@ export default function SimpleProductForm({
                 onChange={(value) =>
                   handleFieldChange("warranty_period", value || undefined)
                 }
-                addonAfter="mo"
+                addonAfter="months"
               />
             </Form.Item>
           </Col>
         </Row>
-
         {/* Row 3: Image - More compact */}
         <Row gutter={[4, 4]}>
           <Col xs={24} sm={6}>
@@ -334,7 +335,8 @@ export default function SimpleProductForm({
               />
             </Form.Item>
           </Col>
-        </Row>        {/* Compact Attributes Section */}
+        </Row>{" "}
+        {/* Compact Attributes Section */}
         {(variant.attributes || []).length > 0 ? (
           <Card
             size="small"
@@ -360,7 +362,9 @@ export default function SimpleProductForm({
             <Row gutter={[4, 2]}>
               {(variant.attributes || []).map((attr, attrIndex) => (
                 <Col xs={24} sm={12} md={8} key={attrIndex}>
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <div
+                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  >
                     <Input
                       placeholder="Name"
                       value={attr.name}
@@ -414,7 +418,6 @@ export default function SimpleProductForm({
             </Button>
           </div>
         )}
-
         {/* Compact Serial Numbers Section */}
         {(variant.serials || []).length > 0 ? (
           <Card
@@ -459,7 +462,7 @@ export default function SimpleProductForm({
                     }
                   />
                 </Col>
-                <Col xs={6} sm={4}>
+                <Col xs={6} sm={3}>
                   <Select
                     value={serial.status}
                     onChange={(value) =>
@@ -480,11 +483,7 @@ export default function SimpleProductForm({
                     value={serial.notes || ""}
                     size="small"
                     onChange={(e) =>
-                      updateVariantSerial(
-                        serialIndex,
-                        "notes",
-                        e.target.value
-                      )
+                      updateVariantSerial(serialIndex, "notes", e.target.value)
                     }
                   />
                 </Col>
@@ -514,26 +513,14 @@ export default function SimpleProductForm({
               Add Serial Numbers
             </Button>
           </div>
-        )}        {/* Compact Inventory/Batch Section - Hidden in Edit Mode */}
+        )}{" "}
+        {/* Compact Inventory/Batch Section - Hidden in Edit Mode */}
         {!isEditMode && (
-          <Card
-            size="small"
-            style={{ marginTop: 6 }}
-            title={
-              <Space size={4}>
-                <Text strong style={{ fontSize: 11 }}>
-                  Inventory Batches ({(variant.batches || []).length})
-                </Text>
-              </Space>
-            }
-            bodyStyle={{ padding: 8 }}
-          >
-            <BatchAddingForm
-              batches={variant.batches || []}
-              onBatchesChange={handleBatchesChange}
-              variantName={variant.name}
-            />
-          </Card>
+          <BatchAddingForm
+            batches={variant.batches || []}
+            onBatchesChange={handleBatchesChange}
+            variantName={variant.name}
+          />
         )}
       </div>
     </div>
