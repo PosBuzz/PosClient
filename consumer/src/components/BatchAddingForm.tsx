@@ -99,20 +99,19 @@ export default function BatchAddingForm({
     (sum, batch) => sum + (batch.cost_price || 0) * (batch.quantity || 0),
     0
   );
-
   if (batches.length === 0) {
     return (
-      <Card size={size} style={{ marginTop: 12 }}>
-        <div style={{ textAlign: "center", padding: "10px 0" }}>
-          <Text type="secondary">No inventory batches added</Text>
+      <Card size={size} style={{ marginTop: 6 }} bodyStyle={{ padding: 8 }}>
+        <div style={{ textAlign: "center", padding: "6px 0" }}>
+          <Text type="secondary" style={{ fontSize: 11 }}>No inventory batches added</Text>
           <br />
           <Button
-            size={size}
+            size="small"
             type="dashed"
             icon={<PlusOutlined />}
             onClick={addBatch}
             disabled={disabled}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 6, height: 24 }}
           >
             Add Inventory Batch
           </Button>
@@ -123,37 +122,40 @@ export default function BatchAddingForm({
 
   return (
     <Card
-      size={size}
-      style={{ marginTop: 12 }}
+      size="small"
+      style={{ marginTop: 6 }}
+      bodyStyle={{ padding: 8 }}
       title={
-        <Space>
-          <Text strong style={{ fontSize: size === "small" ? 12 : 14 }}>
+        <Space size={4}>
+          <Text strong style={{ fontSize: 11 }}>
             Inventory Batches ({batches.length})
           </Text>
           <Button
             type="dashed"
-            size={size}
+            size="small"
             icon={<PlusOutlined />}
             onClick={addBatch}
             disabled={disabled}
+            style={{ height: 20, fontSize: 10 }}
           >
-            Add Batch
+            Add
           </Button>
         </Space>
       }
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {batches.map((batch, index) => (
-          <Card key={index} size="small">
+          <Card key={index} size="small" bodyStyle={{ padding: 8 }}>
+            {/* Compact header */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 12,
+                marginBottom: 6,
               }}
             >
-              <Text strong>Batch {index + 1}</Text>
+              <Text strong style={{ fontSize: 11 }}>Batch {index + 1}</Text>
               {batches.length > 1 && (
                 <Button
                   type="text"
@@ -162,23 +164,25 @@ export default function BatchAddingForm({
                   icon={<MinusCircleOutlined />}
                   onClick={() => removeBatch(index)}
                   disabled={disabled}
+                  style={{ height: 20, minWidth: 20 }}
                 />
               )}
             </div>
 
-            <Row gutter={8}>
+            {/* Row 1: Branch and Reference Number */}
+            <Row gutter={[4, 2]}>
               <Col xs={24} sm={12}>
                 <Form.Item
                   label="Branch/Location"
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                   required
                 >
                   <Select
+                    size="small"
                     placeholder="Select branch"
                     value={batch.branch_id}
                     onChange={(value) => updateBatch(index, "branch_id", value)}
                     disabled={disabled}
-                    size={size}
                   >
                     {branches.map((branch) => (
                       <Option key={branch.id} value={branch.id}>
@@ -192,17 +196,17 @@ export default function BatchAddingForm({
               <Col xs={24} sm={12}>
                 <Form.Item
                   label="Reference Number"
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                   required
                 >
                   <Input
+                    size="small"
                     placeholder="Enter reference number"
                     value={batch.batch_number}
                     onChange={(e) =>
                       updateBatch(index, "batch_number", e.target.value)
                     }
                     disabled={disabled}
-                    size={size}
                     suffix={
                       <Button
                         type="link"
@@ -217,6 +221,7 @@ export default function BatchAddingForm({
                         }
                         disabled={disabled}
                         title="Generate reference number"
+                        style={{ height: 16, minWidth: 16 }}
                       />
                     }
                   />
@@ -224,16 +229,18 @@ export default function BatchAddingForm({
               </Col>
             </Row>
 
-            <Row gutter={8}>
-              <Col xs={24} sm={8}>
+            {/* Row 2: Quantity, Cost Price, Total Cost */}
+            <Row gutter={[4, 2]}>
+              <Col xs={8} sm={6}>
                 <Form.Item
-                  label="Quantity"
-                  style={{ marginBottom: 8 }}
+                  label="Qty"
+                  style={{ marginBottom: 4 }}
                   required
                 >
                   <InputNumber
+                    size="small"
                     type="number"
-                    placeholder="Enter quantity"
+                    placeholder="0"
                     min={1}
                     precision={0}
                     style={{ width: "100%" }}
@@ -242,21 +249,21 @@ export default function BatchAddingForm({
                       updateBatch(index, "quantity", value || 1)
                     }
                     disabled={disabled}
-                    size={size}
-                    addonAfter="units"
+                    addonAfter="u"
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
+              <Col xs={8} sm={6}>
                 <Form.Item
-                  label="Cost Price (per unit)"
-                  style={{ marginBottom: 8 }}
+                  label="Cost/Unit"
+                  style={{ marginBottom: 4 }}
                   required
                 >
                   <InputNumber
+                    size="small"
                     type="number"
-                    placeholder="Enter cost price"
+                    placeholder="0.00"
                     min={0}
                     precision={2}
                     style={{ width: "100%" }}
@@ -265,32 +272,30 @@ export default function BatchAddingForm({
                       updateBatch(index, "cost_price", value || 0)
                     }
                     disabled={disabled}
-                    size={size}
-                    prefix={<DollarOutlined />}
+                    prefix="$"
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={8}>
-                <Form.Item label="Total Cost" style={{ marginBottom: 8 }}>
+              <Col xs={8} sm={6}>
+                <Form.Item label="Total" style={{ marginBottom: 4 }}>
                   <Input
+                    size="small"
                     value={`$${(
                       (batch.cost_price || 0) * (batch.quantity || 0)
                     ).toFixed(2)}`}
                     disabled
-                    size={size}
                   />
                 </Form.Item>
               </Col>
-            </Row>
 
-            <Row gutter={8}>
-              <Col xs={24} sm={12}>
-                <Form.Item label="Expiry Date" style={{ marginBottom: 8 }}>
+              <Col xs={24} sm={6}>
+                <Form.Item label="Expiry" style={{ marginBottom: 4 }}>
                   <DatePicker
+                    size="small"
                     style={{ width: "100%" }}
-                    placeholder="Select expiry date"
-                    format="YYYY-MM-DD"
+                    placeholder="Expiry date"
+                    format="MM/DD/YY"
                     value={batch.expiry_date ? dayjs(batch.expiry_date) : null}
                     onChange={(date) =>
                       updateBatch(
@@ -300,7 +305,6 @@ export default function BatchAddingForm({
                       )
                     }
                     disabled={disabled}
-                    size={size}
                     disabledDate={(current) =>
                       current && current < dayjs().startOf("day")
                     }
@@ -308,14 +312,17 @@ export default function BatchAddingForm({
                   />
                 </Form.Item>
               </Col>
+            </Row>
 
+            {/* Row 3: Vendor (optional) */}
+            <Row gutter={[4, 2]}>
               <Col xs={24} sm={12}>
-                <Form.Item label="Supplier/Vendor" style={{ marginBottom: 8 }}>
+                <Form.Item label="Supplier/Vendor" style={{ marginBottom: 2 }}>
                   <VendorSelector
                     value={batch.vendor_id}
                     onChange={(value) => updateBatch(index, "vendor_id", value)}
                     disabled={disabled}
-                    size={size}
+                    size="small"
                   />
                 </Form.Item>
               </Col>
@@ -323,29 +330,26 @@ export default function BatchAddingForm({
           </Card>
         ))}
 
-        {/* Summary */}
+        {/* Compact Summary */}
         {batches.length > 0 && (
-          <Card size="small">
-            <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
-              Inventory Summary
-            </Title>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Text type="secondary">Total Batches:</Text>
+          <Card size="small" bodyStyle={{ padding: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ textAlign: "center" }}>
+                <Text type="secondary" style={{ fontSize: 10 }}>Batches</Text>
                 <br />
-                <Text strong>{batches.length}</Text>
-              </Col>
-              <Col span={8}>
-                <Text type="secondary">Total Quantity:</Text>
+                <Text strong style={{ fontSize: 11 }}>{batches.length}</Text>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <Text type="secondary" style={{ fontSize: 10 }}>Total Qty</Text>
                 <br />
-                <Text strong>{totalQuantity} units</Text>
-              </Col>
-              <Col span={8}>
-                <Text type="secondary">Total Cost:</Text>
+                <Text strong style={{ fontSize: 11 }}>{totalQuantity}u</Text>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <Text type="secondary" style={{ fontSize: 10 }}>Total Cost</Text>
                 <br />
-                <Text strong>${totalCost.toFixed(2)}</Text>
-              </Col>
-            </Row>
+                <Text strong style={{ fontSize: 11 }}>${totalCost.toFixed(2)}</Text>
+              </div>
+            </div>
           </Card>
         )}
       </div>

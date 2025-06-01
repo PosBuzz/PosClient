@@ -154,6 +154,7 @@ export default function VariantManager({
     ];
     updateVariant(variantIndex, { serials: newSerials });
   };
+  
   const removeVariantSerial = (variantIndex: number, serialIndex: number) => {
     const variant = variants[variantIndex];
     const newSerials = (variant.serials || []).filter(
@@ -171,21 +172,21 @@ export default function VariantManager({
   };
 
   const parentForm = Form.useFormInstance();
-
   useEffect(() => {}, [parentForm]);
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 12 }}>
+      {/* Compact header */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 16,
+          marginBottom: 8,
         }}
       >
-        <Title level={4} style={{ margin: 0 }}>
-          <Space>
+        <Title level={5} style={{ margin: 0, fontSize: 14 }}>
+          <Space size={4}>
             <SettingOutlined />
             Product Variants
             <Badge count={variants.length} showZero color="blue" />
@@ -196,16 +197,19 @@ export default function VariantManager({
           onClick={addVariant}
           icon={<PlusOutlined />}
           size="small"
+          style={{ height: 28 }}
         >
           Add Variant
         </Button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Compact variant cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {variants.map((variant, index) => (
           <Card
             key={`variant-${index}`}
             size="small"
+            style={{ marginBottom: 0 }}
             title={
               <div
                 style={{
@@ -214,7 +218,7 @@ export default function VariantManager({
                   alignItems: "center",
                 }}
               >
-                <Text strong style={{ fontSize: 14 }}>
+                <Text strong style={{ fontSize: 12 }}>
                   Variant {index + 1}
                 </Text>
                 {variants.length > 1 && (
@@ -230,21 +234,24 @@ export default function VariantManager({
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
+                      style={{ height: 24 }}
                     />
                   </Popconfirm>
                 )}
               </div>
             }
+            bodyStyle={{ padding: 12 }}
           >
-            {/* Row 1: Variant Name, SKU, Barcode */}
-            <Row gutter={8}>
+            {/* Compact Row 1: Variant Name, SKU, Barcode */}
+            <Row gutter={[6, 4]}>
               <Col xs={24} sm={8}>
                 <Form.Item
                   label="Variant Name"
                   required
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                 >
                   <Input
+                    size="small"
                     placeholder={`Variant ${index + 1} name`}
                     value={variant.name}
                     onChange={(e) =>
@@ -254,8 +261,9 @@ export default function VariantManager({
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
-                <Form.Item label="SKU" style={{ marginBottom: 8 }}>
+                <Form.Item label="SKU" style={{ marginBottom: 4 }}>
                   <Input
+                    size="small"
                     placeholder="Auto-generate or enter SKU"
                     value={variant.sku || ""}
                     onChange={(e) =>
@@ -277,14 +285,15 @@ export default function VariantManager({
               <Col xs={24} sm={8}>
                 <Form.Item
                   label={
-                    <Space>
+                    <Space size={2}>
                       <BarcodeOutlined />
                       Barcode
                     </Space>
                   }
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                 >
                   <Input
+                    size="small"
                     placeholder="Auto-generate or enter barcode"
                     value={variant.barcode || ""}
                     onChange={(e) =>
@@ -304,15 +313,17 @@ export default function VariantManager({
                 </Form.Item>
               </Col>
             </Row>
-            {/* Row 2: Pricing */}
-            <Row gutter={4}>
-              <Col xs={24} sm={4}>
+
+            {/* Compact Row 2: All pricing, units, and settings in one row */}
+            <Row gutter={[4, 4]}>
+              <Col xs={12} sm={4}>
                 <Form.Item
                   label="Regular Price"
                   required
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                 >
                   <InputNumber
+                    size="small"
                     type="number"
                     placeholder="0.00"
                     min={0}
@@ -326,9 +337,10 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item label="Wholesale Price" style={{ marginBottom: 8 }}>
+              <Col xs={12} sm={4}>
+                <Form.Item label="Wholesale Price" style={{ marginBottom: 4 }}>
                   <InputNumber
+                    size="small"
                     type="number"
                     placeholder="0.00"
                     min={0}
@@ -342,17 +354,18 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={4}>
+              <Col xs={12} sm={3}>
                 <Form.Item
                   label={
-                    <Space>
+                    <Space size={2}>
                       <AlertOutlined />
-                      Alert Quantity
+                      Alert Qty
                     </Space>
                   }
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 4 }}
                 >
                   <InputNumber
+                    size="small"
                     type="number"
                     placeholder="10"
                     min={0}
@@ -365,7 +378,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={4}>
+              <Col xs={12} sm={3}>
                 <CommonSelector
                   label="Sale Unit"
                   type="unit"
@@ -376,7 +389,7 @@ export default function VariantManager({
                   size="small"
                 />
               </Col>
-              <Col xs={24} sm={4}>
+              <Col xs={12} sm={3}>
                 <CommonSelector
                   label="Purchase Unit"
                   type="unit"
@@ -389,9 +402,10 @@ export default function VariantManager({
                   size="small"
                 />
               </Col>
-              <Col xs={24} sm={4}>
-                <Form.Item label="Warranty Period" style={{ marginBottom: 8 }}>
+              <Col xs={12} sm={3}>
+                <Form.Item label="Warranty" style={{ marginBottom: 4 }}>
                   <InputNumber
+                    size="small"
                     type="number"
                     placeholder="12"
                     min={0}
@@ -402,15 +416,12 @@ export default function VariantManager({
                         warranty_period: value || undefined,
                       })
                     }
-                    addonAfter="months"
+                    addonAfter="mo"
                   />
                 </Form.Item>
               </Col>
-            </Row>
-            {/* Row 4: Image */}
-            <Row>
-              <Col span={4}>
-                <Form.Item label="Variant Image" style={{ marginBottom: 8 }}>
+              <Col xs={24} sm={4}>
+                <Form.Item label="Image" style={{ marginBottom: 4 }}>
                   <ImageInput
                     name={`variant-image-${index}`}
                     label=""
@@ -425,14 +436,15 @@ export default function VariantManager({
                 </Form.Item>
               </Col>
             </Row>
-            {/* Attributes - Compact Section */}
+
+            {/* Compact Attributes Section */}
             {(variant.attributes || []).length > 0 ? (
               <Card
                 size="small"
-                style={{ marginTop: 12 }}
+                style={{ marginTop: 6 }}
                 title={
-                  <Space>
-                    <Text strong style={{ fontSize: 12 }}>
+                  <Space size={4}>
+                    <Text strong style={{ fontSize: 11 }}>
                       Attributes ({(variant.attributes || []).length})
                     </Text>
                     <Button
@@ -440,81 +452,82 @@ export default function VariantManager({
                       size="small"
                       icon={<PlusOutlined />}
                       onClick={() => addVariantAttribute(index)}
+                      style={{ height: 20, fontSize: 10 }}
                     >
                       Add
                     </Button>
                   </Space>
                 }
+                bodyStyle={{ padding: 8 }}
               >
-                {(variant.attributes || []).map((attr, attrIndex) => (
-                  <Row
-                    key={attrIndex}
-                    gutter={4}
-                    align="middle"
-                    style={{ marginBottom: 4 }}
-                  >
-                    <Col xs={10}>
-                      <Input
-                        placeholder="Name"
-                        value={attr.name}
-                        size="small"
-                        onChange={(e) =>
-                          updateVariantAttribute(
-                            index,
-                            attrIndex,
-                            "name",
-                            e.target.value
-                          )
-                        }
-                      />
+                <Row gutter={[4, 2]}>
+                  {(variant.attributes || []).map((attr, attrIndex) => (
+                    <Col xs={24} sm={12} md={8} key={attrIndex}>
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <Input
+                          placeholder="Name"
+                          value={attr.name}
+                          size="small"
+                          style={{ flex: 1 }}
+                          onChange={(e) =>
+                            updateVariantAttribute(
+                              index,
+                              attrIndex,
+                              "name",
+                              e.target.value
+                            )
+                          }
+                        />
+                        <Input
+                          placeholder="Value"
+                          value={attr.value}
+                          size="small"
+                          style={{ flex: 1 }}
+                          onChange={(e) =>
+                            updateVariantAttribute(
+                              index,
+                              attrIndex,
+                              "value",
+                              e.target.value
+                            )
+                          }
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<MinusCircleOutlined />}
+                          onClick={() => removeVariantAttribute(index, attrIndex)}
+                          style={{ minWidth: 24, height: 24 }}
+                        />
+                      </div>
                     </Col>
-                    <Col xs={10}>
-                      <Input
-                        placeholder="Value"
-                        value={attr.value}
-                        size="small"
-                        onChange={(e) =>
-                          updateVariantAttribute(
-                            index,
-                            attrIndex,
-                            "value",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </Col>
-                    <Col xs={4}>
-                      <Button
-                        type="text"
-                        danger
-                        size="small"
-                        icon={<MinusCircleOutlined />}
-                        onClick={() => removeVariantAttribute(index, attrIndex)}
-                      />
-                    </Col>
-                  </Row>
-                ))}
+                  ))}
+                </Row>
               </Card>
             ) : (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 6 }}>
                 <Button
                   type="dashed"
                   size="small"
                   block
+                  icon={<PlusOutlined />}
                   onClick={() => addVariantAttribute(index)}
+                  style={{ height: 28 }}
                 >
-                  <PlusOutlined /> Add Attribute
+                  Add Attributes
                 </Button>
               </div>
             )}
-            {/* Serial Numbers - Compact Section */}
+
+            {/* Compact Serial Numbers Section */}
             {(variant.serials || []).length > 0 ? (
               <Card
                 size="small"
-                style={{ marginTop: 8 }}
+                style={{ marginTop: 6 }}
                 title={
-                  <Space>
-                    <Text strong style={{ fontSize: 12 }}>
+                  <Space size={4}>
+                    <Text strong style={{ fontSize: 11 }}>
                       Serial Numbers ({(variant.serials || []).length})
                     </Text>
                     <Button
@@ -522,20 +535,22 @@ export default function VariantManager({
                       size="small"
                       icon={<PlusOutlined />}
                       onClick={() => addVariantSerial(index)}
+                      style={{ height: 20, fontSize: 10 }}
                     >
                       Add
                     </Button>
                   </Space>
                 }
+                bodyStyle={{ padding: 8 }}
               >
                 {(variant.serials || []).map((serial, serialIndex) => (
                   <Row
                     key={serialIndex}
-                    gutter={4}
+                    gutter={[4, 2]}
                     align="middle"
-                    style={{ marginBottom: 4 }}
+                    style={{ marginBottom: 2 }}
                   >
-                    <Col xs={8}>
+                    <Col xs={10} sm={8}>
                       <Input
                         placeholder="Serial #"
                         value={serial.serial_number}
@@ -550,16 +565,11 @@ export default function VariantManager({
                         }
                       />
                     </Col>
-                    <Col xs={6}>
+                    <Col xs={6} sm={4}>
                       <Select
                         value={serial.status}
                         onChange={(value) =>
-                          updateVariantSerial(
-                            index,
-                            serialIndex,
-                            "status",
-                            value
-                          )
+                          updateVariantSerial(index, serialIndex, "status", value)
                         }
                         style={{ width: "100%" }}
                         size="small"
@@ -570,7 +580,7 @@ export default function VariantManager({
                         <Option value="returned">Returned</Option>
                       </Select>
                     </Col>
-                    <Col xs={8}>
+                    <Col xs={6} sm={8}>
                       <Input
                         placeholder="Notes"
                         value={serial.notes || ""}
@@ -592,33 +602,49 @@ export default function VariantManager({
                         size="small"
                         icon={<MinusCircleOutlined />}
                         onClick={() => removeVariantSerial(index, serialIndex)}
+                        style={{ minWidth: 24, height: 24 }}
                       />
                     </Col>
                   </Row>
                 ))}
               </Card>
             ) : (
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 6 }}>
                 <Button
                   type="dashed"
                   size="small"
                   block
+                  icon={<BarcodeOutlined />}
                   onClick={() => addVariantSerial(index)}
+                  style={{ height: 28 }}
                 >
-                  <BarcodeOutlined /> Add Serial Number
+                  Add Serial Numbers
                 </Button>
               </div>
-            )}{" "}
-            {/* Inventory Batches Section - Only show when not in edit mode */}
+            )}
+
+            {/* Compact Inventory/Batch Section - Hidden in Edit Mode */}
             {!isEditMode && (
-              <BatchAddingForm
-                variantName={variant.name}
-                batches={variant.batches || []}
-                onBatchesChange={(batches) =>
-                  handleVariantBatchesChange(index, batches)
-                }
+              <Card
                 size="small"
-              />
+                style={{ marginTop: 6 }}
+                title={
+                  <Space size={4}>
+                    <Text strong style={{ fontSize: 11 }}>
+                      Inventory Batches ({(variant.batches || []).length})
+                    </Text>
+                  </Space>
+                }
+                bodyStyle={{ padding: 8 }}
+              >
+                <BatchAddingForm
+                  batches={variant.batches || []}
+                  onBatchesChange={(batches) =>
+                    handleVariantBatchesChange(index, batches)
+                  }
+                  variantName={variant.name}
+                />
+              </Card>
             )}
           </Card>
         ))}
