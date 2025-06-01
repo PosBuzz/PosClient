@@ -381,10 +381,10 @@ export default function ProductForm() {
             .map((attr) => ({
               name: attr.name,
               value: attr.value,
-            })),
-          serials: (variant.serials || [])
+            })),          serials: (variant.serials || [])
             .filter((serial) => serial.serial_number)
             .map((serial) => ({
+              ...(serial.id && { id: serial.id }), // Include ID for existing serials in edit mode
               serial_number: serial.serial_number,
               status: serial.status || "available",
               notes: serial.notes || undefined,
@@ -407,12 +407,16 @@ export default function ProductForm() {
       return isEditMode
         ? productApi.updateProduct(Number(id), submitData)
         : productApi.createProduct(submitData);
-    },
-    onSuccess: (data) => {
+    },    onSuccess: (data) => {
       messageApi?.success(
         `Product ${isEditMode ? "updated" : "created"} successfully`
       );
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      
+      // Also invalidate the individual product cache if we're editing
+      if (isEditMode && id) {
+        queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
 
       navigate(`/products`);
     },
