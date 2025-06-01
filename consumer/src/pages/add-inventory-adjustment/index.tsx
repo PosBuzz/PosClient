@@ -10,7 +10,6 @@ import {
   Button,
   Card,
   Col,
-  Divider,
   Form,
   Input,
   InputNumber,
@@ -212,27 +211,28 @@ export default function AddInventoryAdjustment() {
             Back to Adjustments
           </Button>
         }
-      />
-
-      <Form
+      />      <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
+        size="small"
         initialValues={{
           adjustment_type: "increase",
           quantity_change: 1,
         }}
       >
-        {/* Product Selection */}
-        <Card title="Product Information" style={{ marginBottom: 24 }}>
-          <Row gutter={24}>
-            <Col span={8}>
+        {/* Compact Product Selection */}
+        <Card title="Product Information" size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+          <Row gutter={[12, 6]}>
+            <Col xs={24} sm={8}>
               <Form.Item
                 name="product_id"
                 label="Product"
+                style={{ marginBottom: 8 }}
                 rules={[{ required: true, message: "Please select a product" }]}
               >
                 <Select
+                  size="small"
                   placeholder="Select product"
                   onChange={handleProductChange}
                   showSearch
@@ -248,13 +248,15 @@ export default function AddInventoryAdjustment() {
               </Form.Item>
             </Col>
 
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item
                 name="variant_id"
                 label="Variant"
+                style={{ marginBottom: 8 }}
                 rules={[{ required: true, message: "Please select a variant" }]}
               >
                 <Select
+                  size="small"
                   placeholder="Select variant"
                   onChange={handleVariantChange}
                   disabled={!selectedProduct}
@@ -269,15 +271,17 @@ export default function AddInventoryAdjustment() {
               </Form.Item>
             </Col>
 
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item
                 name="branch_id"
                 label="Location"
+                style={{ marginBottom: 8 }}
                 rules={[
                   { required: true, message: "Please select a location" },
                 ]}
               >
                 <Select
+                  size="small"
                   placeholder="Select location"
                   onChange={handleBranchChange}
                   disabled={!selectedVariant}
@@ -290,62 +294,57 @@ export default function AddInventoryAdjustment() {
                 </Select>
               </Form.Item>
             </Col>
-          </Row>
-
-          {/* Batch Selection */}
+          </Row>          {/* Compact Batch Selection */}
           {canShowBatches && (
-            <Row gutter={24}>
-              <Col span={24}>
-                <Form.Item
-                  name="batch_id"
-                  label="Batch"
-                  rules={[{ required: true, message: "Please select a batch" }]}
-                  extra="Select the specific batch to adjust"
-                >
-                  <Select
-                    placeholder="Select batch"
-                    loading={batchesLoading}
-                    disabled={!canShowBatches}
-                  >
-                    {batchesData?.data.map((batch) => (
-                      <Option key={batch.id} value={batch.id}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <span>{batch.batch_number}</span>
-                          <span style={{ color: "#666" }}>
-                            {batch.quantity} units - $
-                            {parseFloat(batch.cost_price).toFixed(2)}
-                          </span>
-                        </div>
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+            <Form.Item
+              name="batch_id"
+              label="Batch"
+              style={{ marginBottom: 8 }}
+              rules={[{ required: true, message: "Please select a batch" }]}
+            >
+              <Select
+                size="small"
+                placeholder="Select batch"
+                loading={batchesLoading}
+                disabled={!canShowBatches}
+              >
+                {batchesData?.data.map((batch) => (
+                  <Option key={batch.id} value={batch.id}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span>{batch.batch_number}</span>
+                      <span style={{ color: "#666", fontSize: 11 }}>
+                        {batch.quantity} units - $
+                        {parseFloat(batch.cost_price).toFixed(2)}
+                      </span>
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
           )}
 
-          {/* Current Stock Info */}
+          {/* Compact Current Stock Info */}
           {selectedBatch && (
-            <Card>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Text strong>Current Stock: </Text>
-                  <Text>{selectedBatch.quantity} units</Text>
+            <Card size="small" style={{ marginBottom: 8 }} bodyStyle={{ padding: 8 }}>
+              <Row gutter={8}>
+                <Col xs={8} sm={8}>
+                  <Text strong style={{ fontSize: 11 }}>Stock: </Text>
+                  <Text style={{ fontSize: 11 }}>{selectedBatch.quantity} units</Text>
                 </Col>
-                <Col span={8}>
-                  <Text strong>Cost Price: </Text>
-                  <Text>
+                <Col xs={8} sm={8}>
+                  <Text strong style={{ fontSize: 11 }}>Cost: </Text>
+                  <Text style={{ fontSize: 11 }}>
                     ${parseFloat(selectedBatch.cost_price).toFixed(2)}
                   </Text>
                 </Col>
-                <Col span={8}>
-                  <Text strong>Batch: </Text>
-                  <Text code>{selectedBatch.batch_number}</Text>
+                <Col xs={8} sm={8}>
+                  <Text strong style={{ fontSize: 11 }}>Batch: </Text>
+                  <Text code style={{ fontSize: 10 }}>{selectedBatch.batch_number}</Text>
                 </Col>
               </Row>
             </Card>
@@ -364,33 +363,33 @@ export default function AddInventoryAdjustment() {
                 showIcon
               />
             )}
-        </Card>
-
-        {/* Adjustment Details */}
+        </Card>        {/* Compact Adjustment Details */}
         {selectedBatch && (
-          <Card title="Adjustment Details" style={{ marginBottom: 24 }}>
-            <Row gutter={24}>
-              <Col span={12}>
+          <Card title="Adjustment Details" size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+            <Row gutter={[12, 6]}>
+              <Col xs={24} sm={12}>
                 <Form.Item
                   name="adjustment_type"
                   label="Adjustment Type"
+                  style={{ marginBottom: 8 }}
                   rules={[{ required: true }]}
                 >
-                  <Radio.Group size="large">
-                    <Radio.Button value="increase" style={{ color: "#52c41a" }}>
-                      <PlusOutlined /> Stock Increase
+                  <Radio.Group size="small">
+                    <Radio.Button value="increase" style={{ color: "#52c41a", fontSize: 11 }}>
+                      <PlusOutlined /> Increase
                     </Radio.Button>
-                    <Radio.Button value="decrease" style={{ color: "#ff4d4f" }}>
-                      <MinusOutlined /> Stock Decrease
+                    <Radio.Button value="decrease" style={{ color: "#ff4d4f", fontSize: 11 }}>
+                      <MinusOutlined /> Decrease
                     </Radio.Button>
                   </Radio.Group>
                 </Form.Item>
               </Col>
 
-              <Col span={12}>
+              <Col xs={24} sm={12}>
                 <Form.Item
                   name="quantity_change"
                   label="Quantity"
+                  style={{ marginBottom: 8 }}
                   rules={[
                     { required: true, message: "Please enter quantity" },
                     {
@@ -398,8 +397,8 @@ export default function AddInventoryAdjustment() {
                       min: 1,
                       message: "Quantity must be greater than 0",
                     },
-                    adjustmentType === "decrease" && selectedBatch
-                      ? {
+                    ...(adjustmentType === "decrease" && selectedBatch
+                      ? [{
                           validator: (_, value) => {
                             if (value > selectedBatch.quantity) {
                               return Promise.reject(
@@ -410,11 +409,12 @@ export default function AddInventoryAdjustment() {
                             }
                             return Promise.resolve();
                           },
-                        }
-                      : undefined,
-                  ].filter(Boolean)}
+                        }]
+                      : []),
+                  ]}
                 >
                   <InputNumber
+                    size="small"
                     placeholder="Enter quantity"
                     style={{ width: "100%" }}
                     min={1}
@@ -422,23 +422,24 @@ export default function AddInventoryAdjustment() {
                       adjustmentType === "decrease"
                         ? selectedBatch?.quantity
                         : undefined
-                    }
-                    addonAfter="units"
+                    }                    addonAfter="u"
                   />
                 </Form.Item>
               </Col>
             </Row>
 
-            <Row gutter={24}>
-              <Col span={12}>
+            {/* Compact Reason & Notes Row */}
+            <Row gutter={[12, 6]}>
+              <Col xs={24} sm={12}>
                 <Form.Item
                   name="reason"
                   label="Reason"
+                  style={{ marginBottom: 8 }}
                   rules={[
                     { required: true, message: "Please select a reason" },
                   ]}
                 >
-                  <Select placeholder="Select reason for adjustment">
+                  <Select size="small" placeholder="Select reason for adjustment">
                     {ADJUSTMENT_REASONS.map((reason) => (
                       <Option key={reason} value={reason}>
                         {reason}
@@ -448,72 +449,66 @@ export default function AddInventoryAdjustment() {
                 </Form.Item>
               </Col>
 
-              <Col span={12}>
-                <Form.Item name="notes" label="Additional Notes">
+              <Col xs={24} sm={12}>
+                <Form.Item name="notes" label="Notes" style={{ marginBottom: 8 }}>
                   <TextArea
-                    rows={3}
-                    placeholder="Enter additional notes (optional)"
+                    size="small"
+                    rows={2}
+                    placeholder="Additional notes (optional)"
                   />
                 </Form.Item>
               </Col>
             </Row>
 
-            {/* Live Summary */}
+            {/* Compact Live Summary */}
             {canShowSummary && (
-              <div style={{ marginTop: 16 }}>
-                <Divider />
-                <div
-                  style={{
-                    padding: 16,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text strong>Adjustment Summary:</Text>
-                  <br />
-                  <Text>
-                    Current Stock:{" "}
-                    <Text strong>{selectedBatch.quantity} units</Text>
-                  </Text>
-                  <br />
-                  <Text>
-                    Change:{" "}
-                    <Text
-                      strong
-                      style={{
-                        color:
-                          adjustmentType === "increase" ? "#52c41a" : "#ff4d4f",
-                      }}
-                    >
-                      {adjustmentType === "increase" ? "+" : "-"}
-                      {quantityChange} units
+              <Card size="small" style={{ marginTop: 8 }} bodyStyle={{ padding: 8 }}>
+                <Text strong style={{ fontSize: 11 }}>Adjustment Summary:</Text>
+                <Row gutter={8} style={{ marginTop: 4 }}>
+                  <Col xs={8} sm={8}>
+                    <Text style={{ fontSize: 11 }}>
+                      Current: <Text strong>{selectedBatch.quantity}u</Text>
                     </Text>
-                  </Text>
-                  <br />
-                  <Text>
-                    New Stock:{" "}
-                    <Text
-                      strong
-                      style={{
-                        color:
-                          newStock < 0
-                            ? "#ff4d4f"
-                            : `${isDarkMode ? "#fff" : "#000"}`,
-                      }}
-                    >
-                      {newStock} units
+                  </Col>
+                  <Col xs={8} sm={8}>
+                    <Text style={{ fontSize: 11 }}>
+                      Change:{" "}
+                      <Text
+                        strong
+                        style={{
+                          color:
+                            adjustmentType === "increase" ? "#52c41a" : "#ff4d4f",
+                        }}
+                      >
+                        {adjustmentType === "increase" ? "+" : "-"}
+                        {quantityChange}u
+                      </Text>
                     </Text>
-                  </Text>
-                  {newStock < 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <Alert
-                        message="Warning: This will result in negative stock!"
-                        type="error"
-                        showIcon
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+                  </Col>
+                  <Col xs={8} sm={8}>
+                    <Text style={{ fontSize: 11 }}>
+                      New: <Text
+                        strong
+                        style={{
+                          color:
+                            newStock < 0
+                              ? "#ff4d4f"
+                              : `${isDarkMode ? "#fff" : "#000"}`,
+                        }}
+                      >
+                        {newStock}u
+                      </Text>
+                    </Text>
+                  </Col>
+                </Row>
+                {newStock < 0 && (                  <Alert
+                    message="Warning: This will result in negative stock!"
+                    type="error"
+                    showIcon
+                    style={{ marginTop: 8 }}
+                  />
+                )}
+              </Card>
             )}
           </Card>
         )}
