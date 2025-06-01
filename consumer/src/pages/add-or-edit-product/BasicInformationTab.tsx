@@ -37,7 +37,8 @@ export default function BasicInformationTab({
   updateFormField,
   onDescriptionGenerated,
   onVariantToggle,
-}: BasicInformationTabProps) {  return (
+}: BasicInformationTabProps) {
+  return (
     <div className="space-y-4!">
       {/* Product Basics */}
       <Card
@@ -48,11 +49,11 @@ export default function BasicInformationTab({
           </Space>
         }
         size="small"
-        className="border-blue-200" 
+        className="border-blue-200"
       >
         <Row gutter={[12, 12]}>
-            <Col xs={24} lg={12}>
-              <Form.Item  
+          <Col xs={24} lg={12}>
+            <Form.Item
               name="name"
               label="Product Name"
               rules={[
@@ -102,7 +103,8 @@ export default function BasicInformationTab({
             className="hover:border-blue-400 focus:border-blue-500"
           />
         </Form.Item>
-      </Card>      {/* Classification */}
+      </Card>{" "}
+      {/* Classification */}
       <Card
         title={
           <Space>
@@ -160,7 +162,6 @@ export default function BasicInformationTab({
           </Col>
         </Row>
       </Card>
-
       {/* Sales Objective */}
       <Card
         title={
@@ -168,7 +169,8 @@ export default function BasicInformationTab({
             <GrTarget />
             <span>Sales Target</span>
           </Space>
-        }        size="small"
+        }
+        size="small"
         className="border-purple-200"
         // style={{ marginBottom: 12 }}
       >
@@ -180,6 +182,7 @@ export default function BasicInformationTab({
               tooltip="Target quantity to sell per day"
             >
               <InputNumber
+                type="number"
                 placeholder="0"
                 min={0}
                 className="w-full!"
@@ -201,7 +204,6 @@ export default function BasicInformationTab({
           </Col>
         </Row>
       </Card>
-
       {/* Tax Configuration */}
       <Card
         title={
@@ -209,7 +211,8 @@ export default function BasicInformationTab({
             <DollarCircleOutlined />
             <span>Tax Configuration</span>
           </Space>
-        }        size="small"
+        }
+        size="small"
         className="border-orange-200"
         // style={{ marginBottom: 12 }}
       >
@@ -248,6 +251,7 @@ export default function BasicInformationTab({
               ]}
             >
               <InputNumber
+                type="number"
                 placeholder="0"
                 min={0}
                 max={100}
@@ -261,7 +265,6 @@ export default function BasicInformationTab({
           </Col>
         </Row>
       </Card>
-
       {/* Product Configuration */}
       <Card
         title={
@@ -269,7 +272,8 @@ export default function BasicInformationTab({
             <SettingOutlined />
             <span>Product Configuration</span>
           </Space>
-        }        size="small"
+        }
+        size="small"
         // style={{ marginBottom: 12 }}
       >
         <Row gutter={[12, 12]} align="top">

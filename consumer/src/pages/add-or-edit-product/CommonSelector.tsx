@@ -303,7 +303,7 @@ export default function CommonSelector({
   return (
     <>
       <div>
-        <label className="mb-2 block text-sm font-medium">{label}</label>
+        <label className="mb-3 block text-sm font-medium">{label}</label>
         <Select
           size={size}
           mode={mode}

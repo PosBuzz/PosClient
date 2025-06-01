@@ -31,6 +31,7 @@ import {
 import CommonSelector from "./CommonSelector";
 import ImageInput from "../../components/ImageInput";
 import BatchAddingForm, { BatchData } from "../../components/BatchAddingForm";
+import { useEffect } from "react";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -169,6 +170,10 @@ export default function VariantManager({
     updateVariant(variantIndex, { batches });
   };
 
+  const parentForm = Form.useFormInstance();
+
+  useEffect(() => {}, [parentForm]);
+
   return (
     <div style={{ marginBottom: 16 }}>
       <div
@@ -231,201 +236,195 @@ export default function VariantManager({
               </div>
             }
           >
-            <Form layout="vertical" size="small">
-              {/* Row 1: Variant Name, SKU, Barcode */}
-              <Row gutter={8}>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Variant Name"
-                    required
-                    style={{ marginBottom: 8 }}
-                  >
-                    <Input
-                      placeholder={`Variant ${index + 1} name`}
-                      value={variant.name}
-                      onChange={(e) =>
-                        updateVariant(index, { name: e.target.value })
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Form.Item label="SKU" style={{ marginBottom: 8 }}>
-                    <Input
-                      placeholder="Auto-generate or enter SKU"
-                      value={variant.sku || ""}
-                      onChange={(e) =>
-                        updateVariant(index, { sku: e.target.value })
-                      }
-                      suffix={
-                        <Tooltip title="Generate SKU">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<ReloadOutlined />}
-                            onClick={() => generateSKU(index)}
-                          />
-                        </Tooltip>
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label={
-                      <Space>
-                        <BarcodeOutlined />
-                        Barcode
-                      </Space>
+            {/* Row 1: Variant Name, SKU, Barcode */}
+            <Row gutter={8}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="Variant Name"
+                  required
+                  style={{ marginBottom: 8 }}
+                >
+                  <Input
+                    placeholder={`Variant ${index + 1} name`}
+                    value={variant.name}
+                    onChange={(e) =>
+                      updateVariant(index, { name: e.target.value })
                     }
-                    style={{ marginBottom: 8 }}
-                  >
-                    <Input
-                      placeholder="Auto-generate or enter barcode"
-                      value={variant.barcode || ""}
-                      onChange={(e) =>
-                        updateVariant(index, { barcode: e.target.value })
-                      }
-                      suffix={
-                        <Tooltip title="Generate EAN-13">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<ReloadOutlined />}
-                            onClick={() => generateBarcode(index)}
-                          />
-                        </Tooltip>
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Row 2: Pricing */}
-              <Row gutter={4}>
-                <Col xs={24} sm={4}>
-                  <Form.Item
-                    label="Regular Price"
-                    required
-                    style={{ marginBottom: 8 }}
-                  >
-                    <InputNumber
-                      placeholder="0.00"
-                      min={0}
-                      precision={2}
-                      style={{ width: "100%" }}
-                      prefix="$"
-                      value={variant.regular_price}
-                      onChange={(value) =>
-                        updateVariant(index, { regular_price: value })
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={4}>
-                  <Form.Item
-                    label="Wholesale Price"
-                    style={{ marginBottom: 8 }}
-                  >
-                    <InputNumber
-                      placeholder="0.00"
-                      min={0}
-                      precision={2}
-                      style={{ width: "100%" }}
-                      prefix="$"
-                      value={variant.wholesale_price}
-                      onChange={(value) =>
-                        updateVariant(index, { wholesale_price: value })
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={4}>
-                  <Form.Item
-                    label={
-                      <Space>
-                        <AlertOutlined />
-                        Alert Quantity
-                      </Space>
-                    }
-                    style={{ marginBottom: 8 }}
-                  >
-                    <InputNumber
-                      placeholder="10"
-                      min={0}
-                      style={{ width: "100%" }}
-                      value={variant.alert_quantity}
-                      onChange={(value) =>
-                        updateVariant(index, { alert_quantity: value || 0 })
-                      }
-                      addonAfter="units"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={4}>
-                  <CommonSelector
-                    label="Sale Unit"
-                    type="unit"
-                    value={Number(variant.sale_unit_id) || undefined}
-                    onChange={(value) =>
-                      updateVariant(index, { sale_unit_id: value as number })
-                    }
-                    size="small"
                   />
-                </Col>
-                <Col xs={24} sm={4}>
-                  <CommonSelector
-                    label="Purchase Unit"
-                    type="unit"
-                    value={Number(variant.purchase_unit_id) || undefined}
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="SKU" style={{ marginBottom: 8 }}>
+                  <Input
+                    placeholder="Auto-generate or enter SKU"
+                    value={variant.sku || ""}
+                    onChange={(e) =>
+                      updateVariant(index, { sku: e.target.value })
+                    }
+                    suffix={
+                      <Tooltip title="Generate SKU">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ReloadOutlined />}
+                          onClick={() => generateSKU(index)}
+                        />
+                      </Tooltip>
+                    }
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label={
+                    <Space>
+                      <BarcodeOutlined />
+                      Barcode
+                    </Space>
+                  }
+                  style={{ marginBottom: 8 }}
+                >
+                  <Input
+                    placeholder="Auto-generate or enter barcode"
+                    value={variant.barcode || ""}
+                    onChange={(e) =>
+                      updateVariant(index, { barcode: e.target.value })
+                    }
+                    suffix={
+                      <Tooltip title="Generate EAN-13">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ReloadOutlined />}
+                          onClick={() => generateBarcode(index)}
+                        />
+                      </Tooltip>
+                    }
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            {/* Row 2: Pricing */}
+            <Row gutter={4}>
+              <Col xs={24} sm={4}>
+                <Form.Item
+                  label="Regular Price"
+                  required
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    type="number"
+                    placeholder="0.00"
+                    min={0}
+                    precision={2}
+                    style={{ width: "100%" }}
+                    prefix="$"
+                    value={variant.regular_price}
+                    onChange={(value) =>
+                      updateVariant(index, { regular_price: value })
+                    }
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={4}>
+                <Form.Item label="Wholesale Price" style={{ marginBottom: 8 }}>
+                  <InputNumber
+                    type="number"
+                    placeholder="0.00"
+                    min={0}
+                    precision={2}
+                    style={{ width: "100%" }}
+                    prefix="$"
+                    value={variant.wholesale_price}
+                    onChange={(value) =>
+                      updateVariant(index, { wholesale_price: value })
+                    }
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={4}>
+                <Form.Item
+                  label={
+                    <Space>
+                      <AlertOutlined />
+                      Alert Quantity
+                    </Space>
+                  }
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    type="number"
+                    placeholder="10"
+                    min={0}
+                    style={{ width: "100%" }}
+                    value={variant.alert_quantity}
+                    onChange={(value) =>
+                      updateVariant(index, { alert_quantity: value || 0 })
+                    }
+                    addonAfter="units"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={4}>
+                <CommonSelector
+                  label="Sale Unit"
+                  type="unit"
+                  value={Number(variant.sale_unit_id) || undefined}
+                  onChange={(value) =>
+                    updateVariant(index, { sale_unit_id: value as number })
+                  }
+                  size="small"
+                />
+              </Col>
+              <Col xs={24} sm={4}>
+                <CommonSelector
+                  label="Purchase Unit"
+                  type="unit"
+                  value={Number(variant.purchase_unit_id) || undefined}
+                  onChange={(value) =>
+                    updateVariant(index, {
+                      purchase_unit_id: value as number,
+                    })
+                  }
+                  size="small"
+                />
+              </Col>
+              <Col xs={24} sm={4}>
+                <Form.Item label="Warranty Period" style={{ marginBottom: 8 }}>
+                  <InputNumber
+                    type="number"
+                    placeholder="12"
+                    min={0}
+                    style={{ width: "100%" }}
+                    value={variant.warranty_period}
                     onChange={(value) =>
                       updateVariant(index, {
-                        purchase_unit_id: value as number,
+                        warranty_period: value || undefined,
                       })
                     }
-                    size="small"
+                    addonAfter="months"
                   />
-                </Col>
-                <Col xs={24} sm={4}>
-                  <Form.Item
-                    label="Warranty Period"
-                    style={{ marginBottom: 8 }}
-                  >
-                    <InputNumber
-                      placeholder="12"
-                      min={0}
-                      style={{ width: "100%" }}
-                      value={variant.warranty_period}
-                      onChange={(value) =>
-                        updateVariant(index, {
-                          warranty_period: value || undefined,
-                        })
-                      }
-                      addonAfter="months"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Row 4: Image */}
-              <Row>
-                <Col span={4}>
-                  <Form.Item label="Variant Image" style={{ marginBottom: 8 }}>
-                    <ImageInput
-                      name={`variant-image-${index}`}
-                      label=""
-                      value={variant.image ? [variant.image] : []}
-                      onChange={(urls) =>
-                        updateVariant(index, { image: urls[0] || "" })
-                      }
-                      maxCount={1}
-                      useForm={false}
-                      listType="text"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
+                </Form.Item>
+              </Col>
+            </Row>
+            {/* Row 4: Image */}
+            <Row>
+              <Col span={4}>
+                <Form.Item label="Variant Image" style={{ marginBottom: 8 }}>
+                  <ImageInput
+                    name={`variant-image-${index}`}
+                    label=""
+                    value={variant.image ? [variant.image] : []}
+                    onChange={(urls) =>
+                      updateVariant(index, { image: urls[0] || "" })
+                    }
+                    maxCount={1}
+                    useForm={false}
+                    listType="text"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
             {/* Attributes - Compact Section */}
             {(variant.attributes || []).length > 0 ? (
               <Card
