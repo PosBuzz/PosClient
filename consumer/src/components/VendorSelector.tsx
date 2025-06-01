@@ -10,12 +10,14 @@ interface VendorSelectorProps {
   value?: number;
   onChange?: (value: number) => void;
   disabled?: boolean;
+  size?: "large" | "small" | "middle";
 }
 
 export default function VendorSelector({
   value,
   onChange,
   disabled,
+  size,
 }: VendorSelectorProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -170,8 +172,8 @@ export default function VendorSelector({
     address?: string;
   }) => {
     if (currentEdit) {
-        console.log(values);
-        
+      console.log(values);
+
       updateMutation.mutate({ id: currentEdit.id, vendorData: values });
     }
   };
@@ -180,7 +182,8 @@ export default function VendorSelector({
 
   const { showDeleteConfirm } = useConfirmDelete({
     title: "Delete Vendor",
-    content: "Are you sure you want to delete this vendor? This action cannot be undone.",
+    content:
+      "Are you sure you want to delete this vendor? This action cannot be undone.",
     onConfirm: async () => {
       const idToDelete = deleteIdRef.current;
       if (idToDelete !== null) {
@@ -236,6 +239,7 @@ export default function VendorSelector({
   return (
     <>
       <Select
+        size={size}   
         value={value}
         onChange={onChange}
         placeholder="Select supplier/vendor"
@@ -255,21 +259,24 @@ export default function VendorSelector({
         filterOption={(input, option) => {
           const vendor = option?.originalData;
           if (!vendor) return false;
-          
+
           const searchText = input.toLowerCase();
           return (
             vendor.name.toLowerCase().includes(searchText) ||
-            (vendor.contact && vendor.contact.toLowerCase().includes(searchText)) ||
+            (vendor.contact &&
+              vendor.contact.toLowerCase().includes(searchText)) ||
             (vendor.phone && vendor.phone.toLowerCase().includes(searchText)) ||
             (vendor.email && vendor.email.toLowerCase().includes(searchText))
           );
         }}
-        getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement}
+        getPopupContainer={(triggerNode) =>
+          triggerNode.parentNode as HTMLElement
+        }
         dropdownRender={(menu) => (
           <>
             {menu}
             <div className="border-t border-gray-200 p-2">
-              <Button
+              <Button   
                 type="text"
                 icon={<PlusOutlined />}
                 onClick={() => setIsModalOpen(true)}
@@ -313,43 +320,23 @@ export default function VendorSelector({
             />
           </Form.Item>
 
-          <Form.Item
-            name="contact"
-            label="Contact Person"
-          >
-            <Input
-              placeholder="Enter contact person name"
-              maxLength={100}
-            />
+          <Form.Item name="contact" label="Contact Person">
+            <Input placeholder="Enter contact person name" maxLength={100} />
           </Form.Item>
 
-          <Form.Item
-            name="phone"
-            label="Phone Number"
-          >
-            <Input
-              placeholder="Enter phone number"
-              maxLength={20}
-            />
+          <Form.Item name="phone" label="Phone Number">
+            <Input placeholder="Enter phone number" maxLength={20} />
           </Form.Item>
 
           <Form.Item
             name="email"
             label="Email"
-            rules={[
-              { type: "email", message: "Please enter a valid email" },
-            ]}
+            rules={[{ type: "email", message: "Please enter a valid email" }]}
           >
-            <Input
-              placeholder="Enter email address"
-              maxLength={100}
-            />
+            <Input placeholder="Enter email address" maxLength={100} />
           </Form.Item>
 
-          <Form.Item
-            name="address"
-            label="Address"
-          >
+          <Form.Item name="address" label="Address">
             <Input.TextArea
               placeholder="Enter address"
               maxLength={255}
@@ -383,49 +370,26 @@ export default function VendorSelector({
               { min: 2, message: "Vendor name must be at least 2 characters" },
             ]}
           >
-            <Input
-              placeholder="Enter vendor name"
-              maxLength={100}
-            />
+            <Input placeholder="Enter vendor name" maxLength={100} />
           </Form.Item>
 
-          <Form.Item
-            name="contact"
-            label="Contact Person"
-          >
-            <Input
-              placeholder="Enter contact person name"
-              maxLength={100}
-            />
+          <Form.Item name="contact" label="Contact Person">
+            <Input placeholder="Enter contact person name" maxLength={100} />
           </Form.Item>
 
-          <Form.Item
-            name="phone"
-            label="Phone Number"
-          >
-            <Input
-              placeholder="Enter phone number"
-              maxLength={20}
-            />
+          <Form.Item name="phone" label="Phone Number">
+            <Input placeholder="Enter phone number" maxLength={20} />
           </Form.Item>
 
           <Form.Item
             name="email"
             label="Email"
-            rules={[
-              { type: "email", message: "Please enter a valid email" },
-            ]}
+            rules={[{ type: "email", message: "Please enter a valid email" }]}
           >
-            <Input
-              placeholder="Enter email address"
-              maxLength={100}
-            />
+            <Input placeholder="Enter email address" maxLength={100} />
           </Form.Item>
 
-          <Form.Item
-            name="address"
-            label="Address"
-          >
+          <Form.Item name="address" label="Address">
             <Input.TextArea
               placeholder="Enter address"
               maxLength={255}
