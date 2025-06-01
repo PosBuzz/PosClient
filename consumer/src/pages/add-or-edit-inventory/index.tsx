@@ -220,16 +220,16 @@ export default function AddEditInventory() {
           layout="vertical"
           onFinish={handleSubmit}
           requiredMark={false}
-        >
-          {/* Product Selection */}
-          <Row gutter={24}>
-            <Col span={12}>
+        >          {/* Product Selection - Single Row */}
+          <Row gutter={[12, 6]}>
+            <Col xs={24} sm={8}>
               <Form.Item
                 name="product_id"
                 label="Product"
+                style={{ marginBottom: 8 }}
                 rules={[{ required: true, message: "Please select a product" }]}
-              >
-                <Select
+              >                <Select
+                  size="small"
                   placeholder="Select a product"
                   onSelect={handleProductSelect}
                   loading={productsLoading}
@@ -237,9 +237,9 @@ export default function AddEditInventory() {
                   showSearch
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.children as string)
+                    (option?.children as unknown as string)
                       ?.toLowerCase()
-                      .includes(input.toLowerCase())
+                      ?.includes(input.toLowerCase())
                   }
                 >
                   {products.map((product) => (
@@ -251,18 +251,19 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
 
-            <Col span={12}>
+            <Col xs={24} sm={8}>
               <Form.Item
                 name="variant_id"
-                label="Product Variant"
+                label="Variant"
+                style={{ marginBottom: 8 }}
                 rules={[
                   {
                     required: true,
                     message: "Please select a product variant",
                   },
                 ]}
-              >
-                <Select
+              >                <Select
+                  size="small"
                   placeholder="Select a variant"
                   onSelect={handleVariantSelect}
                   loading={variantsLoading}
@@ -270,9 +271,9 @@ export default function AddEditInventory() {
                   showSearch
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.children as string)
+                    (option?.children as unknown as string)
                       ?.toLowerCase()
-                      .includes(input.toLowerCase())
+                      ?.includes(input.toLowerCase())
                   }
                   notFoundContent={
                     !selectedProductId ? (
@@ -287,6 +288,23 @@ export default function AddEditInventory() {
                   {variants.map((variant) => (
                     <Option key={variant.id} value={variant.id}>
                       {variant.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item
+                name="branch_id"
+                label="Branch"
+                style={{ marginBottom: 8 }}
+                rules={[{ required: true, message: "Please select branch" }]}
+              >
+                <Select size="small" placeholder="Select branch">
+                  {branches.map((branch) => (
+                    <Option key={branch.id} value={branch.id}>
+                      {branch.name}
                     </Option>
                   ))}
                 </Select>
@@ -309,34 +327,20 @@ export default function AddEditInventory() {
               style={{ marginBottom: 24 }}
               showIcon
             />
-          )}
-
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                name="branch_id"
-                label="Branch"
-                rules={[{ required: true, message: "Please elect branch" }]}
-              >
-                <Select placeholder="Select branch">
-                  {branches.map((branch) => (
-                    <Option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+          )}          {/* Single Row for Reference, Cost, Quantity, Expiry */}
+          <Row gutter={[12, 6]}>
+            <Col xs={24} sm={6}>
               <Form.Item
                 name="batch_number"
-                label="Reference Number"
+                label="Reference #"
+                style={{ marginBottom: 8 }}
                 rules={[
                   { required: true, message: "Please enter reference number" },
                 ]}
                 extra="Unique identifier for this stock entry"
               >
                 <Input
+                  size="small"
                   placeholder="Enter reference number"
                   disabled={isEdit}
                   suffix={
@@ -357,13 +361,12 @@ export default function AddEditInventory() {
                 />
               </Form.Item>
             </Col>
-          </Row>
 
-          <Row gutter={24}>
-            <Col span={12}>
+            <Col xs={24} sm={6}>
               <Form.Item
                 name="cost_price"
-                label="Cost Price (per unit)"
+                label="Cost Price"
+                style={{ marginBottom: 8 }}
                 rules={[
                   { required: true, message: "Please enter cost price" },
                   {
@@ -372,9 +375,10 @@ export default function AddEditInventory() {
                     message: "Cost price must be positive",
                   },
                 ]}
-                extra="What you paid for each unit"
+                extra="Cost per unit"
               >
                 <InputNumber
+                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Enter cost price"
                   min={0}
@@ -384,10 +388,11 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
 
-            <Col span={12}>
+            <Col xs={24} sm={6}>
               <Form.Item
                 name="quantity"
                 label="Quantity"
+                style={{ marginBottom: 8 }}
                 rules={[
                   { required: true, message: "Please enter quantity" },
                   {
@@ -398,6 +403,7 @@ export default function AddEditInventory() {
                 ]}
               >
                 <InputNumber
+                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Enter quantity to add"
                   min={1}
@@ -407,16 +413,16 @@ export default function AddEditInventory() {
                 />
               </Form.Item>
             </Col>
-          </Row>
 
-          <Row gutter={24}>
-            <Col span={12}>
+            <Col xs={24} sm={6}>
               <Form.Item
                 name="expiry_date"
                 label="Expiry Date"
-                extra="Leave empty if product doesn't expire"
+                style={{ marginBottom: 8 }}
+                extra="Leave empty if doesn't expire"
               >
                 <DatePicker
+                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Select expiry date"
                   format="YYYY-MM-DD"
@@ -427,14 +433,18 @@ export default function AddEditInventory() {
                 />
               </Form.Item>
             </Col>
+          </Row>
 
-            <Col span={12}>
+          {/* Vendor Row */}
+          <Row gutter={[12, 6]}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 name="vendor_id"
                 label="Supplier/Vendor"
+                style={{ marginBottom: 8 }}
                 extra="Who did you purchase this from?"
               >
-                <VendorSelector />
+                <VendorSelector size="small" />
               </Form.Item>
             </Col>
           </Row>

@@ -4,7 +4,6 @@ import {
   MinusCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SettingOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -154,212 +153,219 @@ export default function SimpleProductForm({
   const parentForm = Form.useFormInstance();
 
   useEffect(() => {}, [parentForm]);
-
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ marginBottom: 8 }}>
-          {/* Row 1: Product Name (readonly), SKU, Barcode */}
-          <Row gutter={8}>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Product Name" style={{ marginBottom: 8 }}>
-                <Input
-                
-                  value={variant.name || productName}
-                  disabled
-                  placeholder="Product name will sync from basic info"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="SKU" style={{ marginBottom: 8 }}>
-                <Input
-                  placeholder="Auto-generate or enter SKU"
-                  value={variant.sku || ""}
-                  onChange={(e) => handleFieldChange("sku", e.target.value)}
-                  suffix={
-                    <Tooltip title="Generate SKU">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<ReloadOutlined />}
-                        onClick={generateSKU}
-                      />
-                    </Tooltip>
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label={
-                  <Space>
-                    <BarcodeOutlined />
-                    Barcode
-                  </Space>
-                }
-                style={{ marginBottom: 8 }}
-              >
-                <Input
-                  placeholder="Auto-generate or enter barcode"
-                  value={variant.barcode || ""}
-                  onChange={(e) => handleFieldChange("barcode", e.target.value)}
-                  suffix={
-                    <Tooltip title="Generate EAN-13">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<ReloadOutlined />}
-                        onClick={generateBarcode}
-                      />
-                    </Tooltip>
-                  }
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          {/* Row 2: Pricing & Inventory */}
-          <Row gutter={4}>
-            <Col xs={24} sm={4}>
-              <Form.Item
-                label="Regular Price"
-                required
-                style={{ marginBottom: 8 }}
-              >
-                <InputNumber
-                  placeholder="0.00"
-                  min={0}
-                  precision={2}
-                  style={{ width: "100%" }}
-                  prefix="$"
-                  value={variant.regular_price}
-                  onChange={(value) =>
-                    handleFieldChange("regular_price", value)
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={4}>
-              <Form.Item label="Wholesale Price" style={{ marginBottom: 8 }}>
-                <InputNumber
-                  placeholder="0.00"
-                  min={0}
-                  precision={2}
-                  style={{ width: "100%" }}
-                  prefix="$"
-                  value={variant.wholesale_price}
-                  onChange={(value) =>
-                    handleFieldChange("wholesale_price", value)
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={4}>
-              <Form.Item
-                label={
-                  <Space>
-                    <AlertOutlined />
-                    Alert Quantity
-                  </Space>
-                }
-                style={{ marginBottom: 8 }}
-              >
-                <InputNumber
-                  placeholder="10"
-                  min={0}
-                  style={{ width: "100%" }}
-                  value={variant.alert_quantity}
-                  onChange={(value) =>
-                    handleFieldChange("alert_quantity", value || 0)
-                  }
-                  addonAfter="units"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={4}>
-              <CommonSelector
-                label="Sale Unit"
-                type="unit"
-                value={Number(variant.sale_unit_id) || undefined}
-                onChange={(value) =>
-                  handleFieldChange("sale_unit_id", value as number)
+    <div style={{ marginBottom: 8 }}>
+      {/* Compact layout with minimal spacing */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {/* Row 1: Product Name, SKU, Barcode - More compact */}
+        <Row gutter={[6, 4]}>
+          <Col xs={24} sm={8}>
+            <Form.Item label="Product Name" style={{ marginBottom: 4 }}>
+              <Input
+                size="small"
+                value={variant.name || productName}
+                disabled
+                placeholder="Product name will sync from basic info"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Form.Item label="SKU" style={{ marginBottom: 4 }}>
+              <Input
+                size="small"
+                placeholder="Auto-generate or enter SKU"
+                value={variant.sku || ""}
+                onChange={(e) => handleFieldChange("sku", e.target.value)}
+                suffix={
+                  <Tooltip title="Generate SKU">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ReloadOutlined />}
+                      onClick={generateSKU}
+                    />
+                  </Tooltip>
                 }
               />
-            </Col>
-            <Col xs={24} sm={4}>
-              <CommonSelector
-                label="Purchase Unit"
-                type="unit"
-                value={Number(variant.purchase_unit_id) || undefined}
-                onChange={(value) =>
-                  handleFieldChange("purchase_unit_id", value as number)
-                }
-              />
-            </Col>
-            <Col xs={24} sm={4}>
-              <Form.Item label="Warranty Period" style={{ marginBottom: 8 }}>
-                <InputNumber
-                  placeholder="12"
-                  min={0}
-                  style={{ width: "100%" }}
-                  value={variant.warranty_period}
-                  onChange={(value) =>
-                    handleFieldChange("warranty_period", value || undefined)
-                  }
-                  addonAfter="months"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          {/* Row 3: Image */}
-          <Row>
-            <Col span={4}>
-              <Form.Item label="Product Image" style={{ marginBottom: 8 }}>
-                <ImageInput
-                  name="product-image"
-                  label=""
-                  value={variant.image ? [variant.image] : []}
-                  onChange={(urls) => handleFieldChange("image", urls[0] || "")}
-                  maxCount={1}
-                  useForm={false}
-                  listType="text"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          {/* Attributes - Compact Section */}
-          {(variant.attributes || []).length > 0 ? (
-            <Card
-              size="small"
-              style={{ marginTop: 12 }}
-              title={
-                <Space>
-                  <Text strong style={{ fontSize: 12 }}>
-                    Attributes ({(variant.attributes || []).length})
-                  </Text>
-                  <Button
-                    type="dashed"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={addVariantAttribute}
-                  >
-                    Add
-                  </Button>
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Form.Item
+              label={
+                <Space size={2}>
+                  <BarcodeOutlined />
+                  Barcode
                 </Space>
               }
+              style={{ marginBottom: 4 }}
             >
-              {(variant.attributes || []).map((attr, attrIndex) => (
-                <Row
-                  key={attrIndex}
-                  gutter={4}
-                  align="middle"
-                  style={{ marginBottom: 4 }}
+              <Input
+                size="small"
+                placeholder="Auto-generate or enter barcode"
+                value={variant.barcode || ""}
+                onChange={(e) => handleFieldChange("barcode", e.target.value)}
+                suffix={
+                  <Tooltip title="Generate EAN-13">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ReloadOutlined />}
+                      onClick={generateBarcode}
+                    />
+                  </Tooltip>
+                }
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Row 2: Pricing, Alert, Units, Warranty - All in one compact row */}
+        <Row gutter={[4, 4]}>
+          <Col xs={12} sm={4}>
+            <Form.Item
+              label="Regular Price"
+              required
+              style={{ marginBottom: 4 }}
+            >
+              <InputNumber
+                size="small"
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                style={{ width: "100%" }}
+                prefix="$"
+                value={variant.regular_price}
+                onChange={(value) =>
+                  handleFieldChange("regular_price", value)
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} sm={4}>
+            <Form.Item label="Wholesale Price" style={{ marginBottom: 4 }}>
+              <InputNumber
+                size="small"
+                placeholder="0.00"
+                min={0}
+                precision={2}
+                style={{ width: "100%" }}
+                prefix="$"
+                value={variant.wholesale_price}
+                onChange={(value) =>
+                  handleFieldChange("wholesale_price", value)
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} sm={4}>
+            <Form.Item
+              label={
+                <Space size={2}>
+                  <AlertOutlined />
+                  Alert Qty
+                </Space>
+              }
+              style={{ marginBottom: 4 }}
+            >
+              <InputNumber
+                size="small"
+                placeholder="10"
+                min={0}
+                style={{ width: "100%" }}
+                value={variant.alert_quantity}
+                onChange={(value) =>
+                  handleFieldChange("alert_quantity", value || 0)
+                }
+                addonAfter="units"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={12} sm={4}>
+            <CommonSelector
+              label="Sale Unit"
+              type="unit"
+              value={Number(variant.sale_unit_id) || undefined}
+              onChange={(value) =>
+                handleFieldChange("sale_unit_id", value as number)
+              }
+              size="small"
+            />
+          </Col>
+          <Col xs={12} sm={4}>
+            <CommonSelector
+              label="Purchase Unit"
+              type="unit"
+              value={Number(variant.purchase_unit_id) || undefined}
+              onChange={(value) =>
+                handleFieldChange("purchase_unit_id", value as number)
+              }
+              size="small"
+            />
+          </Col>
+          <Col xs={12} sm={4}>
+            <Form.Item label="Warranty" style={{ marginBottom: 4 }}>
+              <InputNumber
+                size="small"
+                placeholder="12"
+                min={0}
+                style={{ width: "100%" }}
+                value={variant.warranty_period}
+                onChange={(value) =>
+                  handleFieldChange("warranty_period", value || undefined)
+                }
+                addonAfter="mo"
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Row 3: Image - More compact */}
+        <Row gutter={[4, 4]}>
+          <Col xs={24} sm={6}>
+            <Form.Item label="Product Image" style={{ marginBottom: 4 }}>
+              <ImageInput
+                name="product-image"
+                label=""
+                value={variant.image ? [variant.image] : []}
+                onChange={(urls) => handleFieldChange("image", urls[0] || "")}
+                maxCount={1}
+                useForm={false}
+                listType="text"
+              />
+            </Form.Item>
+          </Col>
+        </Row>        {/* Compact Attributes Section */}
+        {(variant.attributes || []).length > 0 ? (
+          <Card
+            size="small"
+            style={{ marginTop: 6 }}
+            title={
+              <Space size={4}>
+                <Text strong style={{ fontSize: 11 }}>
+                  Attributes ({(variant.attributes || []).length})
+                </Text>
+                <Button
+                  type="dashed"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={addVariantAttribute}
+                  style={{ height: 20, fontSize: 10 }}
                 >
-                  <Col xs={10}>
+                  Add
+                </Button>
+              </Space>
+            }
+            bodyStyle={{ padding: 8 }}
+          >
+            <Row gutter={[4, 2]}>
+              {(variant.attributes || []).map((attr, attrIndex) => (
+                <Col xs={24} sm={12} md={8} key={attrIndex}>
+                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     <Input
                       placeholder="Name"
                       value={attr.name}
                       size="small"
+                      style={{ flex: 1 }}
                       onChange={(e) =>
                         updateVariantAttribute(
                           attrIndex,
@@ -368,12 +374,11 @@ export default function SimpleProductForm({
                         )
                       }
                     />
-                  </Col>
-                  <Col xs={10}>
                     <Input
                       placeholder="Value"
                       value={attr.value}
                       size="small"
+                      style={{ flex: 1 }}
                       onChange={(e) =>
                         updateVariantAttribute(
                           attrIndex,
@@ -382,136 +387,154 @@ export default function SimpleProductForm({
                         )
                       }
                     />
-                  </Col>
-                  <Col xs={4}>
                     <Button
                       type="text"
                       danger
                       size="small"
                       icon={<MinusCircleOutlined />}
                       onClick={() => removeVariantAttribute(attrIndex)}
+                      style={{ minWidth: 24, height: 24 }}
                     />
-                  </Col>
-                </Row>
+                  </div>
+                </Col>
               ))}
-            </Card>
-          ) : (
-            <div style={{ marginTop: 12 }}>
-              <Button
-                type="dashed"
-                size="small"
-                block
-                onClick={addVariantAttribute}
-              >
-                <PlusOutlined /> Add Attribute
-              </Button>
-            </div>
-          )}
-          {/* Serial Numbers - Compact Section */}
-          {(variant.serials || []).length > 0 ? (
-            <Card
+            </Row>
+          </Card>
+        ) : (
+          <div style={{ marginTop: 6 }}>
+            <Button
+              type="dashed"
               size="small"
-              style={{ marginTop: 8 }}
-              title={
-                <Space>
-                  <Text strong style={{ fontSize: 12 }}>
-                    Serial Numbers ({(variant.serials || []).length})
-                  </Text>
-                  <Button
-                    type="dashed"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={addVariantSerial}
-                  >
-                    Add
-                  </Button>
-                </Space>
-              }
+              block
+              icon={<PlusOutlined />}
+              onClick={addVariantAttribute}
+              style={{ height: 28 }}
             >
-              {(variant.serials || []).map((serial, serialIndex) => (
-                <Row
-                  key={serialIndex}
-                  gutter={4}
-                  align="middle"
-                  style={{ marginBottom: 4 }}
+              Add Product Attributes
+            </Button>
+          </div>
+        )}
+
+        {/* Compact Serial Numbers Section */}
+        {(variant.serials || []).length > 0 ? (
+          <Card
+            size="small"
+            style={{ marginTop: 6 }}
+            title={
+              <Space size={4}>
+                <Text strong style={{ fontSize: 11 }}>
+                  Serial Numbers ({(variant.serials || []).length})
+                </Text>
+                <Button
+                  type="dashed"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={addVariantSerial}
+                  style={{ height: 20, fontSize: 10 }}
                 >
-                  <Col xs={8}>
-                    <Input
-                      placeholder="Serial #"
-                      value={serial.serial_number}
-                      size="small"
-                      onChange={(e) =>
-                        updateVariantSerial(
-                          serialIndex,
-                          "serial_number",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </Col>
-                  <Col xs={6}>
-                    <Select
-                      value={serial.status}
-                      onChange={(value) =>
-                        updateVariantSerial(serialIndex, "status", value)
-                      }
-                      style={{ width: "100%" }}
-                      size="small"
-                    >
-                      <Option value="available">Available</Option>
-                      <Option value="sold">Sold</Option>
-                      <Option value="defective">Defective</Option>
-                      <Option value="returned">Returned</Option>
-                    </Select>
-                  </Col>
-                  <Col xs={8}>
-                    <Input
-                      placeholder="Notes"
-                      value={serial.notes || ""}
-                      size="small"
-                      onChange={(e) =>
-                        updateVariantSerial(
-                          serialIndex,
-                          "notes",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </Col>
-                  <Col xs={2}>
-                    <Button
-                      type="text"
-                      danger
-                      size="small"
-                      icon={<MinusCircleOutlined />}
-                      onClick={() => removeVariantSerial(serialIndex)}
-                    />
-                  </Col>
-                </Row>
-              ))}
-            </Card>
-          ) : (
-            <div style={{ marginTop: 8 }}>
-              <Button
-                type="dashed"
-                size="small"
-                block
-                onClick={addVariantSerial}
+                  Add
+                </Button>
+              </Space>
+            }
+            bodyStyle={{ padding: 8 }}
+          >
+            {(variant.serials || []).map((serial, serialIndex) => (
+              <Row
+                key={serialIndex}
+                gutter={[4, 2]}
+                align="middle"
+                style={{ marginBottom: 2 }}
               >
-                <BarcodeOutlined /> Add Serial Number
-              </Button>
-            </div>
-          )}{" "}
-          {/* Inventory Batches Section - Only show when not in edit mode */}
-          {!isEditMode && (
+                <Col xs={10} sm={8}>
+                  <Input
+                    placeholder="Serial #"
+                    value={serial.serial_number}
+                    size="small"
+                    onChange={(e) =>
+                      updateVariantSerial(
+                        serialIndex,
+                        "serial_number",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Col>
+                <Col xs={6} sm={4}>
+                  <Select
+                    value={serial.status}
+                    onChange={(value) =>
+                      updateVariantSerial(serialIndex, "status", value)
+                    }
+                    style={{ width: "100%" }}
+                    size="small"
+                  >
+                    <Option value="available">Available</Option>
+                    <Option value="sold">Sold</Option>
+                    <Option value="defective">Defective</Option>
+                    <Option value="returned">Returned</Option>
+                  </Select>
+                </Col>
+                <Col xs={6} sm={8}>
+                  <Input
+                    placeholder="Notes"
+                    value={serial.notes || ""}
+                    size="small"
+                    onChange={(e) =>
+                      updateVariantSerial(
+                        serialIndex,
+                        "notes",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Col>
+                <Col xs={2}>
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<MinusCircleOutlined />}
+                    onClick={() => removeVariantSerial(serialIndex)}
+                    style={{ minWidth: 24, height: 24 }}
+                  />
+                </Col>
+              </Row>
+            ))}
+          </Card>
+        ) : (
+          <div style={{ marginTop: 6 }}>
+            <Button
+              type="dashed"
+              size="small"
+              block
+              icon={<BarcodeOutlined />}
+              onClick={addVariantSerial}
+              style={{ height: 28 }}
+            >
+              Add Serial Numbers
+            </Button>
+          </div>
+        )}        {/* Compact Inventory/Batch Section - Hidden in Edit Mode */}
+        {!isEditMode && (
+          <Card
+            size="small"
+            style={{ marginTop: 6 }}
+            title={
+              <Space size={4}>
+                <Text strong style={{ fontSize: 11 }}>
+                  Inventory Batches ({(variant.batches || []).length})
+                </Text>
+              </Space>
+            }
+            bodyStyle={{ padding: 8 }}
+          >
             <BatchAddingForm
-              variantName={variant.name}
               batches={variant.batches || []}
               onBatchesChange={handleBatchesChange}
-              size="small"
+              variantName={variant.name}
             />
-          )}
-        </div>
+          </Card>
+        )}
       </div>
     </div>
   );
