@@ -242,9 +242,8 @@ export default function VariantManager({
             }
             bodyStyle={{ padding: 12 }}
           >
-            {/* Compact Row 1: Variant Name, SKU, Barcode */}
             <Row gutter={[6, 4]}>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={3}>
                 <Form.Item
                   label="Variant Name"
                   required
@@ -260,7 +259,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={3}>
                 <Form.Item label="SKU" style={{ marginBottom: 4 }}>
                   <Input
                     size="small"
@@ -282,7 +281,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col xs={24} sm={3}>
                 <Form.Item
                   label={
                     <Space size={2}>
@@ -312,11 +311,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-            </Row>
-
-            {/* Compact Row 2: All pricing, units, and settings in one row */}
-            <Row gutter={[4, 4]}>
-              <Col xs={12} sm={4}>
+              <Col xs={12} sm={2}>
                 <Form.Item
                   label="Regular Price"
                   required
@@ -337,7 +332,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={12} sm={4}>
+              <Col xs={12} sm={2}>
                 <Form.Item label="Wholesale Price" style={{ marginBottom: 4 }}>
                   <InputNumber
                     size="small"
@@ -354,7 +349,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={12} sm={3}>
+              <Col xs={12} sm={2}>
                 <Form.Item
                   label={
                     <Space size={2}>
@@ -378,7 +373,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={12} sm={3}>
+              <Col xs={12} sm={2}>
                 <CommonSelector
                   label="Sale Unit"
                   type="unit"
@@ -389,7 +384,7 @@ export default function VariantManager({
                   size="small"
                 />
               </Col>
-              <Col xs={12} sm={3}>
+              <Col xs={12} sm={2}>
                 <CommonSelector
                   label="Purchase Unit"
                   type="unit"
@@ -402,7 +397,7 @@ export default function VariantManager({
                   size="small"
                 />
               </Col>
-              <Col xs={12} sm={3}>
+              <Col xs={12} sm={2}>
                 <Form.Item label="Warranty" style={{ marginBottom: 4 }}>
                   <InputNumber
                     size="small"
@@ -420,7 +415,7 @@ export default function VariantManager({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={4}>
+              <Col xs={24} sm={3}>
                 <Form.Item label="Image" style={{ marginBottom: 4 }}>
                   <ImageInput
                     name={`variant-image-${index}`}
@@ -573,7 +568,7 @@ export default function VariantManager({
                         }
                       />
                     </Col>
-                    <Col xs={6} sm={4}>
+                    <Col xs={6} sm={2}>
                       <Select
                         value={serial.status}
                         onChange={(value) =>

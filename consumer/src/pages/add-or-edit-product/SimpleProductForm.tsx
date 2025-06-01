@@ -331,7 +331,7 @@ export default function SimpleProductForm({
                 onChange={(urls) => handleFieldChange("image", urls[0] || "")}
                 maxCount={1}
                 useForm={false}
-                listType="text"
+                listType="picture-card"
               />
             </Form.Item>
           </Col>
