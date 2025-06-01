@@ -27,6 +27,7 @@ export interface ProductVariant {
   alert_quantity: number;
   attributes: ProductAttribute[];
   serials?: ProductSerial[];
+  batches?: any[]; // Will be typed properly when importing BatchData from BatchAddingForm
 }
 
 export interface ProductAttribute {

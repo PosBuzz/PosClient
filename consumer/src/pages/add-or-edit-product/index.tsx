@@ -85,19 +85,18 @@ export default function ProductForm() {
                 name: attr.name,
                 value: attr.value,
               })) || [],
-            serials:
-              variant.serials?.map((serial: any) => ({
+            serials:              variant.serials?.map((serial: any) => ({
                 id: serial.id, // Add id field for existing serials
                 serial_number: serial.serial_number,
                 status: serial.status || "available",
                 notes: serial.notes || "",
               })) || [],
+            batches: variant.batches || [], // Initialize batches array
           })) || [],
       };
 
       // Ensure at least one variant exists even for edit mode
-      if (newFormData.variants.length === 0) {
-        newFormData.variants = [
+      if (newFormData.variants.length === 0) {        newFormData.variants = [
           {
             name: newFormData.has_variants
               ? "Variant 1"
@@ -114,6 +113,7 @@ export default function ProductForm() {
             alert_quantity: 0,
             attributes: [],
             serials: [],
+            batches: [], // Initialize batches for new variants
           },
         ];
       }
@@ -124,8 +124,7 @@ export default function ProductForm() {
     } else if (
       !isEditMode &&
       formData.variants.length === 0 &&
-      !isInitialized
-    ) {
+      !isInitialized    ) {
       // Initialize with default variant for new products
       const defaultVariant: ProductVariant = {
         name: "Default",
@@ -141,6 +140,7 @@ export default function ProductForm() {
         alert_quantity: 0,
         attributes: [],
         serials: [],
+        batches: [], // Initialize batches for default variant
       };
 
       const newFormData = { ...formData, variants: [defaultVariant] };
@@ -351,9 +351,7 @@ export default function ProductForm() {
           "Please fill in all required variant fields before submitting"
         );
         return Promise.reject(new Error("Missing variant data"));
-      }
-
-      const submitData = {
+      }      const submitData = {
         name: values.name,
         code: values.code || undefined,
         description: values.description || undefined,
@@ -364,6 +362,7 @@ export default function ProductForm() {
         tax_method: values.tax_method,
         tax: values.tax,
         daily_sale_objective: values.daily_sale_objective || 0,
+        is_edit_mode: isEditMode, // Add edit mode flag
         variants: variants.map((variant, index) => ({
           ...(variant.id && { id: variant.id }), // Include ID only for existing variants
           name: variant.name,
@@ -389,6 +388,16 @@ export default function ProductForm() {
               serial_number: serial.serial_number,
               status: serial.status || "available",
               notes: serial.notes || undefined,
+            })),
+          batches: (variant.batches || [])
+            .filter((batch) => batch.branch_id && batch.batch_number && batch.quantity > 0)
+            .map((batch) => ({
+              branch_id: batch.branch_id,
+              batch_number: batch.batch_number,
+              quantity: batch.quantity,
+              cost_price: batch.cost_price.toString(),
+              vendor_id: batch.vendor_id || undefined,
+              expiry_date: batch.expiry_date || undefined,
             })),
         })),
       };
@@ -478,14 +487,14 @@ export default function ProductForm() {
         ),
       },
       {
-        key: "variants",
-        label: formData.has_variants ? "Variants" : "Product Details",
+        key: "variants",        label: formData.has_variants ? "Variants" : "Product Details",
         children: (
           <VariantsTab
             formData={formData}
             updateVariant={updateVariant}
             addVariant={addVariant}
             deleteVariant={deleteVariant}
+            isEditMode={isEditMode}
           />
         ),
       },

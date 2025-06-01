@@ -30,6 +30,7 @@ import {
 } from "../../types/product.types";
 import CommonSelector from "./CommonSelector";
 import ImageInput from "../../components/ImageInput";
+import BatchAddingForm, { BatchData } from "../../components/BatchAddingForm";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -40,6 +41,7 @@ interface VariantManagerProps {
   addVariant: () => number;
   deleteVariant: (index: number) => void;
   productName?: string;
+  isEditMode?: boolean;
 }
 
 export default function VariantManager({
@@ -48,6 +50,7 @@ export default function VariantManager({
   addVariant,
   deleteVariant,
   productName,
+  isEditMode = false,
 }: VariantManagerProps) {
   if (variants.length === 0) {
     return (
@@ -150,7 +153,6 @@ export default function VariantManager({
     ];
     updateVariant(variantIndex, { serials: newSerials });
   };
-
   const removeVariantSerial = (variantIndex: number, serialIndex: number) => {
     const variant = variants[variantIndex];
     const newSerials = (variant.serials || []).filter(
@@ -159,9 +161,24 @@ export default function VariantManager({
     updateVariant(variantIndex, { serials: newSerials });
   };
 
+  // Batch handling function
+  const handleVariantBatchesChange = (
+    variantIndex: number,
+    batches: BatchData[]
+  ) => {
+    updateVariant(variantIndex, { batches });
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
         <Title level={4} style={{ margin: 0 }}>
           <Space>
             <SettingOutlined />
@@ -169,7 +186,12 @@ export default function VariantManager({
             <Badge count={variants.length} showZero color="blue" />
           </Space>
         </Title>
-        <Button type="dashed" onClick={addVariant} icon={<PlusOutlined />} size="small">
+        <Button
+          type="dashed"
+          onClick={addVariant}
+          icon={<PlusOutlined />}
+          size="small"
+        >
           Add Variant
         </Button>
       </div>
@@ -180,7 +202,13 @@ export default function VariantManager({
             key={`variant-${index}`}
             size="small"
             title={
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <Text strong style={{ fontSize: 14 }}>
                   Variant {index + 1}
                 </Text>
@@ -207,27 +235,28 @@ export default function VariantManager({
               {/* Row 1: Variant Name, SKU, Barcode */}
               <Row gutter={8}>
                 <Col xs={24} sm={8}>
-                  <Form.Item 
-                    label="Variant Name" 
+                  <Form.Item
+                    label="Variant Name"
                     required
                     style={{ marginBottom: 8 }}
                   >
                     <Input
                       placeholder={`Variant ${index + 1} name`}
                       value={variant.name}
-                      onChange={(e) => updateVariant(index, { name: e.target.value })}
+                      onChange={(e) =>
+                        updateVariant(index, { name: e.target.value })
+                      }
                     />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={8}>
-                  <Form.Item 
-                    label="SKU" 
-                    style={{ marginBottom: 8 }}
-                  >
+                  <Form.Item label="SKU" style={{ marginBottom: 8 }}>
                     <Input
                       placeholder="Auto-generate or enter SKU"
                       value={variant.sku || ""}
-                      onChange={(e) => updateVariant(index, { sku: e.target.value })}
+                      onChange={(e) =>
+                        updateVariant(index, { sku: e.target.value })
+                      }
                       suffix={
                         <Tooltip title="Generate SKU">
                           <Button
@@ -242,7 +271,7 @@ export default function VariantManager({
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={8}>
-                  <Form.Item 
+                  <Form.Item
                     label={
                       <Space>
                         <BarcodeOutlined />
@@ -254,7 +283,9 @@ export default function VariantManager({
                     <Input
                       placeholder="Auto-generate or enter barcode"
                       value={variant.barcode || ""}
-                      onChange={(e) => updateVariant(index, { barcode: e.target.value })}
+                      onChange={(e) =>
+                        updateVariant(index, { barcode: e.target.value })
+                      }
                       suffix={
                         <Tooltip title="Generate EAN-13">
                           <Button
@@ -273,8 +304,8 @@ export default function VariantManager({
               {/* Row 2: Pricing */}
               <Row gutter={4}>
                 <Col xs={24} sm={4}>
-                  <Form.Item 
-                    label="Regular Price" 
+                  <Form.Item
+                    label="Regular Price"
                     required
                     style={{ marginBottom: 8 }}
                   >
@@ -285,13 +316,15 @@ export default function VariantManager({
                       style={{ width: "100%" }}
                       prefix="$"
                       value={variant.regular_price}
-                      onChange={(value) => updateVariant(index, { regular_price: value })}
+                      onChange={(value) =>
+                        updateVariant(index, { regular_price: value })
+                      }
                     />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={4}>
-                  <Form.Item 
-                    label="Wholesale Price" 
+                  <Form.Item
+                    label="Wholesale Price"
                     style={{ marginBottom: 8 }}
                   >
                     <InputNumber
@@ -301,12 +334,14 @@ export default function VariantManager({
                       style={{ width: "100%" }}
                       prefix="$"
                       value={variant.wholesale_price}
-                      onChange={(value) => updateVariant(index, { wholesale_price: value })}
+                      onChange={(value) =>
+                        updateVariant(index, { wholesale_price: value })
+                      }
                     />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={4}>
-                  <Form.Item 
+                  <Form.Item
                     label={
                       <Space>
                         <AlertOutlined />
@@ -320,32 +355,40 @@ export default function VariantManager({
                       min={0}
                       style={{ width: "100%" }}
                       value={variant.alert_quantity}
-                      onChange={(value) => updateVariant(index, { alert_quantity: value || 0 })}
+                      onChange={(value) =>
+                        updateVariant(index, { alert_quantity: value || 0 })
+                      }
                       addonAfter="units"
                     />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={4}>
-                    <CommonSelector
-                      label="Sale Unit"
-                      type="unit"
-                      value={Number(variant.sale_unit_id) || undefined}
-                      onChange={(value) => updateVariant(index, { sale_unit_id: value as number })}
-                      size="small"
-                    />
+                  <CommonSelector
+                    label="Sale Unit"
+                    type="unit"
+                    value={Number(variant.sale_unit_id) || undefined}
+                    onChange={(value) =>
+                      updateVariant(index, { sale_unit_id: value as number })
+                    }
+                    size="small"
+                  />
                 </Col>
                 <Col xs={24} sm={4}>
-                    <CommonSelector
-                      label="Purchase Unit"
-                      type="unit"
-                      value={Number(variant.purchase_unit_id) || undefined}
-                      onChange={(value) => updateVariant(index, { purchase_unit_id: value as number })}
-                      size="small"
-                    />
+                  <CommonSelector
+                    label="Purchase Unit"
+                    type="unit"
+                    value={Number(variant.purchase_unit_id) || undefined}
+                    onChange={(value) =>
+                      updateVariant(index, {
+                        purchase_unit_id: value as number,
+                      })
+                    }
+                    size="small"
+                  />
                 </Col>
                 <Col xs={24} sm={4}>
-                  <Form.Item 
-                    label="Warranty Period" 
+                  <Form.Item
+                    label="Warranty Period"
                     style={{ marginBottom: 8 }}
                   >
                     <InputNumber
@@ -353,7 +396,11 @@ export default function VariantManager({
                       min={0}
                       style={{ width: "100%" }}
                       value={variant.warranty_period}
-                      onChange={(value) => updateVariant(index, { warranty_period: value })}
+                      onChange={(value) =>
+                        updateVariant(index, {
+                          warranty_period: value || undefined,
+                        })
+                      }
                       addonAfter="months"
                     />
                   </Form.Item>
@@ -363,15 +410,14 @@ export default function VariantManager({
               {/* Row 4: Image */}
               <Row>
                 <Col span={4}>
-                  <Form.Item 
-                    label="Variant Image" 
-                    style={{ marginBottom: 8 }}
-                  >
+                  <Form.Item label="Variant Image" style={{ marginBottom: 8 }}>
                     <ImageInput
                       name={`variant-image-${index}`}
                       label=""
                       value={variant.image ? [variant.image] : []}
-                      onChange={(urls) => updateVariant(index, { image: urls[0] || "" })}
+                      onChange={(urls) =>
+                        updateVariant(index, { image: urls[0] || "" })
+                      }
                       maxCount={1}
                       useForm={false}
                       listType="text"
@@ -380,7 +426,6 @@ export default function VariantManager({
                 </Col>
               </Row>
             </Form>
-
             {/* Attributes - Compact Section */}
             {(variant.attributes || []).length > 0 ? (
               <Card
@@ -403,14 +448,24 @@ export default function VariantManager({
                 }
               >
                 {(variant.attributes || []).map((attr, attrIndex) => (
-                  <Row key={attrIndex} gutter={4} align="middle" style={{ marginBottom: 4 }}>
+                  <Row
+                    key={attrIndex}
+                    gutter={4}
+                    align="middle"
+                    style={{ marginBottom: 4 }}
+                  >
                     <Col xs={10}>
                       <Input
                         placeholder="Name"
                         value={attr.name}
                         size="small"
                         onChange={(e) =>
-                          updateVariantAttribute(index, attrIndex, "name", e.target.value)
+                          updateVariantAttribute(
+                            index,
+                            attrIndex,
+                            "name",
+                            e.target.value
+                          )
                         }
                       />
                     </Col>
@@ -420,7 +475,12 @@ export default function VariantManager({
                         value={attr.value}
                         size="small"
                         onChange={(e) =>
-                          updateVariantAttribute(index, attrIndex, "value", e.target.value)
+                          updateVariantAttribute(
+                            index,
+                            attrIndex,
+                            "value",
+                            e.target.value
+                          )
                         }
                       />
                     </Col>
@@ -448,12 +508,11 @@ export default function VariantManager({
                 </Button>
               </div>
             )}
-
             {/* Serial Numbers - Compact Section */}
             {(variant.serials || []).length > 0 ? (
               <Card
                 size="small"
-                style={{ marginTop: 8}}
+                style={{ marginTop: 8 }}
                 title={
                   <Space>
                     <Text strong style={{ fontSize: 12 }}>
@@ -471,14 +530,24 @@ export default function VariantManager({
                 }
               >
                 {(variant.serials || []).map((serial, serialIndex) => (
-                  <Row key={serialIndex} gutter={4} align="middle" style={{ marginBottom: 4 }}>
+                  <Row
+                    key={serialIndex}
+                    gutter={4}
+                    align="middle"
+                    style={{ marginBottom: 4 }}
+                  >
                     <Col xs={8}>
                       <Input
                         placeholder="Serial #"
                         value={serial.serial_number}
                         size="small"
                         onChange={(e) =>
-                          updateVariantSerial(index, serialIndex, "serial_number", e.target.value)
+                          updateVariantSerial(
+                            index,
+                            serialIndex,
+                            "serial_number",
+                            e.target.value
+                          )
                         }
                       />
                     </Col>
@@ -486,7 +555,12 @@ export default function VariantManager({
                       <Select
                         value={serial.status}
                         onChange={(value) =>
-                          updateVariantSerial(index, serialIndex, "status", value)
+                          updateVariantSerial(
+                            index,
+                            serialIndex,
+                            "status",
+                            value
+                          )
                         }
                         style={{ width: "100%" }}
                         size="small"
@@ -503,7 +577,12 @@ export default function VariantManager({
                         value={serial.notes || ""}
                         size="small"
                         onChange={(e) =>
-                          updateVariantSerial(index, serialIndex, "notes", e.target.value)
+                          updateVariantSerial(
+                            index,
+                            serialIndex,
+                            "notes",
+                            e.target.value
+                          )
                         }
                       />
                     </Col>
@@ -530,6 +609,17 @@ export default function VariantManager({
                   <BarcodeOutlined /> Add Serial Number
                 </Button>
               </div>
+            )}{" "}
+            {/* Inventory Batches Section - Only show when not in edit mode */}
+            {!isEditMode && (
+              <BatchAddingForm
+                variantName={variant.name}
+                batches={variant.batches || []}
+                onBatchesChange={(batches) =>
+                  handleVariantBatchesChange(index, batches)
+                }
+                size="small"
+              />
             )}
           </Card>
         ))}

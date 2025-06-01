@@ -37,9 +37,8 @@ export default function BasicInformationTab({
   updateFormField,
   onDescriptionGenerated,
   onVariantToggle,
-}: BasicInformationTabProps) {
-  return (
-    <div className="space-y-6!">
+}: BasicInformationTabProps) {  return (
+    <div className="space-y-4!">
       {/* Product Basics */}
       <Card
         title={
@@ -49,11 +48,11 @@ export default function BasicInformationTab({
           </Space>
         }
         size="small"
-        className="border-blue-200"
+        className="border-blue-200" 
       >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <Form.Item
+        <Row gutter={[12, 12]}>
+            <Col xs={24} lg={12}>
+              <Form.Item  
               name="name"
               label="Product Name"
               rules={[
@@ -98,14 +97,12 @@ export default function BasicInformationTab({
         >
           <TextArea
             placeholder="Enter product description"
-            rows={4}
+            rows={3}
             onChange={(e) => updateFormField("description", e.target.value)}
             className="hover:border-blue-400 focus:border-blue-500"
           />
         </Form.Item>
-      </Card>
-
-      {/* Classification */}
+      </Card>      {/* Classification */}
       <Card
         title={
           <Space>
@@ -115,8 +112,9 @@ export default function BasicInformationTab({
         }
         size="small"
         className="border-green-200"
+        // style={{ marginBottom: 12 }}
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} md={8}>
             <Form.Item name="category_id">
               <CommonSelector
@@ -170,11 +168,11 @@ export default function BasicInformationTab({
             <GrTarget />
             <span>Sales Target</span>
           </Space>
-        }
-        size="small"
+        }        size="small"
         className="border-purple-200"
+        // style={{ marginBottom: 12 }}
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} md={12}>
             <Form.Item
               name="daily_sale_objective"
@@ -211,11 +209,11 @@ export default function BasicInformationTab({
             <DollarCircleOutlined />
             <span>Tax Configuration</span>
           </Space>
-        }
-        size="small"
+        }        size="small"
         className="border-orange-200"
+        // style={{ marginBottom: 12 }}
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} md={12}>
             <Form.Item
               name="tax_method"
@@ -271,10 +269,10 @@ export default function BasicInformationTab({
             <SettingOutlined />
             <span>Product Configuration</span>
           </Space>
-        }
-        size="small"
+        }        size="small"
+        // style={{ marginBottom: 12 }}
       >
-        <Row gutter={[16, 16]} align="top">
+        <Row gutter={[12, 12]} align="top">
           <Col xs={24}>
             <Form.Item
               name="has_variants"
