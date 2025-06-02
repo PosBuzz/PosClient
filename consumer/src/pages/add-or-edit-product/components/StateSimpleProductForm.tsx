@@ -157,7 +157,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
               )}
             </div>
           </Col>
-          <Col xs={24} sm={2}>
+          <Col xs={24} sm={3}>
             <div style={{ marginBottom: 4 }}>
               <Text strong style={{ fontSize: 11 }}>
                 Barcode
@@ -331,7 +331,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
               )}
             </div>
           </Col>
-          <Col xs={24} sm={3}>
+          <Col xs={24} sm={2}>
             <div style={{ marginBottom: 4 }}>
               <Text strong style={{ fontSize: 11 }}>
                 Product Image
