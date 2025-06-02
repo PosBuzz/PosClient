@@ -634,7 +634,6 @@ export class ProductService {
     // First check if product exists and belongs to this consumer
     await this.findOne(id, consumerId);
 
-    // Soft delete - set deleted_at timestamp
     await this.prisma.product.delete({
       where: { id },
     });

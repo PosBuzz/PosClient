@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Space, Typography, Popconfirm, Tabs, Alert, Card } from "antd";
-import { PlusOutlined, DeleteOutlined, CopyOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import type {
   ProductFormState,
   ValidationState,
@@ -120,19 +120,8 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
           onGenerateSKU={onGenerateSKU}
           onGenerateBarcode={onGenerateBarcode}
           isEditMode={isEditMode}
-        />
-        <div style={{ marginTop: 16, textAlign: "right" }}>
+        />        <div style={{ marginTop: 16, textAlign: "right" }}>
           <Space>
-            {formState.has_variants && (
-              <Button
-                type="text"
-                size="small"
-                icon={<CopyOutlined />}
-                onClick={() => onDuplicateVariant(variantId)}
-              >
-                Duplicate
-              </Button>
-            )}
             {formState.has_variants && variantIds.length > 1 && (
               <Popconfirm
                 title="Delete Variant"
@@ -157,26 +146,25 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
       </div>
     ),
   }));
-
   return (
     <div>
       {" "}
-      {/* Header with add variant button */}
-      <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Text strong>Product Variants ({variantIds.length})</Text>
-        {formState.has_variants && (
+      {/* Header with add variant button - only show for products with variants */}
+      {formState.has_variants && (
+        <div
+          style={{
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text strong>Product Variants ({variantIds.length})</Text>
           <Button type="dashed" icon={<PlusOutlined />} onClick={onAddVariant}>
             Add Variant
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       {/* Render variants */}
       {formState.has_variants && variantIds.length > 1 ? (
         <Tabs

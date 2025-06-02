@@ -6,7 +6,7 @@ import {
   FormAttribute,
   FormSerial 
 } from '../../../types/product.types';
-import { BatchData } from '../../../components/BatchAddingForm';
+import { BatchData } from '../components/StateBatchAddingForm';
 import { useMessageStore } from '../../../stores/messageStore';
 
 // Complete form state interface
@@ -25,6 +25,9 @@ export interface ProductFormState {
   
   // Variants
   variants: Record<string, ProductVariant>;
+  
+  // Track deleted variant IDs for edit mode
+  deletedVariantIds: number[];
 }
 
 // Validation state for each field
@@ -37,25 +40,61 @@ export interface ValidationState {
 
 // Complex state management hook
 export const useProductFormState = (initialData?: ProductFormData) => {
-  const { messageApi } = useMessageStore();
-  // Create default variant
-  const createDefaultVariant = (): ProductVariant => ({
-    name: "Default",
-    is_default: true,
-    regular_price: null,
-    wholesale_price: null,
-    sale_unit_id: undefined,
-    purchase_unit_id: undefined,
-    sku: "",
-    barcode: "",
-    warranty_period: undefined,
-    image: "",
-    alert_quantity: 0,
-    attributes: [],
-    serials: [],
-    batches: [],
-  });
+  const { messageApi } = useMessageStore();  // Helper function to generate SKU and barcode
+  const generateSkuAndBarcode = (productName?: string) => {
+    const baseName = productName || "Product";
+    const timestamp = Date.now().toString().slice(-6);
+    const prefix = baseName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 3)
+      .padEnd(3, "0");
+    
+    // Auto-generate SKU
+    const sku = `${prefix}-SKU-${timestamp}`;
+    
+    // Auto-generate barcode
+    const countryCode = "123";
+    const manufacturerCode = Math.floor(Math.random() * 100000)
+      .toString()
+      .padStart(5, "0");
+    const productCode = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+    const baseNumber = countryCode + manufacturerCode + productCode;
+    
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      const digit = parseInt(baseNumber[i]);
+      sum += i % 2 === 0 ? digit : digit * 3;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    const barcode = baseNumber + checkDigit;
 
+    return { sku, barcode };
+  };
+
+  // Create default variant
+  const createDefaultVariant = (productName?: string): ProductVariant => {
+    const { sku, barcode } = generateSkuAndBarcode(productName);
+
+    return {
+      name: "Default",
+      is_default: true,
+      regular_price: null,
+      wholesale_price: null,
+      sale_unit_id: undefined,
+      purchase_unit_id: undefined,
+      sku: sku,
+      barcode: barcode,
+      warranty_period: undefined,
+      image: null,
+      alert_quantity: 0,
+      attributes: [],
+      serials: [],
+      batches: [],
+    };
+  };
   // Initialize form state
   const [formState, setFormState] = useState<ProductFormState>(() => {
     if (initialData) {
@@ -73,7 +112,8 @@ export const useProductFormState = (initialData?: ProductFormData) => {
         variants: initialData.variants?.reduce((acc, variant, index) => {
           acc[index.toString()] = variant;
           return acc;
-        }, {} as Record<string, ProductVariant>) || { "0": createDefaultVariant() }
+        }, {} as Record<string, ProductVariant>) || { "0": createDefaultVariant(initialData.name) },
+        deletedVariantIds: []
       };
     }
     
@@ -88,7 +128,8 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax_method: TaxMethod.EXCLUSIVE,
       tax: 0,
       daily_sale_objective: 0,
-      variants: { "0": createDefaultVariant() }
+      variants: { "0": createDefaultVariant("") },
+      deletedVariantIds: []
     };
   });
 
@@ -100,13 +141,28 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     saving: false,
     validating: false,
     generating: false
-  });
-  // Field update function with validation
+  });  // Field update function with validation
   const updateField = useCallback((field: string, value: any) => {
-    setFormState(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormState(prev => {
+      const newState = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Sync variant name with product name for simple products
+      if (field === 'name' && !prev.has_variants) {
+        const updatedVariants = { ...prev.variants };
+        if (updatedVariants["0"]) {
+          updatedVariants["0"] = {
+            ...updatedVariants["0"],
+            name: value || "Default"
+          };
+        }
+        newState.variants = updatedVariants;
+      }
+      
+      return newState;
+    });
     
     // Clear validation error when field is updated
     setValidationState(prev => ({
@@ -139,12 +195,11 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       return newState;
     });
   }, []);
-
   const addVariant = useCallback(() => {
     const variantKeys = Object.keys(formState.variants);
     const newIndex = variantKeys.length;
     const newVariant: ProductVariant = {
-      ...createDefaultVariant(),
+      ...createDefaultVariant(formState.name),
       name: `Variant ${newIndex + 1}`,
       is_default: newIndex === 0
     };
@@ -158,10 +213,17 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     }));
 
     messageApi?.success(`Variant ${newIndex + 1} added successfully`);
-  }, [formState.variants]);
-
+  }, [formState.variants, formState.name]);
   const deleteVariant = useCallback((variantId: string) => {
     const variants = { ...formState.variants };
+    const variantToDelete = variants[variantId];
+    
+    // Track deleted variant ID if it has an ID (existing variant)
+    let deletedVariantIds = [...formState.deletedVariantIds];
+    if (variantToDelete?.id) {
+      deletedVariantIds.push(variantToDelete.id);
+    }
+    
     delete variants[variantId];
     
     // Reindex remaining variants
@@ -179,11 +241,12 @@ export const useProductFormState = (initialData?: ProductFormData) => {
 
     setFormState(prev => ({
       ...prev,
-      variants: reindexedVariants
+      variants: reindexedVariants,
+      deletedVariantIds
     }));
 
     messageApi?.success('Variant deleted successfully');
-  }, [formState.variants, formState.has_variants]);
+  }, [formState.variants, formState.has_variants, formState.deletedVariantIds]);
 
   const duplicateVariant = useCallback((variantId: string) => {
     const sourceVariant = formState.variants[variantId];
@@ -266,15 +329,26 @@ export const useProductFormState = (initialData?: ProductFormData) => {
   const updateVariantBatches = useCallback((variantId: string, batches: BatchData[]) => {
     updateVariant(variantId, { batches });
   }, [updateVariant]);
-
   // Product type toggle (simple vs variants)
   const toggleProductType = useCallback((hasVariants: boolean) => {
     setFormState(prev => {
       const variants = { ...prev.variants };
+      let deletedVariantIds = [...prev.deletedVariantIds];
       
       if (!hasVariants && Object.keys(variants).length > 1) {
         // Keep only first variant for simple product
         const firstVariant = variants["0"];
+        
+        // Track IDs of variants being deleted
+        Object.keys(variants).forEach(variantId => {
+          if (variantId !== "0") {
+            const variant = variants[variantId];
+            if (variant?.id) {
+              deletedVariantIds.push(variant.id);
+            }
+          }
+        });
+        
         return {
           ...prev,
           has_variants: false,
@@ -284,7 +358,8 @@ export const useProductFormState = (initialData?: ProductFormData) => {
               name: prev.name || "Default",
               is_default: true
             }
-          }
+          },
+          deletedVariantIds
         };
       } else {
         // Update variant names for variant mode
@@ -300,13 +375,27 @@ export const useProductFormState = (initialData?: ProductFormData) => {
         return {
           ...prev,
           has_variants: hasVariants,
-          variants: updatedVariants
+          variants: updatedVariants,
+          deletedVariantIds
         };
       }
     });
   }, []);
-
   // Auto-generation utilities
+  const generateProductCode = useCallback(() => {
+    const baseName = formState.name || "Product";
+    const timestamp = Date.now().toString().slice(-6);
+    const prefix = baseName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 3)
+      .padEnd(3, "0");
+    const code = `${prefix}-${timestamp}`;
+    
+    updateField('code', code);
+    messageApi?.success('Product code generated successfully');
+  }, [formState.name, updateField]);
+
   const generateSKU = useCallback((variantId: string) => {
     const baseName = formState.name || "Product";
     const timestamp = Date.now().toString().slice(-6);
@@ -428,13 +517,33 @@ export const useProductFormState = (initialData?: ProductFormData) => {
           errors[`${variantField}_attr_${index}_value`] = { status: 'error', help: 'Attribute value is required' };
           isValid = false;
         }
-      });
-
-      // Validate serials
+      });      // Validate serials
       if (variant.serials) {
         variant.serials.forEach((serial, index) => {
           if (!serial.serial_number?.trim()) {
             errors[`${variantField}_serial_${index}_number`] = { status: 'error', help: 'Serial number is required' };
+            isValid = false;
+          }
+        });
+      }
+
+      // Validate batches
+      if (variant.batches) {
+        variant.batches.forEach((batch, index) => {
+          if (!batch.branch_id) {
+            errors[`${variantField}_batch_${index}_branch_id`] = { status: 'error', help: 'Branch/Location is required' };
+            isValid = false;
+          }
+          if (!batch.batch_number?.trim()) {
+            errors[`${variantField}_batch_${index}_batch_number`] = { status: 'error', help: 'Reference number is required' };
+            isValid = false;
+          }
+          if (!batch.quantity || batch.quantity <= 0) {
+            errors[`${variantField}_batch_${index}_quantity`] = { status: 'error', help: 'Quantity must be greater than 0' };
+            isValid = false;
+          }
+          if (batch.cost_price === undefined || batch.cost_price === null || batch.cost_price < 0) {
+            errors[`${variantField}_batch_${index}_cost_price`] = { status: 'error', help: 'Cost price is required and must be non-negative' };
             isValid = false;
           }
         });
@@ -454,21 +563,26 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax_method: productData.tax_method || TaxMethod.EXCLUSIVE,
       tax: productData.tax || 0,
       daily_sale_objective: productData.daily_sale_objective || 0,
+      deletedVariantIds: [],
       variants: productData.variants?.reduce((acc, variant, index) => {
+        const { sku: autoSku, barcode: autoBarcode } = generateSkuAndBarcode(productData.name);
         acc[index.toString()] = {
           ...variant,
+          // For simple products, sync variant name with product name
+          name: (productData.has_variants || false) ? variant.name : (productData.name || "Default"),
+          // Auto-generate SKU/barcode if missing
+          sku: variant.sku || autoSku,
+          barcode: variant.barcode || autoBarcode,
           // Ensure arrays are properly initialized
           attributes: variant.attributes || [],
           serials: variant.serials || [],
           batches: variant.batches || [],
         };
         return acc;
-      }, {} as Record<string, ProductVariant>) || { "0": createDefaultVariant() }
+      }, {} as Record<string, ProductVariant>) || { "0": createDefaultVariant(productData.name) }
     });
     setValidationState({});
-  }, []);
-
-  // Reset form to initial state
+  }, []);  // Reset form to initial state
   const resetForm = useCallback(() => {
     setFormState({
       name: "",
@@ -481,22 +595,24 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax_method: TaxMethod.EXCLUSIVE,
       tax: 0,
       daily_sale_objective: 0,
-      variants: { "0": createDefaultVariant() }
+      variants: { "0": createDefaultVariant("") },
+      deletedVariantIds: []
     });
     setValidationState({});
     setLoadingStates({ saving: false, validating: false, generating: false });
   }, []);
-
   // Convert state to API format
   const getFormDataForAPI = useCallback(() => {
-    const variants = Object.values(formState.variants).map((variant) => ({      ...variant,
+    const variants = Object.values(formState.variants).map((variant) => ({
+      ...variant,
       regular_price: variant.regular_price?.toString() || "0.00",
       wholesale_price: variant.wholesale_price?.toString() || undefined,
       attributes: variant.attributes.filter(attr => attr.name && attr.value),
       serials: variant.serials?.filter(serial => serial.serial_number) || [],
     }));
 
-    return {
+    // Add deleted variant IDs for edit mode
+    const apiData: any = {
       name: formState.name,
       code: formState.code || undefined,
       description: formState.description || undefined,
@@ -509,6 +625,14 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       daily_sale_objective: formState.daily_sale_objective,
       variants,
     };
+
+    // Only add the variant_ids_to_delete field if there are actually IDs to delete
+    if (formState.deletedVariantIds.length > 0) {
+      apiData.variant_ids_to_delete = formState.deletedVariantIds;
+      apiData.is_edit_mode = true; // Flag to preserve inventory on backend
+    }
+
+    return apiData;
   }, [formState]);
 
   // Loading state management
@@ -545,8 +669,8 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     
     // Product type
     toggleProductType,
-    
-    // Utilities
+      // Utilities
+    generateProductCode,
     generateSKU,
     generateBarcode,
     validateForm,

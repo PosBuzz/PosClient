@@ -190,7 +190,7 @@ model RolePermission {
 model Product {
   id                   Int            @id @default(autoincrement())
   consumer_id          Int
-  name                 String
+  name                 String         @unique
   code                 String?
   description          String?
   category_id          Int?
@@ -252,8 +252,6 @@ model ProductVariant {
   alert_quantity   Int?      @default(0) // Low stock alert threshold
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
-  deleted_at       DateTime?
-
   // Relations
   product             Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
   sale_unit           Unit                  @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
@@ -374,7 +372,7 @@ model InventoryBatch {
   id           Int       @id @default(autoincrement())
   variant_id   Int
   branch_id    Int
-  batch_number String    
+  batch_number String
   quantity     Int
   cost_price   Decimal   @db.Decimal(10, 2)
   vendor_id    Int?

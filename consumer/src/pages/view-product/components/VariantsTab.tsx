@@ -10,15 +10,14 @@ interface VariantsTabProps {
 }
 
 const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
-  const variantColumns = [
-    {
+  const variantColumns = [    {
       title: "Image",
       dataIndex: "image",
       key: "image",
       width: 80,
-      render: (image) => (
+      render: (image: string) => (
         <Image
-          src={image}
+          src={image || "https://placehold.co/50x50?text=No+Image"}
           alt="Variant"
           width={50}
           height={50}
@@ -123,13 +122,12 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               <Text type="secondary" style={{ fontSize: "12px" }}>
                 Alert: {record.alert_quantity}
               </Text>
-            )}
-            {Object.keys(stockByBranch).length > 1 && (
+            )}            {Object.keys(stockByBranch).length > 1 && (
               <Tooltip 
                 title={
                   <div>
                     {Object.entries(stockByBranch).map(([branch, qty]) => (
-                      <div key={branch}>{branch}: {qty} units</div>
+                      <div key={branch}>{branch}: {qty as number} units</div>
                     ))}
                   </div>
                 }
@@ -206,16 +204,15 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
       },
     },
   ];
-
   // Expandable row render function
-  const expandedRowRender = (record) => {
-    const stockByBranch = record.inventory_items?.reduce((acc, item) => {
+  const expandedRowRender = (record: any) => {
+    const stockByBranch = record.inventory_items?.reduce((acc: Record<string, number>, item: any) => {
       const branchName = item.branch?.name || 'Main';
       acc[branchName] = (acc[branchName] || 0) + item.quantity;
       return acc;
     }, {}) || {};
 
-    const expiringItems = record.inventory_items?.filter(item => {
+    const expiringItems = record.inventory_items?.filter((item: any) => {
       if (!item.expiry_date) return false;
       const expiryDate = new Date(item.expiry_date);
       const thirtyDaysFromNow = new Date();
@@ -226,11 +223,10 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
     return (
       <Collapse size="small" ghost>
         {Object.keys(stockByBranch).length > 0 && (
-          <Panel header={`Stock by Branch (${Object.keys(stockByBranch).length})`} key="stock">
-            <Space wrap>
+          <Panel header={`Stock by Branch (${Object.keys(stockByBranch).length})`} key="stock">            <Space wrap>
               {Object.entries(stockByBranch).map(([branch, qty]) => (
                 <Tag key={branch} icon={<ShopOutlined />}>
-                  {branch}: {qty} units
+                  {branch}: {qty as number} units
                 </Tag>
               ))}
             </Space>

@@ -13,9 +13,12 @@ import StateVariantManager from "./components/StateVariantManager";
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("basic");
-  const queryClient = useQueryClient();  // Initialize our state management hook
+  const queryClient = useQueryClient();
+
+  // Initialize our state management hook
   const {
     formState,
     validationState,
@@ -31,60 +34,66 @@ export default function ProductForm() {
     updateVariantSerial,
     deleteVariantSerial,
     updateVariantBatches,
+    generateProductCode,
     generateSKU,
     generateBarcode,
     validateForm,
     initializeFormData,
+    resetForm,
   } = useProductFormState();
   // Define helper functions for data transformation
   const transformProductToFormData = useCallback(
     (product: any): ProductFormData => {
       // Transform variants from backend format to frontend format
-      const transformedVariants = product.variants?.map((variant: any) => ({
-        id: variant.id,
-        name: variant.name || "",
-        sku: variant.sku || "",
-        barcode: variant.barcode || "",
-        regular_price: variant.regular_price || "0.00",
-        wholesale_price: variant.wholesale_price || "",
-        sale_unit_id: variant.sale_unit_id,
-        purchase_unit_id: variant.purchase_unit_id,
-        warranty_period: variant.warranty_period || undefined,
-        image: variant.image || "",
-        alert_quantity: variant.alert_quantity || 0,
-        is_default: variant.is_default || false,
-        // Transform VariantAttribute to attributes
-        attributes: variant.VariantAttribute?.map((attr: any) => ({
-          id: attr.id,
-          name: attr.name,
-          value: attr.value,
-        })) || [],
-        // Transform serials
-        serials: variant.serials?.map((serial: any) => ({
-          id: serial.id,
-          serial_number: serial.serial_number,
-          status: serial.status || "available",
-          notes: serial.notes,
-        })) || [],
-        // Transform batches (for inventory in non-edit mode)
-        batches: variant.inventory_items?.map((item: any) => ({
-          id: item.id,
-          branch_id: item.branch_id,
-          batch_number: item.batch_number || "",
-          quantity: item.quantity,
-          cost_price: item.cost_price || "0.00",
-          vendor_id: item.vendor_id,
-          expiry_date: item.expiry_date,
-        })) || [],
-      })) || [];
-
+      const transformedVariants =
+        product.variants?.map((variant: any) => ({
+          id: variant.id,
+          name: variant.name || "",
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          regular_price: variant.regular_price || "0.00",
+          wholesale_price: variant.wholesale_price || "",
+          sale_unit_id: variant.sale_unit_id,
+          purchase_unit_id: variant.purchase_unit_id,
+          warranty_period: variant.warranty_period || undefined,
+          image: variant.image || null,
+          alert_quantity: variant.alert_quantity || 0,
+          is_default: variant.is_default || false,
+          // Transform VariantAttribute to attributes
+          attributes:
+            variant.VariantAttribute?.map((attr: any) => ({
+              id: attr.id,
+              name: attr.name,
+              value: attr.value,
+            })) || [],
+          // Transform serials
+          serials:
+            variant.serials?.map((serial: any) => ({
+              id: serial.id,
+              serial_number: serial.serial_number,
+              status: serial.status || "available",
+              notes: serial.notes,
+            })) || [],
+          // Transform batches (for inventory in non-edit mode)
+          batches:
+            variant.inventory_items?.map((item: any) => ({
+              id: item.id,
+              branch_id: item.branch_id,
+              batch_number: item.batch_number || "",
+              quantity: item.quantity,
+              cost_price: item.cost_price || "0.00",
+              vendor_id: item.vendor_id,
+              expiry_date: item.expiry_date,
+            })) || [],
+        })) || [];
       return {
         name: product.name || "",
         code: product.code || "",
         description: product.description || "",
         category_id: product.category_id,
         brand_id: product.brand_id,
-        tag_ids: product.tag_ids || [],
+        tag_ids:
+          product.tags?.map((tagRelation: any) => tagRelation.tag.id) || [],
         has_variants: product.has_variants ?? true,
         tax_method: product.tax_method || TaxMethod.EXCLUSIVE,
         tax: product.tax || 0,
@@ -107,7 +116,7 @@ export default function ProductForm() {
       sale_unit_id: variant.sale_unit_id,
       purchase_unit_id: variant.purchase_unit_id,
       warranty_period: variant.warranty_period || undefined,
-      image: variant.image || "",
+      image: variant.image || null,
       alert_quantity: variant.alert_quantity || 0,
       is_default: variant.is_default || false,
       attributes:
@@ -115,19 +124,21 @@ export default function ProductForm() {
           id: attr.id,
           name: attr.name,
           value: attr.value,
-        })) || [],      serials:
+        })) || [],
+      serials:
         variant.serials?.map((serial) => ({
           id: serial.id,
           serial_number: serial.serial_number,
           status: serial.status || "available",
           notes: serial.notes,
-        })) || [],batches: variant.batches?.map((batch) => ({
-        ...batch,
-        cost_price: batch.cost_price?.toString() || "0.00",
-      })) || [],
-    }));
-
-    return {
+        })) || [],
+      batches:
+        variant.batches?.map((batch) => ({
+          ...batch,
+          cost_price: batch.cost_price?.toString() || "0.00",
+        })) || [],
+    }));    // Prepare API data object, adding variant_ids_to_delete if any exist
+    const apiData: any = {
       name: formState.name,
       code: formState.code,
       description: formState.description,
@@ -140,6 +151,17 @@ export default function ProductForm() {
       daily_sale_objective: formState.daily_sale_objective,
       variants,
     };
+    
+    // Add deleted variant IDs for edit mode
+    if (formState.deletedVariantIds.length > 0) {
+      apiData.variant_ids_to_delete = formState.deletedVariantIds;
+      apiData.is_edit_mode = true; // Flag to preserve inventory on backend for edited variants
+    } else if (isEditMode) {
+      // If in edit mode but no variants deleted, still flag it for backend processing
+      apiData.is_edit_mode = true;
+    }
+    
+    return apiData;
   }, [formState]);
 
   // Fetch product data if in edit mode
@@ -147,21 +169,22 @@ export default function ProductForm() {
     queryKey: ["product", id],
     queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
-  });  // Initialize form with product data in edit mode
+  });
+
+  // Initialize form with product data in edit mode
   useEffect(() => {
     if (productData && isEditMode) {
-      console.log("Raw product data from backend:", productData);
       const formData = transformProductToFormData(productData);
-      console.log("Transformed form data:", formData);
       initializeFormData(formData);
-      console.log("Form initialized with product data:", formData);
+    } else {
+      resetForm();
     }
   }, [productData, isEditMode, transformProductToFormData, initializeFormData]);
+
   // Save mutation
   const saveProductMutation = useMutation({
     mutationFn: async () => {
       // Validate form before submitting using the hook's validation
-      console.log(formState);
 
       const isValid = validateForm();
       if (!isValid) {
@@ -192,9 +215,7 @@ export default function ProductForm() {
     onError: (error: any) => {
       message.error(
         `${
-          isEditMode
-            ? "Failed to update product"
-            : "Failed to save product"
+          isEditMode ? "Failed to update product" : "Failed to save product"
         }: ${error.response?.data?.message || error.message || "Unknown error"}`
       );
     },
@@ -213,6 +234,21 @@ export default function ProductForm() {
   };
 
   // Variant management handlers
+  const handleDeleteVariant = useCallback(
+    (variantId: string) => {
+      deleteVariant(variantId);
+    }, 
+    [deleteVariant]
+  );
+
+  const handleAddVariant = useCallback(() => {
+    addVariant();
+  }, [addVariant]);
+
+  const handleDuplicateVariant = useCallback((variantId: string) => {
+    duplicateVariant(variantId);
+  }, [duplicateVariant]);
+
   const handleVariantUpdate = useCallback(
     (variantId: string, updates: any) => {
       updateVariant(variantId, updates);
@@ -253,11 +289,20 @@ export default function ProductForm() {
       updateVariantSerial(variantId, serialIndex, updates);
     },
     [updateVariantSerial]
-  );  const handleDeleteVariantSerial = useCallback(
+  );
+
+  const handleDeleteVariantSerial = useCallback(
     (variantId: string, serialIndex: number) => {
       deleteVariantSerial(variantId, serialIndex);
     },
     [deleteVariantSerial]
+  );
+
+  const handleUpdateVariantBatches = useCallback(
+    (variantId: string, batches: any[]) => {
+      updateVariantBatches(variantId, batches);
+    },
+    [updateVariantBatches]
   );
 
   const handleGenerateSKU = useCallback(
@@ -266,12 +311,14 @@ export default function ProductForm() {
     },
     [generateSKU]
   );
+
   const handleGenerateBarcode = useCallback(
     (variantId: string) => {
       generateBarcode(variantId);
     },
     [generateBarcode]
   );
+
   // Show loading state
   if (isLoadingProduct) {
     return <CenterLoader />;
@@ -290,28 +337,28 @@ export default function ProductForm() {
           onVariantToggle={(hasVariants) =>
             updateField("has_variants", hasVariants)
           }
+          generateProductCode={generateProductCode}
           isEditMode={isEditMode}
         />
       ),
     },
     {
       key: "variants",
-      label: `Variants (${Object.keys(formState.variants).length})`,
-      children: (
+      label: formState.has_variants
+        ? `Variants (${Object.keys(formState.variants).length})`
+        : "Details",      children: (
         <StateVariantManager
           formState={formState}
-          validationState={validationState}
-          onAddVariant={addVariant}
-          onDeleteVariant={deleteVariant}
-          onDuplicateVariant={duplicateVariant}
+          validationState={validationState}          onAddVariant={handleAddVariant}
+          onDeleteVariant={handleDeleteVariant}
+          onDuplicateVariant={handleDuplicateVariant}
           onVariantUpdate={handleVariantUpdate}
           onAddVariantAttribute={handleAddVariantAttribute}
           onUpdateVariantAttribute={handleUpdateVariantAttribute}
-          onDeleteVariantAttribute={handleDeleteVariantAttribute}
-          onAddVariantSerial={handleAddVariantSerial}
+          onDeleteVariantAttribute={handleDeleteVariantAttribute}          onAddVariantSerial={handleAddVariantSerial}
           onUpdateVariantSerial={handleUpdateVariantSerial}
           onDeleteVariantSerial={handleDeleteVariantSerial}
-          onBatchesChange={updateVariantBatches}
+          onBatchesChange={handleUpdateVariantBatches}
           onGenerateSKU={handleGenerateSKU}
           onGenerateBarcode={handleGenerateBarcode}
           isEditMode={isEditMode}
@@ -319,6 +366,7 @@ export default function ProductForm() {
       ),
     },
   ];
+
   return (
     <>
       <PageTitle
