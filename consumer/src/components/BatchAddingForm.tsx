@@ -101,7 +101,7 @@ export default function BatchAddingForm({
   );
   if (batches.length === 0) {
     return (
-      <Card size={size} style={{ marginTop: 6 }} bodyStyle={{ padding: 8 }}>
+      <Card size={size} style={{ marginTop: 6, padding: 8 }}>
         <div style={{ textAlign: "center", padding: "6px 0" }}>
           <Text type="secondary" style={{ fontSize: 11 }}>
             No inventory batches added
@@ -147,7 +147,12 @@ export default function BatchAddingForm({
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {batches.map((batch, index) => (
-          <Card key={index} bordered={false} size="small" bodyStyle={{ padding: 0 }}>
+          <Card
+            key={index}
+            bordered={false}
+            size="small"
+            style={{ padding: 0 }}
+          >
             {/* Compact header */}
             <div
               style={{
@@ -172,7 +177,7 @@ export default function BatchAddingForm({
             </div>
 
             <Row gutter={[4, 2]}>
-              <Col xs={24} sm={4}>
+              <Col xs={24} sm={3}>
                 <Form.Item
                   label="Branch/Location"
                   style={{ marginBottom: 4 }}
@@ -180,7 +185,7 @@ export default function BatchAddingForm({
                 >
                   <Select
                     size="small"
-                    placeholder="Select branch"
+                    placeholder="Select branch/location"
                     value={batch.branch_id}
                     onChange={(value) => updateBatch(index, "branch_id", value)}
                     disabled={disabled}
@@ -229,7 +234,7 @@ export default function BatchAddingForm({
                 </Form.Item>
               </Col>
 
-              <Col xs={8} sm={3}>
+              <Col xs={8} sm={4}>
                 <Form.Item label="Qty" style={{ marginBottom: 4 }} required>
                   <InputNumber
                     size="small"
@@ -283,7 +288,7 @@ export default function BatchAddingForm({
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={3}>
+              <Col xs={24} sm={2}>
                 <Form.Item label="Expiry" style={{ marginBottom: 4 }}>
                   <DatePicker
                     size="small"
@@ -306,7 +311,7 @@ export default function BatchAddingForm({
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={4}>
+              <Col xs={24} sm={3}>
                 <Form.Item label="Supplier/Vendor" style={{ marginBottom: 2 }}>
                   <VendorSelector
                     value={batch.vendor_id}
@@ -322,7 +327,7 @@ export default function BatchAddingForm({
 
         {/* Compact Summary */}
         {batches.length > 0 && (
-          <Card size="small" bodyStyle={{ padding: 6 }}>
+          <Card size="small" style={{ padding: 6 }}>
             <div
               style={{
                 display: "flex",
