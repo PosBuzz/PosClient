@@ -244,8 +244,6 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       variants: reindexedVariants,
       deletedVariantIds
     }));
-
-    messageApi?.success('Variant deleted successfully');
   }, [formState.variants, formState.has_variants, formState.deletedVariantIds]);
 
   const duplicateVariant = useCallback((variantId: string) => {
@@ -393,7 +391,6 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     const code = `${prefix}-${timestamp}`;
     
     updateField('code', code);
-    messageApi?.success('Product code generated successfully');
   }, [formState.name, updateField]);
 
   const generateSKU = useCallback((variantId: string) => {
@@ -407,7 +404,6 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     const sku = `${prefix}-SKU-${timestamp}`;
     
     updateVariant(variantId, { sku });
-    messageApi?.success('SKU generated successfully');
   }, [formState.name, updateVariant]);
   const generateBarcode = useCallback((variantId: string) => {
     const countryCode = "123";
@@ -429,7 +425,6 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     const barcode = baseNumber + checkDigit;
     
     updateVariant(variantId, { barcode });
-    messageApi?.success('Barcode generated successfully');
   }, [updateVariant]);
 
   // Comprehensive validation
