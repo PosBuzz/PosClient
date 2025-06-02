@@ -16,12 +16,16 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ClientAuthGuard } from 'src/auth/guards/client.auth.guard';
 import { Request } from 'express';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 
 @Controller('consumer/products')
-@UseGuards(ClientAuthGuard)
+@UseGuards(ClientAuthGuard, PermissionsGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  @HasPermissions([ConsumerPermission.add_product])
   @Post()
   create(@Req() req: Request, @Body() createProductDto: CreateProductDto) {
     return this.productService.create(
@@ -30,6 +34,7 @@ export class ProductController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.view_product])
   @Get()
   findAll(
     @Req() req: Request,
@@ -37,13 +42,28 @@ export class ProductController {
     @Query('limit') limit?: number,
     @Query('search') search?: string,
     @Query('categoryIds') categoryIds?: string, // Accept as comma-separated string
-    @Query('brandIds') brandIds?: string,       // Accept as comma-separated string
-    @Query('tagIds') tagIds?: string,           // Accept as comma-separated string
+    @Query('brandIds') brandIds?: string, // Accept as comma-separated string
+    @Query('tagIds') tagIds?: string, // Accept as comma-separated string
   ) {
     // Parse comma-separated strings to number arrays
-    const parseCategoryIds = categoryIds ? categoryIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
-    const parseBrandIds = brandIds ? brandIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
-    const parseTagIds = tagIds ? tagIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : undefined;
+    const parseCategoryIds = categoryIds
+      ? categoryIds
+          .split(',')
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id))
+      : undefined;
+    const parseBrandIds = brandIds
+      ? brandIds
+          .split(',')
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id))
+      : undefined;
+    const parseTagIds = tagIds
+      ? tagIds
+          .split(',')
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id))
+      : undefined;
 
     return this.productService.findAll(Number(req?.user.consumer_id), {
       page,
@@ -55,11 +75,13 @@ export class ProductController {
     });
   }
 
+  @HasPermissions([ConsumerPermission.view_product])
   @Get(':id')
   findOne(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
     return this.productService.findOne(id, Number(req?.user.consumer_id));
   }
 
+  @HasPermissions([ConsumerPermission.edit_product])
   @Patch(':id')
   update(
     @Req() req: Request,
@@ -73,6 +95,7 @@ export class ProductController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.delete_product])
   @Delete(':id')
   remove(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
     return this.productService.remove(id, Number(req?.user.consumer_id));
