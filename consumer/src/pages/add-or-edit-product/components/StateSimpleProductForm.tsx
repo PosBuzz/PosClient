@@ -84,10 +84,8 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
 
   const handleFieldUpdate = (field: string, value: any) => {
     onVariantUpdate(variantId, { [field]: value });
-  };
-
-  const handleImageChange = (urls: string[]) => {
-    handleFieldUpdate("image", urls[0] || "");
+  };  const handleImageChange = (urls: string[]) => {
+    handleFieldUpdate("image", urls[0] || null);
   };
 
   const getFieldValidationStatus = (field: string) => {
@@ -595,9 +593,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
             <Text type="secondary" style={{ fontSize: 11 }}>
               No serial numbers added. Click 'Add' to add serial numbers.
             </Text>
-          )}{" "}        </Card>
-
-        {/* Inventory Management Section - Hidden in edit mode */}
+          )}{" "}        </Card>        {/* Inventory Management Section - Hidden in edit mode */}
         {!isEditMode && (
           <StateBatchAddingForm
             variantName={variant.name}
@@ -605,6 +601,8 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
             onBatchesChange={(batches) => onBatchesChange(variantId, batches)}
             disabled={false}
             size="small"
+            validationState={validationState}
+            variantId={variantId}
           />
         )}
       </div>

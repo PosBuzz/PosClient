@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Card,
   Col,
@@ -9,15 +9,20 @@ import {
   Space,
   Switch,
   Typography,
+  Button,
 } from "antd";
 import {
   DollarCircleOutlined,
   ProductOutlined,
   TagsOutlined,
   AimOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
 import { TaxMethod } from "../../../types/product.types";
-import { ProductFormState, ValidationState } from "../hooks/useProductFormState";
+import {
+  ProductFormState,
+  ValidationState,
+} from "../hooks/useProductFormState";
 import { getValidationStatus } from "../utils/validation";
 import AiDescriptionGenerator from "../AiDescriptionGenerator";
 import CommonSelector from "../CommonSelector";
@@ -30,6 +35,7 @@ interface StateBasicInformationTabProps {
   validationState: ValidationState;
   onFieldUpdate: (field: string, value: any) => void;
   onVariantToggle: (hasVariants: boolean) => void;
+  generateProductCode?: () => void;
   isEditMode?: boolean;
 }
 
@@ -38,10 +44,11 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
   validationState,
   onFieldUpdate,
   onVariantToggle,
+  generateProductCode,
   isEditMode = false,
 }) => {
   const handleDescriptionGenerated = (description: string) => {
-    onFieldUpdate('description', description);
+    onFieldUpdate("description", description);
   };
 
   return (
@@ -61,38 +68,50 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
         <Row gutter={[8, 4]}>
           <Col xs={24} sm={12}>
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Product Name *</Text>
+              <Text strong style={{ fontSize: 11 }}>
+                Product Name *
+              </Text>
               <Input
                 size="small"
                 placeholder="Enter product name"
                 value={formState.name}
-                onChange={(e) => onFieldUpdate('name', e.target.value)}
-                status={getValidationStatus('name', validationState).status}
+                onChange={(e) => onFieldUpdate("name", e.target.value)}
+                status={getValidationStatus("name", validationState).status}
                 maxLength={100}
                 showCount
               />
-              {getValidationStatus('name', validationState).help && (
+              {getValidationStatus("name", validationState).help && (
                 <Text type="danger" style={{ fontSize: 10 }}>
-                  {getValidationStatus('name', validationState).help}
+                  {getValidationStatus("name", validationState).help}
                 </Text>
               )}
             </div>
-          </Col>
-          <Col xs={24} sm={12}>
+          </Col>          <Col xs={24} sm={12}>
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Product Code</Text>
-              <Input
-                size="small"
-                placeholder="Enter product code"
-                value={formState.code}
-                onChange={(e) => onFieldUpdate('code', e.target.value)}
-                status={getValidationStatus('code', validationState).status}
-                maxLength={50}
-                showCount
-              />
-              {getValidationStatus('code', validationState).help && (
+              <Text strong style={{ fontSize: 11 }}>
+                Product Code
+              </Text>
+              <Space.Compact style={{ width: "100%" }}>
+                <Input
+                  size="small"
+                  placeholder="Enter product code"
+                  value={formState.code}
+                  onChange={(e) => onFieldUpdate("code", e.target.value)}
+                  status={getValidationStatus("code", validationState).status}
+                  maxLength={50}
+                  showCount
+                />                {generateProductCode && (
+                  <Button
+                    size="small"
+                    icon={<SyncOutlined />}
+                    onClick={generateProductCode}
+                    title="Auto-generate product code"
+                  />
+                )}
+              </Space.Compact>
+              {getValidationStatus("code", validationState).help && (
                 <Text type="danger" style={{ fontSize: 10 }}>
-                  {getValidationStatus('code', validationState).help}
+                  {getValidationStatus("code", validationState).help}
                 </Text>
               )}
             </div>
@@ -110,7 +129,9 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
               width: "100%",
             }}
           >
-            <Text strong style={{ fontSize: 11 }}>Description</Text>
+            <Text strong style={{ fontSize: 11 }}>
+              Description
+            </Text>
             <AiDescriptionGenerator
               productName={formState.name || ""}
               currentDescription={formState.description || ""}
@@ -122,14 +143,14 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
             placeholder="Enter product description"
             rows={2}
             value={formState.description}
-            onChange={(e) => onFieldUpdate('description', e.target.value)}
-            status={getValidationStatus('description', validationState).status}
+            onChange={(e) => onFieldUpdate("description", e.target.value)}
+            status={getValidationStatus("description", validationState).status}
             maxLength={500}
             showCount
           />
-          {getValidationStatus('description', validationState).help && (
+          {getValidationStatus("description", validationState).help && (
             <Text type="danger" style={{ fontSize: 10 }}>
-              {getValidationStatus('description', validationState).help}
+              {getValidationStatus("description", validationState).help}
             </Text>
           )}
         </div>
@@ -149,36 +170,42 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
         <Row gutter={[6, 4]}>
           <Col xs={24} sm={8}>
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Category</Text>
+              <Text strong style={{ fontSize: 11 }}>
+                Category
+              </Text>
               <CommonSelector
                 label=""
                 type="category"
                 value={formState.category_id}
-                onChange={(value) => onFieldUpdate('category_id', value)}
+                onChange={(value) => onFieldUpdate("category_id", value)}
                 size="small"
               />
             </div>
           </Col>
           <Col xs={24} sm={8}>
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Brand</Text>
+              <Text strong style={{ fontSize: 11 }}>
+                Brand
+              </Text>
               <CommonSelector
                 label=""
                 type="brand"
                 value={formState.brand_id}
-                onChange={(value) => onFieldUpdate('brand_id', value)}
+                onChange={(value) => onFieldUpdate("brand_id", value)}
                 size="small"
               />
             </div>
           </Col>
           <Col xs={24} sm={8}>
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Tags</Text>
+              <Text strong style={{ fontSize: 11 }}>
+                Tags
+              </Text>
               <CommonSelector
                 label=""
                 type="tag"
                 value={formState.tag_ids}
-                onChange={(value) => onFieldUpdate('tag_ids', value)}
+                onChange={(value) => onFieldUpdate("tag_ids", value)}
                 mode="tags"
                 size="small"
               />
@@ -203,12 +230,14 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
             <Row gutter={[6, 4]}>
               <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 4 }}>
-                  <Text strong style={{ fontSize: 11 }}>Method</Text>
+                  <Text strong style={{ fontSize: 11 }}>
+                    Method
+                  </Text>
                   <Select
                     size="small"
                     placeholder="Tax method"
                     value={formState.tax_method}
-                    onChange={(value) => onFieldUpdate('tax_method', value)}
+                    onChange={(value) => onFieldUpdate("tax_method", value)}
                     style={{ width: "100%" }}
                     options={[
                       { value: TaxMethod.EXCLUSIVE, label: "Exclusive" },
@@ -219,20 +248,23 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
               </Col>
               <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 4 }}>
-                  <Text strong style={{ fontSize: 11 }}>Rate (%)</Text>
+                  <Text strong style={{ fontSize: 11 }}>
+                    Rate (%)
+                  </Text>
                   <InputNumber
+                    type="number"
                     size="small"
                     placeholder="0"
                     min={0}
                     max={100}
                     value={formState.tax}
-                    onChange={(value) => onFieldUpdate('tax', value || 0)}
+                    onChange={(value) => onFieldUpdate("tax", value || 0)}
                     style={{ width: "100%" }}
-                    status={getValidationStatus('tax', validationState).status}
+                    status={getValidationStatus("tax", validationState).status}
                   />
-                  {getValidationStatus('tax', validationState).help && (
+                  {getValidationStatus("tax", validationState).help && (
                     <Text type="danger" style={{ fontSize: 10 }}>
-                      {getValidationStatus('tax', validationState).help}
+                      {getValidationStatus("tax", validationState).help}
                     </Text>
                   )}
                 </div>
@@ -252,20 +284,32 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
             styles={{ body: { padding: 12 } }}
           >
             <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>Daily Objective</Text>
+              <Text strong style={{ fontSize: 11 }}>
+                Daily Objective
+              </Text>
               <InputNumber
+                type="number"
                 size="small"
                 placeholder="0"
                 min={0}
                 value={formState.daily_sale_objective}
-                onChange={(value) => onFieldUpdate('daily_sale_objective', value || 0)}
+                onChange={(value) =>
+                  onFieldUpdate("daily_sale_objective", value || 0)
+                }
                 style={{ width: "100%" }}
                 addonAfter="units/day"
-                status={getValidationStatus('daily_sale_objective', validationState).status}
+                status={
+                  getValidationStatus("daily_sale_objective", validationState)
+                    .status
+                }
               />
-              {getValidationStatus('daily_sale_objective', validationState).help && (
+              {getValidationStatus("daily_sale_objective", validationState)
+                .help && (
                 <Text type="danger" style={{ fontSize: 10 }}>
-                  {getValidationStatus('daily_sale_objective', validationState).help}
+                  {
+                    getValidationStatus("daily_sale_objective", validationState)
+                      .help
+                  }
                 </Text>
               )}
             </div>
@@ -286,8 +330,17 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
           styles={{ body: { padding: 12 } }}
         >
           <div style={{ marginBottom: 0 }}>
-            <Text strong style={{ fontSize: 11 }}>Variant Setting</Text>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+            <Text strong style={{ fontSize: 11 }}>
+              Variant Setting
+            </Text>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 4,
+              }}
+            >
               <Switch
                 size="small"
                 checkedChildren="Has Variants"
