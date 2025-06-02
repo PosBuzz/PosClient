@@ -89,7 +89,11 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
             ({variant.name})
           </Text>
         )}
-        {hasErrors && <span style={{ color: "#ff4d4f", fontSize: 12 }}><GoDotFill /></span>}
+        {hasErrors && (
+          <span style={{ color: "#ff4d4f", fontSize: 12 }}>
+            <GoDotFill />
+          </span>
+        )}
       </Space>
     );
   };
