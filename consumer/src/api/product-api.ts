@@ -5,7 +5,7 @@ import {
   ProductFormData,
   ProductListResponse,
   Tag,
-  Unit
+  Unit,
 } from "../types/product.types";
 import { deleteApi, get, patch, post } from "./crud-api";
 import { endpoints } from "./endpoints";
@@ -20,7 +20,19 @@ export const productApi = {
     brandIds?: number[];
     tagIds?: number[];
   }): Promise<ProductListResponse> => {
-    return get(endpoints.products, params);
+    const formattedParams = { ...params };
+
+    if (params.categoryIds?.length) {
+      formattedParams.categoryIds = params.categoryIds.join(",") as any;
+    }
+    if (params.brandIds?.length) {
+      formattedParams.brandIds = params.brandIds.join(",") as any;
+    }
+    if (params.tagIds?.length) {
+      formattedParams.tagIds = params.tagIds.join(",") as any;
+    }
+
+    return get(endpoints.products, formattedParams);
   },
 
   getProduct: async (id: number): Promise<Product> => {
