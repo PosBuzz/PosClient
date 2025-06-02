@@ -12,6 +12,52 @@ export interface ProductFormData {
   variants: ProductVariant[];
 }
 
+// Form structure type that matches the dynamic form structure
+export interface ProductFormStructure {
+  name: string;
+  code?: string;
+  description?: string;
+  category_id?: number;
+  brand_id?: number;
+  tag_ids: number[];
+  has_variants: boolean;
+  tax_method: TaxMethod;
+  tax: number;
+  daily_sale_objective: number;
+  variants: { [key: string]: FormVariant };
+}
+
+export interface FormVariant {
+  id?: number;
+  name?: string;
+  sku?: string;
+  barcode?: string;
+  regular_price?: number | string | null;
+  wholesale_price?: number | string | null;
+  sale_unit_id?: number;
+  purchase_unit_id?: number;
+  warranty_period?: number;
+  image?: string;
+  is_default?: boolean;
+  alert_quantity?: number;
+  attributes?: FormAttribute[];
+  serials?: FormSerial[];
+  batches?: any[];
+}
+
+export interface FormAttribute {
+  id?: number;
+  name: string;
+  value: string;
+}
+
+export interface FormSerial {
+  id?: number;
+  serial_number: string;
+  status?: "available" | "sold" | "defective" | "returned";
+  notes?: string;
+}
+
 export interface ProductVariant {
   id?: number;
   name: string;

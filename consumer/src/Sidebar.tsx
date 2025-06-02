@@ -37,7 +37,7 @@ const SideBar: React.FC = () => {
     },
     {
       label: <span title="Products">Products</span>,
-      key: "/products",
+      key: "/products-menu",
       icon: <ProductOutlined />,
       children: [
         {
