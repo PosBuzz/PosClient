@@ -93,7 +93,6 @@ export class InventoryService {
 
     const whereClause: any = {
       product: { consumer_id: consumerId },
-      deleted_at: null,
     };
 
     if (search) {
@@ -209,7 +208,6 @@ export class InventoryService {
     return await this.prisma.productVariant.findMany({
       where: {
         product_id: productId,
-        deleted_at: null,
       },
       select: {
         id: true,
@@ -228,7 +226,6 @@ export class InventoryService {
       where: {
         id: variantId,
         product: { consumer_id: consumerId },
-        deleted_at: null,
       },
       include: {
         product: { select: { id: true, name: true } },
@@ -289,7 +286,6 @@ export class InventoryService {
       where: {
         product: { consumer_id: consumerId },
         alert_quantity: { gt: 0 },
-        deleted_at: null,
       },
       include: {
         product: { select: { id: true, name: true } },

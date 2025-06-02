@@ -37,7 +37,7 @@ export interface FormVariant {
   sale_unit_id?: number;
   purchase_unit_id?: number;
   warranty_period?: number;
-  image?: string;
+  image?: string | null;
   is_default?: boolean;
   alert_quantity?: number;
   attributes?: FormAttribute[];
@@ -68,7 +68,7 @@ export interface ProductVariant {
   sale_unit_id?: number;
   purchase_unit_id?: number;
   warranty_period?: number;
-  image?: string;
+  image?: string | null;
   is_default?: boolean;
   alert_quantity: number;
   attributes: ProductAttribute[];
