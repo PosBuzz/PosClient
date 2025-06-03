@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select } from "antd";
 import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
@@ -17,6 +17,7 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
+  const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.role, data),
@@ -34,6 +35,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateRole(data.id), data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["rules"] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
@@ -46,6 +48,7 @@ export default function DrawerForm({
   const { data: permissionOptions } = useQuery({
     queryKey: ["plan-permissions"],
     queryFn: () => get(endpoints.planPermissions),
+    staleTime: 3600 * 1000,
   });
 
   const onFinish = async (formValues: any) => {

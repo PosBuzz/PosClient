@@ -38,6 +38,7 @@ const ProductDetailsPage = () => {
     queryKey: ["product", productId],
     queryFn: () => productApi.getProduct(productId),
     enabled: !!productId,
+    staleTime: 3600 * 1000,
   });
 
   // Delete confirmation

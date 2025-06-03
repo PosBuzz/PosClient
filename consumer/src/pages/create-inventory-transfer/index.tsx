@@ -18,7 +18,7 @@ import {
   Select,
   Space,
   Table,
-  Typography
+  Typography,
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -59,17 +59,17 @@ export default function AddInventoryTransfer() {
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   // Updated query to handle warehouse (null branch_id)
   const { data: sourceBatches, isLoading: sourceBatchesLoading } = useQuery({
-    queryKey: ["source-batches", sourceBranchId, searchText],
+    queryKey: ["all-batches", sourceBranchId, searchText],
     queryFn: () => {
       // If sourceBranchId is null, get warehouse batches
       if (sourceBranchId === null) {
         return inventoryApi.getBatches({
           search: searchText || undefined,
-          branch_id: null, // Explicitly pass null for warehouse
           limit: 100,
         });
       }
@@ -79,6 +79,7 @@ export default function AddInventoryTransfer() {
         limit: 100,
       });
     },
+    staleTime: 3600 * 1000,
     enabled: sourceBranchId !== undefined,
   });
 

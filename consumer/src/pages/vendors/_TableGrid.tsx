@@ -1,13 +1,17 @@
-import { DeleteOutlined, EditOutlined, PhoneOutlined, MailOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  MailOutlined,
+  PhoneOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tooltip } from "antd";
-import { useEffect } from "react";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
-export default function _TableGrid({ trigger, onClickEdit, ...props }) {
+export default function _TableGrid({ onClickEdit, ...props }) {
   const { messageApi } = useMessageStore();
 
   const {
@@ -18,13 +22,8 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
   } = useQuery({
     queryKey: ["vendors"],
     queryFn: () => get(endpoints.getVendors),
+    staleTime: 3600 * 1000,
   });
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(endpoints.deleteVendor(id)),
@@ -33,7 +32,9 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       refetch();
     },
     onError: (error: any) => {
-      messageApi?.error(error.response?.data?.message || "Failed to delete vendor");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to delete vendor"
+      );
     },
   });
 
@@ -57,7 +58,7 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       title: "Phone",
       dataIndex: "phone",
       key: "phone",
-      render: (phone: string) => 
+      render: (phone: string) =>
         phone ? (
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <PhoneOutlined style={{ color: "#666" }} />
@@ -71,7 +72,7 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       title: "Email",
       dataIndex: "email",
       key: "email",
-      render: (email: string) => 
+      render: (email: string) =>
         email ? (
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <MailOutlined style={{ color: "#666" }} />
@@ -85,15 +86,17 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       title: "Address",
       dataIndex: "address",
       key: "address",
-      render: (address: string) => 
+      render: (address: string) =>
         address ? (
           <Tooltip title={address}>
-            <div style={{ 
-              maxWidth: 200, 
-              overflow: "hidden", 
-              textOverflow: "ellipsis", 
-              whiteSpace: "nowrap" 
-            }}>
+            <div
+              style={{
+                maxWidth: 200,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {address}
             </div>
           </Tooltip>
@@ -148,7 +151,8 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
       pagination={{
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} vendors`,
+        showTotal: (total, range) =>
+          `${range[0]}-${range[1]} of ${total} vendors`,
       }}
     />
   );

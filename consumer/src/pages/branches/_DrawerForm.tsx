@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Switch } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
@@ -18,10 +18,12 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
+  const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.createBranch, data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       messageApi?.success("Branch created successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -37,6 +39,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateBranch(data.id), data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       messageApi?.success("Branch updated successfully");
       form.resetFields();
       onSubmitSuccess(true);

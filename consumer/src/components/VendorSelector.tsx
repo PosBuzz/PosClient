@@ -42,6 +42,7 @@ export default function VendorSelector({
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ["vendors"],
     queryFn: () => inventoryApi.getVendors(),
+    staleTime: 3600 * 1000,
   });
 
   // Create mutation (you'll need to add this to your inventory API)
@@ -239,7 +240,7 @@ export default function VendorSelector({
   return (
     <>
       <Select
-        size={size}   
+        size={size}
         value={value}
         onChange={onChange}
         placeholder="Select supplier/vendor"
@@ -276,7 +277,7 @@ export default function VendorSelector({
           <>
             {menu}
             <div className="border-t border-gray-200 p-2">
-              <Button   
+              <Button
                 type="text"
                 icon={<PlusOutlined />}
                 onClick={() => setIsModalOpen(true)}

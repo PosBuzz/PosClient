@@ -200,7 +200,7 @@ export const inventoryApi = {
     page?: number;
     limit?: number;
     search?: string;
-    branch_id?: number | null;
+    branch_id?: number;
     variant_id?: number;
   }): Promise<PaginatedResponse<InventoryBatch>> => {
     return get(endpoints.inventoryBatches, params);

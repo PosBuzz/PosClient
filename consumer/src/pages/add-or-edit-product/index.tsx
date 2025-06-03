@@ -137,7 +137,7 @@ export default function ProductForm() {
           ...batch,
           cost_price: batch.cost_price?.toString() || "0.00",
         })) || [],
-    }));    // Prepare API data object, adding variant_ids_to_delete if any exist
+    })); // Prepare API data object, adding variant_ids_to_delete if any exist
     const apiData: any = {
       name: formState.name,
       code: formState.code,
@@ -151,7 +151,7 @@ export default function ProductForm() {
       daily_sale_objective: formState.daily_sale_objective,
       variants,
     };
-    
+
     // Add deleted variant IDs for edit mode
     if (formState.deletedVariantIds.length > 0) {
       apiData.variant_ids_to_delete = formState.deletedVariantIds;
@@ -160,7 +160,7 @@ export default function ProductForm() {
       // If in edit mode but no variants deleted, still flag it for backend processing
       apiData.is_edit_mode = true;
     }
-    
+
     return apiData;
   }, [formState]);
 
@@ -169,6 +169,7 @@ export default function ProductForm() {
     queryKey: ["product", id],
     queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
+    staleTime: 3600 * 1000,
   });
 
   // Initialize form with product data in edit mode
@@ -204,10 +205,19 @@ export default function ProductForm() {
           ? "Product updated successfully"
           : "Product saved successfully"
       );
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "products",
+          "product-variants",
+          "products-for-inventory",
+          "batches",
+        ],
+      });
 
       if (isEditMode && id) {
-        queryClient.invalidateQueries({ queryKey: ["product", id] });
+        queryClient.invalidateQueries({
+          queryKey: ["product", id, "products"],
+        });
       }
 
       navigate("/products");
@@ -237,7 +247,7 @@ export default function ProductForm() {
   const handleDeleteVariant = useCallback(
     (variantId: string) => {
       deleteVariant(variantId);
-    }, 
+    },
     [deleteVariant]
   );
 
@@ -245,9 +255,12 @@ export default function ProductForm() {
     addVariant();
   }, [addVariant]);
 
-  const handleDuplicateVariant = useCallback((variantId: string) => {
-    duplicateVariant(variantId);
-  }, [duplicateVariant]);
+  const handleDuplicateVariant = useCallback(
+    (variantId: string) => {
+      duplicateVariant(variantId);
+    },
+    [duplicateVariant]
+  );
 
   const handleVariantUpdate = useCallback(
     (variantId: string, updates: any) => {
@@ -346,16 +359,19 @@ export default function ProductForm() {
       key: "variants",
       label: formState.has_variants
         ? `Variants (${Object.keys(formState.variants).length})`
-        : "Details",      children: (
+        : "Details",
+      children: (
         <StateVariantManager
           formState={formState}
-          validationState={validationState}          onAddVariant={handleAddVariant}
+          validationState={validationState}
+          onAddVariant={handleAddVariant}
           onDeleteVariant={handleDeleteVariant}
           onDuplicateVariant={handleDuplicateVariant}
           onVariantUpdate={handleVariantUpdate}
           onAddVariantAttribute={handleAddVariantAttribute}
           onUpdateVariantAttribute={handleUpdateVariantAttribute}
-          onDeleteVariantAttribute={handleDeleteVariantAttribute}          onAddVariantSerial={handleAddVariantSerial}
+          onDeleteVariantAttribute={handleDeleteVariantAttribute}
+          onAddVariantSerial={handleAddVariantSerial}
           onUpdateVariantSerial={handleUpdateVariantSerial}
           onDeleteVariantSerial={handleDeleteVariantSerial}
           onBatchesChange={handleUpdateVariantBatches}

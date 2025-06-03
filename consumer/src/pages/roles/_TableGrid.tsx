@@ -3,13 +3,12 @@
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
-import { useEffect } from "react";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
-export default function _TableGrid({ trigger, onClickEdit, ...props }) {
+export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
 
   const {
@@ -20,13 +19,8 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
   } = useQuery({
     queryKey: ["roles"],
     queryFn: () => get(endpoints.role),
+    staleTime: 3600 * 1000,
   });
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(endpoints.deleteRole(id)),

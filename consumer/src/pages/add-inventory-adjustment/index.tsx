@@ -17,7 +17,7 @@ import {
   Row,
   Select,
   Space,
-  Typography
+  Typography,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { CreateAdjustmentData, inventoryApi } from "../../api/inventory-api";
@@ -61,17 +61,20 @@ export default function AddInventoryAdjustment() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products-for-inventory"],
     queryFn: () => inventoryApi.getProductsForInventory(),
+    staleTime: 3600 * 1000,
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
     queryKey: ["product-variants", selectedProduct],
     queryFn: () => inventoryApi.getVariants(selectedProduct!),
     enabled: !!selectedProduct,
+    staleTime: 3600 * 1000,
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
@@ -83,6 +86,7 @@ export default function AddInventoryAdjustment() {
         limit: 100,
       }),
     enabled: !!selectedVariant && !!selectedBranch,
+    staleTime: 3600 * 1000,
   });
 
   // Get selected batch data
@@ -211,7 +215,8 @@ export default function AddInventoryAdjustment() {
             Back to Adjustments
           </Button>
         }
-      />      <Form
+      />{" "}
+      <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
@@ -221,7 +226,11 @@ export default function AddInventoryAdjustment() {
         }}
       >
         {/* Compact Product Selection */}
-        <Card title="Product Information" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+        <Card
+          title="Product Information"
+          style={{ marginBottom: 16 }}
+          bodyStyle={{ padding: 12 }}
+        >
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={8}>
               <Form.Item
@@ -290,7 +299,8 @@ export default function AddInventoryAdjustment() {
                 </Select>
               </Form.Item>
             </Col>
-          </Row>          {/* Compact Batch Selection */}
+          </Row>{" "}
+          {/* Compact Batch Selection */}
           {canShowBatches && (
             <Form.Item
               name="batch_id"
@@ -322,29 +332,37 @@ export default function AddInventoryAdjustment() {
               </Select>
             </Form.Item>
           )}
-
           {/* Compact Current Stock Info */}
           {selectedBatch && (
             <Card style={{ marginBottom: 8 }} bodyStyle={{ padding: 8 }}>
               <Row gutter={8}>
                 <Col xs={8} sm={8}>
-                  <Text strong style={{ fontSize: 11 }}>Stock: </Text>
-                  <Text style={{ fontSize: 11 }}>{selectedBatch.quantity} units</Text>
+                  <Text strong style={{ fontSize: 11 }}>
+                    Stock:{" "}
+                  </Text>
+                  <Text style={{ fontSize: 11 }}>
+                    {selectedBatch.quantity} units
+                  </Text>
                 </Col>
                 <Col xs={8} sm={8}>
-                  <Text strong style={{ fontSize: 11 }}>Cost: </Text>
+                  <Text strong style={{ fontSize: 11 }}>
+                    Cost:{" "}
+                  </Text>
                   <Text style={{ fontSize: 11 }}>
                     ${parseFloat(selectedBatch.cost_price).toFixed(2)}
                   </Text>
                 </Col>
                 <Col xs={8} sm={8}>
-                  <Text strong style={{ fontSize: 11 }}>Batch: </Text>
-                  <Text code style={{ fontSize: 10 }}>{selectedBatch.batch_number}</Text>
+                  <Text strong style={{ fontSize: 11 }}>
+                    Batch:{" "}
+                  </Text>
+                  <Text code style={{ fontSize: 10 }}>
+                    {selectedBatch.batch_number}
+                  </Text>
                 </Col>
               </Row>
             </Card>
           )}
-
           {/* Warning if no batches available */}
           {canShowBatches &&
             batchesData?.data.length === 0 &&
@@ -358,9 +376,14 @@ export default function AddInventoryAdjustment() {
                 showIcon
               />
             )}
-        </Card>        {/* Compact Adjustment Details */}
+        </Card>{" "}
+        {/* Compact Adjustment Details */}
         {selectedBatch && (
-          <Card title="Adjustment Details" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+          <Card
+            title="Adjustment Details"
+            style={{ marginBottom: 16 }}
+            bodyStyle={{ padding: 12 }}
+          >
             <Row gutter={[12, 6]}>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -370,10 +393,16 @@ export default function AddInventoryAdjustment() {
                   rules={[{ required: true }]}
                 >
                   <Radio.Group>
-                    <Radio.Button value="increase" style={{ color: "#52c41a", fontSize: 11 }}>
+                    <Radio.Button
+                      value="increase"
+                      style={{ color: "#52c41a", fontSize: 11 }}
+                    >
                       <PlusOutlined /> Increase
                     </Radio.Button>
-                    <Radio.Button value="decrease" style={{ color: "#ff4d4f", fontSize: 11 }}>
+                    <Radio.Button
+                      value="decrease"
+                      style={{ color: "#ff4d4f", fontSize: 11 }}
+                    >
                       <MinusOutlined /> Decrease
                     </Radio.Button>
                   </Radio.Group>
@@ -393,18 +422,20 @@ export default function AddInventoryAdjustment() {
                       message: "Quantity must be greater than 0",
                     },
                     ...(adjustmentType === "decrease" && selectedBatch
-                      ? [{
-                          validator: (_, value) => {
-                            if (value > selectedBatch.quantity) {
-                              return Promise.reject(
-                                new Error(
-                                  `Cannot exceed available stock of ${selectedBatch.quantity} units`
-                                )
-                              );
-                            }
-                            return Promise.resolve();
+                      ? [
+                          {
+                            validator: (_, value) => {
+                              if (value > selectedBatch.quantity) {
+                                return Promise.reject(
+                                  new Error(
+                                    `Cannot exceed available stock of ${selectedBatch.quantity} units`
+                                  )
+                                );
+                              }
+                              return Promise.resolve();
+                            },
                           },
-                        }]
+                        ]
                       : []),
                   ]}
                 >
@@ -416,7 +447,8 @@ export default function AddInventoryAdjustment() {
                       adjustmentType === "decrease"
                         ? selectedBatch?.quantity
                         : undefined
-                    }                    addonAfter="u"
+                    }
+                    addonAfter="u"
                   />
                 </Form.Item>
               </Col>
@@ -444,7 +476,11 @@ export default function AddInventoryAdjustment() {
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item name="notes" label="Notes" style={{ marginBottom: 8 }}>
+                <Form.Item
+                  name="notes"
+                  label="Notes"
+                  style={{ marginBottom: 8 }}
+                >
                   <TextArea
                     rows={2}
                     placeholder="Additional notes (optional)"
@@ -456,7 +492,9 @@ export default function AddInventoryAdjustment() {
             {/* Compact Live Summary */}
             {canShowSummary && (
               <Card style={{ marginTop: 8 }} bodyStyle={{ padding: 8 }}>
-                <Text strong style={{ fontSize: 11 }}>Adjustment Summary:</Text>
+                <Text strong style={{ fontSize: 11 }}>
+                  Adjustment Summary:
+                </Text>
                 <Row gutter={8} style={{ marginTop: 4 }}>
                   <Col xs={8} sm={8}>
                     <Text style={{ fontSize: 11 }}>
@@ -470,7 +508,9 @@ export default function AddInventoryAdjustment() {
                         strong
                         style={{
                           color:
-                            adjustmentType === "increase" ? "#52c41a" : "#ff4d4f",
+                            adjustmentType === "increase"
+                              ? "#52c41a"
+                              : "#ff4d4f",
                         }}
                       >
                         {adjustmentType === "increase" ? "+" : "-"}
@@ -480,7 +520,8 @@ export default function AddInventoryAdjustment() {
                   </Col>
                   <Col xs={8} sm={8}>
                     <Text style={{ fontSize: 11 }}>
-                      New: <Text
+                      New:{" "}
+                      <Text
                         strong
                         style={{
                           color:
@@ -494,7 +535,8 @@ export default function AddInventoryAdjustment() {
                     </Text>
                   </Col>
                 </Row>
-                {newStock < 0 && (                  <Alert
+                {newStock < 0 && (
+                  <Alert
                     message="Warning: This will result in negative stock!"
                     type="error"
                     showIcon
@@ -505,7 +547,6 @@ export default function AddInventoryAdjustment() {
             )}
           </Card>
         )}
-
         {/* Submit */}
         <div className={"text-right"}>
           <Space>
