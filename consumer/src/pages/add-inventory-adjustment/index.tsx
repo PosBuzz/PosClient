@@ -215,14 +215,13 @@ export default function AddInventoryAdjustment() {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        size="small"
         initialValues={{
           adjustment_type: "increase",
           quantity_change: 1,
         }}
       >
         {/* Compact Product Selection */}
-        <Card title="Product Information" size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+        <Card title="Product Information" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={8}>
               <Form.Item
@@ -232,7 +231,6 @@ export default function AddInventoryAdjustment() {
                 rules={[{ required: true, message: "Please select a product" }]}
               >
                 <Select
-                  size="small"
                   placeholder="Select product"
                   onChange={handleProductChange}
                   showSearch
@@ -256,7 +254,6 @@ export default function AddInventoryAdjustment() {
                 rules={[{ required: true, message: "Please select a variant" }]}
               >
                 <Select
-                  size="small"
                   placeholder="Select variant"
                   onChange={handleVariantChange}
                   disabled={!selectedProduct}
@@ -281,7 +278,6 @@ export default function AddInventoryAdjustment() {
                 ]}
               >
                 <Select
-                  size="small"
                   placeholder="Select location"
                   onChange={handleBranchChange}
                   disabled={!selectedVariant}
@@ -303,7 +299,6 @@ export default function AddInventoryAdjustment() {
               rules={[{ required: true, message: "Please select a batch" }]}
             >
               <Select
-                size="small"
                 placeholder="Select batch"
                 loading={batchesLoading}
                 disabled={!canShowBatches}
@@ -330,7 +325,7 @@ export default function AddInventoryAdjustment() {
 
           {/* Compact Current Stock Info */}
           {selectedBatch && (
-            <Card size="small" style={{ marginBottom: 8 }} bodyStyle={{ padding: 8 }}>
+            <Card style={{ marginBottom: 8 }} bodyStyle={{ padding: 8 }}>
               <Row gutter={8}>
                 <Col xs={8} sm={8}>
                   <Text strong style={{ fontSize: 11 }}>Stock: </Text>
@@ -365,7 +360,7 @@ export default function AddInventoryAdjustment() {
             )}
         </Card>        {/* Compact Adjustment Details */}
         {selectedBatch && (
-          <Card title="Adjustment Details" size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
+          <Card title="Adjustment Details" style={{ marginBottom: 16 }} bodyStyle={{ padding: 12 }}>
             <Row gutter={[12, 6]}>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -374,7 +369,7 @@ export default function AddInventoryAdjustment() {
                   style={{ marginBottom: 8 }}
                   rules={[{ required: true }]}
                 >
-                  <Radio.Group size="small">
+                  <Radio.Group>
                     <Radio.Button value="increase" style={{ color: "#52c41a", fontSize: 11 }}>
                       <PlusOutlined /> Increase
                     </Radio.Button>
@@ -414,7 +409,6 @@ export default function AddInventoryAdjustment() {
                   ]}
                 >
                   <InputNumber
-                    size="small"
                     placeholder="Enter quantity"
                     style={{ width: "100%" }}
                     min={1}
@@ -439,7 +433,7 @@ export default function AddInventoryAdjustment() {
                     { required: true, message: "Please select a reason" },
                   ]}
                 >
-                  <Select size="small" placeholder="Select reason for adjustment">
+                  <Select placeholder="Select reason for adjustment">
                     {ADJUSTMENT_REASONS.map((reason) => (
                       <Option key={reason} value={reason}>
                         {reason}
@@ -452,7 +446,6 @@ export default function AddInventoryAdjustment() {
               <Col xs={24} sm={12}>
                 <Form.Item name="notes" label="Notes" style={{ marginBottom: 8 }}>
                   <TextArea
-                    size="small"
                     rows={2}
                     placeholder="Additional notes (optional)"
                   />
@@ -462,7 +455,7 @@ export default function AddInventoryAdjustment() {
 
             {/* Compact Live Summary */}
             {canShowSummary && (
-              <Card size="small" style={{ marginTop: 8 }} bodyStyle={{ padding: 8 }}>
+              <Card style={{ marginTop: 8 }} bodyStyle={{ padding: 8 }}>
                 <Text strong style={{ fontSize: 11 }}>Adjustment Summary:</Text>
                 <Row gutter={8} style={{ marginTop: 4 }}>
                   <Col xs={8} sm={8}>
