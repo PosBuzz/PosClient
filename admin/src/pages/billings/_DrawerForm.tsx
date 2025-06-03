@@ -14,9 +14,8 @@ export default function DrawerForm({
   onSubmitSuccess,
   isEditing,
   editedItem,
-  fetchData,
   consumers,
-  ...props
+  refetch,
 }) {
   const [form] = Form.useForm();
   const consumer_id = Form.useWatch("consumer_id", form);
@@ -27,6 +26,7 @@ export default function DrawerForm({
   const createData = useMutation({
     mutationFn: async (data) => await post(getUrlForModel(model), data),
     onSuccess: (response) => {
+      refetch();
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -40,6 +40,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(getUrlForModel(model, data.id), data),
     onSuccess: (response) => {
+      refetch();
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);

@@ -13,7 +13,7 @@ import {
   Select,
   Space,
   Table,
-  Tag
+  Tag,
 } from "antd";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
@@ -23,14 +23,12 @@ import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({
   model,
-  trigger,
   onClickEdit,
   roleOptions = [],
-  ...props
 }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -71,13 +69,8 @@ export default function _TableGrid({
           role: true,
         },
       }),
+    staleTime: 3600 * 1000,
   });
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),

@@ -10,7 +10,6 @@ import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
-import dayjs from "dayjs";
 
 const model = models.BillingHistory;
 const title = "Billing Histories";
@@ -19,7 +18,6 @@ const Billings = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [trigger, setTrigger] = useState(0);
 
   const [consumerFilter, setConsumerFilter] = useState<string[]>([]);
   const [referenceFilter, setReferenceFilter] = useState<string>("");
@@ -50,6 +48,7 @@ const Billings = () => {
           }),
         },
       }),
+    staleTime: 3600 * 1000,
   });
 
   const ConsumersKey = `all-${models.Consumer}`;
@@ -62,6 +61,7 @@ const Billings = () => {
           plan: true,
         },
       }),
+    staleTime: 3600 * 1000,
   });
 
   const consumerOptions =
@@ -85,7 +85,6 @@ const Billings = () => {
   };
 
   const onSubmitSuccess = () => {
-    setTrigger((trigger) => trigger + 1);
     setOpen(false);
     setIsEditing(false);
     setEditedItem(null);
@@ -95,13 +94,13 @@ const Billings = () => {
     <>
       {setPageTitle(title)}
       <DrawerForm
+        refetch={refetch}
         onClose={onClose}
         open={open}
         model={model}
         isEditing={isEditing}
         editedItem={editedItem}
         onSubmitSuccess={onSubmitSuccess}
-        fetchData={fetchData}
         consumers={consumers}
       />
 
@@ -154,7 +153,6 @@ const Billings = () => {
       </Row>
 
       <TableGrid
-        trigger={trigger}
         model={model}
         onClickEdit={onClickEdit}
         fetchData={fetchData}

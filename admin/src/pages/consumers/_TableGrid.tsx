@@ -18,23 +18,22 @@ import {
   Tag,
 } from "antd";
 import dayjs from "dayjs";
+import { saveAs } from "file-saver";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
+import axiosInstance from "../../api/axiosInstance";
 import { deleteApi, post } from "../../api/crud-api";
 import {
   API_CRUD_FIND_WHERE,
   endpoints,
   getUrlForModel,
 } from "../../api/endpoints";
-import { useMessageStore } from "../../stores/messageStore";
 import { AdminPermission } from "../../constants/adminPermissions";
-import axiosInstance from "../../api/axiosInstance";
-import { saveAs } from "file-saver";
+import { useMessageStore } from "../../stores/messageStore";
 const { Option } = Select;
 
 export default function _TableGrid({
   model,
-  trigger,
   onClickEdit,
   planOptions = [],
   hasPermission,
@@ -149,6 +148,7 @@ export default function _TableGrid({
           billing_logs: true,
         },
       }),
+    staleTime: 3600 * 1000,
   });
 
   const getBillingHistory = async (consumer_id: any, openInNewTab: boolean) => {
@@ -163,12 +163,9 @@ export default function _TableGrid({
       }
 
       // Initiate download
-      const response = await axiosInstance.get(
-        url, 
-        {
-          responseType: "blob",
-        }
-      );
+      const response = await axiosInstance.get(url, {
+        responseType: "blob",
+      });
 
       // Get the filename from the Content-Disposition header if available
       let filename = "Billing-History.pdf";
@@ -210,12 +207,6 @@ export default function _TableGrid({
       alert("Failed to download file. Please try again.");
     }
   };
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),

@@ -7,32 +7,22 @@ import {
 } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table } from "antd";
-import { useEffect } from "react";
+import dayjs from "dayjs";
+import saveAs from 'file-saver';
+import axiosInstance from "../../api/axiosInstance";
 import { deleteApi } from "../../api/crud-api";
 import { endpoints, getUrlForModel } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
-import dayjs from "dayjs";
-import saveAs from 'file-saver'
-import axiosInstance from "../../api/axiosInstance";
 
-// @ts-ignore
 export default function _TableGrid({
   model,
-  trigger,
   onClickEdit,
   isLoading,
   isError,
   fetchData,
   refetch,
-  ...props
 }) {
   const { messageApi } = useMessageStore();
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
