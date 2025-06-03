@@ -92,16 +92,19 @@ export default function InventoryPage() {
         branch_id: selectedBranch,
         variant_id: selectedVariant,
       }),
+    staleTime: 3600 * 1000,
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["inventory-summary", selectedBranch],
     queryFn: () => inventoryApi.getSummary(selectedBranch),
+    staleTime: 3600 * 1000,
   });
 
   // Delete mutation
@@ -113,7 +116,9 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory-summary"] });
     },
     onError: (error: any) => {
-      messageApi?.error(error.response?.data?.message || "Failed to delete batch");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to delete batch"
+      );
     },
   });
 
