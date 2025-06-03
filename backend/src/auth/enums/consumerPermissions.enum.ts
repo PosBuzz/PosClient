@@ -7,4 +7,7 @@ export enum ConsumerPermission {
   delete_product = 'delete_product',
   branches = 'branches',
   vendors = 'vendors',
+  inventory_batches = 'inventory_batches',
+  inventory_transfer = 'inventory_transfer',
+  inventory_adjustment = 'inventory_adjustment',
 }

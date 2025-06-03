@@ -167,6 +167,7 @@ model Permission {
 model Role {
   id          Int              @id @default(autoincrement())
   name        String
+  is_admin    Boolean          @default(false)
   consumer_id Int
   consumer    Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   permissions RolePermission[]
@@ -304,7 +305,7 @@ model Brand {
   consumer_id Int
   name        String
   logo        String?
-  website        String?
+  website     String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 

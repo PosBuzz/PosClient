@@ -49,15 +49,17 @@ const Users = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        onClose={onClose}
-        open={open}
-        model={model}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-        roleOptions={roleOptions}
-      />
+      {open && (
+        <DrawerForm
+          onClose={onClose}
+          open={open}
+          model={model}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+          roleOptions={roleOptions}
+        />
+      )}
 
       <PageTitle
         title={title}

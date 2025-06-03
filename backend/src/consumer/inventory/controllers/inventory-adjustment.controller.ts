@@ -14,14 +14,23 @@ import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 import { InventoryQueryDto } from '../dto/inventory-query.dto';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { Request } from 'express';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 
 @Controller('consumer/inventory/adjustments')
-@UseGuards(ClientAuthGuard)
+@UseGuards(ClientAuthGuard, PermissionsGuard)
+@HasPermissions([ConsumerPermission.inventory_batches])
 export class InventoryAdjustmentController {
-  constructor(private readonly inventoryAdjustmentService: InventoryAdjustmentService) {}
+  constructor(
+    private readonly inventoryAdjustmentService: InventoryAdjustmentService,
+  ) {}
 
   @Post()
-  create(@Req() req: Request, @Body() createInventoryAdjustmentDto: CreateInventoryAdjustmentDto) {
+  create(
+    @Req() req: Request,
+    @Body() createInventoryAdjustmentDto: CreateInventoryAdjustmentDto,
+  ) {
     return this.inventoryAdjustmentService.create(
       Number(req?.user.consumer_id),
       Number(req?.user.id),
@@ -31,11 +40,17 @@ export class InventoryAdjustmentController {
 
   @Get()
   findAll(@Req() req: Request, @Query() query: InventoryQueryDto) {
-    return this.inventoryAdjustmentService.findAll(Number(req?.user.consumer_id), query);
+    return this.inventoryAdjustmentService.findAll(
+      Number(req?.user.consumer_id),
+      query,
+    );
   }
 
   @Get(':id')
   findOne(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
-    return this.inventoryAdjustmentService.findOne(id, Number(req?.user.consumer_id));
+    return this.inventoryAdjustmentService.findOne(
+      id,
+      Number(req?.user.consumer_id),
+    );
   }
 }

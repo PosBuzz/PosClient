@@ -50,6 +50,26 @@ const SideBar: React.FC = () => {
           key: "/products/add",
           permissions: [Permissions.add_product],
         },
+        {
+          label: <span title="Categories">Categories</span>,
+          key: "/categories",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Brands">Brands</span>,
+          key: "/brands",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Tags">Tags</span>,
+          key: "/tags",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Units">Units</span>,
+          key: "/units",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
       ],
     },
     {
@@ -60,40 +80,41 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Batches">Batches</span>,
           key: "/inventory/batches",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_batches],
         },
         {
           label: <span title="Add Batch">Add Batch</span>,
           key: "/inventory/batches/add",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_batches],
         },
         {
           label: <span title="Inventory Transfer">Inventory Transfer</span>,
           key: "/inventory/transfers",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_transfer],
         },
         {
           label: <span title="Add Transfer">Add Transfer</span>,
           key: "/inventory/transfers/add",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_transfer],
         },
         {
           label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
           key: "/inventory/adjustments",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_adjustment],
         },
         {
           label: <span title="Add Adjustment">Add Adjustment</span>,
           key: "/inventory/adjustments/add",
-          permissions: [Permissions.add_product],
+          permissions: [Permissions.inventory_adjustment],
         },
         {
           label: <span title="Vendors">Vendors</span>,
           key: "/vendors",
-          permissions: [Permissions.vendors],
+          permissions: [Permissions.vendors, Permissions.inventory_batches],
         },
       ],
-    },    {
+    },
+    {
       label: <span title="Settings">Settings</span>,
       key: "/settings",
       icon: <SettingOutlined />,
@@ -101,26 +122,6 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Branches">Branches</span>,
           key: "/branches",
-          permissions: [Permissions.branches],
-        },
-        {
-          label: <span title="Categories">Categories</span>,
-          key: "/categories",
-          permissions: [Permissions.branches],
-        },
-        {
-          label: <span title="Brands">Brands</span>,
-          key: "/brands",
-          permissions: [Permissions.branches],
-        },
-        {
-          label: <span title="Tags">Tags</span>,
-          key: "/tags",
-          permissions: [Permissions.branches],
-        },
-        {
-          label: <span title="Units">Units</span>,
-          key: "/units",
           permissions: [Permissions.branches],
         },
         {
