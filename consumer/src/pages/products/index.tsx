@@ -152,6 +152,7 @@ const ProductsTable = () => {
     useQuery<ProductListResponse>({
       queryKey: [queryKeys.products, getQueryParams()],
       queryFn: () => productApi.getProducts(getQueryParams()),
+      staleTime: 3600 * 1000,
     });
 
   // TanStack Query for categories
