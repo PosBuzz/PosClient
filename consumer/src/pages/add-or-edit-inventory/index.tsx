@@ -19,7 +19,7 @@ import {
   Select,
   Space,
   Spin,
-  Typography
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -150,7 +150,9 @@ export default function AddEditInventory() {
   const handleProductSelect = (productId: number) => {
     setSelectedProductId(productId);
     setSelectedVariant(null);
+    // Explicitly set the form field value to ensure it's captured
     form.setFieldsValue({
+      product_id: productId,
       variant_id: undefined,
       cost_price: undefined,
       batch_number: undefined,
@@ -162,6 +164,10 @@ export default function AddEditInventory() {
     if (!variant) return;
 
     setSelectedVariant(variant);
+    // Explicitly set the form field value to ensure it's captured
+    form.setFieldsValue({
+      variant_id: variantId,
+    });
 
     // Auto-generate batch number
     if (!isEdit) {
@@ -220,7 +226,9 @@ export default function AddEditInventory() {
           layout="vertical"
           onFinish={handleSubmit}
           requiredMark={false}
-        >          {/* Product Selection - Single Row */}
+        >
+          {" "}
+          {/* Product Selection - Single Row */}
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={8}>
               <Form.Item
@@ -228,22 +236,26 @@ export default function AddEditInventory() {
                 label="Product"
                 style={{ marginBottom: 8 }}
                 rules={[{ required: true, message: "Please select a product" }]}
-              >                <Select
-                  size="small"
+              >
+                <Select
                   placeholder="Select a product"
-                  onSelect={handleProductSelect}
+                  onChange={handleProductSelect} // Changed from onSelect to onChange
                   loading={productsLoading}
                   disabled={isEdit}
                   showSearch
-                  optionFilterProp="children"
+                  optionFilterProp="label"
                   filterOption={(input, option) =>
-                    (option?.children as unknown as string)
+                    (option?.label as string)
                       ?.toLowerCase()
                       ?.includes(input.toLowerCase())
                   }
                 >
                   {products.map((product) => (
-                    <Option key={product.id} value={product.id}>
+                    <Option
+                      key={product.id}
+                      value={product.id}
+                      label={product.name}
+                    >
                       {product.name}
                     </Option>
                   ))}
@@ -262,16 +274,16 @@ export default function AddEditInventory() {
                     message: "Please select a product variant",
                   },
                 ]}
-              >                <Select
-                  size="small"
+              >
+                <Select
                   placeholder="Select a variant"
-                  onSelect={handleVariantSelect}
+                  onChange={handleVariantSelect} // Changed from onSelect to onChange
                   loading={variantsLoading}
                   disabled={isEdit || !selectedProductId}
                   showSearch
-                  optionFilterProp="children"
+                  optionFilterProp="label"
                   filterOption={(input, option) =>
-                    (option?.children as unknown as string)
+                    (option?.label as string)
                       ?.toLowerCase()
                       ?.includes(input.toLowerCase())
                   }
@@ -279,14 +291,18 @@ export default function AddEditInventory() {
                     !selectedProductId ? (
                       "Please select a product first"
                     ) : variantsLoading ? (
-                      <Spin size="small" />
+                      <Spin />
                     ) : (
                       "No variants found"
                     )
                   }
                 >
                   {variants.map((variant) => (
-                    <Option key={variant.id} value={variant.id}>
+                    <Option
+                      key={variant.id}
+                      value={variant.id}
+                      label={variant.name}
+                    >
                       {variant.name}
                     </Option>
                   ))}
@@ -301,7 +317,7 @@ export default function AddEditInventory() {
                 style={{ marginBottom: 8 }}
                 rules={[{ required: true, message: "Please select branch" }]}
               >
-                <Select size="small" placeholder="Select branch">
+                <Select placeholder="Select branch">
                   {branches.map((branch) => (
                     <Option key={branch.id} value={branch.id}>
                       {branch.name}
@@ -311,7 +327,6 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
           </Row>
-
           {/* Selected Variant Info */}
           {selectedVariant && (
             <Alert
@@ -327,7 +342,8 @@ export default function AddEditInventory() {
               style={{ marginBottom: 24 }}
               showIcon
             />
-          )}          {/* Single Row for Reference, Cost, Quantity, Expiry */}
+          )}{" "}
+          {/* Single Row for Reference, Cost, Quantity, Expiry */}
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={6}>
               <Form.Item
@@ -340,13 +356,12 @@ export default function AddEditInventory() {
                 extra="Unique identifier for this stock entry"
               >
                 <Input
-                  size="small"
                   placeholder="Enter reference number"
                   disabled={isEdit}
+                  className="py-0!"
                   suffix={
                     <Button
                       type="link"
-                      size="small"
                       icon={<ReloadOutlined />}
                       onClick={() =>
                         form.setFieldValue(
@@ -378,7 +393,6 @@ export default function AddEditInventory() {
                 extra="Cost per unit"
               >
                 <InputNumber
-                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Enter cost price"
                   min={0}
@@ -403,7 +417,6 @@ export default function AddEditInventory() {
                 ]}
               >
                 <InputNumber
-                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Enter quantity to add"
                   min={1}
@@ -422,7 +435,6 @@ export default function AddEditInventory() {
                 extra="Leave empty if doesn't expire"
               >
                 <DatePicker
-                  size="small"
                   style={{ width: "100%" }}
                   placeholder="Select expiry date"
                   format="YYYY-MM-DD"
@@ -434,7 +446,6 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
           </Row>
-
           {/* Vendor Row */}
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={12}>
@@ -444,14 +455,13 @@ export default function AddEditInventory() {
                 style={{ marginBottom: 8 }}
                 extra="Who did you purchase this from?"
               >
-                <VendorSelector size="small" />
+                <VendorSelector />
               </Form.Item>
             </Col>
           </Row>
-
           {/* Summary Section - Now updates in real-time */}
           {selectedVariant && (
-            <Card size="small">
+            <Card>
               <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
                 Summary
               </Title>
@@ -477,9 +487,7 @@ export default function AddEditInventory() {
               </Row>
             </Card>
           )}
-
           <Divider />
-
           {/* Action Buttons */}
           <div style={{ textAlign: "right" }}>
             <Space>

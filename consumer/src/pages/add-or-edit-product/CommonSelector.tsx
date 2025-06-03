@@ -58,6 +58,7 @@ export default function CommonSelector({
           return [];
       }
     },
+    staleTime: 3600 * 1000,
   });
 
   // Create mutation
