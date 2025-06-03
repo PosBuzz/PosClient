@@ -35,6 +35,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -77,7 +78,7 @@ export default function InventoryPage() {
   // Queries
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
     queryKey: [
-      "batches",
+      queryKeys.batches,
       currentPage,
       pageSize,
       debouncedSearchText,
@@ -96,13 +97,13 @@ export default function InventoryPage() {
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["inventory-summary", selectedBranch],
+    queryKey: [queryKeys.inventorySummary, selectedBranch],
     queryFn: () => inventoryApi.getSummary(selectedBranch),
     staleTime: 3600 * 1000,
   });
@@ -112,8 +113,10 @@ export default function InventoryPage() {
     mutationFn: inventoryApi.deleteBatch,
     onSuccess: () => {
       messageApi?.success("Batch deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory-summary"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
     },
     onError: (error: any) => {
       messageApi?.error(

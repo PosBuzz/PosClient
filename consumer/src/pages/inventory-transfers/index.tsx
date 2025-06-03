@@ -32,6 +32,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -70,7 +71,7 @@ export default function InventoryTransfersPage() {
   // Queries
   const { data: transfersData, isLoading: transfersLoading } = useQuery({
     queryKey: [
-      "transfers",
+      queryKeys.transfers,
       currentPage,
       pageSize,
       debouncedSearchText,
@@ -88,7 +89,7 @@ export default function InventoryTransfersPage() {
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });
@@ -98,7 +99,7 @@ export default function InventoryTransfersPage() {
     mutationFn: inventoryApi.completeTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer completed successfully");
-      queryClient.invalidateQueries({ queryKey: ["transfers"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -111,7 +112,7 @@ export default function InventoryTransfersPage() {
     mutationFn: inventoryApi.cancelTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer cancelled successfully");
-      queryClient.invalidateQueries({ queryKey: ["transfers"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
       messageApi?.error(

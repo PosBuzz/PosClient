@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { inventoryApi } from "../api/inventory-api";
 import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import { useMessageStore } from "../stores/messageStore";
+import { queryKeys } from "../constants/queryKeys";
 
 interface VendorSelectorProps {
   value?: number;
@@ -40,7 +41,7 @@ export default function VendorSelector({
 
   // Fetch vendors
   const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ["vendors"],
+    queryKey: [queryKeys.vendors],
     queryFn: () => inventoryApi.getVendors(),
     staleTime: 3600 * 1000,
   });
@@ -58,7 +59,7 @@ export default function VendorSelector({
       return await inventoryApi.createVendor(vendorData);
     },
     onSuccess: (newVendor) => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor created successfully");
       setIsModalOpen(false);
       form.resetFields();
@@ -95,7 +96,7 @@ export default function VendorSelector({
       return await inventoryApi.updateVendor(id, vendorData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor updated successfully");
       setEditModalOpen(false);
       setCurrentEdit(null);
@@ -116,7 +117,7 @@ export default function VendorSelector({
       return await inventoryApi.deleteVendor(id);
     },
     onSuccess: (_, deletedId) => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
 
       // Remove deleted vendor from selection if it's selected
       if (onChange && value === deletedId) {

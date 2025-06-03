@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
@@ -23,7 +24,7 @@ export default function DrawerForm({
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.createBranch, data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
       messageApi?.success("Branch created successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -39,7 +40,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateBranch(data.id), data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
       messageApi?.success("Branch updated successfully");
       form.resetFields();
       onSubmitSuccess(true);

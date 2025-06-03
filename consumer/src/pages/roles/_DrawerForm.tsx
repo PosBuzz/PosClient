@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -35,7 +36,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateRole(data.id), data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["rules"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.rules] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
@@ -46,7 +47,7 @@ export default function DrawerForm({
   });
 
   const { data: permissionOptions } = useQuery({
-    queryKey: ["plan-permissions"],
+    queryKey: [queryKeys.planPermissions],
     queryFn: () => get(endpoints.planPermissions),
     staleTime: 3600 * 1000,
   });

@@ -9,6 +9,7 @@ import TableGrid from "./_TableGrid";
 import { useQuery } from "@tanstack/react-query";
 import { get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
+import { queryKeys } from "../../constants/queryKeys";
 
 const title = "Users";
 
@@ -18,7 +19,7 @@ const Users = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: fetchData } = useQuery({
-    queryKey: ["roles"],
+    queryKey: [queryKeys.roles],
     queryFn: () => get(endpoints.role),
     staleTime: 3600 * 1000,
   });
@@ -87,10 +88,7 @@ const Users = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid
-            onClickEdit={onClickEdit}
-            roleOptions={roleOptions}
-          />
+          <TableGrid onClickEdit={onClickEdit} roleOptions={roleOptions} />
         </Col>
       </Row>
     </>
