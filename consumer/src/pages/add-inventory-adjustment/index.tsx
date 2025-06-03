@@ -25,6 +25,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -59,26 +60,26 @@ export default function AddInventoryAdjustment() {
 
   // Queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products-for-inventory"],
+    queryKey: [queryKeys.productsForInventory],
     queryFn: () => inventoryApi.getProductsForInventory(),
     staleTime: 3600 * 1000,
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
-    queryKey: ["product-variants", selectedProduct],
+    queryKey: [queryKeys.productVariants, selectedProduct],
     queryFn: () => inventoryApi.getVariants(selectedProduct!),
     enabled: !!selectedProduct,
     staleTime: 3600 * 1000,
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });
 
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
-    queryKey: ["batches", selectedVariant, selectedBranch],
+    queryKey: [queryKeys.batches, selectedVariant, selectedBranch],
     queryFn: () =>
       inventoryApi.getBatches({
         variant_id: selectedVariant!,
@@ -99,8 +100,8 @@ export default function AddInventoryAdjustment() {
     mutationFn: inventoryApi.createAdjustment,
     onSuccess: () => {
       messageApi?.success("Adjustment created successfully");
-      queryClient.invalidateQueries({ queryKey: ["adjustments"] });
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
       navigate("/inventory/adjustments");
     },
     onError: (error: any) => {

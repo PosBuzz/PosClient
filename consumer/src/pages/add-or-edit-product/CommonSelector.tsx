@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { productApi } from "../../api/product-api";
 import { useConfirmDelete } from "../../hooks/useConfirmDelete";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 interface CommonSelectorProps {
   value?: number | number[];
@@ -44,15 +45,15 @@ export default function CommonSelector({
   const queryKey = (type: string) => {
     switch (type) {
       case "category":
-        return "categories";
+        return queryKeys.categories;
       case "brand":
-        return "brands";
+        return queryKeys.brands;
       case "unit":
-        return "unit";
+        return queryKeys.units;
       case "tag":
-        return "tag";
+        return queryKeys.tags;
       default:
-        return "";
+        return null;
     }
   };
 

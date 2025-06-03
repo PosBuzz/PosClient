@@ -37,6 +37,7 @@ import type {
   Product,
   ProductListResponse,
 } from "../../types/product.types";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -149,27 +150,27 @@ const ProductsTable = () => {
   // TanStack Query for products
   const { data: productsData, isLoading: productsLoading } =
     useQuery<ProductListResponse>({
-      queryKey: ["products", getQueryParams()],
+      queryKey: [queryKeys.products, getQueryParams()],
       queryFn: () => productApi.getProducts(getQueryParams()),
     });
 
   // TanStack Query for categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: [queryKeys.categories],
     queryFn: productApi.getCategories,
     staleTime: 3600 * 1000,
   });
 
   // TanStack Query for brands
   const { data: brands = [] } = useQuery({
-    queryKey: ["brands"],
+    queryKey: [queryKeys.brands],
     queryFn: productApi.getBrands,
     staleTime: 3600 * 1000,
   });
 
   // TanStack Query for tags
   const { data: tags = [] } = useQuery({
-    queryKey: ["tags"],
+    queryKey: [queryKeys.tags],
     queryFn: productApi.getTags,
     staleTime: 3600 * 1000,
   });
@@ -179,7 +180,7 @@ const ProductsTable = () => {
     mutationFn: productApi.deleteProduct,
     onSuccess: () => {
       messageApi?.success("Product deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.products] });
     },
     onError: (error) => {
       messageApi?.error("Failed to delete product");

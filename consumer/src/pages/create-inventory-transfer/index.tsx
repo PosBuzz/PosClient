@@ -30,6 +30,7 @@ import {
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -57,20 +58,20 @@ export default function AddInventoryTransfer() {
 
   // Queries
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });
 
   // Updated query to handle warehouse (null branch_id)
   const { data: sourceBatches, isLoading: sourceBatchesLoading } = useQuery({
-    queryKey: ["all-batches", sourceBranchId, searchText],
+    queryKey: [queryKeys.batches, sourceBranchId, searchText],
     queryFn: () => {
       // If sourceBranchId is null, get warehouse batches
       if (sourceBranchId === null) {
         return inventoryApi.getBatches({
           search: searchText || undefined,
-          limit: 100,
+          limit: undefined,
         });
       }
       // Otherwise get branch-specific batches
@@ -88,7 +89,7 @@ export default function AddInventoryTransfer() {
     mutationFn: inventoryApi.createTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer created successfully");
-      queryClient.invalidateQueries({ queryKey: ["transfers"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {

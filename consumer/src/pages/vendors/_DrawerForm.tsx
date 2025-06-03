@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
@@ -18,12 +19,12 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
-   const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.createVendor, data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor created successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -39,7 +40,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateVendor(data.id), data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor updated successfully");
       form.resetFields();
       onSubmitSuccess(true);

@@ -16,6 +16,7 @@ import ProductPricingCard from "./components/ProductPricingCard";
 import ProductTagsCard from "./components/ProductTagsCard";
 import ProductBasicInfo from "./components/ProductBasicInfo";
 import ProductDetailsTabs from "./components/ProductDetailsTabs";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Title, Text } = Typography;
 
@@ -35,7 +36,7 @@ const ProductDetailsPage = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["product", productId],
+    queryKey: [queryKeys.product, productId],
     queryFn: () => productApi.getProduct(productId),
     enabled: !!productId,
     staleTime: 3600 * 1000,
