@@ -25,9 +25,8 @@ import { useAuthStore } from "../../stores/authStore";
 export default function _TableGrid({
   onClickEdit,
   roleOptions = [],
-  ...props
 }) {
-  const [searchText, setSearchText] = useState(null);
+  const [searchText, setSearchText] = useState('');
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();
   const { user } = useAuthStore();

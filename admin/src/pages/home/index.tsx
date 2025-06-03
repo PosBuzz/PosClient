@@ -21,6 +21,7 @@ function Index() {
           billing_logs: true,
         },
       }),
+    staleTime: 3600 * 1000,
   });
 
   const totalUsers = fetchData?.length || 0;
@@ -31,7 +32,7 @@ function Index() {
 
   if (fetchData) {
     fetchData?.forEach((consumer: any) => {
-      const hasActiveBill = consumer?.billing_logs.some(
+      const hasActiveBill = consumer?.billing_logs?.some(
         (log: any) => log?.billing_month === currentMonth
       );
       if (hasActiveBill) {
@@ -44,10 +45,7 @@ function Index() {
 
   return (
     <>
-      <PageTitle
-        title={"Dashboard"}
-        breadcrumbs={[]}
-      />
+      <PageTitle title={"Dashboard"} breadcrumbs={[]} />
 
       <>
         <Row gutter={[16, 16]}>

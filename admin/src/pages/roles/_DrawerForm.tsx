@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
@@ -19,11 +19,13 @@ export default function DrawerForm({
   ...props
 }) {
   const [form] = Form.useForm();
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
+  const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.role, data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: [`all-${model}`] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -37,6 +39,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(`${endpoints.role}/${data.id}`, data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: [`all-${model}`] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
