@@ -10,8 +10,7 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-// @ts-ignore
-export default function _TableGrid({ onClickEdit, ...props }) {
+export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
 
   const {

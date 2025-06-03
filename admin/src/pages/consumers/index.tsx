@@ -24,7 +24,6 @@ const Consumers = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [trigger, setTrigger] = useState(0);
   const planOptions: any = useModelOptions(models?.Plan, "name");
 
   const showDrawer = () => {
@@ -44,7 +43,6 @@ const Consumers = () => {
   };
 
   const onSubmitSuccess = (isEditing: boolean) => {
-    setTrigger((trigger) => trigger + 1);
     if (isEditing) {
       setOpen(false);
       setIsEditing(false);
@@ -92,7 +90,6 @@ const Consumers = () => {
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
           <TableGrid
-            trigger={trigger}
             model={model}
             onClickEdit={onClickEdit}
             planOptions={planOptions}

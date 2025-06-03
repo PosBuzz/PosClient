@@ -6,13 +6,12 @@ import {
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
-import { useEffect } from "react";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-// @ts-ignore
-export default function _TableGrid({ onClickEdit, ...props }) {
+
+export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
 
   const {
