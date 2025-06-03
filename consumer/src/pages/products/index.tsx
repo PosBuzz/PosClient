@@ -281,7 +281,6 @@ const ProductsTable = () => {
                   ))}
                   {record.tags.length > 3 && (
                     <Tag
-                      size="small"
                       color="default"
                       style={{ fontSize: "10px" }}
                     >
