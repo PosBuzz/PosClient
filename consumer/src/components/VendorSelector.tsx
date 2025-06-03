@@ -265,10 +265,15 @@ export default function VendorSelector({
           const searchText = input.toLowerCase();
           return (
             vendor.name.toLowerCase().includes(searchText) ||
-            (vendor.contact &&
-              vendor.contact.toLowerCase().includes(searchText)) ||
-            (vendor.phone && vendor.phone.toLowerCase().includes(searchText)) ||
-            (vendor.email && vendor.email.toLowerCase().includes(searchText))
+            (vendor.contact
+              ? vendor.contact.toLowerCase().includes(searchText)
+              : false) ||
+            (vendor.phone
+              ? vendor.phone.toLowerCase().includes(searchText)
+              : false) ||
+            (vendor.email
+              ? vendor.email.toLowerCase().includes(searchText)
+              : false)
           );
         }}
         getPopupContainer={(triggerNode) =>
