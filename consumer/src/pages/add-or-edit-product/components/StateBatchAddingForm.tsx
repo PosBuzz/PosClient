@@ -39,7 +39,12 @@ interface StateBatchAddingFormProps {
   onBatchesChange: (batches: BatchData[]) => void;
   disabled?: boolean;
   size?: "small" | "default";
-  validationState?: { [key: string]: { status: 'success' | 'warning' | 'error' | 'validating' | ''; help: string } };
+  validationState?: {
+    [key: string]: {
+      status: "success" | "warning" | "error" | "validating" | "";
+      help: string;
+    };
+  };
   variantId?: string;
 }
 
@@ -51,14 +56,15 @@ export default function StateBatchAddingForm({
   size = "default",
   validationState = {},
   variantId = "0",
-}: StateBatchAddingFormProps) {  // Helper function to get validation status for batch fields
+}: StateBatchAddingFormProps) {
+  // Helper function to get validation status for batch fields
   const getBatchValidationStatus = (batchIndex: number, field: string) => {
     const key = `variant_${variantId}_batch_${batchIndex}_${field}`;
     const validation = validationState[key];
     const status = validation?.status;
     return {
-      status: (status === 'error' || status === 'warning') ? status : undefined,
-      help: validation?.help || ''
+      status: status === "error" || status === "warning" ? status : undefined,
+      help: validation?.help || "",
     };
   };
 
@@ -66,6 +72,7 @@ export default function StateBatchAddingForm({
   const { data: branches = [] } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   // Generate batch number
@@ -189,7 +196,9 @@ export default function StateBatchAddingForm({
               />
             </div>
 
-            <Row gutter={[4, 2]}>              <Col xs={24} sm={3}>
+            <Row gutter={[4, 2]}>
+              {" "}
+              <Col xs={24} sm={3}>
                 <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>
                     Branch/Location *
@@ -216,8 +225,9 @@ export default function StateBatchAddingForm({
                   )}
                 </div>
               </Col>
-
-              <Col xs={24} sm={4}>                <div style={{ marginBottom: 4 }}>
+              <Col xs={24} sm={4}>
+                {" "}
+                <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>
                     Reference Number *
                   </Text>
@@ -230,7 +240,9 @@ export default function StateBatchAddingForm({
                     }
                     disabled={disabled}
                     style={{ marginTop: 2 }}
-                    status={getBatchValidationStatus(index, "batch_number").status}
+                    status={
+                      getBatchValidationStatus(index, "batch_number").status
+                    }
                     suffix={
                       <Button
                         type="link"
@@ -255,7 +267,8 @@ export default function StateBatchAddingForm({
                     </Text>
                   )}
                 </div>
-              </Col>              <Col xs={8} sm={4}>
+              </Col>{" "}
+              <Col xs={8} sm={4}>
                 <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>Qty *</Text>
                   <InputNumber
@@ -279,7 +292,8 @@ export default function StateBatchAddingForm({
                     </Text>
                   )}
                 </div>
-              </Col>              <Col xs={8} sm={3}>
+              </Col>{" "}
+              <Col xs={8} sm={3}>
                 <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>
                     Cost/Unit *
@@ -297,7 +311,9 @@ export default function StateBatchAddingForm({
                     }
                     disabled={disabled}
                     prefix="$"
-                    status={getBatchValidationStatus(index, "cost_price").status}
+                    status={
+                      getBatchValidationStatus(index, "cost_price").status
+                    }
                   />
                   {getBatchValidationStatus(index, "cost_price").help && (
                     <Text type="danger" style={{ fontSize: 10 }}>
@@ -306,7 +322,6 @@ export default function StateBatchAddingForm({
                   )}
                 </div>
               </Col>
-
               <Col xs={8} sm={3}>
                 <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>Total</Text>
@@ -320,7 +335,6 @@ export default function StateBatchAddingForm({
                   />
                 </div>
               </Col>
-
               <Col xs={24} sm={2}>
                 <div style={{ marginBottom: 4 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>Expiry</Text>
@@ -345,7 +359,6 @@ export default function StateBatchAddingForm({
                   />
                 </div>
               </Col>
-
               <Col xs={24} sm={3}>
                 <div style={{ marginBottom: 2 }}>
                   <Text style={{ fontSize: 11, color: "#666" }}>

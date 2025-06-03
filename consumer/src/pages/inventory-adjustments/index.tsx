@@ -77,11 +77,13 @@ export default function InventoryAdjustmentsPage() {
         variant_id: variantFilter,
         branch_id: branchFilter,
       }),
+    staleTime: 3600 * 1000,
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   const handleView = (adjustment: InventoryAdjustment) => {

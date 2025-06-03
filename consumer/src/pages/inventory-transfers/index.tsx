@@ -84,11 +84,13 @@ export default function InventoryTransfersPage() {
         status: statusFilter,
         branch_id: branchFilter,
       }),
+    staleTime: 3600 * 1000,
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   // Mutations

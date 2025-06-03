@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input } from "antd";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
@@ -18,16 +18,20 @@ export default function DrawerForm({
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
+   const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.createVendor, data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
       messageApi?.success("Vendor created successfully");
       form.resetFields();
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(error.response?.data?.message || "Failed to create vendor");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to create vendor"
+      );
     },
   });
 
@@ -35,12 +39,15 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateVendor(data.id), data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
       messageApi?.success("Vendor updated successfully");
       form.resetFields();
       onSubmitSuccess(true);
     },
     onError: (error: any) => {
-      messageApi?.error(error.response?.data?.message || "Failed to update vendor");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to update vendor"
+      );
     },
   });
 
@@ -121,7 +128,10 @@ export default function DrawerForm({
           name="phone"
           rules={[
             { required: false },
-            { pattern: /^[\d\s\-\+\(\)]+$/, message: "Please enter a valid phone number" }
+            {
+              pattern: /^[\d\s\-\+\(\)]+$/,
+              message: "Please enter a valid phone number",
+            },
           ]}
         >
           <Input placeholder="Enter phone number" />
@@ -132,21 +142,14 @@ export default function DrawerForm({
           name="email"
           rules={[
             { required: false },
-            { type: "email", message: "Please enter a valid email address" }
+            { type: "email", message: "Please enter a valid email address" },
           ]}
         >
           <Input placeholder="Enter email address" />
         </Form.Item>
 
-        <Form.Item
-          label="Address"
-          name="address"
-          rules={[{ required: false }]}
-        >
-          <TextArea
-            rows={3}
-            placeholder="Enter vendor address (optional)"
-          />
+        <Form.Item label="Address" name="address" rules={[{ required: false }]}>
+          <TextArea rows={3} placeholder="Enter vendor address (optional)" />
         </Form.Item>
 
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>

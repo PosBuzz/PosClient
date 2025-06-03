@@ -32,7 +32,11 @@ import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 import { Permissions } from "../../constants/permissions";
 import { formatCurrency } from "../../utils/formatters";
-import type { ProductListFilters, Product, ProductListResponse } from "../../types/product.types";
+import type {
+  ProductListFilters,
+  Product,
+  ProductListResponse,
+} from "../../types/product.types";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -88,17 +92,17 @@ const ProductsTable = () => {
     };
 
     if (debouncedSearchText) params.search = debouncedSearchText;
-    
+
     // Handle multiple categories
     if (categoryFilter && categoryFilter.length > 0) {
       params.categoryIds = categoryFilter;
     }
-    
+
     // Handle multiple brands
     if (brandFilter && brandFilter.length > 0) {
       params.brandIds = brandFilter;
     }
-    
+
     // Handle multiple tags
     if (tagFilter && tagFilter.length > 0) {
       params.tagIds = tagFilter;
@@ -143,27 +147,31 @@ const ProductsTable = () => {
   };
 
   // TanStack Query for products
-  const { data: productsData, isLoading: productsLoading } = useQuery<ProductListResponse>({
-    queryKey: ["products", getQueryParams()],
-    queryFn: () => productApi.getProducts(getQueryParams()),
-  });
+  const { data: productsData, isLoading: productsLoading } =
+    useQuery<ProductListResponse>({
+      queryKey: ["products", getQueryParams()],
+      queryFn: () => productApi.getProducts(getQueryParams()),
+    });
 
   // TanStack Query for categories
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: productApi.getCategories,
+    staleTime: 3600 * 1000,
   });
 
   // TanStack Query for brands
   const { data: brands = [] } = useQuery({
     queryKey: ["brands"],
     queryFn: productApi.getBrands,
+    staleTime: 3600 * 1000,
   });
 
   // TanStack Query for tags
   const { data: tags = [] } = useQuery({
     queryKey: ["tags"],
     queryFn: productApi.getTags,
+    staleTime: 3600 * 1000,
   });
 
   // Delete mutation
@@ -180,7 +188,11 @@ const ProductsTable = () => {
   });
 
   // Handle table change (pagination)
-  const handleTableChange = (paginationData: any, filters: any, sorter: any) => {
+  const handleTableChange = (
+    paginationData: any,
+    filters: any,
+    sorter: any
+  ) => {
     setPagination({
       current: paginationData.current,
       pageSize: paginationData.pageSize,
@@ -210,10 +222,12 @@ const ProductsTable = () => {
 
   // Check if any filters are active
   const hasActiveFilters = () => {
-    return debouncedSearchText || 
-           categoryFilter.length > 0 || 
-           brandFilter.length > 0 || 
-           tagFilter.length > 0;
+    return (
+      debouncedSearchText ||
+      categoryFilter.length > 0 ||
+      brandFilter.length > 0 ||
+      tagFilter.length > 0
+    );
   };
 
   // Table columns
@@ -234,18 +248,19 @@ const ProductsTable = () => {
             />
             <div>
               <div>
-                <Text strong style={{ fontSize: '14px' }}>{record.name}</Text>
+                <Text strong style={{ fontSize: "14px" }}>
+                  {record.name}
+                </Text>
               </div>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Code: {record.code || 'No code'}
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Code: {record.code || "No code"}
               </Text>
               {record.description && (
                 <div>
-                  <Text type="secondary" style={{ fontSize: '11px' }}>
-                    {record.description.length > 60 
-                      ? `${record.description.substring(0, 60)}...` 
-                      : record.description
-                    }
+                  <Text type="secondary" style={{ fontSize: "11px" }}>
+                    {record.description.length > 60
+                      ? `${record.description.substring(0, 60)}...`
+                      : record.description}
                   </Text>
                 </div>
               )}
@@ -253,17 +268,21 @@ const ProductsTable = () => {
               {record.tags && record.tags.length > 0 && (
                 <div style={{ marginTop: 4 }}>
                   {record.tags.slice(0, 3).map((tagItem) => (
-                    <Tag 
-                      key={tagItem.tag.id} 
-                      size="small" 
+                    <Tag
+                      key={tagItem.tag.id}
+                      size="small"
                       color="blue"
-                      style={{ fontSize: '10px', marginRight: 4 }}
+                      style={{ fontSize: "10px", marginRight: 4 }}
                     >
                       {tagItem.tag.name}
                     </Tag>
                   ))}
                   {record.tags.length > 3 && (
-                    <Tag size="small" color="default" style={{ fontSize: '10px' }}>
+                    <Tag
+                      size="small"
+                      color="default"
+                      style={{ fontSize: "10px" }}
+                    >
                       +{record.tags.length - 3}
                     </Tag>
                   )}
@@ -279,7 +298,8 @@ const ProductsTable = () => {
       dataIndex: ["category", "name"],
       key: "category",
       width: "12%",
-      render: (name: string) => name || <Text type="secondary">No category</Text>,
+      render: (name: string) =>
+        name || <Text type="secondary">No category</Text>,
     },
     {
       title: "Brand",
@@ -297,15 +317,17 @@ const ProductsTable = () => {
         if (!mainVariant) {
           return <Text type="secondary">No pricing</Text>;
         }
-        
-        const regularPrice = parseFloat(mainVariant.regular_price?.toString() || "0");
+
+        const regularPrice = parseFloat(
+          mainVariant.regular_price?.toString() || "0"
+        );
         const costPrice = parseFloat(mainVariant.cost_price?.toString() || "0");
-        
+
         return (
           <div>
             <Text strong>{formatCurrency(regularPrice)}</Text>
             <div>
-              <Text type="secondary" style={{ fontSize: '10px' }}>
+              <Text type="secondary" style={{ fontSize: "10px" }}>
                 Cost: {formatCurrency(costPrice)}
               </Text>
             </div>
@@ -319,14 +341,17 @@ const ProductsTable = () => {
       width: "8%",
       align: "center" as const,
       render: (_, record: Product) => {
-        const taxMethod = record.tax_method || 'exclusive';
+        const taxMethod = record.tax_method || "exclusive";
         const taxValue = record.tax || 0;
-        
+
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: "center" }}>
             <Text strong>{taxValue}%</Text>
             <div>
-              <Text type="secondary" style={{ fontSize: '10px', textTransform: 'capitalize' }}>
+              <Text
+                type="secondary"
+                style={{ fontSize: "10px", textTransform: "capitalize" }}
+              >
                 {taxMethod}
               </Text>
             </div>
@@ -342,12 +367,15 @@ const ProductsTable = () => {
         const date = new Date(record.created_at);
         return (
           <div>
-            <Text style={{ fontSize: '12px' }}>
+            <Text style={{ fontSize: "12px" }}>
               {date.toLocaleDateString()}
             </Text>
             <div>
-              <Text type="secondary" style={{ fontSize: '10px' }}>
-                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <Text type="secondary" style={{ fontSize: "10px" }}>
+                {date.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </div>
           </div>
@@ -504,16 +532,16 @@ const ProductsTable = () => {
           </Col>
 
           <Col xs={24} sm={12} md={4} lg={3}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
                 {productsData?.meta?.total || 0} products found
               </Text>
               {hasActiveFilters() && (
-                <Button 
-                  type="link" 
-                  size="small" 
+                <Button
+                  type="link"
+                  size="small"
                   onClick={handleClearAllFilters}
-                  style={{ padding: 0, height: 'auto', fontSize: '11px' }}
+                  style={{ padding: 0, height: "auto", fontSize: "11px" }}
                 >
                   Clear all filters
                 </Button>
@@ -527,48 +555,64 @@ const ProductsTable = () => {
           <Row style={{ marginBottom: 16 }}>
             <Col span={24}>
               <Space wrap>
-                <Text type="secondary" style={{ fontSize: '12px' }}>Active filters:</Text>
-                
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  Active filters:
+                </Text>
+
                 {debouncedSearchText && (
                   <Tag closable onClose={() => handleSearchClear()}>
                     Search: "{debouncedSearchText}"
                   </Tag>
                 )}
-                
-                {categoryFilter.map(categoryId => {
-                  const category = categories.find((c: any) => c.id === categoryId);
+
+                {categoryFilter.map((categoryId) => {
+                  const category = categories.find(
+                    (c: any) => c.id === categoryId
+                  );
                   return category ? (
-                    <Tag 
-                      key={categoryId} 
-                      closable 
-                      onClose={() => setCategoryFilter(prev => prev.filter(id => id !== categoryId))}
+                    <Tag
+                      key={categoryId}
+                      closable
+                      onClose={() =>
+                        setCategoryFilter((prev) =>
+                          prev.filter((id) => id !== categoryId)
+                        )
+                      }
                     >
                       Category: {category.name}
                     </Tag>
                   ) : null;
                 })}
-                
-                {brandFilter.map(brandId => {
+
+                {brandFilter.map((brandId) => {
                   const brand = brands.find((b: any) => b.id === brandId);
                   return brand ? (
-                    <Tag 
-                      key={brandId} 
-                      closable 
-                      onClose={() => setBrandFilter(prev => prev.filter(id => id !== brandId))}
+                    <Tag
+                      key={brandId}
+                      closable
+                      onClose={() =>
+                        setBrandFilter((prev) =>
+                          prev.filter((id) => id !== brandId)
+                        )
+                      }
                     >
                       Brand: {brand.name}
                     </Tag>
                   ) : null;
                 })}
-                
-                {tagFilter.map(tagId => {
+
+                {tagFilter.map((tagId) => {
                   const tag = tags.find((t: any) => t.id === tagId);
                   return tag ? (
-                    <Tag 
-                      key={tagId} 
-                      closable 
+                    <Tag
+                      key={tagId}
+                      closable
                       color="blue"
-                      onClose={() => setTagFilter(prev => prev.filter(id => id !== tagId))}
+                      onClose={() =>
+                        setTagFilter((prev) =>
+                          prev.filter((id) => id !== tagId)
+                        )
+                      }
                     >
                       <TagOutlined /> {tag.name}
                     </Tag>
@@ -591,9 +635,9 @@ const ProductsTable = () => {
             total: productsData?.meta?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
+            showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} products`,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            pageSizeOptions: ["10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
           scroll={{ x: 1000 }}
