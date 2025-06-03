@@ -16,11 +16,11 @@ const Users = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [trigger, setTrigger] = useState(0);
 
   const { data: fetchData } = useQuery({
     queryKey: ["roles"],
     queryFn: () => get(endpoints.role),
+    staleTime: 3600 * 1000,
   });
 
   const roleOptions: any = fetchData?.map((role) => {
@@ -44,7 +44,6 @@ const Users = () => {
   };
 
   const onSubmitSuccess = (isEditing: boolean) => {
-    setTrigger((trigger) => trigger + 1);
     if (isEditing) {
       setOpen(false);
       setIsEditing(false);
@@ -89,7 +88,6 @@ const Users = () => {
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
           <TableGrid
-            trigger={trigger}
             onClickEdit={onClickEdit}
             roleOptions={roleOptions}
           />

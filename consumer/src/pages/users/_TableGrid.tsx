@@ -23,7 +23,6 @@ import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 
 export default function _TableGrid({
-  trigger,
   onClickEdit,
   roleOptions = [],
   ...props
@@ -60,13 +59,8 @@ export default function _TableGrid({
         search_text: debouncedSearchText,
         role_id: selectedRole,
       }),
+    staleTime: 3600 * 1000,
   });
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(endpoints.deleteUser(id)),

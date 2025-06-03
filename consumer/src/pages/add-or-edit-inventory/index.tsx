@@ -58,19 +58,22 @@ export default function AddEditInventory() {
 
   // Queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["inventory-products"],
+    queryKey: ["products-for-inventory"],
     queryFn: () => inventoryApi.getProductsForInventory(),
+    staleTime: 3600 * 1000,
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
     queryKey: ["product-variants", selectedProductId],
     queryFn: () => inventoryApi.getVariants(selectedProductId!),
     enabled: !!selectedProductId,
+    staleTime: 3600 * 1000,
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches"],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: 3600 * 1000,
   });
 
   // Load existing batch for edit
@@ -78,6 +81,7 @@ export default function AddEditInventory() {
     queryKey: ["batch", id],
     queryFn: () => inventoryApi.getBatch(parseInt(id!)),
     enabled: isEdit && !!id,
+    staleTime: 3600 * 1000,
   });
 
   // Mutations
@@ -105,7 +109,7 @@ export default function AddEditInventory() {
     }) => inventoryApi.updateBatch(id, data),
     onSuccess: () => {
       messageApi?.success("Inventory updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: ["batch", id] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {

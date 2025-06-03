@@ -41,9 +41,24 @@ export default function CommonSelector({
 
   const { messageApi } = useMessageStore();
 
+  const queryKey = (type: string) => {
+    switch (type) {
+      case "category":
+        return "categories";
+      case "brand":
+        return "brands";
+      case "unit":
+        return "unit";
+      case "tag":
+        return "tag";
+      default:
+        return "";
+    }
+  };
+
   // Fetch options based on type
   const { data: options = [], isLoading } = useQuery({
-    queryKey: ["selector", type],
+    queryKey: [queryKey(type)],
     queryFn: async () => {
       switch (type) {
         case "category":
@@ -79,12 +94,7 @@ export default function CommonSelector({
     },
     onSuccess: (newItem) => {
       // Invalidate the query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["selector", type] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-
+      queryClient.invalidateQueries({ queryKey: [queryKey(type)] });
       messageApi?.success(`${label} created successfully`);
       setIsModalOpen(false);
       form.resetFields();
@@ -127,11 +137,7 @@ export default function CommonSelector({
       }
     },
     onSuccess: (_, deletedId) => {
-      queryClient.invalidateQueries({ queryKey: ["selector", type] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: [queryKey(type)] });
 
       // Remove deleted item from selection if it's selected
       if (onChange && value) {
@@ -170,12 +176,7 @@ export default function CommonSelector({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["selector", type] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-
+      queryClient.invalidateQueries({ queryKey: [queryKey(type)] });
       messageApi?.success(`${label} updated successfully`);
       setEditModalOpen(false);
       setCurrentEdit(null);
