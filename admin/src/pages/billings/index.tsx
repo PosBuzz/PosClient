@@ -93,16 +93,18 @@ const Billings = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        refetch={refetch}
-        onClose={onClose}
-        open={open}
-        model={model}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-        consumers={consumers}
-      />
+      {open && (
+        <DrawerForm
+          refetch={refetch}
+          onClose={onClose}
+          open={open}
+          model={model}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+          consumers={consumers}
+        />
+      )}
 
       <PageTitle
         title={title}

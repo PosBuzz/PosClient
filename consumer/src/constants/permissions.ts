@@ -7,4 +7,7 @@ export const Permissions = {
   delete_product: "delete_product",
   vendors: "vendors",
   branches: "branches",
+  inventory_batches: "inventory_batches",
+  inventory_transfer: "inventory_transfer",
+  inventory_adjustment: "inventory_adjustment",
 };

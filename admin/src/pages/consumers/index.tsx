@@ -57,15 +57,17 @@ const Consumers = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        onClose={onClose}
-        open={open}
-        model={model}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-        planOptions={planOptions}
-      />
+      {open && (
+        <DrawerForm
+          onClose={onClose}
+          open={open}
+          model={model}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+          planOptions={planOptions}
+        />
+      )}
 
       <PageTitle
         title={title}

@@ -24,6 +24,7 @@ export class ConsumerService {
       const role = await tx.role.create({
         data: {
           name: 'Admin',
+          is_admin: true,
           consumer_id: consumer.id,
         },
       });
@@ -92,6 +93,7 @@ export class ConsumerService {
         consumer_id: consumerId,
         role: {
           name: 'Admin',
+          is_admin: true,
           consumer_id: consumerId,
         },
       },

@@ -47,14 +47,16 @@ const Roles = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        onClose={onClose}
-        open={open}
-        model={model}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-      />
+      {open && (
+        <DrawerForm
+          onClose={onClose}
+          open={open}
+          model={model}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+        />
+      )}
 
       <PageTitle
         title={title}
@@ -76,10 +78,7 @@ const Roles = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid
-            model={model}
-            onClickEdit={onClickEdit}
-          />
+          <TableGrid model={model} onClickEdit={onClickEdit} />
         </Col>
       </Row>
     </>
