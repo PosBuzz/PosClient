@@ -44,13 +44,15 @@ const Branches = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        onClose={onClose}
-        open={open}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-      />
+      {open && (
+        <DrawerForm
+          onClose={onClose}
+          open={open}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+        />
+      )}
 
       <PageTitle
         title={title}
@@ -83,4 +85,4 @@ const Branches = () => {
   );
 };
 
-export default Branches;  
+export default Branches;

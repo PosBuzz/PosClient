@@ -27,6 +27,10 @@ const AddInventoryAdjustments = lazy(
 );
 const Vendors = lazy(() => import("./pages/vendors"));
 const Branches = lazy(() => import("./pages/branches"));
+const Tags = lazy(() => import("./pages/tags"));
+const Categories = lazy(() => import("./pages/categories"));
+const Brands = lazy(() => import("./pages/brands"));
+const Units = lazy(() => import("./pages/units"));
 
 export const routes = [
   {
@@ -75,6 +79,38 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.branches}>
             <Branches />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "tags",
+        element: (
+          <RequirePermission permission={Permissions.branches}>
+            <Tags />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "categories",
+        element: (
+          <RequirePermission permission={Permissions.branches}>
+            <Categories />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "brands",
+        element: (
+          <RequirePermission permission={Permissions.branches}>
+            <Brands />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "units",
+        element: (
+          <RequirePermission permission={Permissions.branches}>
+            <Units />
           </RequirePermission>
         ),
       },

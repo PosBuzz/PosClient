@@ -93,15 +93,34 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.vendors],
         },
       ],
-    },
-    {
+    },    {
       label: <span title="Settings">Settings</span>,
       key: "/settings",
       icon: <SettingOutlined />,
       children: [
         {
           label: <span title="Branches">Branches</span>,
-          key: "/Branches",
+          key: "/branches",
+          permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="Categories">Categories</span>,
+          key: "/categories",
+          permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="Brands">Brands</span>,
+          key: "/brands",
+          permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="Tags">Tags</span>,
+          key: "/tags",
+          permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="Units">Units</span>,
+          key: "/units",
           permissions: [Permissions.branches],
         },
         {

@@ -11,6 +11,8 @@ export class BrandService {
     return this.prismaService.brand.create({
       data: {
         name: createBrandDto.name,
+        logo: createBrandDto.logo,
+        website: createBrandDto.website,
         consumer_id: consumerId,
       },
     });
@@ -25,9 +27,9 @@ export class BrandService {
 
   async findOne(id: number, consumerId: number) {
     const brand = await this.prismaService.brand.findFirst({
-      where: { 
+      where: {
         id,
-        consumer_id: consumerId
+        consumer_id: consumerId,
       },
     });
 
@@ -44,7 +46,11 @@ export class BrandService {
 
     return this.prismaService.brand.update({
       where: { id },
-      data: { name: updateBrandDto.name },
+      data: {
+        name: updateBrandDto.name,
+        website: updateBrandDto.website,
+        logo: updateBrandDto.logo,
+      },
     });
   }
 
@@ -55,7 +61,7 @@ export class BrandService {
     await this.prismaService.brand.delete({
       where: { id },
     });
-    
+
     return { success: true };
   }
 }

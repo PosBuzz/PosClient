@@ -28,6 +28,9 @@ const ImageInput: React.FC<ImageInputProps> = ({
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
+  
+  // Add this to track if we've already processed the value prop
+  const [initialValueProcessed, setInitialValueProcessed] = useState(false);
 
   const l = label
     ?.replace("_", " ")
@@ -35,10 +38,11 @@ const ImageInput: React.FC<ImageInputProps> = ({
       return $1.toUpperCase();
     });
 
-  // Convert URLs to file objects for display
+  // Convert URLs to file objects for display - only on initial mount or when value changes
   useEffect(() => {
-    if (value && value.length > 0) {
-      const files = value.map((url, index) => ({
+    if ((value && value.length > 0) || value === null) {
+      const urls = value || [];
+      const files = urls.map((url, index) => ({
         uid: `existing-${index}`,
         name: `image-${index}.jpg`,
         status: "done",
@@ -52,8 +56,10 @@ const ImageInput: React.FC<ImageInputProps> = ({
         },
       }));
       setFileList(files);
-    } else {
+      setInitialValueProcessed(true);
+    } else if (!initialValueProcessed) {
       setFileList([]);
+      setInitialValueProcessed(true);
     }
   }, [value]);
 
