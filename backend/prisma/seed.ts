@@ -99,6 +99,9 @@ async function main() {
     'delete_product',
     'branches',
     'vendors',
+    'inventory_batches',
+    'inventory_transfer',
+    'inventory_adjustment',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
@@ -205,6 +208,7 @@ async function main() {
   // Create Admin Role for Consumer
   const adminConsumerRole = await prisma.role.upsert({
     where: {
+      is_admin: true,
       consumer_id_name: {
         consumer_id: consumer1.id,
         name: 'Admin',
@@ -214,6 +218,7 @@ async function main() {
     create: {
       consumer_id: consumer1.id,
       name: 'Admin',
+      is_admin: true,
     },
   });
 

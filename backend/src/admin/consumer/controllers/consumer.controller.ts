@@ -9,14 +9,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from 'src/auth/enums/roles.enum';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
 import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ConsumerService } from '../services/consumer.service';
-import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
-import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 
 @UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/consumers')

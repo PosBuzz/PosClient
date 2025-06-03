@@ -19,34 +19,36 @@ import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum
 import { Request } from 'express';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
+@HasPermissions([
+  ConsumerPermission.view_product,
+  ConsumerPermission.add_product,
+  ConsumerPermission.edit_product,
+  ConsumerPermission.delete_product,
+])
 @Controller('consumer/units')
 export class UnitController {
   constructor(private readonly unitService: UnitService) {}
 
-  @HasPermissions([ConsumerPermission.add_product, ConsumerPermission.edit_product])
   @Post()
   async create(@Body() createUnitDto: CreateUnitDto, @Req() req: Request) {
     return this.unitService.create(createUnitDto, req.user.id);
   }
 
-  @HasPermissions([ConsumerPermission.view_product, ConsumerPermission.add_product, ConsumerPermission.edit_product])
   @Get()
   async findAll(@Req() req: Request) {
     return this.unitService.findAll(req.user.id);
   }
 
-  @HasPermissions([ConsumerPermission.view_product])
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
     return this.unitService.findOne(+id, req.user.id);
   }
 
-  @HasPermissions([ConsumerPermission.edit_product])
   @Patch(':id')
   async update(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body() updateUnitDto: UpdateUnitDto,
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     return this.unitService.update(+id, updateUnitDto, req.user.id);
   }

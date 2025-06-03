@@ -19,7 +19,10 @@ import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum
 import { Request } from 'express';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
-@HasPermissions([ConsumerPermission.vendors])
+@HasPermissions([
+  ConsumerPermission.vendors,
+  ConsumerPermission.inventory_batches,
+])
 @Controller('consumer/vendors')
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}

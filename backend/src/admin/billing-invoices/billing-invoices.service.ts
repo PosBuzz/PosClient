@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
-import { Response } from 'express';
 import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
 
@@ -18,6 +17,7 @@ interface Role {
   id: number;
   name: string;
   consumer_id: number;
+  is_admin: boolean;
 }
 
 interface User {
@@ -107,12 +107,14 @@ export class BillingInvoicesService {
     });
 
     // Add total row
-    billingSheet.addRow(['', '', '', '', 'Total', totalAmount,]);
+    billingSheet.addRow(['', '', '', '', 'Total', totalAmount]);
 
     // Create "Company Info" sheet
     const infoSheet = workbook.addWorksheet('Company Info');
 
-    const owner = consumer.users.find((user) => user.role?.name === 'Admin');
+    const owner = consumer.users.find(
+      (user) => user.role?.name === 'Admin' && user?.role?.is_admin,
+    );
 
     const infoData = [
       ['Company Name', consumer.company_name || 'N/A'],
@@ -288,7 +290,9 @@ export class BillingInvoicesService {
       .text('Company Information')
       .moveDown(0.5);
 
-    const owner = consumer.users.find((user) => user.role?.name === 'Admin');
+    const owner = consumer.users.find(
+      (user) => user.role?.name === 'Admin' && user.role.is_admin,
+    );
     const companyInfo = [
       { label: 'Company Name', value: consumer.company_name || 'N/A' },
       { label: 'Email', value: consumer.email || 'N/A' },

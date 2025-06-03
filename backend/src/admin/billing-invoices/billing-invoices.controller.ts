@@ -40,6 +40,7 @@ export class BillingInvoicesController {
             where: {
               role: {
                 name: 'Admin',
+                is_admin: true,
               },
             },
             select: {
@@ -96,7 +97,7 @@ export class BillingInvoicesController {
           consumer: {
             include: {
               users: {
-                where: { role: { name: 'Admin' } },
+                where: { role: { is_admin: true } },
                 select: { name: true, role: true },
               },
             },
@@ -145,6 +146,7 @@ export class BillingInvoicesController {
             where: {
               role: {
                 name: 'Admin',
+                is_admin: true,
               },
             },
             select: {

@@ -10,12 +10,16 @@ import {
 import { InventoryService } from '../services/inventory.service';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { Request } from 'express';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 
 @Controller('consumer/inventory')
-@UseGuards(ClientAuthGuard)
+@UseGuards(ClientAuthGuard, PermissionsGuard)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('summary')
   getSummary(@Req() req: Request, @Query('branch_id') branchId?: string) {
     return this.inventoryService.getInventorySummary(
@@ -24,6 +28,7 @@ export class InventoryController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('stock-by-variant')
   getStockByVariant(
     @Req() req: Request,
@@ -45,6 +50,7 @@ export class InventoryController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('expiring')
   getExpiringBatches(@Req() req: Request, @Query('days') days?: string) {
     return this.inventoryService.getExpiringBatches(
@@ -53,7 +59,10 @@ export class InventoryController {
     );
   }
 
-  // New endpoints for inventory management
+  @HasPermissions([
+    ConsumerPermission.inventory_batches,
+    ConsumerPermission.inventory_adjustment,
+  ])
   @Get('products')
   getProductsForInventory(@Req() req: Request) {
     return this.inventoryService.getProductsForInventory(
@@ -61,11 +70,13 @@ export class InventoryController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('products/:productId/variants')
   getProductVariants(@Param('productId', ParseIntPipe) productId: number) {
     return this.inventoryService.getProductVariants(productId);
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('variants/:variantId/stock')
   getVariantStock(
     @Req() req: Request,
@@ -79,6 +90,7 @@ export class InventoryController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('low-stock')
   getLowStockItems(@Req() req: Request, @Query('branch_id') branchId?: string) {
     return this.inventoryService.getLowStockItems(
