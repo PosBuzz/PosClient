@@ -173,24 +173,10 @@ export interface ProductVariantDetailed
   sale_unit?: {
     id: number;
     name: string;
-    code: string;
-    conversion_factor?: number;
-    base_unit?: {
-      id: number;
-      name: string;
-      code: string;
-    };
   };
   purchase_unit?: {
     id: number;
     name: string;
-    code: string;
-    conversion_factor?: number;
-    base_unit?: {
-      id: number;
-      name: string;
-      code: string;
-    };
   };
 
   // Inventory information

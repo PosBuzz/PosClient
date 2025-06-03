@@ -265,30 +265,12 @@ export class ProductService {
               select: {
                 id: true,
                 name: true,
-                code: true,
-                conversion_factor: true,
-                base_unit: {
-                  select: {
-                    id: true,
-                    name: true,
-                    code: true,
-                  },
-                },
               },
             },
             purchase_unit: {
               select: {
                 id: true,
                 name: true,
-                code: true,
-                conversion_factor: true,
-                base_unit: {
-                  select: {
-                    id: true,
-                    name: true,
-                    code: true,
-                  },
-                },
               },
             },
 

@@ -94,7 +94,7 @@ export default function DrawerForm({
     <Drawer
       title={isEditing ? "Update Branch" : "Add Branch"}
       onClose={onClose}
-      width={600}
+      width={500}
       open={open}
       style={{ maxHeight: "100vh", overflowY: "auto" }}
     >
