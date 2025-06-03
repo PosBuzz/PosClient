@@ -33,6 +33,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import VendorSelector from "../../components/VendorSelector";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -58,27 +59,27 @@ export default function AddEditInventory() {
 
   // Queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products-for-inventory"],
+    queryKey: [queryKeys.productsForInventory],
     queryFn: () => inventoryApi.getProductsForInventory(),
     staleTime: 3600 * 1000,
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
-    queryKey: ["product-variants", selectedProductId],
+    queryKey: [queryKeys.productVariants, selectedProductId],
     queryFn: () => inventoryApi.getVariants(selectedProductId!),
     enabled: !!selectedProductId,
     staleTime: 3600 * 1000,
   });
 
   const { data: branches = [] } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });
 
   // Load existing batch for edit
   const { data: existingBatch, isLoading: batchLoading } = useQuery({
-    queryKey: ["batch", id],
+    queryKey: [queryKeys.batch, id],
     queryFn: () => inventoryApi.getBatch(parseInt(id!)),
     enabled: isEdit && !!id,
     staleTime: 3600 * 1000,
@@ -89,7 +90,7 @@ export default function AddEditInventory() {
     mutationFn: inventoryApi.createBatch,
     onSuccess: () => {
       messageApi?.success("Inventory added successfully");
-      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
@@ -109,7 +110,7 @@ export default function AddEditInventory() {
     }) => inventoryApi.updateBatch(id, data),
     onSuccess: () => {
       messageApi?.success("Inventory updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["batch", id] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch, id] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {

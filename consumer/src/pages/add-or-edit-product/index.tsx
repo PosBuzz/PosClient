@@ -9,6 +9,7 @@ import { ProductFormData, TaxMethod } from "../../types/product.types";
 import { useProductFormState } from "./hooks/useProductFormState";
 import StateBasicInformationTab from "./components/StateBasicInformationTab";
 import StateVariantManager from "./components/StateVariantManager";
+import { queryKeys } from "../../constants/queryKeys";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
@@ -166,7 +167,7 @@ export default function ProductForm() {
 
   // Fetch product data if in edit mode
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
-    queryKey: ["product", id],
+    queryKey: [queryKeys.product, id],
     queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
     staleTime: 3600 * 1000,
@@ -207,16 +208,16 @@ export default function ProductForm() {
       );
       queryClient.invalidateQueries({
         queryKey: [
-          "products",
-          "product-variants",
-          "products-for-inventory",
-          "batches",
+          queryKeys.products,
+          queryKeys.productVariants,
+          queryKeys.productsForInventory,
+          queryKeys.batches,
         ],
       });
 
       if (isEditMode && id) {
         queryClient.invalidateQueries({
-          queryKey: ["product", id, "products"],
+          queryKey: [queryKeys.product, id, "products"],
         });
       }
 

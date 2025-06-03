@@ -20,6 +20,7 @@ import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "../../../api/inventory-api";
 import VendorSelector from "../../../components/VendorSelector";
+import { queryKeys } from "../../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -70,7 +71,7 @@ export default function StateBatchAddingForm({
 
   // Queries
   const { data: branches = [] } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });

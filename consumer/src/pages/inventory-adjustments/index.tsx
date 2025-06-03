@@ -27,6 +27,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -64,7 +65,7 @@ export default function InventoryAdjustmentsPage() {
   // Queries
   const { data: adjustmentsData, isLoading: adjustmentsLoading } = useQuery({
     queryKey: [
-      "adjustments",
+      queryKeys.adjustments,
       currentPage,
       pageSize,
       variantFilter,
@@ -81,7 +82,7 @@ export default function InventoryAdjustmentsPage() {
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ["branches"],
+    queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
     staleTime: 3600 * 1000,
   });

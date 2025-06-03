@@ -21,12 +21,10 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
+import { queryKeys } from "../../constants/queryKeys";
 
-export default function _TableGrid({
-  onClickEdit,
-  roleOptions = [],
-}) {
-  const [searchText, setSearchText] = useState('');
+export default function _TableGrid({ onClickEdit, roleOptions = [] }) {
+  const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();
   const { user } = useAuthStore();
@@ -52,7 +50,7 @@ export default function _TableGrid({
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["users", debouncedSearchText, selectedRole],
+    queryKey: [queryKeys.users, debouncedSearchText, selectedRole],
     queryFn: () =>
       get(endpoints.user, {
         search_text: debouncedSearchText,

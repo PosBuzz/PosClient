@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys } from "../../constants/queryKeys";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -23,7 +24,7 @@ export default function DrawerForm({
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.user, data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -37,7 +38,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateUser(data.id), data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
