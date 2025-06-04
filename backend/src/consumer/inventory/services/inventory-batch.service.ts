@@ -2,11 +2,15 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryBatchService {
-  constructor(private prisma: PrismaService) {}
-
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
   async create(consumerId: number, dto: CreateInventoryBatchDto) {
     // Verify variant belongs to consumer
     const variant = await this.prisma.productVariant.findFirst({
@@ -71,11 +75,11 @@ export class InventoryBatchService {
           select: { id: true, name: true },
         },
       },
-    });
+    });    // Invalidate related caches
+    await this.invalidateInventoryBatchCaches(consumerId, dto.variant_id, dto.branch_id);
 
     return batch;
   }
-
   async findAll(consumerId: number, options: {
     page?: number;
     limit?: number;
@@ -84,35 +88,84 @@ export class InventoryBatchService {
     variant_id?: number;
   } = {}) {
     const { page = 1, limit = 10, search, branch_id, variant_id } = options;
-    const skip = (page - 1) * limit;
+    const cacheKey = generateCacheKey.inventoryBatchList(consumerId, page, limit, search, branch_id, variant_id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const skip = (page - 1) * limit;
 
-    const whereClause: any = {
-      variant: {
-        product: {
-          consumer_id: consumerId,
+      const whereClause: any = {
+        variant: {
+          product: {
+            consumer_id: consumerId,
+          },
         },
-      },
-    };
+      };
 
-    if (search) {
-      whereClause.OR = [
-        { batch_number: { contains: search, mode: 'insensitive' } },
-        { variant: { name: { contains: search, mode: 'insensitive' } } },
-        { variant: { product: { name: { contains: search, mode: 'insensitive' } } } },
-      ];
-    }
+      if (search) {
+        whereClause.OR = [
+          { batch_number: { contains: search, mode: 'insensitive' } },
+          { variant: { name: { contains: search, mode: 'insensitive' } } },
+          { variant: { product: { name: { contains: search, mode: 'insensitive' } } } },
+        ];
+      }
 
-    if (branch_id) {
-      whereClause.branch_id = branch_id;
-    }
+      if (branch_id) {
+        whereClause.branch_id = branch_id;
+      }
 
-    if (variant_id) {
-      whereClause.variant_id = variant_id;
-    }
+      if (variant_id) {
+        whereClause.variant_id = variant_id;
+      }
 
-    const [batches, total] = await Promise.all([
-      this.prisma.inventoryBatch.findMany({
-        where: whereClause,
+      const [batches, total] = await Promise.all([
+        this.prisma.inventoryBatch.findMany({
+          where: whereClause,
+          include: {
+            variant: {
+              include: {
+                product: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+            branch: {
+              select: { id: true, name: true },
+            },
+            vendor: {
+              select: { id: true, name: true },
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+        }),
+        this.prisma.inventoryBatch.count({ where: whereClause }),
+      ]);
+
+      return {
+        data: batches,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    });
+  }
+  async findOne(id: number, consumerId: number) {
+    const cacheKey = generateCacheKey.inventoryBatchDetail(id, consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const batch = await this.prisma.inventoryBatch.findFirst({
+        where: {
+          id,
+          variant: {
+            product: {
+              consumer_id: consumerId,
+            },
+          },
+        },
         include: {
           variant: {
             include: {
@@ -128,60 +181,17 @@ export class InventoryBatchService {
             select: { id: true, name: true },
           },
         },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      this.prisma.inventoryBatch.count({ where: whereClause }),
-    ]);
+      });
 
-    return {
-      data: batches,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
+      if (!batch) {
+        throw new NotFoundException(`Inventory batch with ID ${id} not found`);
+      }
 
-  async findOne(id: number, consumerId: number) {
-    const batch = await this.prisma.inventoryBatch.findFirst({
-      where: {
-        id,
-        variant: {
-          product: {
-            consumer_id: consumerId,
-          },
-        },
-      },
-      include: {
-        variant: {
-          include: {
-            product: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-        branch: {
-          select: { id: true, name: true },
-        },
-        vendor: {
-          select: { id: true, name: true },
-        },
-      },
+      return batch;
     });
-
-    if (!batch) {
-      throw new NotFoundException(`Inventory batch with ID ${id} not found`);
-    }
-
-    return batch;
   }
-
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
-    await this.findOne(id, consumerId);
+    const batch = await this.findOne(id, consumerId);
 
     const updatedBatch = await this.prisma.inventoryBatch.update({
       where: { id },
@@ -193,16 +203,41 @@ export class InventoryBatchService {
       },
     });
 
+    // Invalidate related caches
+    await this.invalidateInventoryBatchCaches(consumerId, batch.variant_id, batch.branch_id);
+
     return updatedBatch;
   }
 
   async remove(id: number, consumerId: number) {
-    await this.findOne(id, consumerId);
+    const batch = await this.findOne(id, consumerId);
 
     await this.prisma.inventoryBatch.delete({
       where: { id },
     });
 
+    // Invalidate related caches
+    await this.invalidateInventoryBatchCaches(consumerId, batch.variant_id, batch.branch_id);
+
     return { success: true, message: 'Inventory batch deleted successfully' };
+  }
+  // Cache invalidation helper methods
+  private async invalidateInventoryBatchCaches(consumerId: number, variantId?: number, branchId?: number) {
+    const cacheKeysToInvalidate: string[] = [];
+
+    // Invalidate batch list cache with different pagination options
+    for (let page = 1; page <= 10; page++) {
+      for (const limit of [10, 25, 50]) {
+        cacheKeysToInvalidate.push(
+          generateCacheKey.inventoryBatchList(consumerId, page, limit),
+          generateCacheKey.inventoryBatchList(consumerId, page, limit, undefined, branchId, variantId),
+        );
+      }
+    }    // Invalidate specific batch detail cache if we had the batch ID
+    // This will be handled by the caller methods
+
+    await Promise.all(
+      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
+    );
   }
 }

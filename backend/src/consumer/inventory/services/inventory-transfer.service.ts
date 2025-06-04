@@ -2,12 +2,15 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryTransferService {
   constructor(
     private prisma: PrismaService,
-    private inventoryHelper: InventoryHelperService
+    private inventoryHelper: InventoryHelperService,
+    private cacheService: CacheService,
   ) {}
 
   async create(consumerId: number, userId: number, dto: CreateInventoryTransferDto) {
@@ -60,9 +63,7 @@ export class InventoryTransferService {
           `Insufficient quantity in batch ${item.batch_id}. Available: ${batch.quantity}, Requested: ${item.quantity}`
         );
       }
-    }
-
-    // Create transfer with items
+    }    // Create transfer with items
     const transfer = await this.prisma.inventoryTransfer.create({
       data: {
         source_branch_id: dto.source_branch_id,
@@ -96,9 +97,11 @@ export class InventoryTransferService {
       },
     });
 
+    // Invalidate related caches after successful creation
+    await this.invalidateInventoryTransferCaches(consumerId, dto.source_branch_id, dto.destination_branch_id);
+
     return transfer;
   }
-
   async findAll(consumerId: number, options: {
     page?: number;
     limit?: number;
@@ -107,37 +110,96 @@ export class InventoryTransferService {
   } = {}) {
     const page = options.page || 1;
     const limit = options.limit || 10;
-    const skip = (page - 1) * limit;
+    const cacheKey = generateCacheKey.inventoryTransferList(consumerId, page, limit, options.status, options.branch_id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const skip = (page - 1) * limit;
 
-    const where: any = {
-      OR: [
-        {
-          source_branch: {
-            consumer_id: consumerId,
+      const where: any = {
+        OR: [
+          {
+            source_branch: {
+              consumer_id: consumerId,
+            },
           },
-        },
-        {
-          destination_branch: {
-            consumer_id: consumerId,
+          {
+            destination_branch: {
+              consumer_id: consumerId,
+            },
           },
+        ],
+      };
+
+      if (options.status) {
+        where.status = options.status;
+      }
+
+      if (options.branch_id !== undefined) {
+        where.OR = [
+          { source_branch_id: options.branch_id },
+          { destination_branch_id: options.branch_id },
+        ];
+      }
+
+      const [transfers, total] = await Promise.all([
+        this.prisma.inventoryTransfer.findMany({
+          where,
+          include: {
+            source_branch: { select: { id: true, name: true, is_warehouse: true } },
+            destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+            created_by_user: { select: { id: true, name: true } },
+            items: {
+              include: {
+                batch: {
+                  include: {
+                    variant: {
+                      include: {
+                        product: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.inventoryTransfer.count({ where }),
+      ]);
+
+      return {
+        data: transfers,
+        meta: {
+          current_page: page,
+          per_page: limit,
+          total,
+          last_page: Math.ceil(total / limit),
         },
-      ],
-    };
-
-    if (options.status) {
-      where.status = options.status;
-    }
-
-    if (options.branch_id !== undefined) {
-      where.OR = [
-        { source_branch_id: options.branch_id },
-        { destination_branch_id: options.branch_id },
-      ];
-    }
-
-    const [transfers, total] = await Promise.all([
-      this.prisma.inventoryTransfer.findMany({
-        where,
+      };
+    });
+  }
+  async findOne(id: number, consumerId: number) {
+    const cacheKey = generateCacheKey.inventoryTransferDetail(id, consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const transfer = await this.prisma.inventoryTransfer.findFirst({
+        where: {
+          id,
+          OR: [
+            {
+              source_branch: {
+                consumer_id: consumerId,
+              },
+            },
+            {
+              destination_branch: {
+                consumer_id: consumerId,
+              },
+            },
+          ],
+        },
         include: {
           source_branch: { select: { id: true, name: true, is_warehouse: true } },
           destination_branch: { select: { id: true, name: true, is_warehouse: true } },
@@ -156,66 +218,14 @@ export class InventoryTransferService {
             },
           },
         },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.inventoryTransfer.count({ where }),
-    ]);
+      });
 
-    return {
-      data: transfers,
-      meta: {
-        current_page: page,
-        per_page: limit,
-        total,
-        last_page: Math.ceil(total / limit),
-      },
-    };
-  }
+      if (!transfer) {
+        throw new NotFoundException('Transfer not found');
+      }
 
-  async findOne(id: number, consumerId: number) {
-    const transfer = await this.prisma.inventoryTransfer.findFirst({
-      where: {
-        id,
-        OR: [
-          {
-            source_branch: {
-              consumer_id: consumerId,
-            },
-          },
-          {
-            destination_branch: {
-              consumer_id: consumerId,
-            },
-          },
-        ],
-      },
-      include: {
-        source_branch: { select: { id: true, name: true, is_warehouse: true } },
-        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
-        created_by_user: { select: { id: true, name: true } },
-        items: {
-          include: {
-            batch: {
-              include: {
-                variant: {
-                  include: {
-                    product: { select: { id: true, name: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      return transfer;
     });
-
-    if (!transfer) {
-      throw new NotFoundException('Transfer not found');
-    }
-
-    return transfer;
   }
 
   async completeTransfer(id: number, consumerId: number) {
@@ -341,8 +351,10 @@ export class InventoryTransferService {
             },
           },
         },
-      });
-    });
+      });    });
+
+    // Invalidate related caches after successful completion
+    await this.invalidateInventoryTransferCaches(consumerId, transfer.source_branch_id, transfer.destination_branch_id);
 
     return result;
   }
@@ -352,15 +364,54 @@ export class InventoryTransferService {
 
     if (transfer.status !== 'pending') {
       throw new BadRequestException('Transfer is not in pending status');
-    }
-
-    const updatedTransfer = await this.prisma.inventoryTransfer.update({
+    }    const updatedTransfer = await this.prisma.inventoryTransfer.update({
       where: { id },
       data: {
         status: 'cancelled',
       },
     });
 
+    // Invalidate related caches after cancellation
+    await this.invalidateInventoryTransferCaches(consumerId, transfer.source_branch_id, transfer.destination_branch_id);
+
     return updatedTransfer;
+  }
+
+  // Cache invalidation helper methods
+  private async invalidateInventoryTransferCaches(consumerId: number, sourceBranchId?: number, destinationBranchId?: number) {
+    const cacheKeysToInvalidate: string[] = [];
+
+    // Invalidate transfer list cache with different pagination options
+    for (let page = 1; page <= 10; page++) {
+      for (const limit of [10, 25, 50]) {
+        // Generic list cache
+        cacheKeysToInvalidate.push(
+          generateCacheKey.inventoryTransferList(consumerId, page, limit),
+        );
+        
+        // Cache with different status filters
+        for (const status of ['pending', 'completed', 'cancelled']) {
+          cacheKeysToInvalidate.push(
+            generateCacheKey.inventoryTransferList(consumerId, page, limit, status),
+          );
+        }
+        
+        // Cache with branch filters
+        if (sourceBranchId) {
+          cacheKeysToInvalidate.push(
+            generateCacheKey.inventoryTransferList(consumerId, page, limit, undefined, sourceBranchId),
+          );
+        }
+        if (destinationBranchId) {
+          cacheKeysToInvalidate.push(
+            generateCacheKey.inventoryTransferList(consumerId, page, limit, undefined, destinationBranchId),
+          );
+        }
+      }
+    }
+
+    await Promise.all(
+      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
+    );
   }
 }
