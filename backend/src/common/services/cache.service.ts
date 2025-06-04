@@ -92,17 +92,31 @@ export class CacheService {
     } catch (error) {
       this.logger.error('Cache reset error:', error);
     }
-  }
-
-  /**
-   * Delete multiple keys by pattern (if supported)
+  }  /**
+   * Delete multiple keys by pattern using Redis SCAN
    */
   async delPattern(pattern: string): Promise<void> {
     try {
-      // For Redis-based stores, you might have pattern deletion
-      if ('del' in this.cacheManager) {
-        await this.cacheManager.del(pattern);
-        this.logger.log(`🗑️ CACHE DEL PATTERN: ${pattern}`);
+      // Check if we have a Redis-based cache store
+      const cacheStore = (this.cacheManager as any).store;
+      if (cacheStore && typeof cacheStore.getClient === 'function') {
+        const client = cacheStore.getClient();
+        
+        let cursor = '0';
+        let deletedCount = 0;
+        
+        do {
+          const reply = await client.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
+          cursor = reply[0];
+          const keys = reply[1];
+
+          if (keys.length > 0) {
+            await client.del(keys);
+            deletedCount += keys.length;
+          }
+        } while (cursor !== '0');
+
+        this.logger.log(`🗑️ CACHE DEL PATTERN: ${pattern} (${deletedCount} keys deleted)`);
       } else {
         this.logger.warn(`Pattern deletion not supported for: ${pattern}`);
       }
@@ -110,4 +124,51 @@ export class CacheService {
       this.logger.error(`Cache pattern delete error for ${pattern}:`, error);
     }
   }
+
+  /**
+   * Invalidate cache for a specific user
+   */
+  async invalidateUserCache(userId: string): Promise<void> {
+    await this.delPattern(`user:${userId}:*`);
+  }
+
+  /**
+   * Invalidate cache for a specific entity type
+   */
+  async invalidateEntityCache(entityType: string, entityId?: string): Promise<void> {
+    const pattern = entityId ? `${entityType}:${entityId}:*` : `${entityType}:*`;
+    await this.delPattern(pattern);
+  }
+
+  /**
+   * Get multiple keys by pattern (for debugging/monitoring)
+   */
+  async getKeysByPattern(pattern: string): Promise<string[]> {
+    try {
+      const cacheStore = (this.cacheManager as any).store;
+      if (cacheStore && typeof cacheStore.getClient === 'function') {
+        const client = cacheStore.getClient();
+        
+        let cursor = '0';
+        const allKeys: string[] = [];
+        
+        do {
+          const reply = await client.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
+          cursor = reply[0];
+          const keys = reply[1];
+          allKeys.push(...keys);
+        } while (cursor !== '0');
+
+        this.logger.log(`🔍 CACHE KEYS FOUND: ${allKeys.length} keys for pattern ${pattern}`);
+        return allKeys;
+      } else {
+        this.logger.warn(`Pattern search not supported for: ${pattern}`);
+        return [];
+      }
+    } catch (error) {
+      this.logger.error(`Cache pattern search error for ${pattern}:`, error);
+      return [];
+    }
+  }
+
 }
