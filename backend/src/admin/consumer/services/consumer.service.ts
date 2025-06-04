@@ -3,10 +3,15 @@ import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ConsumerService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
@@ -76,13 +81,14 @@ export class ConsumerService {
           is_main: true,
           is_warehouse: false,
         },
-      });
-
-      return {
+      });      return {
         message: 'Consumer, admin user, and permissions created successfully',
         consumer,
       };
     });
+
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
@@ -147,19 +153,30 @@ export class ConsumerService {
           permission_id: pp.permission_id,
         })),
       });
-    }
-
-    return {
+    }    return {
       message: 'Consumer, admin user, and permissions updated successfully',
     };
+
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
+  }
+  async checkSubdomain(value: string) {
+    const cacheKey = generateCacheKey.consumerBySubdomain(value);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const exists = await this.prisma.consumer.findUnique({
+        where: { subdomain: value },
+        select: { id: true },
+      });      return { available: !exists };
+    });
   }
 
-  async checkSubdomain(value: string) {
-    const exists = await this.prisma.consumer.findUnique({
-      where: { subdomain: value },
-      select: { id: true },
-    });
-
-    return { available: !exists };
+  private async invalidateConsumerCaches(): Promise<void> {
+    try {
+      // Invalidate subdomain checks by pattern
+      await this.cacheService.del('consumer:subdomain:*');
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
   }
 }
