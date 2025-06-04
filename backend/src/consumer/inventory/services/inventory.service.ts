@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InventoryHelperService } from './inventory-helper.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryService {
@@ -512,37 +512,65 @@ export class InventoryService {
           totalPages: Math.ceil(total / limit),
         },
       };
-    });
-  }
-
+    });  }
+  
   // Cache invalidation helper methods
   private async invalidateInventoryCaches(consumerId: number, variantId?: number, branchId?: number) {
-    const cacheKeysToInvalidate = [
-      generateCacheKey.inventorySummary(consumerId),
-      generateCacheKey.inventorySummary(consumerId, branchId),
-      generateCacheKey.lowStockItems(consumerId),
-      generateCacheKey.lowStockItems(consumerId, branchId),
-      generateCacheKey.expiringBatches(consumerId),
-    ];
+    try {
+      const patterns = [
+        // Base inventory information patterns
+        `${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`,
+        `${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:*`,
+        `${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`,
+        `${CACHE_KEYS.INVENTORY.EXPIRING_BATCHES}:${consumerId}:*`,
+      ];
 
-    if (variantId) {
-      cacheKeysToInvalidate.push(
-        generateCacheKey.variantStock(variantId, consumerId),
-        generateCacheKey.variantStock(variantId, consumerId, branchId),
-      );
-    }
+      // If a specific variant is affected
+      if (variantId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`);
+        patterns.push(`${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:*`);
 
-    // Invalidate stock by variant cache with different pagination options
-    for (let page = 1; page <= 10; page++) {
-      for (const limit of [10, 25, 50]) {
-        cacheKeysToInvalidate.push(
-          generateCacheKey.stockByVariant(consumerId, page, limit),
-          generateCacheKey.stockByVariant(consumerId, page, limit, branchId),
-          generateCacheKey.stockByVariant(consumerId, page, limit, branchId, undefined, true),
-        );
+        // Also invalidate product variant caches
+        patterns.push(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`);
+
+        // Get product ID to invalidate product caches
+        const variant = await this.prisma.productVariant.findUnique({
+          where: { id: variantId },
+          select: { product_id: true }
+        });
+
+        if (variant) {
+          patterns.push(`${CACHE_KEYS.PRODUCT.DETAIL}:${variant.product_id}:*`);
+          patterns.push(`${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${variant.product_id}`);
+        }
+
+        // Invalidate batch caches related to this variant
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_VARIANT}:*${variantId}*`);
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:*:*:*:*:${variantId}`);
       }
-    }    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
+
+      // If a specific branch is affected
+      if (branchId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:${branchId}`);
+        patterns.push(`${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:${branchId}`);
+        patterns.push(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*:${branchId}*`);
+
+        // Invalidate batch caches related to this branch
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_BRANCH}:*${branchId}*`);
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:*:*:*:${branchId}:*`);
+      }
+
+      // Delete all patterns in parallel for efficiency
+      await Promise.all(patterns.map(async (pattern) => {
+        try {
+          await this.cacheService.delPattern(pattern);
+        } catch (error) {
+          console.error(`Failed to invalidate cache for pattern: ${pattern}`, error);
+          // Retry logic can be added here if needed
+        }
+      }));
+    } catch (error) {
+      console.error('Cache invalidation error:', error);
+    }
   }
 }

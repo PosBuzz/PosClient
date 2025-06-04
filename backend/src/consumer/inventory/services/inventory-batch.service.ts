@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryBatchService {
@@ -74,9 +74,17 @@ export class InventoryBatchService {
         vendor: {
           select: { id: true, name: true },
         },
-      },
-    });    // Invalidate related caches
+      },    });    
+    // Invalidate related caches
     await this.invalidateInventoryBatchCaches(consumerId, dto.variant_id, dto.branch_id);
+
+    // Invalidate inventory summaries and product caches
+    const inventorySummaryPattern = `${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`;
+    const productCachePattern = `${CACHE_KEYS.PRODUCT.DETAIL}:*`;
+    await Promise.all([
+      this.cacheService.delPattern(inventorySummaryPattern),
+      this.cacheService.delPattern(productCachePattern),
+    ]);
 
     return batch;
   }  async findAll(consumerId: number, options: {
@@ -218,24 +226,51 @@ export class InventoryBatchService {
     await this.invalidateInventoryBatchCaches(consumerId, batch.variant_id, batch.branch_id);
 
     return { success: true, message: 'Inventory batch deleted successfully' };
-  }
-  // Cache invalidation helper methods
+  }  // Cache invalidation helper methods
   private async invalidateInventoryBatchCaches(consumerId: number, variantId?: number, branchId?: number) {
-    const cacheKeysToInvalidate: string[] = [];
-
-    // Invalidate batch list cache with different pagination options
-    for (let page = 1; page <= 10; page++) {
-      for (const limit of [10, 25, 50]) {
-        cacheKeysToInvalidate.push(
-          generateCacheKey.inventoryBatchList(consumerId, page, limit),
-          generateCacheKey.inventoryBatchList(consumerId, page, limit, undefined, branchId, variantId),
-        );
+    try {
+      // Use pattern-based invalidation for more efficient cache clearing
+      const patterns = [
+        // Invalidate all batch lists for this consumer
+        `${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:*`,
+      ];
+      
+      // Add branch-specific and variant-specific patterns if provided
+      if (branchId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_BRANCH}:*${branchId}*`);
       }
-    }    // Invalidate specific batch detail cache if we had the batch ID
-    // This will be handled by the caller methods
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
+      
+      if (variantId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_VARIANT}:*${variantId}*`);
+        
+        // Also invalidate product and variant caches that depend on inventory data
+        const variant = await this.prisma.productVariant.findUnique({
+          where: { id: variantId },
+          select: { product_id: true }
+        });
+        
+        if (variant) {
+          // Invalidate variant stock cache
+          patterns.push(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`);
+          
+          // Invalidate product detail cache that includes variant inventory
+          patterns.push(`${CACHE_KEYS.PRODUCT.DETAIL}:${variant.product_id}:*`);
+          
+          // Also invalidate variant detail cache
+          patterns.push(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`);
+        }
+      }
+      
+      // Always invalidate inventory summary and stock information
+      patterns.push(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY.EXPIRING_BATCHES}:${consumerId}:*`);
+      
+      // Delete all patterns in parallel
+      await Promise.all(patterns.map(pattern => this.cacheService.delPattern(pattern)));
+    } catch (error) {
+      console.error('Cache invalidation error:', error);
+    }
   }
 }

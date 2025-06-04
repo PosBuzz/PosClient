@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryTransferService {
@@ -99,6 +99,16 @@ export class InventoryTransferService {
 
     // Invalidate related caches after successful creation
     await this.invalidateInventoryTransferCaches(consumerId, dto.source_branch_id, dto.destination_branch_id);
+
+    // Invalidate inventory summaries, batch caches, and product caches
+    const inventorySummaryPattern = `${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`;
+    const batchCachePattern = `${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:*`;
+    const productCachePattern = `${CACHE_KEYS.PRODUCT.DETAIL}:*`;
+    await Promise.all([
+      this.cacheService.delPattern(inventorySummaryPattern),
+      this.cacheService.delPattern(batchCachePattern),
+      this.cacheService.delPattern(productCachePattern),
+    ]);
 
     return transfer;
   }
@@ -376,42 +386,102 @@ export class InventoryTransferService {
 
     return updatedTransfer;
   }
-
   // Cache invalidation helper methods
   private async invalidateInventoryTransferCaches(consumerId: number, sourceBranchId?: number, destinationBranchId?: number) {
-    const cacheKeysToInvalidate: string[] = [];
-
-    // Invalidate transfer list cache with different pagination options
-    for (let page = 1; page <= 10; page++) {
-      for (const limit of [10, 25, 50]) {
-        // Generic list cache
-        cacheKeysToInvalidate.push(
-          generateCacheKey.inventoryTransferList(consumerId, page, limit),
-        );
+    try {
+      const patterns = [
+        // Invalidate all transfer lists for this consumer with a pattern
+        `${CACHE_KEYS.INVENTORY_TRANSFER.LIST}:${consumerId}:*`,
+      ];
+      
+      // Find affected batch ids and variant ids to invalidate related caches
+      let affectedBatches: { id: number; variant_id: number }[] = [];
+      
+      // If we're completing or canceling a transfer (both branch IDs provided)
+      if (sourceBranchId && destinationBranchId) {
+        // Get all transfer items to identify affected batches and variants
+        const transferItems = await this.prisma.inventoryTransferItem.findMany({
+          where: {
+            transfer: {
+              OR: [
+                { source_branch_id: sourceBranchId },
+                { source_branch_id: destinationBranchId },
+                { destination_branch_id: sourceBranchId },
+                { destination_branch_id: destinationBranchId },
+              ],
+            },
+          },
+          select: {
+            batch_id: true,
+            batch: {
+              select: {
+                id: true,
+                variant_id: true,
+                variant: {
+                  select: {
+                    product_id: true
+                  }
+                }
+              }
+            }
+          }
+        });
         
-        // Cache with different status filters
-        for (const status of ['pending', 'completed', 'cancelled']) {
-          cacheKeysToInvalidate.push(
-            generateCacheKey.inventoryTransferList(consumerId, page, limit, status),
-          );
-        }
+        // Collect unique batch and variant ids
+        affectedBatches = transferItems.map(item => ({
+          id: item.batch.id,
+          variant_id: item.batch.variant_id
+        }));
         
-        // Cache with branch filters
-        if (sourceBranchId) {
-          cacheKeysToInvalidate.push(
-            generateCacheKey.inventoryTransferList(consumerId, page, limit, undefined, sourceBranchId),
-          );
-        }
-        if (destinationBranchId) {
-          cacheKeysToInvalidate.push(
-            generateCacheKey.inventoryTransferList(consumerId, page, limit, undefined, destinationBranchId),
-          );
+        // Add batch and inventory specific patterns
+        if (affectedBatches.length > 0) {
+          // Invalidate batch caches for both branches
+          patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_BRANCH}:*${sourceBranchId}*`);
+          patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_BRANCH}:*${destinationBranchId}*`);
+          
+          // Get unique variants and products
+          const variantIds = [...new Set(affectedBatches.map(b => b.variant_id))];
+          const productIds = [...new Set(
+            transferItems.filter(i => i.batch.variant?.product_id)
+              .map(i => i.batch.variant.product_id)
+          )];
+          
+          // Invalidate variant-specific caches
+          for (const variantId of variantIds) {
+            patterns.push(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`);
+            patterns.push(`${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:*`);
+            patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.BY_VARIANT}:*${variantId}*`);
+            patterns.push(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`);
+          }
+          
+          // Invalidate product-specific caches
+          for (const productId of productIds) {
+            patterns.push(`${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:*`);
+          }
         }
       }
+      
+      // Always invalidate these caches when transfers are affected
+      patterns.push(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:*`);
+      patterns.push(`${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:*`);
+      
+      // If specific branches are involved, invalidate their caches
+      if (sourceBranchId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:${sourceBranchId}`);
+        patterns.push(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*:${sourceBranchId}*`);
+      }
+      
+      if (destinationBranchId) {
+        patterns.push(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:${destinationBranchId}`);
+        patterns.push(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*:${destinationBranchId}*`);
+      }
+      
+      // Delete all patterns in parallel
+      await Promise.all(patterns.map(pattern => this.cacheService.delPattern(pattern)));
+    } catch (error) {
+      console.error('Cache invalidation error:', error);
     }
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
   }
 }

@@ -81,7 +81,8 @@ export class ConsumerService {
           is_main: true,
           is_warehouse: false,
         },
-      });      return {
+      });
+      return {
         message: 'Consumer, admin user, and permissions created successfully',
         consumer,
       };
@@ -153,21 +154,22 @@ export class ConsumerService {
           permission_id: pp.permission_id,
         })),
       });
-    }    return {
-      message: 'Consumer, admin user, and permissions updated successfully',
-    };
-
+    }
     // Invalidate consumer caches
     await this.invalidateConsumerCaches();
+    return {
+      message: 'Consumer, admin user, and permissions updated successfully',
+    };
   }
   async checkSubdomain(value: string) {
     const cacheKey = generateCacheKey.consumerBySubdomain(value);
-    
+
     return this.cacheService.getOrSet(cacheKey, async () => {
       const exists = await this.prisma.consumer.findUnique({
         where: { subdomain: value },
         select: { id: true },
-      });      return { available: !exists };
+      });
+      return { available: !exists };
     });
   }
 

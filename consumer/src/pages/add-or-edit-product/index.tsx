@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Tabs, message } from "antd";
+import { Button, Card, Tabs } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { productApi } from "../../api/product-api";
@@ -10,10 +10,13 @@ import { useProductFormState } from "./hooks/useProductFormState";
 import StateBasicInformationTab from "./components/StateBasicInformationTab";
 import StateVariantManager from "./components/StateVariantManager";
 import { queryKeys } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
+  const { messageApi } = useMessageStore();
 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("basic");
@@ -201,7 +204,7 @@ export default function ProductForm() {
         : productApi.createProduct(submitData);
     },
     onSuccess: () => {
-      message.success(
+      messageApi?.success(
         isEditMode
           ? "Product updated successfully"
           : "Product saved successfully"
@@ -224,7 +227,7 @@ export default function ProductForm() {
       navigate("/products");
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         `${
           isEditMode ? "Failed to update product" : "Failed to save product"
         }: ${error.response?.data?.message || error.message || "Unknown error"}`
