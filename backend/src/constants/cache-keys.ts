@@ -44,12 +44,18 @@ export const CACHE_KEYS = {
     DETAIL: 'unit:detail',
     BY_CONSUMER: 'units:consumer',
   },
-
   // Branch cache keys
   BRANCH: {
     LIST: 'branches:list',
     DETAIL: 'branch:detail',
     BY_CONSUMER: 'branches:consumer',
+  },
+
+  // Vendor cache keys
+  VENDOR: {
+    LIST: 'vendors:list',
+    DETAIL: 'vendor:detail',
+    BY_CONSUMER: 'vendors:consumer',
   },
 
   // User cache keys
@@ -95,7 +101,6 @@ export const CACHE_KEYS = {
     INVOICE: 'billing:invoice',
     BY_CONSUMER: 'billing:consumer',
   },
-
   // Inventory cache keys
   INVENTORY: {
     ITEMS: 'inventory:items',
@@ -103,6 +108,34 @@ export const CACHE_KEYS = {
     BY_BRANCH: 'inventory:branch',
     BY_PRODUCT: 'inventory:product',
     LOW_STOCK: 'inventory:low-stock',
+    STOCK_BY_VARIANT: 'inventory:stock-by-variant',
+    EXPIRING_BATCHES: 'inventory:expiring-batches',
+    VARIANT_STOCK: 'inventory:variant-stock',
+    MOVEMENT_HISTORY: 'inventory:movement-history',
+  },
+
+  // Inventory Batch cache keys
+  INVENTORY_BATCH: {
+    LIST: 'inventory-batches:list',
+    DETAIL: 'inventory-batch:detail',
+    BY_VARIANT: 'inventory-batches:variant',
+    BY_BRANCH: 'inventory-batches:branch',
+  },
+
+  // Inventory Adjustment cache keys
+  INVENTORY_ADJUSTMENT: {
+    LIST: 'inventory-adjustments:list',
+    DETAIL: 'inventory-adjustment:detail',
+    BY_VARIANT: 'inventory-adjustments:variant',
+    BY_BRANCH: 'inventory-adjustments:branch',
+  },
+
+  // Inventory Transfer cache keys
+  INVENTORY_TRANSFER: {
+    LIST: 'inventory-transfers:list',
+    DETAIL: 'inventory-transfer:detail',
+    BY_SOURCE_BRANCH: 'inventory-transfers:source-branch',
+    BY_DESTINATION_BRANCH: 'inventory-transfers:destination-branch',
   },
 
   // Search cache keys
@@ -124,9 +157,14 @@ export const CACHE_KEYS = {
 export const generateCacheKey = {
   productList: (consumerId: number, page?: number, limit?: number, search?: string) =>
     `${CACHE_KEYS.PRODUCT.BY_CONSUMER}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}`,
-
   productDetail: (productId: number, consumerId: number) =>
     `${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:${consumerId}`,
+
+  productVariantDetail: (variantId: number) =>
+    `${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`,
+
+  productVariantsByProduct: (productId: number) =>
+    `${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${productId}`,
 
   categoryList: (consumerId: number) =>
     `${CACHE_KEYS.CATEGORY.BY_CONSUMER}:${consumerId}`,
@@ -154,9 +192,14 @@ export const generateCacheKey = {
 
   branchList: (consumerId: number) =>
     `${CACHE_KEYS.BRANCH.BY_CONSUMER}:${consumerId}`,
-
   branchDetail: (branchId: number, consumerId: number) =>
     `${CACHE_KEYS.BRANCH.DETAIL}:${branchId}:${consumerId}`,
+
+  vendorList: (consumerId: number) =>
+    `${CACHE_KEYS.VENDOR.BY_CONSUMER}:${consumerId}`,
+
+  vendorDetail: (vendorId: number, consumerId: number) =>
+    `${CACHE_KEYS.VENDOR.DETAIL}:${vendorId}:${consumerId}`,
 
   userList: (consumerId: number, search?: string, roleId?: number) =>
     `${CACHE_KEYS.USER.BY_CONSUMER}:${consumerId}:${search || 'all'}:${roleId || 'all'}`,
@@ -181,9 +224,48 @@ export const generateCacheKey = {
 
   consumerDetail: (consumerId: number) =>
     `${CACHE_KEYS.CONSUMER.DETAIL}:${consumerId}`,
-
   consumerBySubdomain: (subdomain: string) =>
     `${CACHE_KEYS.CONSUMER.BY_SUBDOMAIN}:${subdomain}`,
+
+  // Inventory cache helpers
+  inventorySummary: (consumerId: number, branchId?: number) =>
+    `${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:${branchId || 'all'}`,
+
+  stockByVariant: (consumerId: number, page?: number, limit?: number, branchId?: number, search?: string, lowStockOnly?: boolean) =>
+    `${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:${page || 1}:${limit || 10}:${branchId || 'all'}:${search || 'all'}:${lowStockOnly || false}`,
+
+  expiringBatches: (consumerId: number, days?: number) =>
+    `${CACHE_KEYS.INVENTORY.EXPIRING_BATCHES}:${consumerId}:${days || 30}`,
+
+  variantStock: (variantId: number, consumerId: number, branchId?: number) =>
+    `${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:${consumerId}:${branchId || 'all'}`,
+
+  lowStockItems: (consumerId: number, branchId?: number) =>
+    `${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:${branchId || 'all'}`,
+
+  movementHistory: (variantId: number, consumerId: number, page?: number, limit?: number, branchId?: number) =>
+    `${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:${consumerId}:${page || 1}:${limit || 20}:${branchId || 'all'}`,
+
+  // Inventory Batch cache helpers
+  inventoryBatchList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, variantId?: number) =>
+    `${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
+
+  inventoryBatchDetail: (batchId: number, consumerId: number) =>
+    `${CACHE_KEYS.INVENTORY_BATCH.DETAIL}:${batchId}:${consumerId}`,
+
+  // Inventory Adjustment cache helpers
+  inventoryAdjustmentList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, variantId?: number) =>
+    `${CACHE_KEYS.INVENTORY_ADJUSTMENT.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
+
+  inventoryAdjustmentDetail: (adjustmentId: number, consumerId: number) =>
+    `${CACHE_KEYS.INVENTORY_ADJUSTMENT.DETAIL}:${adjustmentId}:${consumerId}`,
+
+  // Inventory Transfer cache helpers
+  inventoryTransferList: (consumerId: number, page?: number, limit?: number, search?: string, sourceBranchId?: number, destinationBranchId?: number) =>
+    `${CACHE_KEYS.INVENTORY_TRANSFER.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${sourceBranchId || 'all'}:${destinationBranchId || 'all'}`,
+
+  inventoryTransferDetail: (transferId: number, consumerId: number) =>
+    `${CACHE_KEYS.INVENTORY_TRANSFER.DETAIL}:${transferId}:${consumerId}`,
 
   searchResults: (query: string, model: string, filters?: string) =>
     `${CACHE_KEYS.SEARCH.RESULTS}:${model}:${query}:${filters || 'none'}`,
