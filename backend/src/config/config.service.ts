@@ -14,7 +14,10 @@ export class ConfigService {
   }
 
   get jwtSecret(): string {
-    return this.configService.get<string>('JWT_SECRET_KEY') || 'at-least-32-characters-long-secret-key';
+    return (
+      this.configService.get<string>('JWT_SECRET_KEY') ||
+      'at-least-32-characters-long-secret-key'
+    );
   }
 
   get jwtAlgorithm(): string {
@@ -68,6 +71,19 @@ export class ConfigService {
       throw new Error('DB_NAME is not defined in environment variables');
     }
     return name;
+  }
+
+  // Redis configuration
+  get redisHost(): string {
+    return this.configService.get<string>('REDIS_HOST') || 'localhost';
+  }
+
+  get redisPort(): number {
+    return this.configService.get<number>('REDIS_PORT') || 6379;
+  }
+
+  get redisPrefix(): string {
+    return this.configService.get<string>('REDIS_PREFIX') || 'posbuzz';
   }
 
   // CORS settings
