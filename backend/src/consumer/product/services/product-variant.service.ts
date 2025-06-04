@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductVariantService {
@@ -330,18 +330,48 @@ export class ProductVariantService {
 
     return { success: true, message: 'Variant deleted successfully' };
   }
-
   private async invalidateVariantCaches(productId: number, variantId?: number): Promise<void> {
     try {
       const promises = [
-        this.cacheService.del(generateCacheKey.productVariantsByProduct(productId)),
+        this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${productId}`),
       ];
 
+      // Get product's consumer ID for later cache invalidation
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        select: { consumer_id: true },
+      });
+      
+      const consumerId = product?.consumer_id;
+
       if (variantId) {
-        promises.push(this.cacheService.del(generateCacheKey.productVariantDetail(variantId)));
+        // Invalidate this specific variant
+        promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`));
+        
+        // Also invalidate product cache that contains this variant
+        if (consumerId) {
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:*`));
+          
+          // Invalidate inventory-related caches for this variant
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY_BATCH.BY_VARIANT}:*${variantId}*`));
+          
+          // Invalidate inventory summary that might include this variant
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:*`));
+        }
       } else {
-        // Invalidate all variant details by pattern
-        promises.push(this.cacheService.del(`product-variant:detail:*`));
+        // Invalidate all variant details if no specific ID
+        promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:*`));
+        
+        // Also invalidate broader caches if we have consumer ID
+        if (consumerId) {
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`));
+          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`));
+        }
       }
 
       await Promise.all(promises);

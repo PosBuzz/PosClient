@@ -1,6 +1,5 @@
 import { DollarOutlined } from "@ant-design/icons";
-import { FaArrowTrendUp } from "react-icons/fa6";
-import { Card, Descriptions, Typography, Space, Tag, Tooltip } from "antd";
+import { Card, Descriptions, Space, Typography } from "antd";
 import { formatCurrency } from "../../../utils/formatters";
 
 const { Text } = Typography;

@@ -8,8 +8,6 @@ import { queryKeys } from "../../constants/queryKeys";
 import ImageInput from "../../components/ImageInput";
 import { getImageUrlForCloudinaryImage } from "../../utils/upload";
 
-const { TextArea } = Input;
-
 // @ts-ignore
 export default function DrawerForm({
   onClose,
