@@ -5,10 +5,15 @@ import { CreateRoleDto } from '../dtos/create-role.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async permissionOptions(plan_id: number) {
     const permissions = await this.prisma.planPermission.findMany({
@@ -21,29 +26,36 @@ export class UsersService {
     return permissions.map((p) => {
       return { label: p.permission.action, value: p.permission.id };
     });
-  }
-
-  async getRoles(consumer_id: number) {
-    return await this.prisma.role.findMany({
-      where: { consumer_id },
-      include: {
-        permissions: {
-          include: {
-            permission: true,
+  }  async getRoles(consumer_id: number) {
+    // Generate cache key
+    const cacheKey = generateCacheKey.roleList(consumer_id);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.role.findMany({
+        where: { consumer_id },
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
           },
         },
-      },
+      });
     });
   }
-
   async deleteRole(id: number, consumer_id: number) {
-    return await this.prisma.role.delete({
+    const result = await this.prisma.role.delete({
       where: { consumer_id, id },
     });
-  }
 
+    // Invalidate user caches
+    await this.invalidateUserCaches(consumer_id);
+
+    return result;
+  }
   async createRole(dto: CreateRoleDto, consumer_id: number) {
-    return this.prisma.role.create({
+    const result = await this.prisma.role.create({
       data: {
         consumer_id,
         name: dto.name,
@@ -61,37 +73,50 @@ export class UsersService {
         },
       },
     });
-  }
 
+    // Invalidate user caches
+    await this.invalidateUserCaches(consumer_id);
+
+    return result;
+  }
   async getUsers(consumer_id: number, search_text?: string | null, role_id?: number) {
     console.log({consumer_id, search_text, role_id});
     
-    return await this.prisma.user.findMany({
-      where: {
-        consumer_id,
-        ...(search_text && {
-          OR: [
-            { name: { contains: search_text, mode: 'insensitive' } },
-            { email: { contains: search_text, mode: 'insensitive' } },
-          ],
-        }),
-        ...(role_id && { role_id }),
-      },
-      include: {
-        role: true,
-      },
+    // Generate cache key
+    const cacheKey = generateCacheKey.userList(consumer_id, search_text || undefined, role_id);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.user.findMany({
+        where: {
+          consumer_id,
+          ...(search_text && {
+            OR: [
+              { name: { contains: search_text, mode: 'insensitive' } },
+              { email: { contains: search_text, mode: 'insensitive' } },
+            ],
+          }),
+          ...(role_id && { role_id }),
+        },
+        include: {
+          role: true,
+        },
+      });
     });
   }
-
   async deleteUser(id: number, consumer_id: number) {
-    return await this.prisma.user.delete({
+    const result = await this.prisma.user.delete({
       where: { consumer_id, id },
     });
-  }
 
+    // Invalidate user caches
+    await this.invalidateUserCaches(consumer_id);
+
+    return result;
+  }
   async createUser(dto: CreateUserDto, consumer_id: number) {
     const hashedPassword = await bcryptjs.hash(dto.password, 10);
-    return this.prisma.user.create({
+    const result = await this.prisma.user.create({
       data: {
         consumer_id,
         email: dto.email,
@@ -106,8 +131,12 @@ export class UsersService {
         role: true,
       },
     });
-  }
 
+    // Invalidate user caches
+    await this.invalidateUserCaches(consumer_id);
+
+    return result;
+  }
   async updateRole(id: number, dto: UpdateRoleDto) {
     const updatedRole = await this.prisma.role.update({
       where: { id },
@@ -131,16 +160,26 @@ export class UsersService {
       });
     }
 
+    // Get consumer_id for cache invalidation
+    const role = await this.prisma.role.findUnique({
+      where: { id },
+      select: { consumer_id: true },
+    });
+
+    if (role) {
+      // Invalidate user caches
+      await this.invalidateUserCaches(role.consumer_id);
+    }
+
     return updatedRole;
   }
-
   async updateUser(id: number, dto: UpdateUserDto) {
     let hashedPassword: string | undefined = undefined;
     if (dto.password) {
       hashedPassword = await bcryptjs.hash(dto.password, 10);
     }
 
-    return this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data: {
         email: dto.email,
@@ -155,5 +194,32 @@ export class UsersService {
         role: true,
       },
     });
+
+    // Get consumer_id for cache invalidation
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { consumer_id: true },
+    });
+
+    if (user) {
+      // Invalidate user caches
+      await this.invalidateUserCaches(user.consumer_id);
+    }
+
+    return result;
+  }
+
+  private async invalidateUserCaches(consumer_id: number): Promise<void> {
+    try {
+      // Invalidate all user-related caches for this consumer
+      await Promise.all([
+        this.cacheService.del(generateCacheKey.userList(consumer_id)),
+        this.cacheService.del(generateCacheKey.roleList(consumer_id)),
+        // Invalidate user lists with search and role filters by pattern
+        this.cacheService.del(`user:list:${consumer_id}:*`),
+      ]);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
   }
 }

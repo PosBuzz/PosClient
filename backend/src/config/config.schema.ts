@@ -23,11 +23,13 @@ export const configValidationSchema = Joi.object({
   DB_USERNAME: Joi.string().required(),
   DB_PASSWORD: Joi.string().required(),
   DB_NAME: Joi.string().required(),
-
   // Individual redis config
   REDIS_HOST: Joi.string().default('localhost'),
-  REDIS_PORT: Joi.number().default(5432),
+  REDIS_PORT: Joi.number().default(6379),
   REDIS_PREFIX: Joi.string().default('posbuzz'),
+
+  // Cache TTL
+  CACHE_TTL: Joi.number().default(3600), // Default: 1 hour in seconds
 
   // CORS
   CORS_ORIGINS: Joi.string().default(
