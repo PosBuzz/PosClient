@@ -79,19 +79,19 @@ export class InventoryBatchService {
     await this.invalidateInventoryBatchCaches(consumerId, dto.variant_id, dto.branch_id);
 
     return batch;
-  }
-  async findAll(consumerId: number, options: {
+  }  async findAll(consumerId: number, options: {
     page?: number;
     limit?: number;
     search?: string;
     branch_id?: number;
     variant_id?: number;
   } = {}) {
-    const { page = 1, limit = 10, search, branch_id, variant_id } = options;
+    const { page = 1, limit, search, branch_id, variant_id } = options;
     const cacheKey = generateCacheKey.inventoryBatchList(consumerId, page, limit, search, branch_id, variant_id);
     
     return this.cacheService.getOrSet(cacheKey, async () => {
-      const skip = (page - 1) * limit;
+      // Only apply pagination if limit is specified
+      const skip = limit ? (page - 1) * limit : undefined;
 
       const whereClause: any = {
         variant: {
@@ -115,9 +115,7 @@ export class InventoryBatchService {
 
       if (variant_id) {
         whereClause.variant_id = variant_id;
-      }
-
-      const [batches, total] = await Promise.all([
+      }      const [batches, total] = await Promise.all([
         this.prisma.inventoryBatch.findMany({
           where: whereClause,
           include: {
@@ -136,7 +134,7 @@ export class InventoryBatchService {
             },
           },
           skip,
-          take: limit,
+          take: limit, // Will be undefined if no limit specified
           orderBy: { created_at: 'desc' },
         }),
         this.prisma.inventoryBatch.count({ where: whereClause }),
@@ -147,8 +145,8 @@ export class InventoryBatchService {
         meta: {
           total,
           page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          limit: limit || total, // Use total count if no limit specified
+          totalPages: limit ? Math.ceil(total / limit) : 1,
         },
       };
     });
