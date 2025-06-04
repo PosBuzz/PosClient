@@ -8,12 +8,14 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
-export class ProductService {
-  constructor(
+export class ProductService {  constructor(
     private prisma: PrismaService,
     private variantService: ProductVariantService,
+    private cacheService: CacheService,
   ) {}
 
   async create(consumerId: number, dto: CreateProductDto) {
@@ -71,6 +73,9 @@ export class ProductService {
       ),
     );
 
+    // Invalidate relevant caches
+    await this.invalidateProductCaches(consumerId);
+
     return this.findOne(product.id, consumerId);
   }
 
@@ -94,44 +99,147 @@ export class ProductService {
       tagIds,
     } = options;
 
-    const skip = (page - 1) * limit;
+    // Generate cache key
+    const cacheKey = generateCacheKey.productList(consumerId, page, limit, search);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const skip = (page - 1) * limit;
 
-    // Build the where clause properly for Prisma
-    const whereClause: any = {
-      consumer_id: consumerId,
-    };
+      // Build the where clause properly for Prisma
+      const whereClause: any = {
+        consumer_id: consumerId,
+      };
 
-    if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' as any } },
-        { code: { contains: search, mode: 'insensitive' as any } },
-        { description: { contains: search, mode: 'insensitive' as any } },
-      ];
-    }
+      if (search) {
+        whereClause.OR = [
+          { name: { contains: search, mode: 'insensitive' as any } },
+          { code: { contains: search, mode: 'insensitive' as any } },
+          { description: { contains: search, mode: 'insensitive' as any } },
+        ];
+      }
 
-    // Handle multiple categories
-    if (categoryIds && categoryIds.length > 0) {
-      whereClause.category_id = { in: categoryIds };
-    }
+      // Handle multiple categories
+      if (categoryIds && categoryIds.length > 0) {
+        whereClause.category_id = { in: categoryIds };
+      }
 
-    // Handle multiple brands
-    if (brandIds && brandIds.length > 0) {
-      whereClause.brand_id = { in: brandIds };
-    }
+      // Handle multiple brands
+      if (brandIds && brandIds.length > 0) {
+        whereClause.brand_id = { in: brandIds };
+      }
 
-    // Handle multiple tags
-    if (tagIds && tagIds.length > 0) {
-      whereClause.tags = {
-        some: {
-          tag_id: { in: tagIds },
+      // Handle multiple tags
+      if (tagIds && tagIds.length > 0) {
+        whereClause.tags = {
+          some: {
+            tag_id: { in: tagIds },
+          },
+        };
+      }
+
+      const [products, total] = await Promise.all([
+        this.prisma.product.findMany({
+          where: whereClause,
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            brand: {
+              select: {
+                id: true,
+                name: true,
+                logo: true,
+              },
+            },
+            tags: {
+              include: {
+                tag: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            variants: {
+              include: {
+                sale_unit: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                purchase_unit: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+                inventory_items: {
+                  select: {
+                    quantity: true,
+                    branch: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+                serials: {
+                  select: {
+                    id: true,
+                    status: true,
+                  },
+                },
+                price_history: {
+                  take: 1,
+                  orderBy: { effective_date: 'desc' },
+                  select: {
+                    regular_price: true,
+                    wholesale_price: true,
+                  },
+                },
+              },
+              orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+        }),
+        this.prisma.product.count({ where: whereClause }),
+      ]);
+
+      return {
+        data: products,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
       };
-    }
+    });
+  }
 
-    const [products, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where: whereClause,
+  async findOne(id: number, consumerId: number) {
+    // Generate cache key
+    const cacheKey = generateCacheKey.productDetail(id, consumerId);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const product = await this.prisma.product.findFirst({
+        where: {
+          id,
+          consumer_id: consumerId,
+        },
         include: {
+          // Basic product relations
           category: {
             select: {
               id: true,
@@ -145,6 +253,15 @@ export class ProductService {
               logo: true,
             },
           },
+          consumer: {
+            select: {
+              id: true,
+              company_name: true,
+              subdomain: true,
+            },
+          },
+
+          // Tags relation
           tags: {
             include: {
               tag: {
@@ -155,8 +272,11 @@ export class ProductService {
               },
             },
           },
+
+          // Complete variant information
           variants: {
             include: {
+              // Unit relations
               sale_unit: {
                 select: {
                   id: true,
@@ -169,207 +289,104 @@ export class ProductService {
                   name: true,
                 },
               },
-              inventory_items: {
+
+              // Variant attributes
+              VariantAttribute: {
                 select: {
-                  quantity: true,
-                  branch: {
+                  id: true,
+                  name: true,
+                  value: true,
+                },
+              },
+
+              // Serial numbers with full details
+              serials: {
+                orderBy: { created_at: 'desc' },
+                select: {
+                  id: true,
+                  serial_number: true,
+                  status: true,
+                  sold_date: true,
+                  notes: true,
+                  created_at: true,
+                  updated_at: true,
+                  batch: {
                     select: {
                       id: true,
-                      name: true,
+                      batch_number: true,
+                      expiry_date: true,
                     },
                   },
                 },
               },
-              serials: {
-                select: {
-                  id: true,
-                  status: true,
+
+              // Complete inventory information
+              inventory_items: {
+                include: {
+                  branch: {
+                    select: {
+                      id: true,
+                      name: true,
+                      is_main: true,
+                      address: true,
+                    },
+                  },
+                  vendor: {
+                    select: {
+                      id: true,
+                      name: true,
+                      contact: true,
+                      phone: true,
+                      email: true,
+                    },
+                  },
                 },
+                orderBy: { created_at: 'desc' },
               },
+
+              // Complete price history
               price_history: {
-                take: 1,
+                include: {
+                  created_by_user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
                 orderBy: { effective_date: 'desc' },
-                select: {
-                  regular_price: true,
-                  wholesale_price: true,
-                },
+                take: 10, // Get last 10 price changes
               },
-            },
-            orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      this.prisma.product.count({ where: whereClause }),
-    ]);
 
-    return {
-      data: products,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async findOne(id: number, consumerId: number) {
-    const product = await this.prisma.product.findFirst({
-      where: {
-        id,
-        consumer_id: consumerId,
-      },
-      include: {
-        // Basic product relations
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        brand: {
-          select: {
-            id: true,
-            name: true,
-            logo: true,
-          },
-        },
-        consumer: {
-          select: {
-            id: true,
-            company_name: true,
-            subdomain: true,
-          },
-        },
-
-        // Tags relation
-        tags: {
-          include: {
-            tag: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-
-        // Complete variant information
-        variants: {
-          include: {
-            // Unit relations
-            sale_unit: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            purchase_unit: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            // Variant attributes
-            VariantAttribute: {
-              select: {
-                id: true,
-                name: true,
-                value: true,
-              },
-            },
-
-            // Serial numbers with full details
-            serials: {
-              orderBy: { created_at: 'desc' },
-              select: {
-                id: true,
-                serial_number: true,
-                status: true,
-                sold_date: true,
-                notes: true,
-                created_at: true,
-                updated_at: true,
-                batch: {
-                  select: {
-                    id: true,
-                    batch_number: true,
-                    expiry_date: true,
+              // Active promotions for this variant
+              promotions: {
+                where: {
+                  promotion: {
+                    is_active: true,
+                    start_date: { lte: new Date() },
+                    OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
                   },
                 },
-              },
-            },
-
-            // Complete inventory information
-            inventory_items: {
-              include: {
-                branch: {
-                  select: {
-                    id: true,
-                    name: true,
-                    is_main: true,
-                    address: true,
-                  },
-                },
-                vendor: {
-                  select: {
-                    id: true,
-                    name: true,
-                    contact: true,
-                    phone: true,
-                    email: true,
-                  },
-                },
-              },
-              orderBy: { created_at: 'desc' },
-            },
-
-            // Complete price history
-            price_history: {
-              include: {
-                created_by_user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                  },
-                },
-              },
-              orderBy: { effective_date: 'desc' },
-              take: 10, // Get last 10 price changes
-            },
-
-            // Active promotions for this variant
-            promotions: {
-              where: {
-                promotion: {
-                  is_active: true,
-                  start_date: { lte: new Date() },
-                  OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
-                },
-              },
-              include: {
-                promotion: {
-                  select: {
-                    id: true,
-                    name: true,
-                    description: true,
-                    discount_type: true,
-                    discount_value: true,
-                    start_date: true,
-                    end_date: true,
-                    min_purchase: true,
-                    branch_specific: true,
-                    branches: {
-                      include: {
-                        branch: {
-                          select: {
-                            id: true,
-                            name: true,
+                include: {
+                  promotion: {
+                    select: {
+                      id: true,
+                      name: true,
+                      description: true,
+                      discount_type: true,
+                      discount_value: true,
+                      start_date: true,
+                      end_date: true,
+                      min_purchase: true,
+                      branch_specific: true,
+                      branches: {
+                        include: {
+                          branch: {
+                            select: {
+                              id: true,
+                              name: true,
+                            },
                           },
                         },
                       },
@@ -378,149 +395,149 @@ export class ProductService {
                 },
               },
             },
+            orderBy: [
+              { is_default: 'desc' }, // Default variants first
+              { created_at: 'asc' }, // Then by creation order
+            ],
           },
-          orderBy: [
-            { is_default: 'desc' }, // Default variants first
-            { created_at: 'asc' }, // Then by creation order
-          ],
         },
-      },
-    });
+      });
 
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
+      if (!product) {
+        throw new NotFoundException(`Product with ID ${id} not found`);
+      }
 
-    // Calculate additional metrics for each variant
-    const enrichedProduct = {
-      ...product,
-      variants: product.variants.map((variant) => {
-        // Calculate total stock across all branches
-        const totalStock = variant.inventory_items.reduce(
-          (sum, item) => sum + item.quantity,
+      // Calculate additional metrics for each variant
+      const enrichedProduct = {
+        ...product,
+        variants: product.variants.map((variant) => {
+          // Calculate total stock across all branches
+          const totalStock = variant.inventory_items.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          );
+
+          // Calculate stock by branch
+          const stockByBranch = variant.inventory_items.reduce(
+            (acc, item) => {
+              const branchName = item.branch?.name || 'Central Inventory';
+              acc[branchName] = (acc[branchName] || 0) + item.quantity;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
+
+          // Calculate serial status summary
+          const serialsSummary = variant.serials.reduce(
+            (acc, serial) => {
+              acc[serial.status] = (acc[serial.status] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
+
+          // Check if stock is low
+          const isLowStock =
+            variant.alert_quantity &&
+            variant.alert_quantity > 0 &&
+            totalStock <= variant.alert_quantity;
+
+          // Get current and previous prices
+          const currentPrice = variant.price_history[0];
+          const previousPrice = variant.price_history[1];
+
+          // Calculate price change percentage
+          let priceChangePercentage: number | null = null;
+          if (currentPrice && previousPrice) {
+            const currentRegular = parseFloat(
+              currentPrice.regular_price.toString(),
+            );
+            const previousRegular = parseFloat(
+              previousPrice.regular_price.toString(),
+            );
+            priceChangePercentage =
+              ((currentRegular - previousRegular) / previousRegular) * 100;
+          }
+
+          // Get expiring inventory (within 30 days)
+          const now = new Date();
+          const thirtyDaysFromNow = new Date(
+            now.getTime() + 30 * 24 * 60 * 60 * 1000,
+          );
+          const expiringInventory = variant.inventory_items.filter(
+            (item) =>
+              item.expiry_date &&
+              new Date(item.expiry_date) <= thirtyDaysFromNow &&
+              new Date(item.expiry_date) > now,
+          );
+
+          return {
+            ...variant,
+            // Calculated metrics
+            total_stock: totalStock,
+            stock_by_branch: stockByBranch,
+            is_low_stock: isLowStock,
+            serials_summary: serialsSummary,
+            available_serials_count: serialsSummary.available || 0,
+            sold_serials_count: serialsSummary.sold || 0,
+            defective_serials_count: serialsSummary.defective || 0,
+            returned_serials_count: serialsSummary.returned || 0,
+            price_change_percentage: priceChangePercentage,
+            has_expiring_inventory: expiringInventory.length > 0,
+            expiring_inventory_count: expiringInventory.length,
+            expiring_inventory: expiringInventory.map((item) => ({
+              batch_number: item.batch_number,
+              quantity: item.quantity,
+              expiry_date: item.expiry_date,
+              branch_name: item.branch?.name || 'Central Inventory',
+            })),
+          };
+        }),
+      };
+
+      // Calculate product-level metrics
+      const productMetrics = {
+        total_variants: enrichedProduct.variants.length,
+        total_stock_all_variants: enrichedProduct.variants.reduce(
+          (sum, v) => sum + v.total_stock,
           0,
-        );
-
-        // Calculate stock by branch
-        const stockByBranch = variant.inventory_items.reduce(
-          (acc, item) => {
-            const branchName = item.branch?.name || 'Central Inventory';
-            acc[branchName] = (acc[branchName] || 0) + item.quantity;
-            return acc;
-          },
-          {} as Record<string, number>,
-        );
-
-        // Calculate serial status summary
-        const serialsSummary = variant.serials.reduce(
-          (acc, serial) => {
-            acc[serial.status] = (acc[serial.status] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>,
-        );
-
-        // Check if stock is low
-        const isLowStock =
-          variant.alert_quantity &&
-          variant.alert_quantity > 0 &&
-          totalStock <= variant.alert_quantity;
-
-        // Get current and previous prices
-        const currentPrice = variant.price_history[0];
-        const previousPrice = variant.price_history[1];
-
-        // Calculate price change percentage
-        let priceChangePercentage: number | null = null;
-        if (currentPrice && previousPrice) {
-          const currentRegular = parseFloat(
-            currentPrice.regular_price.toString(),
-          );
-          const previousRegular = parseFloat(
-            previousPrice.regular_price.toString(),
-          );
-          priceChangePercentage =
-            ((currentRegular - previousRegular) / previousRegular) * 100;
-        }
-
-        // Get expiring inventory (within 30 days)
-        const now = new Date();
-        const thirtyDaysFromNow = new Date(
-          now.getTime() + 30 * 24 * 60 * 60 * 1000,
-        );
-        const expiringInventory = variant.inventory_items.filter(
-          (item) =>
-            item.expiry_date &&
-            new Date(item.expiry_date) <= thirtyDaysFromNow &&
-            new Date(item.expiry_date) > now,
-        );
-
-        return {
-          ...variant,
-          // Calculated metrics
-          total_stock: totalStock,
-          stock_by_branch: stockByBranch,
-          is_low_stock: isLowStock,
-          serials_summary: serialsSummary,
-          available_serials_count: serialsSummary.available || 0,
-          sold_serials_count: serialsSummary.sold || 0,
-          defective_serials_count: serialsSummary.defective || 0,
-          returned_serials_count: serialsSummary.returned || 0,
-          price_change_percentage: priceChangePercentage,
-          has_expiring_inventory: expiringInventory.length > 0,
-          expiring_inventory_count: expiringInventory.length,
-          expiring_inventory: expiringInventory.map((item) => ({
-            batch_number: item.batch_number,
-            quantity: item.quantity,
-            expiry_date: item.expiry_date,
-            branch_name: item.branch?.name || 'Central Inventory',
-          })),
-        };
-      }),
-    };
-
-    // Calculate product-level metrics
-    const productMetrics = {
-      total_variants: enrichedProduct.variants.length,
-      total_stock_all_variants: enrichedProduct.variants.reduce(
-        (sum, v) => sum + v.total_stock,
-        0,
-      ),
-      total_serials_all_variants: enrichedProduct.variants.reduce(
-        (sum, v) => sum + v.serials.length,
-        0,
-      ),
-      available_serials_all_variants: enrichedProduct.variants.reduce(
-        (sum, v) => sum + v.available_serials_count,
-        0,
-      ),
-      variants_with_low_stock: enrichedProduct.variants.filter(
-        (v) => v.is_low_stock,
-      ).length,
-      variants_with_expiring_inventory: enrichedProduct.variants.filter(
-        (v) => v.has_expiring_inventory,
-      ).length,
-      has_active_promotions: enrichedProduct.variants.some(
-        (v) => v.promotions.length > 0,
-      ),
-      price_range: {
-        min_regular_price: Math.min(
-          ...enrichedProduct.variants.map((v) =>
-            parseFloat(v.regular_price.toString()),
-          ),
         ),
-        max_regular_price: Math.max(
-          ...enrichedProduct.variants.map((v) =>
-            parseFloat(v.regular_price.toString()),
-          ),
+        total_serials_all_variants: enrichedProduct.variants.reduce(
+          (sum, v) => sum + v.serials.length,
+          0,
         ),
-      },
-    };
+        available_serials_all_variants: enrichedProduct.variants.reduce(
+          (sum, v) => sum + v.available_serials_count,
+          0,
+        ),
+        variants_with_low_stock: enrichedProduct.variants.filter(
+          (v) => v.is_low_stock,
+        ).length,
+        variants_with_expiring_inventory: enrichedProduct.variants.filter(
+          (v) => v.has_expiring_inventory,
+        ).length,
+        has_active_promotions: enrichedProduct.variants.some(
+          (v) => v.promotions.length > 0,
+        ),
+        price_range: {
+          min_regular_price: Math.min(
+            ...enrichedProduct.variants.map((v) =>
+              parseFloat(v.regular_price.toString()),
+            ),
+          ),
+          max_regular_price: Math.max(
+            ...enrichedProduct.variants.map((v) =>
+              parseFloat(v.regular_price.toString()),
+            ),
+          ),
+        },
+      };
 
-    return {
-      ...enrichedProduct,
-      metrics: productMetrics,
-    };
+      return {
+        ...enrichedProduct,
+        metrics: productMetrics,
+      };
+    });
   }
   async update(id: number, dto: UpdateProductDto, consumerId: number) {
     // First check if product exists and belongs to this consumer
@@ -609,6 +626,9 @@ export class ProductService {
       );
     }
 
+    // Invalidate relevant caches
+    await this.invalidateProductCaches(consumerId, id);
+
     return this.findOne(id, consumerId);
   }
 
@@ -620,6 +640,27 @@ export class ProductService {
       where: { id },
     });
 
+    // Invalidate relevant caches
+    await this.invalidateProductCaches(consumerId, id);
+
     return { success: true, message: 'Product deleted successfully' };
+  }
+
+  // Cache invalidation helper method
+  private async invalidateProductCaches(consumerId: number, productId?: number) {
+    try {
+      // Invalidate product lists (all pages, searches, etc.)
+      const listPattern = `${generateCacheKey.productList(consumerId, 1, 10, '').split(':').slice(0, -3).join(':')}*`;
+      await this.cacheService.del(listPattern);
+      
+      // If productId is provided, invalidate specific product cache
+      if (productId) {
+        const detailKey = generateCacheKey.productDetail(productId, consumerId);
+        await this.cacheService.del(detailKey);
+      }
+    } catch (error) {
+      // Log error but don't fail the operation
+      console.error('Cache invalidation error:', error);
+    }
   }
 }

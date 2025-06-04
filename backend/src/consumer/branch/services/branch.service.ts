@@ -2,11 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class BranchService {
-  constructor(private readonly prismaService: PrismaService) {}
-
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
   async create(createBranchDto: CreateBranchDto, consumerId: number) {
     // Get count of existing branches
     const branchCount = await this.prismaService.branch.count({
@@ -16,7 +20,7 @@ export class BranchService {
     // If this is the first branch, make it the main branch
     const isMain = branchCount === 0;
     
-    return this.prismaService.branch.create({
+    const result = await this.prismaService.branch.create({
       data: {
         name: createBranchDto.name,
         address: createBranchDto.address,
@@ -26,38 +30,52 @@ export class BranchService {
         consumer_id: consumerId,
       },
     });
-  }
 
+    // Invalidate branch caches
+    await this.invalidateBranchCaches(consumerId);
+
+    return result;
+  }
   async findAll(consumerId: number) {
-    return this.prismaService.branch.findMany({
-      where: { consumer_id: consumerId },
-      orderBy: [
-        { is_main: 'desc' }, // Main branch first
-        { name: 'asc' }      // Then alphabetically
-      ],
+    // Generate cache key
+    const cacheKey = generateCacheKey.branchList(consumerId);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return this.prismaService.branch.findMany({
+        where: { consumer_id: consumerId },
+        orderBy: [
+          { is_main: 'desc' }, // Main branch first
+          { name: 'asc' }      // Then alphabetically
+        ],
+      });
     });
   }
-
   async findOne(id: number, consumerId: number) {
-    const branch = await this.prismaService.branch.findFirst({
-      where: { 
-        id,
-        consumer_id: consumerId
-      },
+    // Generate cache key
+    const cacheKey = generateCacheKey.branchDetail(id, consumerId);
+    
+    // Try to get from cache first
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const branch = await this.prismaService.branch.findFirst({
+        where: { 
+          id,
+          consumer_id: consumerId
+        },
+      });
+
+      if (!branch) {
+        throw new NotFoundException(`Branch with ID ${id} not found`);
+      }
+
+      return branch;
     });
-
-    if (!branch) {
-      throw new NotFoundException(`Branch with ID ${id} not found`);
-    }
-
-    return branch;
   }
-
   async update(id: number, updateBranchDto: UpdateBranchDto, consumerId: number) {
     // First check if the branch exists and belongs to this consumer
     await this.findOne(id, consumerId);
 
-    return this.prismaService.branch.update({
+    const result = await this.prismaService.branch.update({
       where: { id },
       data: {
         name: updateBranchDto.name,
@@ -66,8 +84,12 @@ export class BranchService {
         email: updateBranchDto.email,
       },
     });
-  }
 
+    // Invalidate branch caches
+    await this.invalidateBranchCaches(consumerId, id);
+
+    return result;
+  }
   async remove(id: number, consumerId: number) {
     // First check if the branch exists and belongs to this consumer
     const branch = await this.findOne(id, consumerId);
@@ -81,15 +103,17 @@ export class BranchService {
       where: { id },
     });
     
+    // Invalidate branch caches
+    await this.invalidateBranchCaches(consumerId, id);
+    
     return { success: true };
   }
-
   async setMainBranch(id: number, consumerId: number) {
     // Check if branch exists
     await this.findOne(id, consumerId);
     
     // Start a transaction to update main branch status
-    return this.prismaService.$transaction(async (tx) => {
+    const result = await this.prismaService.$transaction(async (tx) => {
       // First, set all branches to not be main
       await tx.branch.updateMany({
         where: { consumer_id: consumerId },
@@ -102,5 +126,28 @@ export class BranchService {
         data: { is_main: true },
       });
     });
+
+    // Invalidate branch caches since main branch status changed
+    await this.invalidateBranchCaches(consumerId);
+
+    return result;
+  }
+
+  // Cache invalidation helper method
+  private async invalidateBranchCaches(consumerId: number, branchId?: number) {
+    try {
+      // Invalidate branch list cache
+      const listKey = generateCacheKey.branchList(consumerId);
+      await this.cacheService.del(listKey);
+      
+      // If branchId is provided, invalidate specific branch cache
+      if (branchId) {
+        const detailKey = generateCacheKey.branchDetail(branchId, consumerId);
+        await this.cacheService.del(detailKey);
+      }
+    } catch (error) {
+      // Log error but don't fail the operation
+      console.error('Cache invalidation error:', error);
+    }
   }
 }
