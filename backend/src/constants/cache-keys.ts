@@ -4,15 +4,10 @@ export const CACHE_KEYS = {
     LIST: 'products:list',
     DETAIL: 'product:detail',
     BY_CONSUMER: 'products:consumer',
-    BY_CATEGORY: 'products:category',
-    BY_BRAND: 'products:brand',
-    BY_TAG: 'products:tag',
-    SEARCH: 'products:search',
   },
 
   // Product Variant cache keys
   PRODUCT_VARIANT: {
-    LIST: 'product-variants:list',
     DETAIL: 'product-variant:detail',
     BY_PRODUCT: 'product-variants:product',
   },
@@ -44,6 +39,7 @@ export const CACHE_KEYS = {
     DETAIL: 'unit:detail',
     BY_CONSUMER: 'units:consumer',
   },
+
   // Branch cache keys
   BRANCH: {
     LIST: 'branches:list',
@@ -63,7 +59,6 @@ export const CACHE_KEYS = {
     LIST: 'users:list',
     DETAIL: 'user:detail',
     BY_CONSUMER: 'users:consumer',
-    BY_ROLE: 'users:role',
   },
 
   // Role cache keys
@@ -71,21 +66,12 @@ export const CACHE_KEYS = {
     LIST: 'roles:list',
     DETAIL: 'role:detail',
     BY_CONSUMER: 'roles:consumer',
-    PERMISSIONS: 'role:permissions',
-  },
-
-  // Permission cache keys
-  PERMISSION: {
-    LIST: 'permissions:list',
-    DETAIL: 'permission:detail',
-    BY_PLAN: 'permissions:plan',
   },
 
   // Plan cache keys
   PLAN: {
     LIST: 'plans:list',
     DETAIL: 'plan:detail',
-    PERMISSIONS: 'plan:permissions',
   },
 
   // Consumer cache keys
@@ -95,12 +81,6 @@ export const CACHE_KEYS = {
     BY_SUBDOMAIN: 'consumer:subdomain',
   },
 
-  // Billing cache keys
-  BILLING: {
-    HISTORY: 'billing:history',
-    INVOICE: 'billing:invoice',
-    BY_CONSUMER: 'billing:consumer',
-  },
   // Inventory cache keys
   INVENTORY: {
     ITEMS: 'inventory:items',
@@ -134,22 +114,6 @@ export const CACHE_KEYS = {
   INVENTORY_TRANSFER: {
     LIST: 'inventory-transfers:list',
     DETAIL: 'inventory-transfer:detail',
-    BY_SOURCE_BRANCH: 'inventory-transfers:source-branch',
-    BY_DESTINATION_BRANCH: 'inventory-transfers:destination-branch',
-  },
-
-  // Search cache keys
-  SEARCH: {
-    RESULTS: 'search:results',
-    SUGGESTIONS: 'search:suggestions',
-  },
-
-  // Statistics cache keys
-  STATS: {
-    DASHBOARD: 'stats:dashboard',
-    SALES: 'stats:sales',
-    INVENTORY: 'stats:inventory',
-    USERS: 'stats:users',
   },
 };
 
@@ -157,6 +121,7 @@ export const CACHE_KEYS = {
 export const generateCacheKey = {
   productList: (consumerId: number, page?: number, limit?: number, search?: string) =>
     `${CACHE_KEYS.PRODUCT.BY_CONSUMER}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}`,
+  
   productDetail: (productId: number, consumerId: number) =>
     `${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:${consumerId}`,
 
@@ -192,6 +157,7 @@ export const generateCacheKey = {
 
   branchList: (consumerId: number) =>
     `${CACHE_KEYS.BRANCH.BY_CONSUMER}:${consumerId}`,
+  
   branchDetail: (branchId: number, consumerId: number) =>
     `${CACHE_KEYS.BRANCH.DETAIL}:${branchId}:${consumerId}`,
 
@@ -215,15 +181,12 @@ export const generateCacheKey = {
 
   planList: () =>
     `${CACHE_KEYS.PLAN.LIST}`,
-
   planDetail: (planId: number) =>
     `${CACHE_KEYS.PLAN.DETAIL}:${planId}`,
 
-  planPermissions: (planId: number) =>
-    `${CACHE_KEYS.PLAN.PERMISSIONS}:${planId}`,
-
   consumerDetail: (consumerId: number) =>
     `${CACHE_KEYS.CONSUMER.DETAIL}:${consumerId}`,
+  
   consumerBySubdomain: (subdomain: string) =>
     `${CACHE_KEYS.CONSUMER.BY_SUBDOMAIN}:${subdomain}`,
 
@@ -266,7 +229,4 @@ export const generateCacheKey = {
 
   inventoryTransferDetail: (transferId: number, consumerId: number) =>
     `${CACHE_KEYS.INVENTORY_TRANSFER.DETAIL}:${transferId}:${consumerId}`,
-
-  searchResults: (query: string, model: string, filters?: string) =>
-    `${CACHE_KEYS.SEARCH.RESULTS}:${model}:${query}:${filters || 'none'}`,
 };
