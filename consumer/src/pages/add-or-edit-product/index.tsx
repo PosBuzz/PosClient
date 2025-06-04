@@ -10,10 +10,13 @@ import { useProductFormState } from "./hooks/useProductFormState";
 import StateBasicInformationTab from "./components/StateBasicInformationTab";
 import StateVariantManager from "./components/StateVariantManager";
 import { queryKeys } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
+  const { messageApi } = useMessageStore();
 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("basic");
@@ -201,18 +204,25 @@ export default function ProductForm() {
         : productApi.createProduct(submitData);
     },
     onSuccess: () => {
-      message.success(
+      messageApi?.success(
         isEditMode
           ? "Product updated successfully"
           : "Product saved successfully"
       );
       queryClient.invalidateQueries({
-        queryKey: [
-          queryKeys.products,
-          queryKeys.productVariants,
-          queryKeys.productsForInventory,
-          queryKeys.batches,
-        ],
+        queryKey: [queryKeys.product],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.products],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productVariants],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productsForInventory],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.batches],
       });
 
       if (isEditMode && id) {
@@ -224,7 +234,7 @@ export default function ProductForm() {
       navigate("/products");
     },
     onError: (error: any) => {
-      message.error(
+      messageApi?.error(
         `${
           isEditMode ? "Failed to update product" : "Failed to save product"
         }: ${error.response?.data?.message || error.message || "Unknown error"}`
