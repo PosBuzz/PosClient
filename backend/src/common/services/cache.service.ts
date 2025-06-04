@@ -1,37 +1,48 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ConfigService } from 'src/config/config.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Cache } from 'cache-manager';
+import { ConfigService } from '../../config/config.service';
 
 @Injectable()
 export class CacheService {
+  private readonly logger = new Logger(CacheService.name);
+  private readonly ttl: number;
+
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private configService: ConfigService,
-  ) {}
+  ) {
+    this.ttl = this.configService.cacheTtl;
+  }
 
   /**
    * Get item from cache
    */
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(key: string): Promise<T | undefined> {
     try {
-      const cached = await this.cacheManager.get<string>(key);
-      return cached ? JSON.parse(cached) : null;
+      const result = await this.cacheManager.get<T>(key);
+      if (result !== null && result !== undefined) {
+        this.logger.log(`✅ CACHE HIT: ${key}`);
+        return result;
+      } else {
+        this.logger.log(`❌ CACHE MISS: ${key}`);
+        return undefined;
+      }
     } catch (error) {
-      console.error(`Cache get error for key ${key}:`, error);
-      return null;
+      this.logger.error(`Cache get error for key ${key}:`, error);
+      return undefined;
     }
   }
 
   /**
    * Set item in cache with TTL from config
    */
-  async set(key: string, value: any, ttl?: number): Promise<void> {
+  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     try {
-      const cacheValue = JSON.stringify(value);
-      const cacheTtl = ttl || this.configService.cacheTtl;
-      await this.cacheManager.set(key, cacheValue, cacheTtl * 1000); // Convert to milliseconds
+      await this.cacheManager.set(key, value, (ttl || this.ttl) * 1000);
+      this.logger.log(`💾 CACHE SET: ${key} (TTL: ${ttl || this.ttl}s)`);
     } catch (error) {
-      console.error(`Cache set error for key ${key}:`, error);
+      this.logger.error(`Cache set error for key ${key}:`, error);
     }
   }
 
@@ -41,24 +52,9 @@ export class CacheService {
   async del(key: string): Promise<void> {
     try {
       await this.cacheManager.del(key);
+      this.logger.log(`🗑️ CACHE DEL: ${key}`);
     } catch (error) {
-      console.error(`Cache delete error for key ${key}:`, error);
-    }
-  }
-
-  /**
-   * Delete multiple items from cache using pattern
-   */
-  async delPattern(pattern: string): Promise<void> {
-    try {
-      // This is a simplified approach - in production you might want to use Redis SCAN
-      // For now, this method signature is for future implementation
-      console.warn(`Pattern deletion not implemented for pattern: ${pattern}`);
-    } catch (error) {
-      console.error(
-        `Cache pattern delete error for pattern ${pattern}:`,
-        error,
-      );
+      this.logger.error(`Cache delete error for key ${key}:`, error);
     }
   }
 
@@ -67,58 +63,51 @@ export class CacheService {
    */
   async getOrSet<T>(
     key: string,
-    fetchFunction: () => Promise<T>,
+    factory: () => Promise<T>,
     ttl?: number,
   ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    this.logger.log(`🔄 CACHE FACTORY: Executing factory for ${key}`);
+    const result = await factory();
+    await this.set(key, result, ttl);
+    return result;
+  }
+
+  /**
+   * Clear all cache (if supported by the cache store)
+   */
+  async reset(): Promise<void> {
     try {
-      // Try to get from cache first
-      const cached = await this.get<T>(key);
-      if (cached !== null) {
-        return cached;
+      // Check if reset method exists on the cache manager
+      if ('reset' in this.cacheManager && typeof this.cacheManager.reset === 'function') {
+        await (this.cacheManager as any).reset();
+        this.logger.log('🧹 CACHE RESET: All cache cleared');
+      } else {
+        this.logger.warn('🧹 CACHE RESET: Reset method not supported by cache store');
       }
-
-      // Cache miss - execute function
-      const result = await fetchFunction();
-
-      // Cache the result
-      await this.set(key, result, ttl);
-
-      return result;
     } catch (error) {
-      console.error(`Cache getOrSet error for key ${key}:`, error);
-      // If caching fails, still return the result from the function
-      return await fetchFunction();
+      this.logger.error('Cache reset error:', error);
     }
   }
 
   /**
-   * Invalidate related cache keys
+   * Delete multiple keys by pattern (if supported)
    */
-  async invalidateRelated(keys: string[]): Promise<void> {
+  async delPattern(pattern: string): Promise<void> {
     try {
-      await Promise.all(keys.map((key) => this.del(key)));
+      // For Redis-based stores, you might have pattern deletion
+      if ('del' in this.cacheManager) {
+        await this.cacheManager.del(pattern);
+        this.logger.log(`🗑️ CACHE DEL PATTERN: ${pattern}`);
+      } else {
+        this.logger.warn(`Pattern deletion not supported for: ${pattern}`);
+      }
     } catch (error) {
-      console.error(`Cache invalidate related error:`, error);
+      this.logger.error(`Cache pattern delete error for ${pattern}:`, error);
     }
-  }
-
-  /**
-   * Check if key exists in cache
-   */
-  async exists(key: string): Promise<boolean> {
-    try {
-      const value = await this.cacheManager.get(key);
-      return value !== undefined && value !== null;
-    } catch (error) {
-      console.error(`Cache exists check error for key ${key}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Get TTL for debugging
-   */
-  getTtl(): number {
-    return this.configService.cacheTtl;
   }
 }
