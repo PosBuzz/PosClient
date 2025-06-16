@@ -20,6 +20,7 @@ export interface InventoryBatch {
   created_at: string;
   updated_at: string;
   variant: {
+    product_id: number;
     id: number;
     name: string;
     sku?: string;
@@ -314,7 +315,9 @@ export const inventoryApi = {
   getAdjustment: async (id: number): Promise<InventoryAdjustment> => {
     return get(endpoints.inventoryAdjustment(id));
   },
-  createAdjustment: async (data: CreateAdjustmentData): Promise<InventoryAdjustment> => {
+  createAdjustment: async (
+    data: CreateAdjustmentData
+  ): Promise<InventoryAdjustment> => {
     return post(endpoints.createInventoryAdjustment, data);
   },
   // New inventory views
