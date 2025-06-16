@@ -1,43 +1,61 @@
 /* eslint-disable */
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { UpdateCrudDto } from './dto/update-crud.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { error } from 'console';
+import { CacheService } from '../../common/services/cache.service';
+import { UpdateCrudDto } from './dto/update-crud.dto';
+import { generateCacheKey } from '../../constants/cache-keys';
 
 @Injectable()
 export class CrudService {
-  constructor(private readonly prismaService: PrismaService) {}
-  //TODO add type of the body based on the model
+  constructor(
+    private readonly prismaService: PrismaService,
+    private cacheService: CacheService,
+  ) {}  //TODO add type of the body based on the model
   async create(body: any, model: string) {
     // console.log(body);
-    return await this.prismaService[model].create({
+    const result = await this.prismaService[model].create({
       data: body,
     });
-  }
 
-  async findAll(model: string) {
-    return await this.prismaService[model].findMany({
-      orderBy: {
-        id: 'asc',
-      },
+    // Invalidate related caches
+    await this.invalidateCrudCaches(model);
+
+    return result;
+  }  async findAll(model: string) {
+    const cacheKey = generateCacheKey.adminCrudList(model);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prismaService[model].findMany({
+        orderBy: {
+          id: 'asc',
+        },
+      });
+    });
+  }  async findOne(id: number, model: string) {
+    const cacheKey = generateCacheKey.adminCrudDetail(model, id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prismaService[model].findFirst({ where: { id } });
     });
   }
-
-  async findOne(id: number, model: string) {
-    return await this.prismaService[model].findFirst({ where: { id } });
-  }
-
   async update(id: number, updateCrudDto: UpdateCrudDto, model: string) {
-    return await this.prismaService[model].update({
+    const result = await this.prismaService[model].update({
       where: { id },
       data: updateCrudDto,
     });
-  }
 
+    // Invalidate related caches
+    await this.invalidateCrudCaches(model, id);
+
+    return result;
+  }
   async remove(id: number, model: string) {
     try {
       await this.prismaService[model].delete({ where: { id } });
+      
+      // Invalidate related caches
+      await this.invalidateCrudCaches(model, id);
     } catch (e) {
       throw new HttpException(
         { message: 'failed', error: e },
@@ -83,5 +101,21 @@ export class CrudService {
     });
 
     return searchResults;
+  }
+  // Cache invalidation helper methods
+  private async invalidateCrudCaches(model: string, id?: number) {
+    const cacheKeysToInvalidate: string[] = [];
+
+    // Invalidate list cache
+    cacheKeysToInvalidate.push(generateCacheKey.adminCrudList(model));
+
+    // Invalidate specific item cache if ID is provided
+    if (id) {
+      cacheKeysToInvalidate.push(generateCacheKey.adminCrudDetail(model, id));
+    }
+
+    await Promise.all(
+      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
+    );
   }
 }

@@ -81,9 +81,12 @@ export class ConfigService {
   get redisPort(): number {
     return this.configService.get<number>('REDIS_PORT') || 6379;
   }
-
   get redisPrefix(): string {
     return this.configService.get<string>('REDIS_PREFIX') || 'posbuzz';
+  }
+
+  get cacheTtl(): number {
+    return this.configService.get<number>('CACHE_TTL') || 3600; // Default: 1 hour in seconds
   }
 
   // CORS settings

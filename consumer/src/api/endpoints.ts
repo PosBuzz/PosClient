@@ -6,10 +6,10 @@ export const endpoints = {
   refreshToken: "/auth/client-refresh-token",
   changePassword: "/consumer/change-password",
   planPermissions: "/consumer/users/plan-permissions",
-  
+
   user: "/consumer/users",
-  updateUser: (id: number) => `/consumer/users/users/${id}`,
-  deleteUser: (id: number) => `/consumer/users/users/${id}`,
+  updateUser: (id: number) => `/consumer/users/${id}`,
+  deleteUser: (id: number) => `/consumer/users/${id}`,
 
   role: "/consumer/users/roles",
   updateRole: (id: number) => `/consumer/users/roles/${id}`,

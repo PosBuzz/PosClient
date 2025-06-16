@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class PlanService {
-  constructor(private prisma: PrismaService) {}
-
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
   async create(data: CreatePlanDto) {
-    return await this.prisma.plan.create({
+    const result = await this.prisma.plan.create({
       data: {
         name: data.name,
         price: data.price,
@@ -18,6 +22,45 @@ export class PlanService {
           })),
         },
       },
+    });
+
+    // Invalidate related caches
+    await this.invalidatePlanCaches();
+
+    return result;
+  }
+
+  async findAll() {
+    const cacheKey = generateCacheKey.planList();
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.plan.findMany({
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      });
+    });
+  }
+
+  async findOne(id: number) {
+    const cacheKey = generateCacheKey.planDetail(id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.plan.findUnique({
+        where: { id },
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      });
     });
   }
 
@@ -112,10 +155,8 @@ export class PlanService {
             }
           }
         }
-      }
-
-      // Update the plan with new permissions
-      return await this.prisma.plan.update({
+      }      // Update the plan with new permissions
+      const result = await this.prisma.plan.update({
         where: { id: planId },
         data: {
           ...rest,
@@ -126,12 +167,37 @@ export class PlanService {
           },
         },
       });
-    }
 
-    // If no permissions are provided, only update the plan basic info
-    return await this.prisma.plan.update({
+      // Invalidate related caches
+      await this.invalidatePlanCaches(planId);
+
+      return result;
+    }    // If no permissions are provided, only update the plan basic info
+    const result = await this.prisma.plan.update({
       where: { id: planId },
       data: { ...rest },
     });
+
+    // Invalidate related caches
+    await this.invalidatePlanCaches(planId);
+
+    return result;
+  }
+
+  // Cache invalidation helper methods
+  private async invalidatePlanCaches(planId?: number) {
+    const cacheKeysToInvalidate: string[] = [];
+
+    // Invalidate plan list cache
+    cacheKeysToInvalidate.push(generateCacheKey.planList());
+
+    // Invalidate specific plan detail cache if planId is provided
+    if (planId) {
+      cacheKeysToInvalidate.push(generateCacheKey.planDetail(planId));
+    }
+
+    await Promise.all(
+      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
+    );
   }
 }

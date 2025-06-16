@@ -373,7 +373,12 @@ export default function CommonSelector({
         okText="Create"
         zIndex={1060}
       >
-        <Form form={form} layout="vertical" onFinish={handleCreateSubmit}>
+        <Form
+          autoComplete="off"
+          form={form}
+          layout="vertical"
+          onFinish={handleCreateSubmit}
+        >
           <Form.Item
             name="name"
             label={`${label} Name`}

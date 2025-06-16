@@ -34,7 +34,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
         <Space>
           <ShopOutlined />
           <Text>{record.branch?.name || "Main Branch"}</Text>
-          {record.branch?.is_main && <Tag color="green" size="small">Main</Tag>}
+          {record.branch?.is_main && <Tag color="green">Main</Tag>}
         </Space>
       ),
     },

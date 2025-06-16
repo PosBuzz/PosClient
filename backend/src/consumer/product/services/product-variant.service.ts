@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductVariantService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(productId: number, dto: CreateProductVariantDto) {
     // Create the variant
@@ -81,61 +86,84 @@ export class ProductVariantService {
               expiry_date: batchDto.expiry_date ? new Date(batchDto.expiry_date) : null,
             },
           })
-        )
-      );
+        )      );
+    }    // Invalidate caches for this consumer
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { consumer_id: true }
+    });
+    
+    if (product) {
+      // Clear all inventory-related caches since variants affect inventory
+      await this.cacheService.invalidateAllInventoryCaches(product.consumer_id);
     }
 
     return this.findOne(variant.id);
   }
-
-  async findOne(id: number) {
-    const variant = await this.prisma.productVariant.findUnique({
-      where: { id },
-      include: {
-        sale_unit: true,
-        purchase_unit: true,
-        VariantAttribute: true,
-        serials: {
-          orderBy: { created_at: 'desc' },
-        },
-        price_history: {
-          take: 1,
-          orderBy: { effective_date: 'desc' },
-        },
-        inventory_items: {
-          include: {
-            branch: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: { created_at: 'desc' },
-        },
-      },
-    });
-
-    if (!variant) {
-      throw new NotFoundException(`Product variant with ID ${id} not found`);
+  async findOne(id: number, consumerId?: number) {
+    // Get consumer ID if not provided
+    if (!consumerId) {
+      const variant = await this.prisma.productVariant.findUnique({
+        where: { id },
+        select: { product: { select: { consumer_id: true } } }
+      });
+      consumerId = variant?.product.consumer_id;
+      if (!consumerId) {
+        throw new NotFoundException(`Product variant with ID ${id} not found`);
+      }
     }
 
-    // Calculate total stock and add alert status
-    const totalStock = variant.inventory_items.reduce((sum, item) => sum + item.quantity, 0);
-    const isLowStock = variant.alert_quantity && variant.alert_quantity > 0 && totalStock <= variant.alert_quantity;
+    const cacheKey = generateCacheKey.productVariantDetail(id, consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const variant = await this.prisma.productVariant.findUnique({
+        where: { id },
+        include: {
+          sale_unit: true,
+          purchase_unit: true,
+          VariantAttribute: true,
+          serials: {
+            orderBy: { created_at: 'desc' },
+          },
+          price_history: {
+            take: 1,
+            orderBy: { effective_date: 'desc' },
+          },
+          inventory_items: {
+            include: {
+              branch: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              vendor: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: { created_at: 'desc' },
+          },
+        },
+      });
 
-    return {
-      ...variant,
-      total_stock: totalStock,
-      is_low_stock: isLowStock,
-      available_serials_count: variant.serials.filter(s => s.status === 'available').length,
-    };
+      if (!variant) {
+        throw new NotFoundException(`Product variant with ID ${id} not found`);
+      }
+
+      // Calculate total stock and add alert status
+      const totalStock = variant.inventory_items.reduce((sum, item) => sum + item.quantity, 0);
+      const isLowStock = variant.alert_quantity && variant.alert_quantity > 0 && totalStock <= variant.alert_quantity;
+
+      return {
+        ...variant,
+        total_stock: totalStock,
+        is_low_stock: isLowStock,
+        available_serials_count: variant.serials.filter(s => s.status === 'available').length,
+      };
+    });
   }
 
   async update(id: number, dto: UpdateProductVariantDto) {
@@ -285,23 +313,44 @@ export class ProductVariantService {
                 },
               })
             )
-          );
-        }
-      }
+          );        }
+      }    }    // Get consumer ID for cache invalidation
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+      select: { 
+        product_id: true,
+        product: { select: { consumer_id: true } }
+      },
+    });
+
+    if (variant) {
+      // Clear all inventory-related caches since variants affect inventory
+      await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
     }
 
     return this.findOne(id);
   }
-
   async remove(id: number) {
-    // First check if variant exists
-    await this.findOne(id);
+    // First check if variant exists and get consumer ID
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+      select: { 
+        product_id: true,
+        product: { select: { consumer_id: true } }
+      },
+    });
+
+    if (!variant) {
+      throw new NotFoundException(`Product variant with ID ${id} not found`);
+    }
 
     // Delete the variant (cascades to attributes and price history)
     await this.prisma.productVariant.delete({
       where: { id },
     });
 
+    // Clear all inventory-related caches since variants affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
+
     return { success: true, message: 'Variant deleted successfully' };
-  }
-}
+  }}
