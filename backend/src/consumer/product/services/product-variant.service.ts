@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductVariantService {
@@ -87,16 +87,33 @@ export class ProductVariantService {
             },
           })
         )      );
+    }    // Invalidate caches for this consumer
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { consumer_id: true }
+    });
+    
+    if (product) {
+      // Clear all inventory-related caches since variants affect inventory
+      await this.cacheService.invalidateAllInventoryCaches(product.consumer_id);
     }
-
-    // Invalidate variant caches
-    await this.invalidateVariantCaches(productId);
 
     return this.findOne(variant.id);
   }
+  async findOne(id: number, consumerId?: number) {
+    // Get consumer ID if not provided
+    if (!consumerId) {
+      const variant = await this.prisma.productVariant.findUnique({
+        where: { id },
+        select: { product: { select: { consumer_id: true } } }
+      });
+      consumerId = variant?.product.consumer_id;
+      if (!consumerId) {
+        throw new NotFoundException(`Product variant with ID ${id} not found`);
+      }
+    }
 
-  async findOne(id: number) {
-    const cacheKey = generateCacheKey.productVariantDetail(id);
+    const cacheKey = generateCacheKey.productVariantDetail(id, consumerId);
     
     return this.cacheService.getOrSet(cacheKey, async () => {
       const variant = await this.prisma.productVariant.findUnique({
@@ -297,86 +314,43 @@ export class ProductVariantService {
               })
             )
           );        }
-      }    }
-
-    // Get product ID for cache invalidation
-    const productVariant = await this.prisma.productVariant.findUnique({
+      }    }    // Get consumer ID for cache invalidation
+    const variant = await this.prisma.productVariant.findUnique({
       where: { id },
-      select: { product_id: true },
+      select: { 
+        product_id: true,
+        product: { select: { consumer_id: true } }
+      },
     });
 
-    if (productVariant) {
-      // Invalidate variant caches
-      await this.invalidateVariantCaches(productVariant.product_id, id);
+    if (variant) {
+      // Clear all inventory-related caches since variants affect inventory
+      await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
     }
 
     return this.findOne(id);
   }
-
   async remove(id: number) {
-    // First check if variant exists
-    const variant = await this.findOne(id);
+    // First check if variant exists and get consumer ID
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+      select: { 
+        product_id: true,
+        product: { select: { consumer_id: true } }
+      },
+    });
 
-    // Get product ID for cache invalidation
-    const productId = variant.product_id;
+    if (!variant) {
+      throw new NotFoundException(`Product variant with ID ${id} not found`);
+    }
 
     // Delete the variant (cascades to attributes and price history)
     await this.prisma.productVariant.delete({
       where: { id },
     });
 
-    // Invalidate variant caches
-    await this.invalidateVariantCaches(productId, id);
+    // Clear all inventory-related caches since variants affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
 
     return { success: true, message: 'Variant deleted successfully' };
-  }
-  private async invalidateVariantCaches(productId: number, variantId?: number): Promise<void> {
-    try {
-      const promises = [
-        this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${productId}`),
-      ];
-
-      // Get product's consumer ID for later cache invalidation
-      const product = await this.prisma.product.findUnique({
-        where: { id: productId },
-        select: { consumer_id: true },
-      });
-      
-      const consumerId = product?.consumer_id;
-
-      if (variantId) {
-        // Invalidate this specific variant
-        promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`));
-        
-        // Also invalidate product cache that contains this variant
-        if (consumerId) {
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:*`));
-          
-          // Invalidate inventory-related caches for this variant
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY_BATCH.BY_VARIANT}:*${variantId}*`));
-          
-          // Invalidate inventory summary that might include this variant
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:*`));
-        }
-      } else {
-        // Invalidate all variant details if no specific ID
-        promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:*`));
-        
-        // Also invalidate broader caches if we have consumer ID
-        if (consumerId) {
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`));
-          promises.push(this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`));
-        }
-      }
-
-      await Promise.all(promises);
-    } catch (error) {
-      console.warn('Cache invalidation failed:', error);
-    }
-  }
-}
+  }}

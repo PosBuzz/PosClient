@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/update-brand.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class BrandService {
@@ -73,10 +73,8 @@ export class BrandService {
         website: updateBrandDto.website,
         logo: updateBrandDto.logo,
       },
-    });
-
-    // Invalidate brand caches
-    await this.invalidateBrandCaches(consumerId, id);
+    });    // Invalidate brand caches
+    await this.invalidateBrandCaches(consumerId);
 
     return result;
   }
@@ -90,23 +88,15 @@ export class BrandService {
     });
     
     // Invalidate brand caches
-    await this.invalidateBrandCaches(consumerId, id);
+    await this.invalidateBrandCaches(consumerId);
     
     return { success: true };
   }
-
   // Cache invalidation helper method
-  private async invalidateBrandCaches(consumerId: number, brandId?: number) {
+  private async invalidateBrandCaches(consumerId: number) {
     try {
-      // Invalidate brand list cache
-      const listKey = generateCacheKey.brandList(consumerId);
-      await this.cacheService.del(listKey);
-      
-      // If brandId is provided, invalidate specific brand cache
-      if (brandId) {
-        const detailKey = generateCacheKey.brandDetail(brandId, consumerId);
-        await this.cacheService.del(detailKey);
-      }
+      // Invalidate all brand-related caches for this consumer
+      await this.cacheService.delPattern(generateCachePatterns.allBrands(consumerId));
     } catch (error) {
       // Log error but don't fail the operation
       console.error('Cache invalidation error:', error);

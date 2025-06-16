@@ -12,15 +12,14 @@ export class UnitService {
     private readonly cacheService: CacheService,
   ) {}
   async create(createUnitDto: CreateUnitDto, consumerId: number) {
-    const result = await this.prismaService.unit.create({
-      data: {
+    const result = await this.prismaService.unit.create({      data: {
         name: createUnitDto.name,
         consumer_id: consumerId,
       },
     });
 
-    // Invalidate unit caches
-    await this.invalidateUnitCaches(consumerId);
+    // Invalidate caches since units affect products and inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
@@ -58,47 +57,25 @@ export class UnitService {
   }
   async update(id: number, updateUnitDto: UpdateUnitDto, consumerId: number) {
     // First check if the unit exists and belongs to this consumer
-    await this.findOne(id, consumerId);
-
-    const result = await this.prismaService.unit.update({
+    await this.findOne(id, consumerId);    const result = await this.prismaService.unit.update({
       where: { id },
       data: { name: updateUnitDto.name },
     });
 
-    // Invalidate unit caches
-    await this.invalidateUnitCaches(consumerId, id);
+    // Invalidate caches since units affect products and inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
   async remove(id: number, consumerId: number) {
     // First check if the unit exists and belongs to this consumer
-    await this.findOne(id, consumerId);
-
-    await this.prismaService.unit.delete({
+    await this.findOne(id, consumerId);    await this.prismaService.unit.delete({
       where: { id },
     });
     
-    // Invalidate unit caches
-    await this.invalidateUnitCaches(consumerId, id);
+    // Invalidate caches since units affect products and inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
     
     return { success: true };
-  }
-
-  // Cache invalidation helper method
-  private async invalidateUnitCaches(consumerId: number, unitId?: number) {
-    try {
-      // Invalidate unit list cache
-      const listKey = generateCacheKey.unitList(consumerId);
-      await this.cacheService.del(listKey);
-      
-      // If unitId is provided, invalidate specific unit cache
-      if (unitId) {
-        const detailKey = generateCacheKey.unitDetail(unitId, consumerId);
-        await this.cacheService.del(detailKey);
-      }
-    } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
-    }
   }
 }

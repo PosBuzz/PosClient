@@ -6,7 +6,7 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
@@ -207,16 +207,12 @@ export class UsersService {
     }
 
     return result;
-  }
-
-  private async invalidateUserCaches(consumer_id: number): Promise<void> {
+  }  private async invalidateUserCaches(consumer_id: number): Promise<void> {
     try {
-      // Invalidate all user-related caches for this consumer
-      await Promise.all([
-        this.cacheService.del(generateCacheKey.userList(consumer_id)),
-        this.cacheService.del(generateCacheKey.roleList(consumer_id)),
-        // Invalidate user lists with search and role filters by pattern
-        this.cacheService.del(`user:list:${consumer_id}:*`),
+      // Invalidate all user-related caches for this consumer using cache patterns
+      await this.cacheService.delPatterns([
+        generateCachePatterns.allUsers(consumer_id),
+        generateCachePatterns.allRoles(consumer_id),
       ]);
     } catch (error) {
       console.warn('Cache invalidation failed:', error);

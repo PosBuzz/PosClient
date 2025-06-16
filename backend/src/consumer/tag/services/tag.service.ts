@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class TagService {
@@ -63,10 +63,8 @@ export class TagService {
     const result = await this.prismaService.tag.update({
       where: { id },
       data: { name: updateTagDto.name },
-    });
-
-    // Invalidate tag caches
-    await this.invalidateTagCaches(consumerId, id);
+    });    // Invalidate tag caches
+    await this.invalidateTagCaches(consumerId);
 
     return result;
   }
@@ -77,25 +75,17 @@ export class TagService {
     await this.prismaService.tag.delete({
       where: { id },
     });
-    
-    // Invalidate tag caches
-    await this.invalidateTagCaches(consumerId, id);
+      // Invalidate tag caches
+    await this.invalidateTagCaches(consumerId);
     
     return { success: true };
   }
 
   // Cache invalidation helper method
-  private async invalidateTagCaches(consumerId: number, tagId?: number) {
+  private async invalidateTagCaches(consumerId: number) {
     try {
-      // Invalidate tag list cache
-      const listKey = generateCacheKey.tagList(consumerId);
-      await this.cacheService.del(listKey);
-      
-      // If tagId is provided, invalidate specific tag cache
-      if (tagId) {
-        const detailKey = generateCacheKey.tagDetail(tagId, consumerId);
-        await this.cacheService.del(detailKey);
-      }
+      // Invalidate all tag-related caches for this consumer
+      await this.cacheService.delPattern(generateCachePatterns.allTags(consumerId));
     } catch (error) {
       // Log error but don't fail the operation
       console.error('Cache invalidation error:', error);

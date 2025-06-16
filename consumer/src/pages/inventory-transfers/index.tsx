@@ -19,7 +19,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography
+  Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -99,6 +99,8 @@ export default function InventoryTransfersPage() {
     onSuccess: () => {
       messageApi?.success("Transfer completed successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
     },
     onError: (error: any) => {
       messageApi?.error(

@@ -102,6 +102,7 @@ export default function AddInventoryAdjustment() {
       messageApi?.success("Adjustment created successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
       navigate("/inventory/adjustments");
     },
     onError: (error: any) => {
