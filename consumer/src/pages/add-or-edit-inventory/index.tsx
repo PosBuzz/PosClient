@@ -113,6 +113,7 @@ export default function AddEditInventory() {
       messageApi?.success("Inventory updated successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.batch, id] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {

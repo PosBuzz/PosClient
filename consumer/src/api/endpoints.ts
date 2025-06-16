@@ -61,8 +61,6 @@ export const endpoints = {
   inventoryProducts: "/consumer/inventory/products",
   inventoryProductVariants: (productId: number) =>
     `/consumer/inventory/products/${productId}/variants`,
-  inventoryVariantStock: (variantId: number) =>
-    `/consumer/inventory/variants/${variantId}/stock`,
 
   // Batch Management
   inventoryBatches: "/consumer/inventory/batches",

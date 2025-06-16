@@ -30,6 +30,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
+import useDarkMode from "../../hooks/useDarkMode";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -58,6 +59,7 @@ interface LowStockItem {
 export default function InventoryLowStockPage() {
   const navigate = useNavigate();
   const { modal } = useModalStore();
+  const isDarkMode = useDarkMode();
 
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -415,8 +417,14 @@ export default function InventoryLowStockPage() {
           </Tooltip>
         </Space>
       ),
-    },
-  ];
+    },  ];
+
+  const getCardStyle = () => ({
+    backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+    borderColor: isDarkMode ? '#303030' : '#d9d9d9',
+  });
+
+  const getSummaryTextColor = () => isDarkMode ? '#d9d9d9' : '#666';
 
   if (branchesLoading && currentPage === 1) {
     return <CenterLoader />;
@@ -454,51 +462,48 @@ export default function InventoryLowStockPage() {
       )}
 
       {/* Summary Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
+      <Row gutter={16} style={{ marginBottom: 24 }}>        <Col span={6}>
+          <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ff4d4f" }}>
                 {criticalCount}
               </div>
-              <div style={{ color: "#666" }}>Critical</div>
+              <div style={{ color: getSummaryTextColor() }}>Critical</div>
             </div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fa8c16" }}>
                 {warningCount}
               </div>
-              <div style={{ color: "#666" }}>Warning</div>
+              <div style={{ color: getSummaryTextColor() }}>Warning</div>
             </div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fadb14" }}>
                 {attentionCount}
               </div>
-              <div style={{ color: "#666" }}>Attention</div>
+              <div style={{ color: getSummaryTextColor() }}>Attention</div>
             </div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1890ff" }}>
                 {filteredData.length}
               </div>
-              <div style={{ color: "#666" }}>Total Items</div>
+              <div style={{ color: getSummaryTextColor() }}>Total Items</div>
             </div>
           </Card>
         </Col>
-      </Row>
-
-      {/* Filters */}
-      <Card style={{ marginBottom: 24 }}>
+      </Row>      {/* Filters */}
+      <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
             <Input
@@ -563,7 +568,7 @@ export default function InventoryLowStockPage() {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card style={getCardStyle()}>
         <Table
           columns={columns}
           dataSource={filteredData}
@@ -590,17 +595,15 @@ export default function InventoryLowStockPage() {
             return "table-row-attention";
           }}
         />
-      </Card>
-
-      <style>{`
+      </Card>      <style>{`
         .table-row-critical {
-          background-color: #fff2f0 !important;
+          background-color: ${isDarkMode ? '#2a1a1a' : '#fff2f0'} !important;
         }
         .table-row-warning {
-          background-color: #fff7e6 !important;
+          background-color: ${isDarkMode ? '#2a2219' : '#fff7e6'} !important;
         }
         .table-row-attention {
-          background-color: #feffe6 !important;
+          background-color: ${isDarkMode ? '#262a16' : '#feffe6'} !important;
         }
       `}</style>
     </>

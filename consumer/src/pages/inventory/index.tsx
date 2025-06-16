@@ -24,7 +24,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography
+  Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -440,7 +440,6 @@ export default function InventoryPage() {
           </Button>
         }
       />
-
       {/* Summary Cards */}
       {summary && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -510,7 +509,6 @@ export default function InventoryPage() {
           </Col>
         </Row>
       )}
-
       {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
@@ -594,8 +592,9 @@ export default function InventoryPage() {
             </Col>
           </Row>
         )}
-      </Card>      {/* Quick Navigation */}
-      <Card title="Inventory Views" style={{ marginBottom: 24 }}>
+      </Card>{" "}
+      {/* Quick Navigation */}
+      {/* <Card title="Inventory Views" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
           <Col span={6}>
             <Button
@@ -636,8 +635,7 @@ export default function InventoryPage() {
             </Button>
           </Col>
         </Row>
-      </Card>
-
+      </Card> */}
       {/* Alerts for expiring items */}
       {summary && summary.expiring_soon > 0 && (
         <Alert
@@ -657,7 +655,6 @@ export default function InventoryPage() {
           }
         />
       )}
-
       {/* Alerts for low stock items */}
       {summary && summary.low_stock_variants > 0 && (
         <Alert
@@ -677,7 +674,6 @@ export default function InventoryPage() {
           }
         />
       )}
-
       {/* Table */}
       <Card>
         <Table
