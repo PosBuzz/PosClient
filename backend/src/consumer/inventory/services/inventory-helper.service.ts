@@ -1,19 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryHelperService {
-  constructor(private prisma: PrismaService) {}
-
-  /**
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}  /**
    * Get warehouse branch for a consumer
    */
   async getWarehouseBranch(consumerId: number) {
-    return await this.prisma.branch.findFirst({
-      where: {
-        consumer_id: consumerId,
-        is_warehouse: true,
-      },
+    const cacheKey = generateCacheKey.warehouseBranch(consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.branch.findFirst({
+        where: {
+          consumer_id: consumerId,
+          is_warehouse: true,
+        },
+      });
     });
   }
 

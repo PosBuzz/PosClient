@@ -23,6 +23,7 @@ export default function DrawerForm({
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.role, data),
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: [queryKeys.roles] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -36,7 +37,7 @@ export default function DrawerForm({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateRole(data.id), data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: [queryKeys.rules] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.roles] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);

@@ -9,6 +9,7 @@ import {
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Avatar,
   Button,
   Card,
   Col,
@@ -18,26 +19,24 @@ import {
   Select,
   Space,
   Table,
-  Typography,
-  Tooltip,
-  Avatar,
   Tag,
+  Tooltip,
+  Typography,
 } from "antd";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
-import { useMessageStore } from "../../stores/messageStore";
-import { useAuthStore } from "../../stores/authStore";
 import { Permissions } from "../../constants/permissions";
-import { formatCurrency } from "../../utils/formatters";
+import { queryKeys } from "../../constants/queryKeys";
+import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
 import type {
-  ProductListFilters,
   Product,
+  ProductListFilters,
   ProductListResponse,
 } from "../../types/product.types";
-import { queryKeys } from "../../constants/queryKeys";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -272,7 +271,6 @@ const ProductsTable = () => {
                   {record.tags.slice(0, 3).map((tagItem) => (
                     <Tag
                       key={tagItem.tag.id}
-                      size="small"
                       color="blue"
                       style={{ fontSize: "10px", marginRight: 4 }}
                     >
@@ -308,33 +306,6 @@ const ProductsTable = () => {
       key: "brand",
       width: "12%",
       render: (name: string) => name || <Text type="secondary">No brand</Text>,
-    },
-    {
-      title: "Price",
-      key: "price",
-      width: "12%",
-      render: (_, record: Product) => {
-        const mainVariant = getMainVariant(record);
-        if (!mainVariant) {
-          return <Text type="secondary">No pricing</Text>;
-        }
-
-        const regularPrice = parseFloat(
-          mainVariant.regular_price?.toString() || "0"
-        );
-        const costPrice = parseFloat(mainVariant.cost_price?.toString() || "0");
-
-        return (
-          <div>
-            <Text strong>{formatCurrency(regularPrice)}</Text>
-            <div>
-              <Text type="secondary" style={{ fontSize: "10px" }}>
-                Cost: {formatCurrency(costPrice)}
-              </Text>
-            </div>
-          </div>
-        );
-      },
     },
     {
       title: "Tax",

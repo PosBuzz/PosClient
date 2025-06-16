@@ -22,6 +22,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDebouncedCallback } from "use-debounce";
 import {
   CreateTransferData,
   inventoryApi,
@@ -29,12 +30,12 @@ import {
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input;
+const { TextArea, Search } = Input;
 
 interface TransferItem {
   key: string;
@@ -50,11 +51,24 @@ export default function AddInventoryTransfer() {
   const [form] = Form.useForm();
 
   const { messageApi } = useMessageStore();
-
   const [sourceBranchId, setSourceBranchId] = useState<number>();
   const [destinationBranchId, setDestinationBranchId] = useState<number>();
   const [selectedItems, setSelectedItems] = useState<TransferItem[]>([]);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+
+  // Debounced search to reduce API calls
+  const debouncedSearch = useDebouncedCallback(
+    (value: string) => {
+      setDebouncedSearchText(value);
+    },
+    300 // 300ms delay
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    debouncedSearch(value);
+  };
 
   // Queries
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
@@ -65,19 +79,19 @@ export default function AddInventoryTransfer() {
 
   // Updated query to handle warehouse (null branch_id)
   const { data: sourceBatches, isLoading: sourceBatchesLoading } = useQuery({
-    queryKey: [queryKeys.batches, sourceBranchId, searchText],
+    queryKey: [queryKeys.batches, sourceBranchId, debouncedSearchText],
     queryFn: () => {
       // If sourceBranchId is null, get warehouse batches
       if (sourceBranchId === null) {
         return inventoryApi.getBatches({
-          search: searchText || undefined,
-          limit: undefined,
+          search: debouncedSearchText || undefined,
+          limit: undefined, // Remove limit to fetch all batches
         });
       }
       // Otherwise get branch-specific batches
       return inventoryApi.getBranchBatches(sourceBranchId!, {
-        search: searchText || undefined,
-        limit: 100,
+        search: debouncedSearchText || undefined,
+        limit: undefined, // Remove limit to fetch all batches
       });
     },
     staleTime: 3600 * 1000,
@@ -402,14 +416,15 @@ export default function AddInventoryTransfer() {
         {sourceBranchId !== null && (
           <Card
             title={`Available Inventory - ${getBranchName(sourceBranchId)}`}
-            style={{ marginBottom: 24 }}
-            extra={
-              <Input
+            style={{ marginBottom: 24 }}            extra={
+              <Search
                 placeholder="Search products..."
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 200 }}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onSearch={handleSearchChange}
+                style={{ width: 300 }}
                 allowClear
+                enterButton
               />
             }
           >

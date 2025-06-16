@@ -5,10 +5,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryAdjustmentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(
     consumerId: number,
@@ -39,10 +44,8 @@ export class InventoryAdjustmentService {
       if (!branch) {
         throw new NotFoundException('Branch not found');
       }
-    }
-
-    // Start transaction
-    return await this.prisma.$transaction(async (prisma) => {
+    }    // Start transaction
+    const result = await this.prisma.$transaction(async (prisma) => {
 
       // If batch_id is provided, verify it exists and belongs to the correct branch/variant
       const batch = await prisma.inventoryBatch.findFirst({
@@ -103,12 +106,12 @@ export class InventoryAdjustmentService {
             increment: dto.quantity_change,
           },
         },
-      });
+      });      return adjustment;
+    });    // Invalidate related caches after successful creation
+    await this.invalidateInventoryAdjustmentCaches(consumerId, dto.variant_id, dto.branch_id);
 
-      return adjustment;
-    });
+    return result;
   }
-
   async findAll(
     consumerId: number,
     options: {
@@ -119,29 +122,78 @@ export class InventoryAdjustmentService {
     } = {},
   ) {
     const { page = 1, limit = 10, variant_id, branch_id } = options;
-    const skip = (page - 1) * limit;
+    const cacheKey = generateCacheKey.inventoryAdjustmentList(consumerId, page, limit, undefined, branch_id, variant_id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const skip = (page - 1) * limit;
 
-    const whereClause: any = {
-      batch: {
-        variant: {
-          product: {
-            consumer_id: consumerId,
+      const whereClause: any = {
+        batch: {
+          variant: {
+            product: {
+              consumer_id: consumerId,
+            },
           },
         },
-      },
-    };
+      };
 
-    if (variant_id) {
-      whereClause.variant_id = variant_id;
-    }
+      if (variant_id) {
+        whereClause.variant_id = variant_id;
+      }
 
-    if (branch_id) {
-      whereClause.branch_id = branch_id;
-    }
+      if (branch_id) {
+        whereClause.branch_id = branch_id;
+      }
 
-    const [adjustments, total] = await Promise.all([
-      this.prisma.inventoryAdjustment.findMany({
-        where: whereClause,
+      const [adjustments, total] = await Promise.all([
+        this.prisma.inventoryAdjustment.findMany({
+          where: whereClause,
+          include: {
+            batch: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+            branch: { select: { id: true, name: true } },
+            created_by_user: { select: { id: true, name: true } },
+          },
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+        }),
+        this.prisma.inventoryAdjustment.count({ where: whereClause }),
+      ]);
+
+      return {
+        data: adjustments,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    });
+  }
+  async findOne(id: number, consumerId: number) {
+    const cacheKey = generateCacheKey.inventoryAdjustmentDetail(id, consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const adjustment = await this.prisma.inventoryAdjustment.findFirst({
+        where: {
+          id,
+          batch: {
+            variant: {
+              product: {
+                consumer_id: consumerId,
+              },
+            },
+          },
+        },
         include: {
           batch: {
             include: {
@@ -155,55 +207,21 @@ export class InventoryAdjustmentService {
           branch: { select: { id: true, name: true } },
           created_by_user: { select: { id: true, name: true } },
         },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      this.prisma.inventoryAdjustment.count({ where: whereClause }),
-    ]);
+      });
 
-    return {
-      data: adjustments,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
+      if (!adjustment) {
+        throw new NotFoundException(`Adjustment with ID ${id} not found`);
+      }
 
-  async findOne(id: number, consumerId: number) {
-    const adjustment = await this.prisma.inventoryAdjustment.findFirst({
-      where: {
-        id,
-        batch: {
-          variant: {
-            product: {
-              consumer_id: consumerId,
-            },
-          },
-        },
-      },
-      include: {
-        batch: {
-          include: {
-            variant: {
-              include: {
-                product: { select: { id: true, name: true } },
-              },
-            },
-          },
-        },
-        branch: { select: { id: true, name: true } },
-        created_by_user: { select: { id: true, name: true } },
-      },
+      return adjustment;
     });
-
-    if (!adjustment) {
-      throw new NotFoundException(`Adjustment with ID ${id} not found`);
+  }  // Cache invalidation helper methods
+  private async invalidateInventoryAdjustmentCaches(consumerId: number, variantId?: number, branchId?: number) {
+    try {
+      // For any adjustment operation, invalidate ALL inventory-related caches
+      await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    } catch (error) {
+      console.error('Adjustment cache invalidation error:', error);
     }
-
-    return adjustment;
   }
 }

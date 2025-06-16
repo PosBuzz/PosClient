@@ -1,10 +1,10 @@
 import { DeleteOutlined, EditOutlined, LinkOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Image, Popconfirm, Space, Table, Tooltip } from "antd";
+import { Button, Image, Popconfirm, Space, Table } from "antd";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
