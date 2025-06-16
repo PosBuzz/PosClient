@@ -12,15 +12,14 @@ export class TagService {
     private readonly cacheService: CacheService,
   ) {}
   async create(createTagDto: CreateTagDto, consumerId: number) {
-    const result = await this.prismaService.tag.create({
-      data: {
+    const result = await this.prismaService.tag.create({      data: {
         name: createTagDto.name,
         consumer_id: consumerId,
       },
     });
 
-    // Invalidate tag caches
-    await this.invalidateTagCaches(consumerId);
+    // Invalidate only tag caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
 
     return result;
   }
@@ -58,13 +57,13 @@ export class TagService {
   }
   async update(id: number, updateTagDto: UpdateTagDto, consumerId: number) {
     // First check if the tag exists and belongs to this consumer
-    await this.findOne(id, consumerId);
-
-    const result = await this.prismaService.tag.update({
+    await this.findOne(id, consumerId);    const result = await this.prismaService.tag.update({
       where: { id },
       data: { name: updateTagDto.name },
-    });    // Invalidate tag caches
-    await this.invalidateTagCaches(consumerId);
+    });
+
+    // Invalidate only tag caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
 
     return result;
   }
@@ -75,20 +74,10 @@ export class TagService {
     await this.prismaService.tag.delete({
       where: { id },
     });
-      // Invalidate tag caches
-    await this.invalidateTagCaches(consumerId);
+    
+    // Invalidate only tag caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
     
     return { success: true };
-  }
-
-  // Cache invalidation helper method
-  private async invalidateTagCaches(consumerId: number) {
-    try {
-      // Invalidate all tag-related caches for this consumer
-      await this.cacheService.delPattern(generateCachePatterns.allTags(consumerId));
-    } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
-    }
   }
 }

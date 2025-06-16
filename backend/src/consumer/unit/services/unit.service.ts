@@ -18,8 +18,8 @@ export class UnitService {
       },
     });
 
-    // Invalidate caches since units affect products and inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only unit caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
 
     return result;
   }
@@ -62,8 +62,8 @@ export class UnitService {
       data: { name: updateUnitDto.name },
     });
 
-    // Invalidate caches since units affect products and inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only unit caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
 
     return result;
   }
@@ -73,8 +73,8 @@ export class UnitService {
       where: { id },
     });
     
-    // Invalidate caches since units affect products and inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only unit caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
     
     return { success: true };
   }

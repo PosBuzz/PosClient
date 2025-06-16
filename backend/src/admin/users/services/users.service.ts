@@ -6,7 +6,7 @@ import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
@@ -38,9 +38,8 @@ export class UsersService {
 
     return result;
   }
-
   async findAllRoles() {
-    const cacheKey = `admin:roles:list`;
+    const cacheKey = generateCacheKey.roleList(0); // Admin roles use 0 as consumer ID
     
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.superAdminRole.findMany({
@@ -226,28 +225,15 @@ export class UsersService {
       data: { password: hashedNewPassword },
       select: { id: true, email: true, name: true },
     });
-  }
-
-  // Cache invalidation helper methods
+  }  // Cache invalidation helper methods
   private async invalidateAdminCaches(userId?: number, roleId?: number) {
-    const cacheKeysToInvalidate: string[] = [];
-
-    // Invalidate lists
-    cacheKeysToInvalidate.push(
-      `admin:users:list`,
-      `admin:roles:list`
-    );
-
-    // Invalidate specific detail caches if IDs are provided
-    if (userId) {
-      cacheKeysToInvalidate.push(`admin:users:detail:${userId}`);
+    try {
+      // Use proper cache invalidation patterns for admin operations
+      const patterns = generateCachePatterns.allAdminRelated();
+      
+      await this.cacheService.delPatterns(patterns);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
     }
-    if (roleId) {
-      cacheKeysToInvalidate.push(`admin:roles:detail:${roleId}`);
-    }
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
   }
 }

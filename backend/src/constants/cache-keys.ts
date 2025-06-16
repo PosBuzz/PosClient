@@ -114,6 +114,17 @@ export const generateCacheKey = {
 
   inventoryTransferDetail: (transferId: number, consumerId: number) =>
     `${consumerId}:inventory-transfer:detail:${transferId}`,
+
+  // Warehouse branch cache helper
+  warehouseBranch: (consumerId: number) =>
+    `${consumerId}:warehouse-branch`,
+
+  // Admin CRUD cache helpers
+  adminCrudList: (model: string) =>
+    `global:admin:crud:${model}:list`,
+
+  adminCrudDetail: (model: string, id: number) =>
+    `global:admin:crud:${model}:detail:${id}`,
 };
 
 // Pattern generation functions for cache invalidation
@@ -168,5 +179,13 @@ export const generateCachePatterns = {
   allProductRelated: (consumerId: number) => [
     `${consumerId}:product*`,
     `${consumerId}:inventory*`, // Inventory data shows in products
+  ],
+
+  // Admin operation patterns
+  allConsumerRelated: () => 'global:consumer:*',
+  allAdminRelated: () => [
+    'global:admin:*',
+    'global:users:*',
+    'global:roles:*',
   ],
 };

@@ -248,6 +248,56 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       `🧹 INVALIDATED ALL INVENTORY CACHES for consumer ${consumerId}`,
     );
   }
+
+  /**
+   * Invalidate specific entity caches for a consumer
+   * Use this for entities that don't directly affect inventory
+   */
+  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles'): Promise<void> {
+    let pattern: string;
+    
+    switch (entityType) {
+      case 'units':
+        pattern = generateCachePatterns.allUnits(consumerId);
+        break;
+      case 'vendors':
+        pattern = generateCachePatterns.allVendors(consumerId);
+        break;
+      case 'categories':
+        pattern = generateCachePatterns.allCategories(consumerId);
+        break;
+      case 'brands':
+        pattern = generateCachePatterns.allBrands(consumerId);
+        break;
+      case 'tags':
+        pattern = generateCachePatterns.allTags(consumerId);
+        break;
+      case 'users':
+        await this.delPatterns([
+          generateCachePatterns.allUsers(consumerId),
+          generateCachePatterns.allRoles(consumerId),
+        ]);
+        this.logger.log(
+          `🧹 INVALIDATED ${entityType.toUpperCase()} CACHES for consumer ${consumerId}`,
+        );
+        return;
+      case 'roles':
+        await this.delPatterns([
+          generateCachePatterns.allUsers(consumerId),
+          generateCachePatterns.allRoles(consumerId),
+        ]);
+        this.logger.log(
+          `🧹 INVALIDATED ${entityType.toUpperCase()} CACHES for consumer ${consumerId}`,
+        );
+        return;
+    }
+    
+    await this.delPattern(pattern);
+    this.logger.log(
+      `🧹 INVALIDATED ${entityType.toUpperCase()} CACHES for consumer ${consumerId}`,
+    );
+  }
+
   /**
    * Get multiple keys by pattern (for debugging/monitoring)
    */
