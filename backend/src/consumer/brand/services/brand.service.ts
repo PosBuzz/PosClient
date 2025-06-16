@@ -12,8 +12,7 @@ export class BrandService {
     private readonly cacheService: CacheService,
   ) {}
 
-  async create(createBrandDto: CreateBrandDto, consumerId: number) {
-    const result = await this.prismaService.brand.create({
+  async create(createBrandDto: CreateBrandDto, consumerId: number) {    const result = await this.prismaService.brand.create({
       data: {
         name: createBrandDto.name,
         logo: createBrandDto.logo,
@@ -22,8 +21,8 @@ export class BrandService {
       },
     });
 
-    // Invalidate brand caches
-    await this.invalidateBrandCaches(consumerId);
+    // Invalidate only brand caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
 
     return result;
   }
@@ -67,14 +66,15 @@ export class BrandService {
     await this.findOne(id, consumerId);
 
     const result = await this.prismaService.brand.update({
-      where: { id },
-      data: {
+      where: { id },      data: {
         name: updateBrandDto.name,
         website: updateBrandDto.website,
         logo: updateBrandDto.logo,
       },
-    });    // Invalidate brand caches
-    await this.invalidateBrandCaches(consumerId);
+    });
+
+    // Invalidate only brand caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
 
     return result;
   }
@@ -87,19 +87,9 @@ export class BrandService {
       where: { id },
     });
     
-    // Invalidate brand caches
-    await this.invalidateBrandCaches(consumerId);
+    // Invalidate only brand caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
     
     return { success: true };
-  }
-  // Cache invalidation helper method
-  private async invalidateBrandCaches(consumerId: number) {
-    try {
-      // Invalidate all brand-related caches for this consumer
-      await this.cacheService.delPattern(generateCachePatterns.allBrands(consumerId));
-    } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
-    }
   }
 }

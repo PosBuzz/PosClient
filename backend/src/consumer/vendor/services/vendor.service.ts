@@ -22,8 +22,8 @@ export class VendorService {
       },
     });
 
-    // Invalidate caches since vendors affect inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
 
     return result;
   }
@@ -73,8 +73,8 @@ export class VendorService {
       },
     });
 
-    // Invalidate caches since vendors affect inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
 
     return result;
   }
@@ -97,8 +97,8 @@ export class VendorService {
       where: { id },
     });
 
-    // Invalidate caches since vendors affect inventory
-    await this.cacheService.invalidateAllInventoryCaches(consumerId);
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
 
     return { success: true };
   }

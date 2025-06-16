@@ -209,11 +209,8 @@ export class UsersService {
     return result;
   }  private async invalidateUserCaches(consumer_id: number): Promise<void> {
     try {
-      // Invalidate all user-related caches for this consumer using cache patterns
-      await this.cacheService.delPatterns([
-        generateCachePatterns.allUsers(consumer_id),
-        generateCachePatterns.allRoles(consumer_id),
-      ]);
+      // Invalidate user and role caches for this consumer
+      await this.cacheService.invalidateEntityCaches(consumer_id, 'users');
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }
