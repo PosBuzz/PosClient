@@ -30,6 +30,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
+import { Link } from "react-router-dom";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -63,11 +64,7 @@ export default function InventoryExpiringPage() {
   }, [debouncedSearchText, selectedBranch, expiryDays]);
   // Queries
   const { data: expiringData, isLoading: expiringLoading } = useQuery({
-    queryKey: [
-      queryKeys.expiringBatches,
-      expiryDays,
-      selectedBranch,
-    ],
+    queryKey: [queryKeys.expiringBatches, expiryDays, selectedBranch],
     queryFn: () =>
       inventoryApi.getExpiringBatches({
         days: expiryDays,
@@ -101,7 +98,7 @@ export default function InventoryExpiringPage() {
 
   const handleView = (batch: InventoryBatch) => {
     const expiryStatus = getExpiryStatus(batch.expiry_date!);
-    
+
     modal?.info({
       title: "Expiring Batch Details",
       width: 600,
@@ -198,7 +195,9 @@ export default function InventoryExpiringPage() {
   };
 
   const hasActiveFilters = () => {
-    return debouncedSearchText || selectedBranch !== undefined || expiryDays !== 30;
+    return (
+      debouncedSearchText || selectedBranch !== undefined || expiryDays !== 30
+    );
   };
 
   const columns: ColumnsType<InventoryBatch> = [
@@ -207,7 +206,9 @@ export default function InventoryExpiringPage() {
       key: "product",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.variant.product.name}</div>
+          <Link to={`/products/view/${record.variant.product.id}`}>
+            <p style={{ fontWeight: 500 }}>{record.variant.product.name}</p>
+          </Link>
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {record.variant.name}
           </Text>
@@ -241,7 +242,13 @@ export default function InventoryExpiringPage() {
       title: "Branch",
       key: "branch",
       render: (_, record) => (
-        <Tag color={record.branch?.name.toLowerCase() === "warehouse" ? "default" : "blue"}>
+        <Tag
+          color={
+            record.branch?.name.toLowerCase() === "warehouse"
+              ? "default"
+              : "blue"
+          }
+        >
           {record.branch?.name || "Warehouse"}
         </Tag>
       ),
@@ -258,8 +265,8 @@ export default function InventoryExpiringPage() {
               <CalendarOutlined />
               <Text>{dayjs(date).format("MMM DD, YYYY")}</Text>
             </div>
-            <Tag 
-              color={status.color} 
+            <Tag
+              color={status.color}
               style={{ marginTop: 4 }}
               icon={status.urgency >= 2 ? <WarningOutlined /> : undefined}
             >
@@ -273,7 +280,7 @@ export default function InventoryExpiringPage() {
         const statusB = getExpiryStatus(b.expiry_date!);
         return statusB.urgency - statusA.urgency;
       },
-      defaultSortOrder: 'ascend',
+      defaultSortOrder: "ascend",
     },
     {
       title: "Actions",
@@ -293,21 +300,23 @@ export default function InventoryExpiringPage() {
     },
   ];
   // Filter batches by search text if needed (client-side filtering for better UX)
-  const filteredData = expiringData?.filter((batch) => {
-    if (!debouncedSearchText) return true;
-    const searchLower = debouncedSearchText.toLowerCase();
-    return (
-      batch.variant.product.name.toLowerCase().includes(searchLower) ||
-      batch.variant.name.toLowerCase().includes(searchLower) ||
-      batch.batch_number.toLowerCase().includes(searchLower)
-    );  }) || [];
+  const filteredData =
+    expiringData?.filter((batch) => {
+      if (!debouncedSearchText) return true;
+      const searchLower = debouncedSearchText.toLowerCase();
+      return (
+        batch.variant.product.name.toLowerCase().includes(searchLower) ||
+        batch.variant.name.toLowerCase().includes(searchLower) ||
+        batch.batch_number.toLowerCase().includes(searchLower)
+      );
+    }) || [];
 
   const getCardStyle = () => ({
-    backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-    borderColor: isDarkMode ? '#303030' : '#d9d9d9',
+    backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
+    borderColor: isDarkMode ? "#303030" : "#d9d9d9",
   });
 
-  const getSummaryTextColor = () => isDarkMode ? '#d9d9d9' : '#666';
+  const getSummaryTextColor = () => (isDarkMode ? "#d9d9d9" : "#666");
 
   if (branchesLoading && currentPage === 1) {
     return <CenterLoader />;
@@ -322,7 +331,8 @@ export default function InventoryExpiringPage() {
           { title: "Inventory", href: "/inventory" },
           { title: "Expiring" },
         ]}
-      />      {/* Filters */}
+      />{" "}
+      {/* Filters */}
       <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
@@ -409,14 +419,21 @@ export default function InventoryExpiringPage() {
                 </Text>
 
                 {debouncedSearchText && (
-                  <Tag closable onClose={() => { setSearchText(""); setDebouncedSearchText(""); }}>
+                  <Tag
+                    closable
+                    onClose={() => {
+                      setSearchText("");
+                      setDebouncedSearchText("");
+                    }}
+                  >
                     Search: "{debouncedSearchText}"
                   </Tag>
                 )}
 
                 {selectedBranch !== undefined && (
                   <Tag closable onClose={() => setSelectedBranch(undefined)}>
-                    Branch: {branches.find((b) => b.id === selectedBranch)?.name}
+                    Branch:{" "}
+                    {branches.find((b) => b.id === selectedBranch)?.name}
                   </Tag>
                 )}
 
@@ -429,37 +446,76 @@ export default function InventoryExpiringPage() {
             </Col>
           </Row>
         )}
-      </Card>      {/* Summary */}
+      </Card>{" "}
+      {/* Summary */}
       {expiringData && (
         <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
           <Row gutter={16}>
             <Col span={6}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ff4d4f" }}>
-                  {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency >= 3).length}
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#ff4d4f",
+                  }}
+                >
+                  {
+                    expiringData.filter(
+                      (b) => getExpiryStatus(b.expiry_date!).urgency >= 3
+                    ).length
+                  }
                 </div>
-                <div style={{ color: getSummaryTextColor() }}>Expired/Today</div>
+                <div style={{ color: getSummaryTextColor() }}>
+                  Expired/Today
+                </div>
               </div>
             </Col>
             <Col span={6}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fa8c16" }}>
-                  {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency === 2).length}
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#fa8c16",
+                  }}
+                >
+                  {
+                    expiringData.filter(
+                      (b) => getExpiryStatus(b.expiry_date!).urgency === 2
+                    ).length
+                  }
                 </div>
                 <div style={{ color: getSummaryTextColor() }}>This Week</div>
               </div>
             </Col>
             <Col span={6}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fadb14" }}>
-                  {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency === 1).length}
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#fadb14",
+                  }}
+                >
+                  {
+                    expiringData.filter(
+                      (b) => getExpiryStatus(b.expiry_date!).urgency === 1
+                    ).length
+                  }
                 </div>
                 <div style={{ color: getSummaryTextColor() }}>This Month</div>
               </div>
             </Col>
             <Col span={6}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1890ff" }}>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#1890ff",
+                  }}
+                >
                   {filteredData.length}
                 </div>
                 <div style={{ color: getSummaryTextColor() }}>Total Items</div>
@@ -468,7 +524,6 @@ export default function InventoryExpiringPage() {
           </Row>
         </Card>
       )}
-
       {/* Table */}
       <Card style={getCardStyle()}>
         <Table
@@ -497,12 +552,13 @@ export default function InventoryExpiringPage() {
             return "";
           }}
         />
-      </Card>      <style>{`
+      </Card>{" "}
+      <style>{`
         .table-row-expired {
-          background-color: ${isDarkMode ? '#2a1a1a' : '#fff2f0'} !important;
+          background-color: ${isDarkMode ? "#2a1a1a" : "#fff2f0"} !important;
         }
         .table-row-urgent {
-          background-color: ${isDarkMode ? '#2a2219' : '#fff7e6'} !important;
+          background-color: ${isDarkMode ? "#2a2219" : "#fff7e6"} !important;
         }
       `}</style>
     </>

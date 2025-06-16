@@ -21,7 +21,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { InventoryAdjustment, inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -202,9 +202,11 @@ export default function InventoryAdjustmentsPage() {
       key: "product",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>
-            {record.batch?.variant.product.name || "Unknown Product"}
-          </div>
+          <Link to={`/products/view/${record.batch?.variant.product.id}`}>
+            <p style={{ fontWeight: 500 }}>
+              {record.batch?.variant.product.name || "Unknown Product"}
+            </p>
+          </Link>
           <div style={{ fontSize: "12px", color: "#666" }}>
             {record.batch?.variant.name || "Unknown Variant"}
           </div>

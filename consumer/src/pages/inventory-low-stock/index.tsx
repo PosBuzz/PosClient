@@ -24,7 +24,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -109,7 +109,7 @@ export default function InventoryLowStockPage() {
   });
   const getUrgencyConfig = (item: LowStockItem) => {
     const stockRatio = item.total_stock / (item.alert_quantity || 1);
-    
+
     if (item.total_stock === 0) {
       return {
         level: "critical" as const,
@@ -147,7 +147,7 @@ export default function InventoryLowStockPage() {
   const handleView = (record: LowStockItem) => {
     const urgency = getUrgencyConfig(record);
     const stockRatio = record.total_stock / (record.alert_quantity || 1);
-    
+
     modal?.info({
       title: "Low Stock Item Details",
       width: 800,
@@ -187,13 +187,21 @@ export default function InventoryLowStockPage() {
               <Text strong>Stock Level:</Text>
               <br />
               <Space>
-                <Progress 
-                  percent={Math.min(stockRatio * 100, 100)} 
+                <Progress
+                  percent={Math.min(stockRatio * 100, 100)}
                   strokeColor={urgency.color}
                   size="small"
                   style={{ width: 100 }}
                 />
-                <Tag color={urgency.level === "critical" ? "red" : urgency.level === "warning" ? "orange" : "yellow"}>
+                <Tag
+                  color={
+                    urgency.level === "critical"
+                      ? "red"
+                      : urgency.level === "warning"
+                      ? "orange"
+                      : "yellow"
+                  }
+                >
                   {urgency.text}
                 </Tag>
               </Space>
@@ -203,11 +211,13 @@ export default function InventoryLowStockPage() {
           <div style={{ marginTop: 24 }}>
             <Text strong>Stock by Branch:</Text>
             <Table
-              dataSource={Object.entries(record.stock_by_branch).map(([branchName, stock]) => ({
-                key: branchName,
-                branch_name: branchName,
-                stock,
-              }))}
+              dataSource={Object.entries(record.stock_by_branch).map(
+                ([branchName, stock]) => ({
+                  key: branchName,
+                  branch_name: branchName,
+                  stock,
+                })
+              )}
               rowKey="key"
               pagination={false}
               size="small"
@@ -230,7 +240,10 @@ export default function InventoryLowStockPage() {
                   key: "stock",
                   align: "right",
                   render: (stock) => (
-                    <Text strong style={{ color: stock > 0 ? "#52c41a" : "#ff4d4f" }}>
+                    <Text
+                      strong
+                      style={{ color: stock > 0 ? "#52c41a" : "#ff4d4f" }}
+                    >
                       {stock} units
                     </Text>
                   ),
@@ -268,15 +281,16 @@ export default function InventoryLowStockPage() {
     return debouncedSearchText || selectedBranch !== undefined;
   };
   // Filter items by search text if needed (client-side filtering for better UX)
-  const filteredData = lowStockData?.filter((item) => {
-    if (!debouncedSearchText) return true;
-    const searchLower = debouncedSearchText.toLowerCase();
-    return (
-      item.product.name.toLowerCase().includes(searchLower) ||
-      item.name.toLowerCase().includes(searchLower) ||
-      (item.sku && item.sku.toLowerCase().includes(searchLower))
-    );
-  }) || [];
+  const filteredData =
+    lowStockData?.filter((item) => {
+      if (!debouncedSearchText) return true;
+      const searchLower = debouncedSearchText.toLowerCase();
+      return (
+        item.product.name.toLowerCase().includes(searchLower) ||
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.sku && item.sku.toLowerCase().includes(searchLower))
+      );
+    }) || [];
   const columns: ColumnsType<LowStockItem> = [
     {
       title: "Product",
@@ -285,10 +299,19 @@ export default function InventoryLowStockPage() {
         const urgency = getUrgencyConfig(record);
         return (
           <div>
-            <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-              {urgency.icon}
-              {record.product.name}
-            </div>
+            <Link to={`/products/view/${record.product.id}`}>
+              <div
+                style={{
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                {urgency.icon}
+                {record.product.name}
+              </div>
+            </Link>
             <Text type="secondary" style={{ fontSize: "12px" }}>
               {record.name}
               {record.sku && ` • SKU: ${record.sku}`}
@@ -315,8 +338,8 @@ export default function InventoryLowStockPage() {
             >
               {record.total_stock} units
             </Text>
-            <Progress 
-              percent={Math.min(stockRatio * 100, 100)} 
+            <Progress
+              percent={Math.min(stockRatio * 100, 100)}
               strokeColor={urgency.color}
               size="small"
               showInfo={false}
@@ -341,7 +364,15 @@ export default function InventoryLowStockPage() {
         const percentage = Math.round(stockRatio * 100);
         const urgency = getUrgencyConfig(record);
         return (
-          <Tag color={urgency.level === "critical" ? "red" : urgency.level === "warning" ? "orange" : "yellow"}>
+          <Tag
+            color={
+              urgency.level === "critical"
+                ? "red"
+                : urgency.level === "warning"
+                ? "orange"
+                : "yellow"
+            }
+          >
             {percentage}%
           </Tag>
         );
@@ -359,8 +390,14 @@ export default function InventoryLowStockPage() {
       render: (_, record) => {
         const urgency = getUrgencyConfig(record);
         return (
-          <Tag 
-            color={urgency.level === "critical" ? "red" : urgency.level === "warning" ? "orange" : "yellow"}
+          <Tag
+            color={
+              urgency.level === "critical"
+                ? "red"
+                : urgency.level === "warning"
+                ? "orange"
+                : "yellow"
+            }
             icon={urgency.icon}
           >
             {urgency.text}
@@ -373,7 +410,7 @@ export default function InventoryLowStockPage() {
         const urgencyB = getUrgencyConfig(b);
         return urgencyOrder[urgencyB.level] - urgencyOrder[urgencyA.level];
       },
-      defaultSortOrder: 'ascend',
+      defaultSortOrder: "ascend",
     },
     {
       title: "Branches",
@@ -381,10 +418,7 @@ export default function InventoryLowStockPage() {
       render: (_, record) => (
         <Space wrap>
           {Object.entries(record.stock_by_branch).map(([branchName, stock]) => (
-            <Tag
-              key={branchName}
-              color={stock > 0 ? "blue" : "red"}
-            >
+            <Tag key={branchName} color={stock > 0 ? "blue" : "red"}>
               {branchName}: {stock}
             </Tag>
           ))}
@@ -417,22 +451,29 @@ export default function InventoryLowStockPage() {
           </Tooltip>
         </Space>
       ),
-    },  ];
+    },
+  ];
 
   const getCardStyle = () => ({
-    backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-    borderColor: isDarkMode ? '#303030' : '#d9d9d9',
+    backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
+    borderColor: isDarkMode ? "#303030" : "#d9d9d9",
   });
 
-  const getSummaryTextColor = () => isDarkMode ? '#d9d9d9' : '#666';
+  const getSummaryTextColor = () => (isDarkMode ? "#d9d9d9" : "#666");
 
   if (branchesLoading && currentPage === 1) {
     return <CenterLoader />;
   }
 
-  const criticalCount = filteredData.filter(item => getUrgencyConfig(item).level === "critical").length;
-  const warningCount = filteredData.filter(item => getUrgencyConfig(item).level === "warning").length;
-  const attentionCount = filteredData.filter(item => getUrgencyConfig(item).level === "attention").length;
+  const criticalCount = filteredData.filter(
+    (item) => getUrgencyConfig(item).level === "critical"
+  ).length;
+  const warningCount = filteredData.filter(
+    (item) => getUrgencyConfig(item).level === "warning"
+  ).length;
+  const attentionCount = filteredData.filter(
+    (item) => getUrgencyConfig(item).level === "attention"
+  ).length;
 
   return (
     <>
@@ -444,7 +485,6 @@ export default function InventoryLowStockPage() {
           { title: "Low Stock" },
         ]}
       />
-
       {/* Alert Summary */}
       {filteredData.length > 0 && (
         <Alert
@@ -454,18 +494,29 @@ export default function InventoryLowStockPage() {
           showIcon
           style={{ marginBottom: 24 }}
           action={
-            <Button size="small" type="text" onClick={() => navigate("/inventory/stock-by-variant")}>
+            <Button
+              size="small"
+              type="text"
+              onClick={() => navigate("/inventory/stock-by-variant")}
+            >
               View All Stock
             </Button>
           }
         />
       )}
-
       {/* Summary Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>        <Col span={6}>
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        {" "}
+        <Col span={6}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ff4d4f" }}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#ff4d4f",
+                }}
+              >
                 {criticalCount}
               </div>
               <div style={{ color: getSummaryTextColor() }}>Critical</div>
@@ -475,7 +526,13 @@ export default function InventoryLowStockPage() {
         <Col span={6}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fa8c16" }}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#fa8c16",
+                }}
+              >
                 {warningCount}
               </div>
               <div style={{ color: getSummaryTextColor() }}>Warning</div>
@@ -485,7 +542,13 @@ export default function InventoryLowStockPage() {
         <Col span={6}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fadb14" }}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#fadb14",
+                }}
+              >
                 {attentionCount}
               </div>
               <div style={{ color: getSummaryTextColor() }}>Attention</div>
@@ -495,14 +558,21 @@ export default function InventoryLowStockPage() {
         <Col span={6}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1890ff" }}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#1890ff",
+                }}
+              >
                 {filteredData.length}
               </div>
               <div style={{ color: getSummaryTextColor() }}>Total Items</div>
             </div>
           </Card>
         </Col>
-      </Row>      {/* Filters */}
+      </Row>{" "}
+      {/* Filters */}
       <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
@@ -551,14 +621,21 @@ export default function InventoryLowStockPage() {
                 </Text>
 
                 {debouncedSearchText && (
-                  <Tag closable onClose={() => { setSearchText(""); setDebouncedSearchText(""); }}>
+                  <Tag
+                    closable
+                    onClose={() => {
+                      setSearchText("");
+                      setDebouncedSearchText("");
+                    }}
+                  >
                     Search: "{debouncedSearchText}"
                   </Tag>
                 )}
 
                 {selectedBranch !== undefined && (
                   <Tag closable onClose={() => setSelectedBranch(undefined)}>
-                    Branch: {branches.find((b) => b.id === selectedBranch)?.name}
+                    Branch:{" "}
+                    {branches.find((b) => b.id === selectedBranch)?.name}
                   </Tag>
                 )}
               </Space>
@@ -566,7 +643,6 @@ export default function InventoryLowStockPage() {
           </Row>
         )}
       </Card>
-
       {/* Table */}
       <Card style={getCardStyle()}>
         <Table
@@ -595,15 +671,16 @@ export default function InventoryLowStockPage() {
             return "table-row-attention";
           }}
         />
-      </Card>      <style>{`
+      </Card>{" "}
+      <style>{`
         .table-row-critical {
-          background-color: ${isDarkMode ? '#2a1a1a' : '#fff2f0'} !important;
+          background-color: ${isDarkMode ? "#2a1a1a" : "#fff2f0"} !important;
         }
         .table-row-warning {
-          background-color: ${isDarkMode ? '#2a2219' : '#fff7e6'} !important;
+          background-color: ${isDarkMode ? "#2a2219" : "#fff7e6"} !important;
         }
         .table-row-attention {
-          background-color: ${isDarkMode ? '#262a16' : '#feffe6'} !important;
+          background-color: ${isDarkMode ? "#262a16" : "#feffe6"} !important;
         }
       `}</style>
     </>

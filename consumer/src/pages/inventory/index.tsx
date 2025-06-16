@@ -1,13 +1,10 @@
 import {
-  CalendarOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
-  ShopOutlined,
-  SwapOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,7 +27,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -288,7 +285,9 @@ export default function InventoryPage() {
       key: "product",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.variant.product.name}</div>
+          <Link to={`/products/view/${record.variant.product_id}`}>
+            <p style={{ fontWeight: 500 }}>{record.variant.product.name}</p>
+          </Link>{" "}
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {record.variant.name}
           </Text>
