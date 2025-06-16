@@ -1,10 +1,13 @@
 import {
+  CalendarOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  ShopOutlined,
+  SwapOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -591,6 +594,48 @@ export default function InventoryPage() {
             </Col>
           </Row>
         )}
+      </Card>      {/* Quick Navigation */}
+      <Card title="Inventory Views" style={{ marginBottom: 24 }}>
+        <Row gutter={16}>
+          <Col span={6}>
+            <Button
+              block
+              icon={<ShopOutlined />}
+              onClick={() => navigate("/inventory/stock-by-variant")}
+            >
+              Stock by Variant
+            </Button>
+          </Col>
+          <Col span={6}>
+            <Button
+              block
+              icon={<WarningOutlined />}
+              onClick={() => navigate("/inventory/low-stock")}
+              danger={summary && summary.low_stock_variants > 0}
+            >
+              Low Stock Items
+            </Button>
+          </Col>
+          <Col span={6}>
+            <Button
+              block
+              icon={<CalendarOutlined />}
+              onClick={() => navigate("/inventory/expiring")}
+              type={summary && summary.expiring_soon > 0 ? "primary" : "default"}
+            >
+              Expiring Items
+            </Button>
+          </Col>
+          <Col span={6}>
+            <Button
+              block
+              icon={<SwapOutlined />}
+              onClick={() => navigate("/inventory/transfers")}
+            >
+              Transfers
+            </Button>
+          </Col>
+        </Row>
       </Card>
 
       {/* Alerts for expiring items */}
@@ -605,7 +650,27 @@ export default function InventoryPage() {
             <Button
               size="small"
               type="text"
-              onClick={() => navigate("/inventory/batches/expiring")}
+              onClick={() => navigate("/inventory/expiring")}
+            >
+              View Details
+            </Button>
+          }
+        />
+      )}
+
+      {/* Alerts for low stock items */}
+      {summary && summary.low_stock_variants > 0 && (
+        <Alert
+          message="Low Stock Alert"
+          description={`You have ${summary.low_stock_variants} variants below their alert thresholds. Consider restocking these items.`}
+          type="error"
+          showIcon
+          style={{ marginBottom: 24 }}
+          action={
+            <Button
+              size="small"
+              type="text"
+              onClick={() => navigate("/inventory/low-stock")}
             >
               View Details
             </Button>

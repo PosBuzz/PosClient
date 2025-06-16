@@ -25,6 +25,21 @@ const InventoryAdjustments = lazy(
 const AddInventoryAdjustments = lazy(
   () => import("./pages/add-inventory-adjustment")
 );
+const InventoryStockByVariant = lazy(
+  () => import("./pages/inventory-stock-by-variant")
+);
+const InventoryExpiring = lazy(
+  () => import("./pages/inventory-expiring")
+);
+const InventoryVariantStock = lazy(
+  () => import("./pages/inventory-variant-stock")
+);
+const InventoryLowStock = lazy(
+  () => import("./pages/inventory-low-stock")
+);
+const InventoryMovementHistory = lazy(
+  () => import("./pages/inventory-movement-history")
+);
 const Vendors = lazy(() => import("./pages/vendors"));
 const Branches = lazy(() => import("./pages/branches"));
 const Tags = lazy(() => import("./pages/tags"));
@@ -202,12 +217,50 @@ export const routes = [
             <InventoryAdjustments />
           </RequirePermission>
         ),
-      },
-      {
+      },      {
         path: "inventory/adjustments/add",
         element: (
           <RequirePermission permission={Permissions.edit_product}>
             <AddInventoryAdjustments />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "inventory/stock-by-variant",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <InventoryStockByVariant />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "inventory/expiring",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <InventoryExpiring />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "inventory/variants/:id/stock",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <InventoryVariantStock />
+          </RequirePermission>
+        ),
+      },      {
+        path: "inventory/low-stock",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <InventoryLowStock />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "inventory/movement-history/:variantId",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <InventoryMovementHistory />
           </RequirePermission>
         ),
       },

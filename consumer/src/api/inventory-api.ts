@@ -314,8 +314,54 @@ export const inventoryApi = {
   getAdjustment: async (id: number): Promise<InventoryAdjustment> => {
     return get(endpoints.inventoryAdjustment(id));
   },
-
   createAdjustment: async (data: CreateAdjustmentData): Promise<InventoryAdjustment> => {
     return post(endpoints.createInventoryAdjustment, data);
+  },
+  // New inventory views
+  getStockByVariant: async (params?: {
+    page?: number;
+    limit?: number;
+    branch_id?: number;
+    search?: string;
+    low_stock_only?: boolean;
+  }): Promise<PaginatedResponse<any>> => {
+    return get(endpoints.inventoryStockByVariant, params);
+  },
+
+  getExpiringBatches: async (params?: {
+    days?: number;
+    page?: number;
+    limit?: number;
+    branch_id?: number;
+  }): Promise<InventoryBatch[]> => {
+    return get(endpoints.inventoryExpiringBatches, params);
+  },
+
+  getVariantStock: async (
+    variantId: number,
+    params?: {
+      branch_id?: number;
+    }
+  ): Promise<any> => {
+    return get(endpoints.inventoryVariantStock(variantId), params);
+  },
+
+  getLowStockItems: async (params?: {
+    page?: number;
+    limit?: number;
+    branch_id?: number;
+  }): Promise<any[]> => {
+    return get(endpoints.inventoryLowStock, params);
+  },
+
+  getInventoryMovementHistory: async (
+    variantId: number,
+    params?: {
+      page?: number;
+      limit?: number;
+      branch_id?: number;
+    }
+  ): Promise<PaginatedResponse<any>> => {
+    return get(endpoints.inventoryMovementHistory(variantId), params);
   },
 };
