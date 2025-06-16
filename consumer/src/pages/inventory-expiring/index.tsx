@@ -29,12 +29,14 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
+import useDarkMode from "../../hooks/useDarkMode";
 
 const { Text } = Typography;
 const { Option } = Select;
 
 export default function InventoryExpiringPage() {
   const { modal } = useModalStore();
+  const isDarkMode = useDarkMode();
 
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -298,8 +300,14 @@ export default function InventoryExpiringPage() {
       batch.variant.product.name.toLowerCase().includes(searchLower) ||
       batch.variant.name.toLowerCase().includes(searchLower) ||
       batch.batch_number.toLowerCase().includes(searchLower)
-    );
-  }) || [];
+    );  }) || [];
+
+  const getCardStyle = () => ({
+    backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+    borderColor: isDarkMode ? '#303030' : '#d9d9d9',
+  });
+
+  const getSummaryTextColor = () => isDarkMode ? '#d9d9d9' : '#666';
 
   if (branchesLoading && currentPage === 1) {
     return <CenterLoader />;
@@ -314,10 +322,8 @@ export default function InventoryExpiringPage() {
           { title: "Inventory", href: "/inventory" },
           { title: "Expiring" },
         ]}
-      />
-
-      {/* Filters */}
-      <Card style={{ marginBottom: 24 }}>
+      />      {/* Filters */}
+      <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
             <Input
@@ -425,14 +431,14 @@ export default function InventoryExpiringPage() {
         )}
       </Card>      {/* Summary */}
       {expiringData && (
-        <Card style={{ marginBottom: 24 }}>
+        <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
           <Row gutter={16}>
             <Col span={6}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ff4d4f" }}>
                   {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency >= 3).length}
                 </div>
-                <div style={{ color: "#666" }}>Expired/Today</div>
+                <div style={{ color: getSummaryTextColor() }}>Expired/Today</div>
               </div>
             </Col>
             <Col span={6}>
@@ -440,7 +446,7 @@ export default function InventoryExpiringPage() {
                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fa8c16" }}>
                   {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency === 2).length}
                 </div>
-                <div style={{ color: "#666" }}>This Week</div>
+                <div style={{ color: getSummaryTextColor() }}>This Week</div>
               </div>
             </Col>
             <Col span={6}>
@@ -448,7 +454,7 @@ export default function InventoryExpiringPage() {
                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fadb14" }}>
                   {expiringData.filter(b => getExpiryStatus(b.expiry_date!).urgency === 1).length}
                 </div>
-                <div style={{ color: "#666" }}>This Month</div>
+                <div style={{ color: getSummaryTextColor() }}>This Month</div>
               </div>
             </Col>
             <Col span={6}>
@@ -456,7 +462,7 @@ export default function InventoryExpiringPage() {
                 <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1890ff" }}>
                   {filteredData.length}
                 </div>
-                <div style={{ color: "#666" }}>Total Items</div>
+                <div style={{ color: getSummaryTextColor() }}>Total Items</div>
               </div>
             </Col>
           </Row>
@@ -464,7 +470,7 @@ export default function InventoryExpiringPage() {
       )}
 
       {/* Table */}
-      <Card>
+      <Card style={getCardStyle()}>
         <Table
           columns={columns}
           dataSource={filteredData}
@@ -491,14 +497,12 @@ export default function InventoryExpiringPage() {
             return "";
           }}
         />
-      </Card>
-
-      <style>{`
+      </Card>      <style>{`
         .table-row-expired {
-          background-color: #fff2f0 !important;
+          background-color: ${isDarkMode ? '#2a1a1a' : '#fff2f0'} !important;
         }
         .table-row-urgent {
-          background-color: #fff7e6 !important;
+          background-color: ${isDarkMode ? '#2a2219' : '#fff7e6'} !important;
         }
       `}</style>
     </>
