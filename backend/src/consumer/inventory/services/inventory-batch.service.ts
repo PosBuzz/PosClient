@@ -75,7 +75,7 @@ export class InventoryBatchService {
           select: { id: true, name: true },
         },
       },    });      // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId, dto.variant_id, dto.branch_id);
+    await this.invalidateInventoryBatchCaches(consumerId);
 
     return batch;
   }  async findAll(consumerId: number, options: {
@@ -201,7 +201,7 @@ export class InventoryBatchService {
     });
 
     // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId, batch.variant_id, batch.branch_id);
+    await this.invalidateInventoryBatchCaches(consumerId);
 
     return updatedBatch;
   }
@@ -214,11 +214,11 @@ export class InventoryBatchService {
     });
 
     // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId, batch.variant_id, batch.branch_id);
+    await this.invalidateInventoryBatchCaches(consumerId);
 
     return { success: true, message: 'Inventory batch deleted successfully' };
   }  // Cache invalidation helper methods
-  private async invalidateInventoryBatchCaches(consumerId: number, variantId?: number, branchId?: number) {
+  private async invalidateInventoryBatchCaches(consumerId: number) {
     try {
       // For any batch operation, invalidate ALL inventory-related caches
       await this.cacheService.invalidateAllInventoryCaches(consumerId);

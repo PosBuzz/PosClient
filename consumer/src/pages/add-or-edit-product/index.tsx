@@ -224,10 +224,16 @@ export default function ProductForm() {
       queryClient.invalidateQueries({
         queryKey: [queryKeys.batches],
       });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.inventorySummary],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.lowStockItems],
+      });
 
       if (isEditMode && id) {
         queryClient.invalidateQueries({
-          queryKey: [queryKeys.product, id, "products"],
+          queryKey: [queryKeys.product, id],
         });
       }
 
