@@ -31,6 +31,7 @@ import { queryKeys } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
 import { Link } from "react-router-dom";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -324,6 +325,7 @@ export default function InventoryExpiringPage() {
 
   return (
     <>
+      {setPageTitle("Expiring Inventory")}
       <PageTitle
         title="Expiring Inventory"
         breadcrumbs={[

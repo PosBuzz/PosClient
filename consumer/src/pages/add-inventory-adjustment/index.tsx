@@ -26,6 +26,7 @@ import PageTitle from "../../components/PageTitle";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -200,6 +201,7 @@ export default function AddInventoryAdjustment() {
 
   return (
     <>
+     {setPageTitle("Inventory Adjustment Form")}
       <PageTitle
         title="Create Inventory Adjustment"
         breadcrumbs={[

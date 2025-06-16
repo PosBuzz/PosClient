@@ -30,6 +30,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import useDarkMode from "../../hooks/useDarkMode";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -250,6 +251,7 @@ export default function VariantStockPage() {
 
   return (
     <>
+     {setPageTitle("Variant Stock Details")}
       <PageTitle
         title={`${stockData.variant.product.name} - ${stockData.variant.name}`}
         breadcrumbs={[

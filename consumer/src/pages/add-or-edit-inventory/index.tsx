@@ -34,6 +34,7 @@ import PageTitle from "../../components/PageTitle";
 import VendorSelector from "../../components/VendorSelector";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -218,6 +219,7 @@ export default function AddEditInventory() {
 
   return (
     <>
+     {setPageTitle("Inventory Batch Form")}
       {/* Header */}
       <PageTitle
         title={isEdit ? "Edit Inventory" : "Add New Inventory"}
