@@ -91,6 +91,7 @@ export default function AddEditInventory() {
     onSuccess: () => {
       messageApi?.success("Inventory added successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
@@ -111,6 +112,7 @@ export default function AddEditInventory() {
     onSuccess: () => {
       messageApi?.success("Inventory updated successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.batch, id] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
