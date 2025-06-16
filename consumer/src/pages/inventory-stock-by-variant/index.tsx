@@ -24,7 +24,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -137,7 +137,13 @@ export default function InventoryStockByVariantPage() {
             <Col span={12}>
               <Text strong>Total Stock:</Text>
               <br />
-              <Text strong style={{ fontSize: "16px", color: record.is_low_stock ? "#ff4d4f" : "#52c41a" }}>
+              <Text
+                strong
+                style={{
+                  fontSize: "16px",
+                  color: record.is_low_stock ? "#ff4d4f" : "#52c41a",
+                }}
+              >
                 {record.total_stock} units
               </Text>
             </Col>
@@ -153,11 +159,13 @@ export default function InventoryStockByVariantPage() {
           <div style={{ marginTop: 24 }}>
             <Text strong>Stock by Branch:</Text>
             <Table
-              dataSource={Object.entries(record.stock_by_branch).map(([branchName, stock]) => ({
-                key: branchName,
-                branch_name: branchName,
-                stock,
-              }))}
+              dataSource={Object.entries(record.stock_by_branch).map(
+                ([branchName, stock]) => ({
+                  key: branchName,
+                  branch_name: branchName,
+                  stock,
+                })
+              )}
               rowKey="key"
               pagination={false}
               size="small"
@@ -180,7 +188,10 @@ export default function InventoryStockByVariantPage() {
                   key: "stock",
                   align: "right",
                   render: (stock) => (
-                    <Text strong style={{ color: stock > 0 ? "#52c41a" : "#8c8c8c" }}>
+                    <Text
+                      strong
+                      style={{ color: stock > 0 ? "#52c41a" : "#8c8c8c" }}
+                    >
                       {stock} units
                     </Text>
                   ),
@@ -214,7 +225,9 @@ export default function InventoryStockByVariantPage() {
       key: "product",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.product.name}</div>
+          <Link to={`/products/view/${record.product.id}`}>
+            <p style={{ fontWeight: 500 }}>{record.product.name}</p>
+          </Link>
           <Text type="secondary" style={{ fontSize: "12px" }}>
             {record.name}
             {record.sku && ` • SKU: ${record.sku}`}
@@ -231,7 +244,11 @@ export default function InventoryStockByVariantPage() {
           <Text
             strong
             style={{
-              color: record.is_low_stock ? "#ff4d4f" : record.total_stock > 0 ? "#52c41a" : "#8c8c8c",
+              color: record.is_low_stock
+                ? "#ff4d4f"
+                : record.total_stock > 0
+                ? "#52c41a"
+                : "#8c8c8c",
               fontSize: "16px",
             }}
           >
@@ -261,10 +278,7 @@ export default function InventoryStockByVariantPage() {
       render: (_, record) => (
         <Space wrap>
           {Object.entries(record.stock_by_branch).map(([branchName, stock]) => (
-            <Tag
-              key={branchName}
-              color={stock > 0 ? "blue" : "default"}
-            >
+            <Tag key={branchName} color={stock > 0 ? "blue" : "default"}>
               {branchName}: {stock}
             </Tag>
           ))}
@@ -276,15 +290,29 @@ export default function InventoryStockByVariantPage() {
       key: "status",
       align: "center",
       render: (_, record) => (
-        <Tag color={record.is_low_stock ? "red" : record.total_stock > 0 ? "green" : "default"}>
-          {record.is_low_stock ? "Low Stock" : record.total_stock > 0 ? "In Stock" : "Out of Stock"}
+        <Tag
+          color={
+            record.is_low_stock
+              ? "red"
+              : record.total_stock > 0
+              ? "green"
+              : "default"
+          }
+        >
+          {record.is_low_stock
+            ? "Low Stock"
+            : record.total_stock > 0
+            ? "In Stock"
+            : "Out of Stock"}
         </Tag>
       ),
-    },    {
+    },
+    {
       title: "Actions",
       key: "actions",
       fixed: "right",
-      width: 200,render: (_, record) => (
+      width: 200,
+      render: (_, record) => (
         <Space size="small">
           <Tooltip title="View Details">
             <Button
@@ -308,7 +336,9 @@ export default function InventoryStockByVariantPage() {
               type="default"
               size="small"
               icon={<HistoryOutlined />}
-              onClick={() => navigate(`/inventory/movement-history/${record.id}`)}
+              onClick={() =>
+                navigate(`/inventory/movement-history/${record.id}`)
+              }
             >
               History
             </Button>
@@ -393,14 +423,21 @@ export default function InventoryStockByVariantPage() {
                 </Text>
 
                 {debouncedSearchText && (
-                  <Tag closable onClose={() => { setSearchText(""); setDebouncedSearchText(""); }}>
+                  <Tag
+                    closable
+                    onClose={() => {
+                      setSearchText("");
+                      setDebouncedSearchText("");
+                    }}
+                  >
                     Search: "{debouncedSearchText}"
                   </Tag>
                 )}
 
                 {selectedBranch !== undefined && (
                   <Tag closable onClose={() => setSelectedBranch(undefined)}>
-                    Branch: {branches.find((b) => b.id === selectedBranch)?.name}
+                    Branch:{" "}
+                    {branches.find((b) => b.id === selectedBranch)?.name}
                   </Tag>
                 )}
 
@@ -416,7 +453,9 @@ export default function InventoryStockByVariantPage() {
       </Card>
 
       {/* Table */}
-      <Card>        <Table
+      <Card>
+        {" "}
+        <Table
           columns={columns}
           dataSource={stockData?.data || []}
           rowKey="id"
