@@ -12,7 +12,7 @@ export class InventoryHelperService {
    * Get warehouse branch for a consumer
    */
   async getWarehouseBranch(consumerId: number) {
-    const cacheKey = `warehouse-branch:consumer:${consumerId}`;
+    const cacheKey = generateCacheKey.warehouseBranch(consumerId);
     
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.branch.findFirst({

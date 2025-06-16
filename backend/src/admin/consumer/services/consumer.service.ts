@@ -4,7 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ConsumerService {
@@ -172,11 +172,11 @@ export class ConsumerService {
       return { available: !exists };
     });
   }
-
   private async invalidateConsumerCaches(): Promise<void> {
     try {
-      // Invalidate subdomain checks by pattern
-      await this.cacheService.del('consumer:subdomain:*');
+      // Use proper cache invalidation patterns for consumer operations
+      const pattern = generateCachePatterns.allConsumerRelated();
+      await this.cacheService.delPattern(pattern);
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }

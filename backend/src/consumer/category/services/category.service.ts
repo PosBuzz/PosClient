@@ -12,16 +12,15 @@ export class CategoryService {
     private readonly cacheService: CacheService,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto, consumerId: number) {
-    const result = await this.prismaService.category.create({
+  async create(createCategoryDto: CreateCategoryDto, consumerId: number) {    const result = await this.prismaService.category.create({
       data: {
         name: createCategoryDto.name,
         consumer_id: consumerId,
       },
     });
 
-    // Invalidate category caches
-    await this.invalidateCategoryCaches(consumerId);
+    // Invalidate only category caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
 
     return result;
   }
@@ -62,13 +61,13 @@ export class CategoryService {
 
   async update(id: number, updateCategoryDto: UpdateCategoryDto, consumerId: number) {
     // First check if the category exists and belongs to this consumer
-    await this.findOne(id, consumerId);
-
-    const result = await this.prismaService.category.update({
+    await this.findOne(id, consumerId);    const result = await this.prismaService.category.update({
       where: { id },
       data: { name: updateCategoryDto.name },
-    });    // Invalidate category caches
-    await this.invalidateCategoryCaches(consumerId);
+    });
+
+    // Invalidate only category caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
 
     return result;
   }
@@ -81,19 +80,9 @@ export class CategoryService {
       where: { id },
     });
     
-    // Invalidate category caches
-    await this.invalidateCategoryCaches(consumerId);
+    // Invalidate only category caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
     
     return { success: true };
-  }
-  // Cache invalidation helper method
-  private async invalidateCategoryCaches(consumerId: number) {
-    try {
-      // Invalidate all category-related caches for this consumer
-      await this.cacheService.delPattern(generateCachePatterns.allCategories(consumerId));
-    } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
-    }
   }
 }

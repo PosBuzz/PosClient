@@ -1,10 +1,9 @@
 /* eslint-disable */
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { UpdateCrudDto } from './dto/update-crud.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { error } from 'console';
 import { CacheService } from '../../common/services/cache.service';
+import { UpdateCrudDto } from './dto/update-crud.dto';
 import { generateCacheKey } from '../../constants/cache-keys';
 
 @Injectable()
@@ -23,9 +22,8 @@ export class CrudService {
     await this.invalidateCrudCaches(model);
 
     return result;
-  }
-  async findAll(model: string) {
-    const cacheKey = `admin:crud:${model}:list`;
+  }  async findAll(model: string) {
+    const cacheKey = generateCacheKey.adminCrudList(model);
     
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prismaService[model].findMany({
@@ -34,9 +32,8 @@ export class CrudService {
         },
       });
     });
-  }
-  async findOne(id: number, model: string) {
-    const cacheKey = `admin:crud:${model}:detail:${id}`;
+  }  async findOne(id: number, model: string) {
+    const cacheKey = generateCacheKey.adminCrudDetail(model, id);
     
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prismaService[model].findFirst({ where: { id } });
@@ -105,17 +102,16 @@ export class CrudService {
 
     return searchResults;
   }
-
   // Cache invalidation helper methods
   private async invalidateCrudCaches(model: string, id?: number) {
     const cacheKeysToInvalidate: string[] = [];
 
     // Invalidate list cache
-    cacheKeysToInvalidate.push(`admin:crud:${model}:list`);
+    cacheKeysToInvalidate.push(generateCacheKey.adminCrudList(model));
 
     // Invalidate specific item cache if ID is provided
     if (id) {
-      cacheKeysToInvalidate.push(`admin:crud:${model}:detail:${id}`);
+      cacheKeysToInvalidate.push(generateCacheKey.adminCrudDetail(model, id));
     }
 
     await Promise.all(
