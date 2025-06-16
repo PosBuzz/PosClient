@@ -3,10 +3,15 @@ import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ConsumerService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
@@ -77,12 +82,14 @@ export class ConsumerService {
           is_warehouse: false,
         },
       });
-
       return {
         message: 'Consumer, admin user, and permissions created successfully',
         consumer,
       };
     });
+
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
@@ -148,18 +155,30 @@ export class ConsumerService {
         })),
       });
     }
-
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
     return {
       message: 'Consumer, admin user, and permissions updated successfully',
     };
   }
-
   async checkSubdomain(value: string) {
-    const exists = await this.prisma.consumer.findUnique({
-      where: { subdomain: value },
-      select: { id: true },
-    });
+    const cacheKey = generateCacheKey.consumerBySubdomain(value);
 
-    return { available: !exists };
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const exists = await this.prisma.consumer.findUnique({
+        where: { subdomain: value },
+        select: { id: true },
+      });
+      return { available: !exists };
+    });
+  }
+  private async invalidateConsumerCaches(): Promise<void> {
+    try {
+      // Use proper cache invalidation patterns for consumer operations
+      const pattern = generateCachePatterns.allConsumerRelated();
+      await this.cacheService.delPattern(pattern);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
   }
 }

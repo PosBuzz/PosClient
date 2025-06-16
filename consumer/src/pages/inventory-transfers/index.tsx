@@ -12,15 +12,14 @@ import {
   Card,
   Col,
   Input,
-  message,
+  Popconfirm,
   Row,
   Select,
   Space,
   Table,
   Tag,
-  Typography,
   Tooltip,
-  Popconfirm,
+  Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -30,9 +29,9 @@ import { useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryTransfer } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { useModalStore } from "../../stores/modalStore";
-import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
+import { useModalStore } from "../../stores/modalStore";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -100,6 +99,8 @@ export default function InventoryTransfersPage() {
     onSuccess: () => {
       messageApi?.success("Transfer completed successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
     },
     onError: (error: any) => {
       messageApi?.error(

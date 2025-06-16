@@ -2,14 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class VendorService {
-  constructor(private readonly prismaService: PrismaService) {}
-
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
   async create(createVendorDto: CreateVendorDto, consumerId: number) {
-    return this.prismaService.vendor.create({
-      data: {
+    const result = await this.prismaService.vendor.create({      data: {
         name: createVendorDto.name,
         contact: createVendorDto.contact,
         phone: createVendorDto.phone,
@@ -18,30 +21,40 @@ export class VendorService {
         consumer_id: consumerId,
       },
     });
-  }
 
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
+
+    return result;
+  }
   async findAll(consumerId: number) {
-    return this.prismaService.vendor.findMany({
-      where: { consumer_id: consumerId },
-      orderBy: { name: 'asc' },
+    const cacheKey = generateCacheKey.vendorList(consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return this.prismaService.vendor.findMany({
+        where: { consumer_id: consumerId },
+        orderBy: { name: 'asc' },
+      });
     });
   }
-
   async findOne(id: number, consumerId: number) {
-    const vendor = await this.prismaService.vendor.findFirst({
-      where: {
-        id,
-        consumer_id: consumerId,
-      },
+    const cacheKey = generateCacheKey.vendorDetail(id, consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const vendor = await this.prismaService.vendor.findFirst({
+        where: {
+          id,
+          consumer_id: consumerId,
+        },
+      });
+
+      if (!vendor) {
+        throw new NotFoundException(`Vendor with ID ${id} not found`);
+      }
+
+      return vendor;
     });
-
-    if (!vendor) {
-      throw new NotFoundException(`Vendor with ID ${id} not found`);
-    }
-
-    return vendor;
   }
-
   async update(
     id: number,
     updateVendorDto: UpdateVendorDto,
@@ -50,9 +63,8 @@ export class VendorService {
     // First check if the vendor exists and belongs to this consumer
     await this.findOne(id, consumerId);
 
-    return this.prismaService.vendor.update({
-      where: { id },
-      data: {
+    const result = await this.prismaService.vendor.update({
+      where: { id },      data: {
         name: updateVendorDto.name,
         contact: updateVendorDto.contact,
         phone: updateVendorDto.phone,
@@ -60,6 +72,11 @@ export class VendorService {
         address: updateVendorDto.address,
       },
     });
+
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
+
+    return result;
   }
 
   async remove(id: number, consumerId: number) {
@@ -76,11 +93,12 @@ export class VendorService {
       throw new Error(
         `Cannot delete vendor with ${batchCount} associated batches`,
       );
-    }
-
-    await this.prismaService.vendor.delete({
+    }    await this.prismaService.vendor.delete({
       where: { id },
     });
+
+    // Invalidate only vendor caches
+    await this.cacheService.invalidateEntityCaches(consumerId, 'vendors');
 
     return { success: true };
   }

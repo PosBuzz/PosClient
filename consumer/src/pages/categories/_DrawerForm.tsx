@@ -6,8 +6,6 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 
-const { TextArea } = Input;
-
 // @ts-ignore
 export default function DrawerForm({
   onClose,
