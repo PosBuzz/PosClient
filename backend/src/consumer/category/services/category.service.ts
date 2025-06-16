@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class CategoryService {
@@ -67,10 +67,8 @@ export class CategoryService {
     const result = await this.prismaService.category.update({
       where: { id },
       data: { name: updateCategoryDto.name },
-    });
-
-    // Invalidate category caches
-    await this.invalidateCategoryCaches(consumerId, id);
+    });    // Invalidate category caches
+    await this.invalidateCategoryCaches(consumerId);
 
     return result;
   }
@@ -84,23 +82,15 @@ export class CategoryService {
     });
     
     // Invalidate category caches
-    await this.invalidateCategoryCaches(consumerId, id);
+    await this.invalidateCategoryCaches(consumerId);
     
     return { success: true };
   }
-
   // Cache invalidation helper method
-  private async invalidateCategoryCaches(consumerId: number, categoryId?: number) {
+  private async invalidateCategoryCaches(consumerId: number) {
     try {
-      // Invalidate category list cache
-      const listKey = generateCacheKey.categoryList(consumerId);
-      await this.cacheService.del(listKey);
-      
-      // If categoryId is provided, invalidate specific category cache
-      if (categoryId) {
-        const detailKey = generateCacheKey.categoryDetail(categoryId, consumerId);
-        await this.cacheService.del(detailKey);
-      }
+      // Invalidate all category-related caches for this consumer
+      await this.cacheService.delPattern(generateCachePatterns.allCategories(consumerId));
     } catch (error) {
       // Log error but don't fail the operation
       console.error('Cache invalidation error:', error);

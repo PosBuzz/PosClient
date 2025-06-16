@@ -12,8 +12,7 @@ export class VendorService {
     private readonly cacheService: CacheService,
   ) {}
   async create(createVendorDto: CreateVendorDto, consumerId: number) {
-    const result = await this.prismaService.vendor.create({
-      data: {
+    const result = await this.prismaService.vendor.create({      data: {
         name: createVendorDto.name,
         contact: createVendorDto.contact,
         phone: createVendorDto.phone,
@@ -23,8 +22,8 @@ export class VendorService {
       },
     });
 
-    // Invalidate vendor caches
-    await this.invalidateVendorCaches(consumerId);
+    // Invalidate caches since vendors affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
@@ -65,8 +64,7 @@ export class VendorService {
     await this.findOne(id, consumerId);
 
     const result = await this.prismaService.vendor.update({
-      where: { id },
-      data: {
+      where: { id },      data: {
         name: updateVendorDto.name,
         contact: updateVendorDto.contact,
         phone: updateVendorDto.phone,
@@ -75,8 +73,8 @@ export class VendorService {
       },
     });
 
-    // Invalidate vendor caches
-    await this.invalidateVendorCaches(consumerId);
+    // Invalidate caches since vendors affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
@@ -99,21 +97,9 @@ export class VendorService {
       where: { id },
     });
 
-    // Invalidate vendor caches
-    await this.invalidateVendorCaches(consumerId);
+    // Invalidate caches since vendors affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return { success: true };
-  }
-
-  private async invalidateVendorCaches(consumerId: number): Promise<void> {
-    try {
-      await Promise.all([
-        this.cacheService.del(generateCacheKey.vendorList(consumerId)),
-        // Invalidate vendor details by pattern
-        this.cacheService.del(`vendor:detail:*:${consumerId}`),
-      ]);
-    } catch (error) {
-      console.warn('Cache invalidation failed:', error);
-    }
   }
 }

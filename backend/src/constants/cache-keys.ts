@@ -1,232 +1,172 @@
-export const CACHE_KEYS = {
-  // Product related cache keys
-  PRODUCT: {
-    LIST: 'products:list',
-    DETAIL: 'product:detail',
-    BY_CONSUMER: 'products:consumer',
-  },
-
-  // Product Variant cache keys
-  PRODUCT_VARIANT: {
-    DETAIL: 'product-variant:detail',
-    BY_PRODUCT: 'product-variants:product',
-  },
-
-  // Category cache keys
-  CATEGORY: {
-    LIST: 'categories:list',
-    DETAIL: 'category:detail',
-    BY_CONSUMER: 'categories:consumer',
-  },
-
-  // Brand cache keys
-  BRAND: {
-    LIST: 'brands:list',
-    DETAIL: 'brand:detail',
-    BY_CONSUMER: 'brands:consumer',
-  },
-
-  // Tag cache keys
-  TAG: {
-    LIST: 'tags:list',
-    DETAIL: 'tag:detail',
-    BY_CONSUMER: 'tags:consumer',
-  },
-
-  // Unit cache keys
-  UNIT: {
-    LIST: 'units:list',
-    DETAIL: 'unit:detail',
-    BY_CONSUMER: 'units:consumer',
-  },
-
-  // Branch cache keys
-  BRANCH: {
-    LIST: 'branches:list',
-    DETAIL: 'branch:detail',
-    BY_CONSUMER: 'branches:consumer',
-  },
-
-  // Vendor cache keys
-  VENDOR: {
-    LIST: 'vendors:list',
-    DETAIL: 'vendor:detail',
-    BY_CONSUMER: 'vendors:consumer',
-  },
-
-  // User cache keys
-  USER: {
-    LIST: 'users:list',
-    DETAIL: 'user:detail',
-    BY_CONSUMER: 'users:consumer',
-  },
-
-  // Role cache keys
-  ROLE: {
-    LIST: 'roles:list',
-    DETAIL: 'role:detail',
-    BY_CONSUMER: 'roles:consumer',
-  },
-
-  // Plan cache keys
-  PLAN: {
-    LIST: 'plans:list',
-    DETAIL: 'plan:detail',
-  },
-
-  // Consumer cache keys
-  CONSUMER: {
-    LIST: 'consumers:list',
-    DETAIL: 'consumer:detail',
-    BY_SUBDOMAIN: 'consumer:subdomain',
-  },
-
-  // Inventory cache keys
-  INVENTORY: {
-    ITEMS: 'inventory:items',
-    SUMMARY: 'inventory:summary',
-    BY_BRANCH: 'inventory:branch',
-    BY_PRODUCT: 'inventory:product',
-    LOW_STOCK: 'inventory:low-stock',
-    STOCK_BY_VARIANT: 'inventory:stock-by-variant',
-    EXPIRING_BATCHES: 'inventory:expiring-batches',
-    VARIANT_STOCK: 'inventory:variant-stock',
-    MOVEMENT_HISTORY: 'inventory:movement-history',
-  },
-
-  // Inventory Batch cache keys
-  INVENTORY_BATCH: {
-    LIST: 'inventory-batches:list',
-    DETAIL: 'inventory-batch:detail',
-    BY_VARIANT: 'inventory-batches:variant',
-    BY_BRANCH: 'inventory-batches:branch',
-  },
-
-  // Inventory Adjustment cache keys
-  INVENTORY_ADJUSTMENT: {
-    LIST: 'inventory-adjustments:list',
-    DETAIL: 'inventory-adjustment:detail',
-    BY_VARIANT: 'inventory-adjustments:variant',
-    BY_BRANCH: 'inventory-adjustments:branch',
-  },
-
-  // Inventory Transfer cache keys
-  INVENTORY_TRANSFER: {
-    LIST: 'inventory-transfers:list',
-    DETAIL: 'inventory-transfer:detail',
-  },
-};
+// Cache key generation functions
+// All cache keys follow the pattern: consumerId:entity:details for efficient consumer-specific invalidation
+// Global cache keys (plans, consumers) use 'global:' prefix
 
 // Helper functions to generate dynamic cache keys
 export const generateCacheKey = {
   productList: (consumerId: number, page?: number, limit?: number, search?: string) =>
-    `${CACHE_KEYS.PRODUCT.BY_CONSUMER}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}`,
+    `${consumerId}:products:list:${page || 1}:${limit || 10}:${search || 'all'}`,
   
   productDetail: (productId: number, consumerId: number) =>
-    `${CACHE_KEYS.PRODUCT.DETAIL}:${productId}:${consumerId}`,
+    `${consumerId}:product:detail:${productId}`,
 
-  productVariantDetail: (variantId: number) =>
-    `${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variantId}`,
+  productVariantDetail: (variantId: number, consumerId: number) =>
+    `${consumerId}:product-variant:detail:${variantId}`,
 
-  productVariantsByProduct: (productId: number) =>
-    `${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${productId}`,
+  productVariantsByProduct: (productId: number, consumerId: number) =>
+    `${consumerId}:product-variants:product:${productId}`,
 
   categoryList: (consumerId: number) =>
-    `${CACHE_KEYS.CATEGORY.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:categories:list`,
 
   categoryDetail: (categoryId: number, consumerId: number) =>
-    `${CACHE_KEYS.CATEGORY.DETAIL}:${categoryId}:${consumerId}`,
+    `${consumerId}:category:detail:${categoryId}`,
 
   brandList: (consumerId: number) =>
-    `${CACHE_KEYS.BRAND.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:brands:list`,
 
   brandDetail: (brandId: number, consumerId: number) =>
-    `${CACHE_KEYS.BRAND.DETAIL}:${brandId}:${consumerId}`,
+    `${consumerId}:brand:detail:${brandId}`,
 
   tagList: (consumerId: number) =>
-    `${CACHE_KEYS.TAG.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:tags:list`,
 
   tagDetail: (tagId: number, consumerId: number) =>
-    `${CACHE_KEYS.TAG.DETAIL}:${tagId}:${consumerId}`,
+    `${consumerId}:tag:detail:${tagId}`,
 
   unitList: (consumerId: number) =>
-    `${CACHE_KEYS.UNIT.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:units:list`,
 
   unitDetail: (unitId: number, consumerId: number) =>
-    `${CACHE_KEYS.UNIT.DETAIL}:${unitId}:${consumerId}`,
+    `${consumerId}:unit:detail:${unitId}`,
 
   branchList: (consumerId: number) =>
-    `${CACHE_KEYS.BRANCH.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:branches:list`,
   
   branchDetail: (branchId: number, consumerId: number) =>
-    `${CACHE_KEYS.BRANCH.DETAIL}:${branchId}:${consumerId}`,
+    `${consumerId}:branch:detail:${branchId}`,
 
   vendorList: (consumerId: number) =>
-    `${CACHE_KEYS.VENDOR.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:vendors:list`,
 
   vendorDetail: (vendorId: number, consumerId: number) =>
-    `${CACHE_KEYS.VENDOR.DETAIL}:${vendorId}:${consumerId}`,
+    `${consumerId}:vendor:detail:${vendorId}`,
 
   userList: (consumerId: number, search?: string, roleId?: number) =>
-    `${CACHE_KEYS.USER.BY_CONSUMER}:${consumerId}:${search || 'all'}:${roleId || 'all'}`,
+    `${consumerId}:users:list:${search || 'all'}:${roleId || 'all'}`,
 
   userDetail: (userId: number, consumerId: number) =>
-    `${CACHE_KEYS.USER.DETAIL}:${userId}:${consumerId}`,
+    `${consumerId}:user:detail:${userId}`,
 
   roleList: (consumerId: number) =>
-    `${CACHE_KEYS.ROLE.BY_CONSUMER}:${consumerId}`,
+    `${consumerId}:roles:list`,
 
   roleDetail: (roleId: number, consumerId: number) =>
-    `${CACHE_KEYS.ROLE.DETAIL}:${roleId}:${consumerId}`,
+    `${consumerId}:role:detail:${roleId}`,
 
   planList: () =>
-    `${CACHE_KEYS.PLAN.LIST}`,
+    `global:plans:list`,
   planDetail: (planId: number) =>
-    `${CACHE_KEYS.PLAN.DETAIL}:${planId}`,
+    `global:plan:detail:${planId}`,
 
   consumerDetail: (consumerId: number) =>
-    `${CACHE_KEYS.CONSUMER.DETAIL}:${consumerId}`,
+    `global:consumer:detail:${consumerId}`,
   
   consumerBySubdomain: (subdomain: string) =>
-    `${CACHE_KEYS.CONSUMER.BY_SUBDOMAIN}:${subdomain}`,
+    `global:consumer:subdomain:${subdomain}`,
 
   // Inventory cache helpers
   inventorySummary: (consumerId: number, branchId?: number) =>
-    `${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:${branchId || 'all'}`,
+    `${consumerId}:inventory:summary:${branchId || 'all'}`,
 
   stockByVariant: (consumerId: number, page?: number, limit?: number, branchId?: number, search?: string, lowStockOnly?: boolean) =>
-    `${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:${page || 1}:${limit || 10}:${branchId || 'all'}:${search || 'all'}:${lowStockOnly || false}`,
+    `${consumerId}:inventory:stock-by-variant:${page || 1}:${limit || 10}:${branchId || 'all'}:${search || 'all'}:${lowStockOnly || false}`,
 
   expiringBatches: (consumerId: number, days?: number) =>
-    `${CACHE_KEYS.INVENTORY.EXPIRING_BATCHES}:${consumerId}:${days || 30}`,
+    `${consumerId}:inventory:expiring-batches:${days || 30}`,
 
   variantStock: (variantId: number, consumerId: number, branchId?: number) =>
-    `${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:${consumerId}:${branchId || 'all'}`,
+    `${consumerId}:inventory:variant-stock:${variantId}:${branchId || 'all'}`,
 
   lowStockItems: (consumerId: number, branchId?: number) =>
-    `${CACHE_KEYS.INVENTORY.LOW_STOCK}:${consumerId}:${branchId || 'all'}`,
+    `${consumerId}:inventory:low-stock:${branchId || 'all'}`,
 
   movementHistory: (variantId: number, consumerId: number, page?: number, limit?: number, branchId?: number) =>
-    `${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:${consumerId}:${page || 1}:${limit || 20}:${branchId || 'all'}`,
+    `${consumerId}:inventory:movement-history:${variantId}:${page || 1}:${limit || 20}:${branchId || 'all'}`,
 
   // Inventory Batch cache helpers
   inventoryBatchList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, variantId?: number) =>
-    `${CACHE_KEYS.INVENTORY_BATCH.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
+    `${consumerId}:inventory-batches:list:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
 
   inventoryBatchDetail: (batchId: number, consumerId: number) =>
-    `${CACHE_KEYS.INVENTORY_BATCH.DETAIL}:${batchId}:${consumerId}`,
+    `${consumerId}:inventory-batch:detail:${batchId}`,
 
   // Inventory Adjustment cache helpers
   inventoryAdjustmentList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, variantId?: number) =>
-    `${CACHE_KEYS.INVENTORY_ADJUSTMENT.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
+    `${consumerId}:inventory-adjustments:list:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
 
   inventoryAdjustmentDetail: (adjustmentId: number, consumerId: number) =>
-    `${CACHE_KEYS.INVENTORY_ADJUSTMENT.DETAIL}:${adjustmentId}:${consumerId}`,
+    `${consumerId}:inventory-adjustment:detail:${adjustmentId}`,
 
   // Inventory Transfer cache helpers
   inventoryTransferList: (consumerId: number, page?: number, limit?: number, search?: string, sourceBranchId?: number, destinationBranchId?: number) =>
-    `${CACHE_KEYS.INVENTORY_TRANSFER.LIST}:${consumerId}:${page || 1}:${limit || 10}:${search || 'all'}:${sourceBranchId || 'all'}:${destinationBranchId || 'all'}`,
+    `${consumerId}:inventory-transfers:list:${page || 1}:${limit || 10}:${search || 'all'}:${sourceBranchId || 'all'}:${destinationBranchId || 'all'}`,
 
   inventoryTransferDetail: (transferId: number, consumerId: number) =>
-    `${CACHE_KEYS.INVENTORY_TRANSFER.DETAIL}:${transferId}:${consumerId}`,
+    `${consumerId}:inventory-transfer:detail:${transferId}`,
+};
+
+// Pattern generation functions for cache invalidation
+// These generate patterns that can be used with Redis SCAN to invalidate related cache keys
+export const generateCachePatterns = {
+  // Consumer-specific patterns
+  allForConsumer: (consumerId: number) => `${consumerId}:*`,
+  
+  // Product patterns
+  allProducts: (consumerId: number) => `${consumerId}:product*`,
+  allProductLists: (consumerId: number) => `${consumerId}:products:*`,
+  allProductVariants: (consumerId: number) => `${consumerId}:product-variant*`,
+  productsByProduct: (consumerId: number, productId: number) => `${consumerId}:product-variants:product:${productId}*`,
+  
+  // Category patterns
+  allCategories: (consumerId: number) => `${consumerId}:categor*`,
+  
+  // Brand patterns
+  allBrands: (consumerId: number) => `${consumerId}:brand*`,
+  
+  // Tag patterns
+  allTags: (consumerId: number) => `${consumerId}:tag*`,
+  
+  // Unit patterns
+  allUnits: (consumerId: number) => `${consumerId}:unit*`,
+  
+  // Branch patterns
+  allBranches: (consumerId: number) => `${consumerId}:branch*`,
+  
+  // Vendor patterns
+  allVendors: (consumerId: number) => `${consumerId}:vendor*`,
+  
+  // User patterns
+  allUsers: (consumerId: number) => `${consumerId}:user*`,
+  
+  // Role patterns
+  allRoles: (consumerId: number) => `${consumerId}:role*`,
+  
+  // Inventory patterns
+  allInventory: (consumerId: number) => `${consumerId}:inventory*`,
+  allInventoryBatches: (consumerId: number) => `${consumerId}:inventory-batch*`,
+  allInventoryAdjustments: (consumerId: number) => `${consumerId}:inventory-adjustment*`,
+  allInventoryTransfers: (consumerId: number) => `${consumerId}:inventory-transfer*`,
+  
+  // Combined patterns for operations that affect multiple entities
+  allInventoryRelated: (consumerId: number) => [
+    `${consumerId}:inventory*`,
+    `${consumerId}:product*`, // Products affect inventory display
+    `${consumerId}:product-variant*`, // Variants are core to inventory
+  ],
+  
+  allProductRelated: (consumerId: number) => [
+    `${consumerId}:product*`,
+    `${consumerId}:inventory*`, // Inventory data shows in products
+  ],
 };

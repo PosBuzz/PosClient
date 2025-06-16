@@ -1,29 +1,74 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cache } from 'cache-manager';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
+import { generateCachePatterns } from '../../constants/cache-keys';
+import Redis from 'ioredis';
 
 @Injectable()
-export class CacheService {
+export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name);
   private readonly ttl: number;
+  private redisClient: Redis | null = null;
+  private keyPrefix: string;
 
-  constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private configService: ConfigService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.ttl = this.configService.cacheTtl;
+    this.keyPrefix = `${this.configService.redisPrefix}:`;
+  }
+
+  async onModuleInit() {
+    // Initialize Redis connection
+    try {
+      this.redisClient = new Redis({
+        host: this.configService.redisHost,
+        port: this.configService.redisPort,
+        keyPrefix: this.keyPrefix,
+        lazyConnect: true,
+        maxRetriesPerRequest: 3,
+        enableOfflineQueue: false,
+      });
+
+      await this.redisClient.connect();
+      this.logger.log(
+        `✅ Connected to Redis at ${this.configService.redisHost}:${this.configService.redisPort} with prefix '${this.keyPrefix}'`,
+      );
+    } catch (error) {
+      this.logger.error(`❌ Failed to connect to Redis: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async onModuleDestroy() {
+    // Cleanup Redis connection
+    if (this.redisClient) {
+      try {
+        await this.redisClient.disconnect();
+        this.logger.log('🔌 Disconnected from Redis');
+      } catch (error) {
+        this.logger.warn(`Error disconnecting Redis: ${error.message}`);
+      }
+    }
   }
 
   /**
    * Get item from cache
    */
   async get<T>(key: string): Promise<T | undefined> {
+    if (!this.redisClient) {
+      this.logger.warn(`❌ Redis not available for GET: ${key}`);
+      return undefined;
+    }
+
     try {
-      const result = await this.cacheManager.get<T>(key);
-      if (result !== null && result !== undefined) {
+      const result = await this.redisClient.get(key);
+      if (result !== null) {
+        const parsed = JSON.parse(result) as T;
         this.logger.log(`✅ CACHE HIT: ${key}`);
-        return result;
+        return parsed;
       } else {
         this.logger.log(`❌ CACHE MISS: ${key}`);
         return undefined;
@@ -38,9 +83,16 @@ export class CacheService {
    * Set item in cache with TTL from config
    */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    if (!this.redisClient) {
+      this.logger.warn(`❌ Redis not available for SET: ${key}`);
+      return;
+    }
+
     try {
-      await this.cacheManager.set(key, value, (ttl || this.ttl) * 1000);
-      this.logger.log(`💾 CACHE SET: ${key} (TTL: ${ttl || this.ttl}s)`);
+      const serialized = JSON.stringify(value);
+      const expiry = ttl || this.ttl;
+      await this.redisClient.setex(key, expiry, serialized);
+      this.logger.log(`💾 CACHE SET: ${key} (TTL: ${expiry}s)`);
     } catch (error) {
       this.logger.error(`Cache set error for key ${key}:`, error);
     }
@@ -50,8 +102,13 @@ export class CacheService {
    * Delete item from cache
    */
   async del(key: string): Promise<void> {
+    if (!this.redisClient) {
+      this.logger.warn(`❌ Redis not available for DEL: ${key}`);
+      return;
+    }
+
     try {
-      await this.cacheManager.del(key);
+      await this.redisClient.del(key);
       this.logger.log(`🗑️ CACHE DEL: ${key}`);
     } catch (error) {
       this.logger.error(`Cache delete error for key ${key}:`, error);
@@ -78,51 +135,77 @@ export class CacheService {
   }
 
   /**
-   * Clear all cache (if supported by the cache store)
+   * Clear all cache
    */
   async reset(): Promise<void> {
+    if (!this.redisClient) {
+      this.logger.warn(`❌ Redis not available for RESET`);
+      return;
+    }
+
     try {
-      // Check if reset method exists on the cache manager
-      if ('reset' in this.cacheManager && typeof this.cacheManager.reset === 'function') {
-        await (this.cacheManager as any).reset();
-        this.logger.log('🧹 CACHE RESET: All cache cleared');
-      } else {
-        this.logger.warn('🧹 CACHE RESET: Reset method not supported by cache store');
-      }
+      await this.redisClient.flushdb();
+      this.logger.log('🧹 CACHE RESET: All cache cleared');
     } catch (error) {
       this.logger.error('Cache reset error:', error);
     }
-  }  /**
+  }
+  /**
    * Delete multiple keys by pattern using Redis SCAN
    */
   async delPattern(pattern: string): Promise<void> {
+    if (!this.redisClient) {
+      this.logger.warn(`❌ Redis not available for DEL PATTERN: ${pattern}`);
+      return;
+    }
+
     try {
-      // Check if we have a Redis-based cache store
-      const cacheStore = (this.cacheManager as any).store;
-      if (cacheStore && typeof cacheStore.getClient === 'function') {
-        const client = cacheStore.getClient();
-        
-        let cursor = '0';
-        let deletedCount = 0;
-        
-        do {
-          const reply = await client.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
-          cursor = reply[0];
-          const keys = reply[1];
+      let cursor = '0';
+      let deletedCount = 0;
 
-          if (keys.length > 0) {
-            await client.del(keys);
-            deletedCount += keys.length;
+      // Add the prefix to the pattern since SCAN searches the actual Redis keys
+      const fullPattern = `${this.keyPrefix}${pattern}`;
+
+      do {
+        const reply = await this.redisClient.scan(
+          cursor,
+          'MATCH',
+          fullPattern,
+          'COUNT',
+          '100',
+        );
+        cursor = reply[0];
+        const keys = reply[1];
+
+        if (keys.length > 0) {
+          // Remove the keyPrefix from keys since our Redis client expects keys without prefix
+          const keysWithoutPrefix = keys.map((key) =>
+            key.replace(this.keyPrefix, ''),
+          );
+
+          // Use batch deletion for better performance
+          if (keysWithoutPrefix.length === 1) {
+            await this.redisClient.del(keysWithoutPrefix[0]);
+          } else {
+            await this.redisClient.del(...keysWithoutPrefix);
           }
-        } while (cursor !== '0');
+          deletedCount += keysWithoutPrefix.length;
+        }
+      } while (cursor !== '0');
 
-        this.logger.log(`🗑️ CACHE DEL PATTERN: ${pattern} (${deletedCount} keys deleted)`);
-      } else {
-        this.logger.warn(`Pattern deletion not supported for: ${pattern}`);
-      }
+      this.logger.log(
+        `🗑️ CACHE DEL PATTERN: ${pattern} -> ${fullPattern} (${deletedCount} keys deleted)`,
+      );
     } catch (error) {
       this.logger.error(`Cache pattern delete error for ${pattern}:`, error);
     }
+  }
+
+  /**
+   * Delete multiple patterns efficiently
+   */
+  async delPatterns(patterns: string[]): Promise<void> {
+    await Promise.all(patterns.map((pattern) => this.delPattern(pattern)));
   }
 
   /**
@@ -131,44 +214,102 @@ export class CacheService {
   async invalidateUserCache(userId: string): Promise<void> {
     await this.delPattern(`user:${userId}:*`);
   }
-
   /**
    * Invalidate cache for a specific entity type
    */
-  async invalidateEntityCache(entityType: string, entityId?: string): Promise<void> {
-    const pattern = entityId ? `${entityType}:${entityId}:*` : `${entityType}:*`;
+  async invalidateEntityCache(
+    entityType: string,
+    entityId?: string,
+  ): Promise<void> {
+    const pattern = entityId
+      ? `${entityType}:${entityId}:*`
+      : `${entityType}:*`;
     await this.delPattern(pattern);
+  }  /**
+   * Invalidate ALL cache for a specific consumer
+   * This is the most efficient way since all keys start with consumerId
+   */
+  async invalidateConsumerCache(consumerId: number): Promise<void> {
+    const pattern = generateCachePatterns.allForConsumer(consumerId);
+    await this.delPattern(pattern);
+    this.logger.log(
+      `🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`,
+    );
   }
 
+  /**
+   * Invalidate ALL inventory-related caches for a specific consumer
+   * This is used for any inventory operation to ensure complete cache consistency
+   */
+  async invalidateAllInventoryCaches(consumerId: number): Promise<void> {
+    const patterns = generateCachePatterns.allInventoryRelated(consumerId);
+    await this.delPatterns(patterns);
+    this.logger.log(
+      `🧹 INVALIDATED ALL INVENTORY CACHES for consumer ${consumerId}`,
+    );
+  }
   /**
    * Get multiple keys by pattern (for debugging/monitoring)
    */
   async getKeysByPattern(pattern: string): Promise<string[]> {
-    try {
-      const cacheStore = (this.cacheManager as any).store;
-      if (cacheStore && typeof cacheStore.getClient === 'function') {
-        const client = cacheStore.getClient();
-        
-        let cursor = '0';
-        const allKeys: string[] = [];
-        
-        do {
-          const reply = await client.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
-          cursor = reply[0];
-          const keys = reply[1];
-          allKeys.push(...keys);
-        } while (cursor !== '0');
+    if (!this.redisClient) {
+      this.logger.warn(
+        `❌ Redis not available for KEYS BY PATTERN: ${pattern}`,
+      );
+      return [];
+    }
 
-        this.logger.log(`🔍 CACHE KEYS FOUND: ${allKeys.length} keys for pattern ${pattern}`);
-        return allKeys;
-      } else {
-        this.logger.warn(`Pattern search not supported for: ${pattern}`);
-        return [];
-      }
+    try {
+      let cursor = '0';
+      const allKeys: string[] = [];
+
+      // Add the prefix to the pattern since SCAN searches the actual Redis keys
+      const fullPattern = `${this.keyPrefix}${pattern}`;
+
+      do {
+        const reply = await this.redisClient.scan(
+          cursor,
+          'MATCH',
+          fullPattern,
+          'COUNT',
+          '100',
+        );
+        cursor = reply[0];
+        const keys = reply[1];
+        allKeys.push(...keys);
+      } while (cursor !== '0');
+
+      this.logger.log(
+        `🔍 CACHE KEYS FOUND: ${allKeys.length} keys for pattern ${pattern} -> ${fullPattern}`,
+      );
+      return allKeys;
     } catch (error) {
       this.logger.error(`Cache pattern search error for ${pattern}:`, error);
       return [];
     }
   }
 
+  /**
+   * Get cache statistics
+   */
+  async getStats(): Promise<any> {
+    if (!this.redisClient) {
+      return { error: 'Redis not available' };
+    }
+
+    try {
+      const info = await this.redisClient.info('memory');
+      const keyCount = await this.redisClient.dbsize();
+
+      return {
+        keyCount,
+        memory: info,
+        connected: this.redisClient.status === 'ready',
+        prefix: this.keyPrefix,
+      };
+    } catch (error) {
+      this.logger.error('Error getting cache stats:', error);
+      return { error: error.message };
+    }
+  }
 }

@@ -9,7 +9,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, CACHE_KEYS } from '../../../constants/cache-keys';
+import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductService {  constructor(
@@ -71,14 +71,8 @@ export class ProductService {  constructor(
       dto.variants.map((variantDto) =>
         this.variantService.create(product.id, variantDto),
       ),
-    );
-
-    // Invalidate relevant caches
+    );    // Invalidate relevant caches
     await this.invalidateProductCaches(consumerId);
-
-    // Invalidate product list cache
-    const productListPattern = `${CACHE_KEYS.PRODUCT.BY_CONSUMER}:${consumerId}:*`;
-    await this.cacheService.delPattern(productListPattern);
 
     return this.findOne(product.id, consumerId);
   }
@@ -648,57 +642,13 @@ export class ProductService {  constructor(
     await this.invalidateProductCaches(consumerId, id);
 
     return { success: true, message: 'Product deleted successfully' };
-  }
-  // Cache invalidation helper method
+  }  // Cache invalidation helper method
   private async invalidateProductCaches(consumerId: number, productId?: number) {
     try {
-      // Invalidate product lists (all pages, searches, etc.)
-      const listPattern = `${CACHE_KEYS.PRODUCT.BY_CONSUMER}:${consumerId}:*`;
-      await this.cacheService.delPattern(listPattern);
-      
-      // If productId is provided, invalidate specific product cache
-      if (productId) {
-        const detailKey = generateCacheKey.productDetail(productId, consumerId);
-        await this.cacheService.del(detailKey);
-        
-        // Also invalidate any related product variant caches
-        await this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:${productId}`);
-        
-        // Get all variants for this product to invalidate variant-specific caches
-        const variants = await this.prisma.productVariant.findMany({
-          where: { product_id: productId },
-          select: { id: true },
-        });
-        
-        // Invalidate each variant's detailed cache
-        for (const variant of variants) {
-          await this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:${variant.id}`);
-        }
-        
-        // Invalidate inventory caches for variants of this product
-        if (variants.length > 0) {
-          const variantIds = variants.map(v => v.id);
-          
-          // Invalidate stock summaries
-          await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`);
-          await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`);
-          
-          // Invalidate variant-specific inventory caches
-          for (const variantId of variantIds) {
-            await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.VARIANT_STOCK}:${variantId}:*`);
-            await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.MOVEMENT_HISTORY}:${variantId}:*`);
-          }
-        }
-      } else {
-        // If no specific productId, invalidate broader caches
-        await this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.DETAIL}:*`);
-        await this.cacheService.delPattern(`${CACHE_KEYS.PRODUCT_VARIANT.BY_PRODUCT}:*`);
-        await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.SUMMARY}:${consumerId}:*`);
-        await this.cacheService.delPattern(`${CACHE_KEYS.INVENTORY.STOCK_BY_VARIANT}:${consumerId}:*`);
-      }
+      // Use centralized inventory cache invalidation since products are core to inventory
+      await this.cacheService.invalidateAllInventoryCaches(consumerId);
     } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
+      console.error('Product cache invalidation error:', error);
     }
   }
 }

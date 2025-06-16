@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class BranchService {
@@ -31,8 +31,8 @@ export class BranchService {
       },
     });
 
-    // Invalidate branch caches
-    await this.invalidateBranchCaches(consumerId);
+    // Invalidate branch caches    // Invalidate caches since branches affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
@@ -76,8 +76,7 @@ export class BranchService {
     await this.findOne(id, consumerId);
 
     const result = await this.prismaService.branch.update({
-      where: { id },
-      data: {
+      where: { id },      data: {
         name: updateBranchDto.name,
         address: updateBranchDto.address,
         phone: updateBranchDto.phone,
@@ -85,8 +84,8 @@ export class BranchService {
       },
     });
 
-    // Invalidate branch caches
-    await this.invalidateBranchCaches(consumerId, id);
+    // Invalidate caches since branches affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
   }
@@ -97,14 +96,12 @@ export class BranchService {
     // Can't delete the main branch
     if (branch.is_main) {
       throw new Error('Cannot delete the main branch');
-    }
-
-    await this.prismaService.branch.delete({
+    }    await this.prismaService.branch.delete({
       where: { id },
     });
     
-    // Invalidate branch caches
-    await this.invalidateBranchCaches(consumerId, id);
+    // Invalidate caches since branches affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
     
     return { success: true };
   }
@@ -127,27 +124,9 @@ export class BranchService {
       });
     });
 
-    // Invalidate branch caches since main branch status changed
-    await this.invalidateBranchCaches(consumerId);
+    // Invalidate branch caches since main branch status changed    // Invalidate caches since branches affect inventory
+    await this.cacheService.invalidateAllInventoryCaches(consumerId);
 
     return result;
-  }
-
-  // Cache invalidation helper method
-  private async invalidateBranchCaches(consumerId: number, branchId?: number) {
-    try {
-      // Invalidate branch list cache
-      const listKey = generateCacheKey.branchList(consumerId);
-      await this.cacheService.del(listKey);
-      
-      // If branchId is provided, invalidate specific branch cache
-      if (branchId) {
-        const detailKey = generateCacheKey.branchDetail(branchId, consumerId);
-        await this.cacheService.del(detailKey);
-      }
-    } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Cache invalidation error:', error);
-    }
   }
 }
