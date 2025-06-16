@@ -81,11 +81,16 @@ export const endpoints = {
     `/consumer/inventory/transfers/${id}/cancel`,
   branchBatches: (branchId: number) =>
     `/consumer/inventory/batches?branch_id=${branchId}`,
-
   // Adjustment Management
   inventoryAdjustments: "/consumer/inventory/adjustments",
   inventoryAdjustment: (id: number) => `/consumer/inventory/adjustments/${id}`,
   createInventoryAdjustment: "/consumer/inventory/adjustments",
+  // New Inventory Views
+  inventoryStockByVariant: "/consumer/inventory/stock-by-variant",
+  inventoryExpiringBatches: "/consumer/inventory/expiring",
+  inventoryVariantStock: (variantId: number) => `/consumer/inventory/variants/${variantId}/stock`,
+  inventoryLowStock: "/consumer/inventory/low-stock",
+  inventoryMovementHistory: (variantId: number) => `/consumer/inventory/movement-history/${variantId}`,
 
   // AI Services
   generateDescription: "/ai/auto-description",
