@@ -4,6 +4,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuthStore();
@@ -45,6 +46,7 @@ export default function LoginPage() {
         isDarkMode ? "bg-[#000]" : "bg-gray-100"
       }`}
     >
+      {setPageTitle("PosBuzz | Login")}
       <Card className="w-full sm:w-96 p-6 shadow-lg">
         <h2 className="text-center text-2xl font-semibold mb-6">Login</h2>
 

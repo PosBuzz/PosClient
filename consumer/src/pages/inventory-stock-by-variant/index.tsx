@@ -30,6 +30,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -354,6 +355,7 @@ export default function InventoryStockByVariantPage() {
 
   return (
     <>
+     {setPageTitle("Stock by Variant")}
       <PageTitle
         title="Stock by Variant"
         breadcrumbs={[

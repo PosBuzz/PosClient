@@ -1,11 +1,12 @@
 import { Button } from "antd";
 import { BiPlus } from "react-icons/bi";
 import PageTitle from "../../components/PageTitle";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 function index() {
-
   return (
     <>
+      {setPageTitle("PosBuzz | Home")}
       <PageTitle
         title={"Home"}
         breadcrumbs={[

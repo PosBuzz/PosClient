@@ -37,6 +37,7 @@ import type {
   ProductListFilters,
   ProductListResponse,
 } from "../../types/product.types";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -278,10 +279,7 @@ const ProductsTable = () => {
                     </Tag>
                   ))}
                   {record.tags.length > 3 && (
-                    <Tag
-                      color="default"
-                      style={{ fontSize: "10px" }}
-                    >
+                    <Tag color="default" style={{ fontSize: "10px" }}>
                       +{record.tags.length - 3}
                     </Tag>
                   )}
@@ -410,6 +408,7 @@ const ProductsTable = () => {
 
   return (
     <>
+      {setPageTitle(title)}
       <PageTitle
         title={title}
         breadcrumbs={[

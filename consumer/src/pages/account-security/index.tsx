@@ -5,6 +5,7 @@ import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 
@@ -37,15 +38,16 @@ function index() {
 
   return (
     <>
+     {setPageTitle("Account & Security")}
       <PageTitle
-        title={"Home"}
+        title={"Account & Security"}
         breadcrumbs={[
           {
             title: "Dashboard",
             href: "/",
           },
           {
-            title: "Home",
+            title: "Account & Security",
           },
         ]}
       />

@@ -11,6 +11,7 @@ import StateBasicInformationTab from "./components/StateBasicInformationTab";
 import StateVariantManager from "./components/StateVariantManager";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 export default function ProductForm() {
   const { id } = useParams<{ id: string }>();
@@ -402,6 +403,7 @@ export default function ProductForm() {
 
   return (
     <>
+     {setPageTitle("Product Form")} 
       <PageTitle
         title={isEditMode ? "Edit Product" : "Add Product"}
         breadcrumbs={[

@@ -17,6 +17,7 @@ import ProductTagsCard from "./components/ProductTagsCard";
 import ProductBasicInfo from "./components/ProductBasicInfo";
 import ProductDetailsTabs from "./components/ProductDetailsTabs";
 import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Title, Text } = Typography;
 
@@ -82,6 +83,7 @@ const ProductDetailsPage = () => {
 
   return (
     <>
+      {setPageTitle(`Product Details - ${product.name}`)}
       <PageTitle
         title="Product Details"
         breadcrumbs={[
