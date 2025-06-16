@@ -248,12 +248,11 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       `🧹 INVALIDATED ALL INVENTORY CACHES for consumer ${consumerId}`,
     );
   }
-
   /**
    * Invalidate specific entity caches for a consumer
    * Use this for entities that don't directly affect inventory
    */
-  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles'): Promise<void> {
+  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles' | 'branches'): Promise<void> {
     let pattern: string;
     
     switch (entityType) {
@@ -268,9 +267,11 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         break;
       case 'brands':
         pattern = generateCachePatterns.allBrands(consumerId);
-        break;
-      case 'tags':
+        break;      case 'tags':
         pattern = generateCachePatterns.allTags(consumerId);
+        break;
+      case 'branches':
+        pattern = generateCachePatterns.allBranches(consumerId);
         break;
       case 'users':
         await this.delPatterns([
