@@ -32,6 +32,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -321,6 +322,7 @@ export default function AddInventoryTransfer() {
 
   return (
     <>
+      {setPageTitle(" Inventory Transfer Form")}  
       <PageTitle
         title="Create Inventory Transfer"
         breadcrumbs={[
@@ -416,7 +418,8 @@ export default function AddInventoryTransfer() {
         {sourceBranchId !== null && (
           <Card
             title={`Available Inventory - ${getBranchName(sourceBranchId)}`}
-            style={{ marginBottom: 24 }}            extra={
+            style={{ marginBottom: 24 }}
+            extra={
               <Search
                 placeholder="Search products..."
                 value={searchText}

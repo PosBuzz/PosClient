@@ -26,13 +26,14 @@ import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
 
 interface MovementHistoryItem {
   id: number;
-  type: 'adjustment' | 'transfer_in' | 'transfer_out';
+  type: "adjustment" | "transfer_in" | "transfer_out";
   date: string;
   quantity_change: number;
   reason?: string;
@@ -106,12 +107,12 @@ const InventoryMovementHistory: React.FC = () => {
 
   const getMovementTypeIcon = (type: string) => {
     switch (type) {
-      case 'adjustment':
-        return <FileTextOutlined style={{ color: '#1890ff' }} />;
-      case 'transfer_in':
-        return <PlusOutlined style={{ color: '#52c41a' }} />;
-      case 'transfer_out':
-        return <MinusOutlined style={{ color: '#ff4d4f' }} />;
+      case "adjustment":
+        return <FileTextOutlined style={{ color: "#1890ff" }} />;
+      case "transfer_in":
+        return <PlusOutlined style={{ color: "#52c41a" }} />;
+      case "transfer_out":
+        return <MinusOutlined style={{ color: "#ff4d4f" }} />;
       default:
         return <SwapOutlined />;
     }
@@ -119,25 +120,25 @@ const InventoryMovementHistory: React.FC = () => {
 
   const getMovementTypeColor = (type: string) => {
     switch (type) {
-      case 'adjustment':
-        return 'blue';
-      case 'transfer_in':
-        return 'green';
-      case 'transfer_out':
-        return 'red';
+      case "adjustment":
+        return "blue";
+      case "transfer_in":
+        return "green";
+      case "transfer_out":
+        return "red";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const getMovementTypeName = (type: string) => {
     switch (type) {
-      case 'adjustment':
-        return 'Adjustment';
-      case 'transfer_in':
-        return 'Transfer In';
-      case 'transfer_out':
-        return 'Transfer Out';
+      case "adjustment":
+        return "Adjustment";
+      case "transfer_in":
+        return "Transfer In";
+      case "transfer_out":
+        return "Transfer Out";
       default:
         return type;
     }
@@ -164,9 +165,9 @@ const InventoryMovementHistory: React.FC = () => {
         </Space>
       ),
       filters: [
-        { text: 'Adjustment', value: 'adjustment' },
-        { text: 'Transfer In', value: 'transfer_in' },
-        { text: 'Transfer Out', value: 'transfer_out' },
+        { text: "Adjustment", value: "adjustment" },
+        { text: "Transfer In", value: "transfer_in" },
+        { text: "Transfer Out", value: "transfer_out" },
       ],
       onFilter: (value, record) => record.type === value,
     },
@@ -175,11 +176,15 @@ const InventoryMovementHistory: React.FC = () => {
       dataIndex: "quantity_change",
       key: "quantity_change",
       render: (quantity) => (
-        <Text style={{
-          color: quantity > 0 ? '#52c41a' : quantity < 0 ? '#ff4d4f' : 'inherit',
-          fontWeight: 'bold'
-        }}>
-          {quantity > 0 ? '+' : ''}{quantity}
+        <Text
+          style={{
+            color:
+              quantity > 0 ? "#52c41a" : quantity < 0 ? "#ff4d4f" : "inherit",
+            fontWeight: "bold",
+          }}
+        >
+          {quantity > 0 ? "+" : ""}
+          {quantity}
         </Text>
       ),
       sorter: (a, b) => a.quantity_change - b.quantity_change,
@@ -188,33 +193,33 @@ const InventoryMovementHistory: React.FC = () => {
       title: "Batch",
       dataIndex: "batch_number",
       key: "batch_number",
-      render: (batchNumber) => batchNumber || '-',
+      render: (batchNumber) => batchNumber || "-",
     },
     {
       title: "Location",
       dataIndex: "location",
       key: "location",
-      render: (location) => location || '-',
+      render: (location) => location || "-",
     },
     {
       title: "Reason",
       dataIndex: "reason",
       key: "reason",
-      render: (reason) => reason || '-',
+      render: (reason) => reason || "-",
       ellipsis: true,
     },
     {
       title: "Notes",
       dataIndex: "notes",
       key: "notes",
-      render: (notes) => notes || '-',
+      render: (notes) => notes || "-",
       ellipsis: true,
     },
     {
       title: "User",
       dataIndex: "user",
       key: "user",
-      render: (user) => user?.name || '-',
+      render: (user) => user?.name || "-",
     },
   ];
 
@@ -246,7 +251,7 @@ const InventoryMovementHistory: React.FC = () => {
 
   if (variantError) {
     return (
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: "24px" }}>
         <Alert
           message="Error"
           description="Failed to load variant information. Please try again."
@@ -263,9 +268,10 @@ const InventoryMovementHistory: React.FC = () => {
   }
 
   return (
-    <div>
+    <>
+      {setPageTitle("Inventory Movement History")}
       <PageTitle
-        title={`Movement History - ${variantData?.name || 'Variant'}`}
+        title={`Movement History - ${variantData?.name || "Variant"}`}
         breadcrumbs={breadcrumbs}
       />
 
@@ -290,14 +296,14 @@ const InventoryMovementHistory: React.FC = () => {
             <div>
               <Text strong>SKU:</Text>
               <br />
-              <Text>{variantData?.sku || 'N/A'}</Text>
+              <Text>{variantData?.sku || "N/A"}</Text>
             </div>
           </Col>
           <Col xs={24} sm={12} md={8}>
             <div>
               <Text strong>Current Stock:</Text>
               <br />
-              <Text style={{ fontSize: '16px', fontWeight: 'bold' }}>
+              <Text style={{ fontSize: "16px", fontWeight: "bold" }}>
                 {variantData?.total_stock || 0}
               </Text>
             </div>
@@ -318,7 +324,7 @@ const InventoryMovementHistory: React.FC = () => {
           <Col xs={24} sm={12} md={8}>
             <Select
               placeholder="Select branch"
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               allowClear
               value={branchId}
               onChange={setBranchId}
@@ -340,10 +346,7 @@ const InventoryMovementHistory: React.FC = () => {
             </Button>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(-1)}
-            >
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
               Back to Stock Details
             </Button>
           </Col>
@@ -379,7 +382,7 @@ const InventoryMovementHistory: React.FC = () => {
           />
         )}
       </Card>
-    </div>
+    </>
   );
 };
 

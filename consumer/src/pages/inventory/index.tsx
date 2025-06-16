@@ -34,6 +34,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -422,6 +423,7 @@ export default function InventoryPage() {
 
   return (
     <>
+      {setPageTitle("Inventory Batches")}
       {/* Header */}
       <PageTitle
         title="Inventory Management"

@@ -28,6 +28,7 @@ import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
 import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -302,6 +303,9 @@ export default function InventoryAdjustmentsPage() {
 
   return (
     <>
+      {setPageTitle("Inventory Adjustments")}
+
+      {/* Page Title */}
       <PageTitle
         title="Inventory Adjustments"
         breadcrumbs={[

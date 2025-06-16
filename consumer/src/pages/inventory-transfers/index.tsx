@@ -32,6 +32,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -376,6 +377,7 @@ export default function InventoryTransfersPage() {
 
   return (
     <>
+      {setPageTitle("Inventory Transfers")}
       <PageTitle
         title="Inventory Transfers"
         breadcrumbs={[
