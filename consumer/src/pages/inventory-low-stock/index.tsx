@@ -48,6 +48,9 @@ interface LowStockItem {
   total_stock: number;
   stock_by_branch: Record<string, number>;
   shortage: number;
+  affected_branch_id?: number;
+  affected_branch_name?: string;
+  unique_key?: string;
   inventory_items: Array<{
     quantity: number;
     branch: {
@@ -413,10 +416,32 @@ export default function InventoryLowStockPage() {
         const urgencyB = getUrgencyConfig(b);
         return urgencyOrder[urgencyB.level] - urgencyOrder[urgencyA.level];
       },
-      defaultSortOrder: "ascend",
+      defaultSortOrder: "ascend",    },
+    {
+      title: "Affected Branch",
+      key: "affected_branch",
+      render: (_, record) => {
+        if (record.affected_branch_name) {
+          return (
+            <Tag color="red" icon={<ShopOutlined />}>
+              {record.affected_branch_name}
+            </Tag>
+          );
+        } else {
+          // Show multiple branches if not filtered by specific branch
+          const lowStockBranches = Object.entries(record.stock_by_branch)
+            .filter(([_, stock]) => stock <= (record.alert_quantity || 0))
+            .map(([branchName, stock]) => (
+              <Tag key={branchName} color="red" style={{ marginBottom: 2 }}>
+                {branchName}: {stock} units
+              </Tag>
+            ));
+          return <Space direction="vertical" size={2}>{lowStockBranches}</Space>;
+        }
+      },
     },
     {
-      title: "Branches",
+      title: "All Branches",
       key: "branches",
       render: (_, record) => (
         <Space wrap>
@@ -647,11 +672,10 @@ export default function InventoryLowStockPage() {
         )}
       </Card>
       {/* Table */}
-      <Card style={getCardStyle()}>
-        <Table
+      <Card style={getCardStyle()}>        <Table
           columns={columns}
           dataSource={filteredData}
-          rowKey="variant_id"
+          rowKey={(record) => record.unique_key || record.id.toString()}
           loading={lowStockLoading}
           pagination={{
             current: currentPage,

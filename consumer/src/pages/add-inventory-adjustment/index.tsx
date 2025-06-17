@@ -103,7 +103,11 @@ export default function AddInventoryAdjustment() {
       messageApi?.success("Adjustment created successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
       navigate("/inventory/adjustments");
     },
     onError: (error: any) => {
@@ -201,7 +205,7 @@ export default function AddInventoryAdjustment() {
 
   return (
     <>
-     {setPageTitle("Inventory Adjustment Form")}
+      {setPageTitle("Inventory Adjustment Form")}
       <PageTitle
         title="Create Inventory Adjustment"
         breadcrumbs={[
