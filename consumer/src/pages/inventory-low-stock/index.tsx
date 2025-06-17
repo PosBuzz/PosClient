@@ -189,7 +189,7 @@ export default function InventoryLowStockPage() {
               <br />
               <Space>
                 <Progress
-                  percent={Math.min(stockRatio * 100, 100)}
+                  percent={Math.round(Math.min(stockRatio * 100, 100))}
                   strokeColor={urgency.color}
                   size="small"
                   style={{ width: 100 }}
@@ -483,7 +483,6 @@ export default function InventoryLowStockPage() {
         title="Low Stock Items"
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Inventory", href: "/inventory" },
           { title: "Low Stock" },
         ]}
       />

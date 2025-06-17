@@ -62,10 +62,6 @@ const Categories = () => {
             href: "/",
           },
           {
-            title: "Settings",
-            href: "/settings",
-          },
-          {
             title: title,
           },
         ]}

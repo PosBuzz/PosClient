@@ -101,7 +101,8 @@ const SideBar: React.FC = () => {
           label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
           key: "/inventory/adjustments",
           permissions: [Permissions.inventory_adjustment],
-        },        {
+        },
+        {
           label: <span title="Add Adjustment">Add Adjustment</span>,
           key: "/inventory/adjustments/add",
           permissions: [Permissions.inventory_adjustment],
@@ -109,17 +110,17 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Stock by Variant">Stock by Variant</span>,
           key: "/inventory/stock-by-variant",
-          permissions: [Permissions.view_product],
+          permissions: [Permissions.inventory_batches],
         },
         {
           label: <span title="Expiring Items">Expiring Items</span>,
           key: "/inventory/expiring",
-          permissions: [Permissions.view_product],
+          permissions: [Permissions.inventory_batches],
         },
         {
           label: <span title="Low Stock">Low Stock</span>,
           key: "/inventory/low-stock",
-          permissions: [Permissions.view_product],
+          permissions: [Permissions.inventory_batches],
         },
         {
           label: <span title="Vendors">Vendors</span>,

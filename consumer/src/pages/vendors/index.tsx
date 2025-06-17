@@ -62,10 +62,6 @@ const Vendors = () => {
             href: "/",
           },
           {
-            title: "Settings",
-            href: "/settings",
-          },
-          {
             title: title,
           },
         ]}

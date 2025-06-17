@@ -24,7 +24,7 @@ function index() {
           </Button>
         }
       />
-      <h1 className="text-4xl">This is Consumer</h1>
+      <h1 className="text-4xl">Welcome to PosBuzz</h1>
     </>
   );
 }

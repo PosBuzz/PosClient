@@ -143,7 +143,7 @@ export default function VariantStockPage() {
 
   const getStockHealthPercent = () => {
     if (!stockData.variant.alert_quantity) return 100;
-    return Math.min((stockData.total_stock / stockData.variant.alert_quantity) * 100, 100);
+    return Math.min((stockData.total_stock / stockData.variant.alert_quantity) * 100, 100).toPrecision(4);
   };
 
   // Filter batches based on selected branch

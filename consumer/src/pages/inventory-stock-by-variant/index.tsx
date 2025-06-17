@@ -256,7 +256,7 @@ export default function InventoryStockByVariantPage() {
             {record.total_stock}
           </Text>
           <Text type="secondary">units</Text>
-          {record.is_low_stock && (
+          {!record.is_low_stock || (
             <Tooltip title="Low stock alert">
               <WarningOutlined style={{ color: "#ff4d4f" }} />
             </Tooltip>
@@ -311,8 +311,7 @@ export default function InventoryStockByVariantPage() {
     {
       title: "Actions",
       key: "actions",
-      fixed: "right",
-      width: 200,
+      align: "right",
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="View Details">
@@ -355,12 +354,11 @@ export default function InventoryStockByVariantPage() {
 
   return (
     <>
-     {setPageTitle("Stock by Variant")}
+      {setPageTitle("Stock by Variant")}
       <PageTitle
         title="Stock by Variant"
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Inventory", href: "/inventory" },
           { title: "Stock by Variant" },
         ]}
       />

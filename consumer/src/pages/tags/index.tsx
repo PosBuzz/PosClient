@@ -62,10 +62,6 @@ const Tags = () => {
             href: "/",
           },
           {
-            title: "Settings",
-            href: "/settings",
-          },
-          {
             title: title,
           },
         ]}
