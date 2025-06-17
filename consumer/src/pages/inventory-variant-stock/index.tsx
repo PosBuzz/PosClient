@@ -100,23 +100,29 @@ export default function VariantStockPage() {
   const stockData: VariantStockData = variantStock;
 
   // Process branch data from stock_by_branch and batches
-  const branchesData = Object.entries(stockData.stock_by_branch).map(([branchName, stock]) => {
-    const branchBatches = stockData.batches.filter(batch => batch.branch.name === branchName);
-    const branchValue = branchBatches.reduce((sum, batch) => 
-      sum + (parseFloat(batch.cost_price) * batch.quantity), 0
-    );
-    
-    return {
-      name: branchName,
-      stock,
-      value: branchValue,
-      batches: branchBatches
-    };
-  });
+  const branchesData = Object.entries(stockData.stock_by_branch).map(
+    ([branchName, stock]) => {
+      const branchBatches = stockData.batches.filter(
+        (batch) => batch.branch.name === branchName
+      );
+      const branchValue = branchBatches.reduce(
+        (sum, batch) => sum + parseFloat(batch.cost_price) * batch.quantity,
+        0
+      );
+
+      return {
+        name: branchName,
+        stock,
+        value: branchValue,
+        batches: branchBatches,
+      };
+    }
+  );
 
   // Calculate total value from batches
-  const totalValue = stockData.batches.reduce((sum, batch) => 
-    sum + (parseFloat(batch.cost_price) * batch.quantity), 0
+  const totalValue = stockData.batches.reduce(
+    (sum, batch) => sum + parseFloat(batch.cost_price) * batch.quantity,
+    0
   );
 
   const getExpiryStatus = (expiryDate: string) => {
@@ -143,15 +149,20 @@ export default function VariantStockPage() {
 
   const getStockHealthPercent = () => {
     if (!stockData.variant.alert_quantity) return 100;
-    return Math.min((stockData.total_stock / stockData.variant.alert_quantity) * 100, 100).toPrecision(4);
+    return Number(
+      Math.min(
+        (stockData.total_stock / stockData.variant.alert_quantity) * 100,
+        100
+      ).toPrecision(4)
+    );
   };
 
   // Filter batches based on selected branch
-  const displayBatches = selectedBranch 
-    ? stockData.batches.filter(batch => batch.branch.id === selectedBranch)
+  const displayBatches = selectedBranch
+    ? stockData.batches.filter((batch) => batch.branch.id === selectedBranch)
     : stockData.batches;
 
-  const batchColumns: ColumnsType<VariantStockData['batches'][0]> = [
+  const batchColumns: ColumnsType<VariantStockData["batches"][0]> = [
     {
       title: "Batch Reference",
       dataIndex: "batch_number",
@@ -164,7 +175,13 @@ export default function VariantStockPage() {
       render: (_, record) => (
         <Space>
           <ShopOutlined />
-          <Tag color={record.branch.name.toLowerCase() === "warehouse" ? "default" : "blue"}>
+          <Tag
+            color={
+              record.branch.name.toLowerCase() === "warehouse"
+                ? "default"
+                : "blue"
+            }
+          >
             {record.branch.name}
           </Tag>
         </Space>
@@ -202,7 +219,7 @@ export default function VariantStockPage() {
     {
       title: "Vendor",
       key: "vendor",
-      render: (_, record) => record.vendor?.name || '-',
+      render: (_, record) => record.vendor?.name || "-",
     },
     {
       title: "Expiry Date",
@@ -219,8 +236,8 @@ export default function VariantStockPage() {
               <Text>{dayjs(date).format("MMM DD, YYYY")}</Text>
             </div>
             {status && (
-              <Tag 
-                color={status.color} 
+              <Tag
+                color={status.color}
                 style={{ marginTop: 4 }}
                 icon={status.color === "red" ? <WarningOutlined /> : undefined}
               >
@@ -240,18 +257,18 @@ export default function VariantStockPage() {
   ];
 
   const getCardStyle = () => ({
-    backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-    borderColor: isDarkMode ? '#303030' : '#d9d9d9',
+    backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
+    borderColor: isDarkMode ? "#303030" : "#d9d9d9",
   });
 
   const getOutOfStockStyle = () => ({
     opacity: 0.6,
-    backgroundColor: isDarkMode ? '#262626' : '#f5f5f5',
+    backgroundColor: isDarkMode ? "#262626" : "#f5f5f5",
   });
 
   return (
     <>
-     {setPageTitle("Variant Stock Details")}
+      {setPageTitle("Variant Stock Details")}
       <PageTitle
         title={`${stockData.variant.product.name} - ${stockData.variant.name}`}
         breadcrumbs={[
@@ -265,7 +282,9 @@ export default function VariantStockPage() {
             <Button
               type="default"
               icon={<HistoryOutlined />}
-              onClick={() => navigate(`/inventory/movement-history/${variantId}`)}
+              onClick={() =>
+                navigate(`/inventory/movement-history/${variantId}`)
+              }
             >
               Movement History
             </Button>
@@ -281,7 +300,10 @@ export default function VariantStockPage() {
       />
 
       {/* Variant Information */}
-      <Card title="Variant Information" style={{ marginBottom: 24, ...getCardStyle() }}>
+      <Card
+        title="Variant Information"
+        style={{ marginBottom: 24, ...getCardStyle() }}
+      >
         <Descriptions column={2} bordered>
           <Descriptions.Item label="Product">
             {stockData.variant.product.name}
@@ -316,8 +338,8 @@ export default function VariantStockPage() {
               prefix={stockData.is_low_stock ? <WarningOutlined /> : undefined}
             />
             {!stockData.variant.alert_quantity || (
-              <Progress 
-                percent={getStockHealthPercent()} 
+              <Progress
+                percent={getStockHealthPercent()}
                 strokeColor={getStockHealthColor()}
                 size="small"
                 style={{ marginTop: 8 }}
@@ -340,7 +362,7 @@ export default function VariantStockPage() {
           <Card style={getCardStyle()}>
             <Statistic
               title="Branches"
-              value={branchesData.filter(b => b.stock > 0).length}
+              value={branchesData.filter((b) => b.stock > 0).length}
               suffix={`/ ${branchesData.length}`}
               valueStyle={{ color: "#52c41a" }}
             />
@@ -350,10 +372,20 @@ export default function VariantStockPage() {
           <Card style={getCardStyle()}>
             <Statistic
               title="Status"
-              value={stockData.is_low_stock ? "Low Stock" : stockData.total_stock > 0 ? "In Stock" : "Out of Stock"}
-              valueStyle={{ 
-                color: stockData.is_low_stock ? "#ff4d4f" : stockData.total_stock > 0 ? "#52c41a" : getStockHealthColor(),
-                fontSize: "16px"
+              value={
+                stockData.is_low_stock
+                  ? "Low Stock"
+                  : stockData.total_stock > 0
+                  ? "In Stock"
+                  : "Out of Stock"
+              }
+              valueStyle={{
+                color: stockData.is_low_stock
+                  ? "#ff4d4f"
+                  : stockData.total_stock > 0
+                  ? "#52c41a"
+                  : getStockHealthColor(),
+                fontSize: "16px",
               }}
             />
           </Card>
@@ -361,24 +393,44 @@ export default function VariantStockPage() {
       </Row>
 
       {/* Branch Summary */}
-      <Card title="Stock by Branch" style={{ marginBottom: 24, ...getCardStyle() }}>
+      <Card
+        title="Stock by Branch"
+        style={{ marginBottom: 24, ...getCardStyle() }}
+      >
         <Row gutter={16}>
           {branchesData.map((branch, index) => (
-            <Col key={`${branch.name}-${index}`} span={6} style={{ marginBottom: 16 }}>
-              <Card 
-                size="small" 
-                style={branch.stock === 0 ? getOutOfStockStyle() : getCardStyle()}
+            <Col
+              key={`${branch.name}-${index}`}
+              span={6}
+              style={{ marginBottom: 16 }}
+            >
+              <Card
+                size="small"
+                style={
+                  branch.stock === 0 ? getOutOfStockStyle() : getCardStyle()
+                }
               >
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 4,
+                      marginBottom: 8,
+                    }}
+                  >
                     <ShopOutlined />
                     <Text strong>{branch.name}</Text>
                   </div>
-                  <div style={{ 
-                    fontSize: "20px", 
-                    fontWeight: "bold", 
-                    color: branch.stock > 0 ? "#52c41a" : getStockHealthColor()
-                  }}>
+                  <div
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                      color:
+                        branch.stock > 0 ? "#52c41a" : getStockHealthColor(),
+                    }}
+                  >
                     {branch.stock} units
                   </div>
                   <Text type="secondary" style={{ fontSize: "12px" }}>
@@ -392,7 +444,10 @@ export default function VariantStockPage() {
       </Card>
 
       {/* Filters for batches */}
-      <Card title="Inventory Batches" style={{ marginBottom: 24, ...getCardStyle() }}>
+      <Card
+        title="Inventory Batches"
+        style={{ marginBottom: 24, ...getCardStyle() }}
+      >
         <Row style={{ marginBottom: 16 }}>
           <Col span={8}>
             <Select
@@ -430,15 +485,24 @@ export default function VariantStockPage() {
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2}>
                   <Text strong>
-                    {displayBatches.reduce((sum, batch) => sum + batch.quantity, 0)} units
+                    {displayBatches.reduce(
+                      (sum, batch) => sum + batch.quantity,
+                      0
+                    )}{" "}
+                    units
                   </Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={3}></Table.Summary.Cell>
                 <Table.Summary.Cell index={4}>
                   <Text strong>
-                    ${displayBatches.reduce((sum, batch) => 
-                      sum + (parseFloat(batch.cost_price) * batch.quantity), 0
-                    ).toFixed(2)}
+                    $
+                    {displayBatches
+                      .reduce(
+                        (sum, batch) =>
+                          sum + parseFloat(batch.cost_price) * batch.quantity,
+                        0
+                      )
+                      .toFixed(2)}
                   </Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={5} colSpan={3}></Table.Summary.Cell>
