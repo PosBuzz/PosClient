@@ -41,8 +41,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
     {
       title: "Quantity",
       dataIndex: "quantity",
-      key: "quantity",
-      render: (quantity, record) => {
+      key: "quantity",      render: (quantity, record) => {
         const isLowStock = record.alert_quantity && quantity <= record.alert_quantity;
         return (
           <Space>
@@ -50,7 +49,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
               {quantity} units
             </Text>
             {isLowStock && (
-              <Tooltip title="Low stock alert">
+              <Tooltip title={`Low stock alert - Below threshold of ${record.alert_quantity} units for this branch`}>
                 <AlertOutlined style={{ color: "#ff4d4f" }} />
               </Tooltip>
             )}
@@ -145,12 +144,14 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
   if (allInventoryItems.length === 0) {
     return <Text type="secondary">No inventory records available</Text>;
   }
-
   // Calculate summary statistics
   const totalStock = allInventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Calculate low stock items per branch
   const lowStockItems = allInventoryItems.filter(item => 
     item.alert_quantity && item.quantity <= item.alert_quantity
   ).length;
+  
   const expiringItems = allInventoryItems.filter(item => {
     if (!item.expiry_date) return false;
     const expiryDate = new Date(item.expiry_date);

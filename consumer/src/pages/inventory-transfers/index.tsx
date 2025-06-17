@@ -102,6 +102,10 @@ export default function InventoryTransfersPage() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
     },
     onError: (error: any) => {
       messageApi?.error(

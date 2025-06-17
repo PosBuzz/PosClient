@@ -96,24 +96,33 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
     },
     {
       title: "Stock & Inventory",
-      key: "stock",
-      render: (_, record) => {
+      key: "stock",      render: (_, record) => {
         const totalStock = record.inventory_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-        const isLowStock = record.alert_quantity && totalStock <= record.alert_quantity;
+          // Calculate branch-based low stock status
         const stockByBranch = record.inventory_items?.reduce((acc, item) => {
           const branchName = item.branch?.name || 'Main';
           acc[branchName] = (acc[branchName] || 0) + item.quantity;
           return acc;
         }, {}) || {};
+        
+        // Check if any individual branch has low stock
+        const branchStockMap = record.inventory_items?.reduce((acc, item) => {
+          const branchId = item.branch?.id || 0;
+          acc[branchId] = (acc[branchId] || 0) + item.quantity;
+          return acc;
+        }, {} as Record<number, number>) || {};
+        
+        const hasLowStockBranch = record.alert_quantity && 
+          Object.values(branchStockMap).some(branchStock => (branchStock as number) <= (record.alert_quantity || 0));
 
         return (
           <Space direction="vertical" size="small">
             <Space>
-              <Text style={{ color: isLowStock ? "#ff4d4f" : totalStock > 0 ? "#52c41a" : "#8c8c8c" }}>
+              <Text style={{ color: hasLowStockBranch ? "#ff4d4f" : totalStock > 0 ? "#52c41a" : "#8c8c8c" }}>
                 {totalStock} units
               </Text>
-              {isLowStock && (
-                <Tooltip title="Low stock alert">
+              {hasLowStockBranch && (
+                <Tooltip title="Low stock alert in one or more branches">
                   <AlertOutlined style={{ color: "#ff4d4f" }} />
                 </Tooltip>
               )}
@@ -122,13 +131,20 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               <Text type="secondary" style={{ fontSize: "12px" }}>
                 Alert: {record.alert_quantity}
               </Text>
-            )}            {Object.keys(stockByBranch).length > 1 && (
+            )}
+            {Object.keys(stockByBranch).length > 1 && (
               <Tooltip 
                 title={
                   <div>
-                    {Object.entries(stockByBranch).map(([branch, qty]) => (
-                      <div key={branch}>{branch}: {qty as number} units</div>
-                    ))}
+                    {Object.entries(stockByBranch).map(([branch, qty]) => {
+                      const branchQty = qty as number;
+                      const isLowForBranch = record.alert_quantity && branchQty <= record.alert_quantity;
+                      return (
+                        <div key={branch} style={{ color: isLowForBranch ? "#ff4d4f" : "inherit" }}>
+                          {branch}: {branchQty} units {isLowForBranch && "(Low Stock)"}
+                        </div>
+                      );
+                    })}
                   </div>
                 }
               >

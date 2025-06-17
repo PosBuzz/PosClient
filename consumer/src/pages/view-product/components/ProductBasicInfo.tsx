@@ -69,17 +69,23 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
           {availableSerials}/{totalSerials} serials available
         </Tag>
       );
-    }
-
-    // Check for low stock alerts
+    }    // Check for low stock alerts (branch-based)
     const lowStockVariants =
       product.variants?.filter((variant) => {
-        const variantStock =
-          variant.inventory_items?.reduce(
-            (sum, item) => sum + item.quantity,
-            0
-          ) || 0;
-        return variant.alert_quantity && variantStock <= variant.alert_quantity;
+        if (!variant.alert_quantity) return false;
+        
+        // Group inventory by branch
+        const branchStockMap = variant.inventory_items?.reduce(
+          (acc, item) => {
+            acc[item.branch_id || 0] = (acc[item.branch_id || 0] || 0) + item.quantity;
+            return acc;
+          },
+          {} as Record<number, number>
+        ) || {};
+          // Check if any branch has low stock
+        return Object.values(branchStockMap).some(
+          branchStock => (branchStock as number) <= (variant.alert_quantity || 0)
+        );
       }).length || 0;
 
     if (lowStockVariants > 0) {

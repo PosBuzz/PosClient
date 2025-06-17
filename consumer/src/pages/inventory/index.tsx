@@ -655,12 +655,11 @@ export default function InventoryPage() {
             </Button>
           }
         />
-      )}
-      {/* Alerts for low stock items */}
+      )}      {/* Alerts for low stock items */}
       {summary && summary.low_stock_variants > 0 && (
         <Alert
-          message="Low Stock Alert"
-          description={`You have ${summary.low_stock_variants} variants below their alert thresholds. Consider restocking these items.`}
+          message="Branch-Based Low Stock Alert"
+          description={`You have ${summary.low_stock_variants} branch-variant combinations below their alert thresholds. This includes stock levels across individual branches. Consider restocking these items.`}
           type="error"
           showIcon
           style={{ marginBottom: 24 }}
