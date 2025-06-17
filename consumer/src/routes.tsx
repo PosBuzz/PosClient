@@ -28,15 +28,11 @@ const AddInventoryAdjustments = lazy(
 const InventoryStockByVariant = lazy(
   () => import("./pages/inventory-stock-by-variant")
 );
-const InventoryExpiring = lazy(
-  () => import("./pages/inventory-expiring")
-);
+const InventoryExpiring = lazy(() => import("./pages/inventory-expiring"));
 const InventoryVariantStock = lazy(
   () => import("./pages/inventory-variant-stock")
 );
-const InventoryLowStock = lazy(
-  () => import("./pages/inventory-low-stock")
-);
+const InventoryLowStock = lazy(() => import("./pages/inventory-low-stock"));
 const InventoryMovementHistory = lazy(
   () => import("./pages/inventory-movement-history")
 );
@@ -217,7 +213,8 @@ export const routes = [
             <InventoryAdjustments />
           </RequirePermission>
         ),
-      },      {
+      },
+      {
         path: "inventory/adjustments/add",
         element: (
           <RequirePermission permission={Permissions.edit_product}>
@@ -228,7 +225,7 @@ export const routes = [
       {
         path: "inventory/stock-by-variant",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryStockByVariant />
           </RequirePermission>
         ),
@@ -236,7 +233,7 @@ export const routes = [
       {
         path: "inventory/expiring",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryExpiring />
           </RequirePermission>
         ),
@@ -244,14 +241,15 @@ export const routes = [
       {
         path: "inventory/variants/:id/stock",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryVariantStock />
           </RequirePermission>
         ),
-      },      {
+      },
+      {
         path: "inventory/low-stock",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryLowStock />
           </RequirePermission>
         ),
@@ -259,7 +257,7 @@ export const routes = [
       {
         path: "inventory/movement-history/:variantId",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryMovementHistory />
           </RequirePermission>
         ),

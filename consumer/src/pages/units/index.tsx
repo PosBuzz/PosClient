@@ -62,10 +62,6 @@ const Units = () => {
             href: "/",
           },
           {
-            title: "Settings",
-            href: "/settings",
-          },
-          {
             title: title,
           },
         ]}

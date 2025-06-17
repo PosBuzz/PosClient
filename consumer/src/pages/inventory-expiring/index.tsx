@@ -330,7 +330,6 @@ export default function InventoryExpiringPage() {
         title="Expiring Inventory"
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Inventory", href: "/inventory" },
           { title: "Expiring" },
         ]}
       />{" "}

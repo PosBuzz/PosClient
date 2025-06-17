@@ -62,10 +62,6 @@ const Branches = () => {
             href: "/",
           },
           {
-            title: "Settings",
-            href: "/settings",
-          },
-          {
             title: title,
           },
         ]}
