@@ -1,6 +1,7 @@
-import { AlertOutlined, BarcodeOutlined, CalendarOutlined, ShopOutlined } from "@ant-design/icons";
-import { Badge, Space, Table, Tag, Tooltip, Typography, Image, Collapse } from "antd";
+import { AlertOutlined, BarcodeOutlined, CalendarOutlined, ShopOutlined, EyeOutlined } from "@ant-design/icons";
+import { Badge, Space, Table, Tag, Tooltip, Typography, Image, Collapse, Button } from "antd";
 import { formatCurrency, formatDate } from "../../../utils/formatters";
+import { useNavigate } from "react-router-dom";
 
 const { Text } = Typography;
 const { Panel } = Collapse;
@@ -10,7 +11,9 @@ interface VariantsTabProps {
 }
 
 const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
-  const variantColumns = [    {
+  const navigate = useNavigate();
+
+  const variantColumns = [{
       title: "Image",
       dataIndex: "image",
       key: "image",
@@ -216,8 +219,22 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               {record.VariantAttribute.length} attribute{record.VariantAttribute.length > 1 ? 's' : ''}
             </Tag>
           </Tooltip>
-        );
-      },
+        );      },
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 120,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => navigate(`/inventory/variants/${record.id}/stock`)}
+        >
+          View Stock
+        </Button>
+      ),
     },
   ];
   // Expandable row render function
