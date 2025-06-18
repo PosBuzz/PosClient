@@ -422,13 +422,16 @@ export default function VariantStockPage() {
                   >
                     <ShopOutlined />
                     <Text strong>{branch.name}</Text>
-                  </div>
-                  <div
+                  </div>                  <div
                     style={{
                       fontSize: "20px",
                       fontWeight: "bold",
                       color:
-                        branch.stock > 0 ? "#52c41a" : getStockHealthColor(),
+                        stockData.variant.alert_quantity && branch.stock <= stockData.variant.alert_quantity
+                          ? "#ff4d4f" // Red for low stock alert
+                          : branch.stock > 0 
+                          ? "#52c41a" // Green for normal stock
+                          : getStockHealthColor(), // Gray for out of stock
                     }}
                   >
                     {branch.stock} units

@@ -1,4 +1,4 @@
-import { ShopOutlined, CalendarOutlined, AlertOutlined } from "@ant-design/icons";
+import { ShopOutlined, CalendarOutlined } from "@ant-design/icons";
 import { Table, Tag, Typography, Space, Progress, Tooltip } from "antd";
 import { formatDate } from "../../../utils/formatters";
 
@@ -37,47 +37,13 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
           {record.branch?.is_main && <Tag color="green">Main</Tag>}
         </Space>
       ),
-    },
-    {
+    },    {
       title: "Quantity",
       dataIndex: "quantity",
-      key: "quantity",      render: (quantity, record) => {
-        const isLowStock = record.alert_quantity && quantity <= record.alert_quantity;
-        return (
-          <Space>
-            <Text style={{ color: isLowStock ? "#ff4d4f" : quantity > 0 ? "#52c41a" : "#8c8c8c" }}>
-              {quantity} units
-            </Text>
-            {isLowStock && (
-              <Tooltip title={`Low stock alert - Below threshold of ${record.alert_quantity} units for this branch`}>
-                <AlertOutlined style={{ color: "#ff4d4f" }} />
-              </Tooltip>
-            )}
-          </Space>
-        );
-      },
-    },
-    {
-      title: "Stock Level",
-      key: "stock_level",
-      render: (_, record) => {
-        if (!record.alert_quantity) return <Text type="secondary">No alert set</Text>;
-        
-        const percentage = Math.min((record.quantity / (record.alert_quantity * 2)) * 100, 100);
-        const status = percentage <= 50 ? 'exception' : percentage <= 75 ? 'active' : 'success';
-        
-        return (
-          <Tooltip title={`Alert threshold: ${record.alert_quantity} units`}>
-            <Progress 
-              percent={percentage} 
-              size="small" 
-              status={status}
-              showInfo={false}
-              style={{ width: 80 }}
-            />
-          </Tooltip>
-        );
-      },
+      key: "quantity",
+      render: (quantity) => (
+        <Text>{quantity} units</Text>
+      ),
     },
     {
       title: "Batch Number",
@@ -143,14 +109,15 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
 
   if (allInventoryItems.length === 0) {
     return <Text type="secondary">No inventory records available</Text>;
-  }
-  // Calculate summary statistics
+  }  // Calculate summary statistics
   const totalStock = allInventoryItems.reduce((sum, item) => sum + item.quantity, 0);
   
-  // Calculate low stock items per branch
-  const lowStockItems = allInventoryItems.filter(item => 
-    item.alert_quantity && item.quantity <= item.alert_quantity
-  ).length;
+  // Calculate low stock branches (count unique branches with low stock)
+  const lowStockBranches = [...new Set(
+    allInventoryItems
+      .filter(item => item.alert_quantity && item.quantity <= item.alert_quantity)
+      .map(item => item.branch?.name || 'Main')
+  )].length;
   
   const expiringItems = allInventoryItems.filter(item => {
     if (!item.expiry_date) return false;
@@ -170,10 +137,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
         </Tag>
         <Tag color="green" style={{ padding: "4px 8px" }}>
           Branches: {branches}
-        </Tag>
-        {lowStockItems > 0 && (
+        </Tag>        {lowStockBranches > 0 && (
           <Tag color="red" style={{ padding: "4px 8px" }}>
-            Low Stock: {lowStockItems} items
+            Low Stock: {lowStockBranches} branches
           </Tag>
         )}
         {expiringItems > 0 && (
