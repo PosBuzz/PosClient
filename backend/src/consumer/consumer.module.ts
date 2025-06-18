@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ProductModule } from './product/product.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { InventoryModule } from './inventory/inventory.module';
     VendorModule,
     ProductModule,
     InventoryModule,
+    CacheModule,
   ],
 })
 export class ConsumerModule {}
