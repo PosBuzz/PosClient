@@ -93,6 +93,7 @@ export default function AddEditInventory() {
       messageApi?.success("Inventory added successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
@@ -115,6 +116,7 @@ export default function AddEditInventory() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.batch, id] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
@@ -219,7 +221,7 @@ export default function AddEditInventory() {
 
   return (
     <>
-     {setPageTitle("Inventory Batch Form")}
+      {setPageTitle("Inventory Batch Form")}
       {/* Header */}
       <PageTitle
         title={isEdit ? "Edit Inventory" : "Add New Inventory"}
