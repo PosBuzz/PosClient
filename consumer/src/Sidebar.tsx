@@ -2,6 +2,7 @@ import {
   DashboardOutlined,
   ProductOutlined,
   SettingOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
@@ -125,7 +126,23 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Vendors">Vendors</span>,
           key: "/vendors",
-          permissions: [Permissions.vendors, Permissions.inventory_batches],
+          permissions: [Permissions.vendors, Permissions.inventory_batches],        },
+      ],
+    },
+    {
+      label: <span title="Sales">Sales</span>,
+      key: "/sales-menu",
+      icon: <ShoppingCartOutlined />,
+      children: [
+        {
+          label: <span title="All Sales">View Sales</span>,
+          key: "/sales",
+          permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="New Sale">New Sale</span>,
+          key: "/sales/add",
+          permissions: [Permissions.branches],
         },
       ],
     },

@@ -22,7 +22,6 @@ model SuperAdmin {
 
   role SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
-  @@index([email])
   @@index([name])
   @@index([role_id])
   @@map("super_admins")
@@ -34,7 +33,6 @@ model SuperAdminRole {
   permissions SuperAdminRolePermission[]
   users       SuperAdmin[]
 
-  @@index([name])
   @@map("super_admin_roles")
 }
 
@@ -43,7 +41,6 @@ model SuperAdminPermission {
   action         String                     @unique
   RolePermission SuperAdminRolePermission[]
 
-  @@index([action])
   @@map("super_admin_permissions")
 }
 
@@ -54,7 +51,6 @@ model SuperAdminRolePermission {
   permission    SuperAdminPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
-  @@index([role_id])
   @@index([permission_id])
   @@map("super_admin_role_permissions")
 }
@@ -91,7 +87,6 @@ model Consumer {
   @@index([email])
   @@index([company_name])
   @@index([phone])
-  @@index([subdomain])
   @@index([plan_id])
   @@map("consumers")
 }
@@ -106,7 +101,6 @@ model Plan {
   permissions    PlanPermission[]
   BillingHistory BillingHistory[]
 
-  @@index([name])
   @@index([price])
   @@index([created_at])
   @@map("plans")
@@ -119,7 +113,6 @@ model PlanPermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([plan_id, permission_id])
-  @@index([plan_id])
   @@index([permission_id])
   @@map("plan_permissions")
 }
@@ -138,7 +131,6 @@ model BillingHistory {
   plan     Plan     @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
   @@unique([consumer_id, billing_date])
-  @@index([consumer_id])
   @@index([billing_date])
   @@map("billing_histories")
 }
@@ -160,9 +152,7 @@ model User {
   InventoryAdjustment InventoryAdjustment[]
   PriceHistory        PriceHistory[]
 
-  @@index([consumer_id])
   @@index([role_id])
-  @@index([email])
   @@index([name])
   @@index([created_at])
   @@index([consumer_id, role_id])
@@ -175,7 +165,6 @@ model Permission {
   RolePermission RolePermission[]
   PlanPermission PlanPermission[]
 
-  @@index([action])
   @@map("permissions")
 }
 
@@ -189,7 +178,6 @@ model Role {
   users       User[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@map("roles")
 }
 
@@ -200,7 +188,6 @@ model RolePermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
-  @@index([role_id])
   @@index([permission_id])
   @@map("role_permissions")
 }
@@ -228,7 +215,6 @@ model Product {
   variants ProductVariant[]
 
   @@unique([consumer_id, code])
-  @@index([consumer_id])
   @@index([name])
   @@index([category_id])
   @@index([brand_id])
@@ -284,7 +270,6 @@ model ProductVariant {
   serials             ProductSerial[]
   InventoryAdjustment InventoryAdjustment[]
 
-  @@index([product_id])
   @@index([name])
   @@index([sku])
   @@index([barcode])
@@ -306,7 +291,6 @@ model Unit {
   purchase_variants ProductVariant[] @relation("PurchaseUnit")
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
   @@map("units")
 }
@@ -323,7 +307,6 @@ model Category {
   products Product[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
   @@map("categories")
 }
@@ -342,7 +325,6 @@ model Brand {
   products Product[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
   @@map("brands")
 }
@@ -359,7 +341,6 @@ model Tag {
   products TagOnProduct[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
   @@map("tags")
 }
@@ -371,7 +352,6 @@ model TagOnProduct {
   tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@id([product_id, tag_id])
-  @@index([product_id])
   @@index([tag_id])
   @@map("tag_on_products")
 }
@@ -384,7 +364,7 @@ model Branch {
   email        String?
   phone        String?
   is_main      Boolean  @default(false)
-  is_warehouse Boolean  @default(false) // Add this field
+  is_warehouse Boolean  @default(false)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
@@ -397,10 +377,7 @@ model Branch {
   InventoryAdjustment InventoryAdjustment[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
-  @@index([is_main])
-  @@index([is_warehouse])
   @@map("branches")
 }
 
@@ -424,7 +401,6 @@ model InventoryBatch {
   InventoryAdjustment InventoryAdjustment[]
   serials             ProductSerial[]
 
-  @@index([variant_id])
   @@index([branch_id])
   @@index([vendor_id])
   @@index([variant_id, branch_id])
@@ -455,7 +431,6 @@ model InventoryTransfer {
 
   @@index([source_branch_id])
   @@index([destination_branch_id])
-  @@index([status])
   @@index([created_by_user_id])
   @@index([created_at])
   @@index([status, created_at])
@@ -472,7 +447,6 @@ model InventoryTransferItem {
   transfer InventoryTransfer @relation(fields: [transfer_id], references: [id], onDelete: Cascade)
   batch    InventoryBatch    @relation(fields: [batch_id], references: [id])
 
-  @@index([transfer_id])
   @@index([batch_id])
   @@index([transfer_id, batch_id])
   @@map("inventory_transfer_items")
@@ -495,7 +469,6 @@ model InventoryAdjustment {
   branch          Branch         @relation(fields: [branch_id], references: [id])
   created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
 
-  @@index([variant_id])
   @@index([branch_id])
   @@index([batch_id])
   @@index([created_by_user_id])
@@ -520,7 +493,6 @@ model Vendor {
   batches  InventoryBatch[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@index([name])
   @@index([email])
   @@index([phone])
@@ -539,7 +511,6 @@ model VariantAttribute {
   consumerId Int?
 
   @@unique([variant_id, name])
-  @@index([variant_id])
   @@index([name])
   @@index([value])
   @@index([consumerId])
@@ -596,7 +567,6 @@ model PromotionProduct {
   variant   ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
 
   @@id([promotion_id, variant_id])
-  @@index([promotion_id])
   @@index([variant_id])
   @@map("promotion_products")
 }
@@ -610,7 +580,6 @@ model PromotionBranch {
   branch    Branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 
   @@id([promotion_id, branch_id])
-  @@index([promotion_id])
   @@index([branch_id])
   @@map("promotion_branches")
 }
