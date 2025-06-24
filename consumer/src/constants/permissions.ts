@@ -10,4 +10,9 @@ export const Permissions = {
   inventory_batches: "inventory_batches",
   inventory_transfer: "inventory_transfer",
   inventory_adjustment: "inventory_adjustment",
+  sales: "sales",
+  view_sales: "view_sales",
+  add_sale: "add_sale",
+  edit_sale: "edit_sale",
+  delete_sale: "delete_sale",
 };
