@@ -20,6 +20,8 @@ export const queryKeys = {
   sales: "sales",
   sale: "sale",
   salesStats: "sales-stats",
+  customers: "customers",
+  customer: "customer",
   tags: "tags",
   transfers: "transfers",
   units: "units",

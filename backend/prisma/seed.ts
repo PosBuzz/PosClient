@@ -102,6 +102,7 @@ async function main() {
     'inventory_batches',
     'inventory_transfer',
     'inventory_adjustment',
+    'customers',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
