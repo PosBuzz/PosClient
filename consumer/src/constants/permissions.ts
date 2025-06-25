@@ -15,4 +15,5 @@ export const Permissions = {
   add_sale: "add_sale",
   edit_sale: "edit_sale",
   delete_sale: "delete_sale",
+  customers: "customers",
 };

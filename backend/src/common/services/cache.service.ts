@@ -252,7 +252,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
    * Invalidate specific entity caches for a consumer
    * Use this for entities that don't directly affect inventory
    */
-  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles' | 'branches'): Promise<void> {
+  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles' | 'branches' | 'customers'): Promise<void> {
     let pattern: string;
     
     switch (entityType) {
@@ -261,6 +261,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         break;
       case 'vendors':
         pattern = generateCachePatterns.allVendors(consumerId);
+        break;
+      case 'customers':
+        pattern = generateCachePatterns.allCustomers(consumerId);
         break;
       case 'categories':
         pattern = generateCachePatterns.allCategories(consumerId);

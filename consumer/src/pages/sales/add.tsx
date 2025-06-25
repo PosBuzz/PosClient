@@ -1,32 +1,39 @@
 import {
-  PlusOutlined,
   DeleteOutlined,
-  SearchOutlined,
+  PlusOutlined,
+  SearchOutlined
 } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
 import {
+  AutoComplete,
   Button,
   Card,
   Col,
+  Divider,
   Form,
   Input,
   InputNumber,
+  message,
   Row,
   Select,
+  Space,
   Table,
   Typography,
-  Space,
-  Divider,
-  message,
 } from "antd";
-import { useState, useEffect } from "react";
+import debounce from "lodash/debounce";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { get } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
-import { setPageTitle } from "../../utils/setPageTitle";
+import type { Customer, CustomerType } from "../../types/customer.types";
 import type {
+  ProductVariantForSale,
   SaleFormData,
   SaleItem,
-  ProductVariantForSale,
 } from "../../types/sale.types";
+import { setPageTitle } from "../../utils/setPageTitle";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -38,8 +45,8 @@ const dummyVariants: ProductVariantForSale[] = [
     name: "iPhone 14 - 128GB Black",
     sku: "IP14-128-BLK",
     barcode: "1234567890123",
-    regular_price: 150.00,
-    wholesale_price: 130.00,
+    regular_price: 150.0,
+    wholesale_price: 130.0,
     image: "https://via.placeholder.com/50",
     product_name: "iPhone 14",
     available_stock: 10,
@@ -50,8 +57,8 @@ const dummyVariants: ProductVariantForSale[] = [
     name: "Samsung Galaxy S24 - 256GB White",
     sku: "SGS24-256-WHT",
     barcode: "1234567890124",
-    regular_price: 75.00,
-    wholesale_price: 65.00,
+    regular_price: 75.0,
+    wholesale_price: 65.0,
     image: "https://via.placeholder.com/50",
     product_name: "Samsung Galaxy S24",
     available_stock: 8,
@@ -62,8 +69,8 @@ const dummyVariants: ProductVariantForSale[] = [
     name: "MacBook Air M2 - 512GB Silver",
     sku: "MBA-M2-512-SLV",
     barcode: "1234567890125",
-    regular_price: 200.00,
-    wholesale_price: 180.00,
+    regular_price: 200.0,
+    wholesale_price: 180.0,
     image: "https://via.placeholder.com/50",
     product_name: "MacBook Air M2",
     available_stock: 5,
@@ -71,12 +78,74 @@ const dummyVariants: ProductVariantForSale[] = [
   },
 ];
 
-const NewSale = () => {  const [form] = Form.useForm();
+// Dummy customer data
+const dummyCustomers: Customer[] = [
+  {
+    id: 1,
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "+1234567890",
+    address: "123 Main St, New York, NY 10001",
+    customer_type: "individual" as CustomerType,
+    consumer_id: 1,
+    created_at: "2025-06-20T10:00:00Z",
+    updated_at: "2025-06-25T14:30:00Z",
+  },
+  {
+    id: 2,
+    name: "Tech Solutions Inc.",
+    email: "contact@techsolutions.com",
+    phone: "+1234567891",
+    address: "456 Business Ave, San Francisco, CA 94102",
+    customer_type: "business" as CustomerType,
+    consumer_id: 1,
+    created_at: "2025-06-18T15:20:00Z",
+    updated_at: "2025-06-24T11:45:00Z",
+  },
+  {
+    id: 3,
+    name: "Jane Smith",
+    email: "jane.smith@email.com",
+    phone: "+1234567892",
+    address: "789 Oak Street, Chicago, IL 60601",
+    customer_type: "individual" as CustomerType,
+    consumer_id: 1,
+    created_at: "2025-06-22T09:15:00Z",
+    updated_at: "2025-06-25T16:20:00Z",
+  },
+];
+
+const NewSale = () => {
+  const [form] = Form.useForm();
   const navigate = useNavigate();
-  
+
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [searchValue, setSearchValue] = useState("");
-  const [filteredVariants, setFilteredVariants] = useState<ProductVariantForSale[]>(dummyVariants);
+  const [filteredVariants, setFilteredVariants] = useState<ProductVariantForSale[]>(
+    dummyVariants
+  );
+  const [customerSearchValue, setCustomerSearchValue] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  // Debounced customer search
+  const debouncedCustomerSearch = useCallback(
+    debounce((searchTerm: string) => {
+      setCustomerSearchValue(searchTerm);
+    }, 300),
+    []
+  );
+
+  // Fetch customers based on search
+  const customersQuery = useQuery({
+    queryKey: [queryKeys.customers, customerSearchValue],
+    queryFn: async () => {
+      if (!customerSearchValue || customerSearchValue.length < 2) {
+        return dummyCustomers.slice(0, 5); // Show first 5 as default
+      }
+      
+      return await get(endpoints.getCustomers, { search: customerSearchValue });
+    },
+  });
 
   useEffect(() => {
     setPageTitle("New Sale");
@@ -98,16 +167,16 @@ const NewSale = () => {  const [form] = Form.useForm();
   }, [searchValue]);
 
   const addToSale = (variant: ProductVariantForSale) => {
-    const existingItem = selectedItems.find(item => item.variant_id === variant.id);
-    
+    const existingItem = selectedItems.find((item) => item.variant_id === variant.id);
+
     if (existingItem) {
       if (existingItem.quantity >= variant.available_stock) {
         message.warning("Cannot add more items than available stock");
         return;
       }
-      
-      setSelectedItems(items =>
-        items.map(item =>
+
+      setSelectedItems((items) =>
+        items.map((item) =>
           item.variant_id === variant.id
             ? {
                 ...item,
@@ -143,13 +212,14 @@ const NewSale = () => {  const [form] = Form.useForm();
       return;
     }
 
-    setSelectedItems(items =>
-      items.map(item =>
+    setSelectedItems((items) =>
+      items.map((item) =>
         item.variant_id === variantId
           ? {
               ...item,
               quantity,
-              line_total: quantity * item.unit_price - (item.discount_amount || 0) + (item.tax_amount || 0),
+              line_total:
+                quantity * item.unit_price - (item.discount_amount || 0) + (item.tax_amount || 0),
             }
           : item
       )
@@ -157,11 +227,11 @@ const NewSale = () => {  const [form] = Form.useForm();
   };
 
   const removeItem = (variantId: number) => {
-    setSelectedItems(items => items.filter(item => item.variant_id !== variantId));
+    setSelectedItems((items) => items.filter((item) => item.variant_id !== variantId));
   };
 
   const calculateTotals = () => {
-    const subtotal = selectedItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    const subtotal = selectedItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
     const discountAmount = form.getFieldValue("discount_amount") || 0;
     const taxAmount = subtotal * 0.15; // 15% tax
     const total = subtotal - discountAmount + taxAmount;
@@ -181,10 +251,10 @@ const NewSale = () => {  const [form] = Form.useForm();
     }
 
     const totals = calculateTotals();
-    
+
     const saleData: SaleFormData = {
       ...values,
-      items: selectedItems.map(item => ({
+      items: selectedItems.map((item) => ({
         ...item,
         tax_amount: (item.quantity * item.unit_price) * 0.15, // Calculate individual tax
       })),
@@ -195,7 +265,7 @@ const NewSale = () => {  const [form] = Form.useForm();
       // For development, just show success message
       message.success("Sale created successfully! (Backend integration pending)");
       console.log("Sale data:", saleData);
-      
+
       // Navigate back to sales list
       navigate("/sales");
     } catch (error) {
@@ -358,7 +428,7 @@ const NewSale = () => {  const [form] = Form.useForm();
                 style={{ marginBottom: 16 }}
                 allowClear
               />
-              
+
               <Table
                 columns={variantColumns}
                 dataSource={filteredVariants}
@@ -374,9 +444,42 @@ const NewSale = () => {  const [form] = Form.useForm();
           <Col span={10}>
             <Card title="Sale Details" style={{ height: "calc(100vh - 200px)" }}>
               <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item label="Customer" name="customer_id">
+                    <AutoComplete
+                      placeholder="Search for a customer or leave empty for walk-in"
+                      onSearch={debouncedCustomerSearch}
+                      onSelect={(value, option) => {
+                        const customer = (customersQuery.data || dummyCustomers).find(
+                          (c: Customer) => c.id === parseInt(value)
+                        );
+                        setSelectedCustomer(customer || null);
+                        form.setFieldsValue({ customer_id: value });
+                      }}
+                      allowClear
+                      showSearch
+                      filterOption={false}
+                      notFoundContent={customersQuery.isLoading ? "Searching..." : "No customers found"}
+                    >
+                      {(customersQuery.data || dummyCustomers).map((customer: Customer) => (
+                        <AutoComplete.Option key={customer.id} value={customer.id.toString()}>
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{customer.name}</div>
+                            <small style={{ color: "#666" }}>
+                              {customer.phone} {customer.email && `• ${customer.email}`}
+                            </small>
+                          </div>
+                        </AutoComplete.Option>
+                      ))}
+                    </AutoComplete>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item label="Customer Name" name="customer_name">
-                    <Input placeholder="Optional" />
+                    <Input placeholder="For walk-in customers" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -457,7 +560,7 @@ const NewSale = () => {  const [form] = Form.useForm();
                 </Col>
               </Row>
 
-              <div style={{ background: "#f5f5f5", padding: 16, borderRadius: 8 }}>
+              <div style={{ padding: 16, borderRadius: 8 }}>
                 <Row justify="space-between">
                   <Text>Subtotal:</Text>
                   <Text>${totals.subtotal.toFixed(2)}</Text>
