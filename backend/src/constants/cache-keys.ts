@@ -52,6 +52,18 @@ export const generateCacheKey = {
   vendorDetail: (vendorId: number, consumerId: number) =>
     `${consumerId}:vendor:detail:${vendorId}`,
 
+  customerList: (consumerId: number) =>
+    `${consumerId}:customers:list`,
+
+  customerFiltered: (consumerId: number, search?: string, customerType?: string, page?: number, limit?: number) =>
+    `${consumerId}:customers:filtered:${search || 'all'}:${customerType || 'all'}:${page || 1}:${limit || 20}`,
+
+  customerSearch: (consumerId: number, query: string) =>
+    `${consumerId}:customers:search:${query.toLowerCase()}`,
+
+  customer: (consumerId: number, customerId: number) =>
+    `${consumerId}:customer:detail:${customerId}`,
+
   userList: (consumerId: number, search?: string, roleId?: number) =>
     `${consumerId}:users:list:${search || 'all'}:${roleId || 'all'}`,
 
@@ -156,6 +168,9 @@ export const generateCachePatterns = {
   
   // Vendor patterns
   allVendors: (consumerId: number) => `${consumerId}:vendor*`,
+  
+  // Customer patterns
+  allCustomers: (consumerId: number) => `${consumerId}:customer*`,
   
   // User patterns
   allUsers: (consumerId: number) => `${consumerId}:user*`,

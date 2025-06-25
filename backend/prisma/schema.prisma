@@ -83,12 +83,34 @@ model Consumer {
   Vendor           Vendor[]
   VariantAttribute VariantAttribute[]
   Promotion        Promotion[]
+  Customer         Customer[]
 
   @@index([email])
   @@index([company_name])
   @@index([phone])
   @@index([plan_id])
   @@map("consumers")
+}
+
+model Customer {
+  id            Int      @id @default(autoincrement())
+  consumer_id   Int
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  customer_type String // 'individual' or 'business'
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@index([consumer_id])
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@map("customers")
 }
 
 model Plan {

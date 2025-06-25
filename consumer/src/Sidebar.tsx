@@ -3,6 +3,7 @@ import {
   ProductOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
@@ -128,6 +129,12 @@ const SideBar: React.FC = () => {
           key: "/vendors",
           permissions: [Permissions.vendors, Permissions.inventory_batches],        },
       ],
+    },
+    {
+      label: <span title="Customers">Customers</span>,
+      key: "/customers",
+      icon: <UserOutlined />,
+      permissions: [Permissions.customers],
     },
     {
       label: <span title="Sales">Sales</span>,

@@ -56,6 +56,12 @@ export const endpoints = {
   updateVendor: (id: number) => `/consumer/vendors/${id}`,
   deleteVendor: (id: number) => `/consumer/vendors/${id}`,
 
+  // Customer management
+  getCustomers: "/consumer/customers",
+  createCustomer: "/consumer/customers",
+  updateCustomer: (id: number) => `/consumer/customers/${id}`,
+  deleteCustomer: (id: number) => `/consumer/customers/${id}`,
+
   // Inventory Management
   inventorySummary: "/consumer/inventory/summary",
   inventoryProducts: "/consumer/inventory/products",
