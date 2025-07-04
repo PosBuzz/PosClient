@@ -97,7 +97,7 @@ model Customer {
   consumer_id   Int
   name          String
   email         String?
-  phone         String?
+  phone         String   @unique
   address       String?
   customer_type String // 'individual' or 'business'
   created_at    DateTime @default(now())
