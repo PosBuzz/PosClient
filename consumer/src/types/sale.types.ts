@@ -4,6 +4,8 @@ export interface SaleItem {
   variant_name: string;
   variant_sku?: string;
   quantity: number;
+  batch_id?: number;
+  batch_number?: string;
   unit_price: number;
   discount_amount?: number;
   tax_amount?: number;
@@ -13,11 +15,14 @@ export interface SaleItem {
   wholesale_price?: number;
   image?: string;
   available_stock: number;
+  unit_name: string;
+  tax_percentage?: number;
 }
 
 export interface Sale {
   id?: number;
   sale_number: string;
+  customer_id?: number;
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
@@ -26,12 +31,18 @@ export interface Sale {
   user_id?: number;
   user_name?: string;
   sale_date: string;
+  sale_type: SaleType;
+  price_type: PriceType;
   subtotal: number;
+  discount_type: DiscountType;
   discount_amount: number;
+  shipping_cost: number;
   tax_amount: number;
   total_amount: number;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
+  received_amount: number;
+  change_amount: number;
   notes?: string;
   items: SaleItem[];
   created_at?: string;
@@ -39,13 +50,19 @@ export interface Sale {
 }
 
 export interface SaleFormData {
+  customer_id?: number;
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
   branch_id: number;
+  sale_type: SaleType;
+  price_type: PriceType;
+  discount_type: DiscountType;
   discount_amount: number;
+  shipping_cost: number;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
+  received_amount: number;
   notes?: string;
   items: SaleItem[];
 }
@@ -53,16 +70,33 @@ export interface SaleFormData {
 export enum PaymentMethod {
   CASH = "cash",
   CARD = "card",
+  CHEQUE = "cheque",
   BANK_TRANSFER = "bank_transfer",
   MOBILE_MONEY = "mobile_money",
+  DEPOSIT = "deposit",
   CREDIT = "credit",
 }
 
 export enum PaymentStatus {
   PAID = "paid",
-  PENDING = "pending",
   PARTIAL = "partial",
+  DUE = "due",
   CANCELLED = "cancelled",
+}
+
+export enum SaleType {
+  SALE = "sale",
+  QUOTATION = "quotation",
+}
+
+export enum PriceType {
+  REGULAR = "regular",
+  WHOLESALE = "wholesale",
+}
+
+export enum DiscountType {
+  FLAT = "flat",
+  PERCENTAGE = "percentage",
 }
 
 export interface SaleListFilters {
@@ -104,6 +138,24 @@ export interface ProductVariantForSale {
   product_name: string;
   available_stock: number;
   unit_name: string;
+  tax_percentage: number;
+  batches: InventoryBatch[];
+}
+
+export interface InventoryBatch {
+  id: number;
+  batch_number: string;
+  quantity: number;
+  cost_price: number;
+  expiry_date?: string;
+}
+
+export interface Branch {
+  id: number;
+  name: string;
+  address?: string;
+  is_main: boolean;
+  is_warehouse: boolean;
 }
 
 export interface SalesStats {
