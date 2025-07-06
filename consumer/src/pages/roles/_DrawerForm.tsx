@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -50,7 +50,7 @@ export default function DrawerForm({
   const { data: permissionOptions } = useQuery({
     queryKey: [queryKeys.planPermissions],
     queryFn: () => get(endpoints.planPermissions),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.planPermissions],
   });
 
   const onFinish = async (formValues: any) => {

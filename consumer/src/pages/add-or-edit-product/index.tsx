@@ -9,7 +9,7 @@ import { ProductFormData, TaxMethod } from "../../types/product.types";
 import { useProductFormState } from "./hooks/useProductFormState";
 import StateBasicInformationTab from "./components/StateBasicInformationTab";
 import StateVariantManager from "./components/StateVariantManager";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -174,7 +174,7 @@ export default function ProductForm() {
     queryKey: [queryKeys.product, id],
     queryFn: () => productApi.getProduct(Number(id!)),
     enabled: isEditMode,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.product],
   });
 
   // Initialize form with product data in edit mode

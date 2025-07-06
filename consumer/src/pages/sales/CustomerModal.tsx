@@ -27,23 +27,32 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       customer_type: values.customer_type,
     };
     onCreateCustomer(newCustomer);
+    handleClose();
+  };
+
+  const handleClose = () => {
     form.resetFields();
     onClose();
   };
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
       form.resetFields();
     }
   }, [open, form]);
+
+  if (!open) {
+    return null;
+  }
 
   return (
     <Modal
       title="Add New Customer"
       open={open}
-      onCancel={onClose}
+      onCancel={handleClose}
       footer={null}
       width={600}
+      destroyOnClose
     >
       <Form
         form={form}
@@ -95,7 +104,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
         <Form.Item style={{ marginBottom: 0 }}>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={onClose}>
+            <Button onClick={handleClose}>
               Cancel
             </Button>
             <Button type="primary" htmlType="submit">

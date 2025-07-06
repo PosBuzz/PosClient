@@ -99,4 +99,11 @@ export const endpoints = {
   // AI Services
   generateDescription: "/ai/auto-description",
   submitFeedback: "/ai/description-feedback",
+
+  // Sales Management
+  getSales: "/consumer/sales",
+  getSale: (id: number) => `/consumer/sales/${id}`,
+  createSale: "/consumer/sales",
+  getSalesStats: "/consumer/sales/stats",
+  getProductsForSale: "/consumer/sales/products",
 };

@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { productApi } from "../../api/product-api";
 import { useConfirmDelete } from "../../hooks/useConfirmDelete";
 import { useMessageStore } from "../../stores/messageStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 interface CommonSelectorProps {
   value?: number | number[];
@@ -53,7 +53,7 @@ export default function CommonSelector({
       case "tag":
         return queryKeys.tags;
       default:
-        return null;
+        return queryKeys.categories; // fallback to categories
     }
   };
 
@@ -74,7 +74,7 @@ export default function CommonSelector({
           return [];
       }
     },
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKey(type)],
   });
 
   // Create mutation

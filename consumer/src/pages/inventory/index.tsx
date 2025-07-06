@@ -31,7 +31,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
 import { setPageTitle } from "../../utils/setPageTitle";
@@ -92,19 +92,19 @@ export default function InventoryPage() {
         branch_id: selectedBranch,
         variant_id: selectedVariant,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.batches],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: [queryKeys.inventorySummary, selectedBranch],
     queryFn: () => inventoryApi.getSummary(selectedBranch),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.inventorySummary],
   });
 
   // Delete mutation

@@ -29,7 +29,6 @@ export default function _TableGrid({ model, onClickEdit }) {
           },
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const deleteMutation = useMutation({

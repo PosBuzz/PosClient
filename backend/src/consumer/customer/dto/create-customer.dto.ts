@@ -20,9 +20,9 @@ export class CreateCustomerDto {
   @IsEmail()
   email?: string;
 
-  @IsOptional()
   @IsString()
-  phone?: string;
+  @IsNotEmpty()
+  phone: string;
 
   @IsOptional()
   @IsString()

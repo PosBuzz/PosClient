@@ -6,7 +6,7 @@ import { Button, Popconfirm, Space, Table, Tag } from "antd";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
@@ -19,7 +19,7 @@ export default function _TableGrid({ onClickEdit }) {
   } = useQuery({
     queryKey: [queryKeys.roles],
     queryFn: () => get(endpoints.role),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.roles],
   });
 
   const deleteMutation = useMutation({

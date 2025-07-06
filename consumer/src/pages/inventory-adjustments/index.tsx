@@ -27,7 +27,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -79,13 +79,13 @@ export default function InventoryAdjustmentsPage() {
         variant_id: variantFilter,
         branch_id: branchFilter,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.adjustments],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   const handleView = (adjustment: InventoryAdjustment) => {

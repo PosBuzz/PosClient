@@ -30,8 +30,9 @@ import {
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
+import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -75,7 +76,7 @@ export default function AddInventoryTransfer() {
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   // Updated query to handle warehouse (null branch_id)
@@ -95,8 +96,8 @@ export default function AddInventoryTransfer() {
         limit: undefined, // Remove limit to fetch all batches
       });
     },
-    staleTime: 3600 * 1000,
     enabled: sourceBranchId !== undefined,
+    staleTime: queryStaleTimeMap[queryKeys.batches],
   });
 
   // Create transfer mutation
@@ -104,7 +105,8 @@ export default function AddInventoryTransfer() {
     mutationFn: inventoryApi.createTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer created successfully");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      // Invalidate all relevant caches after transfer operation
+      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {
