@@ -9,7 +9,7 @@ import TableGrid from "./_TableGrid";
 import { useQuery } from "@tanstack/react-query";
 import { get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 const title = "Users";
 
@@ -21,7 +21,7 @@ const Users = () => {
   const { data: fetchData } = useQuery({
     queryKey: [queryKeys.roles],
     queryFn: () => get(endpoints.role),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.roles],
   });
 
   const roleOptions: any = fetchData?.map((role) => {

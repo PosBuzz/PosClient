@@ -28,7 +28,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import useDarkMode from "../../hooks/useDarkMode";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -76,13 +76,13 @@ export default function VariantStockPage() {
         branch_id: selectedBranch,
       }),
     enabled: !!variantId,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.variantStock],
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   if (stockLoading) {

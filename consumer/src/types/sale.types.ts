@@ -28,8 +28,19 @@ export interface Sale {
   customer_email?: string;
   branch_id: number;
   branch_name?: string;
+  branch?: Branch; // Include branch object from Prisma relation
   user_id?: number;
   user_name?: string;
+  user?: { // Include user object from Prisma relation
+    id: number;
+    name: string;
+  };
+  customer?: { // Include customer object from Prisma relation
+    id: number;
+    name: string;
+    phone?: string;
+    email?: string;
+  };
   sale_date: string;
   sale_type: SaleType;
   price_type: PriceType;

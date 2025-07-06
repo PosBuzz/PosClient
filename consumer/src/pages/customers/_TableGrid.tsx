@@ -23,7 +23,7 @@ import debounce from "lodash/debounce";
 import { useCallback, useState } from "react";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
     Customer,
@@ -67,7 +67,7 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
 
       return await get(endpoints.getCustomers, params);
     },
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.customers],
   });
 
   const deleteMutation = useMutation({

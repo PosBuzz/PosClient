@@ -28,7 +28,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -103,13 +103,13 @@ export default function InventoryStockByVariantPage() {
         branch_id: selectedBranch,
         low_stock_only: lowStockOnly,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.stockByVariant],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
   const handleView = (record: StockByVariantItem) => {
     modal?.info({

@@ -69,7 +69,6 @@ export default function _TableGrid({
           role: true,
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const deleteMutation = useMutation({

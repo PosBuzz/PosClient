@@ -48,7 +48,6 @@ const Billings = () => {
           }),
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const ConsumersKey = `all-${models.Consumer}`;
@@ -61,7 +60,6 @@ const Billings = () => {
           plan: true,
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const consumerOptions =

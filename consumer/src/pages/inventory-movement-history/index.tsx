@@ -25,7 +25,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -73,6 +73,7 @@ const InventoryMovementHistory: React.FC = () => {
     queryFn: () => inventoryApi.getVariantStock(Number(variantId!)),
     enabled: !!variantId,
     retry: 1,
+    staleTime: queryStaleTimeMap[queryKeys.variantStock],
   });
 
   // Get movement history
@@ -97,12 +98,14 @@ const InventoryMovementHistory: React.FC = () => {
       }),
     enabled: !!variantId,
     retry: 1,
+    staleTime: queryStaleTimeMap[queryKeys.movementHistory],
   });
 
   // Get branches for filter
   const { data: branchesData } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   const getMovementTypeIcon = (type: string) => {
