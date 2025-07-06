@@ -21,7 +21,7 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 export default function _TableGrid({ onClickEdit, roleOptions = [] }) {
   const [searchText, setSearchText] = useState("");
@@ -56,7 +56,7 @@ export default function _TableGrid({ onClickEdit, roleOptions = [] }) {
         search_text: debouncedSearchText,
         role_id: selectedRole,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.users],
   });
 
   const deleteMutation = useMutation({

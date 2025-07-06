@@ -131,6 +131,19 @@ export const generateCacheKey = {
   warehouseBranch: (consumerId: number) =>
     `${consumerId}:warehouse-branch`,
 
+  // Sales cache helpers
+  salesList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, paymentMethod?: string, paymentStatus?: string, dateFrom?: string, dateTo?: string) =>
+    `${consumerId}:sales:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${paymentMethod || 'all'}:${paymentStatus || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}`,
+
+  salesDetail: (saleId: number, consumerId: number) =>
+    `${consumerId}:sales:detail:${saleId}`,
+
+  salesStats: (consumerId: number, branchId?: number) =>
+    `${consumerId}:sales:stats:${branchId || 'all'}`,
+
+  productsForSale: (consumerId: number, branchId: number, search?: string) =>
+    `${consumerId}:products-for-sale:${branchId}:${search || 'all'}`,
+
   // Admin CRUD cache helpers
   adminCrudList: (model: string) =>
     `global:admin:crud:${model}:list`,
@@ -184,6 +197,10 @@ export const generateCachePatterns = {
   allInventoryAdjustments: (consumerId: number) => `${consumerId}:inventory-adjustment*`,
   allInventoryTransfers: (consumerId: number) => `${consumerId}:inventory-transfer*`,
   
+  // Sales patterns
+  allSales: (consumerId: number) => `${consumerId}:sales*`,
+  allProductsForSale: (consumerId: number) => `${consumerId}:products-for-sale*`,
+  
   // Combined patterns for operations that affect multiple entities
   allInventoryRelated: (consumerId: number) => [
     `${consumerId}:inventory*`,
@@ -194,6 +211,12 @@ export const generateCachePatterns = {
   allProductRelated: (consumerId: number) => [
     `${consumerId}:product*`,
     `${consumerId}:inventory*`, // Inventory data shows in products
+  ],
+
+  allSalesRelated: (consumerId: number) => [
+    `${consumerId}:sales*`,
+    `${consumerId}:inventory*`, // Sales affect inventory
+    `${consumerId}:products-for-sale*`, // Sales affect product availability
   ],
 
   // Admin operation patterns

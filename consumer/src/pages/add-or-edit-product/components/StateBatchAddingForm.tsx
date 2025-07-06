@@ -20,7 +20,7 @@ import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "../../../api/inventory-api";
 import VendorSelector from "../../../components/VendorSelector";
-import { queryKeys } from "../../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../../constants/queryKeys";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -73,7 +73,7 @@ export default function StateBatchAddingForm({
   const { data: branches = [] } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   // Generate batch number

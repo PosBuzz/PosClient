@@ -28,7 +28,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
 import { setPageTitle } from "../../utils/setPageTitle";
@@ -103,13 +103,13 @@ export default function InventoryLowStockPage() {
         limit: pageSize,
         branch_id: selectedBranch,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.lowStockItems],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
   const getUrgencyConfig = (item: LowStockItem) => {
     const stockRatio = item.total_stock / (item.alert_quantity || 1);

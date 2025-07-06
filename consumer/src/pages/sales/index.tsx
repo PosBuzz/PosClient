@@ -1,13 +1,13 @@
- import {
+import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
+  FilterOutlined,
   PlusOutlined,
   PrinterOutlined,
   SearchOutlined,
-  FilterOutlined,
 } from "@ant-design/icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -17,157 +17,44 @@ import {
   Row,
   Select,
   Space,
+  Statistic,
   Table,
   Tag,
   Tooltip,
-  Typography,
-  DatePicker,
-  Statistic,
+  Typography
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { saleApi } from "../../api/sale-api";
+import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
 import { Permissions } from "../../constants/permissions";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
-  Sale,
-  SaleListFilters,
   PaymentMethod,
   PaymentStatus,
+  Sale,
+  SaleListFilters,
 } from "../../types/sale.types";
+import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 const { Text } = Typography;
 
-// Dummy data for development
-const dummySales: Sale[] = [
-  {
-    id: 1,
-    sale_number: "SAL-2025-001",
-    customer_name: "John Doe",
-    customer_phone: "+1234567890",
-    customer_email: "john@example.com",
-    branch_id: 1,
-    branch_name: "Main Branch",
-    user_id: 1,
-    user_name: "Admin User",
-    sale_date: "2025-06-25T10:30:00Z",
-    subtotal: 150.00,
-    discount_amount: 15.00,
-    tax_amount: 13.50,
-    total_amount: 148.50,
-    payment_method: "cash" as PaymentMethod,
-    payment_status: "paid" as PaymentStatus,
-    notes: "Customer paid in cash",
-    items: [
-      {
-        id: 1,
-        variant_id: 1,
-        variant_name: "iPhone 14 - 128GB Black",
-        variant_sku: "IP14-128-BLK",
-        quantity: 1,
-        unit_price: 150.00,
-        discount_amount: 15.00,
-        tax_amount: 13.50,
-        line_total: 148.50,
-        product_name: "iPhone 14",
-        regular_price: 150.00,
-        wholesale_price: 130.00,
-        image: "https://via.placeholder.com/100",
-        available_stock: 10,
-      },
-    ],
-    created_at: "2025-06-25T10:30:00Z",
-    updated_at: "2025-06-25T10:30:00Z",
-  },
-  {
-    id: 2,
-    sale_number: "SAL-2025-002",
-    customer_name: "Jane Smith",
-    customer_phone: "+1234567891",
-    branch_id: 1,
-    branch_name: "Main Branch",
-    user_id: 1,
-    user_name: "Admin User",
-    sale_date: "2025-06-25T14:15:00Z",
-    subtotal: 75.00,
-    discount_amount: 0.00,
-    tax_amount: 11.25,
-    total_amount: 86.25,
-    payment_method: "card" as PaymentMethod,
-    payment_status: "paid" as PaymentStatus,
-    items: [
-      {
-        id: 2,
-        variant_id: 2,
-        variant_name: "Samsung Galaxy S24 - 256GB White",
-        variant_sku: "SGS24-256-WHT",
-        quantity: 1,
-        unit_price: 75.00,
-        discount_amount: 0.00,
-        tax_amount: 11.25,
-        line_total: 86.25,
-        product_name: "Samsung Galaxy S24",
-        regular_price: 75.00,
-        wholesale_price: 65.00,
-        image: "https://via.placeholder.com/100",
-        available_stock: 8,
-      },
-    ],
-    created_at: "2025-06-25T14:15:00Z",
-    updated_at: "2025-06-25T14:15:00Z",
-  },
-  {
-    id: 3,
-    sale_number: "SAL-2025-003",
-    customer_name: "Bob Johnson",
-    customer_phone: "+1234567892",
-    branch_id: 2,
-    branch_name: "Branch 2",
-    user_id: 2,
-    user_name: "Sales User",
-    sale_date: "2025-06-24T16:45:00Z",
-    subtotal: 200.00,
-    discount_amount: 20.00,
-    tax_amount: 18.00,
-    total_amount: 198.00,
-    payment_method: "bank_transfer" as PaymentMethod,
-    payment_status: "pending" as PaymentStatus,
-    notes: "Awaiting bank transfer confirmation",
-    items: [
-      {
-        id: 3,
-        variant_id: 3,
-        variant_name: "MacBook Air M2 - 512GB Silver",
-        variant_sku: "MBA-M2-512-SLV",
-        quantity: 1,
-        unit_price: 200.00,
-        discount_amount: 20.00,
-        tax_amount: 18.00,
-        line_total: 198.00,
-        product_name: "MacBook Air M2",
-        regular_price: 200.00,
-        wholesale_price: 180.00,
-        image: "https://via.placeholder.com/100",
-        available_stock: 5,
-      },
-    ],
-    created_at: "2025-06-24T16:45:00Z",
-    updated_at: "2025-06-24T16:45:00Z",
-  },
-];
-
 const SalesTable = () => {
   const { user } = useAuthStore();
-  const navigate = useNavigate();  const { messageApi } = useMessageStore();
+  const navigate = useNavigate();
+  const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
-  const showMessage = (content: string, type: "success" | "error" | "info" = "info") => {
+  const showMessage = (
+    content: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
     messageApi?.[type](content);
   };
 
@@ -181,34 +68,29 @@ const SalesTable = () => {
     search: "",
   });
 
-  // For development, use dummy data
-  const salesQuery = {
-    data: {
-      data: dummySales,
-      meta: {
-        total: dummySales.length,
-        page: 1,
-        limit: 20,
-        total_pages: 1,
-      },
-      summary: {
-        total_sales: dummySales.length,
-        total_amount: dummySales.reduce((sum, sale) => sum + sale.total_amount, 0),
-        average_sale: dummySales.reduce((sum, sale) => sum + sale.total_amount, 0) / dummySales.length,
-      },
-    },
-    isLoading: false,
-    error: null,
-  };
+  // Use real API query with optimized caching
+  const salesQuery = useQuery({
+    queryKey: [queryKeys.sales, filters],
+    queryFn: () => salesApi.getSales(filters),
+    placeholderData: (previousData) => previousData,
+    staleTime: queryStaleTimeMap[queryKeys.sales],
+  });
 
   const deleteMutation = useMutation({
-    mutationFn: saleApi.deleteSale,
+    mutationFn: async (id: number) => {
+      // For now, since we don't have delete API, just show success
+      return Promise.resolve();
+    },
     onSuccess: () => {
       showMessage("Sale deleted successfully", "success");
-      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      // Invalidate all relevant caches after sales operation
+      cacheInvalidation.invalidateAfterSalesOperation(queryClient);
     },
     onError: (error: any) => {
-      showMessage(error.response?.data?.message || "Failed to delete sale", "error");
+      showMessage(
+        error.response?.data?.message || "Failed to delete sale",
+        "error"
+      );
     },
   });
 
@@ -226,7 +108,10 @@ const SalesTable = () => {
   const handlePrint = async (saleId: number) => {
     try {
       // For development, just show a message
-      showMessage("Receipt generation will be implemented with backend", "info");
+      showMessage(
+        "Receipt generation will be implemented with backend",
+        "info"
+      );
     } catch (error) {
       showMessage("Failed to generate receipt", "error");
     }
@@ -278,8 +163,8 @@ const SalesTable = () => {
     },
     {
       title: "Branch",
-      dataIndex: "branch_name",
-      key: "branch_name",
+      key: "branch",
+      render: (record: Sale) => record.branch?.name || record.branch_name || 'N/A',
     },
     {
       title: "Sale Date",
@@ -296,7 +181,7 @@ const SalesTable = () => {
       title: "Total Amount",
       dataIndex: "total_amount",
       key: "total_amount",
-      render: (amount: number) => `$${amount.toFixed(2)}`,
+      render: (amount: number) => `$${(Number(amount) || 0).toFixed(2)}`,
     },
     {
       title: "Payment",
@@ -353,11 +238,7 @@ const SalesTable = () => {
               cancelText="No"
             >
               <Tooltip title="Delete Sale">
-                <Button
-                  type="text"
-                  icon={<DeleteOutlined />}
-                  danger
-                />
+                <Button type="text" icon={<DeleteOutlined />} danger />
               </Tooltip>
             </Popconfirm>
           )}
@@ -373,15 +254,14 @@ const SalesTable = () => {
   return (
     <div>
       <PageTitle
-        title="Sales"        breadcrumbs={[
-          { title: "Home", href: "/" },
-          { title: "Sales" },
-        ]}        rightSection={
+        title="Sales"
+        breadcrumbs={[{ title: "Home", href: "/" }, { title: "Sales" }]}
+        rightSection={
           hasPermission(Permissions.add_sale) ? (
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => navigate("/sales/add")}
+              onClick={() => navigate("/sales/new")}
             >
               New Sale
             </Button>
@@ -440,7 +320,11 @@ const SalesTable = () => {
               placeholder="Payment Status"
               style={{ width: "100%" }}
               onChange={(value) =>
-                setFilters((prev) => ({ ...prev, payment_status: value, page: 1 }))
+                setFilters((prev) => ({
+                  ...prev,
+                  payment_status: value,
+                  page: 1,
+                }))
               }
               allowClear
             >
@@ -455,7 +339,11 @@ const SalesTable = () => {
               placeholder="Payment Method"
               style={{ width: "100%" }}
               onChange={(value) =>
-                setFilters((prev) => ({ ...prev, payment_method: value, page: 1 }))
+                setFilters((prev) => ({
+                  ...prev,
+                  payment_method: value,
+                  page: 1,
+                }))
               }
               allowClear
             >

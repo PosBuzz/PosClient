@@ -33,7 +33,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import VendorSelector from "../../components/VendorSelector";
 import { useMessageStore } from "../../stores/messageStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Title, Text } = Typography;
@@ -62,20 +62,20 @@ export default function AddEditInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: [queryKeys.productsForInventory],
     queryFn: () => inventoryApi.getProductsForInventory(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.productsForInventory],
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
     queryKey: [queryKeys.productVariants, selectedProductId],
     queryFn: () => inventoryApi.getVariants(selectedProductId!),
     enabled: !!selectedProductId,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.productVariants],
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   // Load existing batch for edit
@@ -83,7 +83,7 @@ export default function AddEditInventory() {
     queryKey: [queryKeys.batch, id],
     queryFn: () => inventoryApi.getBatch(parseInt(id!)),
     enabled: isEdit && !!id,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.batch],
   });
 
   // Mutations

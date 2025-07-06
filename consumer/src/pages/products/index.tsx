@@ -29,7 +29,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
 import { Permissions } from "../../constants/permissions";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
@@ -37,6 +37,7 @@ import type {
   ProductListFilters,
   ProductListResponse,
 } from "../../types/product.types";
+import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -152,28 +153,28 @@ const ProductsTable = () => {
     useQuery<ProductListResponse>({
       queryKey: [queryKeys.products, getQueryParams()],
       queryFn: () => productApi.getProducts(getQueryParams()),
-      staleTime: 3600 * 1000,
+      staleTime: queryStaleTimeMap[queryKeys.products],
     });
 
   // TanStack Query for categories
   const { data: categories = [] } = useQuery({
     queryKey: [queryKeys.categories],
     queryFn: productApi.getCategories,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.categories],
   });
 
   // TanStack Query for brands
   const { data: brands = [] } = useQuery({
     queryKey: [queryKeys.brands],
     queryFn: productApi.getBrands,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.brands],
   });
 
   // TanStack Query for tags
   const { data: tags = [] } = useQuery({
     queryKey: [queryKeys.tags],
     queryFn: productApi.getTags,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.tags],
   });
 
   // Delete mutation
@@ -181,7 +182,8 @@ const ProductsTable = () => {
     mutationFn: productApi.deleteProduct,
     onSuccess: () => {
       messageApi?.success("Product deleted successfully");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.products] });
+      // Invalidate all relevant caches after product operation
+      cacheInvalidation.invalidateAfterProductOperation(queryClient);
     },
     onError: (error) => {
       messageApi?.error("Failed to delete product");

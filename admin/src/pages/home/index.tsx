@@ -21,7 +21,6 @@ function Index() {
           billing_logs: true,
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const totalUsers = fetchData?.length || 0;

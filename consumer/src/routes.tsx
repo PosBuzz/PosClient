@@ -46,7 +46,7 @@ const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
 const AddSale = lazy(() => import("./pages/sales/add-new"));
 const AddCompactSale = lazy(() => import("./pages/sales/add-compact"));
-const ViewSale = lazy(() => import("./pages/sales/view"));
+const SaleDetail = lazy(() => import("./pages/view-sales"));
 
 export const routes = [
   {
@@ -278,34 +278,43 @@ export const routes = [
       {
         path: "sales",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission permission={Permissions.sales}>
             <Sales />
           </RequirePermission>
         ),
-      },      {
-        path: "sales/add",
+      },
+      {
+        path: "sales/new",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission permission={Permissions.sales}>
             <AddSale />
           </RequirePermission>
         ),
       },
       {
-        path: "sales/pos",
+        path: "sales/add",
         element: (
-          <RequirePermission permission={Permissions.branches}>
-            <AddCompactSale />
+          <RequirePermission permission={Permissions.sales}>
+            <AddSale />
           </RequirePermission>
         ),
       },
       {
         path: "sales/view/:id",
         element: (
-          <RequirePermission permission={Permissions.branches}>
-            <ViewSale />
+          <RequirePermission permission={Permissions.sales}>
+            <SaleDetail />
           </RequirePermission>
         ),
       },
+      // {
+      //   path: "sales/pos",
+      //   element: (
+      //     <RequirePermission permission={Permissions.branches}>
+      //       <AddCompactSale />
+      //     </RequirePermission>
+      //   ),
+      // },
     ],
   },
 ];

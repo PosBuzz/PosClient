@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table } from "antd";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({ onClickEdit }) {
@@ -17,7 +17,7 @@ export default function _TableGrid({ onClickEdit }) {
   } = useQuery({
     queryKey: [queryKeys.tags],
     queryFn: () => get(endpoints.getTags),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.tags],
   });
 
   const deleteMutation = useMutation({

@@ -148,7 +148,6 @@ export default function _TableGrid({
           billing_logs: true,
         },
       }),
-    staleTime: 3600 * 1000,
   });
 
   const getBillingHistory = async (consumer_id: any, openInNewTab: boolean) => {

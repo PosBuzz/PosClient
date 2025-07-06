@@ -27,7 +27,7 @@ import { useCallback, useEffect, useState } from "react";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useModalStore } from "../../stores/modalStore";
 import useDarkMode from "../../hooks/useDarkMode";
 import { Link } from "react-router-dom";
@@ -71,13 +71,13 @@ export default function InventoryExpiringPage() {
         days: expiryDays,
         branch_id: selectedBranch,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.expiringBatches],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   const getExpiryStatus = (expiryDate: string) => {

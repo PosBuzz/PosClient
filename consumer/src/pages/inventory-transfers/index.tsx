@@ -29,9 +29,10 @@ import { useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryTransfer } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
+import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -85,13 +86,13 @@ export default function InventoryTransfersPage() {
         status: statusFilter,
         branch_id: branchFilter,
       }),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.transfers],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   // Mutations
@@ -99,13 +100,8 @@ export default function InventoryTransfersPage() {
     mutationFn: inventoryApi.completeTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer completed successfully");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      // Invalidate all relevant caches after transfer operation
+      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -118,7 +114,8 @@ export default function InventoryTransfersPage() {
     mutationFn: inventoryApi.cancelTransfer,
     onSuccess: () => {
       messageApi?.success("Transfer cancelled successfully");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      // Invalidate all relevant caches after transfer operation
+      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
     },
     onError: (error: any) => {
       messageApi?.error(

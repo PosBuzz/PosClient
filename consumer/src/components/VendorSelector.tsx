@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { inventoryApi } from "../api/inventory-api";
 import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import { useMessageStore } from "../stores/messageStore";
-import { queryKeys } from "../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../constants/queryKeys";
 
 interface VendorSelectorProps {
   value?: number;
@@ -43,7 +43,7 @@ export default function VendorSelector({
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: [queryKeys.vendors],
     queryFn: () => inventoryApi.getVendors(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.vendors],
   });
 
   // Create mutation (you'll need to add this to your inventory API)

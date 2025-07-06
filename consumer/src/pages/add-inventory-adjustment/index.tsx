@@ -25,7 +25,7 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useMessageStore } from "../../stores/messageStore";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -63,20 +63,20 @@ export default function AddInventoryAdjustment() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: [queryKeys.productsForInventory],
     queryFn: () => inventoryApi.getProductsForInventory(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.productsForInventory],
   });
 
   const { data: variants = [], isLoading: variantsLoading } = useQuery({
     queryKey: [queryKeys.productVariants, selectedProduct],
     queryFn: () => inventoryApi.getVariants(selectedProduct!),
     enabled: !!selectedProduct,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.productVariants],
   });
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
@@ -88,7 +88,7 @@ export default function AddInventoryAdjustment() {
         limit: 100,
       }),
     enabled: !!selectedVariant && !!selectedBranch,
-    staleTime: 3600 * 1000,
+    staleTime: queryStaleTimeMap[queryKeys.batches],
   });
 
   // Get selected batch data

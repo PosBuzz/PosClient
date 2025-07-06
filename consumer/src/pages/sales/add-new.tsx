@@ -1,4 +1,12 @@
 import {
+  CalculatorOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
   Button,
   Col,
   Divider,
@@ -6,198 +14,60 @@ import {
   Input,
   InputNumber,
   message,
+  Radio,
   Row,
   Select,
+  Space,
   Table,
   Typography,
-  Space,
-  Radio,
 } from "antd";
-import {
-  DeleteOutlined,
-  SearchOutlined,
-  SwapOutlined,
-  CalculatorOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { get, post } from "../../api/crud-api";
+import { endpoints } from "../../api/endpoints";
+import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { setPageTitle } from "../../utils/setPageTitle";
-import CustomerModal from "./CustomerModal";
 import {
-  SaleItem,
-  SaleFormData,
-  ProductVariantForSale,
+  queryKeys,
+  queryStaleTimeMap,
+} from "../../constants/queryKeys";
+import { Customer } from "../../types/customer.types";
+import {
+  Branch,
+  DiscountType,
   PaymentMethod,
   PaymentStatus,
   PriceType,
-  DiscountType,
-  Branch,
+  ProductVariantForSale,
+  SaleFormData,
+  SaleItem,
 } from "../../types/sale.types";
-import { Customer, CustomerType } from "../../types/customer.types";
+import { cacheInvalidation } from "../../utils/cacheInvalidation";
+import { setPageTitle } from "../../utils/setPageTitle";
+import CustomerModal from "./CustomerModal";
 
 const { Option } = Select;
 const { Text } = Typography;
 
-// Demo data
-const dummyBranches: Branch[] = [
-  {
-    id: 1,
-    name: "Main Branch",
-    address: "123 Main St",
-    is_main: true,
-    is_warehouse: false,
-  },
-  {
-    id: 2,
-    name: "Downtown Branch",
-    address: "456 Downtown Ave",
-    is_main: false,
-    is_warehouse: false,
-  },
-  {
-    id: 3,
-    name: "Warehouse",
-    address: "789 Industrial Rd",
-    is_main: false,
-    is_warehouse: true,
-  },
-];
-
-const dummyCustomers: Customer[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1234567890",
-    address: "123 Main St, New York, NY 10001",
-    customer_type: CustomerType.INDIVIDUAL,
-    consumer_id: 1,
-    created_at: "2025-06-20T10:00:00Z",
-    updated_at: "2025-06-25T14:30:00Z",
-  },
-  {
-    id: 2,
-    name: "Tech Solutions Inc.",
-    email: "contact@techsolutions.com",
-    phone: "+1234567891",
-    address: "456 Business Ave, San Francisco, CA 94102",
-    customer_type: CustomerType.BUSINESS,
-    consumer_id: 1,
-    created_at: "2025-06-18T15:20:00Z",
-    updated_at: "2025-06-24T11:45:00Z",
-  },
-  {
-    id: 3,
-    name: "Jane Smith",
-    email: "jane.smith@email.com",
-    phone: "+1234567892",
-    address: "789 Oak Street, Chicago, IL 60601",
-    customer_type: CustomerType.INDIVIDUAL,
-    consumer_id: 1,
-    created_at: "2025-06-22T09:15:00Z",
-    updated_at: "2025-06-25T16:20:00Z",
-  },
-];
-
-const dummyVariants: ProductVariantForSale[] = [
-  {
-    id: 1,
-    name: "iPhone 14 - 128GB Black",
-    sku: "IP14-128-BLK",
-    barcode: "1234567890123",
-    regular_price: 150.0,
-    wholesale_price: 130.0,
-    image: "https://via.placeholder.com/50",
-    product_name: "iPhone 14",
-    available_stock: 10,
-    unit_name: "piece",
-    tax_percentage: 15,
-    batches: [
-      {
-        id: 1,
-        batch_number: "BATCH001",
-        quantity: 5,
-        cost_price: 120,
-        expiry_date: "2025-12-31",
-      },
-      {
-        id: 2,
-        batch_number: "BATCH002",
-        quantity: 5,
-        cost_price: 125,
-        expiry_date: "2026-06-30",
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 - 256GB White",
-    sku: "SGS24-256-WHT",
-    barcode: "1234567890124",
-    regular_price: 75.0,
-    wholesale_price: 65.0,
-    image: "https://via.placeholder.com/50",
-    product_name: "Samsung Galaxy S24",
-    available_stock: 8,
-    unit_name: "piece",
-    tax_percentage: 15,
-    batches: [
-      {
-        id: 3,
-        batch_number: "BATCH003",
-        quantity: 8,
-        cost_price: 60,
-        expiry_date: "2025-12-31",
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "MacBook Air M2 - 512GB Silver",
-    sku: "MBA-M2-512-SLV",
-    barcode: "1234567890125",
-    regular_price: 200.0,
-    wholesale_price: 180.0,
-    image: "https://via.placeholder.com/50",
-    product_name: "MacBook Air M2",
-    available_stock: 5,
-    unit_name: "piece",
-    tax_percentage: 15,
-    batches: [
-      {
-        id: 4,
-        batch_number: "BATCH004",
-        quantity: 3,
-        cost_price: 170,
-        expiry_date: "2025-12-31",
-      },
-      {
-        id: 5,
-        batch_number: "BATCH005",
-        quantity: 2,
-        cost_price: 175,
-        expiry_date: "2026-06-30",
-      },
-    ],
-  },
-];
-
 const NewSale = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Watch form values for real-time calculations
-  const discountAmount = Form.useWatch('discount_amount', form) || 0;
-  const shippingCost = Form.useWatch('shipping_cost', form) || 0;
-  const receivedAmount = Form.useWatch('received_amount', form) || 0;
+  const discountAmount = Form.useWatch("discount_amount", form) || 0;
+  const shippingCost = Form.useWatch("shipping_cost", form) || 0;
+  const receivedAmount = Form.useWatch("received_amount", form) || 0;
 
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [searchValue, setSearchValue] = useState("");
-  const [filteredVariants, setFilteredVariants] =
-    useState<ProductVariantForSale[]>(dummyVariants);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filteredVariants, setFilteredVariants] = useState<
+    ProductVariantForSale[]
+  >([]);
+  const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
@@ -206,38 +76,80 @@ const NewSale = () => {
   const [discountType, setDiscountType] = useState<DiscountType>(
     DiscountType.FLAT
   );
+  const [loading, setLoading] = useState(false);
 
+  // Load branches using React Query
+  const branchesQuery = useQuery({
+    queryKey: [queryKeys.branches],
+    queryFn: () => get(endpoints.getBranches),
+    staleTime: queryStaleTimeMap[queryKeys.branches],
+  });
+
+  // Load customers using React Query
+  const customersQuery = useQuery({
+    queryKey: [queryKeys.customers],
+    queryFn: async () => {
+      const data = await get(endpoints.getCustomers);
+      return data.data || data;
+    },
+    staleTime: queryStaleTimeMap[queryKeys.customers],
+  });
+
+  // Load products for sale when branch is selected
+  const productsForSaleQuery = useQuery({
+    queryKey: [queryKeys.productsForSale, selectedBranch, searchValue],
+    queryFn: () => salesApi.getProductsForSale(selectedBranch!, searchValue),
+    enabled: !!selectedBranch,
+    staleTime: queryStaleTimeMap[queryKeys.productsForSale],
+  });
+
+  // Update state when queries complete
+  useEffect(() => {
+    if (branchesQuery.data) {
+      setBranches(branchesQuery.data);
+
+      // Set default branch
+      if (branchesQuery.data.length > 0 && !selectedBranch) {
+        const defaultBranch =
+          branchesQuery.data.find((b: Branch) => b.is_main) ||
+          branchesQuery.data[0];
+        setSelectedBranch(defaultBranch.id);
+        form.setFieldsValue({
+          branch_id: defaultBranch.id,
+          price_type: PriceType.REGULAR,
+          discount_type: DiscountType.FLAT,
+          discount_amount: 0,
+          shipping_cost: 0,
+          payment_method: PaymentMethod.CASH,
+          payment_status: PaymentStatus.PAID,
+          received_amount: 0,
+        });
+      }
+    }
+  }, [branchesQuery.data, selectedBranch, form]);
+
+  useEffect(() => {
+    if (customersQuery.data) {
+      setCustomers(customersQuery.data);
+    }
+  }, [customersQuery.data]);
+
+  useEffect(() => {
+    if (productsForSaleQuery.data) {
+      setFilteredVariants(productsForSaleQuery.data);
+    }
+  }, [productsForSaleQuery.data]);
+
+  // Set initial page title
   useEffect(() => {
     setPageTitle("New Sale");
-    // Set default values
-    form.setFieldsValue({
-      branch_id: dummyBranches[0]?.id,
-      customer_id: null,
-      price_type: PriceType.REGULAR,
-      discount_type: DiscountType.FLAT,
-      discount_amount: 0,
-      shipping_cost: 0,
-      payment_method: PaymentMethod.CASH,
-      payment_status: PaymentStatus.PAID,
-      received_amount: 0,
-    });
-  }, [form]);
+  }, []);
 
-  // Filter products based on search
-  useEffect(() => {
-    if (searchValue) {
-      const filtered = dummyVariants.filter(
-        (variant) =>
-          variant.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-          variant.sku?.toLowerCase().includes(searchValue.toLowerCase()) ||
-          variant.barcode?.toLowerCase().includes(searchValue.toLowerCase()) ||
-          variant.product_name.toLowerCase().includes(searchValue.toLowerCase())
-      );
-      setFilteredVariants(filtered);
-    } else {
-      setFilteredVariants(dummyVariants);
-    }
-  }, [searchValue]);
+  const handleBranchChange = (branchId: number) => {
+    setSelectedBranch(branchId);
+    setSelectedItems([]); // Clear items when branch changes
+    form.setFieldsValue({ branch_id: branchId });
+  };
 
   const addToSale = (variant: ProductVariantForSale, batchId?: number) => {
     const existingItem = selectedItems.find(
@@ -245,8 +157,8 @@ const NewSale = () => {
     );
     const price =
       priceType === PriceType.WHOLESALE
-        ? variant.wholesale_price || variant.regular_price
-        : variant.regular_price;
+        ? Number(variant.wholesale_price) || Number(variant.regular_price)
+        : Number(variant.regular_price);
     const selectedBatch =
       variant.batches.find((b) => b.id === batchId) || variant.batches[0];
 
@@ -269,7 +181,10 @@ const NewSale = () => {
                 quantity: item.quantity + 1,
                 unit_price: price,
                 tax_amount:
-                  ((item.quantity + 1) * price * variant.tax_percentage) / 100,
+                  ((item.quantity + 1) *
+                    price *
+                    (Number(variant.tax_percentage) || 0)) /
+                  100,
                 line_total: (item.quantity + 1) * price,
               }
             : item
@@ -283,15 +198,15 @@ const NewSale = () => {
         quantity: 1,
         unit_price: price,
         discount_amount: 0,
-        tax_amount: (price * variant.tax_percentage) / 100,
+        tax_amount: (price * (Number(variant.tax_percentage) || 0)) / 100,
         line_total: price,
         product_name: variant.product_name,
-        regular_price: variant.regular_price,
-        wholesale_price: variant.wholesale_price,
+        regular_price: Number(variant.regular_price),
+        wholesale_price: Number(variant.wholesale_price) || undefined,
         image: variant.image,
         available_stock: selectedBatch.quantity,
         unit_name: variant.unit_name,
-        tax_percentage: variant.tax_percentage,
+        tax_percentage: Number(variant.tax_percentage) || 0,
         batch_id: selectedBatch.id,
         batch_number: selectedBatch.batch_number,
       };
@@ -316,8 +231,11 @@ const NewSale = () => {
               ...item,
               quantity,
               tax_amount:
-                (quantity * item.unit_price * (item.tax_percentage || 0)) / 100,
-              line_total: quantity * item.unit_price,
+                (quantity *
+                  Number(item.unit_price) *
+                  (Number(item.tax_percentage) || 0)) /
+                100,
+              line_total: quantity * Number(item.unit_price),
             }
           : item
       )
@@ -334,30 +252,34 @@ const NewSale = () => {
 
   const calculateTotals = () => {
     const subtotal = selectedItems.reduce(
-      (sum, item) => sum + item.line_total,
+      (sum, item) => sum + (Number(item.line_total) || 0),
       0
     );
     const totalTax = selectedItems.reduce(
-      (sum, item) => sum + (item.tax_amount || 0),
+      (sum, item) => sum + (Number(item.tax_amount) || 0),
       0
     );
 
+    const discountAmountNum = Number(discountAmount) || 0;
+    const shippingCostNum = Number(shippingCost) || 0;
+    const receivedAmountNum = Number(receivedAmount) || 0;
+
     const finalDiscount =
       discountType === DiscountType.PERCENTAGE
-        ? (subtotal * discountAmount) / 100
-        : discountAmount;
+        ? (subtotal * discountAmountNum) / 100
+        : discountAmountNum;
 
-    const total = subtotal - finalDiscount + totalTax + shippingCost;
-    const changeAmount = receivedAmount - total;
+    const total = subtotal - finalDiscount + totalTax + shippingCostNum;
+    const changeAmount = receivedAmountNum - total;
 
     return {
-      subtotal,
-      totalTax,
-      finalDiscount,
-      shippingCost,
-      total,
-      receivedAmount,
-      changeAmount,
+      subtotal: Number(subtotal),
+      totalTax: Number(totalTax),
+      finalDiscount: Number(finalDiscount),
+      shippingCost: Number(shippingCostNum),
+      total: Number(total),
+      receivedAmount: Number(receivedAmountNum),
+      changeAmount: Number(changeAmount),
     };
   };
 
@@ -383,13 +305,19 @@ const NewSale = () => {
     };
 
     try {
-      message.success(
-        "Sale created successfully! (Backend integration pending)"
-      );
-      console.log("Sale data:", saleData);
-      navigate("/sales");
-    } catch (error) {
-      message.error("Failed to create sale");
+      setLoading(true);
+      const createdSale = await salesApi.createSale(saleData);
+
+      // Invalidate all relevant caches after sales operation
+      cacheInvalidation.invalidateAfterSalesOperation(queryClient);
+
+      message.success("Sale created successfully!");
+      navigate(`/sales/view/${createdSale.id}`);
+    } catch (error: any) {
+      console.error("Error creating sale:", error);
+      message.error(error.response?.data?.message || "Failed to create sale");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -445,7 +373,7 @@ const NewSale = () => {
       title: "Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${price.toFixed(2)}`,
+      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
     },
     {
       title: "Quantity",
@@ -472,12 +400,14 @@ const NewSale = () => {
     {
       title: "Tax",
       key: "tax",
-      render: (record: SaleItem) => `$${(record.tax_amount || 0).toFixed(2)}`,
+      render: (record: SaleItem) =>
+        `$${(Number(record.tax_amount) || 0).toFixed(2)}`,
     },
     {
       title: "Total",
       key: "line_total",
-      render: (record: SaleItem) => `$${record.line_total.toFixed(2)}`,
+      render: (record: SaleItem) =>
+        `$${(Number(record.line_total) || 0).toFixed(2)}`,
     },
     {
       title: "Action",
@@ -596,18 +526,23 @@ const NewSale = () => {
       <CustomerModal
         open={customerModalOpen}
         onClose={() => setCustomerModalOpen(false)}
-        onCreateCustomer={(customer) => {
-          // In real app, this would call API to create customer
-          const newCustomer: Customer = {
-            ...customer,
-            id: Date.now(),
-            consumer_id: 1,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setSelectedCustomer(newCustomer);
-          form.setFieldsValue({ customer_id: newCustomer.id });
-          message.success('Customer created successfully');
+        onCreateCustomer={async (customer) => {
+          try {
+            const newCustomer = await post(endpoints.createCustomer, customer);
+            setSelectedCustomer(newCustomer);
+            setCustomers([...customers, newCustomer]);
+            form.setFieldsValue({ customer_id: newCustomer.id });
+
+            // Invalidate customers cache
+            queryClient.invalidateQueries({
+              queryKey: [queryKeys.customers],
+            });
+
+            message.success("Customer created successfully");
+          } catch (error) {
+            console.error("Error creating customer:", error);
+            message.error("Failed to create customer");
+          }
         }}
       />
 
@@ -618,10 +553,14 @@ const NewSale = () => {
               <Form.Item
                 label="Branch"
                 name="branch_id"
-                // rules={[{ required: true }]} 
+                rules={[{ required: true, message: "Please select a branch" }]}
               >
-                <Select placeholder="Select branch">
-                  {dummyBranches.map((branch) => (
+                <Select
+                  placeholder="Select branch"
+                  onChange={handleBranchChange}
+                  loading={loading}
+                >
+                  {branches.map((branch) => (
                     <Option key={branch.id} value={branch.id}>
                       {branch.name}
                     </Option>
@@ -631,7 +570,7 @@ const NewSale = () => {
             </Col>
             <Col span={6}>
               <Form.Item label="Customer" name="customer_id">
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
                   <Select
                     placeholder="Select customer"
                     showSearch
@@ -639,15 +578,13 @@ const NewSale = () => {
                     optionFilterProp="children"
                     value={selectedCustomer?.id}
                     onChange={(value) => {
-                      const customer = dummyCustomers.find((c) => c.id === value);
+                      const customer = customers.find((c) => c.id === value);
                       setSelectedCustomer(customer || null);
                       form.setFieldsValue({ customer_id: value });
                     }}
                     style={{ flex: 1 }}
-                    defaultValue={null}
                   >
-                    <Option value={null}>Walking Customer</Option>
-                    {dummyCustomers.map((customer) => (
+                    {customers.map((customer) => (
                       <Option key={customer.id} value={customer.id}>
                         {customer.name} ({customer.phone})
                       </Option>
@@ -701,6 +638,12 @@ const NewSale = () => {
             size="small"
             scroll={{ y: 250 }}
             pagination={{ pageSize: 8, size: "small" }}
+            loading={productsForSaleQuery.isLoading}
+            locale={{
+              emptyText: selectedBranch
+                ? "No products found"
+                : "Please select a branch first",
+            }}
           />
         </div>
 
@@ -805,7 +748,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Subtotal:</Text>
                   <Text style={{ fontSize: 12 }} strong>
-                    ${totals.subtotal.toFixed(2)}
+                    ${(Number(totals.subtotal) || 0).toFixed(2)}
                   </Text>
                 </div>
                 <div
@@ -817,7 +760,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Tax:</Text>
                   <Text style={{ fontSize: 12 }}>
-                    ${totals.totalTax.toFixed(2)}
+                    ${(Number(totals.totalTax) || 0).toFixed(2)}
                   </Text>
                 </div>
                 <div
@@ -829,7 +772,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Discount:</Text>
                   <Text style={{ fontSize: 12 }}>
-                    -${totals.finalDiscount.toFixed(2)}
+                    -${(Number(totals.finalDiscount) || 0).toFixed(2)}
                   </Text>
                 </div>
                 <div
@@ -841,7 +784,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Shipping:</Text>
                   <Text style={{ fontSize: 12 }}>
-                    ${totals.shippingCost.toFixed(2)}
+                    ${(Number(totals.shippingCost) || 0).toFixed(2)}
                   </Text>
                 </div>
                 <Divider style={{ margin: "8px 0" }} />
@@ -854,7 +797,7 @@ const NewSale = () => {
                 >
                   <Text strong>Total:</Text>
                   <Text strong style={{ fontSize: 16 }}>
-                    ${totals.total.toFixed(2)}
+                    ${(Number(totals.total) || 0).toFixed(2)}
                   </Text>
                 </div>
                 <div
@@ -868,10 +811,13 @@ const NewSale = () => {
                   <Text
                     style={{
                       fontSize: 12,
-                      color: totals.changeAmount >= 0 ? "#52c41a" : "#ff4d4f",
+                      color:
+                        (Number(totals.changeAmount) || 0) >= 0
+                          ? "#52c41a"
+                          : "#ff4d4f",
                     }}
                   >
-                    ${totals.changeAmount.toFixed(2)}
+                    ${(Number(totals.changeAmount) || 0).toFixed(2)}
                   </Text>
                 </div>
               </div>
@@ -908,6 +854,7 @@ const NewSale = () => {
                     icon={<CalculatorOutlined />}
                     size="large"
                     disabled={selectedItems.length === 0}
+                    loading={loading}
                     block
                   >
                     Create Sale
