@@ -15,17 +15,13 @@ import {
   Table,
   Tag,
 } from "antd";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-export default function _TableGrid({
-  model,
-  onClickEdit,
-  roleOptions = [],
-}) {
+export default function _TableGrid({ model, onClickEdit, roleOptions = [] }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();

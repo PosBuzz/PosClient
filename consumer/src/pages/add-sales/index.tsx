@@ -21,19 +21,16 @@ import {
   Table,
   Typography,
 } from "antd";
-import { useEffect, useState } from "react";
+import debounce from "lodash/debounce";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import {
-  queryKeys,
-  queryStaleTimeMap,
-} from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { Customer } from "../../types/customer.types";
 import {
-  Branch,
   DiscountType,
   PaymentMethod,
   PaymentStatus,
@@ -44,6 +41,7 @@ import {
 } from "../../types/sale.types";
 import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { useAuthStore } from "../../stores/authStore";
 import CustomerModal from "./CustomerModal";
 
 const { Option } = Select;
@@ -53,6 +51,7 @@ const NewSale = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   // Watch form values for real-time calculations
   const discountAmount = Form.useWatch("discount_amount", form) || 0;
@@ -62,7 +61,7 @@ const NewSale = () => {
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [searchValue, setSearchValue] = useState("");
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
@@ -78,12 +77,23 @@ const NewSale = () => {
   );
   const [loading, setLoading] = useState(false);
 
-  // Load branches using React Query
-  const branchesQuery = useQuery({
-    queryKey: [queryKeys.branches],
-    queryFn: () => get(endpoints.getBranches),
-    staleTime: queryStaleTimeMap[queryKeys.branches],
-  });
+  // Get user's branches from auth store
+  const userBranches = user?.branches || [];
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearchValue(value);
+    }, 300),
+    []
+  );
+
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   // Load customers using React Query
   const customersQuery = useQuery({
@@ -95,38 +105,38 @@ const NewSale = () => {
     staleTime: queryStaleTimeMap[queryKeys.customers],
   });
 
-  // Load products for sale when branch is selected
+  // Load products for sale when branch is selected - using debounced search
   const productsForSaleQuery = useQuery({
-    queryKey: [queryKeys.productsForSale, selectedBranch, searchValue],
-    queryFn: () => salesApi.getProductsForSale(selectedBranch!, searchValue),
+    queryKey: [queryKeys.productsForSale, selectedBranch, debouncedSearchValue],
+    queryFn: () =>
+      salesApi.getProductsForSale(selectedBranch!, debouncedSearchValue),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.productsForSale],
   });
 
-  // Update state when queries complete
+  // Effect to trigger debounced search
   useEffect(() => {
-    if (branchesQuery.data) {
-      setBranches(branchesQuery.data);
+    debouncedSearch(searchValue);
+  }, [searchValue, debouncedSearch]);
 
-      // Set default branch
-      if (branchesQuery.data.length > 0 && !selectedBranch) {
-        const defaultBranch =
-          branchesQuery.data.find((b: Branch) => b.is_main) ||
-          branchesQuery.data[0];
-        setSelectedBranch(defaultBranch.id);
-        form.setFieldsValue({
-          branch_id: defaultBranch.id,
-          price_type: PriceType.REGULAR,
-          discount_type: DiscountType.FLAT,
-          discount_amount: 0,
-          shipping_cost: 0,
-          payment_method: PaymentMethod.CASH,
-          payment_status: PaymentStatus.PAID,
-          received_amount: 0,
-        });
-      }
+  // Set default branch from user's branches
+  useEffect(() => {
+    if (userBranches.length > 0 && !selectedBranch) {
+      // Just select the first branch from user's assigned branches
+      const defaultBranch = userBranches[0];
+      setSelectedBranch(defaultBranch.id);
+      form.setFieldsValue({
+        branch_id: defaultBranch.id,
+        price_type: PriceType.REGULAR,
+        discount_type: DiscountType.FLAT,
+        discount_amount: 0,
+        shipping_cost: 0,
+        payment_method: PaymentMethod.CASH,
+        payment_status: PaymentStatus.PAID,
+        received_amount: 0,
+      });
     }
-  }, [branchesQuery.data, selectedBranch, form]);
+  }, [userBranches, selectedBranch, form]);
 
   useEffect(() => {
     if (customersQuery.data) {
@@ -560,7 +570,7 @@ const NewSale = () => {
                   onChange={handleBranchChange}
                   loading={loading}
                 >
-                  {branches.map((branch) => (
+                  {userBranches.map((branch) => (
                     <Option key={branch.id} value={branch.id}>
                       {branch.name}
                     </Option>

@@ -101,6 +101,13 @@ const SalesTable = () => {
     []
   );
 
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
   const handleSearch = (value: string) => {
     debouncedSearch(value);
   };

@@ -14,6 +14,13 @@ type User = {
   company_email: string;
   role: string;
   permissions: string[];
+  branches: Array<{
+    id: number;
+    name: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+  }>;
 };
 
 interface AuthState {

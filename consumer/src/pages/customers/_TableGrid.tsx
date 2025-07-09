@@ -20,7 +20,7 @@ import {
     Typography,
 } from "antd";
 import debounce from "lodash/debounce";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -90,6 +90,13 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
     }, 300),
     []
   );
+
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSearch = (value: string) => {
     debouncedSearch(value);
