@@ -46,6 +46,7 @@ const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
 const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
+const POSPage = lazy(() => import("./pages/pos"));
 
 export const routes = [
   {
@@ -55,6 +56,14 @@ export const routes = [
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/pos",
+    element: (
+      <RequireAuth>
+        <POSPage />
+      </RequireAuth>
+    ),
   },
   {
     path: "/",
