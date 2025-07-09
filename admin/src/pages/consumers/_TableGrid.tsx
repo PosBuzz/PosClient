@@ -19,7 +19,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { saveAs } from "file-saver";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { deleteApi, post } from "../../api/crud-api";
