@@ -244,7 +244,7 @@ async function main() {
   );
 
   // Create Admin User
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { email: 'consumer@example.com' },
     update: {
       consumer_id: consumer1.id,
@@ -259,6 +259,22 @@ async function main() {
       password: hash,
       role_id: adminConsumerRole.id,
     },
+  });
+
+  // Assign all branches to the admin user
+  
+  await prisma.userBranch.createMany({
+    data: [
+      {
+        user_id: adminUser.id,
+        branch_id: warehouseBranch.id,
+      },
+      {
+        user_id: adminUser.id,
+        branch_id: mainBranch.id,
+      },
+    ],
+    skipDuplicates: true,
   });
 
   // Create billing history
