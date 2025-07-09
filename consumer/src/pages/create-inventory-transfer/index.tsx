@@ -20,9 +20,9 @@ import {
   Table,
   Typography,
 } from "antd";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDebouncedCallback } from "use-debounce";
+import debounce from "lodash/debounce";
 import {
   CreateTransferData,
   inventoryApi,
@@ -60,12 +60,19 @@ export default function AddInventoryTransfer() {
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
 
   // Debounced search to reduce API calls
-  const debouncedSearch = useDebouncedCallback(
-    (value: string) => {
+  const debouncedSearch = useCallback(
+    debounce((value: string) => {
       setDebouncedSearchText(value);
-    },
-    300 // 300ms delay
+    }, 300),
+    []
   );
+
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSearchChange = (value: string) => {
     setSearchText(value);
@@ -324,7 +331,7 @@ export default function AddInventoryTransfer() {
 
   return (
     <>
-      {setPageTitle(" Inventory Transfer Form")}  
+      {setPageTitle(" Inventory Transfer Form")}
       <PageTitle
         title="Create Inventory Transfer"
         breadcrumbs={[

@@ -44,8 +44,7 @@ const Brands = lazy(() => import("./pages/brands"));
 const Units = lazy(() => import("./pages/units"));
 const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
-const AddSale = lazy(() => import("./pages/sales/add-new"));
-const AddCompactSale = lazy(() => import("./pages/sales/add-compact"));
+const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sales"));
 
 export const routes = [
