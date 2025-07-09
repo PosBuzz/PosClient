@@ -59,7 +59,7 @@ export class ConsumerService {
         skipDuplicates: true,
       });
 
-      await tx.branch.create({
+      const warehouseBranch = await tx.branch.create({
         data: {
           consumer_id: consumer.id,
           name: 'Warehouse',
@@ -71,7 +71,7 @@ export class ConsumerService {
         },
       });
 
-      await tx.branch.create({
+      const mainBranch = await tx.branch.create({
         data: {
           consumer_id: consumer.id,
           name: 'Main Branch',
@@ -81,6 +81,14 @@ export class ConsumerService {
           is_main: true,
           is_warehouse: false,
         },
+      });
+
+      // Assign both branches to the admin user
+      await tx.userBranch.createMany({
+        data: [
+          { user_id: user.id, branch_id: warehouseBranch.id },
+          { user_id: user.id, branch_id: mainBranch.id },
+        ],
       });
       return {
         message: 'Consumer, admin user, and permissions created successfully',

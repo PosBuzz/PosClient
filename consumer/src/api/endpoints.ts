@@ -27,6 +27,7 @@ export const endpoints = {
   getCategories: "/consumer/categories",
   getUnits: "/consumer/units",
   getBranches: "/consumer/branches",
+  getBranchOptions: "/consumer/branches/options",
   getTags: "/consumer/tags",
 
   // Create master data

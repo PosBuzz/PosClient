@@ -24,8 +24,21 @@ const Users = () => {
     staleTime: queryStaleTimeMap[queryKeys.roles],
   });
 
+  const { data: branchData } = useQuery({
+    queryKey: [queryKeys.branchOptions],
+    queryFn: () => get(endpoints.getBranchOptions),
+    staleTime: queryStaleTimeMap[queryKeys.branchOptions],
+  });
+
   const roleOptions: any = fetchData?.map((role) => {
     return { label: role.name, value: role.id };
+  });
+
+  const branchOptions: any = branchData?.map((branch) => {
+    return { 
+      label: `${branch.name}${branch.is_main ? ' (Main)' : ''}${branch.is_warehouse ? ' (Warehouse)' : ''}`, 
+      value: branch.id 
+    };
   });
 
   const showDrawer = () => {
@@ -66,6 +79,7 @@ const Users = () => {
         editedItem={editedItem}
         onSubmitSuccess={onSubmitSuccess}
         roleOptions={roleOptions}
+        branchOptions={branchOptions}
       />
 
       <PageTitle
@@ -88,7 +102,7 @@ const Users = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid onClickEdit={onClickEdit} roleOptions={roleOptions} />
+          <TableGrid onClickEdit={onClickEdit} roleOptions={roleOptions} branchOptions={branchOptions} />
         </Col>
       </Row>
     </>

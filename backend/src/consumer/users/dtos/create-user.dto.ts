@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsNumber } from 'class-validator';
+import { IsEmail, IsString, IsNumber, IsArray, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -12,4 +12,9 @@ export class CreateUserDto {
 
   @IsNumber()
   role_id: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  branch_ids?: number[];
 }

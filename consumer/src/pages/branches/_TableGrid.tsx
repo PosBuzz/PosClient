@@ -4,7 +4,7 @@ import {
   MailOutlined,
   PhoneOutlined,
 } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -13,6 +13,7 @@ import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
 export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
+  const queryClient = useQueryClient();
 
   const {
     data: fetchData,
@@ -29,6 +30,8 @@ export default function _TableGrid({ onClickEdit }) {
     mutationFn: async (id: any) => await deleteApi(endpoints.deleteBranch(id)),
     onSuccess: () => {
       messageApi?.success("Branch deleted successfully");
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.branchOptions] });
       refetch();
     },
     onError: (error: any) => {

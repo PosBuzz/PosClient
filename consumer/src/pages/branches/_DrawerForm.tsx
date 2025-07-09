@@ -25,6 +25,8 @@ export default function DrawerForm({
     mutationFn: async (data) => await post(endpoints.createBranch, data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.branchOptions] });
       messageApi?.success("Branch created successfully");
       form.resetFields();
       onSubmitSuccess();
@@ -41,6 +43,8 @@ export default function DrawerForm({
       await patch(endpoints.updateBranch(data.id), data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.branchOptions] });
       messageApi?.success("Branch updated successfully");
       form.resetFields();
       onSubmitSuccess(true);

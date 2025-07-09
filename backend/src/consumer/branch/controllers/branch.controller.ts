@@ -33,6 +33,11 @@ export class BranchController {
   async findAll(@Req() req: Request) {
     return this.branchService.findAll(req.user.id);
   }
+
+  @Get('options')
+  async getBranchOptions(@Req() req: Request) {
+    return this.branchService.getBranchOptions(req.user.id);
+  }
   
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {

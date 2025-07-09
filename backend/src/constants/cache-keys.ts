@@ -43,6 +43,9 @@ export const generateCacheKey = {
   branchList: (consumerId: number) =>
     `${consumerId}:branches:list`,
   
+  branchOptions: (consumerId: number) =>
+    `${consumerId}:branches:options`,
+  
   branchDetail: (branchId: number, consumerId: number) =>
     `${consumerId}:branch:detail:${branchId}`,
 

@@ -23,7 +23,7 @@ import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
-export default function _TableGrid({ onClickEdit, roleOptions = [] }) {
+export default function _TableGrid({ onClickEdit, roleOptions = [], branchOptions = [] }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();
@@ -89,6 +89,28 @@ export default function _TableGrid({ onClickEdit, roleOptions = [] }) {
         </Tag>
       ),
       key: "role",
+    },
+    {
+      title: "Branch Access",
+      render: (record: any) => {
+        const branches = record?.branches || [];
+        if (branches.length === 0) {
+          return <Tag color="red">No access</Tag>;
+        }
+        if (branches.length === branchOptions.length) {
+          return <Tag color="green">All branches</Tag>;
+        }
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {branches.map((ub: any) => (
+              <Tag key={ub.branch.id} color="blue" style={{ marginBottom: 4 }}>
+                {ub.branch.name}
+              </Tag>
+            ))}
+          </div>
+        );
+      },
+      key: "branches",
     },
     {
       title: "Actions",

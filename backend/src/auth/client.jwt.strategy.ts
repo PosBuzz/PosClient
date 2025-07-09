@@ -43,6 +43,11 @@ export class JwtClientStrategy extends PassportStrategy(
             company_name: true,
           },
         },
+        branches: {
+          include: {
+            branch: true,
+          },
+        },
       },
     });
 
@@ -58,6 +63,14 @@ export class JwtClientStrategy extends PassportStrategy(
 
     // Extract permission actions from role
     const permissions = user.role.permissions.map((rp) => rp.permission.action);
+    
+    // Extract branch information
+    const branches = user.branches.map((ub) => ({
+      id: ub.branch.id,
+      name: ub.branch.name,
+      is_main: ub.branch.is_main,
+      is_warehouse: ub.branch.is_warehouse,
+    }));
 
     return {
       ...userWithoutPassword,
@@ -66,6 +79,7 @@ export class JwtClientStrategy extends PassportStrategy(
       plan_id: user.consumer.plan_id,
       company_name: user.consumer.company_name,
       company_email: user.consumer.email,
+      branches, // attach branch access to request.user
     };
   }
 }

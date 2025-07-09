@@ -172,6 +172,7 @@ model User {
 
   consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   role                Role                  @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  branches            UserBranch[]
   InventoryTransfer   InventoryTransfer[]
   InventoryAdjustment InventoryAdjustment[]
   PriceHistory        PriceHistory[]
@@ -396,6 +397,7 @@ model Branch {
 
   // Relations
   consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  users               UserBranch[]
   inventory           InventoryBatch[]
   transfers_from      InventoryTransfer[]   @relation("SourceBranch")
   transfers_to        InventoryTransfer[]   @relation("DestinationBranch")
@@ -406,6 +408,17 @@ model Branch {
   @@unique([consumer_id, name])
   @@index([name])
   @@map("branches")
+}
+
+model UserBranch {
+  user_id    Int
+  branch_id  Int
+  user       User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  branch     Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, branch_id])
+  @@index([branch_id])
+  @@map("user_branches")
 }
 
 model InventoryBatch {
