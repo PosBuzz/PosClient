@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select } from "antd";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
@@ -15,11 +15,19 @@ export default function DrawerForm({
   isEditing,
   editedItem,
   roleOptions,
+  branchOptions,
   ...props
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
+  const [selectAllBranches, setSelectAllBranches] = useState(false);
+  
+  // Use Form.useWatch to watch role_id changes
+  const selectedRole = Form.useWatch('role_id', form);
+
+  // Check if selected role is admin
+  const isAdminRole = selectedRole && roleOptions?.find(role => role.value === selectedRole)?.label?.toLowerCase().includes('admin');
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.user, data),
@@ -49,12 +57,17 @@ export default function DrawerForm({
   });
 
   const onFinish = async (formValues: any) => {
-    const payload = {
+    const payload: any = {
       name: formValues.name,
       role_id: formValues.role_id,
       email: formValues.email,
       password: formValues.password,
     };
+
+    // Only include branch_ids for non-admin users
+    if (!isAdminRole && formValues.branch_ids) {
+      payload.branch_ids = formValues.branch_ids;
+    }
 
     if (isEditing && editedItem) {
       return updateData.mutate({
@@ -73,15 +86,19 @@ export default function DrawerForm({
 
   useEffect(() => {
     if (isEditing && editedItem) {
+      const branchIds = editedItem.branches?.map(ub => ub.branch.id) || [];
       form.setFieldsValue({
         name: editedItem.name,
         email: editedItem.email,
         role_id: editedItem.role_id,
+        branch_ids: branchIds,
       });
+      setSelectAllBranches(branchIds.length === branchOptions?.length);
     } else {
       form.resetFields();
+      setSelectAllBranches(false);
     }
-  }, [isEditing, editedItem, form]);
+  }, [isEditing, editedItem, form, branchOptions]);
 
   return (
     <>
@@ -114,17 +131,12 @@ export default function DrawerForm({
             <Select
               size="middle"
               allowClear
-              // showSearch
-              // optionFilterProp="label"
-              // filterSort={(
-              //   optionA: { label?: string },
-              //   optionB: { label?: string }
-              // ) =>
-              //   (optionA?.label ?? "")
-              //     .toLowerCase()
-              //     .localeCompare((optionB?.label ?? "").toLowerCase())
-              // }
               options={roleOptions}
+              onChange={(value) => {
+                // Clear branch selection when role changes
+                form.setFieldValue('branch_ids', []);
+                setSelectAllBranches(false);
+              }}
             />
           </Form.Item>
 
@@ -145,6 +157,46 @@ export default function DrawerForm({
           >
             <Input.Password />
           </Form.Item>
+
+          {!isAdminRole && (
+            <>
+              <Form.Item label=" " colon={false} className="!mb-0">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Select branches this user can access:</span>
+                  <Button 
+                    type="link" 
+                    size="small"
+                    onClick={() => {
+                      if (selectAllBranches) {
+                        // If all are selected, clear selection
+                        form.setFieldValue('branch_ids', []);
+                        setSelectAllBranches(false);
+                      } else {
+                        // If not all are selected, select all
+                        const allBranchIds = branchOptions?.map(branch => branch.value) || [];
+                        form.setFieldValue('branch_ids', allBranchIds);
+                        setSelectAllBranches(true);
+                      }
+                    }}
+                  >
+                    {selectAllBranches ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+              </Form.Item>
+              
+              <Form.Item label="Branch Access" name="branch_ids">
+                <Select
+                  mode="multiple"
+                  placeholder="Select branches"
+                  options={branchOptions}
+                  style={{ width: '100%' }}
+                  onChange={(values) => {
+                    setSelectAllBranches(values.length === branchOptions?.length);
+                  }}
+                />
+              </Form.Item>
+            </>
+          )}
 
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
             <Button

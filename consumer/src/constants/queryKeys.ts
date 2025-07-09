@@ -1,6 +1,7 @@
 export const queryKeys = {
   adjustments: "adjustments",
   branches: "branches",
+  branchOptions: "branch-options",
   brands: "brands",
   batch: "batch",
   batches: "batches",
@@ -47,6 +48,7 @@ export const staleTimeConfig = {
 export const queryStaleTimeMap = {
   // Static data
   [queryKeys.branches]: staleTimeConfig.static,
+  [queryKeys.branchOptions]: staleTimeConfig.static,
   [queryKeys.categories]: staleTimeConfig.static,
   [queryKeys.brands]: staleTimeConfig.static,
   [queryKeys.units]: staleTimeConfig.static,

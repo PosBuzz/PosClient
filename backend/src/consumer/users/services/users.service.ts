@@ -6,7 +6,10 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
+import {
+  generateCacheKey,
+  generateCachePatterns,
+} from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
@@ -26,10 +29,11 @@ export class UsersService {
     return permissions.map((p) => {
       return { label: p.permission.action, value: p.permission.id };
     });
-  }  async getRoles(consumer_id: number) {
+  }
+  async getRoles(consumer_id: number) {
     // Generate cache key
     const cacheKey = generateCacheKey.roleList(consumer_id);
-    
+
     // Try to get from cache first
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.role.findMany({
@@ -79,12 +83,20 @@ export class UsersService {
 
     return result;
   }
-  async getUsers(consumer_id: number, search_text?: string | null, role_id?: number) {
-    console.log({consumer_id, search_text, role_id});
-    
+  async getUsers(
+    consumer_id: number,
+    search_text?: string | null,
+    role_id?: number,
+  ) {
+    console.log({ consumer_id, search_text, role_id });
+
     // Generate cache key
-    const cacheKey = generateCacheKey.userList(consumer_id, search_text || undefined, role_id);
-    
+    const cacheKey = generateCacheKey.userList(
+      consumer_id,
+      search_text || undefined,
+      role_id,
+    );
+
     // Try to get from cache first
     return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.user.findMany({
@@ -100,6 +112,11 @@ export class UsersService {
         },
         include: {
           role: true,
+          branches: {
+            include: {
+              branch: true,
+            },
+          },
         },
       });
     });
@@ -116,20 +133,69 @@ export class UsersService {
   }
   async createUser(dto: CreateUserDto, consumer_id: number) {
     const hashedPassword = await bcryptjs.hash(dto.password, 10);
-    const result = await this.prisma.user.create({
-      data: {
-        consumer_id,
-        email: dto.email,
-        name: dto.name,
-        password: hashedPassword,
-        role_id: dto.role_id,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
+
+    // Use transaction to create user and assign branches
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          consumer_id,
+          email: dto.email,
+          name: dto.name,
+          password: hashedPassword,
+          role_id: dto.role_id,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      // Assign branches if provided
+      if (dto.branch_ids && dto.branch_ids.length > 0) {
+        await tx.userBranch.createMany({
+          data: dto.branch_ids.map((branch_id) => ({
+            user_id: user.id,
+            branch_id,
+          })),
+        });
+      } else {
+        // If no branches specified, check if user is admin and assign all branches
+        const role = await tx.role.findUnique({
+          where: { id: dto.role_id },
+          select: { is_admin: true },
+        });
+
+        if (role?.is_admin) {
+          // Get all branches for this consumer
+          const branches = await tx.branch.findMany({
+            where: { consumer_id },
+            select: { id: true },
+          });
+
+          if (branches.length > 0) {
+            await tx.userBranch.createMany({
+              data: branches.map((branch) => ({
+                user_id: user.id,
+                branch_id: branch.id,
+              })),
+            });
+          }
+        }
+      }
+
+      // Return user with branch information
+      const userWithBranches = await tx.user.findUnique({
+        where: { id: user.id },
+        include: {
+          role: true,
+          branches: {
+            include: {
+              branch: true,
+            },
+          },
+        },
+      });
+
+      return userWithBranches;
     });
 
     // Invalidate user caches
@@ -179,38 +245,101 @@ export class UsersService {
       hashedPassword = await bcryptjs.hash(dto.password, 10);
     }
 
-    const result = await this.prisma.user.update({
-      where: { id },
-      data: {
-        email: dto.email,
-        name: dto.name,
-        password: hashedPassword,
-        role_id: dto.role_id,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
+    // Use transaction to update user and branch assignments
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id },
+        data: {
+          email: dto.email,
+          name: dto.name,
+          password: hashedPassword,
+          role_id: dto.role_id,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          consumer_id: true,
+        },
+      });
+
+      // Handle branch assignments if provided
+      if (dto.branch_ids !== undefined) {
+        // Remove existing branch assignments
+        await tx.userBranch.deleteMany({
+          where: { user_id: id },
+        });
+
+        // Add new branch assignments
+        if (dto.branch_ids.length > 0) {
+          await tx.userBranch.createMany({
+            data: dto.branch_ids.map((branch_id) => ({
+              user_id: id,
+              branch_id,
+            })),
+          });
+        }
+      } else {
+        // If no branch_ids provided, check if user is admin and assign all branches
+        const role = await tx.role.findUnique({
+          where: { id: dto.role_id || user.role.id },
+          select: { is_admin: true },
+        });
+
+        if (role?.is_admin) {
+          // Remove existing branch assignments first
+          await tx.userBranch.deleteMany({
+            where: { user_id: id },
+          });
+
+          // Get all branches for this consumer
+          const branches = await tx.branch.findMany({
+            where: { consumer_id: user.consumer_id },
+            select: { id: true },
+          });
+
+          if (branches.length > 0) {
+            await tx.userBranch.createMany({
+              data: branches.map((branch) => ({
+                user_id: id,
+                branch_id: branch.id,
+              })),
+            });
+          }
+        }
+      }
+
+      // Return user with branch information
+      const userWithBranches = await tx.user.findUnique({
+        where: { id },
+        include: {
+          role: true,
+          branches: {
+            include: {
+              branch: true,
+            },
+          },
+        },
+      });
+
+      return userWithBranches;
     });
 
-    // Get consumer_id for cache invalidation
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { consumer_id: true },
-    });
-
-    if (user) {
-      // Invalidate user caches
-      await this.invalidateUserCaches(user.consumer_id);
+    // Invalidate user caches
+    if (result) {
+      await this.invalidateUserCaches(result.consumer_id);
     }
 
     return result;
-  }  private async invalidateUserCaches(consumer_id: number): Promise<void> {
+  }
+
+  private async invalidateUserCaches(consumer_id: number): Promise<void> {
     try {
       // Invalidate user and role caches for this consumer
       await this.cacheService.invalidateEntityCaches(consumer_id, 'users');
+      // Also invalidate branch caches since user-branch relationships changed
+      await this.cacheService.invalidateEntityCaches(consumer_id, 'branches');
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }
