@@ -231,6 +231,9 @@ export default function ProductForm() {
       queryClient.invalidateQueries({
         queryKey: [queryKeys.lowStockItems],
       });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productsForSale],
+      });
 
       if (isEditMode && id) {
         queryClient.invalidateQueries({
@@ -403,7 +406,7 @@ export default function ProductForm() {
 
   return (
     <>
-     {setPageTitle("Product Form")} 
+      {setPageTitle("Product Form")}
       <PageTitle
         title={isEditMode ? "Edit Product" : "Add Product"}
         breadcrumbs={[

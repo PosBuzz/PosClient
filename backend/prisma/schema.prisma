@@ -7,6 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaxMethod {
+  INCLUSIVE
+  EXCLUSIVE
+}
+
+enum PaymentMethodEnum {
+  CASH
+  CARD
+  CHEQUE
+  BANK_TRANSFER
+  MOBILE_MONEY
+  MFS
+  DEPOSIT
+  CREDIT
+}
+
 model SuperAdmin {
   id            Int          @id @default(autoincrement())
   role_id       Int
@@ -228,7 +244,7 @@ model Product {
   brand_id             Int?
   tags                 TagOnProduct[]
   has_variants         Boolean        @default(false)
-  tax_method           String         @default("exclusive") // inclusive, exclusive
+  tax_method           TaxMethod      @default(EXCLUSIVE) // inclusive, exclusive
   tax                  Int            @default(0) // percentage as integer (e.g., 15 for 15%)
   daily_sale_objective Int?           @default(0) // Daily sales target for this product
   created_at           DateTime       @default(now())
@@ -411,10 +427,10 @@ model Branch {
 }
 
 model UserBranch {
-  user_id    Int
-  branch_id  Int
-  user       User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  branch     Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  user_id   Int
+  branch_id Int
+  user      User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  branch    Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, branch_id])
   @@index([branch_id])
@@ -644,7 +660,7 @@ model Sale {
   shipping_cost   Decimal  @default(0) @db.Decimal(10, 2)
   tax_amount      Decimal  @default(0) @db.Decimal(10, 2)
   total_amount    Decimal  @db.Decimal(10, 2)
-  payment_method  String // cash, card, cheque, bank_transfer, mobile_money, deposit, credit
+  payment_method  PaymentMethodEnum? // Deprecated: kept for backward compatibility
   payment_status  String   @default("paid") // paid, partial, due, cancelled
   received_amount Decimal  @default(0) @db.Decimal(10, 2)
   change_amount   Decimal  @default(0) @db.Decimal(10, 2)
@@ -653,11 +669,12 @@ model Sale {
   updated_at      DateTime @updatedAt
 
   // Relations
-  consumer Consumer    @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  customer Customer?   @relation(fields: [customer_id], references: [id], onDelete: SetNull)
-  branch   Branch      @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  user     User?       @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  consumer Consumer      @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  customer Customer?     @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  branch   Branch        @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user     User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
   items    SaleItem[]
+  payments SalePayment[]
 
   @@index([consumer_id])
   @@index([customer_id])
@@ -680,12 +697,30 @@ model SaleItem {
   line_total      Decimal @db.Decimal(10, 2)
 
   // Relations
-  sale    Sale              @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  variant ProductVariant    @relation(fields: [variant_id], references: [id], onDelete: Restrict)
-  batch   InventoryBatch?   @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  sale    Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch   InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
 
   @@index([sale_id])
   @@index([variant_id])
   @@index([batch_id])
   @@map("sale_items")
+}
+
+model SalePayment {
+  id             Int      @id @default(autoincrement())
+  sale_id        Int
+  payment_method PaymentMethodEnum // cash, card, cheque, bank_transfer, mobile_money, mfs, deposit, credit
+  amount         Decimal  @db.Decimal(10, 2)
+  reference      String? // Transaction reference for digital payments
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relations
+  sale Sale @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+
+  @@index([sale_id])
+  @@index([payment_method])
+  @@map("sale_payments")
 }
