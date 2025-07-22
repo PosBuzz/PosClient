@@ -119,10 +119,10 @@ export class SalesService {
       // Using new partial payment system
       totalPaymentAmount = createSaleDto.payments.reduce((sum, payment) => sum + payment.amount, 0);
       paymentMethods = createSaleDto.payments.map(p => p.payment_method);
-    } else if (createSaleDto.payment_method && createSaleDto.received_amount) {
-      // Backward compatibility with single payment method
-      totalPaymentAmount = receivedAmount;
-      paymentMethods = [createSaleDto.payment_method];
+    } else {
+      // No payments provided - set as due
+      totalPaymentAmount = 0;
+      paymentMethods = [];
     }
 
     // Determine payment status
@@ -156,7 +156,6 @@ export class SalesService {
           shipping_cost: shippingCost,
           tax_amount: totalTax,
           total_amount: totalAmount,
-          payment_method: createSaleDto.payment_method || null, // Kept for backward compatibility
           payment_status: paymentStatus,
           received_amount: totalPaymentAmount,
           change_amount: changeAmount,
@@ -179,15 +178,6 @@ export class SalesService {
             })
           )
         );
-      } else if (createSaleDto.payment_method && totalPaymentAmount > 0) {
-        // Create single payment for backward compatibility
-        await tx.salePayment.create({
-          data: {
-            sale_id: sale.id,
-            payment_method: createSaleDto.payment_method,
-            amount: totalPaymentAmount,
-          },
-        });
       }
 
       // Create sale items and update inventory
@@ -252,6 +242,8 @@ export class SalesService {
       payment_status,
       date_from,
       date_to,
+      sort_by,
+      sort_order,
     );
 
     // Try to get from cache first
@@ -280,7 +272,12 @@ export class SalesService {
     }
 
     if (payment_method) {
-      where.payment_method = payment_method;
+      // For new multi-payment system, search in SalePayment table
+      where.payments = {
+        some: {
+          payment_method: payment_method
+        }
+      };
     }
 
     if (payment_status) {

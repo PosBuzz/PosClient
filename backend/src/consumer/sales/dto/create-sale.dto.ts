@@ -120,9 +120,7 @@ export class CreateSaleDto {
   @Min(0)
   shipping_cost?: number;
 
-  @IsOptional()
-  @IsEnum(PaymentMethod)
-  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
+
 
   @IsOptional()
   @IsEnum(PaymentStatus)

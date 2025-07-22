@@ -51,7 +51,6 @@ export interface Sale {
   shipping_cost: number;
   tax_amount: number;
   total_amount: number;
-  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
   payment_status: PaymentStatus;
   received_amount: number;
   change_amount: number;
@@ -73,7 +72,6 @@ export interface SaleFormData {
   discount_type: DiscountType;
   discount_amount: number;
   shipping_cost: number;
-  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
   payment_status: PaymentStatus;
   received_amount: number;
   notes?: string;

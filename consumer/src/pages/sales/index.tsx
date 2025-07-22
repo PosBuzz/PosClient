@@ -2,7 +2,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
-  FilterOutlined,
   PlusOutlined,
   PrinterOutlined,
   SearchOutlined,
@@ -12,6 +11,7 @@ import {
   Button,
   Card,
   Col,
+  DatePicker,
   Input,
   Popconfirm,
   Row,
@@ -21,7 +21,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
@@ -44,6 +44,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 const { Text } = Typography;
+const { RangePicker } = DatePicker;
 
 const SalesTable = () => {
   const { user } = useAuthStore();
@@ -112,6 +113,17 @@ const SalesTable = () => {
     debouncedSearch(value);
   };
 
+  const hasActiveFilters = () => {
+    return (
+      filters.search ||
+      filters.payment_status ||
+      filters.payment_method ||
+      filters.date_from ||
+      filters.date_to ||
+      filters.branch_id
+    );
+  };
+
   const handlePrint = async (saleId: number) => {
     try {
       // For development, just show a message
@@ -127,8 +139,8 @@ const SalesTable = () => {
   const getPaymentStatusColor = (status: PaymentStatus) => {
     const colors = {
       paid: "success",
-      pending: "warning",
       partial: "processing",
+      due: "warning",
       cancelled: "error",
     };
     return colors[status] || "default";
@@ -136,11 +148,14 @@ const SalesTable = () => {
 
   const getPaymentMethodDisplay = (method: PaymentMethod) => {
     const displays = {
-      cash: "Cash",
-      card: "Card",
-      bank_transfer: "Bank Transfer",
-      mobile_money: "Mobile Money",
-      credit: "Credit",
+      CASH: "Cash",
+      CARD: "Card",
+      BANK_TRANSFER: "Bank Transfer",
+      CHEQUE: "Cheque",
+      MOBILE_MONEY: "Mobile Money",
+      MFS: "MFS",
+      DEPOSIT: "Deposit",
+      CREDIT: "Credit",
     };
     return displays[method] || method;
   };
@@ -150,6 +165,7 @@ const SalesTable = () => {
       title: "Sale #",
       dataIndex: "sale_number",
       key: "sale_number",
+      sorter: true,
       render: (text: string, record: Sale) => (
         <Link to={`/sales/view/${record.id}`}>{text}</Link>
       ),
@@ -171,12 +187,14 @@ const SalesTable = () => {
     {
       title: "Branch",
       key: "branch",
-      render: (record: Sale) => record.branch?.name || record.branch_name || 'N/A',
+      render: (record: Sale) =>
+        record.branch?.name || record.branch_name || "N/A",
     },
     {
       title: "Sale Date",
       dataIndex: "sale_date",
       key: "sale_date",
+      sorter: true,
       render: (date: string) => dayjs(date).format("MMM DD, YYYY HH:mm"),
     },
     {
@@ -188,6 +206,7 @@ const SalesTable = () => {
       title: "Total Amount",
       dataIndex: "total_amount",
       key: "total_amount",
+      sorter: true,
       render: (amount: number) => `$${(Number(amount) || 0).toFixed(2)}`,
     },
     {
@@ -199,7 +218,11 @@ const SalesTable = () => {
             {record.payment_status.toUpperCase()}
           </Tag>
           <div style={{ fontSize: "12px", color: "#666" }}>
-            {getPaymentMethodDisplay(record.payment_method)}
+            {record.payments && record.payments.length > 0
+              ? record.payments.length === 1
+                ? getPaymentMethodDisplay(record.payments[0].payment_method)
+                : `${record.payments.length} methods`
+              : "N/A"}
           </div>
         </div>
       ),
@@ -279,7 +302,7 @@ const SalesTable = () => {
       {/* Sales Summary Cards */}
       {salesQuery.data?.summary && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={8}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="Total Sales"
@@ -288,7 +311,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="Total Amount"
@@ -298,7 +321,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="Average Sale"
@@ -308,13 +331,28 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title="Period"
+                value={
+                  filters.date_from && filters.date_to
+                    ? `${dayjs(filters.date_from).format("MMM DD")} - ${dayjs(
+                        filters.date_to
+                      ).format("MMM DD")}`
+                    : "All Time"
+                }
+                style={{ fontSize: 12 }}
+              />
+            </Card>
+          </Col>
         </Row>
       )}
 
       <Card>
         {/* Filters */}
         <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={8}>
+          <Col span={5}>
             <Input
               placeholder="Search sales..."
               prefix={<SearchOutlined />}
@@ -322,10 +360,74 @@ const SalesTable = () => {
               allowClear
             />
           </Col>
-          <Col span={6}>
+          <Col span={5}>
+            <RangePicker
+              style={{ width: "100%" }}
+              value={
+                filters.date_from && filters.date_to
+                  ? [dayjs(filters.date_from), dayjs(filters.date_to)]
+                  : null
+              }
+              onChange={(dates) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  date_from: dates?.[0]?.startOf("day").toISOString(),
+                  date_to: dates?.[1]?.endOf("day").toISOString(),
+                  page: 1,
+                }));
+              }}
+              placeholder={["Start Date", "End Date"]}
+              allowClear
+              presets={[
+                {
+                  label: "Today",
+                  value: [dayjs().startOf("day"), dayjs().endOf("day")],
+                },
+                {
+                  label: "Yesterday",
+                  value: [
+                    dayjs().subtract(1, "day").startOf("day"),
+                    dayjs().subtract(1, "day").endOf("day"),
+                  ],
+                },
+                {
+                  label: "This Week",
+                  value: [dayjs().startOf("week"), dayjs().endOf("week")],
+                },
+                {
+                  label: "Last Week",
+                  value: [
+                    dayjs().subtract(1, "week").startOf("week"),
+                    dayjs().subtract(1, "week").endOf("week"),
+                  ],
+                },
+                {
+                  label: "This Month",
+                  value: [dayjs().startOf("month"), dayjs().endOf("month")],
+                },
+                {
+                  label: "Last Month",
+                  value: [
+                    dayjs().subtract(1, "month").startOf("month"),
+                    dayjs().subtract(1, "month").endOf("month"),
+                  ],
+                },
+                {
+                  label: "Last 30 Days",
+                  value: [dayjs().subtract(30, "day"), dayjs()],
+                },
+                {
+                  label: "Last 90 Days",
+                  value: [dayjs().subtract(90, "day"), dayjs()],
+                },
+              ]}
+            />
+          </Col>
+          <Col span={4}>
             <Select
               placeholder="Payment Status"
               style={{ width: "100%" }}
+              value={filters.payment_status}
               onChange={(value) =>
                 setFilters((prev) => ({
                   ...prev,
@@ -336,15 +438,16 @@ const SalesTable = () => {
               allowClear
             >
               <Option value="paid">Paid</Option>
-              <Option value="pending">Pending</Option>
               <Option value="partial">Partial</Option>
+              <Option value="due">Due</Option>
               <Option value="cancelled">Cancelled</Option>
             </Select>
           </Col>
-          <Col span={6}>
+          <Col span={4}>
             <Select
               placeholder="Payment Method"
               style={{ width: "100%" }}
+              value={filters.payment_method}
               onChange={(value) =>
                 setFilters((prev) => ({
                   ...prev,
@@ -354,25 +457,173 @@ const SalesTable = () => {
               }
               allowClear
             >
-              <Option value="cash">Cash</Option>
-              <Option value="card">Card</Option>
-              <Option value="bank_transfer">Bank Transfer</Option>
-              <Option value="mobile_money">Mobile Money</Option>
-              <Option value="credit">Credit</Option>
+              <Option value="CASH">Cash</Option>
+              <Option value="CARD">Card</Option>
+              <Option value="BANK_TRANSFER">Bank Transfer</Option>
+              <Option value="CHEQUE">Cheque</Option>
+              <Option value="MOBILE_MONEY">Mobile Money</Option>
+              <Option value="MFS">MFS</Option>
+              <Option value="DEPOSIT">Deposit</Option>
+              <Option value="CREDIT">Credit</Option>
             </Select>
           </Col>
-          <Col span={4}>
-            <Button icon={<FilterOutlined />} style={{ width: "100%" }}>
-              More Filters
+          <Col span={3}>
+            <Select
+              placeholder="Branch"
+              value={filters.branch_id}
+              style={{ width: "100%" }}
+              onChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  branch_id: value,
+                  page: 1,
+                }))
+              }
+              allowClear
+            >
+              {user?.branches?.map((branch) => (
+                <Option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          <Col span={2}>
+            <Button
+              onClick={() => {
+                setFilters({
+                  page: 1,
+                  limit: 20,
+                  search: "",
+                });
+              }}
+              disabled={!hasActiveFilters()}
+            >
+              Clear
             </Button>
           </Col>
         </Row>
+
+        {/* Active Filters Display */}
+        {hasActiveFilters() && (
+          <Row style={{ marginBottom: 16 }}>
+            <Col span={24}>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  color: "#666",
+                }}
+              >
+                <Text strong>Active Filters: </Text>
+                {filters.search && (
+                  <Tag
+                    closable
+                    onClose={() => {
+                      setFilters((prev) => ({ ...prev, search: "" }));
+                    }}
+                  >
+                    Search: {filters.search}
+                  </Tag>
+                )}
+                {filters.payment_status && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        payment_status: undefined,
+                      }))
+                    }
+                  >
+                    Status: {filters.payment_status}
+                  </Tag>
+                )}
+                {filters.payment_method && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        payment_method: undefined,
+                      }))
+                    }
+                  >
+                    Method: {filters.payment_method}
+                  </Tag>
+                )}
+                {filters.date_from && filters.date_to && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        date_from: undefined,
+                        date_to: undefined,
+                      }))
+                    }
+                  >
+                    Date: {dayjs(filters.date_from).format("MMM DD")} -{" "}
+                    {dayjs(filters.date_to).format("MMM DD, YYYY")}
+                  </Tag>
+                )}
+                {filters.branch_id && (
+                  <Tag
+                    closable
+                    onClose={() =>
+                      setFilters((prev) => ({ ...prev, branch_id: undefined }))
+                    }
+                  >
+                    Branch:{" "}
+                    {
+                      user?.branches.find(
+                        (branch) => branch.id === filters.branch_id
+                      )?.name
+                    }
+                  </Tag>
+                )}
+              </div>
+            </Col>
+          </Row>
+        )}
 
         <Table
           columns={columns}
           dataSource={salesQuery.data?.data || []}
           loading={salesQuery.isLoading}
           rowKey="id"
+          onChange={(pagination, _filters, sorter) => {
+            // Handle pagination
+            const newPage = pagination.current || 1;
+            const newLimit = pagination.pageSize || 20;
+
+            if (newPage !== filters.page || newLimit !== filters.limit) {
+              setFilters((prev) => ({
+                ...prev,
+                page: newPage,
+                limit: newLimit,
+              }));
+            }
+
+            // Handle sorting
+            if (sorter && !Array.isArray(sorter)) {
+              const sortField = sorter.field as string;
+              const sortOrder =
+                sorter.order === "ascend"
+                  ? "asc"
+                  : sorter.order === "descend"
+                  ? "desc"
+                  : undefined;
+
+              setFilters((prev) => ({
+                ...prev,
+                sort_by: sortOrder ? sortField : "created_at",
+                sort_order: sortOrder || "desc",
+                page: 1, // Reset to first page when sorting
+              }));
+            }
+          }}
           pagination={{
             current: filters.page,
             pageSize: filters.limit,
@@ -381,8 +632,6 @@ const SalesTable = () => {
             showQuickJumper: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} sales`,
-            onChange: (page, pageSize) =>
-              setFilters((prev) => ({ ...prev, page, limit: pageSize })),
           }}
         />
       </Card>

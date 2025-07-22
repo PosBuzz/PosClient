@@ -660,7 +660,6 @@ model Sale {
   shipping_cost   Decimal  @default(0) @db.Decimal(10, 2)
   tax_amount      Decimal  @default(0) @db.Decimal(10, 2)
   total_amount    Decimal  @db.Decimal(10, 2)
-  payment_method  PaymentMethodEnum? // Deprecated: kept for backward compatibility
   payment_status  String   @default("paid") // paid, partial, due, cancelled
   received_amount Decimal  @default(0) @db.Decimal(10, 2)
   change_amount   Decimal  @default(0) @db.Decimal(10, 2)
@@ -708,14 +707,14 @@ model SaleItem {
 }
 
 model SalePayment {
-  id             Int      @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   sale_id        Int
   payment_method PaymentMethodEnum // cash, card, cheque, bank_transfer, mobile_money, mfs, deposit, credit
-  amount         Decimal  @db.Decimal(10, 2)
+  amount         Decimal           @db.Decimal(10, 2)
   reference      String? // Transaction reference for digital payments
   notes          String?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
 
   // Relations
   sale Sale @relation(fields: [sale_id], references: [id], onDelete: Cascade)
