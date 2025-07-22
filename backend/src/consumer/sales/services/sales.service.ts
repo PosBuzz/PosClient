@@ -8,6 +8,7 @@ import { CacheService } from '../../../common/services/cache.service';
 import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
+import { EODReportDto, EODReportResponse, PaymentMethodBreakdown, ProductSalesStats, EODSummary } from '../dto/eod-report.dto';
 
 @Injectable()
 export class SalesService {
@@ -463,7 +464,7 @@ export class SalesService {
   async getSalesStats(consumerId: number, branchId?: number) {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const baseWhere: any = {
@@ -532,6 +533,200 @@ export class SalesService {
       month_sales: monthStats._count || 0,
       month_amount: monthStats._sum.total_amount || 0,
       top_products: topProductsWithDetails,
+    };
+  }
+
+  async getEODReport(
+    consumerId: number,
+    eodDto: EODReportDto,
+  ): Promise<EODReportResponse> {
+    // Parse date or use current date
+    const reportDate = eodDto.date ? new Date(eodDto.date) : new Date();
+    const startOfDay = new Date(reportDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(reportDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Build where clause
+    const whereClause: any = {
+      consumer_id: consumerId,
+      sale_date: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    };
+
+    if (eodDto.branch_id) {
+      whereClause.branch_id = eodDto.branch_id;
+    }
+
+    // Get branch name if specific branch selected
+    let branchName: string | undefined;
+    if (eodDto.branch_id) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: eodDto.branch_id },
+        select: { name: true },
+      });
+      branchName = branch?.name;
+    }
+
+    // Get all sales for the day
+    const sales = await this.prisma.sale.findMany({
+      where: whereClause,
+      include: {
+        payments: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Calculate summary statistics
+    const totalSales = sales.length;
+    const totalAmount = sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
+    const totalItemsSold = sales.reduce((sum, sale) => 
+      sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
+    );
+
+    // Get unique products sold
+    const uniqueProductIds = new Set();
+    sales.forEach(sale => {
+      sale.items.forEach(item => {
+        uniqueProductIds.add(item.variant_id);
+      });
+    });
+
+    // Payment method breakdown
+    const paymentMethodMap = new Map<string, { total_amount: number; transaction_count: number }>();
+    
+    sales.forEach(sale => {
+      if (sale.payments && sale.payments.length > 0) {
+        sale.payments.forEach(payment => {
+          const method = payment.payment_method;
+          const existing = paymentMethodMap.get(method) || { total_amount: 0, transaction_count: 0 };
+          paymentMethodMap.set(method, {
+            total_amount: existing.total_amount + Number(payment.amount),
+            transaction_count: existing.transaction_count + 1,
+          });
+        });
+      }
+    });
+
+    const paymentMethodBreakdown: PaymentMethodBreakdown[] = Array.from(paymentMethodMap.entries()).map(
+      ([method, data]) => ({
+        payment_method: method,
+        total_amount: data.total_amount,
+        transaction_count: data.transaction_count,
+      })
+    );
+
+    // Product sales statistics
+    const productSalesMap = new Map<number, {
+      variant_name: string;
+      product_name: string;
+      sku?: string;
+      quantity_sold: number;
+      total_amount: number;
+    }>();
+
+    sales.forEach(sale => {
+      sale.items.forEach(item => {
+        const existing = productSalesMap.get(item.variant_id) || {
+          variant_name: item.variant.name,
+          product_name: item.variant.product.name,
+          sku: item.variant.sku || undefined,
+          quantity_sold: 0,
+          total_amount: 0,
+        };
+        
+        productSalesMap.set(item.variant_id, {
+          ...existing,
+          quantity_sold: existing.quantity_sold + item.quantity,
+          total_amount: existing.total_amount + Number(item.line_total),
+        });
+      });
+    });
+
+    const productSales: ProductSalesStats[] = Array.from(productSalesMap.entries()).map(
+      ([variantId, data]) => ({
+        variant_id: variantId,
+        variant_name: data.variant_name,
+        product_name: data.product_name,
+        sku: data.sku,
+        quantity_sold: data.quantity_sold,
+        total_amount: data.total_amount,
+        average_unit_price: data.total_amount / data.quantity_sold,
+      })
+    ).sort((a, b) => b.total_amount - a.total_amount); // Sort by total amount descending
+
+    // Hourly sales breakdown
+    const hourlySalesMap = new Map<number, { sales_count: number; total_amount: number }>();
+    for (let hour = 0; hour < 24; hour++) {
+      hourlySalesMap.set(hour, { sales_count: 0, total_amount: 0 });
+    }
+
+    sales.forEach(sale => {
+      const hour = new Date(sale.sale_date).getHours();
+      const existing = hourlySalesMap.get(hour)!;
+      hourlySalesMap.set(hour, {
+        sales_count: existing.sales_count + 1,
+        total_amount: existing.total_amount + Number(sale.total_amount),
+      });
+    });
+
+    const hourlySales = Array.from(hourlySalesMap.entries()).map(([hour, data]) => ({
+      hour,
+      sales_count: data.sales_count,
+      total_amount: data.total_amount,
+    }));
+
+    // Payment status breakdown
+    const paymentStatusMap = new Map<string, { count: number; total_amount: number }>();
+    sales.forEach(sale => {
+      const existing = paymentStatusMap.get(sale.payment_status) || { count: 0, total_amount: 0 };
+      paymentStatusMap.set(sale.payment_status, {
+        count: existing.count + 1,
+        total_amount: existing.total_amount + Number(sale.total_amount),
+      });
+    });
+
+    const paymentStatusBreakdown = Array.from(paymentStatusMap.entries()).map(
+      ([status, data]) => ({
+        status,
+        count: data.count,
+        total_amount: data.total_amount,
+      })
+    );
+
+    // Calculate cash vs non-cash sales
+    const cashSales = paymentMethodBreakdown.find(p => p.payment_method === 'CASH')?.total_amount || 0;
+    const nonCashSales = totalAmount - cashSales;
+
+    const summary: EODSummary = {
+      total_sales: totalSales,
+      total_amount: totalAmount,
+      total_transactions: totalSales,
+      cash_sales: cashSales,
+      non_cash_sales: nonCashSales,
+      average_transaction_value: totalSales > 0 ? totalAmount / totalSales : 0,
+      total_items_sold: totalItemsSold,
+      unique_products_sold: uniqueProductIds.size,
+    };
+
+    return {
+      date: reportDate.toISOString().split('T')[0],
+      branch_name: branchName,
+      summary,
+      payment_method_breakdown: paymentMethodBreakdown,
+      product_sales: productSales,
+      hourly_sales: hourlySales,
+      payment_status_breakdown: paymentStatusBreakdown,
     };
   }
 

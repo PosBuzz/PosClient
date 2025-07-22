@@ -31,17 +31,17 @@ export class TagController {
 
   @Post()
   async create(@Body() createTagDto: CreateTagDto, @Req() req: Request) {
-    return this.tagService.create(createTagDto, req.user.id);
+    return this.tagService.create(createTagDto, Number(req.user.consumer_id));
   }
 
   @Get()
   async findAll(@Req() req: Request) {
-    return this.tagService.findAll(req.user.id);
+    return this.tagService.findAll(Number(req.user.consumer_id));
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.tagService.findOne(+id, req.user.id);
+    return this.tagService.findOne(+id, Number(req.user.consumer_id));
   }
 
   @Patch(':id')
@@ -50,11 +50,11 @@ export class TagController {
     @Body() updateTagDto: UpdateTagDto,
     @Req() req: Request,
   ) {
-    return this.tagService.update(+id, updateTagDto, req.user.id);
+    return this.tagService.update(+id, updateTagDto, Number(req.user.consumer_id));
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.tagService.remove(+id, req.user.id);
+    return this.tagService.remove(+id, Number(req.user.consumer_id));
   }
 }

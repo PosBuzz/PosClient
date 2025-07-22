@@ -35,17 +35,17 @@ export class CategoryController {
     @Body() createCategoryDto: CreateCategoryDto,
     @Req() req: Request,
   ) {
-    return this.categoryService.create(createCategoryDto, req.user.id);
+    return this.categoryService.create(createCategoryDto, Number(req.user.consumer_id));
   }
 
   @Get()
   async findAll(@Req() req: Request) {
-    return this.categoryService.findAll(req.user.id);
+    return this.categoryService.findAll(Number(req.user.consumer_id));
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.categoryService.findOne(+id, req.user.id);
+    return this.categoryService.findOne(+id, Number(req.user.consumer_id));
   }
 
   @Patch(':id')
@@ -54,11 +54,11 @@ export class CategoryController {
     @Body() updateCategoryDto: UpdateCategoryDto,
     @Req() req: Request,
   ) {
-    return this.categoryService.update(+id, updateCategoryDto, req.user.id);
+    return this.categoryService.update(+id, updateCategoryDto, Number(req.user.consumer_id));
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.categoryService.remove(+id, req.user.id);
+    return this.categoryService.remove(+id, Number(req.user.consumer_id));
   }
 }

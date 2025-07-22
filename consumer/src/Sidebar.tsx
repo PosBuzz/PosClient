@@ -151,6 +151,11 @@ const SideBar: React.FC = () => {
           key: "/sales/add",
           permissions: [Permissions.branches],
         },
+        {
+          label: <span title="End of Day Report">End of Day Report</span>,
+          key: "/eod",
+          permissions: [Permissions.sales],
+        },
       ],
     },
     {
