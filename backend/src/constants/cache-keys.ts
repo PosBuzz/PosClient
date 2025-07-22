@@ -135,8 +135,8 @@ export const generateCacheKey = {
     `${consumerId}:warehouse-branch`,
 
   // Sales cache helpers
-  salesList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, paymentMethod?: string, paymentStatus?: string, dateFrom?: string, dateTo?: string) =>
-    `${consumerId}:sales:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${paymentMethod || 'all'}:${paymentStatus || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}`,
+  salesList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, paymentMethod?: string, paymentStatus?: string, dateFrom?: string, dateTo?: string, sortBy?: string, sortOrder?: string) =>
+    `${consumerId}:sales:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${paymentMethod || 'all'}:${paymentStatus || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}:${sortBy || 'created_at'}:${sortOrder || 'desc'}`,
 
   salesDetail: (saleId: number, consumerId: number) =>
     `${consumerId}:sales:detail:${saleId}`,
