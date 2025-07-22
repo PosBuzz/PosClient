@@ -12,6 +12,7 @@ import {
 import { SalesService } from '../services/sales.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
+import { EODReportDto } from '../dto/eod-report.dto';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
@@ -60,6 +61,14 @@ export class SalesController {
       branchId,
       search,
     );
+  }
+
+  @Get('reports/eod')
+  async getEODReport(
+    @Query() eodDto: EODReportDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
   }
 
   @Get(':id')

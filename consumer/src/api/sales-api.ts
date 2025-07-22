@@ -6,7 +6,8 @@ import {
   SaleListFilters, 
   SaleListResponse, 
   SalesStats, 
-  ProductVariantForSale 
+  ProductVariantForSale,
+  EODReportResponse
 } from '../types/sale.types';
 
 export const salesApi = {
@@ -33,5 +34,21 @@ export const salesApi = {
   // Get products available for sale
   getProductsForSale: async (branchId: number, search?: string): Promise<ProductVariantForSale[]> => {
     return await get(endpoints.getProductsForSale, { branch_id: branchId, search });
+  },
+
+  // Get End of Day report
+  getEODReport: async (params: { date?: string; branch_id?: number } = {}): Promise<EODReportResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.date) {
+      queryParams.append('date', params.date);
+    }
+    
+    if (params.branch_id) {
+      queryParams.append('branch_id', params.branch_id.toString());
+    }
+
+    const response = await get(`${endpoints.getSales}/reports/eod?${queryParams.toString()}`);
+    return response;
   },
 };

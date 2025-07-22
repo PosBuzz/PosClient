@@ -31,17 +31,17 @@ export class BrandController {
 
   @Post()
   async create(@Body() createBrandDto: CreateBrandDto, @Req() req: Request) {
-    return this.brandService.create(createBrandDto, req.user.id);
+    return this.brandService.create(createBrandDto, Number(req.user.consumer_id));
   }
 
   @Get()
   async findAll(@Req() req: Request) {
-    return this.brandService.findAll(req.user.id);
+    return this.brandService.findAll(Number(req.user.consumer_id));
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.brandService.findOne(+id, req.user.id);
+    return this.brandService.findOne(+id, Number(req.user.consumer_id));
   }
 
   @Patch(':id')
@@ -50,12 +50,12 @@ export class BrandController {
     @Body() updateBrandDto: UpdateBrandDto,
     @Req() req: Request,
   ) {
-    return this.brandService.update(+id, updateBrandDto, req.user.id);
+    return this.brandService.update(+id, updateBrandDto, Number(req.user.consumer_id));
   }
 
   @HasPermissions([ConsumerPermission.delete_product])
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.brandService.remove(+id, req.user.id);
+    return this.brandService.remove(+id, Number(req.user.consumer_id));
   }
 }

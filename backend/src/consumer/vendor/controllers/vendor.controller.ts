@@ -29,17 +29,17 @@ export class VendorController {
 
   @Post()
   async create(@Body() createVendorDto: CreateVendorDto, @Req() req: Request) {
-    return this.vendorService.create(createVendorDto, req.user.id);
+    return this.vendorService.create(createVendorDto, Number(req.user.consumer_id));
   }
 
   @Get()
   async findAll(@Req() req: Request) {
-    return this.vendorService.findAll(req.user.id);
+    return this.vendorService.findAll(Number(req.user.consumer_id));
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.vendorService.findOne(+id, req.user.id);
+    return this.vendorService.findOne(+id, Number(req.user.consumer_id));
   }
 
   @Patch(':id')
@@ -48,11 +48,11 @@ export class VendorController {
     @Body() updateVendorDto: UpdateVendorDto,
     @Req() req: Request,
   ) {
-    return this.vendorService.update(+id, updateVendorDto, req.user.id);
+    return this.vendorService.update(+id, updateVendorDto, Number(req.user.consumer_id));
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.vendorService.remove(+id, req.user.id);
+    return this.vendorService.remove(+id, Number(req.user.consumer_id));
   }
 }

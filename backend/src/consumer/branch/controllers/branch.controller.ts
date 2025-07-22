@@ -26,22 +26,22 @@ export class BranchController {
   
   @Post()
   async create(@Body() createBranchDto: CreateBranchDto, @Req() req: Request) {
-    return this.branchService.create(createBranchDto, req.user.id);
+    return this.branchService.create(createBranchDto, Number(req.user.consumer_id));
   }
   
   @Get()
   async findAll(@Req() req: Request) {
-    return this.branchService.findAll(req.user.id);
+    return this.branchService.findAll(Number(req.user.consumer_id));
   }
 
   @Get('options')
   async getBranchOptions(@Req() req: Request) {
-    return this.branchService.getBranchOptions(req.user.id);
+    return this.branchService.getBranchOptions(Number(req.user.consumer_id));
   }
   
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.branchService.findOne(+id, req.user.id);
+    return this.branchService.findOne(+id, Number(req.user.consumer_id));
   }
   
   @Patch(':id')
@@ -50,16 +50,16 @@ export class BranchController {
     @Body() updateBranchDto: UpdateBranchDto,
     @Req() req: Request
   ) {
-    return this.branchService.update(+id, updateBranchDto, req.user.id);
+    return this.branchService.update(+id, updateBranchDto, Number(req.user.consumer_id));
   }
   
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.branchService.remove(+id, req.user.id);
+    return this.branchService.remove(+id, Number(req.user.consumer_id));
   }
   
   @Patch(':id/set-main')
   async setMainBranch(@Param('id') id: string, @Req() req: Request) {
-    return this.branchService.setMainBranch(+id, req.user.id);
+    return this.branchService.setMainBranch(+id, Number(req.user.consumer_id));
   }
 }
