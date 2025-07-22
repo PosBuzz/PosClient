@@ -82,8 +82,41 @@ const SaleDetail: React.FC = () => {
         return 'blue';
       case PaymentMethod.BANK_TRANSFER:
         return 'purple';
+      case PaymentMethod.CHEQUE:
+        return 'orange';
+      case PaymentMethod.MOBILE_MONEY:
+        return 'cyan';
+      case PaymentMethod.MFS:
+        return 'magenta';
+      case PaymentMethod.DEPOSIT:
+        return 'gold';
+      case PaymentMethod.CREDIT:
+        return 'red';
       default:
         return 'default';
+    }
+  };
+
+  const getPaymentMethodLabel = (method: PaymentMethod) => {
+    switch (method) {
+      case PaymentMethod.CASH:
+        return 'Cash';
+      case PaymentMethod.CARD:
+        return 'Card';
+      case PaymentMethod.BANK_TRANSFER:
+        return 'Bank Transfer';
+      case PaymentMethod.CHEQUE:
+        return 'Cheque';
+      case PaymentMethod.MOBILE_MONEY:
+        return 'Mobile Money';
+      case PaymentMethod.MFS:
+        return 'MFS';
+      case PaymentMethod.DEPOSIT:
+        return 'Deposit';
+      case PaymentMethod.CREDIT:
+        return 'Credit';
+      default:
+        return method;
     }
   };
 
@@ -247,10 +280,22 @@ const SaleDetail: React.FC = () => {
               <Descriptions.Item label="Sale Type">
                 <Tag color="blue">{sale.sale_type?.toUpperCase()}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Payment Method">
-                <Tag color={getPaymentMethodColor(sale.payment_method)}>
-                  {sale.payment_method.toUpperCase()}
-                </Tag>
+              <Descriptions.Item label="Payment Methods">
+                {sale.payments && sale.payments.length > 0 ? (
+                  <div>
+                    {sale.payments.map((payment: any, index: number) => (
+                      <Tag key={index} color={getPaymentMethodColor(payment.payment_method)} style={{ marginBottom: 4 }}>
+                        {getPaymentMethodLabel(payment.payment_method)}: ${(Number(payment.amount) || 0).toFixed(2)}
+                      </Tag>
+                    ))}
+                  </div>
+                ) : sale.payment_method ? (
+                  <Tag color={getPaymentMethodColor(sale.payment_method)}>
+                    {getPaymentMethodLabel(sale.payment_method)}
+                  </Tag>
+                ) : (
+                  <span>N/A</span>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Payment Status">
                 <Tag color={getPaymentStatusColor(sale.payment_status)}>
@@ -282,6 +327,54 @@ const SaleDetail: React.FC = () => {
               size="small"
             />
           </Card>
+
+          {/* Payment Details */}
+          {sale.payments && sale.payments.length > 0 && (
+            <Card title="Payment Details" style={{ marginTop: 16 }}>
+              <Table
+                columns={[
+                  {
+                    title: 'Payment Method',
+                    dataIndex: 'payment_method',
+                    key: 'payment_method',
+                    render: (method: PaymentMethod) => (
+                      <Tag color={getPaymentMethodColor(method)}>
+                        {getPaymentMethodLabel(method)}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Amount',
+                    dataIndex: 'amount',
+                    key: 'amount',
+                    render: (amount: number) => `$${(Number(amount) || 0).toFixed(2)}`,
+                  },
+                  {
+                    title: 'Reference',
+                    dataIndex: 'reference',
+                    key: 'reference',
+                    render: (reference: string) => reference || 'N/A',
+                  },
+                  {
+                    title: 'Notes',
+                    dataIndex: 'notes',
+                    key: 'notes',
+                    render: (notes: string) => notes || 'N/A',
+                  },
+                  {
+                    title: 'Date',
+                    dataIndex: 'created_at',
+                    key: 'created_at',
+                    render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+                  },
+                ]}
+                dataSource={sale.payments}
+                rowKey="id"
+                pagination={false}
+                size="small"
+              />
+            </Card>
+          )}
         </Col>
 
         <Col span={8}>
@@ -311,10 +404,10 @@ const SaleDetail: React.FC = () => {
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Received:</Text>
+                <Text>Total Paid:</Text>
                 <Text>${(Number(sale?.received_amount) || 0).toFixed(2)}</Text>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <Text>Change:</Text>
                 <Text 
                   style={{ 
@@ -324,6 +417,26 @@ const SaleDetail: React.FC = () => {
                   ${(Number(sale?.change_amount) || 0).toFixed(2)}
                 </Text>
               </div>
+
+              {/* Payment Breakdown */}
+              {sale.payments && sale.payments.length > 0 && (
+                <>
+                  <Divider style={{ margin: '12px 0' }} />
+                  <div style={{ marginBottom: 8 }}>
+                    <Text strong style={{ fontSize: 14 }}>Payment Breakdown:</Text>
+                  </div>
+                  {sale.payments.map((payment: any, index: number) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12 }}>
+                        <Tag color={getPaymentMethodColor(payment.payment_method)} style={{ fontSize: 11 }}>
+                          {getPaymentMethodLabel(payment.payment_method)}
+                        </Tag>
+                      </Text>
+                      <Text style={{ fontSize: 12 }}>${(Number(payment.amount) || 0).toFixed(2)}</Text>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </Card>
         </Col>

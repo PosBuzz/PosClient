@@ -90,8 +90,8 @@ export interface ProductSerial {
 }
 
 export enum TaxMethod {
-  INCLUSIVE = "inclusive",
-  EXCLUSIVE = "exclusive",
+  INCLUSIVE = "INCLUSIVE",
+  EXCLUSIVE = "EXCLUSIVE",
 }
 
 export interface ProductListFilters {

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { TaxMethod } from '@prisma/client';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
@@ -41,7 +42,7 @@ export class ProductService {  constructor(
         category_id: dto.category_id,
         brand_id: dto.brand_id,
         has_variants: dto.has_variants,
-        tax_method: dto.tax_method || 'exclusive',
+        tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
         tax: dto.tax || 0,
         daily_sale_objective: dto.daily_sale_objective || 0,
       },

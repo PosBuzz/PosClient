@@ -38,6 +38,7 @@ import {
   ProductVariantForSale,
   SaleFormData,
   SaleItem,
+  SalePayment,
 } from "../../types/sale.types";
 import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
@@ -56,7 +57,6 @@ const NewSale = () => {
   // Watch form values for real-time calculations
   const discountAmount = Form.useWatch("discount_amount", form) || 0;
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
-  const receivedAmount = Form.useWatch("received_amount", form) || 0;
 
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
@@ -76,6 +76,14 @@ const NewSale = () => {
     DiscountType.FLAT
   );
   const [loading, setLoading] = useState(false);
+  const [salePayments, setSalePayments] = useState<SalePayment[]>([
+    {
+      payment_method: PaymentMethod.CASH,
+      amount: 0,
+      reference: '',
+      notes: '',
+    }
+  ]);
 
   // Get user's branches from auth store
   const userBranches = user?.branches || [];
@@ -131,9 +139,6 @@ const NewSale = () => {
         discount_type: DiscountType.FLAT,
         discount_amount: 0,
         shipping_cost: 0,
-        payment_method: PaymentMethod.CASH,
-        payment_status: PaymentStatus.PAID,
-        received_amount: 0,
       });
     }
   }, [userBranches, selectedBranch, form]);
@@ -161,6 +166,32 @@ const NewSale = () => {
     form.setFieldsValue({ branch_id: branchId });
   };
 
+  const calculateTaxAndTotal = (price: number, quantity: number, taxPercentage: number, taxMethod: string) => {
+    const lineTotal = quantity * price;
+    let taxAmount: number;
+    let taxableAmount: number;
+
+    // Ensure taxPercentage is a valid number
+    const validTaxPercentage = Number(taxPercentage) || 0;
+
+    if (taxMethod === 'INCLUSIVE') {
+      // Tax is included in the price
+      taxableAmount = lineTotal;
+      taxAmount = (lineTotal * validTaxPercentage) / (100 + validTaxPercentage);
+    } else {
+      // Tax is exclusive - added on top of price
+      taxableAmount = lineTotal;
+      taxAmount = (lineTotal * validTaxPercentage) / 100;
+    }
+
+    // Return precise values without rounding
+    return {
+      line_total: Number(lineTotal) || 0,
+      tax_amount: Number(taxAmount) || 0,
+      taxable_amount: Number(taxableAmount) || 0
+    };
+  };
+
   const addToSale = (variant: ProductVariantForSale, batchId?: number) => {
     const existingItem = selectedItems.find(
       (item) => item.variant_id === variant.id && item.batch_id === batchId
@@ -183,35 +214,46 @@ const NewSale = () => {
         return;
       }
 
+      const newQuantity = existingItem.quantity + 1;
+      const { line_total, tax_amount } = calculateTaxAndTotal(
+        price,
+        newQuantity,
+        Number(variant.tax_percentage) || 0,
+        variant.tax_method || 'EXCLUSIVE'
+      );
+
       setSelectedItems((items) =>
         items.map((item) =>
           item.variant_id === variant.id && item.batch_id === batchId
             ? {
                 ...item,
-                quantity: item.quantity + 1,
-                unit_price: price,
-                tax_amount:
-                  ((item.quantity + 1) *
-                    price *
-                    (Number(variant.tax_percentage) || 0)) /
-                  100,
-                line_total: (item.quantity + 1) * price,
+                quantity: newQuantity,
+                unit_price: Number(price) || 0,
+                tax_amount: Number(tax_amount) || 0,
+                line_total: Number(line_total) || 0,
               }
             : item
         )
       );
     } else {
+      const { line_total, tax_amount } = calculateTaxAndTotal(
+        price,
+        1,
+        Number(variant.tax_percentage) || 0,
+        variant.tax_method || 'EXCLUSIVE'
+      );
+
       const newItem: SaleItem = {
         variant_id: variant.id,
         variant_name: variant.name,
         variant_sku: variant.sku,
         quantity: 1,
-        unit_price: price,
+        unit_price: Number(price) || 0,
         discount_amount: 0,
-        tax_amount: (price * (Number(variant.tax_percentage) || 0)) / 100,
-        line_total: price,
+        tax_amount: Number(tax_amount) || 0,
+        line_total: Number(line_total) || 0,
         product_name: variant.product_name,
-        regular_price: Number(variant.regular_price),
+        regular_price: Number(variant.regular_price) || 0,
         wholesale_price: Number(variant.wholesale_price) || undefined,
         image: variant.image,
         available_stock: selectedBatch.quantity,
@@ -235,20 +277,26 @@ const NewSale = () => {
     }
 
     setSelectedItems((items) =>
-      items.map((item) =>
-        item.variant_id === variantId && item.batch_id === batchId
-          ? {
-              ...item,
-              quantity,
-              tax_amount:
-                (quantity *
-                  Number(item.unit_price) *
-                  (Number(item.tax_percentage) || 0)) /
-                100,
-              line_total: quantity * Number(item.unit_price),
-            }
-          : item
-      )
+      items.map((item) => {
+        if (item.variant_id === variantId && item.batch_id === batchId) {
+          // Find the variant to get tax_method
+          const variant = productsForSaleQuery.data?.find(v => v.id === variantId);
+          const { line_total, tax_amount } = calculateTaxAndTotal(
+            Number(item.unit_price),
+            quantity,
+            Number(item.tax_percentage) || 0,
+            variant?.tax_method || 'EXCLUSIVE'
+          );
+
+          return {
+            ...item,
+            quantity,
+            tax_amount: Number(tax_amount) || 0,
+            line_total: Number(line_total) || 0,
+          };
+        }
+        return item;
+      })
     );
   };
 
@@ -261,10 +309,24 @@ const NewSale = () => {
   };
 
   const calculateTotals = () => {
+    // Calculate subtotal (price before tax for exclusive, includes tax for inclusive)
     const subtotal = selectedItems.reduce(
-      (sum, item) => sum + (Number(item.line_total) || 0),
+      (sum, item) => {
+        // For inclusive tax, we need to subtract tax from line_total to get the base amount
+        const variant = productsForSaleQuery.data?.find(v => v.id === item.variant_id);
+        const taxMethod = variant?.tax_method || 'EXCLUSIVE';
+        
+        if (taxMethod === 'INCLUSIVE') {
+          // For inclusive tax, the subtotal is the line_total minus tax
+          return sum + (Number(item.line_total) - Number(item.tax_amount));
+        } else {
+          // For exclusive tax, the subtotal is just the line_total (price without tax)
+          return sum + Number(item.line_total);
+        }
+      },
       0
     );
+
     const totalTax = selectedItems.reduce(
       (sum, item) => sum + (Number(item.tax_amount) || 0),
       0
@@ -272,15 +334,17 @@ const NewSale = () => {
 
     const discountAmountNum = Number(discountAmount) || 0;
     const shippingCostNum = Number(shippingCost) || 0;
-    const receivedAmountNum = Number(receivedAmount) || 0;
 
+    // Calculate discount on subtotal (before tax)
     const finalDiscount =
       discountType === DiscountType.PERCENTAGE
         ? (subtotal * discountAmountNum) / 100
         : discountAmountNum;
 
+    // For inclusive tax: total = subtotal + tax - discount + shipping
+    // For exclusive tax: total = subtotal - discount + tax + shipping
+    // Since we're mixing both types, we calculate: subtotal - discount + tax + shipping
     const total = subtotal - finalDiscount + totalTax + shippingCostNum;
-    const changeAmount = receivedAmountNum - total;
 
     return {
       subtotal: Number(subtotal),
@@ -288,8 +352,6 @@ const NewSale = () => {
       finalDiscount: Number(finalDiscount),
       shippingCost: Number(shippingCostNum),
       total: Number(total),
-      receivedAmount: Number(receivedAmountNum),
-      changeAmount: Number(changeAmount),
     };
   };
 
@@ -299,7 +361,22 @@ const NewSale = () => {
       return;
     }
 
+    // Check if payments are configured
+    if (salePayments.length === 0) {
+      message.error("Please add at least one payment method");
+      return;
+    }
+
     const totals = calculateTotals();
+    const totalPaymentAmount = salePayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+    // Determine payment status
+    let paymentStatus = PaymentStatus.PAID;
+    if (totalPaymentAmount < totals.total) {
+      paymentStatus = PaymentStatus.PARTIAL;
+    } else if (totalPaymentAmount === 0) {
+      paymentStatus = PaymentStatus.DUE;
+    }
 
     const saleData: SaleFormData = {
       ...values,
@@ -312,6 +389,9 @@ const NewSale = () => {
       discount_type: discountType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,
+      payment_status: paymentStatus,
+      received_amount: totalPaymentAmount,
+      payments: salePayments,
     };
 
     try {
@@ -330,6 +410,20 @@ const NewSale = () => {
       setLoading(false);
     }
   };
+
+  // Update default payment amount when totals change
+  useEffect(() => {
+    const totals = calculateTotals();
+    if (salePayments.length === 1 && salePayments[0].payment_method === PaymentMethod.CASH) {
+      const currentTotalPaid = salePayments.reduce((sum, p) => sum + p.amount, 0);
+      if (currentTotalPaid !== totals.total) {
+        setSalePayments([{
+          ...salePayments[0],
+          amount: totals.total
+        }]);
+      }
+    }
+  }, [selectedItems, discountAmount, shippingCost, discountType]);
 
   const totals = calculateTotals();
 
@@ -671,9 +765,9 @@ const NewSale = () => {
 
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <Row gutter={8}>
-                <Col span={8}>
+                <Col span={12}>
                   <Form.Item label="Discount Type">
                     <Radio.Group
                       value={discountType}
@@ -685,7 +779,7 @@ const NewSale = () => {
                     </Radio.Group>
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Form.Item label="Discount" name="discount_amount">
                     <InputNumber
                       min={0}
@@ -695,7 +789,7 @@ const NewSale = () => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Form.Item label="Shipping" name="shipping_cost">
                     <InputNumber
                       min={0}
@@ -707,40 +801,118 @@ const NewSale = () => {
                 </Col>
               </Row>
             </Col>
-            <Col span={8}>
-              <Row gutter={8}>
-                <Col span={8}>
-                  <Form.Item label="Payment Method" name="payment_method">
-                    <Select size="small">
-                      <Option value={PaymentMethod.CASH}>Cash</Option>
-                      <Option value={PaymentMethod.CARD}>Card</Option>
-                      <Option value={PaymentMethod.CHEQUE}>Cheque</Option>
-                      <Option value={PaymentMethod.BANK_TRANSFER}>
-                        Bank Transfer
-                      </Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="Payment Status" name="payment_status">
-                    <Select size="small">
-                      <Option value={PaymentStatus.PAID}>Paid</Option>
-                      <Option value={PaymentStatus.PARTIAL}>Partial</Option>
-                      <Option value={PaymentStatus.DUE}>Due</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="Received Amount" name="received_amount">
-                    <InputNumber
-                      min={0}
-                      style={{ width: "100%" }}
-                      size="small"
-                      placeholder="0.00"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+            <Col span={10}>
+              <div style={{ marginBottom: 16 }}>
+                <h4 style={{ marginBottom: 12, fontSize: 14 }}>Payment Methods</h4>
+                
+                <div style={{ marginBottom: 8 }}>
+                  <Button
+                    type="dashed"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      const remainingAmount = Math.max(0, totals.total - salePayments.reduce((sum, p) => sum + p.amount, 0));
+                      const newPayment: SalePayment = {
+                        payment_method: PaymentMethod.CASH,
+                        amount: remainingAmount > 0 ? remainingAmount : totals.total,
+                        reference: '',
+                        notes: '',
+                      };
+                      setSalePayments([...salePayments, newPayment]);
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    Add Payment Method
+                  </Button>
+                </div>
+
+                <div style={{ minHeight: 'auto' }}>
+                  {salePayments.map((payment, index) => (
+                    <div key={index} style={{ 
+                      marginBottom: 8,
+                      // padding: 8,
+                      // border: '1px solid #d9d9d9',
+                      // borderRadius: 4,
+                      // backgroundColor: '#fafafa'
+                    }}>
+                      <Row gutter={4}>
+                        <Col span={6}>
+                          <Select
+                            size="small"
+                            value={payment.payment_method}
+                            onChange={(value) => {
+                              const updatedPayments = [...salePayments];
+                              updatedPayments[index].payment_method = value;
+                              setSalePayments(updatedPayments);
+                            }}
+                            style={{ width: '100%' }}
+                            placeholder="Method"
+                          >
+                            <Option value={PaymentMethod.CASH}>Cash</Option>
+                            <Option value={PaymentMethod.CARD}>Card</Option>
+                            <Option value={PaymentMethod.CHEQUE}>Cheque</Option>
+                            <Option value={PaymentMethod.BANK_TRANSFER}>Bank Transfer</Option>
+                            <Option value={PaymentMethod.MOBILE_MONEY}>Mobile Money</Option>
+                            <Option value={PaymentMethod.MFS}>MFS</Option>
+                            <Option value={PaymentMethod.DEPOSIT}>Deposit</Option>
+                            <Option value={PaymentMethod.CREDIT}>Credit</Option>
+                          </Select>
+                        </Col>
+                        <Col span={6}>
+                          <InputNumber
+                            size="small"
+                            value={payment.amount}
+                            onChange={(value) => {
+                              const updatedPayments = [...salePayments];
+                              updatedPayments[index].amount = value || 0;
+                              setSalePayments(updatedPayments);
+                            }}
+                            min={0}
+                            precision={2}
+                            style={{ width: '100%' }}
+                            placeholder="0.00"
+                          />
+                        </Col>
+                        <Col span={6}>
+                          <Input
+                            size="small"
+                            value={payment.reference}
+                            onChange={(e) => {
+                              const updatedPayments = [...salePayments];
+                              updatedPayments[index].reference = e.target.value;
+                              setSalePayments(updatedPayments);
+                            }}
+                            placeholder="Reference"
+                          />
+                        </Col>
+                        <Col span={4}>
+                          <Input
+                            size="small"
+                            value={payment.notes}
+                            onChange={(e) => {
+                              const updatedPayments = [...salePayments];
+                              updatedPayments[index].notes = e.target.value;
+                              setSalePayments(updatedPayments);
+                            }}
+                            placeholder="Notes"
+                          />
+                        </Col>
+                        <Col span={2}>
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              const updatedPayments = salePayments.filter((_, i) => i !== index);
+                              setSalePayments(updatedPayments);
+                            }}
+                          />
+                        </Col>
+                      </Row>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </Col>
             <Col span={8}>
               <div
@@ -822,12 +994,12 @@ const NewSale = () => {
                     style={{
                       fontSize: 12,
                       color:
-                        (Number(totals.changeAmount) || 0) >= 0
+                        Math.max(0, salePayments.reduce((sum, p) => sum + p.amount, 0) - totals.total) >= 0
                           ? "#52c41a"
                           : "#ff4d4f",
                     }}
                   >
-                    ${(Number(totals.changeAmount) || 0).toFixed(2)}
+                    ${Math.max(0, salePayments.reduce((sum, p) => sum + p.amount, 0) - totals.total).toFixed(2)}
                   </Text>
                 </div>
               </div>

@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsArray, ValidateNested, IsIn, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsArray, ValidateNested, IsEnum, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TaxMethod } from '@prisma/client';
 import { CreateProductVariantDto } from './create-product-variant.dto';
 
 export class CreateProductDto {
@@ -33,9 +34,8 @@ export class CreateProductDto {
   has_variants: boolean;
   
   @IsOptional()
-  @IsString()
-  @IsIn(['inclusive', 'exclusive'])
-  tax_method?: string = 'exclusive';
+  @IsEnum(TaxMethod)
+  tax_method?: TaxMethod = TaxMethod.EXCLUSIVE;
   
   @IsOptional()
   @IsNumber()
