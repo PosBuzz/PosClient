@@ -289,10 +289,6 @@ const SaleDetail: React.FC = () => {
                       </Tag>
                     ))}
                   </div>
-                ) : sale.payment_method ? (
-                  <Tag color={getPaymentMethodColor(sale.payment_method)}>
-                    {getPaymentMethodLabel(sale.payment_method)}
-                  </Tag>
                 ) : (
                   <span>N/A</span>
                 )}
