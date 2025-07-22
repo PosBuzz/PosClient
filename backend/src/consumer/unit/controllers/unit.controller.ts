@@ -31,17 +31,17 @@ export class UnitController {
 
   @Post()
   async create(@Body() createUnitDto: CreateUnitDto, @Req() req: Request) {
-    return this.unitService.create(createUnitDto, req.user.id);
+    return this.unitService.create(createUnitDto, req.user.consumer_id!);
   }
 
   @Get()
   async findAll(@Req() req: Request) {
-    return this.unitService.findAll(req.user.id);
+    return this.unitService.findAll(req.user.consumer_id!);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.unitService.findOne(+id, req.user.id);
+    return this.unitService.findOne(+id, req.user.consumer_id!);
   }
 
   @Patch(':id')
@@ -50,12 +50,12 @@ export class UnitController {
     @Body() updateUnitDto: UpdateUnitDto,
     @Req() req: Request,
   ) {
-    return this.unitService.update(+id, updateUnitDto, req.user.id);
+    return this.unitService.update(+id, updateUnitDto, req.user.consumer_id!);
   }
 
   @HasPermissions([ConsumerPermission.delete_product])
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.unitService.remove(+id, req.user.id);
+    return this.unitService.remove(+id, req.user.consumer_id!);
   }
 }

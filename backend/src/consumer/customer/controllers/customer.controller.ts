@@ -27,7 +27,7 @@ export class CustomerController {
 
   @Post()
   async create(@Body() createCustomerDto: CreateCustomerDto, @Req() req: Request) {
-    return this.customerService.create(createCustomerDto, req.user.id);
+    return this.customerService.create(createCustomerDto, Number(req.user.consumer_id));
   }
 
   @Get()
@@ -45,14 +45,14 @@ export class CustomerController {
       limit: limit ? parseInt(limit) : 20,
     };
     
-    console.log('Customer query received:', { filters, consumerId: req.user.id });
+    console.log('Customer query received:', { filters, consumerId: Number(req.user.consumer_id) });
     
-    return this.customerService.findAllWithFilters(filters, req.user.id);
+    return this.customerService.findAllWithFilters(filters, Number(req.user.consumer_id));
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
-    return this.customerService.findOne(+id, req.user.id);
+    return this.customerService.findOne(+id, Number(req.user.consumer_id));
   }
 
   @Patch(':id')
@@ -61,11 +61,11 @@ export class CustomerController {
     @Body() updateCustomerDto: UpdateCustomerDto,
     @Req() req: Request,
   ) {
-    return this.customerService.update(+id, updateCustomerDto, req.user.id);
+    return this.customerService.update(+id, updateCustomerDto, Number(req.user.consumer_id));
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: Request) {
-    return this.customerService.remove(+id, req.user.id);
+    return this.customerService.remove(+id, Number(req.user.consumer_id));
   }
 }

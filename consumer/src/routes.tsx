@@ -46,6 +46,7 @@ const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
 const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
+const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
 
 export const routes = [
@@ -275,7 +276,8 @@ export const routes = [
           </RequirePermission>
         ),
       },
-      {        path: "inventory/movement-history/:variantId",
+      {
+        path: "inventory/movement-history/:variantId",
         element: (
           <RequirePermission permission={Permissions.inventory_batches}>
             <InventoryMovementHistory />
@@ -315,14 +317,14 @@ export const routes = [
           </RequirePermission>
         ),
       },
-      // {
-      //   path: "sales/pos",
-      //   element: (
-      //     <RequirePermission permission={Permissions.branches}>
-      //       <AddCompactSale />
-      //     </RequirePermission>
-      //   ),
-      // },
+      {
+        path: "eod",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <EODReport />
+          </RequirePermission>
+        ),
+      },
     ],
   },
 ];
