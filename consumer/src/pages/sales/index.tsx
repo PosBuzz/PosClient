@@ -229,7 +229,7 @@ const SalesTable = () => {
     },
     {
       title: "Sold By",
-      dataIndex: "user_name",
+      dataIndex: ["user", "name"],
       key: "user_name",
     },
     {
