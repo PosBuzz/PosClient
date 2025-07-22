@@ -111,7 +111,29 @@ export class SalesService {
     const shippingCost = createSaleDto.shipping_cost || 0;
     const totalAmount = subtotal + totalTax + shippingCost - discountAmount;
     const receivedAmount = createSaleDto.received_amount || 0;
-    const changeAmount = receivedAmount - totalAmount;
+    // Calculate payment totals and determine payment status
+    let totalPaymentAmount = 0;
+    let paymentMethods: string[] = [];
+    
+    if (createSaleDto.payments && createSaleDto.payments.length > 0) {
+      // Using new partial payment system
+      totalPaymentAmount = createSaleDto.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      paymentMethods = createSaleDto.payments.map(p => p.payment_method);
+    } else if (createSaleDto.payment_method && createSaleDto.received_amount) {
+      // Backward compatibility with single payment method
+      totalPaymentAmount = receivedAmount;
+      paymentMethods = [createSaleDto.payment_method];
+    }
+
+    // Determine payment status
+    let paymentStatus = PaymentStatus.PAID;
+    if (totalPaymentAmount < totalAmount) {
+      paymentStatus = PaymentStatus.PARTIAL;
+    } else if (totalPaymentAmount === 0) {
+      paymentStatus = PaymentStatus.DUE;
+    }
+
+    const changeAmount = Math.max(0, totalPaymentAmount - totalAmount);
 
     // Create sale with items in transaction
     const result = await this.prisma.$transaction(async (tx) => {
@@ -134,13 +156,39 @@ export class SalesService {
           shipping_cost: shippingCost,
           tax_amount: totalTax,
           total_amount: totalAmount,
-          payment_method: createSaleDto.payment_method,
-          payment_status: createSaleDto.payment_status || PaymentStatus.PAID,
-          received_amount: receivedAmount,
+          payment_method: createSaleDto.payment_method || null, // Kept for backward compatibility
+          payment_status: paymentStatus,
+          received_amount: totalPaymentAmount,
           change_amount: changeAmount,
           notes: createSaleDto.notes,
         },
       });
+
+      // Create sale payments if using new system
+      if (createSaleDto.payments && createSaleDto.payments.length > 0) {
+        await Promise.all(
+          createSaleDto.payments.map(payment =>
+            tx.salePayment.create({
+              data: {
+                sale_id: sale.id,
+                payment_method: payment.payment_method,
+                amount: payment.amount,
+                reference: payment.reference,
+                notes: payment.notes,
+              },
+            })
+          )
+        );
+      } else if (createSaleDto.payment_method && totalPaymentAmount > 0) {
+        // Create single payment for backward compatibility
+        await tx.salePayment.create({
+          data: {
+            sale_id: sale.id,
+            payment_method: createSaleDto.payment_method,
+            amount: totalPaymentAmount,
+          },
+        });
+      }
 
       // Create sale items and update inventory
       await Promise.all(
@@ -259,6 +307,7 @@ export class SalesService {
           customer: true,
           branch: true,
           user: { select: { id: true, name: true } },
+          payments: true, // Include payment details
           items: {
             include: {
               variant: {
@@ -313,6 +362,7 @@ export class SalesService {
         customer: true,
         branch: true,
         user: { select: { id: true, name: true } },
+        payments: true, // Include payment details
         items: {
           include: {
             variant: {
@@ -397,6 +447,7 @@ export class SalesService {
       ),
       unit_name: variant.sale_unit.name,
       tax_percentage: variant.product.tax || 0,
+      tax_method: variant.product.tax_method || 'exclusive',
       batches: variant.inventory_items.map((batch) => ({
         id: batch.id,
         batch_number: batch.batch_number,

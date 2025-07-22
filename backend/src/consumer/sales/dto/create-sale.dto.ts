@@ -13,13 +13,14 @@ import {
 } from 'class-validator';
 
 export enum PaymentMethod {
-  CASH = 'cash',
-  CARD = 'card',
-  CHEQUE = 'cheque',
-  BANK_TRANSFER = 'bank_transfer',
-  MOBILE_MONEY = 'mobile_money',
-  DEPOSIT = 'deposit',
-  CREDIT = 'credit',
+  CASH = 'CASH',
+  CARD = 'CARD',
+  CHEQUE = 'CHEQUE',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  MOBILE_MONEY = 'MOBILE_MONEY',
+  MFS = 'MFS', // Mobile Financial Service
+  DEPOSIT = 'DEPOSIT',
+  CREDIT = 'CREDIT',
 }
 
 export enum PaymentStatus {
@@ -57,21 +58,21 @@ export class CreateSaleItemDto {
   @Min(1)
   quantity: number;
 
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   unit_price: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   discount_amount?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   tax_amount?: number;
 
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   line_total: number;
 }
@@ -110,24 +111,25 @@ export class CreateSaleDto {
   discount_type?: DiscountType;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   discount_amount?: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   shipping_cost?: number;
 
+  @IsOptional()
   @IsEnum(PaymentMethod)
-  payment_method: PaymentMethod;
+  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
 
   @IsOptional()
   @IsEnum(PaymentStatus)
   payment_status?: PaymentStatus;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber()
   @Min(0)
   received_amount?: number;
 
@@ -139,4 +141,27 @@ export class CreateSaleDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSaleItemDto)
   items: CreateSaleItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSalePaymentDto)
+  payments?: CreateSalePaymentDto[];
+}
+
+export class CreateSalePaymentDto {
+  @IsEnum(PaymentMethod)
+  payment_method: PaymentMethod;
+
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsOptional()
+  @IsString()
+  reference?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

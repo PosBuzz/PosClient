@@ -17,6 +17,7 @@ export interface SaleItem {
   available_stock: number;
   unit_name: string;
   tax_percentage?: number;
+  tax_method?: string; // "inclusive" or "exclusive"
 }
 
 export interface Sale {
@@ -50,12 +51,13 @@ export interface Sale {
   shipping_cost: number;
   tax_amount: number;
   total_amount: number;
-  payment_method: PaymentMethod;
+  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
   payment_status: PaymentStatus;
   received_amount: number;
   change_amount: number;
   notes?: string;
   items: SaleItem[];
+  payments?: SalePayment[]; // New: support for partial payments
   created_at?: string;
   updated_at?: string;
 }
@@ -71,21 +73,23 @@ export interface SaleFormData {
   discount_type: DiscountType;
   discount_amount: number;
   shipping_cost: number;
-  payment_method: PaymentMethod;
+  payment_method?: PaymentMethod; // Deprecated: for backward compatibility
   payment_status: PaymentStatus;
   received_amount: number;
   notes?: string;
   items: SaleItem[];
+  payments?: SalePayment[]; // New: support for partial payments
 }
 
 export enum PaymentMethod {
-  CASH = "cash",
-  CARD = "card",
-  CHEQUE = "cheque",
-  BANK_TRANSFER = "bank_transfer",
-  MOBILE_MONEY = "mobile_money",
-  DEPOSIT = "deposit",
-  CREDIT = "credit",
+  CASH = "CASH",
+  CARD = "CARD",
+  CHEQUE = "CHEQUE",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  MOBILE_MONEY = "MOBILE_MONEY",
+  MFS = "MFS", // Mobile Financial Service
+  DEPOSIT = "DEPOSIT",
+  CREDIT = "CREDIT",
 }
 
 export enum PaymentStatus {
@@ -108,6 +112,11 @@ export enum PriceType {
 export enum DiscountType {
   FLAT = "flat",
   PERCENTAGE = "percentage",
+}
+
+export enum TaxMethod {
+  INCLUSIVE = "INCLUSIVE",
+  EXCLUSIVE = "EXCLUSIVE",
 }
 
 export interface SaleListFilters {
@@ -150,6 +159,7 @@ export interface ProductVariantForSale {
   available_stock: number;
   unit_name: string;
   tax_percentage: number;
+  tax_method: string; // "inclusive" or "exclusive"
   batches: InventoryBatch[];
 }
 
@@ -183,4 +193,14 @@ export interface SalesStats {
     total_quantity: number;
     total_amount: number;
   }>;
+}
+
+export interface SalePayment {
+  id?: number;
+  payment_method: PaymentMethod;
+  amount: number;
+  reference?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
