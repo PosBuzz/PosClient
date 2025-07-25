@@ -30,6 +30,7 @@ export const queryKeys = {
   units: "units",
   users: "users",
   vendors: "vendors",
+  eod: "eod-report",
 };
 
 // Stale time configurations for different data types
@@ -80,6 +81,7 @@ export const queryStaleTimeMap = {
   [queryKeys.variantStock]: staleTimeConfig.realTime,
   [queryKeys.lowStockItems]: staleTimeConfig.realTime,
   [queryKeys.salesStats]: staleTimeConfig.realTime,
+  [queryKeys.eod]: staleTimeConfig.realTime,
   
   // Background data
   [queryKeys.movementHistory]: staleTimeConfig.background,

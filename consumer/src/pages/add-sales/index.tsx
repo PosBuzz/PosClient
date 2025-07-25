@@ -29,6 +29,7 @@ import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { useAuthStore } from "../../stores/authStore";
 import { Customer } from "../../types/customer.types";
 import {
   DiscountType,
@@ -40,9 +41,7 @@ import {
   SaleItem,
   SalePayment,
 } from "../../types/sale.types";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
-import { useAuthStore } from "../../stores/authStore";
 import CustomerModal from "./CustomerModal";
 
 const { Option } = Select;
@@ -80,9 +79,9 @@ const NewSale = () => {
     {
       payment_method: PaymentMethod.CASH,
       amount: 0,
-      reference: '',
-      notes: '',
-    }
+      reference: "",
+      notes: "",
+    },
   ]);
 
   // Get user's branches from auth store
@@ -166,7 +165,12 @@ const NewSale = () => {
     form.setFieldsValue({ branch_id: branchId });
   };
 
-  const calculateTaxAndTotal = (price: number, quantity: number, taxPercentage: number, taxMethod: string) => {
+  const calculateTaxAndTotal = (
+    price: number,
+    quantity: number,
+    taxPercentage: number,
+    taxMethod: string
+  ) => {
     const lineTotal = quantity * price;
     let taxAmount: number;
     let taxableAmount: number;
@@ -174,7 +178,7 @@ const NewSale = () => {
     // Ensure taxPercentage is a valid number
     const validTaxPercentage = Number(taxPercentage) || 0;
 
-    if (taxMethod === 'INCLUSIVE') {
+    if (taxMethod === "INCLUSIVE") {
       // Tax is included in the price
       taxableAmount = lineTotal;
       taxAmount = (lineTotal * validTaxPercentage) / (100 + validTaxPercentage);
@@ -188,7 +192,7 @@ const NewSale = () => {
     return {
       line_total: Number(lineTotal) || 0,
       tax_amount: Number(taxAmount) || 0,
-      taxable_amount: Number(taxableAmount) || 0
+      taxable_amount: Number(taxableAmount) || 0,
     };
   };
 
@@ -219,7 +223,7 @@ const NewSale = () => {
         price,
         newQuantity,
         Number(variant.tax_percentage) || 0,
-        variant.tax_method || 'EXCLUSIVE'
+        variant.tax_method || "EXCLUSIVE"
       );
 
       setSelectedItems((items) =>
@@ -240,7 +244,7 @@ const NewSale = () => {
         price,
         1,
         Number(variant.tax_percentage) || 0,
-        variant.tax_method || 'EXCLUSIVE'
+        variant.tax_method || "EXCLUSIVE"
       );
 
       const newItem: SaleItem = {
@@ -280,12 +284,14 @@ const NewSale = () => {
       items.map((item) => {
         if (item.variant_id === variantId && item.batch_id === batchId) {
           // Find the variant to get tax_method
-          const variant = productsForSaleQuery.data?.find(v => v.id === variantId);
+          const variant = productsForSaleQuery.data?.find(
+            (v) => v.id === variantId
+          );
           const { line_total, tax_amount } = calculateTaxAndTotal(
             Number(item.unit_price),
             quantity,
             Number(item.tax_percentage) || 0,
-            variant?.tax_method || 'EXCLUSIVE'
+            variant?.tax_method || "EXCLUSIVE"
           );
 
           return {
@@ -310,22 +316,21 @@ const NewSale = () => {
 
   const calculateTotals = () => {
     // Calculate subtotal (price before tax for exclusive, includes tax for inclusive)
-    const subtotal = selectedItems.reduce(
-      (sum, item) => {
-        // For inclusive tax, we need to subtract tax from line_total to get the base amount
-        const variant = productsForSaleQuery.data?.find(v => v.id === item.variant_id);
-        const taxMethod = variant?.tax_method || 'EXCLUSIVE';
-        
-        if (taxMethod === 'INCLUSIVE') {
-          // For inclusive tax, the subtotal is the line_total minus tax
-          return sum + (Number(item.line_total) - Number(item.tax_amount));
-        } else {
-          // For exclusive tax, the subtotal is just the line_total (price without tax)
-          return sum + Number(item.line_total);
-        }
-      },
-      0
-    );
+    const subtotal = selectedItems.reduce((sum, item) => {
+      // For inclusive tax, we need to subtract tax from line_total to get the base amount
+      const variant = productsForSaleQuery.data?.find(
+        (v) => v.id === item.variant_id
+      );
+      const taxMethod = variant?.tax_method || "EXCLUSIVE";
+
+      if (taxMethod === "INCLUSIVE") {
+        // For inclusive tax, the subtotal is the line_total minus tax
+        return sum + (Number(item.line_total) - Number(item.tax_amount));
+      } else {
+        // For exclusive tax, the subtotal is just the line_total (price without tax)
+        return sum + Number(item.line_total);
+      }
+    }, 0);
 
     const totalTax = selectedItems.reduce(
       (sum, item) => sum + (Number(item.tax_amount) || 0),
@@ -368,7 +373,10 @@ const NewSale = () => {
     }
 
     const totals = calculateTotals();
-    const totalPaymentAmount = salePayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalPaymentAmount = salePayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0
+    );
 
     // Determine payment status
     let paymentStatus = PaymentStatus.PAID;
@@ -399,7 +407,25 @@ const NewSale = () => {
       const createdSale = await salesApi.createSale(saleData);
 
       // Invalidate all relevant caches after sales operation
-      cacheInvalidation.invalidateAfterSalesOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.products] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productVariants] });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productsForInventory],
+      });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sale] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
 
       message.success("Sale created successfully!");
       navigate(`/sales/view/${createdSale.id}`);
@@ -414,13 +440,21 @@ const NewSale = () => {
   // Update default payment amount when totals change
   useEffect(() => {
     const totals = calculateTotals();
-    if (salePayments.length === 1 && salePayments[0].payment_method === PaymentMethod.CASH) {
-      const currentTotalPaid = salePayments.reduce((sum, p) => sum + p.amount, 0);
+    if (
+      salePayments.length === 1 &&
+      salePayments[0].payment_method === PaymentMethod.CASH
+    ) {
+      const currentTotalPaid = salePayments.reduce(
+        (sum, p) => sum + p.amount,
+        0
+      );
       if (currentTotalPaid !== totals.total) {
-        setSalePayments([{
-          ...salePayments[0],
-          amount: totals.total
-        }]);
+        setSalePayments([
+          {
+            ...salePayments[0],
+            amount: totals.total,
+          },
+        ]);
       }
     }
   }, [selectedItems, discountAmount, shippingCost, discountType]);
@@ -803,38 +837,48 @@ const NewSale = () => {
             </Col>
             <Col span={10}>
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ marginBottom: 12, fontSize: 14 }}>Payment Methods</h4>
-                
+                <h4 style={{ marginBottom: 12, fontSize: 14 }}>
+                  Payment Methods
+                </h4>
+
                 <div style={{ marginBottom: 8 }}>
                   <Button
                     type="dashed"
                     size="small"
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      const remainingAmount = Math.max(0, totals.total - salePayments.reduce((sum, p) => sum + p.amount, 0));
+                      const remainingAmount = Math.max(
+                        0,
+                        totals.total -
+                          salePayments.reduce((sum, p) => sum + p.amount, 0)
+                      );
                       const newPayment: SalePayment = {
                         payment_method: PaymentMethod.CASH,
-                        amount: remainingAmount > 0 ? remainingAmount : totals.total,
-                        reference: '',
-                        notes: '',
+                        amount:
+                          remainingAmount > 0 ? remainingAmount : totals.total,
+                        reference: "",
+                        notes: "",
                       };
                       setSalePayments([...salePayments, newPayment]);
                     }}
-                    style={{ width: '100%' }}
+                    style={{ width: "100%" }}
                   >
                     Add Payment Method
                   </Button>
                 </div>
 
-                <div style={{ minHeight: 'auto' }}>
+                <div style={{ minHeight: "auto" }}>
                   {salePayments.map((payment, index) => (
-                    <div key={index} style={{ 
-                      marginBottom: 8,
-                      // padding: 8,
-                      // border: '1px solid #d9d9d9',
-                      // borderRadius: 4,
-                      // backgroundColor: '#fafafa'
-                    }}>
+                    <div
+                      key={index}
+                      style={{
+                        marginBottom: 8,
+                        // padding: 8,
+                        // border: '1px solid #d9d9d9',
+                        // borderRadius: 4,
+                        // backgroundColor: '#fafafa'
+                      }}
+                    >
                       <Row gutter={4}>
                         <Col span={6}>
                           <Select
@@ -845,16 +889,22 @@ const NewSale = () => {
                               updatedPayments[index].payment_method = value;
                               setSalePayments(updatedPayments);
                             }}
-                            style={{ width: '100%' }}
+                            style={{ width: "100%" }}
                             placeholder="Method"
                           >
                             <Option value={PaymentMethod.CASH}>Cash</Option>
                             <Option value={PaymentMethod.CARD}>Card</Option>
                             <Option value={PaymentMethod.CHEQUE}>Cheque</Option>
-                            <Option value={PaymentMethod.BANK_TRANSFER}>Bank Transfer</Option>
-                            <Option value={PaymentMethod.MOBILE_MONEY}>Mobile Money</Option>
+                            <Option value={PaymentMethod.BANK_TRANSFER}>
+                              Bank Transfer
+                            </Option>
+                            <Option value={PaymentMethod.MOBILE_MONEY}>
+                              Mobile Money
+                            </Option>
                             <Option value={PaymentMethod.MFS}>MFS</Option>
-                            <Option value={PaymentMethod.DEPOSIT}>Deposit</Option>
+                            <Option value={PaymentMethod.DEPOSIT}>
+                              Deposit
+                            </Option>
                             <Option value={PaymentMethod.CREDIT}>Credit</Option>
                           </Select>
                         </Col>
@@ -869,7 +919,7 @@ const NewSale = () => {
                             }}
                             min={0}
                             precision={2}
-                            style={{ width: '100%' }}
+                            style={{ width: "100%" }}
                             placeholder="0.00"
                           />
                         </Col>
@@ -903,7 +953,9 @@ const NewSale = () => {
                             danger
                             icon={<DeleteOutlined />}
                             onClick={() => {
-                              const updatedPayments = salePayments.filter((_, i) => i !== index);
+                              const updatedPayments = salePayments.filter(
+                                (_, i) => i !== index
+                              );
                               setSalePayments(updatedPayments);
                             }}
                           />
@@ -994,12 +1046,21 @@ const NewSale = () => {
                     style={{
                       fontSize: 12,
                       color:
-                        Math.max(0, salePayments.reduce((sum, p) => sum + p.amount, 0) - totals.total) >= 0
+                        Math.max(
+                          0,
+                          salePayments.reduce((sum, p) => sum + p.amount, 0) -
+                            totals.total
+                        ) >= 0
                           ? "#52c41a"
                           : "#ff4d4f",
                     }}
                   >
-                    ${Math.max(0, salePayments.reduce((sum, p) => sum + p.amount, 0) - totals.total).toFixed(2)}
+                    $
+                    {Math.max(
+                      0,
+                      salePayments.reduce((sum, p) => sum + p.amount, 0) -
+                        totals.total
+                    ).toFixed(2)}
                   </Text>
                 </div>
               </div>

@@ -10,7 +10,19 @@ import {
   Tag,
   Spin,
 } from "antd";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,28 +30,47 @@ import PageTitle from "../../components/PageTitle";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { salesApi } from "../../api/sales-api";
-import { PaymentMethodBreakdown, ProductSalesStats } from "../../types/sale.types";
+import {
+  PaymentMethodBreakdown,
+  ProductSalesStats,
+} from "../../types/sale.types";
+import { queryKeys } from "../../constants/queryKeys";
 
 const { Option } = Select;
 const { Text } = Typography;
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884D8",
+  "#82CA9D",
+  "#FFC658",
+  "#FF7C7C",
+];
 
 const EODReport = () => {
   const { user } = useAuthStore();
-  const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const [selectedBranch, setSelectedBranch] = useState<number | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    dayjs().format("YYYY-MM-DD")
+  );
+  const [selectedBranch, setSelectedBranch] = useState<number | undefined>(
+    undefined
+  );
 
   // Get user's branches
   const userBranches = user?.branches || [];
 
   const { data: eodData, isLoading } = useQuery({
-    queryKey: ['eod-report', selectedDate, selectedBranch],
-    queryFn: () => salesApi.getEODReport({ 
-      date: selectedDate,
-      branch_id: selectedBranch 
-    }),
+    queryKey: [queryKeys.eod, selectedDate, selectedBranch],
+    queryFn: () =>
+      salesApi.getEODReport({
+        date: selectedDate,
+        branch_id: selectedBranch,
+      }),
     enabled: !!selectedDate,
+    staleTime: queryKeys[queryKeys.eod],
   });
 
   useEffect(() => {
@@ -75,24 +106,28 @@ const EODReport = () => {
   };
 
   // Prepare chart data
-  const paymentMethodChartData = eodData?.payment_method_breakdown.map(item => ({
-    name: getPaymentMethodDisplay(item.payment_method),
-    amount: item.total_amount,
-    transactions: item.transaction_count,
-  })) || [];
+  const paymentMethodChartData =
+    eodData?.payment_method_breakdown.map((item) => ({
+      name: getPaymentMethodDisplay(item.payment_method),
+      amount: item.total_amount,
+      transactions: item.transaction_count,
+    })) || [];
 
-  const hourlyChartData = eodData?.hourly_sales.filter(item => item.sales_count > 0).map(item => ({
-    hour: `${item.hour}:00`,
-    sales: item.sales_count,
-    amount: item.total_amount,
-  })) || [];
+  const hourlyChartData =
+    eodData?.hourly_sales
+      .filter((item) => item.sales_count > 0)
+      .map((item) => ({
+        hour: `${item.hour}:00`,
+        sales: item.sales_count,
+        amount: item.total_amount,
+      })) || [];
 
   // Table columns for payment methods
   const paymentMethodColumns = [
     {
-      title: 'Payment Method',
-      dataIndex: 'payment_method',
-      key: 'payment_method',
+      title: "Payment Method",
+      dataIndex: "payment_method",
+      key: "payment_method",
       render: (method: string) => (
         <Tag color={getPaymentMethodColor(method)}>
           {getPaymentMethodDisplay(method)}
@@ -100,25 +135,27 @@ const EODReport = () => {
       ),
     },
     {
-      title: 'Total Amount',
-      dataIndex: 'total_amount',
-      key: 'total_amount',
+      title: "Total Amount",
+      dataIndex: "total_amount",
+      key: "total_amount",
       render: (amount: number) => `$${amount.toFixed(2)}`,
-      sorter: (a: PaymentMethodBreakdown, b: PaymentMethodBreakdown) => a.total_amount - b.total_amount,
+      sorter: (a: PaymentMethodBreakdown, b: PaymentMethodBreakdown) =>
+        a.total_amount - b.total_amount,
     },
     {
-      title: 'Transactions',
-      dataIndex: 'transaction_count',
-      key: 'transaction_count',
-      sorter: (a: PaymentMethodBreakdown, b: PaymentMethodBreakdown) => a.transaction_count - b.transaction_count,
+      title: "Transactions",
+      dataIndex: "transaction_count",
+      key: "transaction_count",
+      sorter: (a: PaymentMethodBreakdown, b: PaymentMethodBreakdown) =>
+        a.transaction_count - b.transaction_count,
     },
   ];
 
   // Table columns for product sales
   const productSalesColumns = [
     {
-      title: 'Product',
-      key: 'product',
+      title: "Product",
+      key: "product",
       render: (record: ProductSalesStats) => (
         <div>
           <Text strong>{record.product_name}</Text>
@@ -138,24 +175,27 @@ const EODReport = () => {
       ),
     },
     {
-      title: 'Qty Sold',
-      dataIndex: 'quantity_sold',
-      key: 'quantity_sold',
-      sorter: (a: ProductSalesStats, b: ProductSalesStats) => a.quantity_sold - b.quantity_sold,
+      title: "Qty Sold",
+      dataIndex: "quantity_sold",
+      key: "quantity_sold",
+      sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
+        a.quantity_sold - b.quantity_sold,
     },
     {
-      title: 'Total Amount',
-      dataIndex: 'total_amount',
-      key: 'total_amount',
+      title: "Total Amount",
+      dataIndex: "total_amount",
+      key: "total_amount",
       render: (amount: number) => `$${amount.toFixed(2)}`,
-      sorter: (a: ProductSalesStats, b: ProductSalesStats) => a.total_amount - b.total_amount,
+      sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
+        a.total_amount - b.total_amount,
     },
     {
-      title: 'Avg Unit Price',
-      dataIndex: 'average_unit_price',
-      key: 'average_unit_price',
+      title: "Avg Unit Price",
+      dataIndex: "average_unit_price",
+      key: "average_unit_price",
       render: (price: number) => `$${price.toFixed(2)}`,
-      sorter: (a: ProductSalesStats, b: ProductSalesStats) => a.average_unit_price - b.average_unit_price,
+      sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
+        a.average_unit_price - b.average_unit_price,
     },
   ];
 
@@ -163,10 +203,7 @@ const EODReport = () => {
     <div>
       <PageTitle
         title="End of Day Report"
-        breadcrumbs={[
-          { title: "Home", href: "/" },
-          { title: "EOD Report" }
-        ]}
+        breadcrumbs={[{ title: "Home", href: "/" }, { title: "EOD Report" }]}
       />
 
       {/* Filters */}
@@ -179,7 +216,7 @@ const EODReport = () => {
               value={dayjs(selectedDate)}
               onChange={(date) => {
                 if (date) {
-                  setSelectedDate(date.format('YYYY-MM-DD'));
+                  setSelectedDate(date.format("YYYY-MM-DD"));
                 }
               }}
               format="YYYY-MM-DD"
@@ -207,7 +244,7 @@ const EODReport = () => {
 
       {isLoading ? (
         <Card>
-          <div style={{ textAlign: 'center', padding: '50px' }}>
+          <div style={{ textAlign: "center", padding: "50px" }}>
             <Spin size="large" />
             <p style={{ marginTop: 16 }}>Loading EOD report...</p>
           </div>
@@ -290,10 +327,13 @@ const EODReport = () => {
               <Card>
                 <Statistic
                   title="Date"
-                  value={dayjs(eodData.date).format('MMM DD, YYYY')}
+                  value={dayjs(eodData.date).format("MMM DD, YYYY")}
                 />
                 {eodData.branch_name && (
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, display: "block" }}
+                  >
                     Branch: {eodData.branch_name}
                   </Text>
                 )}
@@ -322,16 +362,26 @@ const EODReport = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                        label={({ name, percent }) =>
+                          `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                        }
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="amount"
                       >
                         {paymentMethodChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Amount']} />
+                      <Tooltip
+                        formatter={(value) => [
+                          `$${Number(value).toFixed(2)}`,
+                          "Amount",
+                        ]}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -341,22 +391,37 @@ const EODReport = () => {
 
           {/* Hourly Sales Chart */}
           {hourlyChartData.length > 0 && (
-            <Card title="Hourly Sales Distribution" style={{ marginBottom: 24 }}>
+            <Card
+              title="Hourly Sales Distribution"
+              style={{ marginBottom: 24 }}
+            >
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={hourlyChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
                   <YAxis yAxisId="left" />
                   <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name) => [
-                      name === 'amount' ? `$${Number(value).toFixed(2)}` : value,
-                      name === 'amount' ? 'Amount' : 'Sales Count'
+                      name === "amount"
+                        ? `$${Number(value).toFixed(2)}`
+                        : value,
+                      name === "amount" ? "Amount" : "Sales Count",
                     ]}
                   />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="sales" fill="#8884d8" name="Sales Count" />
-                  <Bar yAxisId="right" dataKey="amount" fill="#82ca9d" name="Amount" />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="sales"
+                    fill="#8884d8"
+                    name="Sales Count"
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="amount"
+                    fill="#82ca9d"
+                    name="Amount"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -381,8 +446,10 @@ const EODReport = () => {
         </>
       ) : (
         <Card>
-          <div style={{ textAlign: 'center', padding: '50px' }}>
-            <Text type="secondary">No data available for the selected date and branch.</Text>
+          <div style={{ textAlign: "center", padding: "50px" }}>
+            <Text type="secondary">
+              No data available for the selected date and branch.
+            </Text>
           </div>
         </Card>
       )}

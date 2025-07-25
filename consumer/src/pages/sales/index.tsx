@@ -1,19 +1,16 @@
 import {
-  DeleteOutlined,
-  EditOutlined,
   EyeOutlined,
   PlusOutlined,
   PrinterOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
   DatePicker,
   Input,
-  Popconfirm,
   Row,
   Select,
   Space,
@@ -29,17 +26,17 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { Permissions } from "../../constants/permissions";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
   PaymentMethod,
-  PaymentStatus,
   Sale,
   SaleListFilters,
 } from "../../types/sale.types";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
+import {
+  PaymentStatus,
+} from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -50,17 +47,12 @@ const SalesTable = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { messageApi } = useMessageStore();
-  const queryClient = useQueryClient();
 
   const showMessage = (
     content: string,
     type: "success" | "error" | "info" = "info"
   ) => {
     messageApi?.[type](content);
-  };
-
-  const hasPermission = (permission: string) => {
-    return user?.permissions?.includes(permission);
   };
 
   const [filters, setFilters] = useState<SaleListFilters>({
@@ -75,24 +67,6 @@ const SalesTable = () => {
     queryFn: () => salesApi.getSales(filters),
     placeholderData: (previousData) => previousData,
     staleTime: queryStaleTimeMap[queryKeys.sales],
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      // For now, since we don't have delete API, just show success
-      return Promise.resolve();
-    },
-    onSuccess: () => {
-      showMessage("Sale deleted successfully", "success");
-      // Invalidate all relevant caches after sales operation
-      cacheInvalidation.invalidateAfterSalesOperation(queryClient);
-    },
-    onError: (error: any) => {
-      showMessage(
-        error.response?.data?.message || "Failed to delete sale",
-        "error"
-      );
-    },
   });
 
   const debouncedSearch = useCallback(
@@ -144,6 +118,29 @@ const SalesTable = () => {
       cancelled: "error",
     };
     return colors[status] || "default";
+  };
+
+  // Calculate actual payment status based on received amount and total
+  const getActualPaymentStatus = (sale: Sale) => {
+    // For tax-inclusive items, the correct total should be the sum of line_totals from items
+    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
+      return sum + (Number(item.line_total) || 0);
+    }, 0) || 0;
+    
+    // Use items total if it's different from the reported total_amount (backend calculation issue)
+    const correctTotal = itemsTotal > 0 ? itemsTotal : (Number(sale?.total_amount) || 0);
+    const receivedAmount = Number(sale?.received_amount) || 0;
+    
+    // Add small tolerance for floating point comparison
+    const tolerance = 0.01;
+    
+    if (receivedAmount >= (correctTotal - tolerance)) {
+      return PaymentStatus.PAID;
+    } else if (receivedAmount > 0) {
+      return PaymentStatus.PARTIAL;
+    } else {
+      return PaymentStatus.DUE;
+    }
   };
 
   const getPaymentMethodDisplay = (method: PaymentMethod) => {
@@ -212,20 +209,23 @@ const SalesTable = () => {
     {
       title: "Payment",
       key: "payment",
-      render: (record: Sale) => (
-        <div>
-          <Tag color={getPaymentStatusColor(record.payment_status)}>
-            {record.payment_status.toUpperCase()}
-          </Tag>
-          <div style={{ fontSize: "12px", color: "#666" }}>
-            {record.payments && record.payments.length > 0
-              ? record.payments.length === 1
-                ? getPaymentMethodDisplay(record.payments[0].payment_method)
-                : `${record.payments.length} methods`
-              : "N/A"}
+      render: (record: Sale) => {
+        const actualStatus = getActualPaymentStatus(record);
+        return (
+          <div>
+            <Tag color={getPaymentStatusColor(actualStatus)}>
+              {actualStatus.toUpperCase()}
+            </Tag>
+            <div style={{ fontSize: "12px", color: "#666" }}>
+              {record.payments && record.payments.length > 0
+                ? record.payments.length === 1
+                  ? getPaymentMethodDisplay(record.payments[0].payment_method)
+                  : `${record.payments.length} methods`
+                : "N/A"}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Sold By",
@@ -251,27 +251,23 @@ const SalesTable = () => {
               onClick={() => handlePrint(record.id!)}
             />
           </Tooltip>
-          {hasPermission(Permissions.edit_sale) && (
-            <Tooltip title="Edit Sale">
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => navigate(`/sales/edit/${record.id}`)}
-              />
+          {/* <Tooltip title="Edit Sale">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/sales/edit/${record.id}`)}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Are you sure you want to delete this sale?"
+            onConfirm={() => deleteMutation.mutate(record.id!)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Tooltip title="Delete Sale">
+              <Button type="text" icon={<DeleteOutlined />} danger />
             </Tooltip>
-          )}
-          {hasPermission(Permissions.delete_sale) && (
-            <Popconfirm
-              title="Are you sure you want to delete this sale?"
-              onConfirm={() => deleteMutation.mutate(record.id!)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Tooltip title="Delete Sale">
-                <Button type="text" icon={<DeleteOutlined />} danger />
-              </Tooltip>
-            </Popconfirm>
-          )}
+          </Popconfirm> */}
         </Space>
       ),
     },
@@ -287,15 +283,13 @@ const SalesTable = () => {
         title="Sales"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "Sales" }]}
         rightSection={
-          hasPermission(Permissions.add_sale) ? (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate("/sales/new")}
-            >
-              New Sale
-            </Button>
-          ) : undefined
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate("/sales/new")}
+          >
+            New Sale
+          </Button>
         }
       />
 
