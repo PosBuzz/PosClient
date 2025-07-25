@@ -122,13 +122,8 @@ const SalesTable = () => {
 
   // Calculate actual payment status based on received amount and total
   const getActualPaymentStatus = (sale: Sale) => {
-    // For tax-inclusive items, the correct total should be the sum of line_totals from items
-    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
-      return sum + (Number(item.line_total) || 0);
-    }, 0) || 0;
-    
-    // Use items total if it's different from the reported total_amount (backend calculation issue)
-    const correctTotal = itemsTotal > 0 ? itemsTotal : (Number(sale?.total_amount) || 0);
+    // Use the corrected total calculation
+    const correctTotal = getCorrectTotal(sale);
     const receivedAmount = Number(sale?.received_amount) || 0;
     
     // Add small tolerance for floating point comparison
@@ -141,6 +136,18 @@ const SalesTable = () => {
     } else {
       return PaymentStatus.DUE;
     }
+  };
+
+  // Calculate the correct total based on line items (same logic as view page)
+  const getCorrectTotal = (sale: Sale) => {
+    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
+      return sum + (Number(item.line_total) || 0);
+    }, 0) || 0;
+    
+    const discountAmount = Number(sale?.discount_amount) || 0;
+    const shippingCost = Number(sale?.shipping_cost) || 0;
+    
+    return itemsTotal - discountAmount + shippingCost;
   };
 
   const getPaymentMethodDisplay = (method: PaymentMethod) => {
@@ -204,7 +211,11 @@ const SalesTable = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       sorter: true,
-      render: (amount: number) => `$${(Number(amount) || 0).toFixed(2)}`,
+      render: (amount: number, record: Sale) => {
+        // Use corrected total calculation instead of backend total
+        const correctTotal = getCorrectTotal(record);
+        return `$${correctTotal.toFixed(2)}`;
+      },
     },
     {
       title: "Payment",
