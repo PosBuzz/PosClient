@@ -1,5 +1,5 @@
-import { ShopOutlined, CalendarOutlined } from "@ant-design/icons";
-import { Table, Tag, Typography, Space, Progress, Tooltip } from "antd";
+import { CalendarOutlined, ShopOutlined } from "@ant-design/icons";
+import { Space, Table, Tag, Tooltip, Typography } from "antd";
 import { formatDate } from "../../../utils/formatters";
 
 const { Text } = Typography;
