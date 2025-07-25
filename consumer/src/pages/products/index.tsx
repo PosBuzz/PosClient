@@ -37,7 +37,6 @@ import type {
   ProductListFilters,
   ProductListResponse,
 } from "../../types/product.types";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -183,7 +182,21 @@ const ProductsTable = () => {
     onSuccess: () => {
       messageApi?.success("Product deleted successfully");
       // Invalidate all relevant caches after product operation
-      cacheInvalidation.invalidateAfterProductOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.products] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productVariants] });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productsForInventory],
+      });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
     },
     onError: (error) => {
       messageApi?.error("Failed to delete product");
