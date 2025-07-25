@@ -20,9 +20,9 @@ import {
   Table,
   Typography,
 } from "antd";
+import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import debounce from "lodash/debounce";
 import {
   CreateTransferData,
   inventoryApi,
@@ -32,7 +32,6 @@ import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -113,7 +112,15 @@ export default function AddInventoryTransfer() {
     onSuccess: () => {
       messageApi?.success("Transfer created successfully");
       // Invalidate all relevant caches after transfer operation
-      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {

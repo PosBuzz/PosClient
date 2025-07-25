@@ -74,6 +74,41 @@ const SaleDetail: React.FC = () => {
     }
   };
 
+  // Calculate actual payment status based on received amount and total
+  const getActualPaymentStatus = (sale: any) => {
+    // For tax-inclusive items, the correct total should be the sum of line_totals from items
+    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
+      return sum + (Number(item.line_total) || 0);
+    }, 0) || 0;
+    
+    // Use items total if it's different from the reported total_amount (backend calculation issue)
+    const correctTotal = itemsTotal > 0 ? itemsTotal : (Number(sale?.total_amount) || 0);
+    const receivedAmount = Number(sale?.received_amount) || 0;
+    
+    // Add small tolerance for floating point comparison
+    const tolerance = 0.01;
+    
+    if (receivedAmount >= (correctTotal - tolerance)) {
+      return PaymentStatus.PAID;
+    } else if (receivedAmount > 0) {
+      return PaymentStatus.PARTIAL;
+    } else {
+      return PaymentStatus.DUE;
+    }
+  };
+
+  // Calculate the correct total based on line items
+  const getCorrectTotal = (sale: any) => {
+    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
+      return sum + (Number(item.line_total) || 0);
+    }, 0) || 0;
+    
+    const discountAmount = Number(sale?.discount_amount) || 0;
+    const shippingCost = Number(sale?.shipping_cost) || 0;
+    
+    return itemsTotal - discountAmount + shippingCost;
+  };
+
   const getPaymentMethodColor = (method: PaymentMethod) => {
     switch (method) {
       case PaymentMethod.CASH:
@@ -202,7 +237,16 @@ const SaleDetail: React.FC = () => {
       title: 'Tax',
       dataIndex: 'tax_amount',
       key: 'tax_amount',
-      render: (tax: number) => `$${(Number(tax) || 0).toFixed(2)}`,
+      render: (tax: number, record: any) => (
+        <div>
+          <span>${(Number(tax) || 0).toFixed(2)}</span>
+          {record.tax_method === 'inclusive' && (
+            <div style={{ fontSize: 11, color: '#666' }}>
+              (included)
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Total',
@@ -294,8 +338,8 @@ const SaleDetail: React.FC = () => {
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Payment Status">
-                <Tag color={getPaymentStatusColor(sale.payment_status)}>
-                  {sale.payment_status.toUpperCase()}
+                <Tag color={getPaymentStatusColor(getActualPaymentStatus(sale))}>
+                  {getActualPaymentStatus(sale).toUpperCase()}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
@@ -377,41 +421,64 @@ const SaleDetail: React.FC = () => {
           {/* Payment Summary */}
           <Card title="Payment Summary">
             <div style={{ marginBottom: 16 }}>
+              {/* For tax-inclusive pricing, show tax as part of subtotal */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Subtotal:</Text>
-                <Text>${(Number(sale?.subtotal) || 0).toFixed(2)}</Text>
+                <Text>Subtotal (inc. tax):</Text>
+                <Text>${(getCorrectTotal(sale) + (Number(sale?.discount_amount) || 0) - (Number(sale?.shipping_cost) || 0)).toFixed(2)}</Text>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Discount:</Text>
-                <Text>-${(Number(sale?.discount_amount) || 0).toFixed(2)}</Text>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Shipping:</Text>
-                <Text>${(Number(sale?.shipping_cost) || 0).toFixed(2)}</Text>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Tax:</Text>
-                <Text>${(Number(sale?.tax_amount) || 0).toFixed(2)}</Text>
-              </div>
+              {(Number(sale?.discount_amount) || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text>Discount:</Text>
+                  <Text>-${(Number(sale?.discount_amount) || 0).toFixed(2)}</Text>
+                </div>
+              )}
+              {(Number(sale?.shipping_cost) || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text>Shipping:</Text>
+                  <Text>${(Number(sale?.shipping_cost) || 0).toFixed(2)}</Text>
+                </div>
+              )}
+              {(Number(sale?.tax_amount) || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Tax (included):</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>${(Number(sale?.tax_amount) || 0).toFixed(2)}</Text>
+                </div>
+              )}
               <Divider style={{ margin: '12px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <Text strong style={{ fontSize: 16 }}>Total:</Text>
-                <Text strong style={{ fontSize: 16 }}>${(Number(sale?.total_amount) || 0).toFixed(2)}</Text>
+                <Text strong style={{ fontSize: 16 }}>${getCorrectTotal(sale).toFixed(2)}</Text>
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <Text>Total Paid:</Text>
-                <Text>${(Number(sale?.received_amount) || 0).toFixed(2)}</Text>
+                <Text style={{ color: '#52c41a' }}>${(Number(sale?.received_amount) || 0).toFixed(2)}</Text>
               </div>
+              {/* Calculate change based on correct total */}
+              {(() => {
+                const correctTotal = getCorrectTotal(sale);
+                const received = Number(sale?.received_amount) || 0;
+                const change = received - correctTotal;
+                return change !== 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text>Change:</Text>
+                    <Text 
+                      style={{ 
+                        color: change >= 0 ? '#52c41a' : '#ff4d4f' 
+                      }}
+                    >
+                      ${change.toFixed(2)}
+                    </Text>
+                  </div>
+                ) : null;
+              })()}
+              
+              {/* Payment Status */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text>Change:</Text>
-                <Text 
-                  style={{ 
-                    color: (Number(sale?.change_amount) || 0) >= 0 ? '#52c41a' : '#ff4d4f' 
-                  }}
-                >
-                  ${(Number(sale?.change_amount) || 0).toFixed(2)}
-                </Text>
+                <Text>Payment Status:</Text>
+                <Tag color={getPaymentStatusColor(getActualPaymentStatus(sale))}>
+                  {getActualPaymentStatus(sale).toUpperCase()}
+                </Tag>
               </div>
 
               {/* Payment Breakdown */}
