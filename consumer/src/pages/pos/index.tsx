@@ -17,11 +17,11 @@ import {
   ProductVariantForSale,
   SaleFormData,
   SaleItem,
+  SalePayment,
   SaleType,
 } from "../../types/sale.types";
 import CustomerModal from "../add-sales/CustomerModal";
 import "./pos.css";
-<h4 className="section-title">Transaction Details</h4>;
 
 const POSPage = () => {
   const navigate = useNavigate();
@@ -47,10 +47,10 @@ const POSPage = () => {
   );
   const [discountAmount, setDiscountAmount] = useState(0);
   const [shippingCost, setShippingCost] = useState(0);
-  const [receivedAmount, setReceivedAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    PaymentMethod.CASH
-  );
+  const [payments, setPayments] = useState<SalePayment[]>([]);
+  const [currentPaymentMethod, setCurrentPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [currentPaymentAmount, setCurrentPaymentAmount] = useState(0);
+  const [currentPaymentReference, setCurrentPaymentReference] = useState("");
   const [paymentStatus] = useState<PaymentStatus>(PaymentStatus.PAID);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -228,6 +228,54 @@ const POSPage = () => {
     );
   };
 
+  // Payment management functions
+  const addPayment = () => {
+    if (currentPaymentAmount <= 0) {
+      message.error("Please enter a valid payment amount");
+      return;
+    }
+
+    const totals = calculateTotals();
+    const currentTotalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    
+    if (currentTotalPaid + currentPaymentAmount > totals.total) {
+      message.warning("Payment amount exceeds the remaining balance");
+      return;
+    }
+
+    const newPayment: SalePayment = {
+      payment_method: currentPaymentMethod,
+      amount: currentPaymentAmount,
+      reference: currentPaymentReference || undefined,
+    };
+
+    setPayments([...payments, newPayment]);
+    setCurrentPaymentAmount(0);
+    setCurrentPaymentReference("");
+  };
+
+  const removePayment = (index: number) => {
+    setPayments(payments.filter((_, i) => i !== index));
+  };
+
+  const getTotalPaid = () => {
+    return payments.reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  const getPaymentMethodLabel = (method: PaymentMethod) => {
+    const labels = {
+      CASH: "Cash",
+      CARD: "Card", 
+      BANK_TRANSFER: "Bank Transfer",
+      CHEQUE: "Cheque",
+      MOBILE_MONEY: "Mobile Money",
+      MFS: "MFS",
+      DEPOSIT: "Deposit",
+      CREDIT: "Credit",
+    };
+    return labels[method] || method;
+  };
+
   const calculateTotals = () => {
     const subtotal = selectedItems.reduce(
       (sum, item) => sum + (Number(item.line_total) || 0),
@@ -243,8 +291,10 @@ const POSPage = () => {
         ? (subtotal * discountAmount) / 100
         : discountAmount;
 
-    const total = subtotal - finalDiscount + totalTax + shippingCost;
-    const changeAmount = receivedAmount - total;
+    // For tax-inclusive pricing, don't add tax again
+    const total = subtotal - finalDiscount + shippingCost;
+    const totalPaid = getTotalPaid();
+    const changeAmount = totalPaid - total;
 
     return {
       subtotal: Number(subtotal),
@@ -252,7 +302,7 @@ const POSPage = () => {
       finalDiscount: Number(finalDiscount),
       shippingCost: Number(shippingCost),
       total: Number(total),
-      receivedAmount: Number(receivedAmount),
+      totalPaid: Number(totalPaid),
       changeAmount: Number(changeAmount),
     };
   };
@@ -263,7 +313,17 @@ const POSPage = () => {
       return;
     }
 
+    if (payments.length === 0) {
+      message.error("Please add at least one payment method");
+      return;
+    }
+
     const totals = calculateTotals();
+
+    if (totals.totalPaid < totals.total) {
+      message.error(`Insufficient payment. Total: $${totals.total.toFixed(2)}, Paid: $${totals.totalPaid.toFixed(2)}`);
+      return;
+    }
 
     const saleData: SaleFormData = {
       branch_id: selectedBranch!,
@@ -276,10 +336,10 @@ const POSPage = () => {
       discount_type: discountType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,
-      payment_method: paymentMethod,
       payment_status: paymentStatus,
-      received_amount: receivedAmount,
+      received_amount: totals.totalPaid,
       sale_type: SaleType.SALE,
+      payments: payments,
     };
 
     try {
@@ -313,7 +373,9 @@ const POSPage = () => {
       setSelectedCustomer(null);
       setDiscountAmount(0);
       setShippingCost(0);
-      setReceivedAmount(0);
+      setPayments([]);
+      setCurrentPaymentAmount(0);
+      setCurrentPaymentReference("");
     } catch (error: any) {
       console.error("Error creating sale:", error);
       message.error(error.response?.data?.message || "Failed to complete sale");
@@ -637,7 +699,7 @@ const POSPage = () => {
               <div className="inputs-panel">
                 <h4 className="section-title">Transaction Details</h4>
 
-                {/* Row 1: Customer & Payment */}
+                {/* Row 1: Customer & Payment Method */}
                 <div className="form-row">
                   <div className="form-group">
                     <label className="input-label">Customer</label>
@@ -673,9 +735,9 @@ const POSPage = () => {
                     <label className="input-label">Payment Method</label>
                     <select
                       className="form-input"
-                      value={paymentMethod}
+                      value={currentPaymentMethod}
                       onChange={(e) =>
-                        setPaymentMethod(e.target.value as PaymentMethod)
+                        setCurrentPaymentMethod(e.target.value as PaymentMethod)
                       }
                     >
                       <option value={PaymentMethod.CASH}>Cash</option>
@@ -684,20 +746,26 @@ const POSPage = () => {
                       <option value={PaymentMethod.BANK_TRANSFER}>
                         Bank Transfer
                       </option>
+                      <option value={PaymentMethod.MOBILE_MONEY}>
+                        Mobile Money
+                      </option>
+                      <option value={PaymentMethod.MFS}>MFS</option>
+                      <option value={PaymentMethod.DEPOSIT}>Deposit</option>
+                      <option value={PaymentMethod.CREDIT}>Credit</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Row 2: Amounts & Discount */}
+                {/* Row 2: Payment Amount & Reference */}
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="input-label">Amount Received</label>
+                    <label className="input-label">Payment Amount</label>
                     <input
                       type="number"
                       className="form-input"
-                      value={receivedAmount}
+                      value={currentPaymentAmount}
                       onChange={(e) =>
-                        setReceivedAmount(Number(e.target.value) || 0)
+                        setCurrentPaymentAmount(Number(e.target.value) || 0)
                       }
                       min="0"
                       step="0.01"
@@ -705,6 +773,90 @@ const POSPage = () => {
                     />
                   </div>
 
+                  <div className="form-group">
+                    <label className="input-label">Reference (Optional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={currentPaymentReference}
+                      onChange={(e) => setCurrentPaymentReference(e.target.value)}
+                      placeholder="Transaction reference..."
+                    />
+                  </div>
+                </div>
+
+                {/* Add Payment Button */}
+                <div className="form-row">
+                  <button
+                    type="button"
+                    onClick={addPayment}
+                    className="add-payment-btn"
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#2563eb",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                    }}
+                  >
+                    ➕ Add Payment
+                  </button>
+                </div>
+
+                {/* Payment List */}
+                {payments.length > 0 && (
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label className="input-label">Added Payments</label>
+                      <div style={{ 
+                        border: "1px solid #d1d5db", 
+                        borderRadius: "6px", 
+                        padding: "8px",
+                        backgroundColor: "#f9fafb"
+                      }}>
+                        {payments.map((payment, index) => (
+                          <div key={index} style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "4px 8px",
+                            marginBottom: "4px",
+                            backgroundColor: "white",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                          }}>
+                            <span>
+                              <strong>{getPaymentMethodLabel(payment.payment_method)}</strong>
+                              {payment.reference && ` (${payment.reference})`}
+                            </span>
+                            <div>
+                              <span style={{ marginRight: "8px" }}>
+                                ${payment.amount.toFixed(2)}
+                              </span>
+                              <button
+                                onClick={() => removePayment(index)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#ef4444",
+                                  cursor: "pointer",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Row 3: Discount */}
+                <div className="form-row">
                   <div className="form-group">
                     <label className="input-label">Discount</label>
                     <div className="discount-row">
@@ -734,7 +886,7 @@ const POSPage = () => {
                   </div>
                 </div>
 
-                {/* Row 3: Notes */}
+                {/* Row 4: Notes */}
                 <div className="form-row">
                   <div className="form-group full-width">
                     <label className="input-label">Notes</label>
@@ -754,14 +906,14 @@ const POSPage = () => {
                 <h4 className="section-title">Payment Summary</h4>
                 <div className="totals-display">
                   <div className="total-row">
-                    <span className="total-label">Subtotal:</span>
+                    <span className="total-label">Subtotal (inc. tax):</span>
                     <span className="total-value">
                       ${totals.subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="total-row">
-                    <span className="total-label">Tax:</span>
-                    <span className="total-value">
+                    <span className="total-label">Tax (included):</span>
+                    <span className="total-value" style={{ fontSize: "12px", color: "#666" }}>
                       ${totals.totalTax.toFixed(2)}
                     </span>
                   </div>
@@ -780,6 +932,12 @@ const POSPage = () => {
                       </span>
                     </div>
                     <div className="total-row">
+                      <span className="total-label">Total Paid:</span>
+                      <span className="total-value" style={{ color: "#52c41a" }}>
+                        ${totals.totalPaid.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="total-row">
                       <span className="total-label">Change:</span>
                       <span
                         className={`total-value change ${
@@ -787,6 +945,20 @@ const POSPage = () => {
                         }`}
                       >
                         ${totals.changeAmount.toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {/* Payment Status Indicator */}
+                    <div className="total-row" style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #e5e7eb" }}>
+                      <span className="total-label">Status:</span>
+                      <span 
+                        className="total-value"
+                        style={{ 
+                          color: totals.totalPaid >= totals.total ? "#52c41a" : "#ef4444",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {totals.totalPaid >= totals.total ? "✅ PAID" : "❌ INSUFFICIENT"}
                       </span>
                     </div>
                   </div>
