@@ -7,7 +7,7 @@ import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
-import { useAuthStore } from "../../stores/authStore";                <h4 className="section-title">Transaction Details</h4>
+import { useAuthStore } from "../../stores/authStore";
 import { Customer } from "../../types/customer.types";
 import {
   DiscountType,
@@ -19,9 +19,9 @@ import {
   SaleItem,
   SaleType,
 } from "../../types/sale.types";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import CustomerModal from "../add-sales/CustomerModal";
 import "./pos.css";
+<h4 className="section-title">Transaction Details</h4>;
 
 const POSPage = () => {
   const navigate = useNavigate();
@@ -33,16 +33,24 @@ const POSPage = () => {
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredVariants, setFilteredVariants] = useState<ProductVariantForSale[]>([]);
+  const [filteredVariants, setFilteredVariants] = useState<
+    ProductVariantForSale[]
+  >([]);
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
-  const [discountType, setDiscountType] = useState<DiscountType>(DiscountType.FLAT);
+  const [discountType, setDiscountType] = useState<DiscountType>(
+    DiscountType.FLAT
+  );
   const [discountAmount, setDiscountAmount] = useState(0);
   const [shippingCost, setShippingCost] = useState(0);
   const [receivedAmount, setReceivedAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    PaymentMethod.CASH
+  );
   const [paymentStatus] = useState<PaymentStatus>(PaymentStatus.PAID);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,7 +84,8 @@ const POSPage = () => {
   // Load products for sale when searching
   const productsForSaleQuery = useQuery({
     queryKey: [queryKeys.productsForSale, selectedBranch, debouncedSearchValue],
-    queryFn: () => salesApi.getProductsForSale(selectedBranch!, debouncedSearchValue),
+    queryFn: () =>
+      salesApi.getProductsForSale(selectedBranch!, debouncedSearchValue),
     enabled: !!selectedBranch && !!debouncedSearchValue,
     staleTime: queryStaleTimeMap[queryKeys.productsForSale],
   });
@@ -113,7 +122,8 @@ const POSPage = () => {
       priceType === PriceType.WHOLESALE
         ? Number(variant.wholesale_price) || Number(variant.regular_price)
         : Number(variant.regular_price);
-    const selectedBatch = variant.batches.find((b) => b.id === batchId) || variant.batches[0];
+    const selectedBatch =
+      variant.batches.find((b) => b.id === batchId) || variant.batches[0];
 
     if (!selectedBatch) {
       message.error("No batch available for this product");
@@ -133,7 +143,11 @@ const POSPage = () => {
                 ...item,
                 quantity: item.quantity + 1,
                 unit_price: price,
-                tax_amount: ((item.quantity + 1) * price * (Number(variant.tax_percentage) || 0)) / 100,
+                tax_amount:
+                  ((item.quantity + 1) *
+                    price *
+                    (Number(variant.tax_percentage) || 0)) /
+                  100,
                 line_total: (item.quantity + 1) * price,
               }
             : item
@@ -161,22 +175,30 @@ const POSPage = () => {
       };
       setSelectedItems([...selectedItems, newItem]);
     }
-    
+
     // Clear search after adding
     setSearchValue("");
     setDebouncedSearchValue("");
   };
 
-  const updateItemQuantity = (variantId: number, batchId: number, quantity: number) => {
+  const updateItemQuantity = (
+    variantId: number,
+    batchId: number,
+    quantity: number
+  ) => {
     if (quantity <= 0) {
       removeItem(variantId, batchId);
       return;
     }
 
     // Check batch quantity limit
-    const currentItem = selectedItems.find(item => item.variant_id === variantId && item.batch_id === batchId);
+    const currentItem = selectedItems.find(
+      (item) => item.variant_id === variantId && item.batch_id === batchId
+    );
     if (currentItem && quantity > currentItem.available_stock) {
-      message.warning(`Cannot exceed available stock of ${currentItem.available_stock} units`);
+      message.warning(
+        `Cannot exceed available stock of ${currentItem.available_stock} units`
+      );
       return;
     }
 
@@ -186,7 +208,11 @@ const POSPage = () => {
           ? {
               ...item,
               quantity,
-              tax_amount: (quantity * Number(item.unit_price) * (Number(item.tax_percentage) || 0)) / 100,
+              tax_amount:
+                (quantity *
+                  Number(item.unit_price) *
+                  (Number(item.tax_percentage) || 0)) /
+                100,
               line_total: quantity * Number(item.unit_price),
             }
           : item
@@ -196,13 +222,21 @@ const POSPage = () => {
 
   const removeItem = (variantId: number, batchId: number) => {
     setSelectedItems((items) =>
-      items.filter((item) => !(item.variant_id === variantId && item.batch_id === batchId))
+      items.filter(
+        (item) => !(item.variant_id === variantId && item.batch_id === batchId)
+      )
     );
   };
 
   const calculateTotals = () => {
-    const subtotal = selectedItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0);
-    const totalTax = selectedItems.reduce((sum, item) => sum + (Number(item.tax_amount) || 0), 0);
+    const subtotal = selectedItems.reduce(
+      (sum, item) => sum + (Number(item.line_total) || 0),
+      0
+    );
+    const totalTax = selectedItems.reduce(
+      (sum, item) => sum + (Number(item.tax_amount) || 0),
+      0
+    );
 
     const finalDiscount =
       discountType === DiscountType.PERCENTAGE
@@ -252,17 +286,34 @@ const POSPage = () => {
       setLoading(true);
       await salesApi.createSale(saleData);
 
-      cacheInvalidation.invalidateAfterSalesOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.products] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productVariants] });
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.productsForInventory],
+      });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sale] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
 
       message.success("Sale completed successfully!");
-      
+
       // Reset everything
       setSelectedItems([]);
       setSelectedCustomer(null);
       setDiscountAmount(0);
       setShippingCost(0);
       setReceivedAmount(0);
-      
     } catch (error: any) {
       console.error("Error creating sale:", error);
       message.error(error.response?.data?.message || "Failed to complete sale");
@@ -277,15 +328,15 @@ const POSPage = () => {
     <div className="pos-container">
       {/* Header */}
       <div className="pos-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '18px',
-              cursor: 'pointer',
-              padding: '8px'
+              background: "none",
+              border: "none",
+              fontSize: "18px",
+              cursor: "pointer",
+              padding: "8px",
             }}
           >
             ← Back
@@ -296,11 +347,11 @@ const POSPage = () => {
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(Number(e.target.value))}
               style={{
-                minWidth: '200px',
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px'
+                minWidth: "200px",
+                padding: "8px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
               }}
             >
               {userBranches.map((branch) => (
@@ -311,50 +362,62 @@ const POSPage = () => {
             </select>
           )}
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <button
-            onClick={() => setPriceType(priceType === PriceType.WHOLESALE ? PriceType.REGULAR : PriceType.WHOLESALE)}
+            onClick={() =>
+              setPriceType(
+                priceType === PriceType.WHOLESALE
+                  ? PriceType.REGULAR
+                  : PriceType.WHOLESALE
+              )
+            }
             style={{
-              padding: '8px 16px',
-              background: priceType === PriceType.WHOLESALE ? '#2563eb' : '#f3f4f6',
-              color: priceType === PriceType.WHOLESALE ? 'white' : '#1f2937',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
+              padding: "8px 16px",
+              background:
+                priceType === PriceType.WHOLESALE ? "#2563eb" : "#f3f4f6",
+              color: priceType === PriceType.WHOLESALE ? "white" : "#1f2937",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
             }}
           >
-            👤 {priceType === PriceType.WHOLESALE ? "Wholesale" : "Regular"} Pricing
+            👤 {priceType === PriceType.WHOLESALE ? "Wholesale" : "Regular"}{" "}
+            Pricing
           </button>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              background: '#2563eb',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '14px'
-            }}>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                background: "#2563eb",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "14px",
+              }}
+            >
               👤
             </div>
-            <span style={{ fontWeight: '600', color: '#1f2937' }}>{user?.name}</span>
+            <span style={{ fontWeight: "600", color: "#1f2937" }}>
+              {user?.name}
+            </span>
             <button
               onClick={() => {
                 logout();
-                navigate('/login');
+                navigate("/login");
               }}
               style={{
-                background: 'none',
-                border: 'none',
-                color: '#ef4444',
-                cursor: 'pointer',
-                padding: '4px',
-                fontSize: '16px'
+                background: "none",
+                border: "none",
+                color: "#ef4444",
+                cursor: "pointer",
+                padding: "4px",
+                fontSize: "16px",
               }}
             >
               🚪
@@ -375,7 +438,11 @@ const POSPage = () => {
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <button className="scan-btn" disabled title="Scan Barcode (Coming Soon)">
+            <button
+              className="scan-btn"
+              disabled
+              title="Scan Barcode (Coming Soon)"
+            >
               📷
             </button>
           </div>
@@ -386,14 +453,16 @@ const POSPage = () => {
               <div className="no-search-state">
                 <div className="no-search-icon">�️</div>
                 <div className="no-search-title">Search to add products</div>
-                <div className="no-search-subtitle">Type product name or SKU</div>
+                <div className="no-search-subtitle">
+                  Type product name or SKU
+                </div>
               </div>
             ) : productsForSaleQuery.isLoading ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div style={{ textAlign: "center", padding: "20px" }}>
                 <div>⏳ Searching...</div>
               </div>
             ) : filteredVariants.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div style={{ textAlign: "center", padding: "20px" }}>
                 <div>❌ No products found</div>
               </div>
             ) : (
@@ -411,7 +480,8 @@ const POSPage = () => {
                       <div className="product-name">{variant.product_name}</div>
                       <div className="product-variant">{variant.name}</div>
                       <div className="product-price">
-                        💰 ${priceType === PriceType.WHOLESALE
+                        💰 $
+                        {priceType === PriceType.WHOLESALE
                           ? variant.wholesale_price || variant.regular_price
                           : variant.regular_price}
                       </div>
@@ -440,7 +510,9 @@ const POSPage = () => {
           <div className="shopping-cart">
             <div className="cart-header">
               <h2 className="cart-title">
-                🛒 Shopping Cart ({selectedItems.reduce((sum, item) => sum + item.quantity, 0)} items)
+                🛒 Shopping Cart (
+                {selectedItems.reduce((sum, item) => sum + item.quantity, 0)}{" "}
+                items)
               </h2>
               <button
                 className="clear-btn"
@@ -457,11 +529,16 @@ const POSPage = () => {
                 <div className="empty-cart">
                   <div className="empty-cart-icon">🛒</div>
                   <div className="empty-cart-text">Cart is empty</div>
-                  <div className="empty-cart-hint">Search and add products to get started</div>
+                  <div className="empty-cart-hint">
+                    Search and add products to get started
+                  </div>
                 </div>
               ) : (
                 selectedItems.map((item) => (
-                  <div key={`${item.variant_id}-${item.batch_id}`} className="cart-item">
+                  <div
+                    key={`${item.variant_id}-${item.batch_id}`}
+                    className="cart-item"
+                  >
                     <div className="cart-item-left">
                       {item.image && (
                         <img
@@ -471,11 +548,15 @@ const POSPage = () => {
                         />
                       )}
                       <div className="cart-item-info">
-                        <div className="cart-item-name">{item.product_name}</div>
-                        <div className="cart-item-variant">{item.variant_name}</div>
+                        <div className="cart-item-name">
+                          {item.product_name}
+                        </div>
+                        <div className="cart-item-variant">
+                          {item.variant_name}
+                        </div>
                       </div>
                     </div>
-                    
+
                     <div className="cart-item-center">
                       <div className="cart-item-price">
                         💰 ${Number(item.unit_price).toFixed(2)} each
@@ -484,12 +565,18 @@ const POSPage = () => {
                         📦 Batch #{item.batch_number}
                       </div>
                     </div>
-                    
+
                     <div className="cart-item-right">
                       <div className="quantity-controls">
                         <button
                           className="qty-btn"
-                          onClick={() => updateItemQuantity(item.variant_id, item.batch_id!, item.quantity - 1)}
+                          onClick={() =>
+                            updateItemQuantity(
+                              item.variant_id,
+                              item.batch_id!,
+                              item.quantity - 1
+                            )
+                          }
                         >
                           ➖
                         </button>
@@ -499,28 +586,42 @@ const POSPage = () => {
                           value={item.quantity}
                           onChange={(e) => {
                             const newQty = parseInt(e.target.value) || 1;
-                            updateItemQuantity(item.variant_id, item.batch_id!, newQty);
+                            updateItemQuantity(
+                              item.variant_id,
+                              item.batch_id!,
+                              newQty
+                            );
                           }}
                           min="1"
                           max={item.available_stock}
                         />
                         <button
                           className="qty-btn"
-                          onClick={() => updateItemQuantity(item.variant_id, item.batch_id!, item.quantity + 1)}
+                          onClick={() =>
+                            updateItemQuantity(
+                              item.variant_id,
+                              item.batch_id!,
+                              item.quantity + 1
+                            )
+                          }
                           disabled={item.quantity >= item.available_stock}
                         >
                           ➕
                         </button>
                         <button
                           className="delete-btn"
-                          onClick={() => removeItem(item.variant_id, item.batch_id!)}
+                          onClick={() =>
+                            removeItem(item.variant_id, item.batch_id!)
+                          }
                           title="Remove item"
                         >
                           🗑️
                         </button>
                       </div>
                       <div className="cart-item-total">
-                        <div className="item-subtotal">${Number(item.line_total).toFixed(2)}</div>
+                        <div className="item-subtotal">
+                          ${Number(item.line_total).toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -535,7 +636,7 @@ const POSPage = () => {
               {/* Left Side - Input Fields */}
               <div className="inputs-panel">
                 <h4 className="section-title">Transaction Details</h4>
-                
+
                 {/* Row 1: Customer & Payment */}
                 <div className="form-row">
                   <div className="form-group">
@@ -543,9 +644,11 @@ const POSPage = () => {
                     <div className="customer-selection">
                       <select
                         className="form-input"
-                        value={selectedCustomer?.id || ''}
+                        value={selectedCustomer?.id || ""}
                         onChange={(e) => {
-                          const customer = customers.find((c) => c.id === Number(e.target.value));
+                          const customer = customers.find(
+                            (c) => c.id === Number(e.target.value)
+                          );
                           setSelectedCustomer(customer || null);
                         }}
                       >
@@ -565,18 +668,22 @@ const POSPage = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="input-label">Payment Method</label>
                     <select
                       className="form-input"
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                      onChange={(e) =>
+                        setPaymentMethod(e.target.value as PaymentMethod)
+                      }
                     >
                       <option value={PaymentMethod.CASH}>Cash</option>
                       <option value={PaymentMethod.CARD}>Card</option>
                       <option value={PaymentMethod.CHEQUE}>Cheque</option>
-                      <option value={PaymentMethod.BANK_TRANSFER}>Bank Transfer</option>
+                      <option value={PaymentMethod.BANK_TRANSFER}>
+                        Bank Transfer
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -589,29 +696,37 @@ const POSPage = () => {
                       type="number"
                       className="form-input"
                       value={receivedAmount}
-                      onChange={(e) => setReceivedAmount(Number(e.target.value) || 0)}
+                      onChange={(e) =>
+                        setReceivedAmount(Number(e.target.value) || 0)
+                      }
                       min="0"
                       step="0.01"
                       placeholder="0.00"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="input-label">Discount</label>
                     <div className="discount-row">
                       <select
                         className="discount-type-select"
                         value={discountType}
-                        onChange={(e) => setDiscountType(e.target.value as DiscountType)}
+                        onChange={(e) =>
+                          setDiscountType(e.target.value as DiscountType)
+                        }
                       >
                         <option value={DiscountType.FLAT}>Fixed ($)</option>
-                        <option value={DiscountType.PERCENTAGE}>Percent (%)</option>
+                        <option value={DiscountType.PERCENTAGE}>
+                          Percent (%)
+                        </option>
                       </select>
                       <input
                         type="number"
                         className="discount-amount-input"
                         value={discountAmount}
-                        onChange={(e) => setDiscountAmount(Number(e.target.value) || 0)}
+                        onChange={(e) =>
+                          setDiscountAmount(Number(e.target.value) || 0)
+                        }
                         min="0"
                         placeholder="0"
                       />
@@ -640,25 +755,37 @@ const POSPage = () => {
                 <div className="totals-display">
                   <div className="total-row">
                     <span className="total-label">Subtotal:</span>
-                    <span className="total-value">${totals.subtotal.toFixed(2)}</span>
+                    <span className="total-value">
+                      ${totals.subtotal.toFixed(2)}
+                    </span>
                   </div>
                   <div className="total-row">
                     <span className="total-label">Tax:</span>
-                    <span className="total-value">${totals.totalTax.toFixed(2)}</span>
+                    <span className="total-value">
+                      ${totals.totalTax.toFixed(2)}
+                    </span>
                   </div>
                   <div className="total-row">
                     <span className="total-label">Discount:</span>
-                    <span className="total-value discount">-${totals.finalDiscount.toFixed(2)}</span>
+                    <span className="total-value discount">
+                      -${totals.finalDiscount.toFixed(2)}
+                    </span>
                   </div>
-                  
+
                   <div className="grand-total">
                     <div className="total-row">
                       <span className="total-label">TOTAL:</span>
-                      <span className="total-value grand">${totals.total.toFixed(2)}</span>
+                      <span className="total-value grand">
+                        ${totals.total.toFixed(2)}
+                      </span>
                     </div>
                     <div className="total-row">
                       <span className="total-label">Change:</span>
-                      <span className={`total-value change ${totals.changeAmount < 0 ? 'negative' : 'positive'}`}>
+                      <span
+                        className={`total-value change ${
+                          totals.changeAmount < 0 ? "negative" : "positive"
+                        }`}
+                      >
                         ${totals.changeAmount.toFixed(2)}
                       </span>
                     </div>
@@ -674,7 +801,7 @@ const POSPage = () => {
                 onClick={completeSale}
                 disabled={selectedItems.length === 0 || loading}
               >
-                {loading ? '⏳ Processing Sale...' : '✅ COMPLETE SALE'}
+                {loading ? "⏳ Processing Sale..." : "✅ COMPLETE SALE"}
               </button>
             </div>
           </div>
