@@ -32,7 +32,6 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
-import { cacheInvalidation } from "../../utils/cacheInvalidation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
@@ -101,7 +100,15 @@ export default function InventoryTransfersPage() {
     onSuccess: () => {
       messageApi?.success("Transfer completed successfully");
       // Invalidate all relevant caches after transfer operation
-      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -115,7 +122,15 @@ export default function InventoryTransfersPage() {
     onSuccess: () => {
       messageApi?.success("Transfer cancelled successfully");
       // Invalidate all relevant caches after transfer operation
-      cacheInvalidation.invalidateAfterTransferOperation(queryClient);
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batch] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
       messageApi?.error(

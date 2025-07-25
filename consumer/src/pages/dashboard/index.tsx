@@ -1,12 +1,11 @@
-import { Button, Card, Col, Row, Space } from "antd";
-import { 
+import {
   CalculatorOutlined,
+  DashboardOutlined,
   PlusOutlined,
-  ShoppingCartOutlined,
-  DashboardOutlined 
+  ShoppingCartOutlined
 } from "@ant-design/icons";
+import { Button, Card, Col, Row, Space } from "antd";
 import { useNavigate } from "react-router-dom";
-import PageTitle from "../../components/PageTitle";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 function index() {
