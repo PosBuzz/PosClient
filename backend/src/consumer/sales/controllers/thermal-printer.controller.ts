@@ -9,7 +9,8 @@ import {
   ParseIntPipe,
   Req,
 } from '@nestjs/common';
-import { ThermalPrinterService, PrinterSettings } from '../services/thermal-printer.service';
+import { ThermalPrinterService } from '../services/thermal-printer.service';
+import { PrinterSettings } from '../../../constants/printer.constants';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
@@ -37,14 +38,14 @@ interface BulkPrintResult {
 export class ThermalPrinterController {
   constructor(private readonly thermalPrinterService: ThermalPrinterService) {}
 
-  @Post('print-receipt/:saleId')
+  @Post('prepare-receipt/:saleId')
   async printSalesReceipt(
     @Param('saleId', ParseIntPipe) saleId: number,
     @Req() req: Request,
     @Body() printerSettings?: PrinterSettingsDto,
   ) {
     const consumerId = req.user?.consumer_id;
-    return this.thermalPrinterService.printSalesReceipt(
+    return this.thermalPrinterService.prepareSalesReceipt(
       saleId,
       consumerId!,
       printerSettings,
@@ -59,7 +60,7 @@ export class ThermalPrinterController {
   ) {
     const consumerId = req.user?.consumer_id;
     // Get the receipt data without actually printing
-    const result = await this.thermalPrinterService.printSalesReceipt(
+    const result = await this.thermalPrinterService.prepareSalesReceipt(
       saleId,
       consumerId!,
       printerSettings,
@@ -72,9 +73,11 @@ export class ThermalPrinterController {
     };
   }
 
-  @Post('test-print')
-  async testPrint(@Body() printerSettings?: PrinterSettingsDto) {
-    return this.thermalPrinterService.testPrint(printerSettings);
+  @Get('test-data')
+  async getTestReceiptData() {
+    return {
+      receiptData: this.thermalPrinterService.getTestReceiptData(),
+    };
   }
 
   @Get('settings')
@@ -99,22 +102,22 @@ export class ThermalPrinterController {
     };
   }
 
-  @Post('print-receipt/:saleId/reprint')
+  @Post('prepare-receipt/:saleId/reprint')
   async reprintReceipt(
     @Param('saleId', ParseIntPipe) saleId: number,
     @Req() req: Request,
     @Body() printerSettings?: PrinterSettingsDto,
   ) {
     const consumerId = req.user?.consumer_id;
-    return this.thermalPrinterService.printSalesReceipt(
+    return this.thermalPrinterService.prepareSalesReceipt(
       saleId,
       consumerId!,
       printerSettings,
     );
   }
 
-  @Post('bulk-print')
-  async bulkPrint(
+  @Post('bulk-prepare')
+  async bulkPrepare(
     @Req() req: Request,
     @Body() body: { saleIds: number[]; printerSettings?: PrinterSettingsDto },
   ) {
@@ -124,24 +127,29 @@ export class ThermalPrinterController {
 
     for (const saleId of saleIds) {
       try {
-        const result = await this.thermalPrinterService.printSalesReceipt(
+        const result = await this.thermalPrinterService.prepareSalesReceipt(
           saleId,
           consumerId!,
           printerSettings,
         );
-        results.push({ saleId, ...result });
-      } catch (error) {
+        results.push({ 
+          saleId, 
+          success: result.success,
+          message: result.message,
+          receiptData: JSON.stringify(result.receiptData, null, 2)
+        });
+      } catch (error: any) {
         results.push({
           saleId,
           success: false,
-          message: error.message || 'Failed to print receipt',
+          message: error.message || 'Failed to prepare receipt',
         });
       }
     }
 
     return {
       success: true,
-      message: 'Bulk printing completed',
+      message: 'Bulk preparation completed',
       results,
     };
   }
