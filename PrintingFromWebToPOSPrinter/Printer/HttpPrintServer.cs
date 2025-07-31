@@ -38,6 +38,7 @@ namespace Printer
                 Console.WriteLine("  GET  http://localhost:{0}/status - Server status", port);
                 Console.WriteLine("  GET  http://localhost:{0}/config - Get configuration", port);
                 Console.WriteLine("  POST http://localhost:{0}/config - Update configuration", port);
+                Console.WriteLine("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port);
                 Console.WriteLine();
                 Console.WriteLine("Press 'q' to quit the server...");
 
@@ -126,6 +127,10 @@ namespace Printer
                 else if (request.HttpMethod == "POST" && request.Url.AbsolutePath == "/config")
                 {
                     responseText = HandleUpdateConfig(request);
+                }
+                else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/cash-drawer")
+                {
+                    responseText = HandleCashDrawerRequest();
                 }
                 else
                 {
@@ -323,6 +328,47 @@ namespace Printer
             catch (Exception ex)
             {
                 Console.WriteLine("Config update error: " + ex.Message);
+                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
+            }
+        }
+
+        private string HandleCashDrawerRequest()
+        {
+            try
+            {
+                Console.WriteLine("=== CASH DRAWER REQUEST ===");
+                Console.WriteLine("Opening cash drawer directly...");
+                
+                // Get the configured printer name
+                StoreConfig config = ConfigManager.GetConfig();
+                string printerName = config.PrinterName;
+                
+                if (string.IsNullOrEmpty(printerName))
+                {
+                    Console.WriteLine("ERROR: No printer configured for cash drawer");
+                    return "{\"error\":\"No printer configured. Please set printer name in configuration.\"}";
+                }
+                
+                Console.WriteLine("Using printer: " + printerName);
+                
+                // Create a simple printer instance and open cash drawer
+                SimpleReceiptPrint printer = new SimpleReceiptPrint();
+                bool success = printer.OpenCashDrawer(printerName);
+                
+                if (success)
+                {
+                    Console.WriteLine("✓ Cash drawer opened successfully!");
+                    return "{\"success\":true,\"message\":\"Cash drawer opened successfully\"}";
+                }
+                else
+                {
+                    Console.WriteLine("✗ Failed to open cash drawer");
+                    return "{\"error\":\"Failed to open cash drawer. Check printer connection and configuration.\"}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Cash drawer error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }
