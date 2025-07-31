@@ -178,6 +178,11 @@ const SideBar: React.FC = () => {
           key: "/users",
           permissions: [Permissions.users],
         },
+        {
+          label: <span title="Printer Settings">Printer Settings</span>,
+          key: "/printer-settings",
+          permissions: [Permissions.users],
+        },
       ],
       permissions: [Permissions.users],
     },

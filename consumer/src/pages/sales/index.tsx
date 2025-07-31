@@ -3,6 +3,7 @@ import {
   PlusOutlined,
   PrinterOutlined,
   SearchOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,12 +20,20 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Modal,
+  Form,
+  InputNumber,
+  Switch,
+  notification,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { thermalPrinterApi } from "../../api/thermal-printer-api";
+import { printingAgentAPI } from "../../api/printing-agent-api";
+import { PRINTER_CONFIG, type PrinterSettings } from "../../constants/printer.constants";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
@@ -47,6 +56,15 @@ const SalesTable = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { messageApi } = useMessageStore();
+
+  const [printerSettingsModal, setPrinterSettingsModal] = useState(false);
+  const [printerSettings, setPrinterSettings] = useState<PrinterSettings>({
+    paperWidth: PRINTER_CONFIG.DEFAULT_PAPER_WIDTH,
+    encoding: PRINTER_CONFIG.DEFAULT_ENCODING,
+    autocut: PRINTER_CONFIG.DEFAULT_AUTOCUT,
+    buzzer: PRINTER_CONFIG.DEFAULT_BUZZER,
+    agentUrl: PRINTER_CONFIG.DEFAULT_AGENT_URL,
+  });
 
   const showMessage = (
     content: string,
@@ -100,13 +118,79 @@ const SalesTable = () => {
 
   const handlePrint = async (saleId: number) => {
     try {
-      // For development, just show a message
-      showMessage(
-        "Receipt generation will be implemented with backend",
-        "info"
-      );
-    } catch (error) {
-      showMessage("Failed to generate receipt", "error");
+      showMessage("Preparing receipt for printing...", "info");
+      
+      // Step 1: Get receipt data from backend
+      const prepResult = await thermalPrinterApi.prepareReceipt(saleId, printerSettings);
+      
+      if (!prepResult.success || !prepResult.receiptData) {
+        showMessage(prepResult.message || "Failed to prepare receipt data", "error");
+        return;
+      }
+
+      showMessage("Sending to printer...", "info");
+      
+      // Step 2: Send to printing agent on client side
+      const printResult = await printingAgentAPI.printReceipt(prepResult.receiptData);
+      
+      if (printResult.success) {
+        showMessage("Receipt printed successfully!", "success");
+      } else {
+        if (printResult.message.includes('agent is not running')) {
+          showMessage(
+            "Printing agent is not running. Please start the printing agent on your computer and try again.",
+            "error"
+          );
+        } else {
+          showMessage(printResult.message || "Failed to print receipt", "error");
+        }
+      }
+    } catch (error: any) {
+      console.error('Print error:', error);
+      showMessage("Failed to print receipt. Please check your connection.", "error");
+    }
+  };
+
+  const handleTestAgent = async () => {
+    try {
+      // Update the agent URL if it was changed in settings
+      if (printerSettings.agentUrl) {
+        printingAgentAPI.setAgentUrl(printerSettings.agentUrl);
+      }
+      
+      const result = await printingAgentAPI.testConnection();
+      if (result.success) {
+        showMessage(result.message, "success");
+      } else {
+        showMessage(result.message, "error");
+      }
+    } catch (error: any) {
+      showMessage("Failed to connect to printing agent", "error");
+    }
+  };
+
+  const handleTestPrint = async () => {
+    try {
+      showMessage("Testing printer connection...", "info");
+      
+      // Test the agent connection first
+      const connectionResult = await printingAgentAPI.testConnection();
+      if (!connectionResult.success) {
+        showMessage(connectionResult.message, "error");
+        return;
+      }
+
+      showMessage("Sending test print...", "info");
+      
+      // Send test print
+      const result = await printingAgentAPI.testPrint();
+      if (result.success) {
+        showMessage(result.message, "success");
+      } else {
+        showMessage(result.message, "error");
+      }
+    } catch (error: any) {
+      showMessage("Failed to test print", "error");
     }
   };
 
@@ -294,13 +378,21 @@ const SalesTable = () => {
         title="Sales"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "Sales" }]}
         rightSection={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate("/sales/new")}
-          >
-            New Sale
-          </Button>
+          <Space>
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => setPrinterSettingsModal(true)}
+            >
+              Printer Settings
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/sales/new")}
+            >
+              New Sale
+            </Button>
+          </Space>
         }
       />
 
@@ -640,6 +732,81 @@ const SalesTable = () => {
           }}
         />
       </Card>
+
+      {/* Printer Settings Modal */}
+      <Modal
+        title="Printer Settings"
+        open={printerSettingsModal}
+        onCancel={() => setPrinterSettingsModal(false)}
+        footer={null}
+        width={500}
+      >
+        <Form
+          layout="vertical"
+          initialValues={printerSettings}
+          onFinish={(values) => {
+            setPrinterSettings(values);
+            setPrinterSettingsModal(false);
+            showMessage("Printer settings updated", "success");
+          }}
+        >
+          <Form.Item
+            label="Agent URL"
+            name="agentUrl"
+            rules={[{ required: true, message: 'Please enter agent URL' }]}
+          >
+            <Input placeholder="http://localhost:8080" />
+          </Form.Item>
+
+          <Form.Item
+            label="Paper Width (characters)"
+            name="paperWidth"
+          >
+            <InputNumber min={20} max={80} placeholder="40" />
+          </Form.Item>
+
+          <Form.Item
+            label="Encoding"
+            name="encoding"
+          >
+            <Select placeholder="utf8">
+              <Select.Option value="utf8">UTF-8</Select.Option>
+              <Select.Option value="ascii">ASCII</Select.Option>
+              <Select.Option value="latin1">Latin-1</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Auto Cut"
+            name="autocut"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <Form.Item
+            label="Buzzer"
+            name="buzzer"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                Save Settings
+              </Button>
+              <Button onClick={handleTestAgent}>
+                Test Connection
+              </Button>
+              <Button onClick={handleTestPrint}>
+                Test Print
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
