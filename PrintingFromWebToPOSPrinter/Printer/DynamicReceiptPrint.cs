@@ -31,7 +31,7 @@ namespace Printer
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error printing receipt: {ex.Message}");
+                Console.WriteLine("Error printing receipt: " + ex.Message);
                 return false;
             }
         }
@@ -58,7 +58,7 @@ namespace Printer
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Could not load logo: {ex.Message}");
+                    Console.WriteLine("Could not load logo: " + ex.Message);
                 }
             }
 
@@ -302,7 +302,7 @@ namespace Printer
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error opening cash drawer: {ex.Message}");
+                Console.WriteLine("Error opening cash drawer: " + ex.Message);
             }
         }
     }
