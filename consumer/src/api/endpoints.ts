@@ -107,4 +107,11 @@ export const endpoints = {
   createSale: "/consumer/sales",
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
+
+  // Thermal Printer Management
+  prepareReceipt: (saleId: number) => `/consumer/thermal-printer/prepare-receipt/${saleId}`,
+  previewReceipt: (saleId: number) => `/consumer/thermal-printer/preview-receipt/${saleId}`,
+  getTestReceiptData: "/consumer/thermal-printer/test-data",
+  getPrinterSettings: "/consumer/thermal-printer/settings",
+  updatePrinterSettings: "/consumer/thermal-printer/settings",
 };
