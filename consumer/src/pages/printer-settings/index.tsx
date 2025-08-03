@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Form,
@@ -13,13 +13,16 @@ import {
   Alert,
   Row,
   Col,
-} from 'antd';
-import { PrinterOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { printingAgentAPI } from '../../api/printing-agent-api';
-import { thermalPrinterApi } from '../../api/thermal-printer-api';
-import { PRINTER_CONFIG, type PrinterSettings } from '../../constants/printer.constants';
-import PageTitle from '../../components/PageTitle';
-import { setPageTitle } from '../../utils/setPageTitle';
+} from "antd";
+import { PrinterOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { printingAgentAPI } from "../../api/printing-agent-api";
+import { thermalPrinterApi } from "../../api/thermal-printer-api";
+import {
+  PRINTER_CONFIG,
+  type PrinterSettings,
+} from "../../constants/printer.constants";
+import PageTitle from "../../components/PageTitle";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -38,7 +41,9 @@ const PrinterSettingsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+  const [connectionStatus, setConnectionStatus] = useState<
+    "unknown" | "connected" | "disconnected"
+  >("unknown");
   const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
 
   const [printerSettings, setPrinterSettings] = useState<PrinterSettings>({
@@ -50,7 +55,7 @@ const PrinterSettingsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    setPageTitle('Printer Settings');
+    setPageTitle("Printer Settings");
     loadSettings();
     testConnection();
   }, []);
@@ -62,14 +67,14 @@ const PrinterSettingsPage: React.FC = () => {
         const settings = response.data;
         setPrinterSettings(settings);
         form.setFieldsValue(settings);
-        
+
         // Update agent URL
         if (settings.agentUrl) {
           printingAgentAPI.setAgentUrl(settings.agentUrl);
         }
       }
     } catch (error) {
-      console.error('Failed to load printer settings:', error);
+      console.error("Failed to load printer settings:", error);
     }
   };
 
@@ -78,9 +83,9 @@ const PrinterSettingsPage: React.FC = () => {
     try {
       const result = await printingAgentAPI.testConnection();
       if (result.success) {
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
         message.success(result.message);
-        
+
         // Load agent config if connected
         const config = await printingAgentAPI.getConfig();
         if (config) {
@@ -88,12 +93,12 @@ const PrinterSettingsPage: React.FC = () => {
           agentForm.setFieldsValue(config);
         }
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus("disconnected");
         message.error(result.message);
       }
     } catch (error) {
-      setConnectionStatus('disconnected');
-      message.error('Failed to connect to printing agent');
+      setConnectionStatus("disconnected");
+      message.error("Failed to connect to printing agent");
     } finally {
       setTestingConnection(false);
     }
@@ -104,12 +109,12 @@ const PrinterSettingsPage: React.FC = () => {
     try {
       const result = await printingAgentAPI.testPrint();
       if (result.success) {
-        message.success('Test receipt printed successfully!');
+        message.success("Test receipt printed successfully!");
       } else {
         message.error(result.message);
       }
     } catch (error) {
-      message.error('Failed to test print');
+      message.error("Failed to test print");
     } finally {
       setTestingPrint(false);
     }
@@ -120,20 +125,20 @@ const PrinterSettingsPage: React.FC = () => {
     try {
       await thermalPrinterApi.updatePrinterSettings(values);
       setPrinterSettings(values);
-      
+
       // Update agent URL
       if (values.agentUrl) {
         printingAgentAPI.setAgentUrl(values.agentUrl);
       }
-      
-      message.success('Printer settings saved successfully!');
-      
+
+      message.success("Printer settings saved successfully!");
+
       // Test connection with new URL
       if (values.agentUrl !== printerSettings.agentUrl) {
         setTimeout(() => testConnection(), 1000);
       }
     } catch (error) {
-      message.error('Failed to save printer settings');
+      message.error("Failed to save printer settings");
     } finally {
       setLoading(false);
     }
@@ -145,12 +150,12 @@ const PrinterSettingsPage: React.FC = () => {
       const result = await printingAgentAPI.updateConfig(values);
       if (result.success) {
         setAgentConfig(values);
-        message.success('Agent configuration saved successfully!');
+        message.success("Agent configuration saved successfully!");
       } else {
         message.error(result.message);
       }
     } catch (error) {
-      message.error('Failed to save agent configuration');
+      message.error("Failed to save agent configuration");
     } finally {
       setLoading(false);
     }
@@ -158,33 +163,50 @@ const PrinterSettingsPage: React.FC = () => {
 
   const getConnectionStatusColor = () => {
     switch (connectionStatus) {
-      case 'connected': return 'success';
-      case 'disconnected': return 'error';
-      default: return 'warning';
+      case "connected":
+        return "success";
+      case "disconnected":
+        return "error";
+      default:
+        return "warning";
     }
   };
 
   const getConnectionStatusText = () => {
     switch (connectionStatus) {
-      case 'connected': return 'Connected to printing agent';
-      case 'disconnected': return 'Disconnected from printing agent';
-      default: return 'Connection status unknown';
+      case "connected":
+        return "Connected to printing agent";
+      case "disconnected":
+        return "Disconnected from printing agent";
+      default:
+        return "Connection status unknown";
     }
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <PageTitle title="Printer Settings" />
-      
+    <div style={{ padding: "24px" }}>
+      <PageTitle
+        title="Printer Settings"
+        breadcrumbs={[
+          {
+            title: "Dashboard",
+            href: "/",
+          },
+          {
+            title: "Printer Settings",
+          },
+        ]}
+      />
+
       <Row gutter={24}>
         <Col xs={24} lg={12}>
           {/* Connection Status */}
-          <Card 
-            title="Connection Status" 
+          <Card
+            title="Connection Status"
             style={{ marginBottom: 24 }}
             extra={
-              <Button 
-                type="link" 
+              <Button
+                type="link"
                 onClick={testConnection}
                 loading={testingConnection}
                 icon={<CheckCircleOutlined />}
@@ -199,14 +221,14 @@ const PrinterSettingsPage: React.FC = () => {
               showIcon
               style={{ marginBottom: 16 }}
             />
-            
+
             <Space>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 icon={<PrinterOutlined />}
                 onClick={testPrint}
                 loading={testingPrint}
-                disabled={connectionStatus !== 'connected'}
+                disabled={connectionStatus !== "connected"}
               >
                 Test Print
               </Button>
@@ -227,7 +249,7 @@ const PrinterSettingsPage: React.FC = () => {
               <Form.Item
                 name="agentUrl"
                 label="Agent URL"
-                rules={[{ required: true, message: 'Please enter agent URL' }]}
+                rules={[{ required: true, message: "Please enter agent URL" }]}
                 help="URL where the printing agent is running (usually http://localhost:8080)"
               >
                 <Input placeholder="http://localhost:8080" />
@@ -241,10 +263,7 @@ const PrinterSettingsPage: React.FC = () => {
                 <InputNumber min={20} max={120} />
               </Form.Item>
 
-              <Form.Item
-                name="encoding"
-                label="Text Encoding"
-              >
+              <Form.Item name="encoding" label="Text Encoding">
                 <Input placeholder="utf8" />
               </Form.Item>
 
@@ -256,11 +275,7 @@ const PrinterSettingsPage: React.FC = () => {
                 <Switch />
               </Form.Item>
 
-              <Form.Item
-                name="buzzer"
-                label="Buzzer"
-                valuePropName="checked"
-              >
+              <Form.Item name="buzzer" label="Buzzer" valuePropName="checked">
                 <Switch />
               </Form.Item>
 
@@ -275,11 +290,8 @@ const PrinterSettingsPage: React.FC = () => {
 
         <Col xs={24} lg={12}>
           {/* Agent Configuration */}
-          <Card 
-            title="Agent Configuration" 
-            style={{ marginBottom: 24 }}
-          >
-            {connectionStatus === 'connected' && agentConfig ? (
+          <Card title="Agent Configuration" style={{ marginBottom: 24 }}>
+            {connectionStatus === "connected" && agentConfig ? (
               <Form
                 form={agentForm}
                 layout="vertical"
@@ -289,29 +301,22 @@ const PrinterSettingsPage: React.FC = () => {
                 <Form.Item
                   name="storeName"
                   label="Store Name"
-                  rules={[{ required: true, message: 'Please enter store name' }]}
+                  rules={[
+                    { required: true, message: "Please enter store name" },
+                  ]}
                 >
                   <Input />
                 </Form.Item>
 
-                <Form.Item
-                  name="address"
-                  label="Store Address"
-                >
+                <Form.Item name="address" label="Store Address">
                   <Input.TextArea rows={3} />
                 </Form.Item>
 
-                <Form.Item
-                  name="phone"
-                  label="Store Phone"
-                >
+                <Form.Item name="phone" label="Store Phone">
                   <Input />
                 </Form.Item>
 
-                <Form.Item
-                  name="email"
-                  label="Store Email"
-                >
+                <Form.Item name="email" label="Store Email">
                   <Input />
                 </Form.Item>
 
@@ -351,22 +356,35 @@ const PrinterSettingsPage: React.FC = () => {
           <Card title="Setup Instructions">
             <Paragraph>
               <Title level={5}>1. Install Printing Agent</Title>
-              <Text>Download and run the PrintingFromWebToPOSPrinter agent on the computer connected to your thermal printer.</Text>
+              <Text>
+                Download and run the PrintingFromWebToPOSPrinter agent on the
+                computer connected to your thermal printer.
+              </Text>
             </Paragraph>
 
             <Paragraph>
               <Title level={5}>2. Configure Printer</Title>
-              <Text>Ensure your thermal printer is properly installed and set as the default printer, or specify the printer name in the agent configuration.</Text>
+              <Text>
+                Ensure your thermal printer is properly installed and set as the
+                default printer, or specify the printer name in the agent
+                configuration.
+              </Text>
             </Paragraph>
 
             <Paragraph>
               <Title level={5}>3. Test Connection</Title>
-              <Text>Use the "Test Connection" button to verify the agent is running and accessible.</Text>
+              <Text>
+                Use the "Test Connection" button to verify the agent is running
+                and accessible.
+              </Text>
             </Paragraph>
 
             <Paragraph>
               <Title level={5}>4. Test Print</Title>
-              <Text>Use the "Test Print" button to ensure receipts can be printed correctly.</Text>
+              <Text>
+                Use the "Test Print" button to ensure receipts can be printed
+                correctly.
+              </Text>
             </Paragraph>
 
             <Divider />
