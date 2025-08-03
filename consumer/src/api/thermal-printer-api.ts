@@ -1,6 +1,6 @@
+import { AgentReceiptData, PrinterSettings } from '../constants/printer.constants';
 import { get, post } from './crud-api';
 import { endpoints } from './endpoints';
-import { PRINTER_CONFIG, PrinterSettings, AgentReceiptData } from '../constants/printer.constants';
 
 export interface PrintResponse {
   success: boolean;
@@ -39,11 +39,6 @@ export const thermalPrinterApi = {
   // Get test receipt data from backend
   getTestData: async (): Promise<{ receiptData: AgentReceiptData }> => {
     return await get(endpoints.getTestReceiptData);
-  },
-
-  // Test agent connection
-  testAgent: async (agentUrl?: string): Promise<TestAgentResponse> => {
-    return await post(endpoints.testAgent, { agentUrl });
   },
 
   // Get current printer settings
