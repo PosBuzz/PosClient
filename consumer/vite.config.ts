@@ -10,6 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: { enabled: true },
       includeAssets: ["favicon.ico", "*.png", "*.svg", "*.jpg"],
       manifest: {
         name: "PossBuzz",
