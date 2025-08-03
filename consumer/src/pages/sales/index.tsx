@@ -11,30 +11,29 @@ import {
   Card,
   Col,
   DatePicker,
+  Form,
   Input,
+  InputNumber,
+  Modal,
   Row,
   Select,
   Space,
   Statistic,
+  Switch,
   Table,
   Tag,
   Tooltip,
-  Typography,
-  Modal,
-  Form,
-  InputNumber,
-  Switch,
-  notification,
+  Typography
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { printingAgentAPI } from "../../api/printing-agent-api";
 import { salesApi } from "../../api/sales-api";
 import { thermalPrinterApi } from "../../api/thermal-printer-api";
-import { printingAgentAPI } from "../../api/printing-agent-api";
-import { PRINTER_CONFIG, type PrinterSettings } from "../../constants/printer.constants";
 import PageTitle from "../../components/PageTitle";
+import { PRINTER_CONFIG, type PrinterSettings } from "../../constants/printer.constants";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
