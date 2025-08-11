@@ -4,6 +4,7 @@ import {
   PrinterOutlined,
   SearchOutlined,
   SettingOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -27,6 +28,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
+import saveAs from "file-saver";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { printingAgentAPI } from "../../api/printing-agent-api";
@@ -147,6 +149,26 @@ const SalesTable = () => {
     } catch (error: any) {
       console.error('Print error:', error);
       showMessage("Failed to print receipt. Please check your connection.", "error");
+    }
+  };
+
+  const handleDownloadPdf = async (saleId: number, saleNumber: string ) => {
+    try {
+      showMessage("Generating PDF receipt...", "info");
+      
+      // Call the API to generate and download PDF (similar to admin billing approach)
+      const pdfBlob = await salesApi.generateReceipt(saleId);
+      
+      // Get the filename - you could also get this from response headers if backend sets it
+      const filename = `${saleNumber}.pdf`;
+
+      // Use file-saver to download the PDF
+      saveAs(pdfBlob, filename);
+      
+      showMessage("PDF receipt downloaded successfully!", "success");
+    } catch (error: any) {
+      console.error('PDF download error:', error);
+      showMessage("Failed to download PDF receipt", "error");
     }
   };
 
@@ -343,6 +365,13 @@ const SalesTable = () => {
               type="text"
               icon={<PrinterOutlined />}
               onClick={() => handlePrint(record.id!)}
+            />
+          </Tooltip>
+          <Tooltip title="Download PDF Receipt">
+            <Button
+              type="text"
+              icon={<FilePdfOutlined />}
+              onClick={() => handleDownloadPdf(record.id!, record.sale_number)}
             />
           </Tooltip>
           {/* <Tooltip title="Edit Sale">

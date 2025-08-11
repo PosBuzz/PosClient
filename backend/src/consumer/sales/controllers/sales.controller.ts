@@ -8,8 +8,11 @@ import {
   UseGuards,
   Req,
   ParseIntPipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { SalesService } from '../services/sales.service';
+import { SalesPdfService } from '../services/sales-pdf.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { EODReportDto } from '../dto/eod-report.dto';
@@ -23,7 +26,10 @@ import { Request } from 'express';
 @HasPermissions([ConsumerPermission.sales])
 @Controller('consumer/sales')
 export class SalesController {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(
+    private readonly salesService: SalesService,
+    private readonly salesPdfService: SalesPdfService,
+  ) {}
 
   @Post()
   async create(@Body() createSaleDto: CreateSaleDto, @Req() req: Request) {
@@ -69,6 +75,38 @@ export class SalesController {
     @Req() req: Request,
   ) {
     return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
+  }
+
+  @Get('receipt/:id')
+  async generateReceiptPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('download') download?: string,
+  ) {
+    // Get the sale data
+    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
+    
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(sale);
+
+    // Set response headers
+    const filename = `receipt-${(sale as any).sale_number || 'unknown'}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    if (download === 'true') {
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    }
+
+    // Send the PDF
+    res.send(pdfBuffer);
   }
 
   @Get(':id')
