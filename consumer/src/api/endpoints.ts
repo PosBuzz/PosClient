@@ -107,6 +107,7 @@ export const endpoints = {
   createSale: "/consumer/sales",
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
+  generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
 
   // Thermal Printer Management
   prepareReceipt: (saleId: number) => `/consumer/thermal-printer/prepare-receipt/${saleId}`,

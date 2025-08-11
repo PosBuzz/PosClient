@@ -9,6 +9,7 @@ import {
   ProductVariantForSale,
   EODReportResponse
 } from '../types/sale.types';
+import axiosInstance from './axiosInstance';
 
 export const salesApi = {
   // Get all sales with filters
@@ -34,6 +35,14 @@ export const salesApi = {
   // Get products available for sale
   getProductsForSale: async (branchId: number, search?: string): Promise<ProductVariantForSale[]> => {
     return await get(endpoints.getProductsForSale, { branch_id: branchId, search });
+  },
+
+  // Generate sale receipt PDF
+  generateReceipt: async (id: number): Promise<Blob> => {
+    const response = await axiosInstance.get(endpoints.generateSaleReceipt(id), {
+      responseType: "blob",
+    });
+    return response.data;
   },
 
   // Get End of Day report
