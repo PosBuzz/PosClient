@@ -439,20 +439,9 @@ export class SalesService {
       wholesale_price: variant.wholesale_price,
       image: variant.image,
       product_name: variant.product.name,
-      available_stock: variant.inventory_items.reduce(
-        (sum, batch) => sum + batch.quantity,
-        0,
-      ),
       unit_name: variant.sale_unit.name,
       tax_percentage: variant.product.tax || 0,
       tax_method: variant.product.tax_method || 'exclusive',
-      batches: variant.inventory_items.map((batch) => ({
-        id: batch.id,
-        batch_number: batch.batch_number,
-        quantity: batch.quantity,
-        cost_price: batch.cost_price,
-        expiry_date: batch.expiry_date,
-      })),
     }));
 
     // Cache the result for 30 seconds (inventory changes frequently)

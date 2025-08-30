@@ -14,7 +14,6 @@ export interface SaleItem {
   regular_price: number;
   wholesale_price?: number;
   image?: string;
-  available_stock: number;
   unit_name: string;
   tax_percentage?: number;
   tax_method?: string; // "inclusive" or "exclusive"
@@ -154,11 +153,9 @@ export interface ProductVariantForSale {
   wholesale_price?: number;
   image?: string;
   product_name: string;
-  available_stock: number;
   unit_name: string;
   tax_percentage: number;
   tax_method: string; // "inclusive" or "exclusive"
-  batches: InventoryBatch[];
 }
 
 export interface InventoryBatch {
