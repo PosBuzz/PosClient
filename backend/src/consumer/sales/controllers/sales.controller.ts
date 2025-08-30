@@ -9,6 +9,8 @@ import {
   Req,
   ParseIntPipe,
   Res,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { SalesService } from '../services/sales.service';
@@ -67,6 +69,29 @@ export class SalesController {
       branchId,
       search,
     );
+  }
+
+  @Get('product-by-barcode')
+  async getProductByBarcode(
+    @Query('branch_id', ParseIntPipe) branchId: number,
+    @Query('barcode') barcode: string,
+    @Req() req: Request,
+  ) {
+    if (!barcode) {
+      throw new BadRequestException('Barcode is required');
+    }
+
+    const product = await this.salesService.getProductByBarcode(
+      req.user.consumer_id!,
+      branchId,
+      barcode,
+    );
+
+    if (!product) {
+      throw new NotFoundException('Product not found for this barcode');
+    }
+
+    return product;
   }
 
   @Get('reports/eod')
