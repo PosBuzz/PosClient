@@ -280,17 +280,30 @@ const NewSale = () => {
 
       setLastKeyTime(currentTime);
 
-      // Check if user is actively typing in an input field
+      // Check if user is actively typing in an input field - MORE COMPREHENSIVE CHECK
       const isTypingInInput = activeElement && (
         activeElement.tagName === 'INPUT' ||
         activeElement.tagName === 'TEXTAREA' ||
         activeElement.role === 'textbox' ||
         activeElement.classList.contains('ant-select-selection-search-input') ||
         activeElement.classList.contains('ant-input') ||
-        activeElement.classList.contains('ant-input-number-input')
+        activeElement.classList.contains('ant-input-number-input') ||
+        activeElement.closest('.ant-select-dropdown') ||
+        activeElement.closest('.ant-input') ||
+        activeElement.closest('.ant-input-number') ||
+        activeElement.getAttribute('contenteditable') === 'true'
       );
 
-      // POS RULE: Barcode scanner ALWAYS works, regardless of focus
+      // DEBUG: Log what's happening
+      console.log('Key pressed:', event.key, 'isTypingInInput:', isTypingInInput, 'activeElement:', activeElement?.tagName, activeElement?.className);
+
+      // If user is typing in input, do NOTHING with barcode logic
+      if (isTypingInInput) {
+        console.log('User is typing in input - ignoring for barcode');
+        return; // Exit early, don't interfere with input
+      }
+
+      // POS RULE: Barcode scanner ONLY works when NOT in input fields
       // Handle Enter key (end of barcode scan)
       if (event.key === 'Enter') {
         if (barcodeBuffer.length > 0) {
@@ -301,39 +314,19 @@ const NewSale = () => {
           setBarcodeBuffer("");
           return;
         } else {
-          // NO BARCODE BUFFER - check if we should submit form
-          const isInputFocused = activeElement && (
-            activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            activeElement.tagName === 'SELECT' ||
-            activeElement.role === 'combobox' ||
-            activeElement.role === 'textbox' ||
-            activeElement.classList.contains('ant-select-selection-search-input') ||
-            activeElement.classList.contains('ant-input') ||
-            activeElement.classList.contains('ant-input-number-input') ||
-            activeElement.closest('.ant-select') ||
-            activeElement.closest('.ant-input') ||
-            activeElement.closest('.ant-input-number')
-          );
-
-          // POS RULE: Enter outside inputs = complete sale
-          if (!isInputFocused) {
-            event.preventDefault();
-            event.stopPropagation();
-            form.submit();
-            return;
-          }
+          // NO BARCODE BUFFER - submit form (since we're not in input)
+          event.preventDefault();
+          event.stopPropagation();
+          form.submit();
+          return;
         }
       } 
-      // Handle regular character input (part of barcode)
+      // Handle regular character input (part of barcode) - ONLY when not in input
       else if (event.key.length === 1 && /[a-zA-Z0-9\-_]/.test(event.key)) {
         // Barcode scanner detection logic:
-        // 1. Very fast typing (< 30ms between keys)
-        // 2. OR we already have a barcode buffer started
-        // 3. AND the user is NOT actively typing in an input field
         const isVeryFastTyping = timeDiff < 30;
         const hasExistingBuffer = barcodeBuffer.length > 0;
-        const isLikelyBarcodeScanner = (isVeryFastTyping || hasExistingBuffer) && !isTypingInInput;
+        const isLikelyBarcodeScanner = isVeryFastTyping || hasExistingBuffer;
         
         if (isLikelyBarcodeScanner) {
           // POS RULE: Barcode scanning overrides everything
@@ -342,15 +335,12 @@ const NewSale = () => {
           setBarcodeBuffer(prev => prev + event.key);
           
           // Blur any focused input to prevent interference
-          if (activeElement && activeElement.blur && !isTypingInInput) {
+          if (activeElement && activeElement.blur) {
             activeElement.blur();
           }
         } else {
-          // Regular typing - allow it to continue to inputs
-          // Still capture for potential barcode if not in input
-          if (!isTypingInInput) {
-            setBarcodeBuffer(prev => prev + event.key);
-          }
+          // Regular typing outside inputs - still capture for potential barcode
+          setBarcodeBuffer(prev => prev + event.key);
         }
       }
     };
