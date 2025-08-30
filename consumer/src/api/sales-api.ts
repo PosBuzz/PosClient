@@ -34,7 +34,11 @@ export const salesApi = {
 
   // Get products available for sale
   getProductsForSale: async (branchId: number, search?: string): Promise<ProductVariantForSale[]> => {
-    return await get(endpoints.getProductsForSale, { branch_id: branchId, search });
+    const params: any = { branch_id: branchId };
+    if (search) {
+      params.search = search;
+    }
+    return await get(endpoints.getProductsForSale, params);
   },
 
   // Generate sale receipt PDF

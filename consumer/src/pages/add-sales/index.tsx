@@ -2,7 +2,6 @@ import {
   CalculatorOutlined,
   DeleteOutlined,
   PlusOutlined,
-  SearchOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,8 +20,7 @@ import {
   Table,
   Typography,
 } from "antd";
-import debounce from "lodash/debounce";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -59,8 +57,6 @@ const NewSale = () => {
 
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
-  const [searchValue, setSearchValue] = useState("");
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
@@ -87,21 +83,6 @@ const NewSale = () => {
   // Get user's branches from auth store
   const userBranches = user?.branches || [];
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((value: string) => {
-      setDebouncedSearchValue(value);
-    }, 300),
-    []
-  );
-
-  // Cleanup debounced function on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
   // Load customers using React Query
   const customersQuery = useQuery({
     queryKey: [queryKeys.customers],
@@ -112,19 +93,14 @@ const NewSale = () => {
     staleTime: queryStaleTimeMap[queryKeys.customers],
   });
 
-  // Load products for sale when branch is selected - using debounced search
+  // Load products for sale when branch is selected
   const productsForSaleQuery = useQuery({
-    queryKey: [queryKeys.productsForSale, selectedBranch, debouncedSearchValue],
+    queryKey: [queryKeys.productsForSale, selectedBranch],
     queryFn: () =>
-      salesApi.getProductsForSale(selectedBranch!, debouncedSearchValue),
+      salesApi.getProductsForSale(selectedBranch!),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.productsForSale],
   });
-
-  // Effect to trigger debounced search
-  useEffect(() => {
-    debouncedSearch(searchValue);
-  }, [searchValue, debouncedSearch]);
 
   // Set default branch from user's branches
   useEffect(() => {
@@ -196,28 +172,18 @@ const NewSale = () => {
     };
   };
 
-  const addToSale = (variant: ProductVariantForSale, batchId?: number) => {
+  const addToSale = (variant: ProductVariantForSale) => {
+    // Check if this variant already exists in the sale
     const existingItem = selectedItems.find(
-      (item) => item.variant_id === variant.id && item.batch_id === batchId
+      (item) => item.variant_id === variant.id
     );
+
     const price =
       priceType === PriceType.WHOLESALE
         ? Number(variant.wholesale_price) || Number(variant.regular_price)
         : Number(variant.regular_price);
-    const selectedBatch =
-      variant.batches.find((b) => b.id === batchId) || variant.batches[0];
-
-    if (!selectedBatch) {
-      message.error("No batch available for this product");
-      return;
-    }
 
     if (existingItem) {
-      if (existingItem.quantity >= selectedBatch.quantity) {
-        message.warning("Cannot add more items than available in this batch");
-        return;
-      }
-
       const newQuantity = existingItem.quantity + 1;
       const { line_total, tax_amount } = calculateTaxAndTotal(
         price,
@@ -228,7 +194,7 @@ const NewSale = () => {
 
       setSelectedItems((items) =>
         items.map((item) =>
-          item.variant_id === variant.id && item.batch_id === batchId
+          item.variant_id === variant.id
             ? {
                 ...item,
                 quantity: newQuantity,
@@ -260,11 +226,8 @@ const NewSale = () => {
         regular_price: Number(variant.regular_price) || 0,
         wholesale_price: Number(variant.wholesale_price) || undefined,
         image: variant.image,
-        available_stock: selectedBatch.quantity,
         unit_name: variant.unit_name,
         tax_percentage: Number(variant.tax_percentage) || 0,
-        batch_id: selectedBatch.id,
-        batch_number: selectedBatch.batch_number,
       };
       setSelectedItems([...selectedItems, newItem]);
     }
@@ -272,17 +235,16 @@ const NewSale = () => {
 
   const updateItemQuantity = (
     variantId: number,
-    batchId: number,
     quantity: number
   ) => {
     if (quantity <= 0) {
-      removeItem(variantId, batchId);
+      removeItem(variantId);
       return;
     }
 
     setSelectedItems((items) =>
       items.map((item) => {
-        if (item.variant_id === variantId && item.batch_id === batchId) {
+        if (item.variant_id === variantId) {
           // Find the variant to get tax_method
           const variant = productsForSaleQuery.data?.find(
             (v) => v.id === variantId
@@ -306,11 +268,9 @@ const NewSale = () => {
     );
   };
 
-  const removeItem = (variantId: number, batchId: number) => {
+  const removeItem = (variantId: number) => {
     setSelectedItems((items) =>
-      items.filter(
-        (item) => !(item.variant_id === variantId && item.batch_id === batchId)
-      )
+      items.filter((item) => item.variant_id !== variantId)
     );
   };
 
@@ -392,7 +352,15 @@ const NewSale = () => {
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
-      items: selectedItems,
+      items: selectedItems.map(item => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_amount: item.discount_amount,
+        tax_amount: item.tax_amount,
+        line_total: item.line_total,
+        // Remove batch_id to let backend use FIFO automatically
+      })),
       price_type: priceType,
       discount_type: discountType,
       discount_amount: totals.finalDiscount,
@@ -496,18 +464,6 @@ const NewSale = () => {
       ),
     },
     {
-      title: "Batch",
-      key: "batch",
-      render: (record: SaleItem) => (
-        <div>
-          <Text strong>{record.batch_number}</Text>
-          <div style={{ fontSize: 11, color: "#666" }}>
-            Qty: {record.available_stock}
-          </div>
-        </div>
-      ),
-    },
-    {
       title: "Price",
       dataIndex: "unit_price",
       key: "unit_price",
@@ -520,12 +476,10 @@ const NewSale = () => {
         <div>
           <InputNumber
             min={1}
-            max={record.available_stock}
             value={record.quantity}
             onChange={(value) =>
               updateItemQuantity(
                 record.variant_id,
-                record.batch_id!,
                 value || 1
               )
             }
@@ -555,97 +509,8 @@ const NewSale = () => {
           type="text"
           danger
           icon={<DeleteOutlined />}
-          onClick={() => removeItem(record.variant_id, record.batch_id!)}
+          onClick={() => removeItem(record.variant_id)}
         />
-      ),
-    },
-  ];
-
-  const variantColumns = [
-    {
-      title: "Product",
-      key: "product",
-      render: (record: ProductVariantForSale) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {record.image && (
-            <img
-              src={record.image}
-              alt={record.name}
-              style={{
-                width: 40,
-                height: 40,
-                objectFit: "cover",
-                borderRadius: 4,
-              }}
-            />
-          )}
-          <div>
-            <div style={{ fontWeight: 500 }}>{record.product_name}</div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.name}
-            </Text>
-            {record.sku && (
-              <div>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  SKU: {record.sku}
-                </Text>
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Batches",
-      key: "batches",
-      render: (record: ProductVariantForSale) => (
-        <div>
-          {record.batches.map((batch) => (
-            <div key={batch.id} style={{ marginBottom: 4 }}>
-              <Button
-                size="small"
-                type="primary"
-                ghost
-                onClick={() => addToSale(record, batch.id)}
-                style={{ marginRight: 4 }}
-              >
-                {batch.batch_number} ({batch.quantity})
-              </Button>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "Price",
-      key: "price",
-      render: (record: ProductVariantForSale) => (
-        <div>
-          <div>
-            $
-            {priceType === PriceType.WHOLESALE
-              ? record.wholesale_price || record.regular_price
-              : record.regular_price}
-          </div>
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            {priceType === PriceType.WHOLESALE ? "Wholesale" : "Regular"}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: "Total Stock",
-      dataIndex: "available_stock",
-      key: "available_stock",
-      render: (stock: number, record: ProductVariantForSale) => (
-        <div>
-          <div>
-            {stock} {record.unit_name}
-          </div>
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            {record.batches.length} batch(es)
-          </Text>
-        </div>
       ),
     },
   ];
@@ -761,28 +626,66 @@ const NewSale = () => {
 
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
           <h3 style={{ marginBottom: 12 }}>Product Selection</h3>
-          <Input
-            placeholder="Search products by name, SKU, or barcode..."
-            prefix={<SearchOutlined />}
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            style={{ marginBottom: 16 }}
+          <Select
+            placeholder="Search and select products..."
+            showSearch
             allowClear
-          />
-          <Table
-            columns={variantColumns}
-            dataSource={filteredVariants}
-            rowKey="id"
-            size="small"
-            scroll={{ y: 250 }}
-            pagination={{ pageSize: 8, size: "small" }}
-            loading={productsForSaleQuery.isLoading}
-            locale={{
-              emptyText: selectedBranch
-                ? "No products found"
-                : "Please select a branch first",
+            style={{ width: "100%" }}
+            optionFilterProp="children"
+            value={null}
+            onChange={(value) => {
+              if (value) {
+                const selectedVariant = filteredVariants.find(v => v.id === value);
+                if (selectedVariant) {
+                  addToSale(selectedVariant);
+                }
+              }
             }}
-          />
+            filterOption={(input, option) =>
+              (option?.label?.toString().toLowerCase() || '').includes(input.toLowerCase())
+            }
+            loading={productsForSaleQuery.isLoading}
+            disabled={!selectedBranch}
+          >
+            {filteredVariants.map((variant) => (
+              <Option 
+                key={variant.id} 
+                value={variant.id}
+                label={`${variant.product_name} - ${variant.name}`}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {variant.image && (
+                    <img
+                      src={variant.image}
+                      alt={variant.name}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        objectFit: "cover",
+                        borderRadius: 4,
+                      }}
+                    />
+                  )}
+                  <div>
+                    <span style={{ fontWeight: 500 }}>
+                      {variant.product_name} - {variant.name}
+                    </span>
+                    {variant.sku && (
+                      <div style={{ fontSize: 11, color: "#666" }}>
+                        SKU: {variant.sku}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11, color: "#666" }}>
+                      $
+                      {priceType === PriceType.WHOLESALE
+                        ? variant.wholesale_price || variant.regular_price
+                        : variant.regular_price}
+                    </div>
+                  </div>
+                </div>
+              </Option>
+            ))}
+          </Select>
         </div>
 
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
@@ -790,7 +693,7 @@ const NewSale = () => {
           <Table
             columns={saleItemColumns}
             dataSource={selectedItems}
-            rowKey={(record) => `${record.variant_id}-${record.batch_id}`}
+            rowKey={(record) => record.variant_id}
             size="small"
             pagination={false}
             locale={{ emptyText: "No items added yet" }}
