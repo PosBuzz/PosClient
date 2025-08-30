@@ -80,6 +80,19 @@ const NewSale = () => {
     },
   ]);
 
+  // Barcode scanning state - POS SYSTEM BEHAVIOR:
+  // - Barcode scanner works regardless of what input is focused
+  // - Enter key outside inputs completes the sale
+  // - Fast sequential keystrokes are treated as barcode input
+  const [barcodeBuffer, setBarcodeBuffer] = useState("");
+  const [lastKeyTime, setLastKeyTime] = useState(0);
+
+  // Reset barcode buffer when component unmounts or branch changes
+  useEffect(() => {
+    setBarcodeBuffer("");
+    setLastKeyTime(0);
+  }, [selectedBranch]);
+
   // Get user's branches from auth store
   const userBranches = user?.branches || [];
 
@@ -232,6 +245,124 @@ const NewSale = () => {
       setSelectedItems([...selectedItems, newItem]);
     }
   };
+
+  // Handle barcode scanning
+  const handleBarcodeScann = async (barcode: string) => {
+    if (!selectedBranch || !barcode.trim()) {
+      return;
+    }
+
+    try {
+      const product = await salesApi.getProductByBarcode(selectedBranch, barcode.trim());
+      if (product) {
+        addToSale(product);
+        message.success(`Added ${product.product_name} - ${product.name} to sale`);
+      } else {
+        message.error(`Product not found for barcode: ${barcode}`);
+      }
+    } catch (error: any) {
+      console.error("Error scanning barcode:", error);
+      message.error("Failed to scan barcode");
+    }
+  };
+
+  // Global barcode scanner listener - POS style: works everywhere
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const currentTime = Date.now();
+      const timeDiff = currentTime - lastKeyTime;
+      const activeElement = document.activeElement as HTMLElement;
+
+      // If more than 100ms have passed since last key, reset buffer (new scan)
+      if (timeDiff > 100) {
+        setBarcodeBuffer("");
+      }
+
+      setLastKeyTime(currentTime);
+
+      // Check if user is actively typing in an input field
+      const isTypingInInput = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.role === 'textbox' ||
+        activeElement.classList.contains('ant-select-selection-search-input') ||
+        activeElement.classList.contains('ant-input') ||
+        activeElement.classList.contains('ant-input-number-input')
+      );
+
+      // POS RULE: Barcode scanner ALWAYS works, regardless of focus
+      // Handle Enter key (end of barcode scan)
+      if (event.key === 'Enter') {
+        if (barcodeBuffer.length > 0) {
+          // BARCODE SCAN COMPLETE - always priority
+          event.preventDefault();
+          event.stopPropagation();
+          handleBarcodeScann(barcodeBuffer);
+          setBarcodeBuffer("");
+          return;
+        } else {
+          // NO BARCODE BUFFER - check if we should submit form
+          const isInputFocused = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.role === 'combobox' ||
+            activeElement.role === 'textbox' ||
+            activeElement.classList.contains('ant-select-selection-search-input') ||
+            activeElement.classList.contains('ant-input') ||
+            activeElement.classList.contains('ant-input-number-input') ||
+            activeElement.closest('.ant-select') ||
+            activeElement.closest('.ant-input') ||
+            activeElement.closest('.ant-input-number')
+          );
+
+          // POS RULE: Enter outside inputs = complete sale
+          if (!isInputFocused) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.submit();
+            return;
+          }
+        }
+      } 
+      // Handle regular character input (part of barcode)
+      else if (event.key.length === 1 && /[a-zA-Z0-9\-_]/.test(event.key)) {
+        // Barcode scanner detection logic:
+        // 1. Very fast typing (< 30ms between keys)
+        // 2. OR we already have a barcode buffer started
+        // 3. AND the user is NOT actively typing in an input field
+        const isVeryFastTyping = timeDiff < 30;
+        const hasExistingBuffer = barcodeBuffer.length > 0;
+        const isLikelyBarcodeScanner = (isVeryFastTyping || hasExistingBuffer) && !isTypingInInput;
+        
+        if (isLikelyBarcodeScanner) {
+          // POS RULE: Barcode scanning overrides everything
+          event.preventDefault();
+          event.stopPropagation();
+          setBarcodeBuffer(prev => prev + event.key);
+          
+          // Blur any focused input to prevent interference
+          if (activeElement && activeElement.blur && !isTypingInInput) {
+            activeElement.blur();
+          }
+        } else {
+          // Regular typing - allow it to continue to inputs
+          // Still capture for potential barcode if not in input
+          if (!isTypingInInput) {
+            setBarcodeBuffer(prev => prev + event.key);
+          }
+        }
+      }
+    };
+
+    // Add global keydown listener with highest priority (capture phase)
+    document.addEventListener('keydown', handleKeyPress, true);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress, true);
+    };
+  }, [lastKeyTime, barcodeBuffer, selectedBranch, form]);
 
   const updateItemQuantity = (
     variantId: number,
@@ -483,6 +614,10 @@ const NewSale = () => {
                 value || 1
               )
             }
+            onPressEnter={(e) => {
+              // Just blur the input, the global handler will handle form submission
+              (e.target as HTMLInputElement).blur();
+            }}
             style={{ width: 80, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: "#666" }}>{record.unit_name}</div>
@@ -549,7 +684,11 @@ const NewSale = () => {
         }}
       />
 
-      <Form form={form} onFinish={onFinish} layout="vertical">
+      <Form 
+        form={form} 
+        onFinish={onFinish} 
+        layout="vertical"
+      >
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={6}>
@@ -723,6 +862,10 @@ const NewSale = () => {
                       style={{ width: "100%" }}
                       size="small"
                       placeholder="0"
+                      onPressEnter={(e) => {
+                        // Just blur the input, the global handler will handle form submission
+                        (e.target as HTMLInputElement).blur();
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -733,6 +876,10 @@ const NewSale = () => {
                       style={{ width: "100%" }}
                       size="small"
                       placeholder="0"
+                      onPressEnter={(e) => {
+                        // Just blur the input, the global handler will handle form submission
+                        (e.target as HTMLInputElement).blur();
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -820,6 +967,10 @@ const NewSale = () => {
                               updatedPayments[index].amount = value || 0;
                               setSalePayments(updatedPayments);
                             }}
+                            onPressEnter={(e) => {
+                              // Just blur the input, the global handler will handle form submission
+                              (e.target as HTMLInputElement).blur();
+                            }}
                             min={0}
                             precision={2}
                             style={{ width: "100%" }}
@@ -835,6 +986,10 @@ const NewSale = () => {
                               updatedPayments[index].reference = e.target.value;
                               setSalePayments(updatedPayments);
                             }}
+                            onPressEnter={(e) => {
+                              // Just blur the input, the global handler will handle form submission
+                              (e.target as HTMLInputElement).blur();
+                            }}
                             placeholder="Reference"
                           />
                         </Col>
@@ -846,6 +1001,10 @@ const NewSale = () => {
                               const updatedPayments = [...salePayments];
                               updatedPayments[index].notes = e.target.value;
                               setSalePayments(updatedPayments);
+                            }}
+                            onPressEnter={(e) => {
+                              // Just blur the input, the global handler will handle form submission
+                              (e.target as HTMLInputElement).blur();
                             }}
                             placeholder="Notes"
                           />

@@ -41,6 +41,18 @@ export const salesApi = {
     return await get(endpoints.getProductsForSale, params);
   },
 
+  // Get product by barcode
+  getProductByBarcode: async (branchId: number, barcode: string): Promise<ProductVariantForSale | null> => {
+    try {
+      return await get(endpoints.getProductByBarcode, { branch_id: branchId, barcode });
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null; // Product not found
+      }
+      throw error; // Re-throw other errors
+    }
+  },
+
   // Generate sale receipt PDF
   generateReceipt: async (id: number): Promise<Blob> => {
     const response = await axiosInstance.get(endpoints.generateSaleReceipt(id), {

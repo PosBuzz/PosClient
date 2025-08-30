@@ -147,6 +147,9 @@ export const generateCacheKey = {
   productsForSale: (consumerId: number, branchId: number, search?: string) =>
     `${consumerId}:products-for-sale:${branchId}:${search || 'all'}`,
 
+  productByBarcode: (consumerId: number, branchId: number, barcode: string) =>
+    `${consumerId}:product-barcode:${branchId}:${barcode}`,
+
   // Admin CRUD cache helpers
   adminCrudList: (model: string) =>
     `global:admin:crud:${model}:list`,

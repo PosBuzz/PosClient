@@ -450,6 +450,64 @@ export class SalesService {
     return result;
   }
 
+  async getProductByBarcode(consumerId: number, branchId: number, barcode: string) {
+    // Generate cache key for this specific query
+    const cacheKey = generateCacheKey.productByBarcode(consumerId, branchId, barcode);
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const variant = await this.prisma.productVariant.findFirst({
+      where: {
+        barcode: barcode,
+        product: { consumer_id: consumerId },
+        inventory_items: {
+          some: {
+            branch_id: branchId,
+            quantity: { gt: 0 },
+          },
+        },
+      },
+      include: {
+        product: true,
+        sale_unit: true,
+        inventory_items: {
+          where: {
+            branch_id: branchId,
+            quantity: { gt: 0 },
+          },
+          orderBy: { created_at: 'asc' }, // FIFO
+        },
+      },
+    });
+
+    if (!variant) {
+      return null;
+    }
+
+    const result = {
+      id: variant.id,
+      name: variant.name,
+      sku: variant.sku,
+      barcode: variant.barcode,
+      regular_price: variant.regular_price,
+      wholesale_price: variant.wholesale_price,
+      image: variant.image,
+      product_name: variant.product.name,
+      unit_name: variant.sale_unit.name,
+      tax_percentage: variant.product.tax || 0,
+      tax_method: variant.product.tax_method || 'exclusive',
+    };
+
+    // Cache the result for 30 seconds (inventory changes frequently)
+    await this.cacheService.set(cacheKey, result, 30);
+
+    return result;
+  }
+
   async getSalesStats(consumerId: number, branchId?: number) {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
