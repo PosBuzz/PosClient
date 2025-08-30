@@ -206,23 +206,29 @@ export const generateCachePatterns = {
   // Sales patterns
   allSales: (consumerId: number) => `${consumerId}:sales*`,
   allProductsForSale: (consumerId: number) => `${consumerId}:products-for-sale*`,
+  allProductBarcodes: (consumerId: number) => `${consumerId}:product-barcode*`,
   
   // Combined patterns for operations that affect multiple entities
   allInventoryRelated: (consumerId: number) => [
     `${consumerId}:inventory*`,
     `${consumerId}:product*`, // Products affect inventory display
     `${consumerId}:product-variant*`, // Variants are core to inventory
+    `${consumerId}:products-for-sale*`, // Affects product availability for sale
+    `${consumerId}:product-barcode*`, // Affects barcode lookup
   ],
   
   allProductRelated: (consumerId: number) => [
     `${consumerId}:product*`,
     `${consumerId}:inventory*`, // Inventory data shows in products
+    `${consumerId}:products-for-sale*`, // Affects product sales data
+    `${consumerId}:product-barcode*`, // Affects barcode lookup
   ],
 
   allSalesRelated: (consumerId: number) => [
     `${consumerId}:sales*`,
     `${consumerId}:inventory*`, // Sales affect inventory
     `${consumerId}:products-for-sale*`, // Sales affect product availability
+    `${consumerId}:product-barcode*`, // Sales affect barcode lookup availability
   ],
 
   // Admin operation patterns
