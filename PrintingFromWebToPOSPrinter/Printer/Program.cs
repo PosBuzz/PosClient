@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using Printer.Barcode;
 using Printer.Services;
 using Printer.Models;
 
@@ -16,7 +17,18 @@ namespace Printer
       // Check for server mode
       if (args != null && args.Length > 0 && args[0].ToLower() == "server")
       {
+        // Start HTTP print server with integrated barcode functionality
         StartHttpServer();
+        
+        // Wait for quit command
+        while (true)
+        {
+          string input = Console.ReadLine();
+          if (input != null && input.ToLower() == "q")
+          {
+            break;
+          }
+        }
         return;
       }
       
@@ -68,6 +80,7 @@ namespace Printer
         }
         else if (input.ToLower() == "s")
         {
+          // Start HTTP print server with integrated barcode functionality
           StartHttpServer();
         }
         else if (input.ToLower() == "p")
