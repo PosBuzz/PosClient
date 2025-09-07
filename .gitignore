@@ -47,3 +47,5 @@ eslintcache
 # Coverage and test output
 coverage/
 *.lcov
+.vs/
+*/packages/
