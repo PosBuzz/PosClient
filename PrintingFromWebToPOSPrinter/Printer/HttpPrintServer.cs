@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading;
 using Printer.Models;
 using Printer.Services;
+using Printer.Barcode;
+using Newtonsoft.Json;
 
 namespace Printer
 {
@@ -39,6 +41,8 @@ namespace Printer
                 Console.WriteLine("  GET  http://localhost:{0}/config - Get configuration", port);
                 Console.WriteLine("  POST http://localhost:{0}/config - Update configuration", port);
                 Console.WriteLine("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port);
+                Console.WriteLine("  POST http://localhost:{0}/print-barcode-label - Print barcode label", port);
+                Console.WriteLine("  GET  http://localhost:{0}/test-barcode-label - Test barcode print", port);
                 Console.WriteLine();
                 Console.WriteLine("Press 'q' to quit the server...");
 
@@ -131,6 +135,14 @@ namespace Printer
                 else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/cash-drawer")
                 {
                     responseText = HandleCashDrawerRequest();
+                }
+                else if (request.HttpMethod == "POST" && request.Url.AbsolutePath == "/print-barcode-label")
+                {
+                    responseText = HandlePrintBarcodeLabel(request);
+                }
+                else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/test-barcode-label")
+                {
+                    responseText = HandleTestBarcodeLabel();
                 }
                 else
                 {
@@ -369,6 +381,65 @@ namespace Printer
             catch (Exception ex)
             {
                 Console.WriteLine("Cash drawer error: " + ex.Message);
+                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
+            }
+        }
+
+        private string HandlePrintBarcodeLabel(HttpListenerRequest request)
+        {
+            try
+            {
+                Console.WriteLine("=== BARCODE LABEL PRINT REQUEST ===");
+                
+                string body = "";
+                using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
+                {
+                    body = reader.ReadToEnd();
+                }
+                
+                Console.WriteLine("Barcode request body: " + body);
+                
+                var printRequest = JsonConvert.DeserializeObject<BarcodeLabelPrintRequest>(body);
+                
+                if (printRequest == null)
+                {
+                    Console.WriteLine("ERROR: Failed to parse barcode print request");
+                    return "{\"error\":\"Invalid request format\"}";
+                }
+                
+                Console.WriteLine("Printing barcode label:");
+                Console.WriteLine("  Barcode Value: " + printRequest.BarcodeValue);
+                Console.WriteLine("  Product Name: " + printRequest.ProductName);
+                Console.WriteLine("  Price: " + printRequest.Price);
+                Console.WriteLine("  Print Barcode Only: " + printRequest.PrintBarcodeOnly);
+                
+                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly);
+                
+                Console.WriteLine("✓ Barcode label printed successfully!");
+                return "{\"success\":true,\"message\":\"Barcode label printed successfully\"}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Barcode print error: " + ex.Message);
+                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
+            }
+        }
+
+        private string HandleTestBarcodeLabel()
+        {
+            try
+            {
+                Console.WriteLine("=== TEST BARCODE LABEL PRINT ===");
+                Console.WriteLine("Printing test barcode label...");
+                
+                BarcodeLabelPrint.PrintLabel("123456789012", "Test Product", "9.99", false);
+                
+                Console.WriteLine("✓ Test barcode label printed successfully!");
+                return "{\"success\":true,\"message\":\"Test barcode label printed successfully\"}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Test barcode print error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }
