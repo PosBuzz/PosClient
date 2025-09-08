@@ -2,100 +2,160 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Windows.Forms;
 using Printer.Barcode;
 using Printer.Services;
 using Printer.Models;
+using System.Runtime.InteropServices;
 
 namespace Printer
 {
   class Program
   {
+    // Import Windows API functions for console allocation
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    static extern bool AllocConsole();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    static extern bool FreeConsole();
+
+    [STAThread]
     static void Main(string[] args)
     {
-      Console.WriteLine("=== POS Receipt Printer ===");
-      
-      // Check for server mode
-      if (args != null && args.Length > 0 && args[0].ToLower() == "server")
-      {
-        // Start HTTP print server with integrated barcode functionality
-        StartHttpServer();
-        
-        // Wait for quit command
-        while (true)
-        {
-          string input = Console.ReadLine();
-          if (input != null && input.ToLower() == "q")
-          {
-            break;
-          }
-        }
-        return;
-      }
-      
-      // Check for printer setup mode
-      if (args != null && args.Length > 0 && args[0].ToLower() == "setup")
-      {
-        PrinterUtility.CreateTestPrinterConfig();
-        return;
-      }
-      
-      // Check for list printers mode
-      if (args != null && args.Length > 0 && args[0].ToLower() == "printers")
-      {
-        PrinterUtility.ListAvailablePrinters();
-        return;
-      }
-      
-      // Load config
+      // Load config first
       var config = ConfigManager.GetConfig();
-      Console.WriteLine("Configuration loaded. Press 'c' to configure, 't' to test, 's' for HTTP server, 'p' for printers, 'q' to quit, or provide order data:");
       
-      // If called with arguments (from custom protocol), handle receipt printing
+      // Check if we should start in console mode (for debugging or specific commands)
+      bool consoleMode = false;
+      
       if (args != null && args.Length > 0)
       {
-        HandlePrintRequest(args[0], config);
+        string command = args[0].ToLower();
+        
+        if (command == "console" || command == "--console" || command == "-console")
+        {
+          consoleMode = true;
+        }
+        else if (command == "setup")
+        {
+          AllocConsole();
+          PrinterUtility.CreateTestPrinterConfig();
+          Console.WriteLine("Press any key to exit...");
+          Console.ReadKey();
+          FreeConsole();
+          return;
+        }
+        else if (command == "printers")
+        {
+          AllocConsole();
+          PrinterUtility.ListAvailablePrinters();
+          Console.WriteLine("Press any key to exit...");
+          Console.ReadKey();
+          FreeConsole();
+          return;
+        }
+        else if (args[0].StartsWith("print://") || args[0].StartsWith("{"))
+        {
+          // Handle print request in background
+          HandlePrintRequest(args[0], config);
+          return;
+        }
+      }
+      
+      // Default behavior: Start in system tray mode with auto-started server
+      if (!consoleMode)
+      {
+        try
+        {
+          Application.EnableVisualStyles();
+          Application.SetCompatibleTextRenderingDefault(false);
+          
+          var trayManager = new SystemTrayManager();
+          trayManager.Run();
+        }
+        catch (Exception ex)
+        {
+          // Show error in message box since no console is available
+          MessageBox.Show($"Error starting application: {ex.Message}", "PosBuzz Print Server Error", 
+                         MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
         return;
       }
       
-      // Interactive mode
-      while (true)
+      // Console mode (only when explicitly requested)
+      AllocConsole();
+      Console.WriteLine("=== POS Receipt Printer ===");
+      Console.WriteLine("Auto-starting HTTP server...");
+      
+      try
       {
-        var input = Console.ReadLine();
+        StartHttpServer();
         
-        if (string.IsNullOrEmpty(input))
-          continue;
+        Console.WriteLine("HTTP server is running. Press 'c' to configure, 't' to test, 'y' for system tray, 'p' for printers, 'q' to quit:");
+        
+        // Interactive mode with server running
+        while (true)
+        {
+          var input = Console.ReadLine();
           
-        if (input.ToLower() == "q")
-        {
-          Console.WriteLine("Goodbye!");
-          break;
+          if (string.IsNullOrEmpty(input))
+            continue;
+            
+          if (input.ToLower() == "q")
+          {
+            Console.WriteLine("Goodbye!");
+            break;
+          }
+          else if (input.ToLower() == "c")
+          {
+            ShowConfigMenu(config);
+          }
+          else if (input.ToLower() == "t")
+          {
+            TestPrint(config);
+          }
+          else if (input.ToLower() == "s")
+          {
+            Console.WriteLine("HTTP server is already running!");
+          }
+          else if (input.ToLower() == "y")
+          {
+            // Switch to system tray mode
+            Console.WriteLine("Switching to system tray mode...");
+            FreeConsole();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            
+            var trayManager = new SystemTrayManager();
+            trayManager.Run();
+            break;
+          }
+          else if (input.ToLower() == "p")
+          {
+            PrinterUtility.ListAvailablePrinters();
+          }
+          else if (input.StartsWith("print://") || input.StartsWith("{"))
+          {
+            HandlePrintRequest(input, config);
+          }
+          else
+          {
+            Console.WriteLine("Commands: 'c' (configure), 't' (test), 's' (server status), 'y' (system tray), 'p' (printers), 'q' (quit)");
+            Console.WriteLine("Or provide JSON receipt data or print:// URL");
+          }
         }
-        else if (input.ToLower() == "c")
-        {
-          ShowConfigMenu(config);
-        }
-        else if (input.ToLower() == "t")
-        {
-          TestPrint(config);
-        }
-        else if (input.ToLower() == "s")
-        {
-          // Start HTTP print server with integrated barcode functionality
-          StartHttpServer();
-        }
-        else if (input.ToLower() == "p")
-        {
-          PrinterUtility.ListAvailablePrinters();
-        }
-        else if (input.StartsWith("print://") || input.StartsWith("{"))
-        {
-          HandlePrintRequest(input, config);
-        }
-        else
-        {
-          Console.WriteLine("Commands: 'c' (configure), 't' (test), 's' (server), 'p' (printers), 'q' (quit)");
-          Console.WriteLine("Or provide JSON receipt data or print:// URL");
-        }
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Error: {ex.Message}");
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
+      }
+      finally
+      {
+        FreeConsole();
       }
     }
     
