@@ -10,6 +10,7 @@ namespace Printer.Models
         public string Email { get; set; }
         public string LogoPath { get; set; }
         public string PrinterName { get; set; }
+        public string BarcodePrinterName { get; set; }
         public bool EnableCashDrawer { get; set; }
         public string Currency { get; set; }
         public int Port { get; set; }
@@ -23,6 +24,7 @@ namespace Printer.Models
             Email = "";
             LogoPath = "";
             PrinterName = "";
+            BarcodePrinterName = "";
             EnableCashDrawer = true;
             Currency = "$";
             Port = 8080;
