@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using Printer.Models;
 using Printer.Services;
-using Printer.Barcode;
 using Newtonsoft.Json;
 
 namespace Printer

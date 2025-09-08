@@ -3,7 +3,6 @@
 
 using System;
 using System.Windows.Forms;
-using Printer.Barcode;
 using Printer.Services;
 using Printer.Models;
 using System.Runtime.InteropServices;

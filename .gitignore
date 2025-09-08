@@ -48,4 +48,4 @@ eslintcache
 coverage/
 *.lcov
 .vs/
-*/packages/
+packages/

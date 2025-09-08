@@ -69,12 +69,16 @@ namespace Printer
 
         private Icon CreateIcon()
         {
-            // Create a simple icon with "P" text
+            // Create a green printer icon for system tray
             var bitmap = new Bitmap(16, 16);
             using (var graphics = Graphics.FromImage(bitmap))
             {
-                graphics.Clear(Color.Blue);
-                graphics.DrawString("P", new Font("Arial", 8, FontStyle.Bold), Brushes.White, 4, 2);
+                graphics.Clear(Color.Transparent);
+                using (var brush = new SolidBrush(Color.FromArgb(0, 120, 215))) // Windows blue
+                {
+                    graphics.FillEllipse(brush, 1, 1, 14, 14);
+                }
+                graphics.DrawString("P", new Font("Arial", 10, FontStyle.Bold), Brushes.White, 3, 1);
             }
             return Icon.FromHandle(bitmap.GetHicon());
         }
@@ -184,7 +188,7 @@ namespace Printer
         {
             try
             {
-                Barcode.BarcodeLabelPrint.PrintLabel("1234567890123", "Test Product", "19.99", false, true, 21.0m, 1);
+                BarcodeLabelPrint.PrintLabel("1234567890123", "Test Product", "19.99", false, true, 21.0m, 1);
                 ShowBalloonTip("Test Barcode", "Test barcode printed successfully", ToolTipIcon.Info);
             }
             catch (Exception ex)
