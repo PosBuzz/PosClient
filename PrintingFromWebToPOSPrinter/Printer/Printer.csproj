@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{41ED6235-3C76-4723-A5F6-02D2FA51E677}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <RootNamespace>Printer</RootNamespace>
     <AssemblyName>Printer</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
@@ -39,6 +39,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net.Http" />
@@ -61,8 +62,13 @@
     <Compile Include="ReceiptPrint.cs" />
     <Compile Include="Services\ConfigManager.cs" />
     <Compile Include="SimpleReceiptPrint.cs" />
-  <Compile Include="Barcode\BarcodeLabelPrint.cs" />
-  <Compile Include="Barcode\BarcodeLabelPrintRequest.cs" />
+    <Compile Include="Barcode\BarcodeLabelPrint.cs" />
+    <Compile Include="Barcode\BarcodeLabelPrintRequest.cs" />
+    <Compile Include="SystemTrayManager.cs" />
+    <Compile Include="ConfigurationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StartupManager.cs" />
     <Compile Include="TextColumn.cs" />
   </ItemGroup>
   <ItemGroup>
