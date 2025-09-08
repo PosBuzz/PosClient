@@ -1,4 +1,4 @@
-namespace Printer.Barcode
+namespace Printer
 {
     public class BarcodeLabelPrintRequest
     {

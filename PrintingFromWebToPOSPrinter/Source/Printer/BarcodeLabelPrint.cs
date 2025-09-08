@@ -5,7 +5,7 @@ using ZXing;
 using System.Drawing.Printing;
 using Printer.Services;
 
-namespace Printer.Barcode
+namespace Printer
 {
     public class BarcodeLabelPrint
     {

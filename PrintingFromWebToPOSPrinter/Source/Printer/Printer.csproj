@@ -62,8 +62,8 @@
     <Compile Include="ReceiptPrint.cs" />
     <Compile Include="Services\ConfigManager.cs" />
     <Compile Include="SimpleReceiptPrint.cs" />
-    <Compile Include="Barcode\BarcodeLabelPrint.cs" />
-    <Compile Include="Barcode\BarcodeLabelPrintRequest.cs" />
+    <Compile Include="BarcodeLabelPrint.cs" />
+    <Compile Include="BarcodeLabelPrintRequest.cs" />
     <Compile Include="SystemTrayManager.cs" />
     <Compile Include="ConfigurationForm.cs">
       <SubType>Form</SubType>
