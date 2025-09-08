@@ -3,3 +3,7 @@ bin/
 obj/
 *.user
 packages/
+
+# Configuration files that shouldn't be tracked
+Distribution/PosBuzz-Print-Server/store-config.txt
+**/store-config.txt
