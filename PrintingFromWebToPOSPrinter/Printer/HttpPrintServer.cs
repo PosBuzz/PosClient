@@ -43,6 +43,7 @@ namespace Printer
                 Console.WriteLine("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port);
                 Console.WriteLine("  POST http://localhost:{0}/print-barcode-label - Print barcode label", port);
                 Console.WriteLine("  GET  http://localhost:{0}/test-barcode-label - Test barcode print", port);
+                Console.WriteLine("  GET  http://localhost:{0}/test-receipt - Test receipt print", port);
                 Console.WriteLine();
                 Console.WriteLine("Press 'q' to quit the server...");
 
@@ -143,6 +144,10 @@ namespace Printer
                 else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/test-barcode-label")
                 {
                     responseText = HandleTestBarcodeLabel();
+                }
+                else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/test-receipt")
+                {
+                    responseText = HandleTestReceipt();
                 }
                 else
                 {
@@ -254,11 +259,18 @@ namespace Printer
             try
             {
                 StoreConfig config = ConfigManager.GetConfig();
-                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"currency\":\"{3}\"}}",
-                    config.StoreName.Replace("\"", "\\\""),
-                    config.Address.Replace("\"", "\\\""),
-                    config.Phone.Replace("\"", "\\\""),
-                    config.Currency.Replace("\"", "\\\""));
+                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"logoPath\":\"{4}\",\"printerName\":\"{5}\",\"barcodePrinterName\":\"{6}\",\"enableCashDrawer\":{7},\"currency\":\"{8}\",\"port\":{9},\"autoStart\":{10}}}",
+                    (config.StoreName ?? "").Replace("\"", "\\\""),
+                    (config.Address ?? "").Replace("\"", "\\\""),
+                    (config.Phone ?? "").Replace("\"", "\\\""),
+                    (config.Email ?? "").Replace("\"", "\\\""),
+                    (config.LogoPath ?? "").Replace("\"", "\\\""),
+                    (config.PrinterName ?? "").Replace("\"", "\\\""),
+                    (config.BarcodePrinterName ?? "").Replace("\"", "\\\""),
+                    config.EnableCashDrawer.ToString().ToLower(),
+                    (config.Currency ?? "$").Replace("\"", "\\\""),
+                    config.Port,
+                    config.AutoStart.ToString().ToLower());
             }
             catch (Exception ex)
             {
@@ -282,52 +294,99 @@ namespace Printer
                 // Create a config object with only the fields to update
                 StoreConfig updatedFields = new StoreConfig();
                 
-                string storeName = ExtractJsonString(body, "storeName");
+                string storeName = GetFirstNonNull(
+                    ExtractJsonString(body, "storeName"),
+                    ExtractJsonString(body, "StoreName"));
                 if (storeName != null) {
                     updatedFields.StoreName = storeName;
                     Console.WriteLine("HTTP: Setting StoreName = " + storeName);
                 }
                 
-                string address = ExtractJsonString(body, "address");
+                string address = GetFirstNonNull(
+                    ExtractJsonString(body, "address"),
+                    ExtractJsonString(body, "Address"));
                 if (address != null) {
                     updatedFields.Address = address;
                     Console.WriteLine("HTTP: Setting Address = " + address);
                 }
                 
-                string phone = ExtractJsonString(body, "phone");
+                string phone = GetFirstNonNull(
+                    ExtractJsonString(body, "phone"),
+                    ExtractJsonString(body, "Phone"));
                 if (phone != null) {
                     updatedFields.Phone = phone;
                     Console.WriteLine("HTTP: Setting Phone = " + phone);
                 }
                 
-                string email = ExtractJsonString(body, "email");
+                string email = GetFirstNonNull(
+                    ExtractJsonString(body, "email"),
+                    ExtractJsonString(body, "Email"));
                 if (email != null) {
                     updatedFields.Email = email;
                     Console.WriteLine("HTTP: Setting Email = " + email);
                 }
                 
-                string logoPath = ExtractJsonString(body, "logoPath");
+                string logoPath = GetFirstNonNull(
+                    ExtractJsonString(body, "logoPath"),
+                    ExtractJsonString(body, "LogoPath"));
                 if (logoPath != null) {
                     updatedFields.LogoPath = logoPath;
                     Console.WriteLine("HTTP: Setting LogoPath = " + logoPath);
                 }
                 
-                string printerName = ExtractJsonString(body, "printerName");
+                string printerName = GetFirstNonNull(
+                    ExtractJsonString(body, "printerName"),
+                    ExtractJsonString(body, "PrinterName"));
                 if (printerName != null) {
                     updatedFields.PrinterName = printerName;
                     Console.WriteLine("HTTP: Setting PrinterName = " + printerName);
                 }
                 
-                string currency = ExtractJsonString(body, "currency");
+                string barcodePrinterName = GetFirstNonNull(
+                    ExtractJsonString(body, "barcodePrinterName"),
+                    ExtractJsonString(body, "BarcodePrinterName"));
+                if (barcodePrinterName != null) {
+                    updatedFields.BarcodePrinterName = barcodePrinterName;
+                    Console.WriteLine("HTTP: Setting BarcodePrinterName = " + barcodePrinterName);
+                }
+                
+                string currency = GetFirstNonNull(
+                    ExtractJsonString(body, "currency"),
+                    ExtractJsonString(body, "Currency"));
                 if (currency != null) {
                     updatedFields.Currency = currency;
                     Console.WriteLine("HTTP: Setting Currency = " + currency);
                 }
                 
-                string enableCashDrawer = ExtractJsonString(body, "enableCashDrawer");
-                if (enableCashDrawer != null) {
-                    updatedFields.EnableCashDrawer = enableCashDrawer.ToLower() == "true";
+                // Handle boolean fields - check for both string and boolean values
+                string enableCashDrawerStr = GetFirstNonNull(
+                    ExtractJsonValue(body, "enableCashDrawer"),
+                    ExtractJsonValue(body, "EnableCashDrawer"));
+                if (enableCashDrawerStr != null) {
+                    bool enableCashDrawer = enableCashDrawerStr.ToLower() == "true" || enableCashDrawerStr == "1";
+                    updatedFields.EnableCashDrawer = enableCashDrawer;
                     Console.WriteLine("HTTP: Setting EnableCashDrawer = " + enableCashDrawer);
+                }
+                
+                // Handle integer fields  
+                string portStr = GetFirstNonNull(
+                    ExtractJsonValue(body, "port"),
+                    ExtractJsonValue(body, "Port"));
+                if (portStr != null) {
+                    int port;
+                    if (int.TryParse(portStr, out port)) {
+                        updatedFields.Port = port;
+                        Console.WriteLine("HTTP: Setting Port = " + port);
+                    }
+                }
+                
+                string autoStartStr = GetFirstNonNull(
+                    ExtractJsonValue(body, "autoStart"),
+                    ExtractJsonValue(body, "AutoStart"));
+                if (autoStartStr != null) {
+                    bool autoStart = autoStartStr.ToLower() == "true" || autoStartStr == "1";
+                    updatedFields.AutoStart = autoStart;
+                    Console.WriteLine("HTTP: Setting AutoStart = " + autoStart);
                 }
                 
                 // Update only the provided fields
@@ -411,9 +470,12 @@ namespace Printer
                 Console.WriteLine("  Barcode Value: " + printRequest.BarcodeValue);
                 Console.WriteLine("  Product Name: " + printRequest.ProductName);
                 Console.WriteLine("  Price: " + printRequest.Price);
+                Console.WriteLine("  VAT Included: " + printRequest.VatIncluded);
+                Console.WriteLine("  VAT Percentage: " + printRequest.VatPercentage + "%");
+                Console.WriteLine("  Quantity: " + printRequest.Quantity);
                 Console.WriteLine("  Print Barcode Only: " + printRequest.PrintBarcodeOnly);
                 
-                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly);
+                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly, printRequest.VatIncluded, printRequest.VatPercentage, printRequest.Quantity);
                 
                 Console.WriteLine("✓ Barcode label printed successfully!");
                 return "{\"success\":true,\"message\":\"Barcode label printed successfully\"}";
@@ -432,7 +494,7 @@ namespace Printer
                 Console.WriteLine("=== TEST BARCODE LABEL PRINT ===");
                 Console.WriteLine("Printing test barcode label...");
                 
-                BarcodeLabelPrint.PrintLabel("123456789012", "Test Product", "9.99", false);
+                BarcodeLabelPrint.PrintLabel("123456789012", "Test Product", "9.99", false, true, 21.0m);
                 
                 Console.WriteLine("✓ Test barcode label printed successfully!");
                 return "{\"success\":true,\"message\":\"Test barcode label printed successfully\"}";
@@ -440,6 +502,107 @@ namespace Printer
             catch (Exception ex)
             {
                 Console.WriteLine("Test barcode print error: " + ex.Message);
+                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
+            }
+        }
+
+        private string HandleTestReceipt()
+        {
+            try
+            {
+                Console.WriteLine("=== TEST RECEIPT PRINT ===");
+                Console.WriteLine("Printing test receipt with cash drawer opening...");
+                
+                // Create a test receipt
+                ReceiptData testReceipt = new ReceiptData
+                {
+                    SaleNumber = "TEST-001",
+                    OrderId = "TEST-001",
+                    Total = 25.99m,
+                    Subtotal = 21.99m,
+                    Tax = 4.00m,
+                    ChangeAmount = 4.01m,
+                    ReceivedAmount = 30.00m,
+                    OpenCashDrawer = true, // This will trigger cash drawer opening
+                    OrderDate = DateTime.Now
+                };
+                
+                // Add store info
+                testReceipt.Branch = new BranchInfo
+                {
+                    Name = "Test Store",
+                    Address = "123 Test Street, Test City",
+                    Phone = "(555) 123-4567"
+                };
+                
+                // Add cashier info
+                testReceipt.Cashier = new UserInfo
+                {
+                    Name = "Test Cashier",
+                    Id = "CASHIER-001"
+                };
+                
+                // Add customer info
+                testReceipt.Customer = new CustomerInfo
+                {
+                    Name = "Test Customer",
+                    Phone = "(555) 987-6543"
+                };
+                
+                // Add payment info
+                testReceipt.Payment = new PaymentInfo
+                {
+                    Method = "Cash",
+                    PaymentMethod = "Cash",
+                    Amount = 30.00m,
+                    AmountPaid = 30.00m,
+                    Change = 4.01m
+                };
+                testReceipt.Payments.Add(testReceipt.Payment);
+                
+                // Add test items
+                testReceipt.Items.Add(new ReceiptItem
+                {
+                    Name = "Test Product 1",
+                    Quantity = 2,
+                    Price = 7.99m,
+                    Total = 15.98m,
+                    UnitPrice = 7.99m,
+                    LineTotal = 15.98m
+                });
+                
+                testReceipt.Items.Add(new ReceiptItem
+                {
+                    Name = "Test Product 2",
+                    Quantity = 1,
+                    Price = 6.01m,
+                    Total = 6.01m,
+                    UnitPrice = 6.01m,
+                    LineTotal = 6.01m
+                });
+                
+                // Print the test receipt
+                SimpleReceiptPrint printer = new SimpleReceiptPrint();
+                bool success = printer.Print("", testReceipt);
+                
+                if (success)
+                {
+                    Console.WriteLine("✓ Test receipt printed successfully!");
+                    if (testReceipt.OpenCashDrawer)
+                    {
+                        Console.WriteLine("✓ Cash drawer should have opened as well!");
+                    }
+                    return "{\"success\":true,\"message\":\"Test receipt printed successfully with cash drawer opening\"}";
+                }
+                else
+                {
+                    Console.WriteLine("✗ Failed to print test receipt");
+                    return "{\"error\":\"Failed to print test receipt\"}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Test receipt print error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }

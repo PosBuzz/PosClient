@@ -50,6 +50,7 @@ namespace Printer.Services
                                     case "Email": _config.Email = value; break;
                                     case "LogoPath": _config.LogoPath = value; break;
                                     case "PrinterName": _config.PrinterName = value; break;
+                                    case "BarcodePrinterName": _config.BarcodePrinterName = value; break;
                                     case "EnableCashDrawer": _config.EnableCashDrawer = bool.Parse(value); break;
                                     case "Currency": _config.Currency = value; break;
                                     case "Port": _config.Port = int.Parse(value); break;
@@ -84,6 +85,7 @@ namespace Printer.Services
                     "Email=" + _config.Email,
                     "LogoPath=" + _config.LogoPath,
                     "PrinterName=" + _config.PrinterName,
+                    "BarcodePrinterName=" + _config.BarcodePrinterName,
                     "EnableCashDrawer=" + _config.EnableCashDrawer,
                     "Currency=" + _config.Currency,
                     "Port=" + _config.Port,
@@ -128,6 +130,8 @@ namespace Printer.Services
                 _config.LogoPath = fieldsToUpdate.LogoPath;
             if (fieldsToUpdate.PrinterName != null)
                 _config.PrinterName = fieldsToUpdate.PrinterName;
+            if (fieldsToUpdate.BarcodePrinterName != null)
+                _config.BarcodePrinterName = fieldsToUpdate.BarcodePrinterName;
             if (fieldsToUpdate.Currency != null)
                 _config.Currency = fieldsToUpdate.Currency;
             
@@ -148,6 +152,7 @@ namespace Printer.Services
             config.Email = "info@yourstore.com";
             config.LogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
             config.PrinterName = "RONGTA 80mm Series Printer";
+            config.BarcodePrinterName = "Default Barcode Printer";
             config.EnableCashDrawer = true;
             config.Currency = "$";
             config.Port = 8080;

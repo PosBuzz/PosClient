@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Linq;
 using ZXing;
 using System.Drawing.Printing;
 using Printer.Services;
@@ -22,9 +23,195 @@ namespace Printer.Barcode
         private static readonly int PrintableWidth = LabelWidth - (2 * ExposedLinerWidth);
         private static readonly int PrintableHeight = LabelHeight;
         
-        private const string BARCODE_PRINTER_NAME = "Gprinter GP-3120TUC";
+        /// <summary>
+        /// Detects the best barcode format based on the input data
+        /// Falls back to CODE_128 as it's the most versatile
+        /// </summary>
+        // Helper method to try different barcode formats and fix checksums if needed
+        private static Bitmap GenerateRobustBarcode(string barcodeValue, BarcodeFormat preferredFormat, int width, int height)
+        {
+            BarcodeWriter writer = null;
+            
+            try
+            {
+                // First try the preferred format
+                writer = new BarcodeWriter
+                {
+                    Format = preferredFormat,
+                    Options = new ZXing.Common.EncodingOptions
+                    {
+                        Width = width,
+                        Height = height,
+                        Margin = 0,
+                        PureBarcode = false
+                    }
+                };
+                
+                return writer.Write(barcodeValue);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed with " + preferredFormat + ": " + ex.Message);
+                
+                // Try to fix EAN-13 checksum if it's EAN-13
+                if (preferredFormat == BarcodeFormat.EAN_13 && barcodeValue.Length >= 12)
+                {
+                    try
+                    {
+                        string fixedEan13 = FixEan13Checksum(barcodeValue);
+                        Console.WriteLine("Trying fixed EAN-13: " + fixedEan13);
+                        return writer.Write(fixedEan13);
+                    }
+                    catch (Exception ex2)
+                    {
+                        Console.WriteLine("Fixed EAN-13 failed: " + ex2.Message);
+                    }
+                }
+                
+                // Try UPC-A if it's 12 digits
+                if (barcodeValue.Length == 12 && barcodeValue.All(char.IsDigit))
+                {
+                    try
+                    {
+                        writer.Format = BarcodeFormat.UPC_A;
+                        string fixedUpc = FixUpcChecksum(barcodeValue);
+                        Console.WriteLine("Trying fixed UPC-A: " + fixedUpc);
+                        return writer.Write(fixedUpc);
+                    }
+                    catch (Exception ex3)
+                    {
+                        Console.WriteLine("UPC-A failed: " + ex3.Message);
+                    }
+                }
+                
+                // Fallback to CODE_128 which is very flexible
+                try
+                {
+                    writer.Format = BarcodeFormat.CODE_128;
+                    Console.WriteLine("Falling back to CODE_128");
+                    return writer.Write(barcodeValue);
+                }
+                catch (Exception ex4)
+                {
+                    Console.WriteLine("CODE_128 failed: " + ex4.Message);
+                }
+                
+                // Last resort - CODE_39 (but needs to be wrapped in *)
+                try
+                {
+                    writer.Format = BarcodeFormat.CODE_39;
+                    string code39Value = barcodeValue;
+                    if (!code39Value.StartsWith("*"))
+                        code39Value = "*" + code39Value;
+                    if (!code39Value.EndsWith("*"))
+                        code39Value = code39Value + "*";
+                    
+                    Console.WriteLine("Last resort CODE_39: " + code39Value);
+                    return writer.Write(code39Value);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("All formats failed. Creating text-based barcode.");
+                    // Create a simple text-based "barcode" as absolute last resort
+                    return CreateTextBarcode(barcodeValue, width, height);
+                }
+            }
+        }
         
-        public static void PrintLabel(string barcodeValue, string productName = null, string price = null, bool printBarcodeOnly = false)
+        // Fix EAN-13 checksum
+        private static string FixEan13Checksum(string ean13)
+        {
+            if (ean13.Length < 12) return ean13;
+            
+            string base12 = ean13.Substring(0, 12);
+            int checksum = CalculateEan13Checksum(base12);
+            return base12 + checksum.ToString();
+        }
+        
+        // Fix UPC-A checksum  
+        private static string FixUpcChecksum(string upc)
+        {
+            if (upc.Length < 11) return upc;
+            
+            string base11 = upc.Substring(0, 11);
+            int checksum = CalculateUpcChecksum(base11);
+            return base11 + checksum.ToString();
+        }
+        
+        // Calculate EAN-13 checksum
+        private static int CalculateEan13Checksum(string base12)
+        {
+            int sum = 0;
+            for (int i = 0; i < 12; i++)
+            {
+                int digit = int.Parse(base12[i].ToString());
+                sum += (i % 2 == 0) ? digit : digit * 3;
+            }
+            return (10 - (sum % 10)) % 10;
+        }
+        
+        // Calculate UPC-A checksum
+        private static int CalculateUpcChecksum(string base11)
+        {
+            int sum = 0;
+            for (int i = 0; i < 11; i++)
+            {
+                int digit = int.Parse(base11[i].ToString());
+                sum += (i % 2 == 0) ? digit * 3 : digit;
+            }
+            return (10 - (sum % 10)) % 10;
+        }
+        
+        // Create a text-based barcode as last resort
+        private static Bitmap CreateTextBarcode(string value, int width, int height)
+        {
+            var bitmap = new Bitmap(width, height);
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.Clear(Color.White);
+                g.DrawRectangle(Pens.Black, 0, 0, width - 1, height - 1);
+                
+                using (Font font = new Font("Arial", 16, FontStyle.Bold))
+                {
+                    var textSize = g.MeasureString(value, font);
+                    float x = (width - textSize.Width) / 2;
+                    float y = (height - textSize.Height) / 2;
+                    g.DrawString(value, font, Brushes.Black, x, y);
+                }
+            }
+            return bitmap;
+        }
+
+        private static BarcodeFormat DetectBarcodeFormat(string barcodeValue)
+        {
+            if (string.IsNullOrWhiteSpace(barcodeValue))
+                return BarcodeFormat.CODE_128;
+            
+            // Remove any spaces or special characters for analysis
+            string cleanValue = barcodeValue.Trim();
+            
+            // UPC-A: exactly 12 digits
+            if (cleanValue.Length == 12 && cleanValue.All(char.IsDigit))
+                return BarcodeFormat.UPC_A;
+            
+            // EAN-13: exactly 13 digits
+            if (cleanValue.Length == 13 && cleanValue.All(char.IsDigit))
+                return BarcodeFormat.EAN_13;
+            
+            // EAN-8: exactly 8 digits
+            if (cleanValue.Length == 8 && cleanValue.All(char.IsDigit))
+                return BarcodeFormat.EAN_8;
+            
+            // CODE_39: typically alphanumeric, often starts/ends with *
+            if (cleanValue.StartsWith("*") && cleanValue.EndsWith("*"))
+                return BarcodeFormat.CODE_39;
+            
+            // For everything else, use CODE_128 as it's the most versatile
+            // CODE_128 can handle: numbers, letters, symbols, and special characters
+            return BarcodeFormat.CODE_128;
+        }
+        
+        public static void PrintLabel(string barcodeValue, string productName = null, string price = null, bool printBarcodeOnly = false, bool vatIncluded = false, decimal vatPercentage = 0, int quantity = 1)
         {
             try
             {
@@ -35,7 +222,14 @@ namespace Printer.Barcode
                 Console.WriteLine("Barcode Value: " + barcodeValue);
                 Console.WriteLine("Product Name: " + productName);
                 Console.WriteLine("Price: " + price);
+                Console.WriteLine("VAT Included: " + vatIncluded);
+                Console.WriteLine("VAT Percentage: " + vatPercentage + "%");
+                Console.WriteLine("Quantity: " + quantity);
                 Console.WriteLine("Barcode Only: " + printBarcodeOnly);
+                
+                // Detect the best barcode format for the input
+                var detectedFormat = DetectBarcodeFormat(barcodeValue);
+                Console.WriteLine("Detected barcode format: " + detectedFormat);
                 
                 var labelBitmap = new Bitmap(LabelWidth, LabelHeight);
                 using (Graphics g = Graphics.FromImage(labelBitmap))
@@ -46,19 +240,7 @@ namespace Printer.Barcode
                     
                     if (printBarcodeOnly)
                     {
-                        var writer = new BarcodeWriter
-                        {
-                            Format = BarcodeFormat.CODE_128,
-                            Options = new ZXing.Common.EncodingOptions
-                            {
-                                Width = PrintableWidth, // Use full printable width - no margins
-                                Height = PrintableHeight - 20, // Use maximum height available
-                                Margin = 0,
-                                PureBarcode = false
-                            }
-                        };
-                        
-                        var barcodeBitmap = writer.Write(barcodeValue);
+                        var barcodeBitmap = GenerateRobustBarcode(barcodeValue, detectedFormat, PrintableWidth, PrintableHeight - 10);
                         Console.WriteLine("Generated large barcode: " + barcodeBitmap.Width + "x" + barcodeBitmap.Height);
                         
                         // Position at the start of printable area (no left gap)
@@ -71,19 +253,7 @@ namespace Printer.Barcode
                     {
                         int currentY = 8;
                         
-                        var writer = new BarcodeWriter
-                        {
-                            Format = BarcodeFormat.CODE_128,
-                            Options = new ZXing.Common.EncodingOptions
-                            {
-                                Width = PrintableWidth, // Use full printable width - no margins
-                                Height = 160, // Shorter barcode for more text space
-                                Margin = 0,
-                                PureBarcode = false
-                            }
-                        };
-                        
-                        var barcodeBitmap = writer.Write(barcodeValue);
+                        var barcodeBitmap = GenerateRobustBarcode(barcodeValue, detectedFormat, PrintableWidth, 200);
                         Console.WriteLine("Generated compact barcode: " + barcodeBitmap.Width + "x" + barcodeBitmap.Height);
                         
                         // Position barcode at the very start of printable area (no left gap)
@@ -135,6 +305,14 @@ namespace Printer.Barcode
                             using (Font font = new Font("Arial", 44, FontStyle.Bold)) // Much bigger font
                             {
                                 string priceText = price.StartsWith("$") ? price : "$" + price;
+                                
+                                // Add VAT information if specified
+                                if (vatPercentage > 0)
+                                {
+                                    string vatText = vatIncluded ? " (inc. VAT " + vatPercentage + "%)" : " (exc. VAT " + vatPercentage + "%)";
+                                    priceText += vatText;
+                                }
+                                
                                 var textSize = g.MeasureString(priceText, font);
                                 float textX = ExposedLinerWidth + (PrintableWidth - textSize.Width) / 2;
                                 g.DrawString(priceText, font, Brushes.Black, textX, currentY);
@@ -146,14 +324,17 @@ namespace Printer.Barcode
 
                 Console.WriteLine("Label bitmap created successfully");
 
+                var config = ConfigManager.GetConfig();
+                string barcodePrinterName = !string.IsNullOrWhiteSpace(config.BarcodePrinterName) ? config.BarcodePrinterName : "Gprinter GP-3120TUC";
+
                 PrintDocument pd = new PrintDocument();
-                pd.PrinterSettings.PrinterName = BARCODE_PRINTER_NAME;
-                Console.WriteLine("Using dedicated barcode printer: " + BARCODE_PRINTER_NAME);
+                pd.PrinterSettings.PrinterName = barcodePrinterName;
+                Console.WriteLine("Using barcode printer: " + barcodePrinterName);
                 
                 bool printerExists = false;
                 foreach (string printerName in PrinterSettings.InstalledPrinters)
                 {
-                    if (printerName.Equals(BARCODE_PRINTER_NAME, StringComparison.OrdinalIgnoreCase))
+                    if (printerName.Equals(barcodePrinterName, StringComparison.OrdinalIgnoreCase))
                     {
                         printerExists = true;
                         break;
@@ -162,14 +343,13 @@ namespace Printer.Barcode
                 
                 if (!printerExists)
                 {
-                    Console.WriteLine("WARNING: Barcode printer '" + BARCODE_PRINTER_NAME + "' not found!");
+                    Console.WriteLine("WARNING: Barcode printer '" + barcodePrinterName + "' not found!");
                     Console.WriteLine("Available printers:");
                     foreach (string printerName in PrinterSettings.InstalledPrinters)
                     {
                         Console.WriteLine("  - " + printerName);
                     }
                     
-                    var config = ConfigManager.GetConfig();
                     pd.PrinterSettings.PrinterName = config.PrinterName;
                     Console.WriteLine("Using configured printer as fallback: " + config.PrinterName);
                 }
@@ -276,8 +456,21 @@ namespace Printer.Barcode
                 };
 
                 Console.WriteLine("Starting print job...");
-                pd.Print();
-                Console.WriteLine("? Barcode label sent to GPrinter successfully!");
+                
+                // Print the specified quantity
+                for (int i = 0; i < quantity; i++)
+                {
+                    pd.Print();
+                    Console.WriteLine("? Barcode label " + (i + 1) + " of " + quantity + " sent to printer successfully!");
+                    
+                    // Small delay between prints to avoid overwhelming the printer
+                    if (i < quantity - 1)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
+                }
+                
+                Console.WriteLine("? All " + quantity + " barcode labels printed successfully!");
                 
                 labelBitmap.Dispose();
             }
