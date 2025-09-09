@@ -48,7 +48,7 @@ namespace Printer
       float relativeLeft = 0f;
 
       foreach (TextColumn textColumn in textColumns)
-        using (Font font = new Font(FontFamily.GenericSansSerif, textColumn.FontSize, FontStyle.Regular))
+        using (Font font = new Font(FontFamily.GenericSansSerif, textColumn.FontSize, textColumn.Style))
         {
           SizeF size = g.MeasureString(textColumn.Text, font, new SizeF(this.width * textColumn.RelativeWidth, 0));
 

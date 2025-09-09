@@ -102,7 +102,7 @@ namespace Printer
 
         private void PrintReceipt(Graphics g)
         {
-            float y = 10;
+            float y = 2; // Reduced top margin
 
             // Print logo if available
             if (!string.IsNullOrEmpty(config.LogoPath) && File.Exists(config.LogoPath))
@@ -111,12 +111,12 @@ namespace Printer
                 {
                     using (Image logoImage = Image.FromFile(config.LogoPath))
                     {
-                        float logoWidth = Math.Min(60, logoImage.Width * 60 / logoImage.Height);
+                        float logoWidth = Math.Min(40, logoImage.Width * 40 / logoImage.Height);
                         float logoHeight = logoImage.Height * logoWidth / logoImage.Width;
                         float logoX = (this.width - logoWidth) / 2;
                         
                         g.DrawImage(logoImage, logoX, y, logoWidth, logoHeight);
-                        y += logoHeight + 10;
+                        y += logoHeight + 3;
                     }
                 }
                 catch (Exception ex)
@@ -128,20 +128,20 @@ namespace Printer
             // Store information
             if (!string.IsNullOrEmpty(config.StoreName))
             {
-                y += this.DrawCenteredText(g, y, config.StoreName, 16f, FontStyle.Bold);
-                y += 5;
+                y += this.DrawCenteredText(g, y, config.StoreName, 10f, FontStyle.Bold);
+                y += 2;
             }
 
             if (!string.IsNullOrEmpty(config.Address))
             {
-                y += this.DrawCenteredText(g, y, config.Address, 10f);
-                y += 2;
+                y += this.DrawCenteredText(g, y, config.Address, 7f);
+                y += 1;
             }
 
             if (!string.IsNullOrEmpty(config.Phone))
             {
-                y += this.DrawCenteredText(g, y, config.Phone, 10f);
-                y += 10;
+                y += this.DrawCenteredText(g, y, config.Phone, 7f);
+                y += 3;
             }
 
             // Order information
@@ -149,8 +149,8 @@ namespace Printer
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Order ID:", 0.6f, StringAlignment.Near, 12f),
-                    new TextColumn(receiptData.OrderId, 0.4f, StringAlignment.Far, 12f)
+                    new TextColumn("Order ID:", 0.6f, StringAlignment.Near, 7f),
+                    new TextColumn(receiptData.OrderId, 0.4f, StringAlignment.Far, 7f)
                 );
             }
 
@@ -158,39 +158,50 @@ namespace Printer
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Date:", 0.6f, StringAlignment.Near, 10f),
-                    new TextColumn(receiptData.OrderDate.Value.ToString("MM/dd/yyyy HH:mm"), 0.4f, StringAlignment.Far, 10f)
+                    new TextColumn("Date:", 0.6f, StringAlignment.Near, 7f),
+                    new TextColumn(receiptData.OrderDate.Value.ToString("MM/dd/yyyy HH:mm"), 0.4f, StringAlignment.Far, 7f)
                 );
             }
 
-            // Customer information
-            if (receiptData.Customer != null && !string.IsNullOrEmpty(receiptData.Customer.Name))
+            // Cashier information (only if exists)
+            if (receiptData.Cashier != null && !string.IsNullOrEmpty(receiptData.Cashier.Name))
             {
-                y += 5;
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Customer:", 0.3f, StringAlignment.Near, 10f),
-                    new TextColumn(receiptData.Customer.Name, 0.7f, StringAlignment.Near, 10f)
+                    new TextColumn("Cashier:", 0.6f, StringAlignment.Near, 7f),
+                    new TextColumn(receiptData.Cashier.Name, 0.4f, StringAlignment.Far, 7f)
                 );
             }
 
-            y += 10;
-            y += this.DrawLine(g, y);
-            y += 5;
+            // Customer information (only if exists)
+            if (receiptData.Customer != null && !string.IsNullOrEmpty(receiptData.Customer.Name))
+            {
+                y += 2;
+                y += this.DrawTextColumns(
+                    g, y,
+                    new TextColumn("Customer:", 0.3f, StringAlignment.Near, 7f),
+                    new TextColumn(receiptData.Customer.Name, 0.7f, StringAlignment.Near, 7f)
+                );
+            }
 
-            // Items
+            // Items section
             if (receiptData.Items != null && receiptData.Items.Count > 0)
             {
+                y += 4;
+                y += this.DrawDashedLine(g, y);
+                y += 4; // More gap after header line
+
                 // Items header
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Item", 0.5f, StringAlignment.Near, 10f),
-                    new TextColumn("Qty", 0.15f, StringAlignment.Center, 10f),
-                    new TextColumn("Price", 0.175f, StringAlignment.Far, 10f),
-                    new TextColumn("Total", 0.175f, StringAlignment.Far, 10f)
+                    new TextColumn("Item", 0.5f, StringAlignment.Near, 7f, FontStyle.Bold),
+                    new TextColumn("Qty", 0.15f, StringAlignment.Center, 7f, FontStyle.Bold),
+                    new TextColumn("Price", 0.175f, StringAlignment.Far, 7f, FontStyle.Bold),
+                    new TextColumn("Total", 0.175f, StringAlignment.Far, 7f, FontStyle.Bold)
                 );
                 
-                y += this.DrawLine(g, y);
+                y += 2;
+                y += this.DrawDashedLine(g, y);
                 y += 2;
 
                 foreach (var item in receiptData.Items)
@@ -203,25 +214,25 @@ namespace Printer
 
                     y += this.DrawTextColumns(
                         g, y,
-                        new TextColumn(itemText, 0.5f, StringAlignment.Near, 10f),
-                        new TextColumn(item.Quantity.ToString(), 0.15f, StringAlignment.Center, 10f),
-                        new TextColumn(FormatCurrency(item.Price), 0.175f, StringAlignment.Far, 10f),
-                        new TextColumn(FormatCurrency(item.Total), 0.175f, StringAlignment.Far, 10f)
+                        new TextColumn(itemText, 0.5f, StringAlignment.Near, 7f),
+                        new TextColumn(item.Quantity.ToString(), 0.15f, StringAlignment.Center, 7f),
+                        new TextColumn(item.Price.ToString("0.00"), 0.175f, StringAlignment.Far, 7f),
+                        new TextColumn(item.Total.ToString("0.00"), 0.175f, StringAlignment.Far, 7f)
                     );
                 }
 
-                y += 10;
-                y += this.DrawLine(g, y);
-                y += 5;
+                y += 3;
+                y += this.DrawDashedLine(g, y);
+                y += 2;
             }
 
-            // Totals
+            // Totals (only show currency sign here)
             if (receiptData.Subtotal > 0)
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Subtotal:", 0.7f, StringAlignment.Near, 11f),
-                    new TextColumn(FormatCurrency(receiptData.Subtotal), 0.3f, StringAlignment.Far, 11f)
+                    new TextColumn("Subtotal:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn(FormatCurrency(receiptData.Subtotal), 0.3f, StringAlignment.Far, 7f)
                 );
             }
 
@@ -229,8 +240,8 @@ namespace Printer
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Tax:", 0.7f, StringAlignment.Near, 11f),
-                    new TextColumn(FormatCurrency(receiptData.Tax), 0.3f, StringAlignment.Far, 11f)
+                    new TextColumn("Tax:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn(FormatCurrency(receiptData.Tax), 0.3f, StringAlignment.Far, 7f)
                 );
             }
 
@@ -238,31 +249,32 @@ namespace Printer
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Discount:", 0.7f, StringAlignment.Near, 11f),
-                    new TextColumn("-" + FormatCurrency(receiptData.Discount), 0.3f, StringAlignment.Far, 11f)
+                    new TextColumn("Discount:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn("-" + FormatCurrency(receiptData.Discount), 0.3f, StringAlignment.Far, 7f)
                 );
             }
 
-            y += 5;
+            y += 2;
             y += this.DrawTextColumns(
                 g, y,
-                new TextColumn("TOTAL:", 0.7f, StringAlignment.Near, 14f),
-                new TextColumn(FormatCurrency(receiptData.Total), 0.3f, StringAlignment.Far, 14f)
+                new TextColumn("TOTAL:", 0.7f, StringAlignment.Near, 9f, FontStyle.Bold),
+                new TextColumn(FormatCurrency(receiptData.Total), 0.3f, StringAlignment.Far, 9f, FontStyle.Bold)
             );
 
-            // Payment information
+            // Payment information (only if exists)
             if (receiptData.Payment != null)
             {
-                y += 10;
-                y += this.DrawLine(g, y);
-                y += 5;
+                y += 3;
+                y += this.DrawDashedLine(g, y);
+                y += 2;
 
-                if (!string.IsNullOrEmpty(receiptData.Payment.Method))
+                if (!string.IsNullOrEmpty(receiptData.Payment.Method) || !string.IsNullOrEmpty(receiptData.Payment.PaymentMethod))
                 {
+                    string paymentMethod = !string.IsNullOrEmpty(receiptData.Payment.Method) ? receiptData.Payment.Method : receiptData.Payment.PaymentMethod;
                     y += this.DrawTextColumns(
                         g, y,
-                        new TextColumn("Payment:", 0.6f, StringAlignment.Near, 10f),
-                        new TextColumn(receiptData.Payment.Method, 0.4f, StringAlignment.Far, 10f)
+                        new TextColumn("Payment:", 0.6f, StringAlignment.Near, 7f),
+                        new TextColumn(paymentMethod, 0.4f, StringAlignment.Far, 7f)
                     );
                 }
 
@@ -270,8 +282,8 @@ namespace Printer
                 {
                     y += this.DrawTextColumns(
                         g, y,
-                        new TextColumn("Paid:", 0.6f, StringAlignment.Near, 10f),
-                        new TextColumn(FormatCurrency(receiptData.Payment.AmountPaid), 0.4f, StringAlignment.Far, 10f)
+                        new TextColumn("Paid:", 0.6f, StringAlignment.Near, 7f),
+                        new TextColumn(FormatCurrency(receiptData.Payment.AmountPaid), 0.4f, StringAlignment.Far, 7f)
                     );
                 }
 
@@ -279,26 +291,26 @@ namespace Printer
                 {
                     y += this.DrawTextColumns(
                         g, y,
-                        new TextColumn("Change:", 0.6f, StringAlignment.Near, 10f),
-                        new TextColumn(FormatCurrency(receiptData.Payment.Change), 0.4f, StringAlignment.Far, 10f)
+                        new TextColumn("Change:", 0.6f, StringAlignment.Near, 7f),
+                        new TextColumn(FormatCurrency(receiptData.Payment.Change), 0.4f, StringAlignment.Far, 7f)
                     );
                 }
             }
 
-            // Notes
+            // Notes (only if exists)
             if (!string.IsNullOrEmpty(receiptData.Notes))
             {
-                y += 10;
-                y += this.DrawLine(g, y);
-                y += 5;
-                y += this.DrawCenteredText(g, y, receiptData.Notes, 10f, FontStyle.Italic);
+                y += 3;
+                y += this.DrawDashedLine(g, y);
+                y += 2;
+                y += this.DrawCenteredText(g, y, receiptData.Notes, 7f, FontStyle.Italic);
             }
 
             // Footer
-            y += 15;
-            y += this.DrawCenteredText(g, y, "Thank you for your business!", 12f, FontStyle.Bold);
-            y += 5;
-            y += this.DrawCenteredText(g, y, DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"), 8f);
+            y += 6; // Reduced gap before thanks
+            y += this.DrawCenteredText(g, y, "Thank you for your business!", 8f, FontStyle.Bold);
+            y += 2;
+            y += this.DrawCenteredText(g, y, DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"), 6f);
         }
 
         private string FormatCurrency(decimal amount)
@@ -323,6 +335,16 @@ namespace Printer
             {
                 g.DrawLine(pen, 5, y, this.width - 5, y);
                 return 2f;
+            }
+        }
+
+        private float DrawDashedLine(Graphics g, float y)
+        {
+            using (Pen pen = new Pen(Color.Black, 0.3f))
+            {
+                pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+                g.DrawLine(pen, 5, y, this.width - 5, y);
+                return 1f;
             }
         }
 

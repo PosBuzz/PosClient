@@ -11,13 +11,15 @@ namespace Printer
     public float RelativeWidth { get; set; }
     public StringAlignment Alignment { get; set; }
     public float FontSize { get; set; }
+    public FontStyle Style { get; set; }
 
-    public TextColumn(string text, float relativeWidth = 1, StringAlignment alignment = StringAlignment.Near, float fontSize = 10f)
+    public TextColumn(string text, float relativeWidth = 1, StringAlignment alignment = StringAlignment.Near, float fontSize = 8f, FontStyle style = FontStyle.Regular)
     {
       this.Text = text;
       this.RelativeWidth = relativeWidth;
       this.Alignment = alignment;
       this.FontSize = fontSize;
+      this.Style = style;
     }
   }
 }
