@@ -69,7 +69,7 @@ namespace Printer
 
         private Icon CreateIcon()
         {
-            // Create a green printer icon for system tray
+            // Create a blue printer icon for system tray
             var bitmap = new Bitmap(16, 16);
             using (var graphics = Graphics.FromImage(bitmap))
             {
@@ -225,7 +225,8 @@ namespace Printer
         {
             if (notifyIcon != null)
             {
-                notifyIcon.ShowBalloonTip(3000, title, text, icon);
+                // Force all notifications to use Info (blue) icon
+                notifyIcon.ShowBalloonTip(3000, title, text, ToolTipIcon.Info);
             }
         }
 

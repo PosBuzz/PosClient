@@ -135,7 +135,7 @@ namespace Printer.Services
                     var json = await reader.ReadToEndAsync();
                     var receiptData = JsonConvert.DeserializeObject<ReceiptData>(json);
                     
-                    var printer = new DynamicReceiptPrint();
+                    var printer = new SimpleReceiptPrint();
                     var success = printer.Print(_config.PrinterName, receiptData);
                     
                     return JsonConvert.SerializeObject(new { 
@@ -210,7 +210,7 @@ namespace Printer.Services
                     OpenCashDrawer = true
                 };
 
-                var printer = new DynamicReceiptPrint();
+                var printer = new SimpleReceiptPrint();
                 var success = printer.Print(_config.PrinterName, testData);
                 
                 return JsonConvert.SerializeObject(new { 

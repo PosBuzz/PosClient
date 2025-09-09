@@ -164,10 +164,22 @@ namespace Printer
       {
         if (input.StartsWith("print://"))
         {
-          // Legacy mode - just print order ID
+          // Legacy mode - convert to simple receipt format
           var orderId = input.Replace("print://", "").Replace("/", "");
           Console.WriteLine("Processing print request: " + input);
-          new ReceiptPrint().Print(config.PrinterName, orderId);
+          
+          // Create a simple receipt data for legacy mode
+          var legacyReceiptData = new ReceiptData 
+          {
+            OrderId = orderId,
+            OrderDate = DateTime.Now,
+            Items = new System.Collections.Generic.List<ReceiptItem>(),
+            Total = 0,
+            Subtotal = 0
+          };
+          
+          var printer = new SimpleReceiptPrint();
+          printer.Print(config.PrinterName, legacyReceiptData);
         }
         else if (input.StartsWith("{"))
         {
