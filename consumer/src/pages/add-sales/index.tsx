@@ -160,28 +160,28 @@ const NewSale = () => {
     taxPercentage: number,
     taxMethod: string
   ) => {
-    const lineTotal = quantity * price;
+    const baseAmount = quantity * price;
     let taxAmount: number;
-    let taxableAmount: number;
+    let lineTotal: number;
 
     // Ensure taxPercentage is a valid number
     const validTaxPercentage = Number(taxPercentage) || 0;
 
     if (taxMethod === "INCLUSIVE") {
-      // Tax is included in the price
-      taxableAmount = lineTotal;
-      taxAmount = (lineTotal * validTaxPercentage) / (100 + validTaxPercentage);
+      // Tax is included in the price - the price already includes tax
+      lineTotal = baseAmount; // Price includes tax
+      taxAmount = (baseAmount * validTaxPercentage) / (100 + validTaxPercentage);
     } else {
       // Tax is exclusive - added on top of price
-      taxableAmount = lineTotal;
-      taxAmount = (lineTotal * validTaxPercentage) / 100;
+      taxAmount = (baseAmount * validTaxPercentage) / 100;
+      lineTotal = baseAmount + taxAmount; // Add tax to get total
     }
 
     // Return precise values without rounding
     return {
       line_total: Number(lineTotal) || 0,
       tax_amount: Number(taxAmount) || 0,
-      taxable_amount: Number(taxableAmount) || 0,
+      taxable_amount: Number(baseAmount) || 0,
     };
   };
 
@@ -396,9 +396,9 @@ const NewSale = () => {
   };
 
   const calculateTotals = () => {
-    // Calculate subtotal (price before tax for exclusive, includes tax for inclusive)
+    // Calculate subtotal (price before tax for both exclusive and inclusive)
     const subtotal = selectedItems.reduce((sum, item) => {
-      // For inclusive tax, we need to subtract tax from line_total to get the base amount
+      // For both inclusive and exclusive tax, we need the base amount (price without tax)
       const variant = productsForSaleQuery.data?.find(
         (v) => v.id === item.variant_id
       );
@@ -408,8 +408,8 @@ const NewSale = () => {
         // For inclusive tax, the subtotal is the line_total minus tax
         return sum + (Number(item.line_total) - Number(item.tax_amount));
       } else {
-        // For exclusive tax, the subtotal is just the line_total (price without tax)
-        return sum + Number(item.line_total);
+        // For exclusive tax, the subtotal is the base price (unit_price * quantity)
+        return sum + (Number(item.unit_price) * Number(item.quantity));
       }
     }, 0);
 
@@ -427,9 +427,7 @@ const NewSale = () => {
         ? (subtotal * discountAmountNum) / 100
         : discountAmountNum;
 
-    // For inclusive tax: total = subtotal + tax - discount + shipping
-    // For exclusive tax: total = subtotal - discount + tax + shipping
-    // Since we're mixing both types, we calculate: subtotal - discount + tax + shipping
+    // Total = subtotal - discount + tax + shipping
     const total = subtotal - finalDiscount + totalTax + shippingCostNum;
 
     return {

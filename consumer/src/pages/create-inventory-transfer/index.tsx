@@ -121,6 +121,7 @@ export default function AddInventoryTransfer() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.movementHistory] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {

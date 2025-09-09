@@ -74,39 +74,16 @@ const SaleDetail: React.FC = () => {
     }
   };
 
-  // Calculate actual payment status based on received amount and total
+  // Use database payment status - backend now calculates correctly
   const getActualPaymentStatus = (sale: any) => {
-    // For tax-inclusive items, the correct total should be the sum of line_totals from items
-    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
-      return sum + (Number(item.line_total) || 0);
-    }, 0) || 0;
-    
-    // Use items total if it's different from the reported total_amount (backend calculation issue)
-    const correctTotal = itemsTotal > 0 ? itemsTotal : (Number(sale?.total_amount) || 0);
-    const receivedAmount = Number(sale?.received_amount) || 0;
-    
-    // Add small tolerance for floating point comparison
-    const tolerance = 0.01;
-    
-    if (receivedAmount >= (correctTotal - tolerance)) {
-      return PaymentStatus.PAID;
-    } else if (receivedAmount > 0) {
-      return PaymentStatus.PARTIAL;
-    } else {
-      return PaymentStatus.DUE;
-    }
+    // Use the database payment_status directly since backend calculates it correctly now
+    return sale?.payment_status || PaymentStatus.DUE;
   };
 
-  // Calculate the correct total based on line items
+  // Use database total amount - backend now calculates correctly
   const getCorrectTotal = (sale: any) => {
-    const itemsTotal = sale?.items?.reduce((sum: number, item: any) => {
-      return sum + (Number(item.line_total) || 0);
-    }, 0) || 0;
-    
-    const discountAmount = Number(sale?.discount_amount) || 0;
-    const shippingCost = Number(sale?.shipping_cost) || 0;
-    
-    return itemsTotal - discountAmount + shippingCost;
+    // Use the database total_amount directly since backend calculates it correctly now
+    return Number(sale?.total_amount) || 0;
   };
 
   const getPaymentMethodColor = (method: PaymentMethod) => {
@@ -152,6 +129,66 @@ const SaleDetail: React.FC = () => {
         return 'Credit';
       default:
         return method;
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!sale) return;
+
+    try {
+      message.info("Preparing receipt for printing...");
+
+      // Format payment methods
+      const paymentMethods = sale.payments && sale.payments.length > 0 
+        ? sale.payments.map((payment: any) => getPaymentMethodLabel(payment.payment_method)).join(", ")
+        : "Cash";
+
+      // Format receipt data according to the required structure
+      const receiptData = {
+        receiptNumber: sale.sale_number,
+        date: dayjs(sale.sale_date).format("YYYY-MM-DD"),
+        time: dayjs(sale.sale_date).format("HH:mm:ss"),
+        cashier: sale.user_name || "Staff",
+        customer: sale.customer_name || "Walk-in Customer",
+        items: sale.items?.map((item: any) => ({
+          name: `${item.variant?.product?.name || 'Product'} - ${item.variant?.name || ''}`.trim(),
+          quantity: Number(item.quantity) || 0,
+          price: Number(item.unit_price) || 0,
+          total: Number(item.line_total) || 0
+        })) || [],
+        subtotal: Number(sale?.subtotal) || 0,
+        tax: Number(sale?.tax_amount) || 0,
+        total: getCorrectTotal(sale),
+        amountPaid: Number(sale?.received_amount) || 0,
+        change: Math.max(0, (Number(sale?.received_amount) || 0) - getCorrectTotal(sale)),
+        paymentMethod: paymentMethods
+      };
+
+      message.info("Sending to printer...");
+
+      // Send direct request to localhost:8080/print
+      const response = await fetch('http://localhost:8080/print', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(receiptData)
+      });
+
+      if (response.ok) {
+        await response.json(); // Parse response for completeness
+        message.success("Receipt printed successfully!");
+      } else {
+        const errorText = await response.text();
+        message.error("Failed to print receipt: " + errorText);
+      }
+    } catch (error: any) {
+      console.error('Print error:', error);
+      if (error.message.includes('fetch')) {
+        message.error("Printing agent is not running. Please start the printing agent on your computer and try again.");
+      } else {
+        message.error("Failed to print receipt. Please check your connection.");
+      }
     }
   };
 
@@ -288,7 +325,7 @@ const SaleDetail: React.FC = () => {
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/sales')}>
               Back to Sales
             </Button>
-            <Button type="primary" icon={<PrinterOutlined />}>
+            <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
               Print Receipt
             </Button>
           </Space>
@@ -421,10 +458,10 @@ const SaleDetail: React.FC = () => {
           {/* Payment Summary */}
           <Card title="Payment Summary">
             <div style={{ marginBottom: 16 }}>
-              {/* For tax-inclusive pricing, show tax as part of subtotal */}
+              {/* Use database subtotal */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text>Subtotal (inc. tax):</Text>
-                <Text>${(getCorrectTotal(sale) + (Number(sale?.discount_amount) || 0) - (Number(sale?.shipping_cost) || 0)).toFixed(2)}</Text>
+                <Text>Subtotal:</Text>
+                <Text>${(Number(sale?.subtotal) || 0).toFixed(2)}</Text>
               </div>
               {(Number(sale?.discount_amount) || 0) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -440,8 +477,8 @@ const SaleDetail: React.FC = () => {
               )}
               {(Number(sale?.tax_amount) || 0) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Tax (included):</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>${(Number(sale?.tax_amount) || 0).toFixed(2)}</Text>
+                  <Text>Tax:</Text>
+                  <Text>${(Number(sale?.tax_amount) || 0).toFixed(2)}</Text>
                 </div>
               )}
               <Divider style={{ margin: '12px 0' }} />
