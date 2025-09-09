@@ -1146,7 +1146,7 @@ const NewSale = () => {
                     htmlType="submit"
                     icon={<CalculatorOutlined />}
                     size="large"
-                    disabled={selectedItems.length === 0}
+                    disabled={selectedItems.length === 0 || loading}
                     loading={loading}
                     block
                   >
