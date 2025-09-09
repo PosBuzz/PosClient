@@ -626,16 +626,31 @@ namespace Printer
                 
                 ReceiptData receipt = new ReceiptData();
                 
-                // Extract basic fields - try both orderId and saleNumber
-                receipt.OrderId = GetFirstNonNull(ExtractJsonString(json, "orderId"), ExtractJsonString(json, "sale_number"));
-                receipt.SaleNumber = GetFirstNonNull(ExtractJsonString(json, "sale_number"), ExtractJsonString(json, "saleNumber"), receipt.OrderId);
+                // Extract basic fields - try multiple naming conventions
+                receipt.OrderId = GetFirstNonNull(
+                    ExtractJsonString(json, "orderId"), 
+                    ExtractJsonString(json, "receiptNumber"),
+                    ExtractJsonString(json, "receipt_number"),
+                    ExtractJsonString(json, "sale_number"),
+                    ExtractJsonString(json, "saleNumber"));
+                    
+                receipt.SaleNumber = GetFirstNonNull(
+                    ExtractJsonString(json, "saleNumber"),
+                    ExtractJsonString(json, "sale_number"), 
+                    ExtractJsonString(json, "receiptNumber"),
+                    receipt.OrderId);
+                    
                 receipt.Notes = ExtractJsonString(json, "notes");
                 receipt.PaymentStatus = GetFirstNonNull(ExtractJsonString(json, "payment_status"), ExtractJsonString(json, "paymentStatus"));
                 
                 Console.WriteLine("ParseReceiptJson: OrderId = " + receipt.OrderId + ", SaleNumber = " + receipt.SaleNumber + ", Notes = " + receipt.Notes);
                 
-                // Extract customer info
-                string customerName = GetFirstNonNull(ExtractJsonString(json, "customer_name"), ExtractJsonString(json, "customerName"));
+                // Extract customer info - handle both simple string and nested object
+                string customerName = GetFirstNonNull(
+                    ExtractJsonString(json, "customer"),
+                    ExtractJsonString(json, "customer_name"), 
+                    ExtractJsonString(json, "customerName"));
+                    
                 if (customerName == null)
                 {
                     // Try nested customer object
@@ -650,7 +665,9 @@ namespace Printer
                 {
                     receipt.Customer = new CustomerInfo { Name = customerName };
                     
-                    string customerPhone = GetFirstNonNull(ExtractJsonString(json, "customer_phone"), ExtractJsonString(json, "customerPhone"));
+                    string customerPhone = GetFirstNonNull(
+                        ExtractJsonString(json, "customer_phone"), 
+                        ExtractJsonString(json, "customerPhone"));
                     if (customerPhone == null)
                     {
                         int customerStart = json.IndexOf("\"customer\"");
@@ -665,6 +682,46 @@ namespace Printer
                     }
                     
                     Console.WriteLine("ParseReceiptJson: Customer = " + customerName + ", Phone = " + customerPhone);
+                }
+                
+                // Extract cashier info
+                string cashierName = GetFirstNonNull(
+                    ExtractJsonString(json, "cashier"),
+                    ExtractJsonString(json, "cashier_name"),
+                    ExtractJsonString(json, "cashierName"));
+                if (!string.IsNullOrEmpty(cashierName))
+                {
+                    receipt.Cashier = new UserInfo { Name = cashierName };
+                    Console.WriteLine("ParseReceiptJson: Cashier = " + cashierName);
+                }
+                
+                // Parse date and time
+                string dateStr = ExtractJsonString(json, "date");
+                string timeStr = ExtractJsonString(json, "time");
+                if (!string.IsNullOrEmpty(dateStr))
+                {
+                    DateTime parsedDate;
+                    if (DateTime.TryParse(dateStr, out parsedDate))
+                    {
+                        if (!string.IsNullOrEmpty(timeStr))
+                        {
+                            // Combine date and time
+                            TimeSpan parsedTime;
+                            if (TimeSpan.TryParse(timeStr, out parsedTime))
+                            {
+                                receipt.OrderDate = parsedDate.Date + parsedTime;
+                            }
+                            else
+                            {
+                                receipt.OrderDate = parsedDate;
+                            }
+                        }
+                        else
+                        {
+                            receipt.OrderDate = parsedDate;
+                        }
+                        Console.WriteLine("ParseReceiptJson: Date = " + receipt.OrderDate);
+                    }
                 }
                 
                 // Extract branch info
@@ -707,8 +764,8 @@ namespace Printer
                 ParseDecimalField(json, receipt, "total", "total_amount", "totalAmount");
                 ParseDecimalField(json, receipt, "discount", "discount_amount", "discountAmount");
                 ParseDecimalField(json, receipt, "shipping_cost", "shippingCost");
-                ParseDecimalField(json, receipt, "received_amount", "receivedAmount");
-                ParseDecimalField(json, receipt, "change_amount", "changeAmount");
+                ParseDecimalField(json, receipt, "received_amount", "receivedAmount", "amountPaid", "amount_paid");
+                ParseDecimalField(json, receipt, "change_amount", "changeAmount", "change");
                 
                 // Extract payment info - handle both single payment and payments array
                 ParsePayments(json, receipt);
@@ -773,9 +830,11 @@ namespace Printer
                                 receipt.ShippingCost = value;
                                 break;
                             case "receivedamount":
+                            case "amountpaid":
                                 receipt.ReceivedAmount = value;
                                 break;
                             case "changeamount":
+                            case "change":
                                 receipt.ChangeAmount = value;
                                 break;
                         }
@@ -839,43 +898,37 @@ namespace Printer
             }
             else
             {
-                // Fallback to single payment object
-                int paymentStart = json.IndexOf("\"payment\"");
-                if (paymentStart > -1)
+                // Fallback to single payment object or direct paymentMethod field
+                string paymentMethod = GetFirstNonNull(
+                    ExtractJsonString(json, "paymentMethod"),
+                    ExtractJsonString(json, "payment_method"),
+                    ExtractJsonString(json, "method"));
+                    
+                if (string.IsNullOrEmpty(paymentMethod))
                 {
-                    string paymentSection = json.Substring(paymentStart);
-                    string paymentMethod = GetFirstNonNull(
-                        ExtractJsonString(paymentSection, "method"),
-                        ExtractJsonString(paymentSection, "payment_method"),
-                        ExtractJsonString(paymentSection, "paymentMethod"));
-                    if (!string.IsNullOrEmpty(paymentMethod))
+                    int paymentStart = json.IndexOf("\"payment\"");
+                    if (paymentStart > -1)
                     {
-                        receipt.Payment = new PaymentInfo { Method = paymentMethod, PaymentMethod = paymentMethod };
-                        
-                        string amountPaidStr = GetFirstNonNull(
-                            ExtractJsonString(paymentSection, "amountPaid"),
-                            ExtractJsonString(paymentSection, "amount_paid"),
-                            ExtractJsonString(paymentSection, "amount"));
-                        if (!string.IsNullOrEmpty(amountPaidStr))
-                        {
-                            decimal amountPaid;
-                            if (decimal.TryParse(amountPaidStr, out amountPaid))
-                            {
-                                receipt.Payment.AmountPaid = amountPaid;
-                                receipt.Payment.Amount = amountPaid;
-                            }
-                        }
-                        
-                        string changeStr = ExtractJsonString(paymentSection, "change");
-                        if (!string.IsNullOrEmpty(changeStr))
-                        {
-                            decimal change;
-                            if (decimal.TryParse(changeStr, out change))
-                                receipt.Payment.Change = change;
-                        }
-                        
-                        receipt.Payments.Add(receipt.Payment);
+                        string paymentSection = json.Substring(paymentStart);
+                        paymentMethod = GetFirstNonNull(
+                            ExtractJsonString(paymentSection, "method"),
+                            ExtractJsonString(paymentSection, "payment_method"),
+                            ExtractJsonString(paymentSection, "paymentMethod"));
                     }
+                }
+                
+                if (!string.IsNullOrEmpty(paymentMethod))
+                {
+                    receipt.Payment = new PaymentInfo 
+                    { 
+                        Method = paymentMethod, 
+                        PaymentMethod = paymentMethod,
+                        AmountPaid = receipt.ReceivedAmount,
+                        Amount = receipt.ReceivedAmount,
+                        Change = receipt.ChangeAmount
+                    };
+                    receipt.Payments.Add(receipt.Payment);
+                    Console.WriteLine("ParseReceiptJson: Payment Method = " + paymentMethod + ", Amount = " + receipt.ReceivedAmount + ", Change = " + receipt.ChangeAmount);
                 }
             }
         }
