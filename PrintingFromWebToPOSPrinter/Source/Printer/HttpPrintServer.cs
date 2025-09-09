@@ -219,7 +219,15 @@ namespace Printer
                 Console.WriteLine("Branch: " + (receiptData.Branch != null ? receiptData.Branch.Name : ""));
                 Console.WriteLine("User: " + (receiptData.Cashier != null ? receiptData.Cashier.Name : ""));
                 Console.WriteLine("Items Count: " + (receiptData.Items != null ? receiptData.Items.Count : 0));
+                Console.WriteLine("=== FINANCIAL DETAILS ===");
+                Console.WriteLine("Subtotal: $" + receiptData.Subtotal);
+                Console.WriteLine("Discount: $" + receiptData.Discount);
+                Console.WriteLine("DiscountAmount: $" + receiptData.DiscountAmount);
+                Console.WriteLine("ShippingCost: $" + receiptData.ShippingCost);
+                Console.WriteLine("Tax: $" + receiptData.Tax);
+                Console.WriteLine("TaxAmount: $" + receiptData.TaxAmount);
                 Console.WriteLine("Total: $" + receiptData.Total);
+                Console.WriteLine("TotalAmount: $" + receiptData.TotalAmount);
                 Console.WriteLine("Date: " + (receiptData.OrderDate != null ? receiptData.OrderDate.ToString() : ""));
                 Console.WriteLine("===============================");
 
@@ -258,7 +266,7 @@ namespace Printer
             try
             {
                 StoreConfig config = ConfigManager.GetConfig();
-                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"logoPath\":\"{4}\",\"printerName\":\"{5}\",\"barcodePrinterName\":\"{6}\",\"enableCashDrawer\":{7},\"currency\":\"{8}\",\"port\":{9},\"autoStart\":{10}}}",
+                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"logoPath\":\"{4}\",\"printerName\":\"{5}\",\"barcodePrinterName\":\"{6}\",\"currency\":\"{7}\",\"port\":{8}}}",
                     (config.StoreName ?? "").Replace("\"", "\\\""),
                     (config.Address ?? "").Replace("\"", "\\\""),
                     (config.Phone ?? "").Replace("\"", "\\\""),
@@ -266,10 +274,8 @@ namespace Printer
                     (config.LogoPath ?? "").Replace("\"", "\\\""),
                     (config.PrinterName ?? "").Replace("\"", "\\\""),
                     (config.BarcodePrinterName ?? "").Replace("\"", "\\\""),
-                    config.EnableCashDrawer.ToString().ToLower(),
                     (config.Currency ?? "$").Replace("\"", "\\\""),
-                    config.Port,
-                    config.AutoStart.ToString().ToLower());
+                    config.Port);
             }
             catch (Exception ex)
             {
@@ -357,16 +363,6 @@ namespace Printer
                     Console.WriteLine("HTTP: Setting Currency = " + currency);
                 }
                 
-                // Handle boolean fields - check for both string and boolean values
-                string enableCashDrawerStr = GetFirstNonNull(
-                    ExtractJsonValue(body, "enableCashDrawer"),
-                    ExtractJsonValue(body, "EnableCashDrawer"));
-                if (enableCashDrawerStr != null) {
-                    bool enableCashDrawer = enableCashDrawerStr.ToLower() == "true" || enableCashDrawerStr == "1";
-                    updatedFields.EnableCashDrawer = enableCashDrawer;
-                    Console.WriteLine("HTTP: Setting EnableCashDrawer = " + enableCashDrawer);
-                }
-                
                 // Handle integer fields  
                 string portStr = GetFirstNonNull(
                     ExtractJsonValue(body, "port"),
@@ -377,15 +373,6 @@ namespace Printer
                         updatedFields.Port = port;
                         Console.WriteLine("HTTP: Setting Port = " + port);
                     }
-                }
-                
-                string autoStartStr = GetFirstNonNull(
-                    ExtractJsonValue(body, "autoStart"),
-                    ExtractJsonValue(body, "AutoStart"));
-                if (autoStartStr != null) {
-                    bool autoStart = autoStartStr.ToLower() == "true" || autoStartStr == "1";
-                    updatedFields.AutoStart = autoStart;
-                    Console.WriteLine("HTTP: Setting AutoStart = " + autoStart);
                 }
                 
                 // Update only the provided fields
@@ -510,93 +497,134 @@ namespace Printer
             try
             {
                 Console.WriteLine("=== TEST RECEIPT PRINT ===");
-                Console.WriteLine("Printing test receipt with cash drawer opening...");
+                Console.WriteLine("Printing comprehensive test receipt with all properties...");
                 
-                // Create a test receipt
+                // Create a comprehensive test receipt with all properties
                 ReceiptData testReceipt = new ReceiptData
                 {
                     SaleNumber = "TEST-001",
                     OrderId = "TEST-001",
-                    Total = 25.99m,
-                    Subtotal = 21.99m,
-                    Tax = 4.00m,
-                    ChangeAmount = 4.01m,
-                    ReceivedAmount = 30.00m,
-                    OpenCashDrawer = true, // This will trigger cash drawer opening
-                    OrderDate = DateTime.Now
+                    Subtotal = 180.00m,        // Items subtotal before discount/shipping
+                    Discount = 20.00m,         // Discount amount
+                    DiscountAmount = 20.00m,   // Alternative discount field
+                    ShippingCost = 15.00m,     // Shipping cost
+                    Tax = 25.00m,              // Tax amount
+                    TaxAmount = 25.00m,        // Alternative tax field
+                    Total = 200.00m,           // Final total (180 - 20 + 15 + 25 = 200)
+                    TotalAmount = 200.00m,     // Alternative total field
+                    ReceivedAmount = 250.00m,  // Amount paid
+                    ChangeAmount = 50.00m,     // Change given
+                    OpenCashDrawer = false,    // Disable cash drawer for now
+                    OrderDate = DateTime.Now,
+                    PaymentStatus = "paid",
+                    Notes = "Test receipt with all properties - Comprehensive test print"
                 };
                 
                 // Add store info
                 testReceipt.Branch = new BranchInfo
                 {
-                    Name = "Test Store",
-                    Address = "123 Test Street, Test City",
+                    Name = "PosBuzz Test Store",
+                    Address = "123 Main Street, Business District, Test City 12345",
                     Phone = "(555) 123-4567"
                 };
                 
                 // Add cashier info
                 testReceipt.Cashier = new UserInfo
                 {
-                    Name = "Test Cashier",
+                    Name = "John Test Cashier",
                     Id = "CASHIER-001"
                 };
                 
                 // Add customer info
                 testReceipt.Customer = new CustomerInfo
                 {
-                    Name = "Test Customer",
-                    Phone = "(555) 987-6543"
+                    Name = "Jane Test Customer",
+                    Phone = "(555) 987-6543",
+                    Address = "456 Customer Ave, Test Town"
                 };
                 
-                // Add payment info
+                // Add payment info with multiple payment methods
                 testReceipt.Payment = new PaymentInfo
                 {
-                    Method = "Cash",
-                    PaymentMethod = "Cash",
-                    Amount = 30.00m,
-                    AmountPaid = 30.00m,
-                    Change = 4.01m
+                    Method = "Cash, Card",
+                    PaymentMethod = "Cash, Card",
+                    Amount = 250.00m,
+                    AmountPaid = 250.00m,
+                    Change = 50.00m
                 };
-                testReceipt.Payments.Add(testReceipt.Payment);
                 
-                // Add test items
+                // Add multiple payments
+                testReceipt.Payments.Add(new PaymentInfo
+                {
+                    Method = "Cash",
+                    PaymentMethod = "Cash", 
+                    Amount = 150.00m,
+                    AmountPaid = 150.00m
+                });
+                
+                testReceipt.Payments.Add(new PaymentInfo
+                {
+                    Method = "Card",
+                    PaymentMethod = "Card",
+                    Amount = 100.00m,
+                    AmountPaid = 100.00m
+                });
+                
+                // Add comprehensive test items
                 testReceipt.Items.Add(new ReceiptItem
                 {
-                    Name = "Test Product 1",
+                    Name = "Premium Product A",
+                    Description = "High-quality item with warranty",
+                    Quantity = 3,
+                    Price = 35.00m,
+                    Total = 105.00m,
+                    UnitPrice = 35.00m,
+                    LineTotal = 105.00m
+                });
+                
+                testReceipt.Items.Add(new ReceiptItem
+                {
+                    Name = "Standard Product B", 
+                    Description = "Regular everyday item",
                     Quantity = 2,
-                    Price = 7.99m,
-                    Total = 15.98m,
-                    UnitPrice = 7.99m,
-                    LineTotal = 15.98m
+                    Price = 25.00m,
+                    Total = 50.00m,
+                    UnitPrice = 25.00m,
+                    LineTotal = 50.00m
                 });
                 
                 testReceipt.Items.Add(new ReceiptItem
                 {
-                    Name = "Test Product 2",
+                    Name = "Discounted Product C",
+                    Description = "Special offer item",
                     Quantity = 1,
-                    Price = 6.01m,
-                    Total = 6.01m,
-                    UnitPrice = 6.01m,
-                    LineTotal = 6.01m
+                    Price = 25.00m,
+                    Total = 25.00m,
+                    UnitPrice = 25.00m,
+                    LineTotal = 25.00m
                 });
                 
-                // Print the test receipt
+                // Print the comprehensive test receipt
                 SimpleReceiptPrint printer = new SimpleReceiptPrint();
                 bool success = printer.Print("", testReceipt);
                 
                 if (success)
                 {
-                    Console.WriteLine("✓ Test receipt printed successfully!");
-                    if (testReceipt.OpenCashDrawer)
-                    {
-                        Console.WriteLine("✓ Cash drawer should have opened as well!");
-                    }
-                    return "{\"success\":true,\"message\":\"Test receipt printed successfully with cash drawer opening\"}";
+                    Console.WriteLine("✓ Comprehensive test receipt printed successfully!");
+                    Console.WriteLine("✓ Receipt should show:");
+                    Console.WriteLine("   - Subtotal: $180.00 (3 items)");
+                    Console.WriteLine("   - Discount: -$20.00");
+                    Console.WriteLine("   - Shipping: $15.00");
+                    Console.WriteLine("   - Tax: $25.00");
+                    Console.WriteLine("   - TOTAL: $200.00");
+                    Console.WriteLine("   - Paid: $250.00 (Cash: $150 + Card: $100)");
+                    Console.WriteLine("   - Change: $50.00");
+                    return "{\"success\":true,\"message\":\"Comprehensive test receipt printed with all properties\"}";
                 }
                 else
                 {
-                    Console.WriteLine("✗ Failed to print test receipt");
-                    return "{\"error\":\"Failed to print test receipt\"}";
+                    Console.WriteLine("✗ Failed to print comprehensive test receipt");
+                    return "{\"error\":\"Failed to print comprehensive test receipt\"}";
                 }
             }
             catch (Exception ex)
@@ -758,14 +786,14 @@ namespace Printer
                     }
                 }
                 
-                // Extract decimal values with multiple naming options
-                ParseDecimalField(json, receipt, "subtotal");
-                ParseDecimalField(json, receipt, "tax", "tax_amount", "taxAmount");
-                ParseDecimalField(json, receipt, "total", "total_amount", "totalAmount");
-                ParseDecimalField(json, receipt, "discount", "discount_amount", "discountAmount");
-                ParseDecimalField(json, receipt, "shipping_cost", "shippingCost");
-                ParseDecimalField(json, receipt, "received_amount", "receivedAmount", "amountPaid", "amount_paid");
-                ParseDecimalField(json, receipt, "change_amount", "changeAmount", "change");
+                // Extract decimal values with multiple naming options (parse before items to avoid conflicts)
+                ParseRootLevelDecimalField(json, receipt, "subtotal");
+                ParseRootLevelDecimalField(json, receipt, "tax", "tax_amount", "taxAmount");
+                ParseRootLevelDecimalField(json, receipt, "total", "total_amount", "totalAmount");
+                ParseRootLevelDecimalField(json, receipt, "discount", "discount_amount", "discountAmount");
+                ParseRootLevelDecimalField(json, receipt, "shipping", "shipping_cost", "shippingCost");
+                ParseRootLevelDecimalField(json, receipt, "received_amount", "receivedAmount", "amountPaid", "amount_paid");
+                ParseRootLevelDecimalField(json, receipt, "change_amount", "changeAmount", "change");
                 
                 // Extract payment info - handle both single payment and payments array
                 ParsePayments(json, receipt);
@@ -793,6 +821,142 @@ namespace Printer
                 Console.WriteLine("ParseReceiptJson error: " + ex.Message);
                 return null;
             }
+        }
+        
+        private void ParseRootLevelDecimalField(string json, ReceiptData receipt, params string[] fieldNames)
+        {
+            foreach (string fieldName in fieldNames)
+            {
+                // Find the items array position to avoid parsing fields inside it
+                int itemsArrayStart = json.IndexOf("\"items\"");
+                int itemsArrayEnd = -1;
+                
+                if (itemsArrayStart > -1)
+                {
+                    int arrayStart = json.IndexOf("[", itemsArrayStart);
+                    if (arrayStart > -1)
+                    {
+                        int bracketCount = 1;
+                        int pos = arrayStart + 1;
+                        while (pos < json.Length && bracketCount > 0)
+                        {
+                            if (json[pos] == '[') bracketCount++;
+                            else if (json[pos] == ']') bracketCount--;
+                            pos++;
+                        }
+                        if (bracketCount == 0) itemsArrayEnd = pos;
+                    }
+                }
+                
+                // Look for the field before the items array or after it
+                string valueStr = null;
+                string pattern = "\"" + fieldName + "\"";
+                int keyIndex = json.IndexOf(pattern);
+                
+                while (keyIndex != -1)
+                {
+                    // Check if this occurrence is inside the items array
+                    bool isInsideItemsArray = itemsArrayStart > -1 && itemsArrayEnd > -1 && 
+                                             keyIndex > itemsArrayStart && keyIndex < itemsArrayEnd;
+                    
+                    if (!isInsideItemsArray)
+                    {
+                        // This is a root-level field, extract its value
+                        int colonIndex = json.IndexOf(":", keyIndex);
+                        if (colonIndex > -1)
+                        {
+                            valueStr = ExtractValueFromPosition(json, colonIndex + 1);
+                            break;
+                        }
+                    }
+                    
+                    // Look for next occurrence
+                    keyIndex = json.IndexOf(pattern, keyIndex + 1);
+                }
+                
+                if (!string.IsNullOrEmpty(valueStr))
+                {
+                    decimal value;
+                    if (decimal.TryParse(valueStr, out value))
+                    {
+                        Console.WriteLine("ParseRootLevelDecimalField: " + fieldName + " = " + value);
+                        switch (fieldName.ToLower().Replace("_", ""))
+                        {
+                            case "subtotal":
+                                receipt.Subtotal = value;
+                                break;
+                            case "tax":
+                            case "taxamount":
+                                receipt.Tax = value;
+                                receipt.TaxAmount = value;
+                                break;
+                            case "total":
+                            case "totalamount":
+                                receipt.Total = value;
+                                receipt.TotalAmount = value;
+                                break;
+                            case "discount":
+                            case "discountamount":
+                                receipt.Discount = value;
+                                receipt.DiscountAmount = value;
+                                break;
+                            case "shipping":
+                            case "shippingcost":
+                                receipt.ShippingCost = value;
+                                break;
+                            case "receivedamount":
+                            case "amountpaid":
+                                receipt.ReceivedAmount = value;
+                                break;
+                            case "changeamount":
+                            case "change":
+                                receipt.ChangeAmount = value;
+                                break;
+                        }
+                        break; // Use the first found value
+                    }
+                }
+            }
+        }
+        
+        private string ExtractValueFromPosition(string json, int startPos)
+        {
+            // Skip whitespace after colon
+            while (startPos < json.Length && char.IsWhiteSpace(json[startPos]))
+                startPos++;
+
+            if (startPos >= json.Length) return null;
+
+            int valueEnd;
+            char firstChar = json[startPos];
+
+            if (firstChar == '"')
+            {
+                // String value - find closing quote
+                valueEnd = json.IndexOf("\"", startPos + 1);
+                if (valueEnd == -1) return null;
+                return json.Substring(startPos + 1, valueEnd - startPos - 1);
+            }
+            else
+            {
+                // Number value - find next comma, brace, or bracket
+                valueEnd = startPos;
+                while (valueEnd < json.Length && 
+                       json[valueEnd] != ',' && 
+                       json[valueEnd] != '}' && 
+                       json[valueEnd] != ']' && 
+                       !char.IsWhiteSpace(json[valueEnd]))
+                {
+                    valueEnd++;
+                }
+                
+                if (valueEnd > startPos)
+                {
+                    return json.Substring(startPos, valueEnd - startPos);
+                }
+            }
+
+            return null;
         }
         
         private void ParseDecimalField(string json, ReceiptData receipt, params string[] fieldNames)
@@ -826,6 +990,7 @@ namespace Printer
                                 receipt.Discount = value;
                                 receipt.DiscountAmount = value;
                                 break;
+                            case "shipping":
                             case "shippingcost":
                                 receipt.ShippingCost = value;
                                 break;

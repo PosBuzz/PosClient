@@ -157,6 +157,8 @@ const SaleDetail: React.FC = () => {
           total: Number(item.line_total) || 0
         })) || [],
         subtotal: Number(sale?.subtotal) || 0,
+        discount: Number(sale?.discount_amount) || 0,
+        shipping: Number(sale?.shipping_cost) || 0,
         tax: Number(sale?.tax_amount) || 0,
         total: getCorrectTotal(sale),
         amountPaid: Number(sale?.received_amount) || 0,
