@@ -48,7 +48,6 @@ const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
 const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
-const PrinterSettings = lazy(() => import("./pages/printer-settings"));
 
 export const routes = [
   {
@@ -323,14 +322,6 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <EODReport />
-          </RequirePermission>
-        ),
-      },
-      {
-        path: "printer-settings",
-        element: (
-          <RequirePermission>
-            <PrinterSettings />
           </RequirePermission>
         ),
       },
