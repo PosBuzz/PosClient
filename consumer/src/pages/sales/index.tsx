@@ -137,7 +137,7 @@ const SalesTable = () => {
         receiptNumber: sale.sale_number,
         date: dayjs(sale.sale_date).format("YYYY-MM-DD"),
         time: dayjs(sale.sale_date).format("HH:mm:ss"),
-        cashier: sale.user_name || "Staff",
+        cashier: sale.user?.name || sale.user_name || "Staff",
         customer: sale.customer_name || "Walk-in Customer",
         items: sale.items?.map((item: any) => ({
           name: `${item.variant?.product?.name || 'Product'} - ${item.variant?.name || ''}`.trim(),
