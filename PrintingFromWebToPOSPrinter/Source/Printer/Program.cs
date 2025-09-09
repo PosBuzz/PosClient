@@ -215,7 +215,6 @@ namespace Printer
       Console.WriteLine("Email: " + config.Email);
       Console.WriteLine("Logo Path: " + config.LogoPath);
       Console.WriteLine("Printer: " + config.PrinterName);
-      Console.WriteLine("Cash Drawer: " + (config.EnableCashDrawer ? "Enabled" : "Disabled"));
       Console.WriteLine("Currency: " + config.Currency);
       
       Console.WriteLine("\nTo modify settings, edit the 'store-config.txt' file");

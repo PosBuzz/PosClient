@@ -11,10 +11,8 @@ namespace Printer.Models
         public string LogoPath { get; set; }
         public string PrinterName { get; set; }
         public string BarcodePrinterName { get; set; }
-        public bool EnableCashDrawer { get; set; }
         public string Currency { get; set; }
         public int Port { get; set; }
-        public bool AutoStart { get; set; }
 
         public StoreConfig()
         {
@@ -25,10 +23,8 @@ namespace Printer.Models
             LogoPath = "";
             PrinterName = "";
             BarcodePrinterName = "";
-            EnableCashDrawer = true;
             Currency = "$";
             Port = 8080;
-            AutoStart = true;
         }
     }
 }
