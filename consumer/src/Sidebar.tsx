@@ -72,6 +72,11 @@ const SideBar: React.FC = () => {
           key: "/units",
           permissions: [Permissions.edit_product, Permissions.add_product],
         },
+        {
+          label: <span title="Barcode Printing">Barcode Printing</span>,
+          key: "/barcode-printing",
+          permissions: [Permissions.add_product],
+        },
       ],
     },
     {

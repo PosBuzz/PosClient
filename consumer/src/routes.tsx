@@ -48,6 +48,7 @@ const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
 const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
+const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
 
 export const routes = [
   {
@@ -314,6 +315,15 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <SaleDetail />
+          </RequirePermission>
+        ),
+      },
+      // Barcode Printing Route
+      {
+        path: "barcode-printing",
+        element: (
+          <RequirePermission permission={Permissions.add_product}>
+            <BarcodePrinting />
           </RequirePermission>
         ),
       },

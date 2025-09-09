@@ -105,7 +105,6 @@ Address=123 Main Street, City, State 12345
 Phone=(555) 123-4567
 PrinterName=Your Printer Name
 Currency=$
-EnableCashDrawer=true
 ```
 
 ## Support
