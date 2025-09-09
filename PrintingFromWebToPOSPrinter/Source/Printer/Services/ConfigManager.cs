@@ -51,10 +51,8 @@ namespace Printer.Services
                                     case "LogoPath": _config.LogoPath = value; break;
                                     case "PrinterName": _config.PrinterName = value; break;
                                     case "BarcodePrinterName": _config.BarcodePrinterName = value; break;
-                                    case "EnableCashDrawer": _config.EnableCashDrawer = bool.Parse(value); break;
                                     case "Currency": _config.Currency = value; break;
                                     case "Port": _config.Port = int.Parse(value); break;
-                                    case "AutoStart": _config.AutoStart = bool.Parse(value); break;
                                 }
                             }
                         }
@@ -86,10 +84,8 @@ namespace Printer.Services
                     "LogoPath=" + _config.LogoPath,
                     "PrinterName=" + _config.PrinterName,
                     "BarcodePrinterName=" + _config.BarcodePrinterName,
-                    "EnableCashDrawer=" + _config.EnableCashDrawer,
                     "Currency=" + _config.Currency,
-                    "Port=" + _config.Port,
-                    "AutoStart=" + _config.AutoStart
+                    "Port=" + _config.Port
                 };
                 
                 File.WriteAllLines(ConfigPath, lines);
@@ -153,10 +149,8 @@ namespace Printer.Services
             config.LogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
             config.PrinterName = "RONGTA 80mm Series Printer";
             config.BarcodePrinterName = "Default Barcode Printer";
-            config.EnableCashDrawer = true;
             config.Currency = "$";
             config.Port = 8080;
-            config.AutoStart = true;
             return config;
         }
     }

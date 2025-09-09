@@ -17,8 +17,6 @@ namespace Printer
         private TextBox txtBarcodePrinterName;
         private TextBox txtCurrency;
         private NumericUpDown numPort;
-        private CheckBox chkEnableCashDrawer;
-        private CheckBox chkAutoStart;
         private CheckBox chkStartupWithWindows;
         private Button btnOK;
         private Button btnCancel;
@@ -32,7 +30,7 @@ namespace Printer
         private void InitializeComponent()
         {
             this.Text = "Configuration - PosBuzz Print Server";
-            this.Size = new Size(450, 450);
+            this.Size = new Size(450, 390);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -70,31 +68,17 @@ namespace Printer
                 Value = 8080
             };
 
-            chkEnableCashDrawer = new CheckBox 
-            { 
-                Text = "Enable Cash Drawer", 
-                Location = new Point(20, 260), 
-                Size = new Size(200, 20) 
-            };
-
-            chkAutoStart = new CheckBox 
-            { 
-                Text = "Auto-start server on launch", 
-                Location = new Point(20, 290), 
-                Size = new Size(200, 20) 
-            };
-
             chkStartupWithWindows = new CheckBox 
             { 
                 Text = "Start with Windows (system tray)", 
-                Location = new Point(20, 320), 
+                Location = new Point(20, 260), 
                 Size = new Size(200, 20) 
             };
 
             btnOK = new Button 
             { 
                 Text = "OK", 
-                Location = new Point(250, 380), 
+                Location = new Point(250, 320), 
                 Size = new Size(75, 30),
                 DialogResult = DialogResult.OK
             };
@@ -103,7 +87,7 @@ namespace Printer
             btnCancel = new Button 
             { 
                 Text = "Cancel", 
-                Location = new Point(335, 380), 
+                Location = new Point(335, 320), 
                 Size = new Size(75, 30),
                 DialogResult = DialogResult.Cancel
             };
@@ -119,8 +103,6 @@ namespace Printer
                 lblBarcodePrinter, txtBarcodePrinterName,
                 lblCurrency, txtCurrency,
                 lblPort, numPort,
-                chkEnableCashDrawer,
-                chkAutoStart,
                 chkStartupWithWindows,
                 btnOK, btnCancel
             });
@@ -139,8 +121,6 @@ namespace Printer
             txtBarcodePrinterName.Text = config.BarcodePrinterName ?? "";
             txtCurrency.Text = config.Currency ?? "$";
             numPort.Value = config.Port > 0 ? config.Port : 8080;
-            chkEnableCashDrawer.Checked = config.EnableCashDrawer;
-            chkAutoStart.Checked = config.AutoStart;
             chkStartupWithWindows.Checked = StartupManager.IsStartupEnabled();
         }
 
@@ -155,9 +135,7 @@ namespace Printer
                 PrinterName = txtPrinterName.Text,
                 BarcodePrinterName = txtBarcodePrinterName.Text,
                 Currency = txtCurrency.Text,
-                Port = (int)numPort.Value,
-                EnableCashDrawer = chkEnableCashDrawer.Checked,
-                AutoStart = chkAutoStart.Checked
+                Port = (int)numPort.Value
             };
 
             // Handle Windows startup setting

@@ -73,7 +73,7 @@ namespace Printer
                 
                 this.Print(printerName, this.PrintReceipt);
                 
-                if (data.OpenCashDrawer && config.EnableCashDrawer)
+                if (data.OpenCashDrawer)
                 {
                     Console.WriteLine("Opening cash drawer...");
                     // Cash drawer opening logic here
@@ -236,29 +236,41 @@ namespace Printer
                 );
             }
 
-            if (receiptData.Tax > 0)
+            if (receiptData.Discount > 0 || receiptData.DiscountAmount > 0)
             {
-                y += this.DrawTextColumns(
-                    g, y,
-                    new TextColumn("Tax:", 0.7f, StringAlignment.Near, 7f),
-                    new TextColumn(FormatCurrency(receiptData.Tax), 0.3f, StringAlignment.Far, 7f)
-                );
-            }
-
-            if (receiptData.Discount > 0)
-            {
+                decimal discountToShow = receiptData.Discount > 0 ? receiptData.Discount : receiptData.DiscountAmount;
                 y += this.DrawTextColumns(
                     g, y,
                     new TextColumn("Discount:", 0.7f, StringAlignment.Near, 7f),
-                    new TextColumn("-" + FormatCurrency(receiptData.Discount), 0.3f, StringAlignment.Far, 7f)
+                    new TextColumn("-" + FormatCurrency(discountToShow), 0.3f, StringAlignment.Far, 7f)
+                );
+            }
+
+            if (receiptData.ShippingCost > 0)
+            {
+                y += this.DrawTextColumns(
+                    g, y,
+                    new TextColumn("Shipping:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn(FormatCurrency(receiptData.ShippingCost), 0.3f, StringAlignment.Far, 7f)
+                );
+            }
+
+            if (receiptData.Tax > 0 || receiptData.TaxAmount > 0)
+            {
+                decimal taxToShow = receiptData.Tax > 0 ? receiptData.Tax : receiptData.TaxAmount;
+                y += this.DrawTextColumns(
+                    g, y,
+                    new TextColumn("Tax:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn(FormatCurrency(taxToShow), 0.3f, StringAlignment.Far, 7f)
                 );
             }
 
             y += 2;
+            decimal totalToShow = receiptData.Total > 0 ? receiptData.Total : receiptData.TotalAmount;
             y += this.DrawTextColumns(
                 g, y,
                 new TextColumn("TOTAL:", 0.7f, StringAlignment.Near, 9f, FontStyle.Bold),
-                new TextColumn(FormatCurrency(receiptData.Total), 0.3f, StringAlignment.Far, 9f, FontStyle.Bold)
+                new TextColumn(FormatCurrency(totalToShow), 0.3f, StringAlignment.Far, 9f, FontStyle.Bold)
             );
 
             // Payment information (only if exists)
@@ -353,14 +365,6 @@ namespace Printer
             try
             {
                 Console.WriteLine("Opening cash drawer for printer: " + printerName);
-                
-                // Check if cash drawer is enabled in config
-                StoreConfig config = ConfigManager.GetConfig();
-                if (!config.EnableCashDrawer)
-                {
-                    Console.WriteLine("Cash drawer is disabled in configuration");
-                    return false;
-                }
                 
                 // ESC/POS commands to open cash drawer
                 // Standard commands that work with most thermal printers
