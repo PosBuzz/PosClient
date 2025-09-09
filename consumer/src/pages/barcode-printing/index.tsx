@@ -22,6 +22,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 import { productApi } from "../../api/product-api";
 import { queryKeys } from "../../constants/queryKeys";
 import { Product, ProductVariantDetailed } from "../../types/product.types";
+import { set } from "lodash";
 
 const { Option } = Select;
 
@@ -102,13 +103,9 @@ const BarcodePrinting = () => {
       });
 
       // Force form to re-render
-    //   form.validateFields().catch(() => {});
+      //   form.validateFields().catch(() => {});
     }
   };
-
-  useEffect(() => {
-    setPageTitle("Barcode Printing");
-  }, []);
 
   const handlePreview = () => {
     const values = form.getFieldsValue();
@@ -219,6 +216,7 @@ const BarcodePrinting = () => {
 
   return (
     <div>
+      {setPageTitle("Barcode Printing")}
       <PageTitle
         title="Barcode Printing"
         breadcrumbs={[
@@ -267,8 +265,8 @@ const BarcodePrinting = () => {
                     >
                       {productOptions.map((product) => (
                         <Option key={product.id} value={product.id.toString()}>
-                          {product.label} | Barcode: {product.barcode} | Price: $
-                          {parseFloat(product.price.toString()).toFixed(2)}
+                          {product.label} | Barcode: {product.barcode} | Price:
+                          ${parseFloat(product.price.toString()).toFixed(2)}
                         </Option>
                       ))}
                     </Select>
@@ -326,10 +324,7 @@ const BarcodePrinting = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={12} lg={6}>
-                  <Form.Item
-                    label="VAT Percentage"
-                    name="vatPercentage"
-                  >
+                  <Form.Item label="VAT Percentage" name="vatPercentage">
                     <InputNumber
                       min={0}
                       max={100}
@@ -343,13 +338,19 @@ const BarcodePrinting = () => {
                   <Form.Item
                     label="Quantity"
                     name="Quantity"
-                    rules={[{ required: true, message: "Please enter quantity" }]}
+                    rules={[
+                      { required: true, message: "Please enter quantity" },
+                    ]}
                   >
                     <InputNumber min={1} max={100} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
                 <Col xs={12} lg={6}>
-                  <Form.Item name="PrintBarcodeOnly" valuePropName="checked" label="Print Barcode Only">
+                  <Form.Item
+                    name="PrintBarcodeOnly"
+                    valuePropName="checked"
+                    label="Print Barcode Only"
+                  >
                     <Switch />
                   </Form.Item>
                 </Col>
@@ -359,12 +360,11 @@ const BarcodePrinting = () => {
 
               <Row justify="center">
                 <Col>
-                  <Space size="large">
+                  <Space>
                     <Button
                       type="default"
                       icon={<EyeOutlined />}
                       onClick={handlePreview}
-                      size="large"
                     >
                       Preview
                     </Button>
@@ -373,15 +373,10 @@ const BarcodePrinting = () => {
                       icon={<PrinterOutlined />}
                       loading={loading}
                       onClick={handlePrint}
-                      size="large"
                     >
                       Print Label
                     </Button>
-                    <Button 
-                      icon={<ClearOutlined />} 
-                      onClick={handleClear}
-                      size="large"
-                    >
+                    <Button icon={<ClearOutlined />} onClick={handleClear}>
                       Clear
                     </Button>
                   </Space>
