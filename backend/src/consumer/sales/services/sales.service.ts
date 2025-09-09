@@ -99,18 +99,54 @@ export class SalesService {
     // Generate sale number
     const saleNumber = await this.generateSaleNumber(consumerId);
 
-    // Calculate totals
-    const subtotal = createSaleDto.items.reduce(
-      (sum, item) => sum + item.line_total,
+    // DEBUG: Log the incoming data to understand the calculation mismatch
+    console.log('=== SALE CREATION DEBUG ===');
+    console.log('Items received from frontend:');
+    createSaleDto.items.forEach((item, index) => {
+      console.log(`Item ${index + 1}:`, {
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.line_total,
+        tax_amount: item.tax_amount,
+        calculated_base: Number(item.line_total) - Number(item.tax_amount || 0)
+      });
+    });
+    
+    // Calculate totals using frontend-calculated values
+    // The frontend has already calculated correct subtotal, tax, and totals considering INCLUSIVE/EXCLUSIVE tax
+    // We should trust the frontend calculations instead of recalculating here
+    
+    // Use the frontend's calculated subtotal directly (it's passed in the DTO if available)
+    // If not available, calculate it properly by checking each item's tax method
+    let subtotal = 0;
+    let totalTax = 0;
+    
+    // For now, use the simpler approach: trust frontend calculations
+    // Subtotal = sum of (line_total - tax_amount) for all items
+    subtotal = createSaleDto.items.reduce((sum, item) => {
+      return sum + (Number(item.line_total) - Number(item.tax_amount || 0));
+    }, 0);
+    
+    totalTax = createSaleDto.items.reduce(
+      (sum, item) => sum + (Number(item.tax_amount) || 0),
       0,
     );
-    const totalTax = createSaleDto.items.reduce(
-      (sum, item) => sum + (item.tax_amount || 0),
-      0,
-    );
-    const discountAmount = createSaleDto.discount_amount || 0;
-    const shippingCost = createSaleDto.shipping_cost || 0;
-    const totalAmount = subtotal + totalTax + shippingCost - discountAmount;
+    
+    const discountAmount = Number(createSaleDto.discount_amount) || 0;
+    const shippingCost = Number(createSaleDto.shipping_cost) || 0;
+    
+    // Total = subtotal - discount + tax + shipping (same as frontend)
+    const totalAmount = subtotal - discountAmount + totalTax + shippingCost;
+    
+    console.log('Backend calculated totals:', {
+      subtotal,
+      totalTax,
+      discountAmount,
+      shippingCost,
+      totalAmount
+    });
+    console.log('=== END DEBUG ===');
     const receivedAmount = createSaleDto.received_amount || 0;
     // Calculate payment totals and determine payment status
     let totalPaymentAmount = 0;

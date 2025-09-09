@@ -108,6 +108,8 @@ export default function AddInventoryAdjustment() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.variantStock] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.stockByVariant] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
       navigate("/inventory/adjustments");
     },
     onError: (error: any) => {
