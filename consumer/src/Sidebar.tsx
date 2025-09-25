@@ -157,6 +157,16 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.branches],
         },
         {
+          label: <span title="Returns">Returns</span>,
+          key: "/returns",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="Create Return">Create Return</span>,
+          key: "/returns/new",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="End of Day Report">End of Day Report</span>,
           key: "/eod",
           permissions: [Permissions.sales],
