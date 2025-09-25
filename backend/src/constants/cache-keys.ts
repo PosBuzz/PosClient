@@ -150,6 +150,13 @@ export const generateCacheKey = {
   productByBarcode: (consumerId: number, branchId: number, barcode: string) =>
     `${consumerId}:product-barcode:${branchId}:${barcode}`,
 
+  // Returns cache helpers
+  returnList: (consumerId: number, page?: number, limit?: number, branchId?: number, originalSaleId?: number) =>
+    `${consumerId}:returns:list:${page || 1}:${limit || 10}:${branchId || 'all'}:${originalSaleId || 'all'}`,
+
+  returnDetail: (returnId: number, consumerId: number) =>
+    `${consumerId}:return:detail:${returnId}`,
+
   // Admin CRUD cache helpers
   adminCrudList: (model: string) =>
     `global:admin:crud:${model}:list`,

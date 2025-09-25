@@ -30,6 +30,8 @@ export const queryKeys = {
   units: "units",
   users: "users",
   vendors: "vendors",
+  returns: "returns",
+  return: "return",
   eod: "eod-report",
 };
 
@@ -67,6 +69,8 @@ export const queryStaleTimeMap = {
   [queryKeys.users]: staleTimeConfig.dynamic,
   [queryKeys.sales]: staleTimeConfig.dynamic,
   [queryKeys.sale]: staleTimeConfig.dynamic,
+  [queryKeys.returns]: staleTimeConfig.dynamic,
+  [queryKeys.return]: staleTimeConfig.dynamic,
   [queryKeys.productsForSale]: staleTimeConfig.dynamic,
   [queryKeys.product]: staleTimeConfig.dynamic,
   [queryKeys.batches]: staleTimeConfig.dynamic,

@@ -49,6 +49,9 @@ const SaleDetail = lazy(() => import("./pages/view-sale"));
 const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
 const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
+const Returns = lazy(() => import("./pages/returns"));
+const CreateReturn = lazy(() => import("./pages/returns/create"));
+const ViewReturn = lazy(() => import("./pages/view-return"));
 
 export const routes = [
   {
@@ -332,6 +335,31 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <EODReport />
+          </RequirePermission>
+        ),
+      },
+      // Returns Routes
+      {
+        path: "returns",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <Returns />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "returns/new",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <CreateReturn />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "returns/view/:id",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <ViewReturn />
           </RequirePermission>
         ),
       },

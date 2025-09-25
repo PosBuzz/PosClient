@@ -12,6 +12,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { CacheModule } from './cache/cache.module';
 import { CustomerModule } from './customer/customer.module';
 import { SalesModule } from './sales/sales.module';
+import { ReturnsModule } from './returns/returns.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SalesModule } from './sales/sales.module';
     CacheModule,
     CustomerModule,
     SalesModule,
+    ReturnsModule,
   ],
 })
 export class ConsumerModule {}
