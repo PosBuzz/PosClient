@@ -21,6 +21,7 @@ enum PaymentMethodEnum {
   MFS
   DEPOSIT
   CREDIT
+  EXCHANGE
 }
 
 model SuperAdmin {
@@ -101,6 +102,7 @@ model Consumer {
   Promotion        Promotion[]
   Customer         Customer[]
   Sales            Sale[]
+  Returns          Return[]
 
   @@index([email])
   @@index([company_name])
@@ -193,6 +195,7 @@ model User {
   InventoryAdjustment InventoryAdjustment[]
   PriceHistory        PriceHistory[]
   Sales               Sale[]
+  Returns             Return[]
 
   @@index([role_id])
   @@index([name])
@@ -312,6 +315,8 @@ model ProductVariant {
   serials             ProductSerial[]
   InventoryAdjustment InventoryAdjustment[]
   SaleItems           SaleItem[]
+  ReturnItems         ReturnItem[]
+  ReturnExchanges     ReturnExchange[]
 
   @@index([name])
   @@index([sku])
@@ -420,6 +425,7 @@ model Branch {
   PromotionBranch     PromotionBranch[]
   InventoryAdjustment InventoryAdjustment[]
   Sales               Sale[]
+  Returns             Return[]
 
   @@unique([consumer_id, name])
   @@index([name])
@@ -457,6 +463,8 @@ model InventoryBatch {
   InventoryAdjustment InventoryAdjustment[]
   serials             ProductSerial[]
   SaleItems           SaleItem[]
+  ReturnItems         ReturnItem[]
+  ReturnExchanges     ReturnExchange[]
 
   @@index([branch_id])
   @@index([vendor_id])
@@ -674,6 +682,7 @@ model Sale {
   user     User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
   items    SaleItem[]
   payments SalePayment[]
+  returns  Return[]
 
   @@index([consumer_id])
   @@index([customer_id])
@@ -696,9 +705,10 @@ model SaleItem {
   line_total      Decimal @db.Decimal(10, 2)
 
   // Relations
-  sale    Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  variant ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
-  batch   InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  sale         Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant      ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch        InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  return_items ReturnItem[]
 
   @@index([sale_id])
   @@index([variant_id])
@@ -722,4 +732,95 @@ model SalePayment {
   @@index([sale_id])
   @@index([payment_method])
   @@map("sale_payments")
+}
+
+model Return {
+  id              Int      @id @default(autoincrement())
+  return_number   String   @unique
+  original_sale_id Int
+  consumer_id     Int
+  branch_id       Int
+  user_id         Int?
+  return_date     DateTime @default(now())
+  total_refund    Decimal  @default(0) @db.Decimal(10, 2)
+  total_exchange  Decimal  @default(0) @db.Decimal(10, 2)
+  reason          String?
+  notes           String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  original_sale Sale           @relation(fields: [original_sale_id], references: [id], onDelete: Restrict)
+  consumer      Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  branch        Branch         @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user          User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items         ReturnItem[]
+  payments      ReturnPayment[]
+  exchanges     ReturnExchange[]
+
+  @@index([original_sale_id])
+  @@index([consumer_id])
+  @@index([branch_id])
+  @@index([return_date])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id            Int     @id @default(autoincrement())
+  return_id     Int
+  sale_item_id  Int
+  variant_id    Int
+  batch_id      Int?
+  quantity      Int
+  refund_amount Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Relations
+  return_record Return      @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  sale_item     SaleItem    @relation(fields: [sale_item_id], references: [id], onDelete: Restrict)
+  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@index([return_id])
+  @@index([sale_item_id])
+  @@index([variant_id])
+  @@index([batch_id])
+  @@map("return_items")
+}
+
+model ReturnPayment {
+  id             Int               @id @default(autoincrement())
+  return_id      Int
+  payment_method PaymentMethodEnum
+  amount         Decimal           @db.Decimal(10, 2)
+  reference      String? // Transaction reference for digital payments
+  notes          String?
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  // Relations
+  return_record Return @relation(fields: [return_id], references: [id], onDelete: Cascade)
+
+  @@index([return_id])
+  @@index([payment_method])
+  @@map("return_payments")
+}
+
+model ReturnExchange {
+  id            Int     @id @default(autoincrement())
+  return_id     Int
+  variant_id    Int
+  batch_id      Int?
+  quantity      Int
+  unit_price    Decimal @db.Decimal(10, 2)
+  line_total    Decimal @db.Decimal(10, 2)
+
+  // Relations
+  return_record Return         @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@index([return_id])
+  @@index([variant_id])
+  @@index([batch_id])
+  @@map("return_exchanges")
 }

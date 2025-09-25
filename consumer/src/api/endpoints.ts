@@ -110,6 +110,11 @@ export const endpoints = {
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
 
+  // Returns Management
+  getReturns: "/consumer/returns",
+  getReturn: (id: number) => `/consumer/returns/${id}`,
+  createReturn: "/consumer/returns",
+
   // Thermal Printer Management
   prepareReceipt: (saleId: number) => `/consumer/thermal-printer/prepare-receipt/${saleId}`,
   previewReceipt: (saleId: number) => `/consumer/thermal-printer/preview-receipt/${saleId}`,
