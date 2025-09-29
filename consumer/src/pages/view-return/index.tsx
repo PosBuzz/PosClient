@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Card, 
   Row, 
@@ -14,15 +14,16 @@ import {
 import { ArrowLeftOutlined, PrinterOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { returnsApi } from '../../api/returns-api';
-import { saleApi } from '../../api/sale-api';
 import PageTitle from '../../components/PageTitle';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import type { ReturnItem, ReturnExchange } from '../../types/return.types';
+import { salesApi } from '../../api/sales-api';
 
 const { Text } = Typography;
 
 export default function ViewReturn() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { data: returnData, isLoading, error } = useQuery({
     queryKey: ['return', id],
@@ -32,7 +33,7 @@ export default function ViewReturn() {
 
   const { data: saleData } = useQuery({
     queryKey: ['sale', returnData?.original_sale_id],
-    queryFn: () => saleApi.getSale(returnData!.original_sale_id),
+    queryFn: () => salesApi.getSale(returnData!.original_sale_id),
     enabled: !!returnData?.original_sale_id,
   });
 
@@ -52,36 +53,27 @@ export default function ViewReturn() {
     {
       title: 'Product',
       key: 'product',
-      render: (_: any, record: ReturnItem) => 
-        `${record.product_name || 'N/A'} - ${record.variant_name || 'N/A'}`,
+      render: (_: any, record: ReturnItem) => {
+        const productName = record.variant?.product?.name || record.product_name || 'N/A';
+        const variantName = record.variant?.name || record.variant_name || 'N/A';
+        return `${productName} - ${variantName}`;
+      },
     },
     {
       title: 'Quantity Returned',
       dataIndex: 'quantity',
       key: 'quantity',
     },
-    {
-      title: 'Unit Price',
-      dataIndex: 'unit_price',
-      key: 'unit_price',
-      render: (price: number) => formatCurrency(price),
-    },
-    {
-      title: 'Total',
-      key: 'total',
-      render: (_: any, record: ReturnItem) => 
-        formatCurrency(record.quantity * (record.unit_price || 0)),
-    },
   ];
 
   const paymentColumns = [
     {
       title: 'Method',
-      dataIndex: 'method',
-      key: 'method',
+      dataIndex: 'payment_method',
+      key: 'payment_method',
       render: (method: string) => (
-        <Tag color={method === 'CASH' ? 'green' : method === 'CARD' ? 'blue' : 'orange'}>
-          {method}
+        <Tag color={method === 'CASH' ? 'green' : method === 'CARD' ? 'blue' : method === 'EXCHANGE' ? 'orange' : 'purple'}>
+          {method?.replace('_', ' ') || 'N/A'}
         </Tag>
       ),
     },
@@ -97,8 +89,11 @@ export default function ViewReturn() {
     {
       title: 'New Product',
       key: 'newProduct',
-      render: (_: any, record: ReturnExchange) => 
-        `${record.product_name || 'N/A'} - ${record.variant_name || 'N/A'}`,
+      render: (_: any, record: ReturnExchange) => {
+        const productName = record.variant?.product?.name || record.product_name || 'N/A';
+        const variantName = record.variant?.name || record.variant_name || 'N/A';
+        return `${productName} - ${variantName}`;
+      },
     },
     {
       title: 'Quantity',
@@ -132,7 +127,7 @@ export default function ViewReturn() {
       <Space style={{ marginBottom: 16 }}>
         <Button 
           icon={<ArrowLeftOutlined />} 
-          onClick={() => window.history.back()}
+          onClick={() => navigate('/returns')}
         >
           Back to Returns
         </Button>
@@ -222,7 +217,7 @@ export default function ViewReturn() {
                     <Table.Summary.Cell index={1}>
                       <Text strong>
                         {formatCurrency(
-                          returnDetail.payments.reduce((sum, p) => sum + p.amount, 0)
+                          returnDetail.payments.reduce((sum, p) => sum + +p.amount, 0)
                         )}
                       </Text>
                     </Table.Summary.Cell>

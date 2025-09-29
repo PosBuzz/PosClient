@@ -21,6 +21,7 @@ export enum PaymentMethod {
   MFS = 'MFS', // Mobile Financial Service
   DEPOSIT = 'DEPOSIT',
   CREDIT = 'CREDIT',
+  EXCHANGE = 'EXCHANGE',
 }
 
 export enum PaymentStatus {

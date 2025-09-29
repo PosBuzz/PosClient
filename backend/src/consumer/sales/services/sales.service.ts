@@ -421,6 +421,114 @@ export class SalesService {
     return sale;
   }
 
+  async findBySaleNumber(saleNumber: string, consumerId: number) {
+    // Generate cache key for this specific sale number search
+    const cacheKey = generateCacheKey.saleByNumber(saleNumber, consumerId);
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const sale = await this.prisma.sale.findFirst({
+      where: { 
+        sale_number: saleNumber, 
+        consumer_id: consumerId 
+      },
+      include: {
+        customer: true,
+        branch: true,
+        user: { select: { id: true, name: true } },
+        payments: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+                sale_unit: true,
+              },
+            },
+            batch: true,
+          },
+        },
+      },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Sale not found with that sale number');
+    }
+
+    // Calculate available_for_return for each item by checking existing returns
+    const saleWithAvailableQuantities = {
+      ...sale,
+      items: await Promise.all(
+        sale.items.map(async (item) => {
+          // Get total quantity already returned for this sale item
+          const returnedQuantity = await this.prisma.returnItem.aggregate({
+            where: {
+              sale_item_id: item.id,
+            },
+            _sum: {
+              quantity: true,
+            },
+          });
+
+          const totalReturned = returnedQuantity._sum?.quantity || 0;
+          const availableForReturn = item.quantity - totalReturned;
+
+          return {
+            ...item,
+            available_for_return: Math.max(0, availableForReturn), // Ensure it's never negative
+          };
+        })
+      ),
+    };
+
+    // Calculate return summary for this sale
+    const returns = await this.prisma.return.findMany({
+      where: {
+        original_sale_id: sale.id,
+      },
+      include: {
+        payments: true,
+        exchanges: true,
+      },
+    });
+
+    // Calculate totals from all returns
+    const totalRefunded = returns.reduce((sum, ret) => sum + parseFloat(ret.total_refund.toString()), 0);
+    const totalExchanged = returns.reduce((sum, ret) => sum + parseFloat(ret.total_exchange.toString()), 0);
+    const totalAlreadyReturned = totalRefunded + totalExchanged;
+    const availableAmount = parseFloat(sale.total_amount.toString()) - totalAlreadyReturned;
+
+    const returnSummary = {
+      total_returned: returns.length,
+      total_refunded: totalRefunded,
+      total_exchanged: totalExchanged,
+      total_already_returned: totalAlreadyReturned,
+      available_amount: Math.max(0, availableAmount), // Ensure it's never negative
+      returns: returns.map(ret => ({
+        id: ret.id,
+        return_number: ret.return_number,
+        return_date: ret.return_date,
+        total_refund: parseFloat(ret.total_refund.toString()),
+        total_exchange: parseFloat(ret.total_exchange.toString()),
+        reason: ret.reason,
+      })),
+    };
+
+    const saleWithReturnSummary = {
+      ...saleWithAvailableQuantities,
+      return_summary: returnSummary,
+    };
+
+    // Cache the sale with calculated quantities for 5 minutes
+    await this.cacheService.set(cacheKey, saleWithReturnSummary, 300);
+
+    return saleWithReturnSummary;
+  }
+
   async getProductsForSale(consumerId: number, branchId: number, search?: string) {
     // Generate cache key for this specific query
     const cacheKey = generateCacheKey.productsForSale(consumerId, branchId, search);

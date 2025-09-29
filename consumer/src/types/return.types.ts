@@ -14,6 +14,19 @@ export interface ReturnItem {
   line_total?: number;
   unit_name?: string;
   image?: string;
+  // Nested relations from backend
+  variant?: {
+    id: number;
+    name?: string;
+    product?: {
+      id: number;
+      name: string;
+    };
+  };
+  batch?: {
+    id: number;
+    batch_number?: string;
+  };
 }
 
 export interface ReturnPayment {
@@ -38,12 +51,26 @@ export interface ReturnExchange {
   line_total: number;
   unit_name?: string;
   image?: string;
+  // Nested relations from backend
+  variant?: {
+    id: number;
+    name?: string;
+    product?: {
+      id: number;
+      name: string;
+    };
+  };
+  batch?: {
+    id: number;
+    batch_number?: string;
+  };
 }
 
 export interface Return {
   id?: number;
   return_number: string;
   original_sale_id: number;
+  exchange_sale_id?: number;
   consumer_id?: number;
   branch_id: number;
   branch_name?: string;
@@ -93,7 +120,6 @@ export interface CreateReturnItemForm {
   variant_id: number;
   batch_id?: number;
   quantity: number;
-  refund_amount: number;
   max_quantity?: number;
   variant_name?: string;
   product_name?: string;
@@ -124,6 +150,7 @@ export interface CreateReturnExchangeForm {
 export interface CreateReturnForm {
   original_sale_id: number;
   branch_id: number;
+  exchange_sale_id?: number;
   reason?: string;
   notes?: string;
   items: CreateReturnItemForm[];
@@ -157,6 +184,28 @@ export interface SaleForReturn {
   total_amount: number;
   branch_id: number;
   branch_name?: string;
+  subtotal?: number;
+  discount_amount?: number;
+  shipping_cost?: number;
+  payments?: Array<{
+    payment_method: string;
+    amount: number;
+  }>;
+  return_summary?: {
+    total_returned: number;
+    total_refunded: number;
+    total_exchanged: number;
+    total_already_returned: number;
+    available_amount: number;
+    returns: Array<{
+      id: number;
+      return_number: string;
+      return_date: string;
+      total_refund: number;
+      total_exchange: number;
+      reason?: string;
+    }>;
+  };
   items: Array<{
     id: number;
     variant_id: number;
