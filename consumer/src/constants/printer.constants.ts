@@ -1,10 +1,6 @@
 export const PRINTER_CONFIG = {
   // Default agent settings
   DEFAULT_AGENT_URL: 'http://localhost:8080',
-  DEFAULT_PAPER_WIDTH: 40, // characters (40 or 80 typical)
-  DEFAULT_ENCODING: 'utf8',
-  DEFAULT_AUTOCUT: true,
-  DEFAULT_BUZZER: false,
   
   // Agent endpoints
   AGENT_ENDPOINTS: {
@@ -18,23 +14,10 @@ export const PRINTER_CONFIG = {
   
   // Default receipt settings
   DEFAULT_RECEIPT_SETTINGS: {
-    openCashDrawer: true,
-    includeCustomerInfo: true,
-    includeBranchInfo: true,
-    includePaymentDetails: true,
     defaultCustomerName: 'Walk-in Customer',
     thankYouMessage: 'Thank you for your business!',
   },
 } as const;
-
-export interface PrinterSettings {
-  printerName?: string;
-  paperWidth: number;
-  encoding?: string;
-  autocut?: boolean;
-  buzzer?: boolean;
-  agentUrl?: string;
-}
 
 export interface AgentReceiptData {
   orderId?: string;
