@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsArray, ValidateNested, IsDecimal, IsEnum } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsArray, ValidateNested, IsNumber, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { PaymentMethodEnum } from '@prisma/client';
 
@@ -19,10 +19,6 @@ export class CreateReturnItemDto {
   @IsInt()
   @Type(() => Number)
   quantity: number;
-
-  @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
-  refund_amount: number;
 }
 
 export class CreateReturnPaymentDto {
@@ -30,7 +26,7 @@ export class CreateReturnPaymentDto {
   payment_method: PaymentMethodEnum;
 
   @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @IsNumber()
   amount: number;
 
   @IsOptional()
@@ -57,11 +53,11 @@ export class CreateReturnExchangeDto {
   quantity: number;
 
   @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @IsNumber()
   unit_price: number;
 
   @Transform(({ value }) => parseFloat(value))
-  @IsDecimal()
+  @IsNumber()
   line_total: number;
 }
 
@@ -73,6 +69,11 @@ export class CreateReturnDto {
   @IsInt()
   @Type(() => Number)
   branch_id: number;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  exchange_sale_id?: number;
 
   @IsOptional()
   @IsString()
