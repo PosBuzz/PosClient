@@ -18,7 +18,7 @@ import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum
 import { Request } from 'express';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
-@HasPermissions([ConsumerPermission.returns])
+// @HasPermissions([ConsumerPermission.returns])
 @Controller('consumer/returns')
 export class ReturnController {
   constructor(

@@ -12,13 +12,12 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Radio,
   Row,
   Select,
   Space,
   Table,
-  Typography,
+  Typography
 } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +27,7 @@ import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
 import { Customer } from "../../types/customer.types";
 import {
   DiscountType,
@@ -50,6 +50,7 @@ const NewSale = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { messageApi } = useMessageStore();
 
   // Watch form values for real-time calculations
   const discountAmount = Form.useWatch("discount_amount", form) || 0;
@@ -109,8 +110,7 @@ const NewSale = () => {
   // Load products for sale when branch is selected
   const productsForSaleQuery = useQuery({
     queryKey: [queryKeys.productsForSale, selectedBranch],
-    queryFn: () =>
-      salesApi.getProductsForSale(selectedBranch!),
+    queryFn: () => salesApi.getProductsForSale(selectedBranch!),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.productsForSale],
   });
@@ -170,7 +170,8 @@ const NewSale = () => {
     if (taxMethod === "INCLUSIVE") {
       // Tax is included in the price - the price already includes tax
       lineTotal = baseAmount; // Price includes tax
-      taxAmount = (baseAmount * validTaxPercentage) / (100 + validTaxPercentage);
+      taxAmount =
+        (baseAmount * validTaxPercentage) / (100 + validTaxPercentage);
     } else {
       // Tax is exclusive - added on top of price
       taxAmount = (baseAmount * validTaxPercentage) / 100;
@@ -253,16 +254,21 @@ const NewSale = () => {
     }
 
     try {
-      const product = await salesApi.getProductByBarcode(selectedBranch, barcode.trim());
+      const product = await salesApi.getProductByBarcode(
+        selectedBranch,
+        barcode.trim()
+      );
       if (product) {
         addToSale(product);
-        message.success(`Added ${product.product_name} - ${product.name} to sale`);
+        messageApi?.success(
+          `Added ${product.product_name} - ${product.name} to sale`
+        );
       } else {
-        message.error(`Product not found for barcode: ${barcode}`);
+        messageApi?.error(`Product not found for barcode: ${barcode}`);
       }
     } catch (error: any) {
       console.error("Error scanning barcode:", error);
-      message.error("Failed to scan barcode");
+      messageApi?.error("Failed to scan barcode");
     }
   };
 
@@ -281,31 +287,41 @@ const NewSale = () => {
       setLastKeyTime(currentTime);
 
       // Check if user is actively typing in an input field - MORE COMPREHENSIVE CHECK
-      const isTypingInInput = activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.role === 'textbox' ||
-        activeElement.classList.contains('ant-select-selection-search-input') ||
-        activeElement.classList.contains('ant-input') ||
-        activeElement.classList.contains('ant-input-number-input') ||
-        activeElement.closest('.ant-select-dropdown') ||
-        activeElement.closest('.ant-input') ||
-        activeElement.closest('.ant-input-number') ||
-        activeElement.getAttribute('contenteditable') === 'true'
-      );
+      const isTypingInInput =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.role === "textbox" ||
+          activeElement.classList.contains(
+            "ant-select-selection-search-input"
+          ) ||
+          activeElement.classList.contains("ant-input") ||
+          activeElement.classList.contains("ant-input-number-input") ||
+          activeElement.closest(".ant-select-dropdown") ||
+          activeElement.closest(".ant-input") ||
+          activeElement.closest(".ant-input-number") ||
+          activeElement.getAttribute("contenteditable") === "true");
 
       // DEBUG: Log what's happening
-      console.log('Key pressed:', event.key, 'isTypingInInput:', isTypingInInput, 'activeElement:', activeElement?.tagName, activeElement?.className);
+      console.log(
+        "Key pressed:",
+        event.key,
+        "isTypingInInput:",
+        isTypingInInput,
+        "activeElement:",
+        activeElement?.tagName,
+        activeElement?.className
+      );
 
       // If user is typing in input, do NOTHING with barcode logic
       if (isTypingInInput) {
-        console.log('User is typing in input - ignoring for barcode');
+        console.log("User is typing in input - ignoring for barcode");
         return; // Exit early, don't interfere with input
       }
 
       // POS RULE: Barcode scanner ONLY works when NOT in input fields
       // Handle Enter key (end of barcode scan)
-      if (event.key === 'Enter') {
+      if (event.key === "Enter") {
         if (barcodeBuffer.length > 0) {
           // BARCODE SCAN COMPLETE - always priority
           event.preventDefault();
@@ -320,44 +336,41 @@ const NewSale = () => {
           form.submit();
           return;
         }
-      } 
+      }
       // Handle regular character input (part of barcode) - ONLY when not in input
       else if (event.key.length === 1 && /[a-zA-Z0-9\-_]/.test(event.key)) {
         // Barcode scanner detection logic:
         const isVeryFastTyping = timeDiff < 30;
         const hasExistingBuffer = barcodeBuffer.length > 0;
         const isLikelyBarcodeScanner = isVeryFastTyping || hasExistingBuffer;
-        
+
         if (isLikelyBarcodeScanner) {
           // POS RULE: Barcode scanning overrides everything
           event.preventDefault();
           event.stopPropagation();
-          setBarcodeBuffer(prev => prev + event.key);
-          
+          setBarcodeBuffer((prev) => prev + event.key);
+
           // Blur any focused input to prevent interference
           if (activeElement && activeElement.blur) {
             activeElement.blur();
           }
         } else {
           // Regular typing outside inputs - still capture for potential barcode
-          setBarcodeBuffer(prev => prev + event.key);
+          setBarcodeBuffer((prev) => prev + event.key);
         }
       }
     };
 
     // Add global keydown listener with highest priority (capture phase)
-    document.addEventListener('keydown', handleKeyPress, true);
+    document.addEventListener("keydown", handleKeyPress, true);
 
     // Cleanup
     return () => {
-      document.removeEventListener('keydown', handleKeyPress, true);
+      document.removeEventListener("keydown", handleKeyPress, true);
     };
   }, [lastKeyTime, barcodeBuffer, selectedBranch, form]);
 
-  const updateItemQuantity = (
-    variantId: number,
-    quantity: number
-  ) => {
+  const updateItemQuantity = (variantId: number, quantity: number) => {
     if (quantity <= 0) {
       removeItem(variantId);
       return;
@@ -409,7 +422,7 @@ const NewSale = () => {
         return sum + (Number(item.line_total) - Number(item.tax_amount));
       } else {
         // For exclusive tax, the subtotal is the base price (unit_price * quantity)
-        return sum + (Number(item.unit_price) * Number(item.quantity));
+        return sum + Number(item.unit_price) * Number(item.quantity);
       }
     }, 0);
 
@@ -441,13 +454,13 @@ const NewSale = () => {
 
   const onFinish = async (values: any) => {
     if (selectedItems.length === 0) {
-      message.error("Please add at least one item to the sale");
+      messageApi?.error("Please add at least one item to the sale");
       return;
     }
 
     // Check if payments are configured
     if (salePayments.length === 0) {
-      message.error("Please add at least one payment method");
+      messageApi?.error("Please add at least one payment method");
       return;
     }
 
@@ -471,7 +484,7 @@ const NewSale = () => {
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
-      items: selectedItems.map(item => ({
+      items: selectedItems.map((item) => ({
         variant_id: item.variant_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -514,11 +527,13 @@ const NewSale = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
 
-      message.success("Sale created successfully!");
+      messageApi?.success("Sale created successfully!");
       navigate(`/sales/view/${createdSale.id}`);
     } catch (error: any) {
       console.error("Error creating sale:", error);
-      message.error(error.response?.data?.message || "Failed to create sale");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to create sale"
+      );
     } finally {
       setLoading(false);
     }
@@ -597,10 +612,7 @@ const NewSale = () => {
             min={1}
             value={record.quantity}
             onChange={(value) =>
-              updateItemQuantity(
-                record.variant_id,
-                value || 1
-              )
+              updateItemQuantity(record.variant_id, value || 1)
             }
             onPressEnter={(e) => {
               // Just blur the input, the global handler will handle form submission
@@ -664,19 +676,15 @@ const NewSale = () => {
               queryKey: [queryKeys.customers],
             });
 
-            message.success("Customer created successfully");
+            messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            message.error("Failed to create customer");
+            messageApi?.error("Failed to create customer");
           }
         }}
       />
 
-      <Form 
-        form={form} 
-        onFinish={onFinish} 
-        layout="vertical"
-      >
+      <Form form={form} onFinish={onFinish} layout="vertical">
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={6}>
@@ -762,21 +770,25 @@ const NewSale = () => {
             value={null}
             onChange={(value) => {
               if (value) {
-                const selectedVariant = filteredVariants.find(v => v.id === value);
+                const selectedVariant = filteredVariants.find(
+                  (v) => v.id === value
+                );
                 if (selectedVariant) {
                   addToSale(selectedVariant);
                 }
               }
             }}
             filterOption={(input, option) =>
-              (option?.label?.toString().toLowerCase() || '').includes(input.toLowerCase())
+              (option?.label?.toString().toLowerCase() || "").includes(
+                input.toLowerCase()
+              )
             }
             loading={productsForSaleQuery.isLoading}
             disabled={!selectedBranch}
           >
             {filteredVariants.map((variant) => (
-              <Option 
-                key={variant.id} 
+              <Option
+                key={variant.id}
                 value={variant.id}
                 label={`${variant.product_name} - ${variant.name}`}
               >
@@ -944,6 +956,9 @@ const NewSale = () => {
                               Deposit
                             </Option>
                             <Option value={PaymentMethod.CREDIT}>Credit</Option>
+                            <Option value={PaymentMethod.EXCHANGE}>
+                              Exchange
+                            </Option>
                           </Select>
                         </Col>
                         <Col span={6}>

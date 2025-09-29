@@ -134,6 +134,14 @@ export class SalesController {
     res.send(pdfBuffer);
   }
 
+  @Get('search/:saleNumber')
+  async findBySaleNumber(
+    @Param('saleNumber') saleNumber: string,
+    @Req() req: Request,
+  ) {
+    return this.salesService.findBySaleNumber(saleNumber, req.user.consumer_id!);
+  }
+
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,

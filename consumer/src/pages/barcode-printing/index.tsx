@@ -1,28 +1,27 @@
-import { PrinterOutlined, EyeOutlined, ClearOutlined } from "@ant-design/icons";
+import { ClearOutlined, EyeOutlined, PrinterOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
+  Divider,
   Form,
   Input,
   InputNumber,
-  Row,
-  Switch,
   message,
-  Space,
-  Divider,
-  Select,
   Modal,
+  Row,
+  Select,
+  Space,
+  Switch,
 } from "antd";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import Barcode from "react-barcode";
-import PageTitle from "../../components/PageTitle";
-import { setPageTitle } from "../../utils/setPageTitle";
 import { productApi } from "../../api/product-api";
-import { queryKeys } from "../../constants/queryKeys";
+import PageTitle from "../../components/PageTitle";
 import { Product, ProductVariantDetailed } from "../../types/product.types";
-import { set } from "lodash";
+import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 

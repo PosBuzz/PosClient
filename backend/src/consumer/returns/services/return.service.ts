@@ -69,7 +69,7 @@ export class ReturnService {
         },
       });
 
-      const totalReturned = existingReturns._sum.quantity || 0;
+      const totalReturned = existingReturns._sum?.quantity || 0;
       if (totalReturned + returnItem.quantity > originalItem.quantity) {
         throw new BadRequestException(
           `Return quantity exceeds available quantity for item ${returnItem.sale_item_id}. Available: ${originalItem.quantity - totalReturned}, Requested: ${returnItem.quantity}`
@@ -77,22 +77,53 @@ export class ReturnService {
       }
     }
 
-    // Calculate totals
-    const totalRefund = dto.items.reduce((sum, item) => sum + parseFloat(item.refund_amount.toString()), 0);
-    const totalExchange = dto.exchanges?.reduce((sum, item) => sum + parseFloat(item.line_total.toString()), 0) || 0;
+    // Calculate totals based on business logic:
+    // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE' and 'CREDIT'
+    // - totalExchange = sum of only 'EXCHANGE' payment methods
+    
+    const totalRefund = dto.payments?.reduce((sum, payment) => {
+      const method = payment.payment_method.toString().toUpperCase();
+    
+      if (method !== 'EXCHANGE' && method !== 'CREDIT') {
+        console.log(`Adding ${payment.amount} to refund total`);
+        return sum + parseFloat(payment.amount.toString());
+      }
+  
+      return sum;
+    }, 0) || 0;
+    
+    const totalExchange = dto.payments?.reduce((sum, payment) => {
+      const method = payment.payment_method.toString().toUpperCase();
+      if (method === 'EXCHANGE') {
+        console.log(`Adding ${payment.amount} to exchange total`);
+        return sum + parseFloat(payment.amount.toString());
+      }
+      return sum;
+    }, 0) || 0;
+    
+    console.log('Calculated totals:', { totalRefund, totalExchange });
+    
     const totalPayments = dto.payments?.reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0) || 0;
 
-    // Validate that total refund + exchange doesn't exceed what can be refunded
-    const maxRefundable = parseFloat(originalSale.total_amount.toString());
-    if (totalRefund + totalExchange > maxRefundable) {
-      throw new BadRequestException('Total refund and exchange amount exceeds original sale amount');
-    }
+    // Calculate available amount by checking existing returns for this sale
+    const existingReturns = await this.prisma.return.findMany({
+      where: {
+        original_sale_id: dto.original_sale_id,
+      },
+    });
 
-    // Validate that total payments match expected refund
-    if (dto.payments && Math.abs(totalPayments - totalRefund) > 0.01) {
-      throw new BadRequestException('Total payment amount must match total refund amount');
-    }
+    const totalAlreadyReturned = existingReturns.reduce((sum, ret) => 
+      sum + parseFloat(ret.total_refund.toString()) + parseFloat(ret.total_exchange.toString()), 0
+    );
 
+    const availableAmount = parseFloat(originalSale.total_amount.toString()) - totalAlreadyReturned;
+
+    // Validate that total refund + exchange doesn't exceed available amount
+    if (totalRefund + totalExchange > availableAmount) {
+      throw new BadRequestException(
+        `Total refund and exchange amount ($${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)}). Already returned: $${totalAlreadyReturned.toFixed(2)}`
+      );
+    }
     // Start transaction
     const result = await this.prisma.$transaction(async (prisma) => {
       // Generate return number
@@ -106,6 +137,7 @@ export class ReturnService {
           consumer_id: consumerId,
           branch_id: dto.branch_id,
           user_id: userId,
+          exchange_sale_id: dto.exchange_sale_id,
           total_refund: totalRefund,
           total_exchange: totalExchange,
           reason: dto.reason,
@@ -143,7 +175,6 @@ export class ReturnService {
             variant_id: itemDto.variant_id,
             batch_id: itemDto.batch_id,
             quantity: itemDto.quantity,
-            refund_amount: itemDto.refund_amount,
           },
           include: {
             variant: {

@@ -61,6 +61,12 @@ export const salesApi = {
     return response.data;
   },
 
+  // Search sale by sale number
+  getSaleBySaleNumber: async (saleNumber: string): Promise<Sale> => {
+    const response = await axiosInstance.get(`/consumer/sales/search/${saleNumber}`);
+    return response.data;
+  },
+
   // Get End of Day report
   getEODReport: async (params: { date?: string; branch_id?: number } = {}): Promise<EODReportResponse> => {
     const queryParams = new URLSearchParams();

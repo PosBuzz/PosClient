@@ -141,6 +141,9 @@ export const generateCacheKey = {
   salesDetail: (saleId: number, consumerId: number) =>
     `${consumerId}:sales:detail:${saleId}`,
 
+  saleByNumber: (saleNumber: string, consumerId: number) =>
+    `${consumerId}:sales:by-number:${saleNumber}`,
+
   salesStats: (consumerId: number, branchId?: number) =>
     `${consumerId}:sales:stats:${branchId || 'all'}`,
 
