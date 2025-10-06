@@ -9,15 +9,38 @@ import { generateCacheKey, generateCachePatterns } from '../../../constants/cach
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { EODReportDto, EODReportResponse, PaymentMethodBreakdown, ProductSalesStats, EODSummary } from '../dto/eod-report.dto';
+import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
 
 @Injectable()
 export class SalesService {
   constructor(
     private prisma: PrismaService,
     private cacheService: CacheService,
+    private rewardsService: RewardsService,
   ) {}
 
   async create(createSaleDto: CreateSaleDto, consumerId: number, userId: number) {
+    // Validate CREDIT payments before processing
+    if (createSaleDto.payments) {
+      const creditPayments = createSaleDto.payments.filter(p => p.payment_method === 'CREDIT');
+      
+      if (creditPayments.length > 0 && !createSaleDto.customer_id) {
+        throw new BadRequestException('CREDIT payments require a customer account');
+      }
+      
+      for (const creditPayment of creditPayments) {
+        const validation = await this.rewardsService.validateCreditPayment(
+          consumerId,
+          createSaleDto.customer_id!,
+          Number(creditPayment.amount)
+        );
+        
+        if (!validation.isValid) {
+          throw new BadRequestException(`Credit payment validation failed: ${validation.reason}`);
+        }
+      }
+    }
+
     // Validate branch belongs to consumer
     const branch = await this.prisma.branch.findFirst({
       where: { id: createSaleDto.branch_id, consumer_id: consumerId },
@@ -203,8 +226,9 @@ export class SalesService {
       // Create sale payments if using new system
       if (createSaleDto.payments && createSaleDto.payments.length > 0) {
         await Promise.all(
-          createSaleDto.payments.map(payment =>
-            tx.salePayment.create({
+          createSaleDto.payments.map(async payment => {
+            // Skip CREDIT payment processing inside transaction - will handle after
+            return tx.salePayment.create({
               data: {
                 sale_id: sale.id,
                 payment_method: payment.payment_method,
@@ -212,8 +236,8 @@ export class SalesService {
                 reference: payment.reference,
                 notes: payment.notes,
               },
-            })
-          )
+            });
+          })
         );
       }
 
@@ -246,6 +270,60 @@ export class SalesService {
 
       return sale;
     });
+
+    // Process CREDIT payments after sale is committed
+    if (createSaleDto.payments && createSaleDto.payments.length > 0) {
+      const creditPayments = createSaleDto.payments.filter(payment => 
+        payment.payment_method === 'CREDIT' && result.customer_id
+      );
+      
+      for (const payment of creditPayments) {
+        try {
+          await this.rewardsService.processCreditPayment(
+            consumerId,
+            result.customer_id!,
+            Number(payment.amount),
+            result.id,
+            payment.reference
+          );
+        } catch (error) {
+          console.error('Failed to process CREDIT payment:', error);
+          // Note: At this point the sale is already committed, 
+          // so we log the error but don't fail the sale
+          // You might want to implement compensation logic here
+        }
+      }
+    }
+
+    // Award rewards points if sale is completed and customer is provided
+    // Exclude CREDIT payment amounts from rewards calculation
+    if (
+      result.customer_id && 
+      result.payment_status === 'paid' && 
+      result.sale_type === 'sale'
+    ) {
+      try {
+        // Calculate amount eligible for rewards (exclude CREDIT payments)
+        const creditPaymentAmount = createSaleDto.payments
+          ?.filter(payment => payment.payment_method === 'CREDIT')
+          .reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+        
+        const rewardEligibleAmount = Number(result.total_amount) - creditPaymentAmount;
+        
+        // Only award points if there's a positive eligible amount
+        if (rewardEligibleAmount > 0) {
+          await this.rewardsService.earnPoints(
+            consumerId,
+            result.customer_id,
+            result.id,
+            rewardEligibleAmount,
+          );
+        }
+      } catch (error) {
+        // Don't fail the sale if rewards points fail
+        console.error('Failed to award rewards points:', error);
+      }
+    }
 
     // Invalidate related caches after successful sale creation
     await this.invalidateSalesCaches(consumerId, createSaleDto.branch_id);

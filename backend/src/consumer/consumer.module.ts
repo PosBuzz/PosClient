@@ -13,6 +13,7 @@ import { CacheModule } from './cache/cache.module';
 import { CustomerModule } from './customer/customer.module';
 import { SalesModule } from './sales/sales.module';
 import { ReturnsModule } from './returns/returns.module';
+import { RewardsModule } from './rewards/rewards.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ReturnsModule } from './returns/returns.module';
     CustomerModule,
     SalesModule,
     ReturnsModule,
+    RewardsModule,
   ],
 })
 export class ConsumerModule {}

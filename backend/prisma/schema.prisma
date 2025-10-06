@@ -103,6 +103,9 @@ model Consumer {
   Customer         Customer[]
   Sales            Sale[]
   Returns          Return[]
+  RewardsSettings  RewardsSettings?
+  CustomerRewardsPoints CustomerRewardsPoints[]
+  RewardsPointTransactions RewardsPointTransaction[]
 
   @@index([email])
   @@index([company_name])
@@ -123,8 +126,10 @@ model Customer {
   updated_at    DateTime @updatedAt
 
   // Relations
-  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  Sales    Sale[]
+  consumer           Consumer                @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  Sales              Sale[]
+  rewards_points     CustomerRewardsPoints?
+  point_transactions RewardsPointTransaction[]
 
   @@index([consumer_id])
   @@index([name])
@@ -196,6 +201,7 @@ model User {
   PriceHistory        PriceHistory[]
   Sales               Sale[]
   Returns             Return[]
+  created_rewards_transactions RewardsPointTransaction[]
 
   @@index([role_id])
   @@index([name])
@@ -684,6 +690,7 @@ model Sale {
   payments SalePayment[]
   returns_as_original Return[] @relation("OriginalSale")
   returns_as_exchange Return[] @relation("ExchangeSale")
+  rewards_point_transactions RewardsPointTransaction[]
 
   @@index([consumer_id])
   @@index([customer_id])
@@ -826,4 +833,101 @@ model ReturnExchange {
   @@index([variant_id])
   @@index([batch_id])
   @@map("return_exchanges")
+}
+
+// Rewards Point System Models
+
+model RewardsSettings {
+  id                      Int      @id @default(autoincrement())
+  consumer_id             Int      @unique
+  is_enabled              Boolean  @default(true)
+  
+  // Earning Rules
+  points_per_currency       Decimal  @default(1) @db.Decimal(10, 2) // Points earned per dollar spent
+  minimum_purchase_amount Decimal  @default(0) @db.Decimal(10, 2) // Minimum purchase to earn points
+  maximum_points_per_sale Decimal? @db.Decimal(10, 2) // Maximum points that can be earned per sale
+  
+  // Redemption Rules
+  redemption_value        Decimal  @default(0.01) @db.Decimal(10, 4) // Dollar value per point (e.g., 0.01 = 1 point = $0.01)
+  minimum_redemption      Int      @default(100) // Minimum points required to redeem
+  maximum_redemption      Int?     // Maximum points that can be redeemed per transaction
+  
+  // Point Expiration
+  points_expire_days      Int?     // Points expire after X days (null = never expire)
+  
+  // Settings
+  allow_partial_redemption Boolean @default(true) // Allow using partial points for payment
+  earn_on_sale_only       Boolean @default(true)  // Only earn points on completed sales (not quotations)
+  
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  // Relations
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@map("rewards_settings")
+}
+
+model CustomerRewardsPoints {
+  id              Int      @id @default(autoincrement())
+  customer_id     Int      @unique
+  consumer_id     Int
+  total_points    Int      @default(0)
+  lifetime_earned Int      @default(0) // Total points ever earned
+  lifetime_redeemed Int    @default(0) // Total points ever redeemed
+  last_earned_at  DateTime?
+  last_redeemed_at DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@index([customer_id])
+  @@index([consumer_id])
+  @@index([total_points])
+  @@map("customer_rewards_points")
+}
+
+enum RewardsTransactionType {
+  EARN
+  REDEEM
+  EXPIRE
+  ADJUSTMENT
+}
+
+model RewardsPointTransaction {
+  id               Int                     @id @default(autoincrement())
+  customer_id      Int
+  consumer_id      Int
+  type             RewardsTransactionType
+  points           Int                     // Positive for earn/adjustment credit, negative for redeem/expire/adjustment debit
+  balance_before   Int                     // Points balance before this transaction
+  balance_after    Int                     // Points balance after this transaction
+  
+  // Transaction Context
+  sale_id          Int?                    // Associated sale for earning/redemption
+  description      String?                 // Human readable description
+  reference        String?                 // External reference (receipt number, etc.)
+  expiry_date      DateTime?               // For earned points, when they expire
+  
+  // Metadata
+  created_by_user_id Int?                  // Admin user who made manual adjustments
+  notes            String?
+  created_at       DateTime                @default(now())
+
+  // Relations
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  sale     Sale?    @relation(fields: [sale_id], references: [id], onDelete: SetNull)
+  created_by User?  @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([customer_id])
+  @@index([consumer_id])
+  @@index([type])
+  @@index([sale_id])
+  @@index([created_at])
+  @@index([expiry_date])
+  @@map("rewards_point_transactions")
 }

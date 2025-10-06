@@ -139,7 +139,18 @@ const SideBar: React.FC = () => {
       label: <span title="Customers">Customers</span>,
       key: "/customers",
       icon: <UserOutlined />,
-      permissions: [Permissions.customers],
+      children: [
+        {
+          label: <span title="Customers">Customers</span>,
+          key: "/customers",
+          permissions: [Permissions.customers],
+        },
+        {
+          label: <span title="Reward Points">Reward Points</span>,
+          key: "/reward-points",
+          permissions: [Permissions.customers],
+        },
+      ],
     },
     {
       label: <span title="Sales">Sales</span>,
@@ -192,6 +203,11 @@ const SideBar: React.FC = () => {
           label: <span title="Users">Users</span>,
           key: "/users",
           permissions: [Permissions.users],
+        },
+        {
+          label: <span title="Rewards">Rewards</span>,
+          key: "/rewards-settings",
+          permissions: [Permissions.sales],
         },
       ],
       permissions: [Permissions.users],
