@@ -1247,6 +1247,20 @@ const CreateReturn = () => {
                 <Divider />
                 <div>
                   <Text>Total Payments: ${getTotalPayments().toFixed(2)}</Text>
+                  {saleData && (
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Maximum refundable amount: ${(saleData.return_summary?.available_amount ?? saleData.total_amount).toFixed(2)}
+                      </Text>
+                      {getTotalPayments() > (saleData.return_summary?.available_amount ?? saleData.total_amount) && (
+                        <div>
+                          <Text type="danger" style={{ fontSize: 12 }}>
+                             Payment amount exceeds available refund limit. Please adjust payment amounts.
+                          </Text>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Space>
             </Card>
