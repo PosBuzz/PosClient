@@ -7,6 +7,7 @@ import {
 import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import CacheInvalidationButton from "./components/CacheInvalidationButton";
 import ThemeDropdown from "./components/ThemeDropdown";
 import useDarkMode from "./hooks/useDarkMode";
 import SideBar from "./Sidebar";
@@ -95,8 +96,8 @@ const AppLayout = () => {
               className="w-16 h-16 text-lg"
             />
             <h2 className="m-0 text-lg hidden md:block">{user?.name}</h2>
-          </div>
-          <div className="flex">
+          </div>          <div className="flex">
+            <CacheInvalidationButton />
             <ThemeDropdown />
             <Tooltip title="Account and Security">
               <Button

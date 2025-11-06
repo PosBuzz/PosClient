@@ -1,0 +1,357 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "PosBuzz Print Server",
+    "description": "Complete collection of all endpoints for the PosBuzz Print Server",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Configuration Management",
+      "item": [
+        {
+          "name": "Get Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Retrieve the current store configuration including printer settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"StoreName\": \"My Store\",\n  \"Address\": \"123 Main St, City, State 12345\",\n  \"Phone\": \"(555) 123-4567\",\n  \"Email\": \"info@mystore.com\",\n  \"LogoPath\": \"C:\\\\path\\\\to\\\\logo.png\",\n  \"PrinterName\": \"RONGTA 80mm Series Printer\",\n  \"BarcodePrinterName\": \"Gprinter GP-3120TUC\",\n  \"EnableCashDrawer\": true,\n  \"Currency\": \"$\",\n  \"Port\": 8080,\n  \"AutoStart\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Update the store configuration with new settings"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for managing store configuration and printer settings"
+    },
+    {
+      "name": "Receipt Printing",
+      "item": [
+        {
+          "name": "Print Receipt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiptNumber\": \"RCP-001\",\n  \"date\": \"2025-09-08\",\n  \"time\": \"14:30:00\",\n  \"cashier\": \"John Doe\",\n  \"customer\": \"Jane Smith\",\n  \"items\": [\n    {\n      \"name\": \"Product 1\",\n      \"quantity\": 2,\n      \"price\": 10.50,\n      \"total\": 21.00\n    },\n    {\n      \"name\": \"Product 2\",\n      \"quantity\": 1,\n      \"price\": 15.99,\n      \"total\": 15.99\n    }\n  ],\n  \"subtotal\": 36.99,\n  \"tax\": 3.70,\n  \"total\": 40.69,\n  \"amountPaid\": 50.00,\n  \"change\": 9.31,\n  \"paymentMethod\": \"Cash\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print",
+              "host": ["{{base_url}}"],
+              "path": ["print"]
+            },
+            "description": "Print a complete receipt with items, totals, and payment information"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for printing various types of receipts"
+    },
+    {
+      "name": "Barcode Label Printing",
+      "item": [
+        {
+          "name": "Print Barcode Label (Full)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"BarcodeValue\": \"1234567890123\",\n  \"ProductName\": \"Sample Product\",\n  \"Price\": \"19.99\",\n  \"PrintBarcodeOnly\": false,\n  \"VatIncluded\": true,\n  \"VatPercentage\": 21.0,\n  \"Quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["print-barcode-label"]
+            },
+            "description": "Print barcode labels with product name, price, VAT info, and multiple quantity support. Auto-detects barcode format."
+          },
+          "response": []
+        },
+        {
+          "name": "Print Barcode Label (Barcode Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"BarcodeValue\": \"987654321098\",\n  \"PrintBarcodeOnly\": true,\n  \"Quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["print-barcode-label"]
+            },
+            "description": "Print barcode-only labels (no text) with quantity support"
+          },
+          "response": []
+        },
+        {
+          "name": "Print EAN-13 Barcode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"BarcodeValue\": \"1234567890123\",\n  \"ProductName\": \"EAN-13 Product\",\n  \"Price\": \"29.99\",\n  \"PrintBarcodeOnly\": false,\n  \"VatIncluded\": false,\n  \"VatPercentage\": 18.0,\n  \"Quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["print-barcode-label"]
+            },
+            "description": "Print EAN-13 barcode (13 digits) - format will be auto-detected"
+          },
+          "response": []
+        },
+        {
+          "name": "Print UPC-A Barcode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"BarcodeValue\": \"123456789012\",\n  \"ProductName\": \"UPC-A Product\",\n  \"Price\": \"12.99\",\n  \"PrintBarcodeOnly\": false,\n  \"VatIncluded\": true,\n  \"VatPercentage\": 10.0,\n  \"Quantity\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["print-barcode-label"]
+            },
+            "description": "Print UPC-A barcode (12 digits) - format will be auto-detected"
+          },
+          "response": []
+        },
+        {
+          "name": "Print CODE-39 Barcode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"BarcodeValue\": \"*ABC123*\",\n  \"ProductName\": \"CODE-39 Product\",\n  \"Price\": \"8.50\",\n  \"PrintBarcodeOnly\": false,\n  \"VatIncluded\": false,\n  \"VatPercentage\": 15.0,\n  \"Quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/print-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["print-barcode-label"]
+            },
+            "description": "Print CODE-39 barcode (starts and ends with *) - format will be auto-detected"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for printing barcode labels with smart format detection and quantity support"
+    },
+    {
+      "name": "Test Endpoints",
+      "item": [
+        {
+          "name": "Test Receipt Print",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test-receipt",
+              "host": ["{{base_url}}"],
+              "path": ["test-receipt"]
+            },
+            "description": "Test the receipt printing functionality with a sample receipt and cash drawer opening"
+          },
+          "response": []
+        },
+        {
+          "name": "Test Barcode Label Print",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test-barcode-label",
+              "host": ["{{base_url}}"],
+              "path": ["test-barcode-label"]
+            },
+            "description": "Test the barcode label printing functionality with a sample barcode"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test endpoints for quick functionality verification"
+    },
+    {
+      "name": "System Control",
+      "item": [
+        {
+          "name": "Open Cash Drawer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cash-drawer",
+              "host": ["{{base_url}}"],
+              "path": ["cash-drawer"]
+            },
+            "description": "Trigger the cash drawer to open (if enabled in configuration)"
+          },
+          "response": []
+        },
+        {
+          "name": "Server Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["status"]
+            },
+            "description": "Check the server status and store information"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Check if the print server is running and responsive"
+          },
+          "response": []
+        }
+      ],
+      "description": "System control and health check endpoints"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": ["console.log('Sending request to PosBuzz Print Server');"]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Status code is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "});",
+          "",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ]
+}

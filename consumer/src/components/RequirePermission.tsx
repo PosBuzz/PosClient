@@ -1,7 +1,7 @@
-import { Spin } from "antd";
 import { JSX } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
+import CenterLoader from "./CenterLoader";
 
 export default function RequirePermission({
   children,
@@ -13,13 +13,7 @@ export default function RequirePermission({
   const { user } = useAuthStore();
 
   if (!user) {
-    return (
-      <div
-        className="flex justify-center items-center h-[calc(100vh-112px)]"
-      >
-        <Spin />
-      </div>
-    );
+    return <CenterLoader />;
   }
   // Check if the user has the required permission
   if (permission && !user?.permissions?.includes(permission)) {

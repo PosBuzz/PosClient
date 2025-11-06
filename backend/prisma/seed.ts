@@ -91,11 +91,19 @@ async function main() {
 
   // Consumer permissions
   const consumerPermissions = [
-    'create_invoice',
-    'view_report',
-    'manage_users',
     'profile',
     'users',
+    'add_product',
+    'edit_product',
+    'view_product',
+    'delete_product',
+    'branches',
+    'vendors',
+    'inventory_batches',
+    'inventory_transfer',
+    'inventory_adjustment',
+    'customers',
+    'sales',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
@@ -147,9 +155,62 @@ async function main() {
     },
   });
 
+  // Create Warehouse Branch
+  const warehouseBranch = await prisma.branch.upsert({
+    where: {
+      consumer_id_name: {
+        consumer_id: consumer1.id,
+        name: 'Warehouse',
+      },
+    },
+    update: {
+      address: 'Central Warehouse Location',
+      email: 'warehouse@example.com',
+      phone: '+1-555-0100',
+      is_main: false,
+      is_warehouse: true,
+    },
+    create: {
+      consumer_id: consumer1.id,
+      name: 'Warehouse',
+      address: 'Central Warehouse Location',
+      email: 'warehouse@example.com',
+      phone: '+1-555-0100',
+      is_main: false,
+      is_warehouse: true,
+    },
+  });
+
+  // Create Main Branch
+  const mainBranch = await prisma.branch.upsert({
+    where: {
+      consumer_id_name: {
+        consumer_id: consumer1.id,
+        name: 'Main Store',
+      },
+    },
+    update: {
+      address: '123 Main Street, Downtown',
+      email: 'mainstore@example.com',
+      phone: '+1-555-0200',
+      is_main: true,
+      is_warehouse: false,
+    },
+    create: {
+      consumer_id: consumer1.id,
+      name: 'Main Store',
+      address: '123 Main Street, Downtown',
+      email: 'mainstore@example.com',
+      phone: '+1-555-0200',
+      is_main: true,
+      is_warehouse: false,
+    },
+  });
+
   // Create Admin Role for Consumer
   const adminConsumerRole = await prisma.role.upsert({
     where: {
+      is_admin: true,
       consumer_id_name: {
         consumer_id: consumer1.id,
         name: 'Admin',
@@ -159,6 +220,7 @@ async function main() {
     create: {
       consumer_id: consumer1.id,
       name: 'Admin',
+      is_admin: true,
     },
   });
 
@@ -182,7 +244,7 @@ async function main() {
   );
 
   // Create Admin User
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { email: 'consumer@example.com' },
     update: {
       consumer_id: consumer1.id,
@@ -199,22 +261,41 @@ async function main() {
     },
   });
 
+  // Assign all branches to the admin user
+  
+  await prisma.userBranch.createMany({
+    data: [
+      {
+        user_id: adminUser.id,
+        branch_id: warehouseBranch.id,
+      },
+      {
+        user_id: adminUser.id,
+        branch_id: mainBranch.id,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Create billing history
   await prisma.billingHistory.upsert({
     where: {
       consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_date: new Date('2025-03-01T00:00:00Z'), // Exact date for March 2025
+        billing_date: new Date('2025-06-01T00:00:00Z'),
       },
     },
     update: {
       amount: 100.0,
-      billing_date: new Date('2025-03-01T00:00:00Z'),
+      plan_id: enterprisePlan.id,
+      billing_date: new Date('2025-06-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
+      plan_id: enterprisePlan.id,
       amount: 100.0,
       reference: 'Invoice #12345',
-      billing_date: new Date('2025-03-01T00:00:00Z'),
+      billing_date: new Date('2025-06-01T00:00:00Z'),
     },
   });
 
@@ -222,18 +303,20 @@ async function main() {
     where: {
       consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_date: new Date('2025-04-01T00:00:00Z'), // Exact date for April 2025
+        billing_date: new Date('2025-05-01T00:00:00Z'),
       },
     },
     update: {
+      plan_id: enterprisePlan.id,
       amount: 250.0,
-      billing_date: new Date('2025-04-01T00:00:00Z'),
+      billing_date: new Date('2025-05-01T00:00:00Z'),
     },
     create: {
       consumer_id: consumer1.id,
+      plan_id: enterprisePlan.id,
       amount: 250.0,
       reference: 'Invoice #67890',
-      billing_date: new Date('2025-04-01T00:00:00Z'),
+      billing_date: new Date('2025-05-01T00:00:00Z'),
     },
   });
 

@@ -21,14 +21,10 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
-export default function _TableGrid({
-  trigger,
-  onClickEdit,
-  roleOptions = [],
-  ...props
-}) {
-  const [searchText, setSearchText] = useState(null);
+export default function _TableGrid({ onClickEdit, roleOptions = [], branchOptions = [] }) {
+  const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();
   const { user } = useAuthStore();
@@ -54,21 +50,17 @@ export default function _TableGrid({
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["users", debouncedSearchText, selectedRole],
+    queryKey: [queryKeys.users, debouncedSearchText, selectedRole],
     queryFn: () =>
-      get(
-        `${endpoints.user}?search_text=${debouncedSearchText}&role_id=${selectedRole}`
-      ),
+      get(endpoints.user, {
+        search_text: debouncedSearchText,
+        role_id: selectedRole,
+      }),
+    staleTime: queryStaleTimeMap[queryKeys.users],
   });
 
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
-
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(`${endpoints.user}/${id}`),
+    mutationFn: async (id: any) => await deleteApi(endpoints.deleteUser(id)),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();
@@ -97,6 +89,28 @@ export default function _TableGrid({
         </Tag>
       ),
       key: "role",
+    },
+    {
+      title: "Branch Access",
+      render: (record: any) => {
+        const branches = record?.branches || [];
+        if (branches.length === 0) {
+          return <Tag color="red">No access</Tag>;
+        }
+        if (branches.length === branchOptions.length) {
+          return <Tag color="green">All branches</Tag>;
+        }
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {branches.map((ub: any) => (
+              <Tag key={ub.branch.id} color="blue" style={{ marginBottom: 4 }}>
+                {ub.branch.name}
+              </Tag>
+            ))}
+          </div>
+        );
+      },
+      key: "branches",
     },
     {
       title: "Actions",
