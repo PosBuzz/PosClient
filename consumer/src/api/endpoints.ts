@@ -121,4 +121,18 @@ export const endpoints = {
   getTestReceiptData: "/consumer/thermal-printer/test-data",
   getPrinterSettings: "/consumer/thermal-printer/settings",
   updatePrinterSettings: "/consumer/thermal-printer/settings",
+
+  // Rewards Management
+  getRewardsSettings: "/consumer/rewards/settings",
+  createRewardsSettings: "/consumer/rewards/settings",
+  updateRewardsSettings: "/consumer/rewards/settings",
+  getCustomersWithPoints: "/consumer/rewards/customers",
+  getCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/points`,
+  redeemCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/redeem`,
+  adjustCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/adjust`,
+  canRedeemPoints: (id: number, points: number) => `/consumer/rewards/customers/${id}/can-redeem/${points}`,
+  getRewardsTransactions: "/consumer/rewards/transactions",
+  getCustomerTransactions: (id: number) => `/consumer/rewards/customers/${id}/transactions`,
+  expirePoints: "/consumer/rewards/expire-points",
+  getRedemptionValue: (points: number) => `/consumer/rewards/redemption-value/${points}`,
 };
