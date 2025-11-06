@@ -52,6 +52,8 @@ const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
 const Returns = lazy(() => import("./pages/returns"));
 const CreateReturn = lazy(() => import("./pages/returns/create"));
 const ViewReturn = lazy(() => import("./pages/view-return"));
+const RewardsSettings = lazy(() => import("./pages/rewards-settings"));
+const RewardPoints = lazy(() => import("./pages/customer-rewards"));
 
 export const routes = [
   {
@@ -360,6 +362,22 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <ViewReturn />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "rewards-settings",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <RewardsSettings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "reward-points",
+        element: (
+          <RequirePermission permission={Permissions.customers}>
+            <RewardPoints />
           </RequirePermission>
         ),
       },

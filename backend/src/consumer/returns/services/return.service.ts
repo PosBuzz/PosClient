@@ -7,12 +7,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { CacheService } from '../../../common/services/cache.service';
 import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
+import { RewardsService } from '../../rewards/services/rewards.service';
 
 @Injectable()
 export class ReturnService {
   constructor(
     private prisma: PrismaService,
     private cacheService: CacheService,
+    private rewardsService: RewardsService,
   ) {}
 
   async create(consumerId: number, userId: number, dto: CreateReturnDto) {
@@ -78,13 +80,13 @@ export class ReturnService {
     }
 
     // Calculate totals based on business logic:
-    // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE' and 'CREDIT'
+    // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE'
     // - totalExchange = sum of only 'EXCHANGE' payment methods
     
     const totalRefund = dto.payments?.reduce((sum, payment) => {
       const method = payment.payment_method.toString().toUpperCase();
     
-      if (method !== 'EXCHANGE' && method !== 'CREDIT') {
+      if (method !== 'EXCHANGE') {
         console.log(`Adding ${payment.amount} to refund total`);
         return sum + parseFloat(payment.amount.toString());
       }
@@ -218,6 +220,24 @@ export class ReturnService {
       const returnPayments: any[] = [];
       if (dto.payments) {
         for (const paymentDto of dto.payments) {
+          // Handle CREDIT refund - add points back to customer
+          if (paymentDto.payment_method === 'CREDIT' && originalSale.customer_id) {
+            try {
+              await this.rewardsService.processCreditRefund(
+                consumerId,
+                originalSale.customer_id,
+                Number(paymentDto.amount),
+                originalSale.id,
+                returnRecord.id,
+                paymentDto.reference
+              );
+            } catch (error) {
+              console.error('Failed to process CREDIT refund:', error);
+              // Continue with the return but log the error
+              // You might want different error handling based on business requirements
+            }
+          }
+
           const returnPayment = await prisma.returnPayment.create({
             data: {
               return_id: returnRecord.id,
