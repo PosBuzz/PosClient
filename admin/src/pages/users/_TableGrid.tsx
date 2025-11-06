@@ -13,24 +13,18 @@ import {
   Select,
   Space,
   Table,
-  Tag
+  Tag,
 } from "antd";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-export default function _TableGrid({
-  model,
-  trigger,
-  onClickEdit,
-  roleOptions = [],
-  ...props
-}) {
+export default function _TableGrid({ model, onClickEdit, roleOptions = [] }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -72,12 +66,6 @@ export default function _TableGrid({
         },
       }),
   });
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),

@@ -3,13 +3,12 @@
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
-import { useEffect } from "react";
 import { deleteApi, get } from "../../api/crud-api";
-import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
-// @ts-ignore
-export default function _TableGrid({ trigger, onClickEdit, ...props }) {
+export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
 
   const {
@@ -18,18 +17,13 @@ export default function _TableGrid({ trigger, onClickEdit, ...props }) {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["roles"],
+    queryKey: [queryKeys.roles],
     queryFn: () => get(endpoints.role),
+    staleTime: queryStaleTimeMap[queryKeys.roles],
   });
 
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
-
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(`${endpoints.role}/${id}`),
+    mutationFn: async (id: any) => await deleteApi(endpoints.deleteRole(id)),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();

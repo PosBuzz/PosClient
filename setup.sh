@@ -77,4 +77,45 @@ echo ".env file created in consumer."
 npm install
 echo "Consumer dependencies installed."
 
+# Navigate back to the root directory
+cd ..
+
+# Navigate to the ai-service directory
+cd ai-service || exit
+echo "Switched to ai-service directory."
+
+# Copy .env.example to .env
+cp .env.example .env
+echo ".env file created in ai-service."
+
+# Check if Python is installed
+if ! command -v python3 &> /dev/null; then
+    echo "Python3 is not installed. Please install Python 3.8+ and try again."
+    exit 1
+fi
+
+# Create virtual environment if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv .venv
+    echo "Virtual environment created."
+fi
+
+# Activate virtual environment
+echo "Activating virtual environment..."
+source .venv/Scripts/activate || source .venv/bin/activate 
+
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install Python dependencies
+echo "Installing Python dependencies..."
+pip install -r requirements.txt
+echo "AI service dependencies installed."
+
+# Create data directories if they don't exist
+mkdir -p data/chroma_db
+mkdir -p data/feedback
+echo "Data directories created."
+
 echo "Setup completed successfully."

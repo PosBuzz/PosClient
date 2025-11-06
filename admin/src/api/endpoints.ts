@@ -21,6 +21,7 @@ export const endpoints = {
   role: "/admin/users/roles",
   backup: "/admin/backup",
   restore: "/admin/restore",
+  downloadBillingInvoice: `${baseUrlWithPrefix}/admin/billing/invoice/pdf`,
   downloadBillingHistoryPDF: `${baseUrlWithPrefix}/admin/billing/history/pdf`,
   downloadBillingHistoryExcel: '/admin/billing/history/excel',
 };

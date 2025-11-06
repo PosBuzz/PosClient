@@ -20,7 +20,11 @@ const useInitTheme = () => {
 
     document.documentElement.setAttribute("data-theme", themeToApply);
     localStorage.setItem("isDarkMode", String(themeToApply === "dark"));
-    window.dispatchEvent(new Event("themeChanged"));
+
+    // Dispatch the event after a small delay to ensure it's properly caught
+    setTimeout(() => {
+      window.dispatchEvent(new Event("themeChanged"));
+    }, 0);
   }, [isSystemDark]); // re-run when system theme changes
 };
 

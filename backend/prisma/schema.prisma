@@ -7,6 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaxMethod {
+  INCLUSIVE
+  EXCLUSIVE
+}
+
+enum PaymentMethodEnum {
+  CASH
+  CARD
+  CHEQUE
+  BANK_TRANSFER
+  MOBILE_MONEY
+  MFS
+  DEPOSIT
+  CREDIT
+  EXCHANGE
+}
+
 model SuperAdmin {
   id            Int          @id @default(autoincrement())
   role_id       Int
@@ -22,7 +39,6 @@ model SuperAdmin {
 
   role SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
-  @@index([email])
   @@index([name])
   @@index([role_id])
   @@map("super_admins")
@@ -52,6 +68,7 @@ model SuperAdminRolePermission {
   permission    SuperAdminPermission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
+  @@index([permission_id])
   @@map("super_admin_role_permissions")
 }
 
@@ -60,6 +77,7 @@ model Consumer {
   company_name      String
   business_category String?
   secondary_email   String?
+  max_branch        Int      @default(1)
   email             String
   phone             String?
   address           String?
@@ -69,28 +87,69 @@ model Consumer {
   updated_at        DateTime @updatedAt
 
   // Relations
-  plan         Plan             @relation(fields: [plan_id], references: [id], onDelete: Restrict)
-  users        User[]
-  roles        Role[]
-  billing_logs BillingHistory[]
+  plan             Plan               @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+  users            User[]
+  roles            Role[]
+  billing_logs     BillingHistory[]
+  Product          Product[]
+  Tag              Tag[]
+  Unit             Unit[]
+  Category         Category[]
+  Brand            Brand[]
+  Branch           Branch[]
+  Vendor           Vendor[]
+  VariantAttribute VariantAttribute[]
+  Promotion        Promotion[]
+  Customer         Customer[]
+  Sales            Sale[]
+  Returns          Return[]
+  RewardsSettings  RewardsSettings?
+  CustomerRewardsPoints CustomerRewardsPoints[]
+  RewardsPointTransactions RewardsPointTransaction[]
 
   @@index([email])
   @@index([company_name])
   @@index([phone])
-  @@index([subdomain])
   @@index([plan_id])
   @@map("consumers")
 }
 
-model Plan {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  price       Float
-  created_at  DateTime         @default(now())
-  updated_at  DateTime         @updatedAt
-  consumers   Consumer[]
-  permissions PlanPermission[]
+model Customer {
+  id            Int      @id @default(autoincrement())
+  consumer_id   Int
+  name          String
+  email         String?
+  phone         String   @unique
+  address       String?
+  customer_type String // 'individual' or 'business'
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
+  // Relations
+  consumer           Consumer                @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  Sales              Sale[]
+  rewards_points     CustomerRewardsPoints?
+  point_transactions RewardsPointTransaction[]
+
+  @@index([consumer_id])
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@map("customers")
+}
+
+model Plan {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  price          Float
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+  consumers      Consumer[]
+  permissions    PlanPermission[]
+  BillingHistory BillingHistory[]
+
+  @@index([price])
+  @@index([created_at])
   @@map("plans")
 }
 
@@ -101,12 +160,14 @@ model PlanPermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([plan_id, permission_id])
+  @@index([permission_id])
   @@map("plan_permissions")
 }
 
 model BillingHistory {
   id           Int      @id @default(autoincrement())
   consumer_id  Int
+  plan_id      Int
   amount       Float
   reference    String
   billing_date DateTime
@@ -114,9 +175,9 @@ model BillingHistory {
   updated_at   DateTime @updatedAt
 
   consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
   @@unique([consumer_id, billing_date])
-  @@index([consumer_id])
   @@index([billing_date])
   @@map("billing_histories")
 }
@@ -132,10 +193,20 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  role                Role                  @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  branches            UserBranch[]
+  InventoryTransfer   InventoryTransfer[]
+  InventoryAdjustment InventoryAdjustment[]
+  PriceHistory        PriceHistory[]
+  Sales               Sale[]
+  Returns             Return[]
+  created_rewards_transactions RewardsPointTransaction[]
 
-  @@index([consumer_id])
+  @@index([role_id])
+  @@index([name])
+  @@index([created_at])
+  @@index([consumer_id, role_id])
   @@map("users")
 }
 
@@ -151,13 +222,13 @@ model Permission {
 model Role {
   id          Int              @id @default(autoincrement())
   name        String
+  is_admin    Boolean          @default(false)
   consumer_id Int
   consumer    Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   permissions RolePermission[]
   users       User[]
 
   @@unique([consumer_id, name])
-  @@index([consumer_id])
   @@map("roles")
 }
 
@@ -168,5 +239,695 @@ model RolePermission {
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
+  @@index([permission_id])
   @@map("role_permissions")
+}
+
+model Product {
+  id                   Int            @id @default(autoincrement())
+  consumer_id          Int
+  name                 String         @unique
+  code                 String?
+  description          String?
+  category_id          Int?
+  brand_id             Int?
+  tags                 TagOnProduct[]
+  has_variants         Boolean        @default(false)
+  tax_method           TaxMethod      @default(EXCLUSIVE) // inclusive, exclusive
+  tax                  Int            @default(0) // percentage as integer (e.g., 15 for 15%)
+  daily_sale_objective Int?           @default(0) // Daily sales target for this product
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+
+  // Relations
+  consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  category Category?        @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  brand    Brand?           @relation(fields: [brand_id], references: [id], onDelete: SetNull)
+  variants ProductVariant[]
+
+  @@unique([consumer_id, code])
+  @@index([name])
+  @@index([category_id])
+  @@index([brand_id])
+  @@index([consumer_id, name])
+  @@map("products")
+}
+
+model ProductSerial {
+  id            Int       @id @default(autoincrement())
+  variant_id    Int
+  serial_number String
+  status        String    @default("available") // available, sold, defective, returned
+  batch_id      Int? // Link to inventory batch if needed
+  sold_date     DateTime?
+  notes         String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  variant ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  batch   InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@unique([variant_id, serial_number])
+  @@index([variant_id, status])
+  @@index([serial_number])
+  @@map("product_serials")
+}
+
+model ProductVariant {
+  id                  Int                   @id @default(autoincrement())
+  product_id          Int
+  name                String
+  sku                 String?
+  barcode             String?
+  regular_price       Decimal               @db.Decimal(10, 2)
+  wholesale_price     Decimal?              @db.Decimal(10, 2)
+  sale_unit_id        Int
+  purchase_unit_id    Int
+  warranty_period     Int? // warranty period in months only
+  image               String? // single image URL for variant
+  is_default          Boolean               @default(false)
+  alert_quantity      Int?                  @default(0) // Low stock alert threshold
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  // Relations
+  product             Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  sale_unit           Unit                  @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
+  purchase_unit       Unit                  @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
+  inventory_items     InventoryBatch[]
+  price_history       PriceHistory[]
+  promotions          PromotionProduct[]
+  VariantAttribute    VariantAttribute[]
+  serials             ProductSerial[]
+  InventoryAdjustment InventoryAdjustment[]
+  SaleItems           SaleItem[]
+  ReturnItems         ReturnItem[]
+  ReturnExchanges     ReturnExchange[]
+
+  @@index([name])
+  @@index([sku])
+  @@index([barcode])
+  @@index([product_id, name])
+  @@index([regular_price])
+  @@map("product_variants")
+}
+
+model Unit {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer          Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  sale_variants     ProductVariant[] @relation("SaleUnit")
+  purchase_variants ProductVariant[] @relation("PurchaseUnit")
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@map("units")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@map("categories")
+}
+
+model Brand {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  logo        String?
+  website     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@map("brands")
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products TagOnProduct[]
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@map("tags")
+}
+
+model TagOnProduct {
+  product_id Int
+  tag_id     Int
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, tag_id])
+  @@index([tag_id])
+  @@map("tag_on_products")
+}
+
+model Branch {
+  id           Int      @id @default(autoincrement())
+  consumer_id  Int
+  name         String
+  address      String?
+  email        String?
+  phone        String?
+  is_main      Boolean  @default(false)
+  is_warehouse Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  users               UserBranch[]
+  inventory           InventoryBatch[]
+  transfers_from      InventoryTransfer[]   @relation("SourceBranch")
+  transfers_to        InventoryTransfer[]   @relation("DestinationBranch")
+  PromotionBranch     PromotionBranch[]
+  InventoryAdjustment InventoryAdjustment[]
+  Sales               Sale[]
+  Returns             Return[]
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@map("branches")
+}
+
+model UserBranch {
+  user_id   Int
+  branch_id Int
+  user      User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  branch    Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, branch_id])
+  @@index([branch_id])
+  @@map("user_branches")
+}
+
+model InventoryBatch {
+  id           Int       @id @default(autoincrement())
+  variant_id   Int
+  branch_id    Int
+  batch_number String
+  quantity     Int
+  cost_price   Decimal   @db.Decimal(10, 2)
+  vendor_id    Int?
+  expiry_date  DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  // Relations
+  variant             ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  branch              Branch                  @relation(fields: [branch_id], references: [id])
+  vendor              Vendor?                 @relation(fields: [vendor_id], references: [id], onDelete: SetNull)
+  transfers           InventoryTransferItem[]
+  InventoryAdjustment InventoryAdjustment[]
+  serials             ProductSerial[]
+  SaleItems           SaleItem[]
+  ReturnItems         ReturnItem[]
+  ReturnExchanges     ReturnExchange[]
+
+  @@index([branch_id])
+  @@index([vendor_id])
+  @@index([variant_id, branch_id])
+  @@index([batch_number])
+  @@index([expiry_date])
+  @@index([quantity])
+  @@index([created_at])
+  @@index([variant_id, branch_id, quantity])
+  @@map("inventory_batches")
+}
+
+model InventoryTransfer {
+  id                    Int       @id @default(autoincrement())
+  source_branch_id      Int
+  destination_branch_id Int
+  status                String    @default("pending")
+  notes                 String?
+  created_by_user_id    Int
+  created_at            DateTime  @default(now())
+  completed_date        DateTime?
+  updated_at            DateTime  @updatedAt
+
+  // Relations
+  source_branch      Branch                  @relation("SourceBranch", fields: [source_branch_id], references: [id])
+  destination_branch Branch                  @relation("DestinationBranch", fields: [destination_branch_id], references: [id])
+  created_by_user    User                    @relation(fields: [created_by_user_id], references: [id])
+  items              InventoryTransferItem[]
+
+  @@index([source_branch_id])
+  @@index([destination_branch_id])
+  @@index([created_by_user_id])
+  @@index([created_at])
+  @@index([status, created_at])
+  @@map("inventory_transfers")
+}
+
+model InventoryTransferItem {
+  id          Int @id @default(autoincrement())
+  transfer_id Int
+  batch_id    Int
+  quantity    Int
+
+  // Relations
+  transfer InventoryTransfer @relation(fields: [transfer_id], references: [id], onDelete: Cascade)
+  batch    InventoryBatch    @relation(fields: [batch_id], references: [id])
+
+  @@index([batch_id])
+  @@index([transfer_id, batch_id])
+  @@map("inventory_transfer_items")
+}
+
+model InventoryAdjustment {
+  id                 Int      @id @default(autoincrement())
+  variant_id         Int
+  branch_id          Int
+  batch_id           Int
+  quantity_change    Int // positive for additions, negative for reductions
+  reason             String
+  notes              String?
+  created_by_user_id Int?
+  created_at         DateTime @default(now())
+
+  // Relations
+  variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  batch           InventoryBatch @relation(fields: [batch_id], references: [id])
+  branch          Branch         @relation(fields: [branch_id], references: [id])
+  created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([branch_id])
+  @@index([batch_id])
+  @@index([created_by_user_id])
+  @@index([created_at])
+  @@index([variant_id, branch_id])
+  @@map("inventory_adjustments")
+}
+
+model Vendor {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  name        String
+  contact     String?
+  phone       String?
+  email       String?
+  address     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  batches  InventoryBatch[]
+
+  @@unique([consumer_id, name])
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@map("vendors")
+}
+
+model VariantAttribute {
+  id         Int    @id @default(autoincrement())
+  variant_id Int
+  name       String
+  value      String
+
+  // Relations
+  variant    ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  Consumer   Consumer?      @relation(fields: [consumerId], references: [id])
+  consumerId Int?
+
+  @@unique([variant_id, name])
+  @@index([name])
+  @@index([value])
+  @@index([consumerId])
+  @@map("variant_attributes")
+}
+
+model PriceHistory {
+  id                 Int      @id @default(autoincrement())
+  variant_id         Int
+  regular_price      Decimal  @db.Decimal(10, 2)
+  wholesale_price    Decimal? @db.Decimal(10, 2)
+  effective_date     DateTime @default(now())
+  created_by_user_id Int?
+
+  // Relations
+  variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  created_by_user User?          @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([variant_id, effective_date])
+  @@map("price_history")
+}
+
+model Promotion {
+  id              Int       @id @default(autoincrement())
+  consumer_id     Int
+  name            String
+  description     String?
+  discount_type   String // percentage, fixed_amount
+  discount_value  Decimal   @db.Decimal(10, 2)
+  start_date      DateTime
+  end_date        DateTime?
+  is_active       Boolean   @default(true)
+  min_purchase    Decimal?  @db.Decimal(10, 2)
+  branch_specific Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // Relations
+  consumer Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products PromotionProduct[]
+  branches PromotionBranch[]
+
+  @@index([consumer_id, is_active])
+  @@index([start_date, end_date])
+  @@map("promotions")
+}
+
+model PromotionProduct {
+  promotion_id Int
+  variant_id   Int
+
+  // Relations
+  promotion Promotion      @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  @@id([promotion_id, variant_id])
+  @@index([variant_id])
+  @@map("promotion_products")
+}
+
+model PromotionBranch {
+  promotion_id Int
+  branch_id    Int
+
+  // Relations
+  promotion Promotion @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
+  branch    Branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@id([promotion_id, branch_id])
+  @@index([branch_id])
+  @@map("promotion_branches")
+}
+
+model Sale {
+  id              Int      @id @default(autoincrement())
+  sale_number     String   @unique
+  consumer_id     Int
+  customer_id     Int?
+  customer_name   String?
+  customer_phone  String?
+  customer_email  String?
+  branch_id       Int
+  user_id         Int?
+  sale_date       DateTime @default(now())
+  sale_type       String   @default("sale") // sale, quotation
+  price_type      String   @default("regular") // regular, wholesale
+  subtotal        Decimal  @db.Decimal(10, 2)
+  discount_type   String   @default("flat") // flat, percentage
+  discount_amount Decimal  @default(0) @db.Decimal(10, 2)
+  shipping_cost   Decimal  @default(0) @db.Decimal(10, 2)
+  tax_amount      Decimal  @default(0) @db.Decimal(10, 2)
+  total_amount    Decimal  @db.Decimal(10, 2)
+  payment_status  String   @default("paid") // paid, partial, due, cancelled
+  received_amount Decimal  @default(0) @db.Decimal(10, 2)
+  change_amount   Decimal  @default(0) @db.Decimal(10, 2)
+  notes           String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  consumer Consumer      @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  customer Customer?     @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  branch   Branch        @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user     User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items    SaleItem[]
+  payments SalePayment[]
+  returns_as_original Return[] @relation("OriginalSale")
+  returns_as_exchange Return[] @relation("ExchangeSale")
+  rewards_point_transactions RewardsPointTransaction[]
+
+  @@index([consumer_id])
+  @@index([customer_id])
+  @@index([branch_id])
+  @@index([sale_date])
+  @@index([payment_status])
+  @@index([sale_type])
+  @@map("sales")
+}
+
+model SaleItem {
+  id              Int     @id @default(autoincrement())
+  sale_id         Int
+  variant_id      Int
+  batch_id        Int?
+  quantity        Int
+  unit_price      Decimal @db.Decimal(10, 2)
+  discount_amount Decimal @default(0) @db.Decimal(10, 2)
+  tax_amount      Decimal @default(0) @db.Decimal(10, 2)
+  line_total      Decimal @db.Decimal(10, 2)
+
+  // Relations
+  sale         Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant      ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch        InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  return_items ReturnItem[]
+
+  @@index([sale_id])
+  @@index([variant_id])
+  @@index([batch_id])
+  @@map("sale_items")
+}
+
+model SalePayment {
+  id             Int               @id @default(autoincrement())
+  sale_id        Int
+  payment_method PaymentMethodEnum // cash, card, cheque, bank_transfer, mobile_money, mfs, deposit, credit
+  amount         Decimal           @db.Decimal(10, 2)
+  reference      String? // Transaction reference for digital payments
+  notes          String?
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  // Relations
+  sale Sale @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+
+  @@index([sale_id])
+  @@index([payment_method])
+  @@map("sale_payments")
+}
+
+model Return {
+  id              Int      @id @default(autoincrement())
+  return_number   String   @unique
+  original_sale_id Int
+  exchange_sale_id Int?
+  consumer_id     Int
+  branch_id       Int
+  user_id         Int?
+  return_date     DateTime @default(now())
+  total_refund    Decimal  @default(0) @db.Decimal(10, 2)
+  total_exchange  Decimal  @default(0) @db.Decimal(10, 2)
+  reason          String?
+  notes           String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  original_sale Sale           @relation("OriginalSale", fields: [original_sale_id], references: [id], onDelete: Restrict)
+  exchange_sale Sale?          @relation("ExchangeSale", fields: [exchange_sale_id], references: [id], onDelete: SetNull)
+  consumer      Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  branch        Branch         @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user          User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items         ReturnItem[]
+  payments      ReturnPayment[]
+  exchanges     ReturnExchange[]
+
+  @@index([original_sale_id])
+  @@index([exchange_sale_id])
+  @@index([consumer_id])
+  @@index([branch_id])
+  @@index([return_date])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id            Int     @id @default(autoincrement())
+  return_id     Int
+  sale_item_id  Int
+  variant_id    Int
+  batch_id      Int?
+  quantity      Int
+  
+  // Relations
+  return_record Return      @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  sale_item     SaleItem    @relation(fields: [sale_item_id], references: [id], onDelete: Restrict)
+  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@index([return_id])
+  @@index([sale_item_id])
+  @@index([variant_id])
+  @@index([batch_id])
+  @@map("return_items")
+}
+
+model ReturnPayment {
+  id             Int               @id @default(autoincrement())
+  return_id      Int
+  payment_method PaymentMethodEnum
+  amount         Decimal           @db.Decimal(10, 2)
+  reference      String? // Transaction reference for digital payments
+  notes          String?
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  // Relations
+  return_record Return @relation(fields: [return_id], references: [id], onDelete: Cascade)
+
+  @@index([return_id])
+  @@index([payment_method])
+  @@map("return_payments")
+}
+
+model ReturnExchange {
+  id            Int     @id @default(autoincrement())
+  return_id     Int
+  variant_id    Int
+  batch_id      Int?
+  quantity      Int
+  unit_price    Decimal @db.Decimal(10, 2)
+  line_total    Decimal @db.Decimal(10, 2)
+
+  // Relations
+  return_record Return         @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@index([return_id])
+  @@index([variant_id])
+  @@index([batch_id])
+  @@map("return_exchanges")
+}
+
+// Rewards Point System Models
+
+model RewardsSettings {
+  id                      Int      @id @default(autoincrement())
+  consumer_id             Int      @unique
+  is_enabled              Boolean  @default(true)
+  
+  // Earning Rules
+  points_per_currency       Decimal  @default(1) @db.Decimal(10, 2) // Points earned per dollar spent
+  minimum_purchase_amount Decimal  @default(0) @db.Decimal(10, 2) // Minimum purchase to earn points
+  maximum_points_per_sale Decimal? @db.Decimal(10, 2) // Maximum points that can be earned per sale
+  
+  // Redemption Rules
+  redemption_value        Decimal  @default(0.01) @db.Decimal(10, 4) // Dollar value per point (e.g., 0.01 = 1 point = $0.01)
+  minimum_redemption      Int      @default(100) // Minimum points required to redeem
+  maximum_redemption      Int?     // Maximum points that can be redeemed per transaction
+  
+  // Point Expiration
+  points_expire_days      Int?     // Points expire after X days (null = never expire)
+  
+  // Settings
+  allow_partial_redemption Boolean @default(true) // Allow using partial points for payment
+  earn_on_sale_only       Boolean @default(true)  // Only earn points on completed sales (not quotations)
+  
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  // Relations
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@map("rewards_settings")
+}
+
+model CustomerRewardsPoints {
+  id              Int      @id @default(autoincrement())
+  customer_id     Int      @unique
+  consumer_id     Int
+  total_points    Int      @default(0)
+  lifetime_earned Int      @default(0) // Total points ever earned
+  lifetime_redeemed Int    @default(0) // Total points ever redeemed
+  last_earned_at  DateTime?
+  last_redeemed_at DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@index([customer_id])
+  @@index([consumer_id])
+  @@index([total_points])
+  @@map("customer_rewards_points")
+}
+
+enum RewardsTransactionType {
+  EARN
+  REDEEM
+  EXPIRE
+  ADJUSTMENT
+}
+
+model RewardsPointTransaction {
+  id               Int                     @id @default(autoincrement())
+  customer_id      Int
+  consumer_id      Int
+  type             RewardsTransactionType
+  points           Int                     // Positive for earn/adjustment credit, negative for redeem/expire/adjustment debit
+  balance_before   Int                     // Points balance before this transaction
+  balance_after    Int                     // Points balance after this transaction
+  
+  // Transaction Context
+  sale_id          Int?                    // Associated sale for earning/redemption
+  description      String?                 // Human readable description
+  reference        String?                 // External reference (receipt number, etc.)
+  expiry_date      DateTime?               // For earned points, when they expire
+  
+  // Metadata
+  created_by_user_id Int?                  // Admin user who made manual adjustments
+  notes            String?
+  created_at       DateTime                @default(now())
+
+  // Relations
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  sale     Sale?    @relation(fields: [sale_id], references: [id], onDelete: SetNull)
+  created_by User?  @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([customer_id])
+  @@index([consumer_id])
+  @@index([type])
+  @@index([sale_id])
+  @@index([created_at])
+  @@index([expiry_date])
+  @@map("rewards_point_transactions")
 }

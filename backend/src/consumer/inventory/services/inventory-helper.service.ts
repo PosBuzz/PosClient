@@ -1,0 +1,69 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey } from '../../../constants/cache-keys';
+
+@Injectable()
+export class InventoryHelperService {
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}  /**
+   * Get warehouse branch for a consumer
+   */
+  async getWarehouseBranch(consumerId: number) {
+    const cacheKey = generateCacheKey.warehouseBranch(consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.branch.findFirst({
+        where: {
+          consumer_id: consumerId,
+          is_warehouse: true,
+        },
+      });
+    });
+  }
+
+  /**
+   * Get standardized location name for display
+   */
+  getLocationName(branch: { id: number; name: string; is_warehouse?: boolean }): string {
+    if (branch.is_warehouse || branch.name === 'Warehouse') {
+      return 'Warehouse';
+    }
+    return branch.name;
+  }
+
+  /**
+   * Get location description for transactions
+   */
+  getLocationDescription(branch: { id: number; name: string; is_warehouse?: boolean }): string {
+    if (branch.is_warehouse || branch.name === 'Warehouse') {
+      return 'Central Warehouse';
+    }
+    return `Branch: ${branch.name}`;
+  }
+
+  /**
+   * Check if a branch is warehouse
+   */
+  isWarehouse(branch: { is_warehouse?: boolean; name?: string }): boolean {
+    return branch.is_warehouse === true || branch.name === 'Warehouse';
+  }
+
+  /**
+   * Generate batch number for adjustments
+   */
+  generateAdjustmentBatchNumber(): string {
+    const timestamp = Date.now().toString().slice(-8);
+    return `ADJ-${timestamp}`;
+  }
+
+  /**
+   * Generate batch number for transfers
+   */
+  generateTransferBatchNumber(): string {
+    const timestamp = Date.now().toString().slice(-8);
+    return `TRF-${timestamp}`;
+  }
+}

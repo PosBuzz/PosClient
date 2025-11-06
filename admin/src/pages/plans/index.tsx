@@ -15,7 +15,6 @@ const Plans = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [trigger, setTrigger] = useState(0);
 
   const showDrawer = () => {
     setOpen(true);
@@ -34,7 +33,6 @@ const Plans = () => {
   };
 
   const onSubmitSuccess = (isEditing: boolean) => {
-    setTrigger((trigger) => trigger + 1);
     if (isEditing) {
       setOpen(false);
       setIsEditing(false);
@@ -49,14 +47,16 @@ const Plans = () => {
   return (
     <>
       {setPageTitle(title)}
-      <DrawerForm
-        onClose={onClose}
-        open={open}
-        model={model}
-        isEditing={isEditing}
-        editedItem={editedItem}
-        onSubmitSuccess={onSubmitSuccess}
-      />
+      {open && (
+        <DrawerForm
+          onClose={onClose}
+          open={open}
+          model={model}
+          isEditing={isEditing}
+          editedItem={editedItem}
+          onSubmitSuccess={onSubmitSuccess}
+        />
+      )}
 
       <PageTitle
         title={title}
@@ -78,11 +78,7 @@ const Plans = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid
-            trigger={trigger}
-            model={model}
-            onClickEdit={onClickEdit}
-          />
+          <TableGrid model={model} onClickEdit={onClickEdit} />
         </Col>
       </Row>
     </>

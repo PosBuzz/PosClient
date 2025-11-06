@@ -18,23 +18,22 @@ import {
   Tag,
 } from "antd";
 import dayjs from "dayjs";
-import { debounce } from "lodash";
+import { saveAs } from "file-saver";
+import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
+import axiosInstance from "../../api/axiosInstance";
 import { deleteApi, post } from "../../api/crud-api";
 import {
   API_CRUD_FIND_WHERE,
   endpoints,
   getUrlForModel,
 } from "../../api/endpoints";
-import { useMessageStore } from "../../stores/messageStore";
 import { AdminPermission } from "../../constants/adminPermissions";
-import axiosInstance from "../../api/axiosInstance";
-import { saveAs } from "file-saver";
+import { useMessageStore } from "../../stores/messageStore";
 const { Option } = Select;
 
 export default function _TableGrid({
   model,
-  trigger,
   onClickEdit,
   planOptions = [],
   hasPermission,
@@ -163,28 +162,9 @@ export default function _TableGrid({
       }
 
       // Initiate download
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          // Add any authentication headers if needed
-          // 'Authorization': `Bearer ${token}`,
-        },
+      const response = await axiosInstance.get(url, {
+        responseType: "blob",
       });
-
-      // Check if the request was successful
-      if (!response.ok) {
-        // Handle error based on status code
-        if (response.status === 404) {
-          throw new Error(`Consumer with ID ${consumer_id} not found`);
-        }
-        throw new Error(`Failed to download PDF: ${response.statusText}`);
-      }
-
-      // Get the blob from the response
-      const blob = await response.blob();
-
-      // Create a URL for the blob
-      const downloadUrl = window.URL.createObjectURL(blob);
 
       // Get the filename from the Content-Disposition header if available
       let filename = "Billing-History.pdf";
@@ -196,20 +176,7 @@ export default function _TableGrid({
         }
       }
 
-      // Create a temporary anchor element and trigger the download
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
-
-      console.log(
-        `Billing history PDF for consumer ${consumer_id} downloaded successfully`
-      );
+      saveAs(response.data, filename);
     } catch (error) {
       console.error("Error downloading billing history PDF:", error);
       throw error;
@@ -239,12 +206,6 @@ export default function _TableGrid({
       alert("Failed to download file. Please try again.");
     }
   };
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
@@ -338,18 +299,23 @@ export default function _TableGrid({
       render: (record: any) => {
         return (
           <Space>
-            <Button
-              onClick={() => downloadBillingHistoryExcel(record.id)}
-              type="link"
-            >
-              <FileExcelOutlined />
-            </Button>
-            <Button
-              onClick={() => getBillingHistory(record.id, true)}
-              type="link"
-            >
-              <DownloadOutlined />
-            </Button>
+            {hasPermission(AdminPermission.modify_consumers) && (
+              <>
+                {" "}
+                <Button
+                  onClick={() => downloadBillingHistoryExcel(record.id)}
+                  type="link"
+                >
+                  <FileExcelOutlined />
+                </Button>
+                <Button
+                  onClick={() => getBillingHistory(record.id, true)}
+                  type="link"
+                >
+                  <DownloadOutlined />
+                </Button>
+              </>
+            )}
             {hasPermission(AdminPermission.modify_consumers) && (
               <Button onClick={() => onClickEdit(record)} type="link">
                 <EditOutlined />

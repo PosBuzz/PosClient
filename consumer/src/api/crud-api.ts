@@ -1,8 +1,19 @@
 import axiosInstance from "./axiosInstance";
+import { AxiosRequestConfig } from "axios";
 
-export const get = async (endpoint: string) => {
-  const response = await axiosInstance.get(endpoint);
-  return response.data;
+export const get = async (endpoint: string, params?: any, config?: AxiosRequestConfig) => {
+  try {
+    const requestConfig: AxiosRequestConfig = {
+      ...config,
+      params: params
+    };
+    
+    const response = await axiosInstance.get(endpoint, requestConfig);
+    return response.data;
+  } catch (error) {
+    console.error("GET request failed:", endpoint, error);
+    return Promise.reject(error);
+  }
 };
 
 export const post = async (endpoint: string, data: any) => {
@@ -20,9 +31,11 @@ export const post = async (endpoint: string, data: any) => {
 };
 
 export const patch = async (endpoint: string, data: any) => {
-  return await axiosInstance.patch(endpoint, data);
+  const response = await axiosInstance.patch(endpoint, data);
+  return response.data;
 };
 
 export const deleteApi = async (endpoint: string) => {
-  return await axiosInstance.delete(endpoint);
+  const response = await axiosInstance.delete(endpoint);
+  return response.data;
 };
