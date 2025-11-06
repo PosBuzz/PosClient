@@ -1,0 +1,193 @@
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { Response } from 'express';
+import { BillingInvoicesService } from './billing-invoices.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
+import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
+import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
+import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
+
+@HasPermissions([AdminPermission.billing])
+@UseGuards(AdminAuthGuard, PermissionsGuard)
+@Controller('admin/billing')
+export class BillingInvoicesController {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly billingInvoicesService: BillingInvoicesService,
+  ) {}
+
+  @Get('history/pdf/:consumerId')
+  async getBillingHistoryPdf(
+    @Param('consumerId', ParseIntPipe) consumerId: number,
+    @Res() res: Response,
+  ) {
+    try {
+      // Fetch consumer data with users and billing logs
+      const consumer = await this.prismaService.consumer.findUnique({
+        where: { id: consumerId },
+        include: {
+          users: {
+            where: {
+              role: {
+                name: 'Admin',
+                is_admin: true,
+              },
+            },
+            select: {
+              name: true,
+              role: true,
+            },
+          },
+          billing_logs: {
+            include: {
+              plan: true,
+            },
+          },
+        },
+      });
+
+      if (!consumer) {
+        throw new NotFoundException(`Consumer with ID ${consumerId} not found`);
+      }
+
+      // Generate PDF
+      const pdfBuffer =
+        await this.billingInvoicesService.generateBillingHistoryPdf(consumer);
+
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${consumer.company_name.replace(/[^a-zA-Z0-9]/g, '_')}-Billing-History.pdf"`,
+      );
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+      // Send the PDF
+      res.send(pdfBuffer);
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Failed to generate billing history PDF',
+          error,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Get('invoice/pdf/:billingId')
+  async generateInvoicePdf(
+    @Param('billingId', ParseIntPipe) billingId: number,
+    @Res() res: Response,
+  ) {
+    try {
+      const billing = await this.prismaService.billingHistory.findUnique({
+        where: { id: billingId },
+        include: {
+          consumer: {
+            include: {
+              users: {
+                where: { role: { is_admin: true } },
+                select: { name: true, role: true },
+              },
+            },
+          },
+          plan: true,
+        },
+      });
+
+      if (!billing) {
+        throw new NotFoundException('Billing history not found');
+      }
+
+      // Generate PDF as Buffer
+      const pdfBuffer =
+        await this.billingInvoicesService.generateInvoicePdf(billing);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename=invoice-${billing.reference}.pdf`,
+      );
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Failed to generate invoice PDF',
+          error,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Get('history/excel/:consumerId')
+  async downloadExcel(
+    @Param('consumerId', ParseIntPipe) consumerId: number,
+    @Res() res: Response,
+  ) {
+    try {
+      const consumer = await this.prismaService.consumer.findUnique({
+        where: { id: consumerId },
+        include: {
+          users: {
+            where: {
+              role: {
+                name: 'Admin',
+                is_admin: true,
+              },
+            },
+            select: {
+              name: true,
+              role: true,
+            },
+          },
+          billing_logs: {
+            include: {
+              plan: true,
+            },
+          },
+        },
+      });
+
+      if (!consumer) {
+        throw new NotFoundException(`Consumer with ID ${consumerId} not found`);
+      }
+
+      const buffer =
+        await this.billingInvoicesService.generateBillingHistoryExcel(consumer);
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${consumer.company_name}-billing-history.xlsx"`,
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+      res.send(buffer);
+    } catch (error) {
+      console.log(error);
+
+      throw new HttpException(
+        {
+          message: 'Failed to generate billing history Excel',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+}

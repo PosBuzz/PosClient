@@ -30,12 +30,12 @@ function Index() {
   let totalActiveUsers = 0;
 
   if (fetchData) {
-    fetchData.forEach((consumer: any) => {
-      const hasActiveBill = consumer.billing_logs.some(
-        (log: any) => log.billing_month === currentMonth
+    fetchData?.forEach((consumer: any) => {
+      const hasActiveBill = consumer?.billing_logs?.some(
+        (log: any) => log?.billing_month === currentMonth
       );
       if (hasActiveBill) {
-        const planName = consumer.plan?.name || "Unknown";
+        const planName = consumer?.plan?.name || "Unknown";
         activeUsersByPlan[planName] = (activeUsersByPlan[planName] || 0) + 1;
         totalActiveUsers++;
       }
@@ -44,10 +44,7 @@ function Index() {
 
   return (
     <>
-      <PageTitle
-        title={"Dashboard"}
-        breadcrumbs={[]}
-      />
+      <PageTitle title={"Dashboard"} breadcrumbs={[]} />
 
       <>
         <Row gutter={[16, 16]}>

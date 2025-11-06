@@ -1,21 +1,22 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
+import { CacheService } from '../../../common/services/cache.service';
+import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ConsumerService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(data: CreateConsumerDto) {
     const { password, email, name, ...consumerData } = data;
 
-    return this.prisma.$transaction(async (tx) => {
+    this.prisma.$transaction(async (tx) => {
       // Step 1: Create the consumer
       const consumer = await tx.consumer.create({
         data: {
@@ -28,6 +29,7 @@ export class ConsumerService {
       const role = await tx.role.create({
         data: {
           name: 'Admin',
+          is_admin: true,
           consumer_id: consumer.id,
         },
       });
@@ -57,11 +59,45 @@ export class ConsumerService {
         skipDuplicates: true,
       });
 
+      const warehouseBranch = await tx.branch.create({
+        data: {
+          consumer_id: consumer.id,
+          name: 'Warehouse',
+          address: 'Central Warehouse',
+          email: consumer.email,
+          phone: consumer.phone,
+          is_main: false,
+          is_warehouse: true,
+        },
+      });
+
+      const mainBranch = await tx.branch.create({
+        data: {
+          consumer_id: consumer.id,
+          name: 'Main Branch',
+          address: 'Main Branch',
+          email: consumer.email,
+          phone: consumer.phone,
+          is_main: true,
+          is_warehouse: false,
+        },
+      });
+
+      // Assign both branches to the admin user
+      await tx.userBranch.createMany({
+        data: [
+          { user_id: user.id, branch_id: warehouseBranch.id },
+          { user_id: user.id, branch_id: mainBranch.id },
+        ],
+      });
       return {
         message: 'Consumer, admin user, and permissions created successfully',
         consumer,
       };
     });
+
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
@@ -72,6 +108,7 @@ export class ConsumerService {
         consumer_id: consumerId,
         role: {
           name: 'Admin',
+          is_admin: true,
           consumer_id: consumerId,
         },
       },
@@ -126,18 +163,30 @@ export class ConsumerService {
         })),
       });
     }
-
+    // Invalidate consumer caches
+    await this.invalidateConsumerCaches();
     return {
       message: 'Consumer, admin user, and permissions updated successfully',
     };
   }
-
   async checkSubdomain(value: string) {
-    const exists = await this.prisma.consumer.findUnique({
-      where: { subdomain: value },
-      select: { id: true },
-    });
+    const cacheKey = generateCacheKey.consumerBySubdomain(value);
 
-    return { available: !exists };
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const exists = await this.prisma.consumer.findUnique({
+        where: { subdomain: value },
+        select: { id: true },
+      });
+      return { available: !exists };
+    });
+  }
+  private async invalidateConsumerCaches(): Promise<void> {
+    try {
+      // Use proper cache invalidation patterns for consumer operations
+      const pattern = generateCachePatterns.allConsumerRelated();
+      await this.cacheService.delPattern(pattern);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
   }
 }

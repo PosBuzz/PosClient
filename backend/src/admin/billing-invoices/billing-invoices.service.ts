@@ -1,0 +1,539 @@
+import { Injectable } from '@nestjs/common';
+import * as ExcelJS from 'exceljs';
+import * as PDFDocument from 'pdfkit';
+import { Readable } from 'stream';
+
+interface BillingLog {
+  created_at: string | number | Date;
+  id: number;
+  consumer_id: number;
+  amount: number;
+  reference: string;
+  billing_date: Date;
+  plan: Plan;
+}
+
+interface Role {
+  id: number;
+  name: string;
+  consumer_id: number;
+  is_admin: boolean;
+}
+
+interface User {
+  name: string;
+  role: Role;
+}
+
+interface Consumer {
+  id: number;
+  company_name: string;
+  business_category: string | null;
+  email: string;
+  secondary_email: string | null;
+  phone: string | null;
+  address: string | null;
+  subdomain: string;
+  plan_id: number;
+  created_at: Date;
+  updated_at: Date;
+  users: User[];
+  billing_logs: BillingLog[];
+}
+
+interface Plan {
+  name: string;
+  id: number;
+  price: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface Billing {
+  id: number;
+  consumer_id: number;
+  amount: number;
+  reference: string;
+  billing_date: Date;
+  created_at: Date;
+  updated_at: Date;
+  consumer: Partial<Consumer>;
+  plan: Plan;
+}
+
+@Injectable()
+export class BillingInvoicesService {
+  async generateBillingHistoryExcel(consumer: Consumer): Promise<Buffer> {
+    const sortedLogs = [...consumer.billing_logs].sort(
+      (a, b) =>
+        new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
+    );
+
+    const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
+
+    const workbook = new ExcelJS.Workbook();
+
+    // Create "Billing History" sheet
+    const billingSheet = workbook.addWorksheet('Billing History');
+
+    // Add header row with Created On
+    billingSheet.addRow([
+      'No.',
+      'Created On',
+      'Billing Date',
+      'Reference',
+      'Plan Name',
+      'Amount',
+    ]);
+
+    // Add billing logs
+    sortedLogs.forEach((log, index) => {
+      billingSheet.addRow([
+        index + 1,
+        new Date(log.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        new Date(log.billing_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        log.reference,
+        log.plan?.name || 'N/A',
+        log.amount,
+      ]);
+    });
+
+    // Add total row
+    billingSheet.addRow(['', '', '', '', 'Total', totalAmount]);
+
+    // Create "Company Info" sheet
+    const infoSheet = workbook.addWorksheet('Company Info');
+
+    const owner = consumer.users.find(
+      (user) => user.role?.name === 'Admin' && user?.role?.is_admin,
+    );
+
+    const infoData = [
+      ['Company Name', consumer.company_name || 'N/A'],
+      ['Email', consumer.email || 'N/A'],
+      ['Secondary Email', consumer.secondary_email || 'N/A'],
+      ['Phone', consumer.phone || 'N/A'],
+      ['Address', consumer.address || 'N/A'],
+      ['Subdomain', consumer.subdomain || 'N/A'],
+      [
+        'Client Since',
+        new Date(consumer.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      ],
+      ['Owner Name', owner?.name || 'N/A'],
+    ];
+
+    infoData.forEach((row) => infoSheet.addRow(row));
+
+    // Generate Excel buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return Buffer.from(buffer);
+  }
+
+  async generateInvoicePdf(billing: Billing): Promise<Buffer> {
+    const formatDate = (date: Date) =>
+      new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err) => reject(err));
+
+      const gray = '#666666';
+      const dark = '#333333';
+      const accent = '#007ACC';
+
+      // ====== Header ======
+      doc.fillColor(accent).fontSize(26).text('INVOICE', { align: 'right' });
+
+      doc
+        .moveDown()
+        .moveTo(50, doc.y)
+        .lineTo(545, doc.y)
+        .strokeColor('#CCCCCC')
+        .lineWidth(1)
+        .stroke();
+
+      doc.moveDown(1.5);
+
+      // ====== Company Info ======
+      doc.fillColor(dark).fontSize(14).text('Billed To:', { underline: true });
+      doc
+        .fontSize(12)
+        .fillColor(gray)
+        .text(`Company: ${billing.consumer.company_name}`)
+        .text(`Owner Name: ${billing.consumer.users?.[0]?.name || 'N/A'}`)
+        .text(`Email: ${billing.consumer.email}`)
+        .text(`Phone: ${billing.consumer.phone || 'N/A'}`)
+        .text(`Address: ${billing.consumer.address || 'N/A'}`);
+
+      doc.moveDown(1.2);
+
+      // ====== Invoice Details ======
+      doc
+        .fillColor(dark)
+        .fontSize(14)
+        .text('Invoice Details', { underline: true });
+      doc
+        .fontSize(12)
+        .fillColor(gray)
+        .text(`Reference: ${billing.reference || 'N/A'}`)
+        .text(`Billing Date: ${formatDate(billing.billing_date)}`)
+        .text(`Created At: ${formatDate(billing.created_at)}`)
+        .text(`Plan: ${billing.plan.name}`)
+        .text(`Plan Price: $${billing.plan.price}`)
+        .text(`Amount Charged: $${billing.amount}`);
+
+      doc.moveDown(1.5);
+
+      // ====== Footer ======
+      doc
+        .moveTo(50, doc.y)
+        .lineTo(545, doc.y)
+        .strokeColor('#CCCCCC')
+        .lineWidth(1)
+        .stroke()
+        .moveDown();
+
+      doc
+        .fontSize(10)
+        .fillColor('#999999')
+        .text('Thank you for your business!', { align: 'center' });
+
+      doc.end();
+    });
+  }
+
+  async generateBillingHistoryPdf(consumer: Consumer): Promise<Buffer> {
+    return new Promise((resolve) => {
+      const chunks: Buffer[] = [];
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `${consumer.company_name} - Billing History`,
+          Author: 'System Generated',
+        },
+      });
+
+      // Collect PDF chunks
+      const stream = new Readable({
+        read() {},
+      });
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => {
+        const result = Buffer.concat(chunks);
+        resolve(result);
+      });
+
+      // Start generating PDF content
+      this.addHeader(doc, consumer);
+      this.addCompanyInfo(doc, consumer);
+      this.addBillingTable(doc, consumer.billing_logs);
+
+      // Finalize PDF
+      doc.end();
+    });
+  }
+
+  private addHeader(doc: PDFKit.PDFDocument, consumer: Consumer): void {
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(18)
+      .text(`${consumer.company_name} - Billing History`, { align: 'center' })
+      .moveDown(0.5);
+
+    // Add date
+    const today = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    doc
+      .fontSize(10)
+      .text(`Generated on: ${today}`, { align: 'center' })
+      .moveDown(1);
+
+    // Add horizontal line
+    doc
+      .moveTo(50, doc.y)
+      .lineTo(doc.page.width - 50, doc.y)
+      .stroke()
+      .moveDown(1);
+  }
+
+  private addCompanyInfo(doc: PDFKit.PDFDocument, consumer: Consumer): void {
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text('Company Information')
+      .moveDown(0.5);
+
+    const owner = consumer.users.find(
+      (user) => user.role?.name === 'Admin' && user.role.is_admin,
+    );
+    const companyInfo = [
+      { label: 'Company Name', value: consumer.company_name || 'N/A' },
+      { label: 'Email', value: consumer.email || 'N/A' },
+      { label: 'Secondary Email', value: consumer.secondary_email || 'N/A' },
+      { label: 'Phone', value: consumer.phone || 'N/A' },
+      { label: 'Address', value: consumer.address || 'N/A' },
+      { label: 'Subdomain', value: consumer.subdomain || 'N/A' },
+      {
+        label: 'Client Since',
+        value: new Date(consumer.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      },
+      {
+        label: 'Owner Name',
+        value: owner?.name || 'N/A',
+      },
+    ];
+
+    const labelWidth = 120;
+    const valueStartX = 180;
+
+    doc.font('Helvetica').fontSize(10);
+
+    companyInfo.forEach((item) => {
+      const y = doc.y;
+      doc.text(`${item.label}:`, 50, y);
+      doc.text(item.value, valueStartX, y);
+      doc.moveDown(0.8); // Increased line spacing to prevent overlap
+    });
+
+    doc.moveDown(1.2);
+  }
+
+  private addBillingTable(
+    doc: PDFKit.PDFDocument,
+    billingLogs: BillingLog[],
+  ): void {
+    // Add table header
+    doc.x = doc.page.margins.left;
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text('Billing History', { align: 'center' })
+      .moveDown(0.5);
+
+    // Sort billing logs by date (newest first)
+    const sortedLogs = [...billingLogs].sort(
+      (a, b) =>
+        new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
+    );
+
+    if (sortedLogs.length === 0) {
+      doc
+        .font('Helvetica')
+        .fontSize(10)
+        .text('No billing history available.')
+        .moveDown();
+      return;
+    }
+
+    // Table dimensions
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const tableRight = doc.page.width - 50;
+    const rowHeight = 30;
+
+    // Column widths
+    const colWidths = {
+      id: 40,
+      createdOn: 100,
+      date: 100,
+      reference: 120,
+      plan: 80,
+      amount: 60,
+    };
+
+    // Draw table header
+    doc.font('Helvetica-Bold').fontSize(10);
+    this.drawTableRow(
+      doc,
+      tableLeft,
+      tableTop,
+      colWidths,
+      ['No.', 'Created On', 'Billing Date', 'Reference', 'Plan Name', 'Amount'],
+      rowHeight,
+      true,
+    );
+
+    // Draw table rows
+    doc.font('Helvetica').fontSize(10);
+    let currentY = tableTop + rowHeight;
+
+    sortedLogs.forEach((log, i) => {
+      if (currentY + rowHeight > doc.page.height - 50) {
+        doc.addPage();
+        currentY = 50;
+
+        // Redraw title on new page
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(14)
+          .text('Billing History', { align: 'center' })
+          .moveDown(0.5);
+
+        currentY = doc.y;
+
+        // Redraw header
+        doc.font('Helvetica-Bold').fontSize(10);
+        this.drawTableRow(
+          doc,
+          tableLeft,
+          currentY,
+          colWidths,
+          [
+            '#',
+            'Created On',
+            'Billing Date',
+            'Reference',
+            'Plan Name',
+            'Amount',
+          ],
+          rowHeight,
+          true,
+        );
+        currentY += rowHeight;
+      }
+
+      const date = new Date(log.billing_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      const createdOn = new Date(log.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      const amount = `$${log.amount.toFixed(2)}`;
+
+      this.drawTableRow(
+        doc,
+        tableLeft,
+        currentY,
+        colWidths,
+        [
+          (i + 1).toString(),
+          createdOn, // Add Created On
+          date,
+          log.reference,
+          log.plan?.name || 'N/A',
+          amount,
+        ],
+        rowHeight,
+        false,
+        i % 2 === 0,
+      );
+
+      currentY += rowHeight;
+    });
+
+    // Draw table bottom line
+    doc.moveTo(tableLeft, currentY).lineTo(tableRight, currentY).stroke();
+
+    // Add total
+    const total = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
+    currentY += 20;
+
+    doc
+      .font('Helvetica-Bold')
+      .text('Total Amount:', tableRight - 200, currentY)
+      .text(`$${total.toFixed(2)}`, tableRight - 100, currentY, {
+        width: 100,
+        align: 'right',
+      });
+  }
+
+  private drawTableRow(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    colWidths: {
+      id: number;
+      date: number;
+      reference: number;
+      plan: number;
+      amount: number;
+    },
+    texts: string[],
+    height: number,
+    isHeader: boolean = false,
+    isEvenRow: boolean = false,
+  ): void {
+    const tableWidth = Object.values(colWidths).reduce(
+      (sum, width) => sum + width,
+      0,
+    );
+
+    // Draw background for alternating rows or header
+    if (isHeader) {
+      doc.rect(x, y, tableWidth, height).fill('#e0e0e0').stroke();
+    } else if (isEvenRow) {
+      doc.rect(x, y, tableWidth, height).fill('#f5f5f5').stroke();
+    }
+    doc.fillColor('black');
+
+    // Draw cell borders
+    doc.rect(x, y, tableWidth, height).stroke();
+
+    // Draw column separators
+    let currentX = x;
+    Object.values(colWidths).forEach((width) => {
+      currentX += width;
+      if (currentX < x + tableWidth) {
+        doc
+          .moveTo(currentX, y)
+          .lineTo(currentX, y + height)
+          .stroke();
+      }
+    });
+
+    // Add text to cells
+    currentX = x;
+    texts.forEach((text, i) => {
+      const width = Object.values(colWidths)[i];
+      const textX = currentX + 5; // Add padding
+      const textY = y + height / 2 - 5; // Center text vertically
+
+      // Align the Amount column (last column) to the right
+      const textOptions =
+        i === texts.length - 1
+          ? { width: width - 10, align: 'right' as const } // Adjust padding for right alignment
+          : { width: width - 10, align: 'left' as const }; // Default alignment for other columns
+
+      doc.text(text, textX, textY, textOptions);
+      currentX += width;
+    });
+  }
+}

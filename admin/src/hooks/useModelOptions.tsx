@@ -6,7 +6,6 @@ function useModelOptions(modelName: string, labelColumn: string | any) {
   const { isLoading, isSuccess, isError, data } = useQuery({
     queryKey: [`all-${modelName}`],
     queryFn: () => get(getUrlForModel(modelName)),
-    staleTime: 0,
   });
 
   if (isLoading || isError) {

@@ -1,4 +1,16 @@
 export enum ConsumerPermission {
   profile = 'profile',
   users = 'users',
+  add_product = 'add_product',
+  edit_product = 'edit_product',
+  view_product = 'view_product',
+  delete_product = 'delete_product',
+  branches = 'branches',
+  vendors = 'vendors',
+  customers = 'customers',
+  inventory_batches = 'inventory_batches',
+  inventory_transfer = 'inventory_transfer',
+  inventory_adjustment = 'inventory_adjustment',
+  sales = 'sales',
+  returns = 'returns',
 }

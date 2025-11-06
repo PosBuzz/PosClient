@@ -1,32 +1,28 @@
 /* eslint-disable */
 
-import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+} from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table } from "antd";
-import { useEffect } from "react";
-import { deleteApi } from "../../api/crud-api";
-import { getUrlForModel } from "../../api/endpoints";
-import { useMessageStore } from "../../stores/messageStore";
 import dayjs from "dayjs";
+import saveAs from 'file-saver';
+import axiosInstance from "../../api/axiosInstance";
+import { deleteApi } from "../../api/crud-api";
+import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { useMessageStore } from "../../stores/messageStore";
 
-// @ts-ignore
 export default function _TableGrid({
   model,
-  trigger,
   onClickEdit,
   isLoading,
   isError,
   fetchData,
   refetch,
-  ...props
 }) {
- const { messageApi } = useMessageStore();
-
-  useEffect(() => {
-    if (trigger) {
-      refetch();
-    }
-  }, [trigger]);
+  const { messageApi } = useMessageStore();
 
   const deleteMutation = useMutation({
     mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
@@ -41,6 +37,39 @@ export default function _TableGrid({
 
   const handleDeleteClient = (id: any) => {
     deleteMutation.mutate(id);
+  };
+
+  const getInvoice = async (billing_id: any, openInNewTab: boolean) => {
+    try {
+      // Form the URL
+      const url = `${endpoints.downloadBillingInvoice}/${billing_id}`;
+
+      if (openInNewTab) {
+        // Open in a new tab - this won't trigger a download but will open the PDF in the browser
+        window.open(url, "_blank");
+        return;
+      }
+
+      // Initiate download
+      const response = await axiosInstance.get(url, {
+        responseType: "blob",
+      });
+
+      // Get the filename from the Content-Disposition header if available
+      let filename = "Billing-Invoice.pdf";
+      const contentDisposition = response.headers["content-disposition"];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      saveAs(response.data, filename);
+    } catch (error) {
+      console.error("Error downloading billing history PDF:", error);
+      throw error;
+    }
   };
 
   const columns = [
@@ -70,6 +99,9 @@ export default function _TableGrid({
       key: "actions",
       render: (record: any) => (
         <Space>
+          <Button onClick={() => getInvoice(record.id, true)} type="link">
+            <DownloadOutlined />
+          </Button>
           <Button onClick={() => onClickEdit(record)} type={"link"}>
             <EditOutlined />
           </Button>
