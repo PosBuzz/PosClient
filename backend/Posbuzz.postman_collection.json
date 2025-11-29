@@ -68,6 +68,18 @@
 				},
 				{
 					"name": "User Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"client_access_token\", pm.response.json().access_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -95,6 +107,18 @@
 				},
 				{
 					"name": "Client Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"client_access_token\", pm.response.json().access_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -1068,13 +1092,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{Host}}/consumer/create-branch",
+									"raw": "{{Host}}/consumer/branches",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"create-branch"
+										"branches"
 									]
 								},
 								"description": "Create a new branch"
@@ -1087,13 +1111,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{Host}}/consumer/get-branches",
+									"raw": "{{Host}}/consumer/branches",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"get-branches"
+										"branches"
 									]
 								},
 								"description": "Get all branches"
@@ -1178,13 +1202,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{Host}}/consumer/create-category",
+									"raw": "{{Host}}/consumer/categories",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"create-category"
+										"categories"
 									]
 								},
 								"description": "Create a new category"
@@ -1279,13 +1303,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{Host}}/consumer/create-brand",
+									"raw": "{{Host}}/consumer/brands",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"create-brand"
+										"brands"
 									]
 								},
 								"description": "Create a new brand"
@@ -1298,13 +1322,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{Host}}/consumer/get-brands",
+									"raw": "{{Host}}/consumer/brands",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"get-brands"
+										"brands"
 									]
 								},
 								"description": "Get all brands"
@@ -1404,13 +1428,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{Host}}/consumer/get-units",
+									"raw": "{{Host}}/consumer/units",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"get-units"
+										"units"
 									]
 								},
 								"description": "Get all units"
@@ -1486,13 +1510,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{Host}}/consumer/create-tag",
+									"raw": "{{Host}}/consumer/tags",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"create-tag"
+										"tags"
 									]
 								},
 								"description": "Create a new tag"
@@ -1505,13 +1529,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{Host}}/consumer/get-tags",
+									"raw": "{{Host}}/consumer/tags",
 									"host": [
 										"{{Host}}"
 									],
 									"path": [
 										"consumer",
-										"get-tags"
+										"tags"
 									]
 								},
 								"description": "Get all tags"
@@ -1570,6 +1594,442 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "AI Service",
+			"item": [
+				{
+					"name": "Generate Product Description",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"product\": \"Harpic\",\r\n    \"force_refresh\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ai_host}}/generate-description",
+							"host": [
+								"{{ai_host}}"
+							],
+							"path": [
+								"generate-description"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Description Feedback",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"product\": \"Samsung Galaxy S21\",\r\n  \"description\": \"High-end Android smartphone with 5G capability\",\r\n  \"rating\": 4,\r\n  \"comment\": \"Good description but could mention camera quality\",\r\n  \"user_edited_description\": \"High-end Android smartphone with 5G and 108MP camera\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ai_host}}/feedback",
+							"host": [
+								"{{ai_host}}"
+							],
+							"path": [
+								"feedback"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Microservices Calls",
+			"item": [
+				{
+					"name": "Generate Product Description",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"product\": \"Samsung Galaxy S21\",\r\n    \"force_refresh\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Host}}/ai/auto-description",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"ai",
+								"auto-description"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Product Description Feedback",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"product\": \"Mojo\",\r\n    \"description\": \"\\\"Mojo is a Point of Sale (POS) system offering efficient transaction processing and inventory management capabilities.\\\"\",\r\n    \"rating\": 1,\r\n    \"comment\": \"Fully incorrect\",\r\n    \"user_edited_description\": \"Mojo is a popular energy drink in Bangladesh, offering a refreshing boost with its unique flavor and energizing formula. Perfect for active lifestyles, it helps you stay alert and refreshed throughout the day.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Host}}/ai/description-feedback",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"ai",
+								"description-feedback"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Thermal Printer Tests",
+			"item": [
+				{
+					"name": "1. Test Printer Connection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paperWidth\": 40,\n  \"autocut\": true,\n  \"buzzer\": false\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/test-print",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"test-print"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Printer Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/settings",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Update Printer Settings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paperWidth\": 40,\n  \"encoding\": \"utf8\",\n  \"autocut\": true,\n  \"buzzer\": false\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/settings",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Print Sales Receipt",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paperWidth\": 40,\n  \"autocut\": true,\n  \"buzzer\": false\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/print-receipt/{{sale_id}}",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"print-receipt",
+								"{{sale_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Preview Receipt Content",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/preview-receipt/{{sale_id}}?paperWidth=40&autocut=true",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"preview-receipt",
+								"{{sale_id}}"
+							],
+							"query": [
+								{
+									"key": "paperWidth",
+									"value": "40"
+								},
+								{
+									"key": "autocut",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Reprint Receipt",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paperWidth\": 40,\n  \"autocut\": true\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/print-receipt/{{sale_id}}/reprint",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"print-receipt",
+								"{{sale_id}}",
+								"reprint"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Bulk Print Multiple Receipts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"saleIds\": [1, 2, 3],\n  \"printerSettings\": {\n    \"paperWidth\": 40,\n    \"autocut\": true,\n    \"buzzer\": false\n  }\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/thermal-printer/bulk-print",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"thermal-printer",
+								"bulk-print"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sales Data (for testing)",
+			"item": [
+				{
+					"name": "Get Sales List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/consumer/sales?page=1&limit=10",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"sales"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Sale",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/consumer/sales/{{sale_id}}",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"sales",
+								"{{sale_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Test Sale",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"branch_id\": 1,\n  \"customer_name\": \"Test Customer\",\n  \"customer_phone\": \"+1234567890\",\n  \"sale_type\": \"SALE\",\n  \"price_type\": \"regular\",\n  \"items\": [\n    {\n      \"variant_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 10.00,\n      \"line_total\": 20.00,\n      \"tax_amount\": 2.00\n    }\n  ],\n  \"payments\": [\n    {\n      \"payment_method\": \"CASH\",\n      \"amount\": 22.00\n    }\n  ],\n  \"discount_amount\": 0,\n  \"shipping_cost\": 0,\n  \"notes\": \"Test sale for thermal printing\"\n}"
+						},
+						"url": {
+							"raw": "{{Host}}/consumer/sales",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"consumer",
+								"sales"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -1578,6 +2038,7 @@
 			"script": {
 				"type": "text/javascript",
 				"packages": {},
+				"requests": {},
 				"exec": [
 					"pm.request.headers.add({\r",
 					"    key: 'X-CSRF-TOKEN',\r",
@@ -1592,6 +2053,7 @@
 			"script": {
 				"type": "text/javascript",
 				"packages": {},
+				"requests": {},
 				"exec": [
 					""
 				]
@@ -1600,14 +2062,20 @@
 	],
 	"variable": [
 		{
+			"key": "ai_host",
+			"value": ""
+		},
+		{
 			"key": "Host",
-			"value": "",
-			"type": "default"
+			"value": ""
 		},
 		{
 			"key": "csrfToken",
-			"value": "",
-			"type": "string"
+			"value": ""
+		},
+		{
+			"key": "client_access_token",
+			"value": ""
 		}
 	]
 }
