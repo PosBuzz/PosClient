@@ -52,12 +52,15 @@ class VectorStore:
                 )
             )
             
-            # Initialize the main collection with default embeddings first
-            # We'll use the embeddings directly later when adding documents
+            # Initialize collections with custom embedding function
+            # Create embedding adapter for ChromaDB
+            embedding_adapter = ChromaEmbeddingAdapter(self.embedder)
+            
             for collection_key in ["main", "a_e", "f_j", "k_o", "p_t", "u_z"]:
                 try:
                     self.collections[collection_key] = self.client.get_or_create_collection(
                         name=f"product_descriptions_{collection_key}",
+                        embedding_function=embedding_adapter,
                         metadata={
                             "hnsw:space": "cosine",
                             "hnsw:construction_ef": 128,
