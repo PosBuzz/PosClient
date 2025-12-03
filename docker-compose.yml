@@ -123,6 +123,25 @@ services:
       - "11434:11434"
     networks:
       - posbuzz-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Start Ollama in the background
+        /bin/ollama serve &
+        # Wait for Ollama to be ready
+        until ollama list &>/dev/null; do
+          echo "Waiting for Ollama to start..."
+          sleep 2
+        done
+        # Pull the model if not already present
+        if ! ollama list | grep -q "${LLM_MODEL:-llama3:8b-instruct-q8_0}"; then
+          echo "Pulling model ${LLM_MODEL:-llama3:8b-instruct-q8_0}..."
+          ollama pull ${LLM_MODEL:-llama3:8b-instruct-q8_0}
+        else
+          echo "Model ${LLM_MODEL:-llama3:8b-instruct-q8_0} already exists"
+        fi
+        # Keep the container running
+        wait
     # Uncomment below if you have NVIDIA GPU support
     # deploy:
     #   resources:
@@ -177,8 +196,6 @@ services:
       - ./admin/.env.docker
     ports:
       - "${ADMIN_PORT:-3001}:80"
-    depends_on:
-      - backend
     networks:
       - posbuzz-network
 
@@ -195,8 +212,6 @@ services:
       - ./consumer/.env.docker
     ports:
       - "${CONSUMER_PORT:-3000}:80"
-    depends_on:
-      - backend
     networks:
       - posbuzz-network
 
