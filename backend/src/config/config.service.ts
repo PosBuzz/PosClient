@@ -120,16 +120,18 @@ export class ConfigService {
 
   // Postgres binaries paths
   get pgDumpPath(): string {
+    // In Docker: 'pg_dump' (installed via apk)
+    // In local dev: Full path to DBngin binary
     return (
-      this.configService.get<string>('PG_DUMP_PATH') ||
-      'C:\\Users\\istia\\AppData\\Local\\com.tinyapp.DBngin\\Binaries\\postgresql\\17.0\\bin\\pg_dump.exe'
+      this.configService.get<string>('PG_DUMP_PATH') || 'pg_dump'
     );
   }
 
   get psqlPath(): string {
+    // In Docker: 'psql' (installed via apk)
+    // In local dev: Full path to DBngin binary
     return (
-      this.configService.get<string>('PSQL_PATH') ||
-      'C:\\Users\\istia\\AppData\\Local\\com.tinyapp.DBngin\\Binaries\\postgresql\\17.0\\bin\\psql.exe'
+      this.configService.get<string>('PSQL_PATH') || 'psql'
     );
   }
 }

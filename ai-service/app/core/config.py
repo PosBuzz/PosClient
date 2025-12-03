@@ -58,6 +58,7 @@ class Settings:
     HISTORY_VERSIONS_TO_KEEP: int = int(os.getenv("HISTORY_VERSIONS_TO_KEEP", "3"))  # Default: keep 3 versions
 
     # LLM settings
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3:8b-instruct-q8_0")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
     LLM_NUM_GPU: int = int(os.getenv("LLM_num_gpu", "0"))
