@@ -8,6 +8,7 @@ import { CommonModule } from './common/common.module';
 import { ConfigModule } from './config/config.module';
 import { ConsumerModule } from './consumer/consumer.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AuthModule,
     ConsumerModule,
     AiServicesModule,
+    RabbitMQModule,
   ],
   controllers: [AppController],
   providers: [AppService],
