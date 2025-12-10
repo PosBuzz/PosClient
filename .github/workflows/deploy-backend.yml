@@ -2,11 +2,11 @@ name: Deploy Backend Services
 
 on:
   workflow_dispatch:  # Manual trigger only
-    inputs:
-      confirm:
-        description: 'Type "deploy" to confirm deployment'
-        required: true
-        default: ''
+    # inputs:
+    #   confirm:
+    #     description: 'Type "deploy" to confirm deployment'
+    #     required: true
+    #     default: ''
 
 jobs:
   deploy-backend:
@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Validate Input
-        run: |
-          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
-            echo "❌ Deployment not confirmed. Please type 'deploy' to proceed."
-            exit 1
-          fi
-          echo "✅ Deployment confirmed"
+      # - name: Validate Input
+      #   run: |
+      #     if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+      #       echo "❌ Deployment not confirmed. Please type 'deploy' to proceed."
+      #       exit 1
+      #     fi
+      #     echo "✅ Deployment confirmed"
 
       - name: Deploy to Backend VM
         uses: appleboy/ssh-action@v1.0.3
@@ -36,7 +36,7 @@ jobs:
             echo "=========================================="
             
             # Navigate to project directory
-            cd /home/posbuzz
+            cd PosClient
             echo "📁 Current directory: $(pwd)"
             
             # Pull latest code
