@@ -2,9 +2,10 @@
 
 githubuser=Istiak-A-Tashrif
 githubpass=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
+organization=PosBuzz
 repo=PosClient
 branch=main
 
-git pull "https://$githubuser:$githubpass@github.com/$githubuser/$repo.git" $branch --no-rebase
+git pull "https://$githubuser:$githubpass@github.com//$organization.git" $branch --no-rebase
 
 
