@@ -26,6 +26,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       this.redisClient = new Redis({
         host: this.configService.redisHost,
         port: this.configService.redisPort,
+        password: this.configService.redisPassword,
         keyPrefix: this.keyPrefix,
         lazyConnect: true,
         maxRetriesPerRequest: 3,
@@ -225,16 +226,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       ? `${entityType}:${entityId}:*`
       : `${entityType}:*`;
     await this.delPattern(pattern);
-  }  /**
+  } /**
    * Invalidate ALL cache for a specific consumer
    * This is the most efficient way since all keys start with consumerId
    */
   async invalidateConsumerCache(consumerId: number): Promise<void> {
     const pattern = generateCachePatterns.allForConsumer(consumerId);
     await this.delPattern(pattern);
-    this.logger.log(
-      `🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`,
-    );
+    this.logger.log(`🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`);
   }
 
   /**
@@ -252,9 +251,21 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
    * Invalidate specific entity caches for a consumer
    * Use this for entities that don't directly affect inventory
    */
-  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles' | 'branches' | 'customers'): Promise<void> {
+  async invalidateEntityCaches(
+    consumerId: number,
+    entityType:
+      | 'units'
+      | 'vendors'
+      | 'categories'
+      | 'brands'
+      | 'tags'
+      | 'users'
+      | 'roles'
+      | 'branches'
+      | 'customers',
+  ): Promise<void> {
     let pattern: string;
-    
+
     switch (entityType) {
       case 'units':
         pattern = generateCachePatterns.allUnits(consumerId);
@@ -270,7 +281,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         break;
       case 'brands':
         pattern = generateCachePatterns.allBrands(consumerId);
-        break;      case 'tags':
+        break;
+      case 'tags':
         pattern = generateCachePatterns.allTags(consumerId);
         break;
       case 'branches':
@@ -295,7 +307,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         );
         return;
     }
-    
+
     await this.delPattern(pattern);
     this.logger.log(
       `🧹 INVALIDATED ${entityType.toUpperCase()} CACHES for consumer ${consumerId}`,
