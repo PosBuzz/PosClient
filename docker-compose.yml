@@ -116,7 +116,7 @@ services:
     container_name: posbuzz-ollama
     restart: unless-stopped
     env_file:
-      - .env.docker
+      - ./ai-service/.env.docker
     volumes:
       - ollama_data:/root/.ollama
     ports:
