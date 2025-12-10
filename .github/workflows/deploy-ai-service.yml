@@ -36,7 +36,7 @@ jobs:
             echo "=========================================="
             
             # Navigate to project directory
-            cd /home/posbuzz
+            cd PosClient
             echo "📁 Current directory: $(pwd)"
             
             # Pull latest code
