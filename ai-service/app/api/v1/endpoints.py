@@ -4,6 +4,7 @@ from typing import Optional
 from app.llm.generate import generate_description
 from app.core.auth import verify_jwt
 from app.core.feedback import feedback_manager
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -41,3 +42,15 @@ async def submit_feedback(feedback: FeedbackInput, user_data=Depends(verify_jwt)
     )
     
     return {"success": result, "message": "Feedback recorded"}
+
+
+@router.get("/health")
+async def healthcheck():
+    """Simple health check endpoint.
+
+    Returns service status and current UTC timestamp.
+    """
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
