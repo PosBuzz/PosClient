@@ -6,6 +6,6 @@ organization=PosBuzz
 repo=PosClient
 branch=main
 
-git pull "https://$githubuser:$githubpass@github.com//$organization.git" $branch --no-rebase
+git pull "https://$githubuser:$githubpass@github.com/$organization/$repo.git" $branch --no-rebase
 
 
