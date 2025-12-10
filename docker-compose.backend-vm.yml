@@ -34,8 +34,6 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     container_name: posbuzz-admin
     restart: unless-stopped
     env_file:
@@ -53,8 +51,6 @@ services:
     build:
       context: ./consumer
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=${VITE_CONSUMER_API_URL:-http://localhost:8000}
     container_name: posbuzz-consumer
     restart: unless-stopped
     env_file:
