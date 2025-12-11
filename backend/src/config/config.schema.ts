@@ -26,7 +26,7 @@ export const configValidationSchema = Joi.object({
   // Individual redis config
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
-  REDIS_PASSWORD: Joi.string(),
+  REDIS_PASSWORD: Joi.string().allow(''),
   REDIS_PREFIX: Joi.string().default('posbuzz'),
 
   // Cache TTL

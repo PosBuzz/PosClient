@@ -22,7 +22,7 @@ export class JwtClientStrategy extends PassportStrategy(
   }
 
   async validate(payload: JwtPayload) {
-    const { sub, consumer_id } = payload;
+    const { sub, consumer_id, consumer_subdomain } = payload;
 
     const user = await this.prisma.user.findUnique({
       where: { id: sub, consumer_id },
@@ -41,6 +41,7 @@ export class JwtClientStrategy extends PassportStrategy(
             plan_id: true,
             email: true,
             company_name: true,
+            subdomain: true,
           },
         },
         branches: {
@@ -79,6 +80,7 @@ export class JwtClientStrategy extends PassportStrategy(
       plan_id: user.consumer.plan_id,
       company_name: user.consumer.company_name,
       company_email: user.consumer.email,
+      consumer_subdomain: consumer_subdomain || user.consumer.subdomain, // Use from JWT or fallback to DB
       branches, // attach branch access to request.user
     };
   }
