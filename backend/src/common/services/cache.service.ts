@@ -226,7 +226,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       ? `${entityType}:${entityId}:*`
       : `${entityType}:*`;
     await this.delPattern(pattern);
-  } /**
+  }
+  
+  /**
    * Invalidate ALL cache for a specific consumer
    * This is the most efficient way since all keys start with consumerId
    */
@@ -234,6 +236,56 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     const pattern = generateCachePatterns.allForConsumer(consumerId);
     await this.delPattern(pattern);
     this.logger.log(`🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`);
+  }
+
+  /**
+   * Invalidate global consumer-related caches (subdomain validation, consumer details, etc.)
+   * This is used when consumer data changes (create, update, delete) in admin
+   */
+  async invalidateGlobalConsumerCaches(): Promise<void> {
+    const pattern = generateCachePatterns.allConsumerRelated();
+    await this.delPattern(pattern);
+    this.logger.log(`🧹 INVALIDATED ALL GLOBAL CONSUMER CACHES`);
+  }
+
+  /**
+   * Invalidate all plan-related caches
+   */
+  async invalidateGlobalPlanCaches(): Promise<void> {
+    const pattern = generateCachePatterns.allPlanRelated();
+    await this.delPattern(pattern);
+    this.logger.log(`🧹 INVALIDATED ALL GLOBAL PLAN CACHES`);
+  }
+
+  /**
+   * Invalidate ALL admin-related caches (consumers, plans, admin CRUD)
+   */
+  async invalidateAllAdminCaches(): Promise<void> {
+    const patterns = generateCachePatterns.allAdminRelated();
+    await this.delPatterns(patterns);
+    this.logger.log(`🧹 INVALIDATED ALL ADMIN CACHES`);
+  }
+
+  /**
+   * Delete multiple specific keys (not patterns)
+   * Useful for invalidating specific cache entries by exact keys
+   */
+  async delKeys(keys: string[]): Promise<void> {
+    if (!this.redisClient || keys.length === 0) {
+      this.logger.warn(`❌ Redis not available or no keys provided for DEL KEYS`);
+      return;
+    }
+
+    try {
+      if (keys.length === 1) {
+        await this.redisClient.del(keys[0]);
+      } else {
+        await this.redisClient.del(...keys);
+      }
+      this.logger.log(`🗑️ CACHE DEL KEYS: ${keys.length} keys deleted`);
+    } catch (error) {
+      this.logger.error(`Cache delete keys error:`, error);
+    }
   }
 
   /**
