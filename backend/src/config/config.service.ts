@@ -82,7 +82,7 @@ export class ConfigService {
     return this.configService.get<number>('REDIS_PORT') || 6379;
   }
   get redisPassword(): string | undefined {
-    return this.configService.get<string>('REDIS_PASSWORD');
+    return this.configService.get<string | undefined>('REDIS_PASSWORD');
   }
   get redisPrefix(): string {
     return this.configService.get<string>('REDIS_PREFIX') || 'posbuzz';
