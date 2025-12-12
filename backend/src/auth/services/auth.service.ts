@@ -88,8 +88,8 @@ export class AuthService {
             billing_logs: {
               where: {
                 billing_date: {
-                  gte: dayjs().subtract(1, 'month').toISOString(),
-                  lte: dayjs().toISOString(),
+                  gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
+                  lte: dayjs().endOf('day').toDate(),
                 },
               },
             },
