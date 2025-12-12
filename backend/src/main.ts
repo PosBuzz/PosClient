@@ -34,9 +34,12 @@ async function bootstrap() {
         // Exact match
         if (allowedOrigin === origin) return true;
 
-        // Wildcard subdomain support (e.g., *.example.com)
+        // Wildcard subdomain support (e.g., *.example.com or https://*.example.com)
         if (allowedOrigin.includes('*')) {
-          const pattern = allowedOrigin.replace(/\*/g, '[a-zA-Z0-9-]+');
+          // Escape special regex characters except *
+          const pattern = allowedOrigin
+            .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+            .replace(/\*/g, '[a-zA-Z0-9-]+');
           const regex = new RegExp(`^${pattern}$`);
           return regex.test(origin);
         }
