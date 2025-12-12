@@ -68,16 +68,25 @@ async function bootstrap() {
   // Use cookie-parser before CSRF middleware
   app.use(cookieParser());
 
-  // CSRF Protection Middleware Configuration
-  app.use(
-    csurf({
+  // CSRF Protection Middleware Configuration with excluded paths
+  app.use((req, res, next) => {
+    // Exclude public endpoints from CSRF protection
+    const publicPaths = ['/api/v1/public'];
+    const isPublicPath = publicPaths.some((path) => req.path.startsWith(path));
+    
+    if (isPublicPath) {
+      return next();
+    }
+
+    // Apply CSRF protection for non-public paths
+    return csurf({
       cookie: {
         sameSite: 'none',
         secure: true,
         httpOnly: true, // Ensures cookie is not accessible via JavaScript
       },
-    }),
-  );
+    })(req, res, next);
+  });
 
   // Global pipes for validation
   app.useGlobalPipes(
