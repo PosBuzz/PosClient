@@ -49,7 +49,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
     // Check if user has consumer_subdomain in JWT
     if (!user.consumer_subdomain) {
       this.logger.warn(
-        `User ${user.sub} missing consumer_subdomain for ${method} ${url} - JWT needs refresh`,
+        `User ${user.id} missing consumer_subdomain for ${method} ${url} - JWT needs refresh`,
       );
       // Allow for now - subdomain validation will happen after user logs out/in again
       // TODO: Remove this fallback after all users have new JWTs
@@ -59,7 +59,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
     // Validate subdomain matches the one in JWT
     if (subdomain !== user.consumer_subdomain) {
       this.logger.warn(
-        `Subdomain mismatch for ${method} ${url}: request='${subdomain}' jwt='${user.consumer_subdomain}' user='${user.sub}' - clearing cookies`,
+        `Subdomain mismatch for ${method} ${url}: request='${subdomain}' jwt='${user.consumer_subdomain}' user='${user.id}' - clearing cookies`,
       );
       
       // Clear cookies to force re-authentication
@@ -80,7 +80,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
     }
 
     this.logger.debug(
-      `Subdomain validated for ${method} ${url}: '${subdomain}' matches JWT for user ${user.sub}`,
+      `Subdomain validated for ${method} ${url}: '${subdomain}' matches JWT for user ${user.id}`,
     );
 
     return true;
