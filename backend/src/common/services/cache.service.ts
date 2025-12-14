@@ -59,13 +59,11 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         this.logger.log('🔄 Redis reconnecting...');
       });
 
-      this.redisClient.on('connect', () => {
-        this.logger.log('✅ Redis connected');
-      });
+      // Note: We don't log on 'connect' event to avoid duplicate logs
 
       await this.redisClient.connect();
       this.logger.log(
-        `✅ Connected to Redis at ${this.configService.redisHost}:${this.configService.redisPort} with prefix '${this.keyPrefix}'`,
+        `✅ Redis connected at ${this.configService.redisHost}:${this.configService.redisPort} (prefix: '${this.keyPrefix}')`,
       );
     } catch (error) {
       this.logger.error(`❌ Failed to connect to Redis: ${error.message}`);

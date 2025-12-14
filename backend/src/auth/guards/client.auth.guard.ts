@@ -3,7 +3,6 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Logger,
-  Inject,
 } from '@nestjs/common';
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -14,7 +13,6 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
   private readonly logger = new Logger(ClientAuthGuard.name);
 
   constructor(
-    @Inject(SubdomainUtilService)
     private readonly subdomainUtil: SubdomainUtilService,
   ) {
     super();
