@@ -30,60 +30,41 @@ export class SubdomainValidationService {
   async validateSubdomain(
     subdomain: string,
   ): Promise<SubdomainValidationResult> {
-    this.logger.log(`🔍 Validating subdomain: '${subdomain}'`);
-    
     if (!subdomain || subdomain.trim() === '') {
-      this.logger.warn('❌ Subdomain validation failed: empty subdomain');
       return {
         exists: false,
         message: 'Subdomain is required',
       };
     }
 
-    // Normalize subdomain (lowercase, trim)
     const normalizedSubdomain = subdomain.toLowerCase().trim();
-
-    // Check cache first for performance
     const cacheKey = generateCacheKey.consumerBySubdomain(normalizedSubdomain);
 
     try {
-      this.logger.debug(`🔍 Checking cache for subdomain: ${normalizedSubdomain}`);
-      
       const cachedResult =
         await this.cacheService.getOrSet<SubdomainValidationResult>(
           cacheKey,
           async () => {
-            this.logger.log(`🔍 Cache miss - querying database for subdomain: ${normalizedSubdomain}`);
-            
-            // Query database for subdomain with timeout protection
-            const consumer = await this.prisma.executeWithTimeout(
-              async () => {
-                return await this.prisma.consumer.findUnique({
-                  where: { subdomain: normalizedSubdomain },
-                  select: {
-                    id: true,
-                    subdomain: true,
-                    // Check if consumer has valid billing (is active)
-                    billing_logs: {
-                      where: {
-                        billing_date: {
-                          gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
-                          lte: dayjs().endOf('day').toDate(),
-                        },
-                      },
-                      select: { id: true },
-                      take: 1,
-                      orderBy: { billing_date: 'desc' },
+            const consumer = await this.prisma.consumer.findUnique({
+              where: { subdomain: normalizedSubdomain },
+              select: {
+                id: true,
+                subdomain: true,
+                billing_logs: {
+                  where: {
+                    billing_date: {
+                      gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
+                      lte: dayjs().endOf('day').toDate(),
                     },
                   },
-                });
+                  select: { id: true },
+                  take: 1,
+                  orderBy: { billing_date: 'desc' },
+                },
               },
-              10000, // 10 second timeout
-              `Subdomain validation query for '${normalizedSubdomain}'`,
-            );
+            });
 
             if (!consumer) {
-              this.logger.debug(`❌ Subdomain '${normalizedSubdomain}' not found in database`);
               return {
                 exists: false,
                 message: 'Subdomain not found',
@@ -93,9 +74,6 @@ export class SubdomainValidationService {
             const isActive = consumer.billing_logs.length > 0;
 
             if (!isActive) {
-              this.logger.warn(
-                `⚠️ Subdomain '${normalizedSubdomain}' exists but billing is not active`,
-              );
               return {
                 exists: true,
                 consumerId: consumer.id,
@@ -104,9 +82,6 @@ export class SubdomainValidationService {
               };
             }
 
-            this.logger.debug(
-              `✅ Subdomain '${normalizedSubdomain}' validated successfully (Consumer ID: ${consumer.id})`,
-            );
             return {
               exists: true,
               consumerId: consumer.id,
@@ -114,17 +89,14 @@ export class SubdomainValidationService {
               message: 'Subdomain is valid',
             };
           },
-          300, // Cache for 5 minutes
+          300,
         );
 
-      this.logger.log(`✅ Subdomain validation complete for '${normalizedSubdomain}': exists=${cachedResult.exists}, active=${cachedResult.isActive}`);
       return cachedResult;
     } catch (error) {
       this.logger.error(
-        `❌ Error validating subdomain '${normalizedSubdomain}': ${error.message}`,
-        error.stack,
+        `❌ Subdomain validation error '${normalizedSubdomain}': ${error.message}`,
       );
-      // Fail open for availability, but log the error
       return {
         exists: false,
         message: 'Error validating subdomain',
