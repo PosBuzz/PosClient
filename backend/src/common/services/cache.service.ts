@@ -31,6 +31,36 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         lazyConnect: true,
         maxRetriesPerRequest: 3,
         enableOfflineQueue: false,
+        retryStrategy: (times: number) => {
+          const delay = Math.min(times * 50, 2000);
+          this.logger.warn(`🔄 Redis retry attempt ${times}, waiting ${delay}ms`);
+          return delay;
+        },
+        reconnectOnError: (err) => {
+          this.logger.error(`🔴 Redis connection error: ${err.message}`);
+          const targetError = 'READONLY';
+          if (err.message.includes(targetError)) {
+            return true; // Reconnect on READONLY errors
+          }
+          return false;
+        },
+      });
+
+      // Add error handler to prevent unhandled errors
+      this.redisClient.on('error', (err) => {
+        this.logger.error(`🔴 Redis Error: ${err.message}`, err.stack);
+      });
+
+      this.redisClient.on('close', () => {
+        this.logger.warn('⚠️ Redis connection closed');
+      });
+
+      this.redisClient.on('reconnecting', () => {
+        this.logger.log('🔄 Redis reconnecting...');
+      });
+
+      this.redisClient.on('connect', () => {
+        this.logger.log('✅ Redis connected');
       });
 
       await this.redisClient.connect();
@@ -65,7 +95,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const result = await this.redisClient.get(key);
+      // Add timeout to prevent hanging
+      const result = await Promise.race([
+        this.redisClient.get(key),
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis GET timeout')), 5000)
+        ),
+      ]);
+
       if (result !== null) {
         const parsed = JSON.parse(result) as T;
         this.logger.log(`✅ CACHE HIT: ${key}`);
@@ -75,7 +112,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         return undefined;
       }
     } catch (error) {
-      this.logger.error(`Cache get error for key ${key}:`, error);
+      this.logger.error(`Cache get error for key ${key}: ${error.message}`);
       return undefined;
     }
   }
@@ -92,10 +129,18 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     try {
       const serialized = JSON.stringify(value);
       const expiry = ttl || this.ttl;
-      await this.redisClient.setex(key, expiry, serialized);
+      
+      // Add timeout to prevent hanging
+      await Promise.race([
+        this.redisClient.setex(key, expiry, serialized),
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis SET timeout')), 5000)
+        ),
+      ]);
+      
       this.logger.log(`💾 CACHE SET: ${key} (TTL: ${expiry}s)`);
     } catch (error) {
-      this.logger.error(`Cache set error for key ${key}:`, error);
+      this.logger.error(`Cache set error for key ${key}: ${error.message}`);
     }
   }
 
@@ -124,15 +169,27 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     factory: () => Promise<T>,
     ttl?: number,
   ): Promise<T> {
-    const cached = await this.get<T>(key);
-    if (cached !== undefined) {
-      return cached;
-    }
+    try {
+      const cached = await this.get<T>(key);
+      if (cached !== undefined) {
+        return cached;
+      }
 
-    this.logger.log(`🔄 CACHE FACTORY: Executing factory for ${key}`);
-    const result = await factory();
-    await this.set(key, result, ttl);
-    return result;
+      this.logger.log(`🔄 CACHE FACTORY: Executing factory for ${key}`);
+      const result = await factory();
+      
+      // Don't wait for cache set to complete - fire and forget
+      this.set(key, result, ttl).catch((err) => {
+        this.logger.error(`Failed to cache result for ${key}: ${err.message}`);
+      });
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`getOrSet error for key ${key}: ${error.message}`);
+      // On cache error, still execute factory to not block the request
+      this.logger.log(`⚠️ CACHE BYPASS: Executing factory without cache for ${key}`);
+      return await factory();
+    }
   }
 
   /**
