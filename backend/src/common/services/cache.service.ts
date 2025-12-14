@@ -31,8 +31,10 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         lazyConnect: true,
         maxRetriesPerRequest: 3,
         enableOfflineQueue: false,
+        connectTimeout: 10000,
+        commandTimeout: 8000,
         retryStrategy: (times: number) => {
-          const delay = Math.min(times * 50, 2000);
+          const delay = Math.min(times * 100, 3000);
           this.logger.warn(`🔄 Redis retry attempt ${times}, waiting ${delay}ms`);
           return delay;
         },
@@ -97,7 +99,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       const result = await Promise.race([
         this.redisClient.get(key),
         new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Redis GET timeout')), 5000)
+          setTimeout(() => reject(new Error('Redis GET timeout')), 10000)
         ),
       ]);
 
@@ -132,7 +134,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       await Promise.race([
         this.redisClient.setex(key, expiry, serialized),
         new Promise<void>((_, reject) => 
-          setTimeout(() => reject(new Error('Redis SET timeout')), 5000)
+          setTimeout(() => reject(new Error('Redis SET timeout')), 10000)
         ),
       ]);
       
