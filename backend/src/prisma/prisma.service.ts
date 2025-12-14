@@ -8,24 +8,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor() {
     super({
       log: [
-        { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },
-        { emit: 'event', level: 'info' },
         { emit: 'event', level: 'warn' },
       ],
-      errorFormat: 'pretty',
-    });
-
-    // Log all queries in development (optional - can be removed in production)
-    // @ts-ignore - Prisma event types
-    this.$on('query', (e: any) => {
-      if (process.env.NODE_ENV === 'development') {
-        this.logger.debug(`Query: ${e.query} - Params: ${e.params} - Duration: ${e.duration}ms`);
-      }
-      // Log slow queries even in production
-      if (e.duration > 1000) {
-        this.logger.warn(`🐌 SLOW QUERY (${e.duration}ms): ${e.query}`);
-      }
+      errorFormat: 'minimal',
     });
 
     // @ts-ignore - Prisma event types
@@ -37,63 +23,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.$on('warn', (e: any) => {
       this.logger.warn(`⚠️ Database Warning: ${e.message}`);
     });
-
-    // @ts-ignore - Prisma event types
-    this.$on('info', (e: any) => {
-      this.logger.log(`ℹ️ Database Info: ${e.message}`);
-    });
   }
 
   async onModuleInit() {
     try {
-      this.logger.log('🔌 Connecting to database...');
       await this.$connect();
-      this.logger.log('✅ Successfully connected to database');
-      
-      // Test the connection
-      await this.$queryRaw`SELECT 1`;
-      this.logger.log('✅ Database connection test successful');
+      this.logger.log('✅ Database connected');
     } catch (error) {
-      this.logger.error(`❌ Failed to connect to database: ${error.message}`, error.stack);
+      this.logger.error(`❌ Database connection failed: ${error.message}`);
       throw error;
     }
   }
 
   async onModuleDestroy() {
     try {
-      this.logger.log('🔌 Disconnecting from database...');
       await this.$disconnect();
-      this.logger.log('✅ Successfully disconnected from database');
+      this.logger.log('✅ Database disconnected');
     } catch (error) {
-      this.logger.warn(`⚠️ Error during database disconnect: ${error.message}`);
-    }
-  }
-
-  /**
-   * Execute a query with timeout and error handling
-   */
-  async executeWithTimeout<T>(
-    operation: () => Promise<T>,
-    timeoutMs: number = 30000,
-    operationName: string = 'Database operation',
-  ): Promise<T> {
-    try {
-      const result = await Promise.race([
-        operation(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${operationName} timeout after ${timeoutMs}ms`)),
-            timeoutMs,
-          ),
-        ),
-      ]);
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `❌ ${operationName} failed: ${error.message}`,
-        error.stack,
-      );
-      throw error;
+      this.logger.warn(`⚠️ Error disconnecting: ${error.message}`);
     }
   }
 
@@ -156,8 +103,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         ORDER BY query_start
       `;
 
+      const statsData = stats[0];
+      
       return {
-        stats: stats[0],
+        stats: {
+          numbackends: statsData.numbackends,
+          xact_commit: Number(statsData.xact_commit),
+          xact_rollback: Number(statsData.xact_rollback),
+          blks_read: Number(statsData.blks_read),
+          blks_hit: Number(statsData.blks_hit),
+          tup_returned: Number(statsData.tup_returned),
+          tup_fetched: Number(statsData.tup_fetched),
+          tup_inserted: Number(statsData.tup_inserted),
+          tup_updated: Number(statsData.tup_updated),
+          tup_deleted: Number(statsData.tup_deleted),
+        },
         activeConnections: Number(connections[0]?.count || 0),
         longRunningQueries: longQueries,
       };
