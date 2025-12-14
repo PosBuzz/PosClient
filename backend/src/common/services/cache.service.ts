@@ -32,10 +32,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         maxRetriesPerRequest: 3,
         enableOfflineQueue: false,
         connectTimeout: 10000,
-        commandTimeout: 8000,
+        commandTimeout: 5000,
         retryStrategy: (times: number) => {
           const delay = Math.min(times * 100, 3000);
-          this.logger.warn(`🔄 Redis retry attempt ${times}, waiting ${delay}ms`);
           return delay;
         },
         reconnectOnError: (err) => {
@@ -50,79 +49,61 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
 
       // Add error handler to prevent unhandled errors
       this.redisClient.on('error', (err) => {
-        this.logger.error(`🔴 Redis Error: ${err.message}`, err.stack);
+        this.logger.error(`Redis error: ${err.message}`);
       });
 
       this.redisClient.on('close', () => {
-        this.logger.warn('⚠️ Redis connection closed');
+        this.logger.warn('Redis connection closed');
       });
 
       this.redisClient.on('reconnecting', () => {
-        this.logger.log('🔄 Redis reconnecting...');
+        this.logger.log('Redis reconnecting');
       });
 
-      // Note: We don't log on 'connect' event to avoid duplicate logs
-
       await this.redisClient.connect();
-      this.logger.log(
-        `✅ Redis connected at ${this.configService.redisHost}:${this.configService.redisPort} (prefix: '${this.keyPrefix}')`,
-      );
+      this.logger.log(`✅ Redis connected: ${this.configService.redisHost}:${this.configService.redisPort}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to connect to Redis: ${error.message}`);
+      this.logger.error(`❌ Redis connection failed: ${error.message}`);
       throw error;
     }
   }
 
   async onModuleDestroy() {
-    // Cleanup Redis connection
     if (this.redisClient) {
       try {
         await this.redisClient.disconnect();
-        this.logger.log('🔌 Disconnected from Redis');
+        this.logger.log('✅ Redis disconnected');
       } catch (error) {
-        this.logger.warn(`Error disconnecting Redis: ${error.message}`);
+        this.logger.warn(`Redis disconnect error: ${error.message}`);
       }
     }
   }
 
-  /**
-   * Get item from cache
-   */
   async get<T>(key: string): Promise<T | undefined> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for GET: ${key}`);
       return undefined;
     }
 
     try {
-      // Add timeout to prevent hanging
       const result = await Promise.race([
         this.redisClient.get(key),
         new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Redis GET timeout')), 10000)
+          setTimeout(() => reject(new Error('Redis GET timeout')), 8000)
         ),
       ]);
 
       if (result !== null) {
-        const parsed = JSON.parse(result) as T;
-        this.logger.log(`✅ CACHE HIT: ${key}`);
-        return parsed;
-      } else {
-        this.logger.log(`❌ CACHE MISS: ${key}`);
-        return undefined;
+        return JSON.parse(result) as T;
       }
+      return undefined;
     } catch (error) {
-      this.logger.error(`Cache get error for key ${key}: ${error.message}`);
+      this.logger.error(`Cache GET error (${key}): ${error.message}`);
       return undefined;
     }
   }
 
-  /**
-   * Set item in cache with TTL from config
-   */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for SET: ${key}`);
       return;
     }
 
@@ -130,40 +111,29 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       const serialized = JSON.stringify(value);
       const expiry = ttl || this.ttl;
       
-      // Add timeout to prevent hanging
       await Promise.race([
         this.redisClient.setex(key, expiry, serialized),
         new Promise<void>((_, reject) => 
-          setTimeout(() => reject(new Error('Redis SET timeout')), 10000)
+          setTimeout(() => reject(new Error('Redis SET timeout')), 8000)
         ),
       ]);
-      
-      this.logger.log(`💾 CACHE SET: ${key} (TTL: ${expiry}s)`);
     } catch (error) {
-      this.logger.error(`Cache set error for key ${key}: ${error.message}`);
+      this.logger.error(`Cache SET error (${key}): ${error.message}`);
     }
   }
 
-  /**
-   * Delete item from cache
-   */
   async del(key: string): Promise<void> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for DEL: ${key}`);
       return;
     }
 
     try {
       await this.redisClient.del(key);
-      this.logger.log(`🗑️ CACHE DEL: ${key}`);
     } catch (error) {
-      this.logger.error(`Cache delete error for key ${key}:`, error);
+      this.logger.error(`Cache DEL error (${key}): ${error.message}`);
     }
   }
 
-  /**
-   * Get or set pattern - if cache miss, execute function and cache result
-   */
   async getOrSet<T>(
     key: string,
     factory: () => Promise<T>,
@@ -175,19 +145,16 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         return cached;
       }
 
-      this.logger.log(`🔄 CACHE FACTORY: Executing factory for ${key}`);
       const result = await factory();
       
-      // Don't wait for cache set to complete - fire and forget
+      // Fire and forget cache set
       this.set(key, result, ttl).catch((err) => {
-        this.logger.error(`Failed to cache result for ${key}: ${err.message}`);
+        this.logger.error(`Failed to cache ${key}: ${err.message}`);
       });
       
       return result;
     } catch (error) {
-      this.logger.error(`getOrSet error for key ${key}: ${error.message}`);
-      // On cache error, still execute factory to not block the request
-      this.logger.log(`⚠️ CACHE BYPASS: Executing factory without cache for ${key}`);
+      this.logger.error(`getOrSet error (${key}): ${error.message}`);
       return await factory();
     }
   }
