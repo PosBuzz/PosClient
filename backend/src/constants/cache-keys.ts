@@ -87,9 +87,14 @@ export const generateCacheKey = {
   consumerDetail: (consumerId: number) =>
     `global:consumer:detail:${consumerId}`,
   
+  // Subdomain validation cache (returns {exists, isActive, consumerId, message})
   consumerBySubdomain: (subdomain: string) =>
     `global:consumer:subdomain:${subdomain}`,
-
+  
+  // Subdomain availability check (returns {available: boolean})
+  subdomainAvailability: (subdomain: string) =>
+    `global:consumer:subdomain:availability:${subdomain}`,
+ 
   // Inventory cache helpers
   inventorySummary: (consumerId: number, branchId?: number) =>
     `${consumerId}:inventory:summary:${branchId || 'all'}`,
@@ -243,9 +248,10 @@ export const generateCachePatterns = {
 
   // Admin operation patterns
   allConsumerRelated: () => 'global:consumer:*',
+  allPlanRelated: () => 'global:plan*',
   allAdminRelated: () => [
     'global:admin:*',
-    'global:users:*',
-    'global:roles:*',
+    'global:consumer:*',
+    'global:plan*',
   ],
 };

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Use the updated OllamaLLM class with caching
 llm = OllamaLLM(
+    base_url=settings.OLLAMA_BASE_URL,
     model=settings.LLM_MODEL,
     temperature=settings.LLM_TEMPERATURE,
     num_gpu=settings.LLM_NUM_GPU,

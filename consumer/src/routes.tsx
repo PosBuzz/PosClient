@@ -5,6 +5,7 @@ import { Permissions } from "./constants/permissions";
 import AppLayout from "./layout";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
+const SubscriptionInactive = lazy(() => import("./pages/SubscriptionInactive"));
 const Login = lazy(() => import("./pages/login"));
 const Home = lazy(() => import("./pages/dashboard"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
@@ -59,6 +60,14 @@ export const routes = [
   {
     path: "*",
     element: <NotFound />,
+  },
+  {
+    path: "/404",
+    element: <NotFound />,
+  },
+  {
+    path: "/inactive",
+    element: <SubscriptionInactive />,
   },
   {
     path: "/login",

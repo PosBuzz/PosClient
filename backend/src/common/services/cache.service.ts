@@ -26,112 +26,137 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       this.redisClient = new Redis({
         host: this.configService.redisHost,
         port: this.configService.redisPort,
+        password: this.configService.redisPassword,
         keyPrefix: this.keyPrefix,
         lazyConnect: true,
         maxRetriesPerRequest: 3,
         enableOfflineQueue: false,
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+        retryStrategy: (times: number) => {
+          const delay = Math.min(times * 100, 3000);
+          return delay;
+        },
+        reconnectOnError: (err) => {
+          this.logger.error(`🔴 Redis connection error: ${err.message}`);
+          const targetError = 'READONLY';
+          if (err.message.includes(targetError)) {
+            return true; // Reconnect on READONLY errors
+          }
+          return false;
+        },
+      });
+
+      // Add error handler to prevent unhandled errors
+      this.redisClient.on('error', (err) => {
+        this.logger.error(`Redis error: ${err.message}`);
+      });
+
+      this.redisClient.on('close', () => {
+        this.logger.warn('Redis connection closed');
+      });
+
+      this.redisClient.on('reconnecting', () => {
+        this.logger.log('Redis reconnecting');
       });
 
       await this.redisClient.connect();
-      this.logger.log(
-        `✅ Connected to Redis at ${this.configService.redisHost}:${this.configService.redisPort} with prefix '${this.keyPrefix}'`,
-      );
+      this.logger.log(`✅ Redis connected: ${this.configService.redisHost}:${this.configService.redisPort}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to connect to Redis: ${error.message}`);
+      this.logger.error(`❌ Redis connection failed: ${error.message}`);
       throw error;
     }
   }
 
   async onModuleDestroy() {
-    // Cleanup Redis connection
     if (this.redisClient) {
       try {
         await this.redisClient.disconnect();
-        this.logger.log('🔌 Disconnected from Redis');
+        this.logger.log('✅ Redis disconnected');
       } catch (error) {
-        this.logger.warn(`Error disconnecting Redis: ${error.message}`);
+        this.logger.warn(`Redis disconnect error: ${error.message}`);
       }
     }
   }
 
-  /**
-   * Get item from cache
-   */
   async get<T>(key: string): Promise<T | undefined> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for GET: ${key}`);
       return undefined;
     }
 
     try {
-      const result = await this.redisClient.get(key);
+      const result = await Promise.race([
+        this.redisClient.get(key),
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis GET timeout')), 8000)
+        ),
+      ]);
+
       if (result !== null) {
-        const parsed = JSON.parse(result) as T;
-        this.logger.log(`✅ CACHE HIT: ${key}`);
-        return parsed;
-      } else {
-        this.logger.log(`❌ CACHE MISS: ${key}`);
-        return undefined;
+        return JSON.parse(result) as T;
       }
+      return undefined;
     } catch (error) {
-      this.logger.error(`Cache get error for key ${key}:`, error);
+      this.logger.error(`Cache GET error (${key}): ${error.message}`);
       return undefined;
     }
   }
 
-  /**
-   * Set item in cache with TTL from config
-   */
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for SET: ${key}`);
       return;
     }
 
     try {
       const serialized = JSON.stringify(value);
       const expiry = ttl || this.ttl;
-      await this.redisClient.setex(key, expiry, serialized);
-      this.logger.log(`💾 CACHE SET: ${key} (TTL: ${expiry}s)`);
+      
+      await Promise.race([
+        this.redisClient.setex(key, expiry, serialized),
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis SET timeout')), 8000)
+        ),
+      ]);
     } catch (error) {
-      this.logger.error(`Cache set error for key ${key}:`, error);
+      this.logger.error(`Cache SET error (${key}): ${error.message}`);
     }
   }
 
-  /**
-   * Delete item from cache
-   */
   async del(key: string): Promise<void> {
     if (!this.redisClient) {
-      this.logger.warn(`❌ Redis not available for DEL: ${key}`);
       return;
     }
 
     try {
       await this.redisClient.del(key);
-      this.logger.log(`🗑️ CACHE DEL: ${key}`);
     } catch (error) {
-      this.logger.error(`Cache delete error for key ${key}:`, error);
+      this.logger.error(`Cache DEL error (${key}): ${error.message}`);
     }
   }
 
-  /**
-   * Get or set pattern - if cache miss, execute function and cache result
-   */
   async getOrSet<T>(
     key: string,
     factory: () => Promise<T>,
     ttl?: number,
   ): Promise<T> {
-    const cached = await this.get<T>(key);
-    if (cached !== undefined) {
-      return cached;
-    }
+    try {
+      const cached = await this.get<T>(key);
+      if (cached !== undefined) {
+        return cached;
+      }
 
-    this.logger.log(`🔄 CACHE FACTORY: Executing factory for ${key}`);
-    const result = await factory();
-    await this.set(key, result, ttl);
-    return result;
+      const result = await factory();
+      
+      // Fire and forget cache set
+      this.set(key, result, ttl).catch((err) => {
+        this.logger.error(`Failed to cache ${key}: ${err.message}`);
+      });
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`getOrSet error (${key}): ${error.message}`);
+      return await factory();
+    }
   }
 
   /**
@@ -225,16 +250,66 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       ? `${entityType}:${entityId}:*`
       : `${entityType}:*`;
     await this.delPattern(pattern);
-  }  /**
+  }
+  
+  /**
    * Invalidate ALL cache for a specific consumer
    * This is the most efficient way since all keys start with consumerId
    */
   async invalidateConsumerCache(consumerId: number): Promise<void> {
     const pattern = generateCachePatterns.allForConsumer(consumerId);
     await this.delPattern(pattern);
-    this.logger.log(
-      `🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`,
-    );
+    this.logger.log(`🧹 INVALIDATED ALL CACHE for consumer ${consumerId}`);
+  }
+
+  /**
+   * Invalidate global consumer-related caches (subdomain validation, consumer details, etc.)
+   * This is used when consumer data changes (create, update, delete) in admin
+   */
+  async invalidateGlobalConsumerCaches(): Promise<void> {
+    const pattern = generateCachePatterns.allConsumerRelated();
+    await this.delPattern(pattern);
+    this.logger.log(`🧹 INVALIDATED ALL GLOBAL CONSUMER CACHES`);
+  }
+
+  /**
+   * Invalidate all plan-related caches
+   */
+  async invalidateGlobalPlanCaches(): Promise<void> {
+    const pattern = generateCachePatterns.allPlanRelated();
+    await this.delPattern(pattern);
+    this.logger.log(`🧹 INVALIDATED ALL GLOBAL PLAN CACHES`);
+  }
+
+  /**
+   * Invalidate ALL admin-related caches (consumers, plans, admin CRUD)
+   */
+  async invalidateAllAdminCaches(): Promise<void> {
+    const patterns = generateCachePatterns.allAdminRelated();
+    await this.delPatterns(patterns);
+    this.logger.log(`🧹 INVALIDATED ALL ADMIN CACHES`);
+  }
+
+  /**
+   * Delete multiple specific keys (not patterns)
+   * Useful for invalidating specific cache entries by exact keys
+   */
+  async delKeys(keys: string[]): Promise<void> {
+    if (!this.redisClient || keys.length === 0) {
+      this.logger.warn(`❌ Redis not available or no keys provided for DEL KEYS`);
+      return;
+    }
+
+    try {
+      if (keys.length === 1) {
+        await this.redisClient.del(keys[0]);
+      } else {
+        await this.redisClient.del(...keys);
+      }
+      this.logger.log(`🗑️ CACHE DEL KEYS: ${keys.length} keys deleted`);
+    } catch (error) {
+      this.logger.error(`Cache delete keys error:`, error);
+    }
   }
 
   /**
@@ -252,9 +327,21 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
    * Invalidate specific entity caches for a consumer
    * Use this for entities that don't directly affect inventory
    */
-  async invalidateEntityCaches(consumerId: number, entityType: 'units' | 'vendors' | 'categories' | 'brands' | 'tags' | 'users' | 'roles' | 'branches' | 'customers'): Promise<void> {
+  async invalidateEntityCaches(
+    consumerId: number,
+    entityType:
+      | 'units'
+      | 'vendors'
+      | 'categories'
+      | 'brands'
+      | 'tags'
+      | 'users'
+      | 'roles'
+      | 'branches'
+      | 'customers',
+  ): Promise<void> {
     let pattern: string;
-    
+
     switch (entityType) {
       case 'units':
         pattern = generateCachePatterns.allUnits(consumerId);
@@ -270,7 +357,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         break;
       case 'brands':
         pattern = generateCachePatterns.allBrands(consumerId);
-        break;      case 'tags':
+        break;
+      case 'tags':
         pattern = generateCachePatterns.allTags(consumerId);
         break;
       case 'branches':
@@ -295,7 +383,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         );
         return;
     }
-    
+
     await this.delPattern(pattern);
     this.logger.log(
       `🧹 INVALIDATED ${entityType.toUpperCase()} CACHES for consumer ${consumerId}`,
