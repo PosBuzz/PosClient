@@ -1,4 +1,5 @@
 export const endpoints = {
+  validateSubdomain:"/public/subdomain/validate",
   csrfToken: "/auth/csrf-token",
   login: "/auth/login-user",
   getMe: "/auth/client",

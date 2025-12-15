@@ -33,11 +33,17 @@ export class AuthService {
     };
   }
 
-  async loginUser(user: { email: string; id: number; consumer_id: number }) {
+  async loginUser(user: {
+    email: string;
+    id: number;
+    consumer_id: number;
+    consumer_subdomain: string;
+  }) {
     const payload = {
       email: user.email,
       sub: user.id,
       consumer_id: user.consumer_id,
+      consumer_subdomain: user.consumer_subdomain,
     };
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: this.configService.jwtRefreshExpiration, // Refresh token validity
@@ -78,11 +84,12 @@ export class AuthService {
       include: {
         consumer: {
           select: {
+            subdomain: true,
             billing_logs: {
               where: {
                 billing_date: {
-                  gte: dayjs().subtract(1, 'month').toISOString(),
-                  lte: dayjs().toISOString(),
+                  gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
+                  lte: dayjs().endOf('day').toDate(),
                 },
               },
             },
@@ -111,6 +118,13 @@ export class AuthService {
     // Validate refresh token in the database
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub, refresh_token: refreshToken },
+      include: {
+        consumer: {
+          select: {
+            subdomain: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -122,6 +136,7 @@ export class AuthService {
         email: payload.email,
         sub: payload.sub,
         consumer_id: payload.consumer_id,
+        consumer_subdomain: user.consumer.subdomain,
       },
       { expiresIn: this.configService.jwtExpiration },
     );

@@ -6,6 +6,7 @@ import {
 import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import CacheInvalidationButton from "./components/CacheInvalidationButton";
 import ThemeDropdown from "./components/ThemeDropdown";
 import useDarkMode from "./hooks/useDarkMode";
 import SideBar from "./Sidebar";
@@ -94,6 +95,7 @@ const AppLayout = () => {
             <h2 className="m-0 text-lg hidden md:block">Admin Panel</h2>
           </div>
           <div className="flex">
+            <CacheInvalidationButton />
             <ThemeDropdown />
             <Tooltip title="Logout">
               <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
