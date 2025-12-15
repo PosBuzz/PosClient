@@ -117,5 +117,21 @@ export class CrudService {
     await Promise.all(
       cacheKeysToInvalidate.map(key => this.cacheService.del(key))
     );
+
+    // Invalidate global caches based on model type
+    // billing_logs affect consumer subdomain validation (billing status check)
+    if (model === 'BillingHistory') {
+      await this.cacheService.invalidateGlobalConsumerCaches();
+    }
+    
+    // Consumer changes affect subdomain validation and consumer details
+    if (model === 'Consumer') {
+      await this.cacheService.invalidateGlobalConsumerCaches();
+    }
+    
+    // Plan changes affect plan lists and related data
+    if (model === 'Plan') {
+      await this.cacheService.invalidateGlobalPlanCaches();
+    }
   }
 }
