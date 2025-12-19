@@ -246,24 +246,51 @@ export class InventoryService {
 
   // New methods for inventory management
   async getProductsForInventory(consumerId: number) {
-    return await this.prisma.product.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-    });
+    const cacheKey = generateCacheKey.productsForInventory(consumerId);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.product.findMany({
+        where: {
+          consumer_id: consumerId
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+    }, 300); // 5 minutes TTL
   }
 
   async getProductVariants(productId: number) {
-    return await this.prisma.productVariant.findMany({
-      where: {
-        product_id: productId,
-      },
-      select: {
-        id: true,
-        name: true,
-      },
+    // Get the product to verify ownership and get consumerId for cache key
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { consumer_id: true },
     });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const cacheKey = generateCacheKey.productVariantsForInventory(productId, product.consumer_id);
+    
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      return await this.prisma.productVariant.findMany({
+        where: {
+          product_id: productId,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+    }, 300); // 5 minutes TTL
   }
   async getVariantStock(
     variantId: number,
