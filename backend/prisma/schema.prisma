@@ -87,24 +87,24 @@ model Consumer {
   updated_at        DateTime @updatedAt
 
   // Relations
-  plan             Plan               @relation(fields: [plan_id], references: [id], onDelete: Restrict)
-  users            User[]
-  roles            Role[]
-  billing_logs     BillingHistory[]
-  Product          Product[]
-  Tag              Tag[]
-  Unit             Unit[]
-  Category         Category[]
-  Brand            Brand[]
-  Branch           Branch[]
-  Vendor           Vendor[]
-  VariantAttribute VariantAttribute[]
-  Promotion        Promotion[]
-  Customer         Customer[]
-  Sales            Sale[]
-  Returns          Return[]
-  RewardsSettings  RewardsSettings?
-  CustomerRewardsPoints CustomerRewardsPoints[]
+  plan                     Plan                      @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+  users                    User[]
+  roles                    Role[]
+  billing_logs             BillingHistory[]
+  Product                  Product[]
+  Tag                      Tag[]
+  Unit                     Unit[]
+  Category                 Category[]
+  Brand                    Brand[]
+  Branch                   Branch[]
+  Vendor                   Vendor[]
+  VariantAttribute         VariantAttribute[]
+  Promotion                Promotion[]
+  Customer                 Customer[]
+  Sales                    Sale[]
+  Returns                  Return[]
+  RewardsSettings          RewardsSettings?
+  CustomerRewardsPoints    CustomerRewardsPoints[]
   RewardsPointTransactions RewardsPointTransaction[]
 
   @@index([email])
@@ -126,7 +126,7 @@ model Customer {
   updated_at    DateTime @updatedAt
 
   // Relations
-  consumer           Consumer                @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  consumer           Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   Sales              Sale[]
   rewards_points     CustomerRewardsPoints?
   point_transactions RewardsPointTransaction[]
@@ -193,14 +193,14 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  consumer            Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  role                Role                  @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  branches            UserBranch[]
-  InventoryTransfer   InventoryTransfer[]
-  InventoryAdjustment InventoryAdjustment[]
-  PriceHistory        PriceHistory[]
-  Sales               Sale[]
-  Returns             Return[]
+  consumer                     Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  role                         Role                      @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  branches                     UserBranch[]
+  InventoryTransfer            InventoryTransfer[]
+  InventoryAdjustment          InventoryAdjustment[]
+  PriceHistory                 PriceHistory[]
+  Sales                        Sale[]
+  Returns                      Return[]
   created_rewards_transactions RewardsPointTransaction[]
 
   @@index([role_id])
@@ -657,7 +657,7 @@ model PromotionBranch {
 
 model Sale {
   id              Int      @id @default(autoincrement())
-  sale_number     String   @unique
+  sale_number     String
   consumer_id     Int
   customer_id     Int?
   customer_name   String?
@@ -682,16 +682,17 @@ model Sale {
   updated_at      DateTime @updatedAt
 
   // Relations
-  consumer Consumer      @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  customer Customer?     @relation(fields: [customer_id], references: [id], onDelete: SetNull)
-  branch   Branch        @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  user     User?         @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  items    SaleItem[]
-  payments SalePayment[]
-  returns_as_original Return[] @relation("OriginalSale")
-  returns_as_exchange Return[] @relation("ExchangeSale")
+  consumer                   Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  customer                   Customer?                 @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  branch                     Branch                    @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user                       User?                     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  items                      SaleItem[]
+  payments                   SalePayment[]
+  returns_as_original        Return[]                  @relation("OriginalSale")
+  returns_as_exchange        Return[]                  @relation("ExchangeSale")
   rewards_point_transactions RewardsPointTransaction[]
 
+  // @@unique([sale_number, consumer_id])
   @@index([consumer_id])
   @@index([customer_id])
   @@index([branch_id])
@@ -743,27 +744,27 @@ model SalePayment {
 }
 
 model Return {
-  id              Int      @id @default(autoincrement())
-  return_number   String   @unique
+  id               Int      @id @default(autoincrement())
+  return_number    String   @unique
   original_sale_id Int
   exchange_sale_id Int?
-  consumer_id     Int
-  branch_id       Int
-  user_id         Int?
-  return_date     DateTime @default(now())
-  total_refund    Decimal  @default(0) @db.Decimal(10, 2)
-  total_exchange  Decimal  @default(0) @db.Decimal(10, 2)
-  reason          String?
-  notes           String?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  consumer_id      Int
+  branch_id        Int
+  user_id          Int?
+  return_date      DateTime @default(now())
+  total_refund     Decimal  @default(0) @db.Decimal(10, 2)
+  total_exchange   Decimal  @default(0) @db.Decimal(10, 2)
+  reason           String?
+  notes            String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
   // Relations
-  original_sale Sale           @relation("OriginalSale", fields: [original_sale_id], references: [id], onDelete: Restrict)
-  exchange_sale Sale?          @relation("ExchangeSale", fields: [exchange_sale_id], references: [id], onDelete: SetNull)
-  consumer      Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  branch        Branch         @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  user          User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  original_sale Sale             @relation("OriginalSale", fields: [original_sale_id], references: [id], onDelete: Restrict)
+  exchange_sale Sale?            @relation("ExchangeSale", fields: [exchange_sale_id], references: [id], onDelete: SetNull)
+  consumer      Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  branch        Branch           @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  user          User?            @relation(fields: [user_id], references: [id], onDelete: SetNull)
   items         ReturnItem[]
   payments      ReturnPayment[]
   exchanges     ReturnExchange[]
@@ -777,17 +778,17 @@ model Return {
 }
 
 model ReturnItem {
-  id            Int     @id @default(autoincrement())
-  return_id     Int
-  sale_item_id  Int
-  variant_id    Int
-  batch_id      Int?
-  quantity      Int
-  
+  id           Int  @id @default(autoincrement())
+  return_id    Int
+  sale_item_id Int
+  variant_id   Int
+  batch_id     Int?
+  quantity     Int
+
   // Relations
-  return_record Return      @relation(fields: [return_id], references: [id], onDelete: Cascade)
-  sale_item     SaleItem    @relation(fields: [sale_item_id], references: [id], onDelete: Restrict)
-  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  return_record Return          @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  sale_item     SaleItem        @relation(fields: [sale_item_id], references: [id], onDelete: Restrict)
+  variant       ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
   batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
 
   @@index([return_id])
@@ -816,17 +817,17 @@ model ReturnPayment {
 }
 
 model ReturnExchange {
-  id            Int     @id @default(autoincrement())
-  return_id     Int
-  variant_id    Int
-  batch_id      Int?
-  quantity      Int
-  unit_price    Decimal @db.Decimal(10, 2)
-  line_total    Decimal @db.Decimal(10, 2)
+  id         Int     @id @default(autoincrement())
+  return_id  Int
+  variant_id Int
+  batch_id   Int?
+  quantity   Int
+  unit_price Decimal @db.Decimal(10, 2)
+  line_total Decimal @db.Decimal(10, 2)
 
   // Relations
-  return_record Return         @relation(fields: [return_id], references: [id], onDelete: Cascade)
-  variant       ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  return_record Return          @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  variant       ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
   batch         InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
 
   @@index([return_id])
@@ -838,29 +839,29 @@ model ReturnExchange {
 // Rewards Point System Models
 
 model RewardsSettings {
-  id                      Int      @id @default(autoincrement())
-  consumer_id             Int      @unique
-  is_enabled              Boolean  @default(true)
-  
+  id          Int     @id @default(autoincrement())
+  consumer_id Int     @unique
+  is_enabled  Boolean @default(true)
+
   // Earning Rules
-  points_per_currency       Decimal  @default(1) @db.Decimal(10, 2) // Points earned per dollar spent
+  points_per_currency     Decimal  @default(1) @db.Decimal(10, 2) // Points earned per dollar spent
   minimum_purchase_amount Decimal  @default(0) @db.Decimal(10, 2) // Minimum purchase to earn points
   maximum_points_per_sale Decimal? @db.Decimal(10, 2) // Maximum points that can be earned per sale
-  
+
   // Redemption Rules
-  redemption_value        Decimal  @default(0.01) @db.Decimal(10, 4) // Dollar value per point (e.g., 0.01 = 1 point = $0.01)
-  minimum_redemption      Int      @default(100) // Minimum points required to redeem
-  maximum_redemption      Int?     // Maximum points that can be redeemed per transaction
-  
+  redemption_value   Decimal @default(0.01) @db.Decimal(10, 4) // Dollar value per point (e.g., 0.01 = 1 point = $0.01)
+  minimum_redemption Int     @default(100) // Minimum points required to redeem
+  maximum_redemption Int? // Maximum points that can be redeemed per transaction
+
   // Point Expiration
-  points_expire_days      Int?     // Points expire after X days (null = never expire)
-  
+  points_expire_days Int? // Points expire after X days (null = never expire)
+
   // Settings
   allow_partial_redemption Boolean @default(true) // Allow using partial points for payment
-  earn_on_sale_only       Boolean @default(true)  // Only earn points on completed sales (not quotations)
-  
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
+  earn_on_sale_only        Boolean @default(true) // Only earn points on completed sales (not quotations)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -869,16 +870,16 @@ model RewardsSettings {
 }
 
 model CustomerRewardsPoints {
-  id              Int      @id @default(autoincrement())
-  customer_id     Int      @unique
-  consumer_id     Int
-  total_points    Int      @default(0)
-  lifetime_earned Int      @default(0) // Total points ever earned
-  lifetime_redeemed Int    @default(0) // Total points ever redeemed
-  last_earned_at  DateTime?
-  last_redeemed_at DateTime?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id                Int       @id @default(autoincrement())
+  customer_id       Int       @unique
+  consumer_id       Int
+  total_points      Int       @default(0)
+  lifetime_earned   Int       @default(0) // Total points ever earned
+  lifetime_redeemed Int       @default(0) // Total points ever redeemed
+  last_earned_at    DateTime?
+  last_redeemed_at  DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
 
   // Relations
   customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
@@ -898,30 +899,30 @@ enum RewardsTransactionType {
 }
 
 model RewardsPointTransaction {
-  id               Int                     @id @default(autoincrement())
-  customer_id      Int
-  consumer_id      Int
-  type             RewardsTransactionType
-  points           Int                     // Positive for earn/adjustment credit, negative for redeem/expire/adjustment debit
-  balance_before   Int                     // Points balance before this transaction
-  balance_after    Int                     // Points balance after this transaction
-  
+  id             Int                    @id @default(autoincrement())
+  customer_id    Int
+  consumer_id    Int
+  type           RewardsTransactionType
+  points         Int // Positive for earn/adjustment credit, negative for redeem/expire/adjustment debit
+  balance_before Int // Points balance before this transaction
+  balance_after  Int // Points balance after this transaction
+
   // Transaction Context
-  sale_id          Int?                    // Associated sale for earning/redemption
-  description      String?                 // Human readable description
-  reference        String?                 // External reference (receipt number, etc.)
-  expiry_date      DateTime?               // For earned points, when they expire
-  
+  sale_id     Int? // Associated sale for earning/redemption
+  description String? // Human readable description
+  reference   String? // External reference (receipt number, etc.)
+  expiry_date DateTime? // For earned points, when they expire
+
   // Metadata
-  created_by_user_id Int?                  // Admin user who made manual adjustments
-  notes            String?
-  created_at       DateTime                @default(now())
+  created_by_user_id Int? // Admin user who made manual adjustments
+  notes              String?
+  created_at         DateTime @default(now())
 
   // Relations
-  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  sale     Sale?    @relation(fields: [sale_id], references: [id], onDelete: SetNull)
-  created_by User?  @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  customer   Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  consumer   Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  sale       Sale?    @relation(fields: [sale_id], references: [id], onDelete: SetNull)
+  created_by User?    @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
 
   @@index([customer_id])
   @@index([consumer_id])
