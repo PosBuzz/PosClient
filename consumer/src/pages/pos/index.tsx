@@ -30,8 +30,8 @@ import { useNavigate } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
+import CustomerModal from "../../components/CustomerModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
-import ProvidersForPos from "../../ProvidersForPos";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { Customer } from "../../types/customer.types";
@@ -46,7 +46,6 @@ import {
 	SalePayment,
 } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
-import CustomerModal from "./CustomerModal";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -619,7 +618,7 @@ const NewSale = () => {
 		},
 	];
 	return (
-		<ProvidersForPos>
+		<Card className="!rounded-none !border-none">
 			<CustomerModal
 				open={customerModalOpen}
 				onClose={() => setCustomerModalOpen(false)}
@@ -687,15 +686,9 @@ const NewSale = () => {
 							/>
 						)}
 						<Button
+							type="primary"
 							icon={<ArrowLeftOutlined />}
 							onClick={() => navigate("/")}
-							size="large"
-							style={{
-								display: "flex",
-								alignItems: "center",
-								gap: 8,
-								fontWeight: 600,
-							}}
 						>
 							Back
 						</Button>
@@ -1610,7 +1603,7 @@ const NewSale = () => {
 					</Row>
 				</Form>
 			</div>
-		</ProvidersForPos>
+		</Card>
 	);
 };
 
