@@ -43,42 +43,31 @@ const Providers = () => {
 		<ConfigProvider
 			theme={{
 				algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-				token: {
-					// Global brand tokens (keep existing background colors)
-					colorPrimary: "#111827",
-					colorInfo: "#111827",
-					borderRadius: 8,
-					borderRadiusLG: 10,
-					fontFamily:
-						'-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
-				},
 				components: {
 					Layout: {
-						headerBg: isDarkMode ? "#020617" : "#ffffff",
-						bodyBg: isDarkMode ? "#020617" : "#f3f4f6",
+						//   siderBg: isDarkMode ? "#001529" : "#fff",
+						headerBg: isDarkMode ? "#001529" : "#fff",
 					},
-					Button: {
-						borderRadius: 999,
-						controlHeight: 40,
-						paddingInline: 18,
-						fontWeight: 600,
-					},
-					Table: {
-						headerBg: isDarkMode ? "#020617" : "#f9fafb",
-						headerColor: isDarkMode ? "#e5e7eb" : "#4b5563",
-						borderColor: isDarkMode ? "#1f2937" : "#e5e7eb",
-						rowHoverBg: isDarkMode ? "#020617" : "#f9fafb",
-					},
-					Input: {
-						borderRadius: 8,
-					},
-					Select: {
-						borderRadius: 8,
-						controlHeight: 40,
-					},
-					Radio: {
-						colorPrimary: "#111827",
-					},
+					// Menu: {
+					//   itemBg: isDarkMode ? "#001529" : "#fff",
+					//   itemHoverColor: "#1677ff",
+					//   itemSelectedColor: isDarkMode ? "#fff" : "#1677ff",
+					//   itemSelectedBg: isDarkMode ? "#1677ff" : "rgba(0, 0, 0, 0.04)",
+					// },
+					// Message: {
+					//   colorText: isDarkMode ? "#fff" : "#000",
+					//   contentBg: isDarkMode ? "#1F1F1F" : "#fff",
+					//   colorBgElevated: isDarkMode ? "#1F1F1F" : "#fff",
+					// },
+					// Notification: {
+					//   colorText: isDarkMode ? "#fff" : "#000",
+					//   colorBgElevated: isDarkMode ? "#1F1F1F" : "#fff",
+					// },
+					// Modal: {
+					//   headerBg: isDarkMode ? "#1F1F1F" : "#fff",
+					//   contentBg: isDarkMode ? "#1F1F1F" : "#fff",
+					//   titleColor: isDarkMode ? "#fff" : "#000",
+					// },
 				},
 			}}
 		>
