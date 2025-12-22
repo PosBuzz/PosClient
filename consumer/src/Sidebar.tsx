@@ -38,48 +38,6 @@ const SideBar: React.FC = () => {
       label: <span title="Dashboard">Dashboard</span>,
     },
     {
-      label: <span title="Products">Products</span>,
-      key: "/products-menu",
-      icon: <ProductOutlined />,
-      children: [
-        {
-          label: <span title="All Products">View Products</span>,
-          key: "/products",
-          permissions: [Permissions.view_product],
-        },
-        {
-          label: <span title="Add Product">Add Product</span>,
-          key: "/products/add",
-          permissions: [Permissions.add_product],
-        },
-        {
-          label: <span title="Categories">Categories</span>,
-          key: "/categories",
-          permissions: [Permissions.edit_product, Permissions.add_product],
-        },
-        {
-          label: <span title="Brands">Brands</span>,
-          key: "/brands",
-          permissions: [Permissions.edit_product, Permissions.add_product],
-        },
-        {
-          label: <span title="Tags">Tags</span>,
-          key: "/tags",
-          permissions: [Permissions.edit_product, Permissions.add_product],
-        },
-        {
-          label: <span title="Units">Units</span>,
-          key: "/units",
-          permissions: [Permissions.edit_product, Permissions.add_product],
-        },
-        {
-          label: <span title="Barcode Printing">Barcode Printing</span>,
-          key: "/barcode-printing",
-          permissions: [Permissions.add_product],
-        },
-      ],
-    },
-    {
       label: <span title="Inventory">Inventory</span>,
       key: "/inventory",
       icon: <MdOutlineInventory />,
@@ -132,7 +90,50 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Vendors">Vendors</span>,
           key: "/vendors",
-          permissions: [Permissions.vendors, Permissions.inventory_batches],        },
+          permissions: [Permissions.vendors, Permissions.inventory_batches],
+        },
+      ],
+    },
+    {
+      label: <span title="Products">Products</span>,
+      key: "/products-menu",
+      icon: <ProductOutlined />,
+      children: [
+        {
+          label: <span title="All Products">View Products</span>,
+          key: "/products",
+          permissions: [Permissions.view_product],
+        },
+        {
+          label: <span title="Add Product">Add Product</span>,
+          key: "/products/add",
+          permissions: [Permissions.add_product],
+        },
+        {
+          label: <span title="Categories">Categories</span>,
+          key: "/categories",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Brands">Brands</span>,
+          key: "/brands",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Tags">Tags</span>,
+          key: "/tags",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Units">Units</span>,
+          key: "/units",
+          permissions: [Permissions.edit_product, Permissions.add_product],
+        },
+        {
+          label: <span title="Barcode Printing">Barcode Printing</span>,
+          key: "/barcode-printing",
+          permissions: [Permissions.add_product],
+        },
       ],
     },
     {
