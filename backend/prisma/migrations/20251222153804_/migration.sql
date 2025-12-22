@@ -680,9 +680,6 @@ CREATE UNIQUE INDEX "roles_consumer_id_name_key" ON "roles"("consumer_id", "name
 CREATE INDEX "role_permissions_permission_id_idx" ON "role_permissions"("permission_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "products_name_key" ON "products"("name");
-
--- CreateIndex
 CREATE INDEX "products_name_idx" ON "products"("name");
 
 -- CreateIndex
@@ -692,7 +689,7 @@ CREATE INDEX "products_category_id_idx" ON "products"("category_id");
 CREATE INDEX "products_brand_id_idx" ON "products"("brand_id");
 
 -- CreateIndex
-CREATE INDEX "products_consumer_id_name_idx" ON "products"("consumer_id", "name");
+CREATE UNIQUE INDEX "products_consumer_id_name_key" ON "products"("consumer_id", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "products_consumer_id_code_key" ON "products"("consumer_id", "code");

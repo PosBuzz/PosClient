@@ -421,9 +421,12 @@ export default function ProductForm() {
               type="primary"
               onClick={handleSubmit}
               loading={saveProductMutation.isPending}
-              disabled={Object.keys(validationState).some(
-                (key) => validationState[key].status === "error"
-              )}
+              disabled={
+                saveProductMutation.isPending ||
+                Object.keys(validationState).some(
+                  (key) => validationState[key].status === "error"
+                )
+              }
             >
               {isEditMode ? "Update Product" : "Save Product"}
             </Button>
