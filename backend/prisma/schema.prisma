@@ -246,7 +246,7 @@ model RolePermission {
 model Product {
   id                   Int            @id @default(autoincrement())
   consumer_id          Int
-  name                 String         @unique
+  name                 String
   code                 String?
   description          String?
   category_id          Int?
@@ -265,11 +265,11 @@ model Product {
   brand    Brand?           @relation(fields: [brand_id], references: [id], onDelete: SetNull)
   variants ProductVariant[]
 
+  @@unique([consumer_id, name])
   @@unique([consumer_id, code])
   @@index([name])
   @@index([category_id])
   @@index([brand_id])
-  @@index([consumer_id, name])
   @@map("products")
 }
 
@@ -692,7 +692,7 @@ model Sale {
   returns_as_exchange        Return[]                  @relation("ExchangeSale")
   rewards_point_transactions RewardsPointTransaction[]
 
-  // @@unique([sale_number, consumer_id])
+  @@unique([sale_number, consumer_id])
   @@index([consumer_id])
   @@index([customer_id])
   @@index([branch_id])

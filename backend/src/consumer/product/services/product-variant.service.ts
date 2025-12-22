@@ -42,40 +42,38 @@ export class ProductVariantService {
 
     // Create variant attributes if provided
     if (dto.attributes && dto.attributes.length > 0) {
-      await Promise.all(
-        dto.attributes.map(attr =>
-          this.prisma.variantAttribute.create({
-            data: {
-              variant_id: variant.id,
-              name: attr.name,
-              value: attr.value,
-            },
-          })
-        )
-      );
+      // Use createMany with skipDuplicates to handle concurrent requests
+      await this.prisma.variantAttribute.createMany({
+        data: dto.attributes.map(attr => ({
+          variant_id: variant.id,
+          name: attr.name,
+          value: attr.value,
+        })),
+        skipDuplicates: true, // Skip if the same variant_id + name combination already exists
+      });
     }
 
     // Create serial numbers if provided
     if (dto.serials && dto.serials.length > 0) {
-      await Promise.all(
-        dto.serials.map(serialDto =>
-          this.prisma.productSerial.create({
-            data: {
-              variant_id: variant.id,
-              serial_number: serialDto.serial_number,
-              status: serialDto.status || 'available',
-              notes: serialDto.notes,
-            },
-          })
-        )
-      );
+      // Use createMany with skipDuplicates to handle concurrent requests
+      await this.prisma.productSerial.createMany({
+        data: dto.serials.map(serialDto => ({
+          variant_id: variant.id,
+          serial_number: serialDto.serial_number,
+          status: serialDto.status || 'available',
+          notes: serialDto.notes,
+        })),
+        skipDuplicates: true, // Skip if the same variant_id + serial_number already exists
+      });
     }
 
     // Create inventory batches if provided
     if (dto.batches && dto.batches.length > 0) {
-      await Promise.all(
-        dto.batches.map(batchDto =>
-          this.prisma.inventoryBatch.create({
+      // Use individual creates for batches since we want to capture any errors
+      // and batches don't have a unique constraint to skip
+      for (const batchDto of dto.batches) {
+        try {
+          await this.prisma.inventoryBatch.create({
             data: {
               variant_id: variant.id,
               branch_id: batchDto.branch_id,
@@ -85,8 +83,12 @@ export class ProductVariantService {
               vendor_id: batchDto.vendor_id,
               expiry_date: batchDto.expiry_date ? new Date(batchDto.expiry_date) : null,
             },
-          })
-        )      );
+          });
+        } catch (error) {
+          // Log the error but continue with other batches
+          console.error(`Failed to create batch ${batchDto.batch_number}:`, error);
+        }
+      }
     }    // Invalidate caches for this consumer
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -226,17 +228,14 @@ export class ProductVariantService {
 
       // Create new attributes if any provided
       if (dto.attributes.length > 0) {
-        await Promise.all(
-          dto.attributes.map(attr =>
-            this.prisma.variantAttribute.create({
-              data: {
-                variant_id: id,
-                name: attr.name,
-                value: attr.value,
-              },
-            })
-          )
-        );
+        await this.prisma.variantAttribute.createMany({
+          data: dto.attributes.map(attr => ({
+            variant_id: id,
+            name: attr.name,
+            value: attr.value,
+          })),
+          skipDuplicates: true,
+        });
       }
     }    // Handle serial number updates properly for edit mode
     if (dto.serials !== undefined) {
@@ -268,18 +267,15 @@ export class ProductVariantService {
 
         // Create new serials
         if (serialsWithoutId.length > 0) {
-          await Promise.all(
-            serialsWithoutId.map(serialDto =>
-              this.prisma.productSerial.create({
-                data: {
-                  variant_id: id,
-                  serial_number: serialDto.serial_number,
-                  status: serialDto.status || 'available',
-                  notes: serialDto.notes,
-                },
-              })
-            )
-          );
+          await this.prisma.productSerial.createMany({
+            data: serialsWithoutId.map(serialDto => ({
+              variant_id: id,
+              serial_number: serialDto.serial_number,
+              status: serialDto.status || 'available',
+              notes: serialDto.notes,
+            })),
+            skipDuplicates: true,
+          });
         }
 
         // Delete serials that are no longer present
@@ -302,19 +298,18 @@ export class ProductVariantService {
         });
 
         if (dto.serials.length > 0) {
-          await Promise.all(
-            dto.serials.map(serialDto =>
-              this.prisma.productSerial.create({
-                data: {
-                  variant_id: id,
-                  serial_number: serialDto.serial_number,
-                  status: serialDto.status || 'available',
-                  notes: serialDto.notes,
-                },
-              })
-            )
-          );        }
-      }    }    // Get consumer ID for cache invalidation
+          await this.prisma.productSerial.createMany({
+            data: dto.serials.map(serialDto => ({
+              variant_id: id,
+              serial_number: serialDto.serial_number,
+              status: serialDto.status || 'available',
+              notes: serialDto.notes,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    }    // Get consumer ID for cache invalidation
     const variant = await this.prisma.productVariant.findUnique({
       where: { id },
       select: { 
