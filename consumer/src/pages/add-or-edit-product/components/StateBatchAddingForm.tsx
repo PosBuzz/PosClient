@@ -136,7 +136,7 @@ export default function StateBatchAddingForm({
             disabled={disabled}
             style={{ marginTop: 6, height: 24 }}
           >
-            Add Inventory Batch
+            Add Inventory
           </Button>
         </div>
       </Card>
