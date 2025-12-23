@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
 import { generateCachePatterns } from '../../constants/cache-keys';
-import { RedisCacheService } from 'nest-cache-io';
+import { RedisCacheService } from 'nest-cache-redis';
 
 @Injectable()
 export class CacheService {
