@@ -396,7 +396,10 @@ export default function CommonSelector({
             <Input
               ref={inputRef}
               placeholder={`Enter ${label.toLowerCase()} name`}
-              onPressEnter={() => form.submit()}
+              onPressEnter={(e) => {
+                e.preventDefault();
+                form.submit();
+              }}
               maxLength={50}
             />
           </Form.Item>
@@ -435,7 +438,10 @@ export default function CommonSelector({
             <Input
               ref={editInputRef}
               placeholder={`Enter ${label.toLowerCase()} name`}
-              onPressEnter={() => editForm.submit()}
+              onPressEnter={(e) => {
+                e.preventDefault();
+                editForm.submit();
+              }}
               maxLength={50}
             />
           </Form.Item>

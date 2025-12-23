@@ -3,6 +3,7 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { configValidationSchema } from './config.schema';
 import { ConfigService } from './config.service';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { RedisCacheModule } from 'nest-cache-redis';
 
 @Global()
 @Module({
@@ -22,6 +23,30 @@ import { ThrottlerModule } from '@nestjs/throttler';
           limit: 50,
         },
       ],
+    }),
+    RedisCacheModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redisOptions: {
+          host: configService.redisHost,
+          port: configService.redisPort,
+          password: configService.redisPassword,
+          keyPrefix: `${configService.redisPrefix}:`,
+          maxRetriesPerRequest: 3,
+          enableOfflineQueue: false,
+          connectTimeout: 10000,
+          commandTimeout: 5000,
+          retryStrategy: (times: number) => {
+            const delay = Math.min(times * 100, 3000);
+            return delay;
+          },
+        },
+        ttl: configService.cacheTtl, // TTL in seconds
+        fireAndForget: true, // Global fire-and-forget mode
+        debug: true, // Enable in development
+        isGlobal: true, // Available everywhere
+      }),
     }),
   ],
   providers: [ConfigService],
