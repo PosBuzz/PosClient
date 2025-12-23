@@ -1,11 +1,21 @@
 import {
 	ArrowLeftOutlined,
+	BankOutlined,
 	CalculatorOutlined,
+	CarOutlined,
+	CreditCardOutlined,
 	DeleteOutlined,
+	FileTextOutlined,
+	MobileOutlined,
+	MoneyCollectOutlined,
+	PayCircleOutlined,
+	PercentageOutlined,
 	PlusOutlined,
+	SaveOutlined,
 	ShoppingCartOutlined,
 	SwapOutlined,
 	TagOutlined,
+	WalletOutlined,
 } from "@ant-design/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,6 +36,7 @@ import {
 	Typography,
 } from "antd";
 import { useEffect, useState } from "react";
+import { BsCash } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -658,19 +669,7 @@ const NewSale = () => {
 						level={4}
 						style={{ margin: 0, display: "flex", alignItems: "center", gap: 12 }}
 					>
-						<div
-							style={{
-								width: 40,
-								height: 40,
-								borderRadius: 10,
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-						>
-							<ShoppingCartOutlined style={{ fontSize: 20 }} />
-						</div>
-						<span>Point of Sale</span>
+						Point of Sale
 					</Typography.Title>
 					<div style={{ display: "flex", alignItems: "center", gap: 12 }}>
 						{selectedItems.length > 0 && (
@@ -997,13 +996,13 @@ const NewSale = () => {
 													value={DiscountType.FLAT}
 													style={{ width: "50%", textAlign: "center" }}
 												>
-													💵 Fixed
+													<MoneyCollectOutlined className="" /> Fixed
 												</Radio.Button>
 												<Radio.Button
 													value={DiscountType.PERCENTAGE}
 													style={{ width: "50%", textAlign: "center" }}
 												>
-													📊 Percent
+													<PercentageOutlined className="mr-2" /> Percent
 												</Radio.Button>
 											</Radio.Group>
 										</Form.Item>
@@ -1070,7 +1069,7 @@ const NewSale = () => {
 										}}
 									>
 										<Typography.Title level={5} style={{ margin: 0 }}>
-											💳 Payments
+											<CreditCardOutlined className="mr-2" /> Payments
 										</Typography.Title>
 										<Button
 											size="small"
@@ -1128,35 +1127,44 @@ const NewSale = () => {
 															placeholder="Method"
 														>
 															<Option value={PaymentMethod.CASH}>
-																💵 Cash
+																<BsCash className="mr-2 inline" />{" "}
+																Cash
 															</Option>
 															<Option value={PaymentMethod.CARD}>
-																💳 Card
+																<CreditCardOutlined className="mr-2" />{" "}
+																Card
 															</Option>
 															<Option value={PaymentMethod.CHEQUE}>
-																📝 Cheque
+																<FileTextOutlined className="mr-2" />{" "}
+																Cheque
 															</Option>
 															<Option
 																value={PaymentMethod.BANK_TRANSFER}
 															>
-																🏦 Transfer
+																<BankOutlined className="mr-2" />{" "}
+																Transfer
 															</Option>
 															<Option
 																value={PaymentMethod.MOBILE_MONEY}
 															>
-																📱 Mobile
+																<MobileOutlined className="mr-2" />{" "}
+																Mobile
 															</Option>
 															<Option value={PaymentMethod.MFS}>
-																💸 MFS
+																<PayCircleOutlined className="mr-2" />{" "}
+																MFS
 															</Option>
 															<Option value={PaymentMethod.DEPOSIT}>
-																🏧 Deposit
+																<SaveOutlined className="mr-2" />{" "}
+																Deposit
 															</Option>
 															<Option value={PaymentMethod.CREDIT}>
-																🔖 Credit
+																<WalletOutlined className="mr-2" />{" "}
+																Credit
 															</Option>
 															<Option value={PaymentMethod.EXCHANGE}>
-																🔄 Exchange
+																<SwapOutlined className="mr-2" />{" "}
+																Exchange
 															</Option>
 														</Select>
 													</Col>
@@ -1259,7 +1267,7 @@ const NewSale = () => {
 								<Form.Item
 									label={
 										<span style={{ fontWeight: 600, fontSize: 13 }}>
-											📝 Sale Notes
+											<FileTextOutlined className="mr-2" /> Sale Notes
 										</span>
 									}
 									name="notes"
@@ -1299,7 +1307,7 @@ const NewSale = () => {
 												border: "none",
 											}}
 										>
-											💰 Complete Sale
+											<MoneyCollectOutlined className="mr-2" /> Complete Sale
 										</Button>
 									</Col>
 								</Row>
@@ -1528,7 +1536,10 @@ const NewSale = () => {
 												fontSize: 14,
 											}}
 										>
-											{totals.shippingCost > 0 ? "🚚 " : ""}Shipping:
+											{totals.shippingCost > 0 ? (
+												<CarOutlined className="mr-2" />
+											) : null}
+											Shipping:
 										</Text>
 										<Text style={{ fontSize: 15 }}>
 											${(Number(totals.shippingCost) || 0).toFixed(2)}
@@ -1577,7 +1588,7 @@ const NewSale = () => {
 											}}
 										>
 											<Text strong style={{ fontSize: 16 }}>
-												💵 Change:
+												<MoneyCollectOutlined className="mr-2" /> Change:
 											</Text>
 											<Text
 												strong
