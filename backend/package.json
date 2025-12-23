@@ -43,7 +43,7 @@
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
     "joi": "^17.13.3",
-    "nest-cache-io": "^1.0.0",
+    "nest-cache-redis": "^1.0.0",
     "node-thermal-printer": "^4.5.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
