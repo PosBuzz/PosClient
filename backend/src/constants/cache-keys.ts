@@ -114,6 +114,12 @@ export const generateCacheKey = {
   movementHistory: (variantId: number, consumerId: number, page?: number, limit?: number, branchId?: number) =>
     `${consumerId}:inventory:movement-history:${variantId}:${page || 1}:${limit || 20}:${branchId || 'all'}`,
 
+  productsForInventory: (consumerId: number) =>
+    `${consumerId}:inventory:products-for-inventory`,
+
+  productVariantsForInventory: (productId: number, consumerId: number) =>
+    `${consumerId}:inventory:product-variants:${productId}`,
+
   // Inventory Batch cache helpers
   inventoryBatchList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, variantId?: number) =>
     `${consumerId}:inventory-batches:list:${page || 1}:${limit || 10}:${search || 'all'}:${branchId || 'all'}:${variantId || 'all'}`,
