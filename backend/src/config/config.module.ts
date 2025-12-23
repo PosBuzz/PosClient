@@ -3,7 +3,7 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { configValidationSchema } from './config.schema';
 import { ConfigService } from './config.service';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { RedisCacheModule } from 'nest-cache-io';
+import { RedisCacheModule } from 'nest-cache-redis';
 
 @Global()
 @Module({
