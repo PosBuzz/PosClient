@@ -1,18 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '../../config/config.service';
-import { generateCachePatterns } from '../../constants/cache-keys';
+import { Injectable, Logger } from '@nestjs/common';
 import { RedisCacheService } from 'nest-cache-redis';
+import { generateCachePatterns } from '../../constants/cache-keys';
 
 @Injectable()
 export class CacheService {
-  private keyPrefix: string;
+  private readonly logger = new Logger(CacheService.name);
 
-  constructor(
-    private configService: ConfigService,
-    private readonly cache: RedisCacheService,
-  ) {
-    this.keyPrefix = `${this.configService.redisPrefix}:`;
-  }
+  constructor(private readonly cache: RedisCacheService) {}
 
   // ==========================================
   // BASIC CACHE OPERATIONS (Pass-through)
@@ -77,7 +71,7 @@ export class CacheService {
     await this.cache.delPatterns(patterns);
   }
 
-   /**
+  /**
    * Get multiple keys by pattern (for debugging/monitoring)
    */
   async getKeysByPattern(pattern: string): Promise<string[]> {
