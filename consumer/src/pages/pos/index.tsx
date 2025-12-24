@@ -522,7 +522,7 @@ const NewSale = () => {
 
     try {
       setLoading(true);
-      const createdSale = await salesApi.createSale(saleData);
+      await salesApi.createSale(saleData);
 
       // Invalidate all relevant caches after sales operation
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
@@ -546,7 +546,7 @@ const NewSale = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
 
       messageApi?.success("Sale created successfully!");
-    //   navigate(`/sales/view/${createdSale.id}`);
+      //   navigate(`/sales/view/${createdSale.id}`);
     } catch (error: any) {
       console.error("Error creating sale:", error);
       messageApi?.error(
