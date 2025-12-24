@@ -1050,22 +1050,8 @@ export class SalesService {
       for (const pattern of patterns) {
         await this.cacheService.delPattern(pattern);
       }
-
-      this.cacheService['logger'].log(`🗑️ Invalidated sales caches for consumer ${consumerId}`);
     } catch (error) {
       this.cacheService['logger'].error(`Failed to invalidate sales caches:`, error);
-    }
-  }
-
-  /**
-   * Invalidate specific sale cache
-   */
-  private async invalidateSaleCache(saleId: number, consumerId: number) {
-    try {
-      const cacheKey = generateCacheKey.salesDetail(saleId, consumerId);
-      await this.cacheService.del(cacheKey);
-    } catch (error) {
-      this.cacheService['logger'].error(`Failed to invalidate sale cache:`, error);
     }
   }
 }
