@@ -78,9 +78,18 @@ export class AuthService {
     return superAdmin;
   }
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+  async validateUser(
+    email: string,
+    pass: string,
+    subdomain: string,
+  ): Promise<any> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        consumer: {
+          subdomain,
+        },
+      },
       include: {
         consumer: {
           select: {
