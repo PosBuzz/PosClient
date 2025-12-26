@@ -9,6 +9,7 @@ const SubscriptionInactive = lazy(() => import("./pages/SubscriptionInactive"));
 const Login = lazy(() => import("./pages/login"));
 const Home = lazy(() => import("./pages/dashboard"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
+const Profile = lazy(() => import("./pages/profile"));
 const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const Products = lazy(() => import("./pages/products"));
@@ -98,6 +99,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.profile}>
             <AccountSecurity />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "profile",
+        element: (
+          <RequirePermission permission={Permissions.companyProfile}>
+            <Profile />
           </RequirePermission>
         ),
       },
@@ -339,7 +348,7 @@ export const routes = [
       {
         path: "quotations",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.quotations}>
             <Quotations />
           </RequirePermission>
         ),
@@ -347,7 +356,7 @@ export const routes = [
       {
         path: "add-quotation",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.quotations}>
             <AddQuotation />
           </RequirePermission>
         ),
@@ -355,7 +364,7 @@ export const routes = [
       {
         path: "quotations/view/:id",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.quotations}>
             <ViewQuotation />
           </RequirePermission>
         ),

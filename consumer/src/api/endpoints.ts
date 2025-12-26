@@ -6,6 +6,7 @@ export const endpoints = {
   logout: "/auth/client-logout",
   refreshToken: "/auth/client-refresh-token",
   changePassword: "/consumer/change-password",
+  updateConsumerProfile: "/consumer/profile/update",
   planPermissions: "/consumer/users/plan-permissions",
 
   user: "/consumer/users",

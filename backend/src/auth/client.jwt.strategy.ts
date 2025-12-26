@@ -36,14 +36,7 @@ export class JwtClientStrategy extends PassportStrategy(
             },
           },
         },
-        consumer: {
-          select: {
-            plan_id: true,
-            email: true,
-            company_name: true,
-            subdomain: true,
-          },
-        },
+        consumer: true,
         branches: {
           include: {
             branch: true,
@@ -80,6 +73,9 @@ export class JwtClientStrategy extends PassportStrategy(
       plan_id: user.consumer.plan_id,
       company_name: user.consumer.company_name,
       company_email: user.consumer.email,
+      secondary_email: user.consumer.secondary_email,
+      phone: user.consumer.phone,
+      address: user.consumer.address,
       consumer_subdomain: consumer_subdomain || user.consumer.subdomain, // Use from JWT or fallback to DB
       branches, // attach branch access to request.user
     };
