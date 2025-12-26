@@ -1,80 +1,94 @@
-import axiosInstance from "./axiosInstance";
-import { endpoints } from "./endpoints";
 import {
-  RewardsSettings,
+  AdjustPointsDto,
+  CanRedeemResponse,
   CreateRewardsSettingsDto,
   CustomerRewardsPoints,
-  RewardsPointTransaction,
   RedeemPointsDto,
-  AdjustPointsDto,
+  RedemptionValueResponse,
   RewardsFilters,
   RewardsListResponse,
-  CanRedeemResponse,
-  RedemptionValueResponse,
+  RewardsPointTransaction,
+  RewardsSettings,
 } from "../types/rewards.types";
+import { get, patch, post } from "./crud-api";
+import { endpoints } from "./endpoints";
 
 export const rewardsApi = {
   // Settings
   getSettings: async (): Promise<RewardsSettings> => {
-    const response = await axiosInstance.get(endpoints.getRewardsSettings);
-    return response.data;
+    return get(endpoints.getRewardsSettings);
   },
 
-  createSettings: async (data: CreateRewardsSettingsDto): Promise<RewardsSettings> => {
-    const response = await axiosInstance.post(endpoints.createRewardsSettings, data);
-    return response.data;
+  createSettings: async (
+    data: CreateRewardsSettingsDto
+  ): Promise<RewardsSettings> => {
+    return post(endpoints.createRewardsSettings, data);
   },
 
-  updateSettings: async (data: CreateRewardsSettingsDto): Promise<RewardsSettings> => {
-    const response = await axiosInstance.put(endpoints.updateRewardsSettings, data);
-    return response.data;
+  updateSettings: async (
+    data: CreateRewardsSettingsDto
+  ): Promise<RewardsSettings> => {
+    return patch(endpoints.updateRewardsSettings, data);
   },
 
   // Customer Points
-  getCustomersWithPoints: async (filters?: RewardsFilters): Promise<RewardsListResponse<CustomerRewardsPoints>> => {
-    const response = await axiosInstance.get(endpoints.getCustomersWithPoints, { params: filters });
-    return response.data;
+  getCustomersWithPoints: async (
+    filters?: RewardsFilters
+  ): Promise<RewardsListResponse<CustomerRewardsPoints>> => {
+    return get(endpoints.getCustomersWithPoints, { params: filters });
   },
 
-  getCustomerPoints: async (customerId: number): Promise<CustomerRewardsPoints> => {
-    const response = await axiosInstance.get(endpoints.getCustomerPoints(customerId));
-    return response.data;
+  getCustomerPoints: async (
+    customerId: number
+  ): Promise<CustomerRewardsPoints> => {
+    return get(endpoints.getCustomerPoints(customerId));
   },
 
-  redeemPoints: async (customerId: number, data: RedeemPointsDto): Promise<RewardsPointTransaction> => {
-    const response = await axiosInstance.post(endpoints.redeemCustomerPoints(customerId), data);
-    return response.data;
+  redeemPoints: async (
+    customerId: number,
+    data: RedeemPointsDto
+  ): Promise<RewardsPointTransaction> => {
+    return post(endpoints.redeemCustomerPoints(customerId), data);
   },
 
-  adjustPoints: async (customerId: number, data: AdjustPointsDto): Promise<RewardsPointTransaction> => {
-    const response = await axiosInstance.post(endpoints.adjustCustomerPoints(customerId), data);
-    return response.data;
+  adjustPoints: async (
+    customerId: number,
+    data: AdjustPointsDto
+  ): Promise<RewardsPointTransaction> => {
+    return post(endpoints.adjustCustomerPoints(customerId), data);
   },
 
-  canRedeemPoints: async (customerId: number, points: number): Promise<CanRedeemResponse> => {
-    const response = await axiosInstance.get(endpoints.canRedeemPoints(customerId, points));
-    return response.data;
+  canRedeemPoints: async (
+    customerId: number,
+    points: number
+  ): Promise<CanRedeemResponse> => {
+    return get(endpoints.canRedeemPoints(customerId, points));
   },
 
   // Transactions
-  getTransactions: async (filters?: RewardsFilters): Promise<RewardsListResponse<RewardsPointTransaction>> => {
-    const response = await axiosInstance.get(endpoints.getRewardsTransactions, { params: filters });
-    return response.data;
+  getTransactions: async (
+    filters?: RewardsFilters
+  ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
+    return get(endpoints.getRewardsTransactions, { params: filters });
   },
 
-  getCustomerTransactions: async (customerId: number, filters?: RewardsFilters): Promise<RewardsListResponse<RewardsPointTransaction>> => {
-    const response = await axiosInstance.get(endpoints.getCustomerTransactions(customerId), { params: filters });
-    return response.data;
+  getCustomerTransactions: async (
+    customerId: number,
+    filters?: RewardsFilters
+  ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
+    return get(endpoints.getCustomerTransactions(customerId), {
+      params: filters,
+    });
   },
 
   // Utilities
   expirePoints: async (): Promise<{ expired: number }> => {
-    const response = await axiosInstance.post(endpoints.expirePoints);
-    return response.data;
+    return post(endpoints.expirePoints, {});
   },
 
-  getRedemptionValue: async (points: number): Promise<RedemptionValueResponse> => {
-    const response = await axiosInstance.get(endpoints.getRedemptionValue(points));
-    return response.data;
+  getRedemptionValue: async (
+    points: number
+  ): Promise<RedemptionValueResponse> => {
+    return get(endpoints.getRedemptionValue(points));
   },
 };

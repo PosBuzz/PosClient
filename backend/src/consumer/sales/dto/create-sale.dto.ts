@@ -100,6 +100,10 @@ export class CreateSaleDto {
   branch_id: number;
 
   @IsOptional()
+  @IsInt()
+  quotation_id?: number;
+
+  @IsOptional()
   @IsEnum(SaleType)
   sale_type?: SaleType;
 

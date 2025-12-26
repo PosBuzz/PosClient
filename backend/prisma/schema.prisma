@@ -656,30 +656,32 @@ model PromotionBranch {
 }
 
 model Sale {
-  id              Int      @id @default(autoincrement())
-  sale_number     String
-  consumer_id     Int
-  customer_id     Int?
-  customer_name   String?
-  customer_phone  String?
-  customer_email  String?
-  branch_id       Int
-  user_id         Int?
-  sale_date       DateTime @default(now())
-  sale_type       String   @default("sale") // sale, quotation
-  price_type      String   @default("regular") // regular, wholesale
-  subtotal        Decimal  @db.Decimal(10, 2)
-  discount_type   String   @default("flat") // flat, percentage
-  discount_amount Decimal  @default(0) @db.Decimal(10, 2)
-  shipping_cost   Decimal  @default(0) @db.Decimal(10, 2)
-  tax_amount      Decimal  @default(0) @db.Decimal(10, 2)
-  total_amount    Decimal  @db.Decimal(10, 2)
-  payment_status  String   @default("paid") // paid, partial, due, cancelled
-  received_amount Decimal  @default(0) @db.Decimal(10, 2)
-  change_amount   Decimal  @default(0) @db.Decimal(10, 2)
-  notes           String?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id                   Int       @id @default(autoincrement())
+  sale_number          String
+  consumer_id          Int
+  customer_id          Int?
+  customer_name        String?
+  customer_phone       String?
+  customer_email       String?
+  branch_id            Int
+  user_id              Int?
+  sale_date            DateTime  @default(now())
+  sale_type            String    @default("sale") // sale, quotation
+  price_type           String    @default("regular") // regular, wholesale
+  subtotal             Decimal   @db.Decimal(10, 2)
+  discount_type        String    @default("flat") // flat, percentage
+  discount_amount      Decimal   @default(0) @db.Decimal(10, 2)
+  shipping_cost        Decimal   @default(0) @db.Decimal(10, 2)
+  tax_amount           Decimal   @default(0) @db.Decimal(10, 2)
+  total_amount         Decimal   @db.Decimal(10, 2)
+  payment_status       String    @default("paid") // paid, partial, due, cancelled
+  received_amount      Decimal   @default(0) @db.Decimal(10, 2)
+  change_amount        Decimal   @default(0) @db.Decimal(10, 2)
+  notes                String?
+  converted_to_sale_id Int? // For quotations: tracks which sale it was converted to
+  converted_at         DateTime? // For quotations: timestamp when converted to sale
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
   // Relations
   consumer                   Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -691,6 +693,8 @@ model Sale {
   returns_as_original        Return[]                  @relation("OriginalSale")
   returns_as_exchange        Return[]                  @relation("ExchangeSale")
   rewards_point_transactions RewardsPointTransaction[]
+  converted_to_sale          Sale?                     @relation("QuotationConversion", fields: [converted_to_sale_id], references: [id], onDelete: SetNull)
+  converted_from_quotations  Sale[]                    @relation("QuotationConversion")
 
   @@unique([sale_number, consumer_id])
   @@index([consumer_id])
@@ -699,6 +703,7 @@ model Sale {
   @@index([sale_date])
   @@index([payment_status])
   @@index([sale_type])
+  @@index([converted_to_sale_id])
   @@map("sales")
 }
 

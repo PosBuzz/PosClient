@@ -142,6 +142,22 @@ export class SalesController {
     return this.salesService.findBySaleNumber(saleNumber, req.user.consumer_id!);
   }
 
+  @Get('quotations/list')
+  async findAllQuotations(
+    @Query() filters: SaleListFiltersDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.findAllQuotations(filters, req.user.consumer_id!);
+  }
+
+  @Get('quotations/:id')
+  async findOneQuotation(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    return this.salesService.findOneQuotation(id, req.user.consumer_id!);
+  }
+
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,

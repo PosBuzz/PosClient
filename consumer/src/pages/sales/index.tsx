@@ -96,7 +96,8 @@ const SalesTable = () => {
       filters.payment_method ||
       filters.date_from ||
       filters.date_to ||
-      filters.branch_id
+      filters.branch_id ||
+      filters.source
     );
   };
 
@@ -387,8 +388,8 @@ const SalesTable = () => {
 
       {/* Sales Summary Cards */}
       {salesQuery.data?.summary && (
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Total Sales"
@@ -397,7 +398,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Total Amount"
@@ -407,7 +408,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Average Sale"
@@ -417,7 +418,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Period"
@@ -437,8 +438,8 @@ const SalesTable = () => {
 
       <Card>
         {/* Filters */}
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={5}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col  xs={24} sm={12} md={4}>
             <Input
               placeholder="Search sales..."
               prefix={<SearchOutlined />}
@@ -446,7 +447,7 @@ const SalesTable = () => {
               allowClear
             />
           </Col>
-          <Col span={5}>
+          <Col  xs={24} sm={12} md={4}>
             <RangePicker
               style={{ width: "100%" }}
               value={
@@ -509,7 +510,7 @@ const SalesTable = () => {
               ]}
             />
           </Col>
-          <Col span={4}>
+          <Col  xs={24} sm={12} md={4}>
             <Select
               placeholder="Payment Status"
               style={{ width: "100%" }}
@@ -529,7 +530,7 @@ const SalesTable = () => {
               <Option value="cancelled">Cancelled</Option>
             </Select>
           </Col>
-          <Col span={4}>
+          <Col  xs={24} sm={12} md={4}>
             <Select
               placeholder="Payment Method"
               style={{ width: "100%" }}
@@ -553,7 +554,7 @@ const SalesTable = () => {
               <Option value="CREDIT">Credit</Option>
             </Select>
           </Col>
-          <Col span={3}>
+          <Col  xs={24} sm={12} md={3}>
             <Select
               placeholder="Branch"
               value={filters.branch_id}
@@ -574,7 +575,25 @@ const SalesTable = () => {
               ))}
             </Select>
           </Col>
-          <Col span={2}>
+          <Col  xs={24} sm={12} md={3}>
+            <Select
+              placeholder="Source"
+              value={filters.source}
+              style={{ width: "100%" }}
+              onChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  source: value,
+                  page: 1,
+                }))
+              }
+              allowClear
+            >
+              <Option value="quotation">From Quotation</Option>
+              <Option value="direct">Direct Sale</Option>
+            </Select>
+          </Col>
+          <Col  xs={24} sm={12} md={2}>
             <Button
               onClick={() => {
                 setFilters({
