@@ -24,6 +24,58 @@ enum PaymentMethodEnum {
   EXCHANGE
 }
 
+// ERP Enums
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  RESIGNED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  PARTIALLY_PAID
+}
+
+enum DeductionStatus {
+  PENDING
+  APPLIED
+  PARTIALLY_APPLIED
+  CANCELLED
+}
+
+enum AdvanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  DEDUCTED
+  PARTIALLY_DEDUCTED
+}
+
 model SuperAdmin {
   id            Int          @id @default(autoincrement())
   role_id       Int
@@ -107,6 +159,18 @@ model Consumer {
   CustomerRewardsPoints    CustomerRewardsPoints[]
   RewardsPointTransactions RewardsPointTransaction[]
 
+  // ERP Relations
+  erp_settings      ERPSettings?
+  salary_structures SalaryStructure[]
+  attendances       Attendance[]
+  leaves            Leave[]
+  overtimes         Overtime[]
+  expenses          Expense[]
+  deductions        Deduction[]
+  advances          Advance[]
+  salary_increments SalaryIncrement[]
+  salary_payments   SalaryPayment[]
+
   @@index([email])
   @@index([company_name])
   @@index([phone])
@@ -183,19 +247,35 @@ model BillingHistory {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   consumer_id   Int
   role_id       Int
-  email         String   @unique
+  email         String
   name          String
   password      String
   refresh_token String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
 
-  consumer                     Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  role                         Role                      @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  branches                     UserBranch[]
+  // Employee Information
+  employee_id       String?           @unique // Auto-generated employee ID (e.g., EMP001)
+  phone             String?
+  address           String?
+  date_of_birth     DateTime?
+  date_of_joining   DateTime?
+  employment_status EmploymentStatus? @default(ACTIVE)
+  nid_number        String? // National ID
+  photo_url         String?
+  cv_url            String?
+  nid_document_url  String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  consumer Consumer     @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  role     Role         @relation("UserRole", fields: [role_id], references: [id], onDelete: Cascade)
+  branches UserBranch[]
+
+  // Existing Relations
   InventoryTransfer            InventoryTransfer[]
   InventoryAdjustment          InventoryAdjustment[]
   PriceHistory                 PriceHistory[]
@@ -203,8 +283,27 @@ model User {
   Returns                      Return[]
   created_rewards_transactions RewardsPointTransaction[]
 
+  // ERP Relations
+  salary_structures         SalaryStructure[]
+  attendances               Attendance[]
+  leaves                    Leave[]           @relation("EmployeeLeaves")
+  approved_leaves           Leave[]           @relation("LeaveApprover")
+  overtimes                 Overtime[]        @relation("EmployeeOvertimes")
+  approved_overtimes        Overtime[]        @relation("OvertimeApprover")
+  expenses                  Expense[]         @relation("EmployeeExpenses")
+  approved_expenses         Expense[]         @relation("ExpenseApprover")
+  deductions                Deduction[]
+  advances                  Advance[]         @relation("EmployeeAdvances")
+  approved_advances         Advance[]         @relation("AdvanceApprover")
+  salary_increments         SalaryIncrement[] @relation("EmployeeSalaryIncrements")
+  salary_increments_created SalaryIncrement[] @relation("SalaryIncrementCreator")
+  salary_payments           SalaryPayment[]
+ 
+  @@unique([consumer_id, email])
   @@index([role_id])
   @@index([name])
+  @@index([employee_id])
+  @@index([employment_status])
   @@index([created_at])
   @@index([consumer_id, role_id])
   @@map("users")
@@ -220,15 +319,22 @@ model Permission {
 }
 
 model Role {
-  id          Int              @id @default(autoincrement())
-  name        String
-  is_admin    Boolean          @default(false)
-  consumer_id Int
-  consumer    Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  permissions RolePermission[]
-  users       User[]
+  id                 Int     @id @default(autoincrement())
+  name               String
+  is_admin           Boolean @default(false)
+  hierarchy_level    Int     @default(0) // Higher number = higher position (e.g., 0=Employee, 1=Supervisor, 2=Manager, 3=GM)
+  reports_to_role_id Int? // Role that this role reports to (Salesman → Supervisor)
+  consumer_id        Int
+
+  consumer          Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  reports_to        Role?            @relation("RoleHierarchy", fields: [reports_to_role_id], references: [id], onDelete: SetNull)
+  subordinate_roles Role[]           @relation("RoleHierarchy")
+  permissions       RolePermission[]
+  users             User[]           @relation("UserRole")
 
   @@unique([consumer_id, name])
+  @@index([hierarchy_level])
+  @@index([reports_to_role_id])
   @@map("roles")
 }
 
@@ -936,4 +1042,440 @@ model RewardsPointTransaction {
   @@index([created_at])
   @@index([expiry_date])
   @@map("rewards_point_transactions")
+}
+
+// ============================================
+// ERP (Employee Management) Models
+// ============================================
+
+// ERP Settings for each Consumer
+model ERPSettings {
+  id          Int @id @default(autoincrement())
+  consumer_id Int @unique
+
+  // Attendance Settings
+  attendance_gps_enabled Boolean @default(false)
+  gps_radius_meters      Int?    @default(100) // Allowed radius in meters
+
+  // Salary Cycle Settings
+  salary_cycle       String @default("monthly") // monthly, bi-weekly, weekly
+  salary_payment_day Int?   @default(1) // Day of month for monthly cycle (1-31)
+
+  // Overtime Settings
+  overtime_multiplier Decimal @default(1.5) @db.Decimal(5, 2) // Default overtime rate multiplier
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@map("erp_settings")
+}
+
+// Salary Structure for each Employee
+model SalaryStructure {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  // Basic Salary Components
+  basic_salary        Decimal @db.Decimal(10, 2)
+  house_allowance     Decimal @default(0) @db.Decimal(10, 2)
+  medical_allowance   Decimal @default(0) @db.Decimal(10, 2)
+  transport_allowance Decimal @default(0) @db.Decimal(10, 2)
+  food_allowance      Decimal @default(0) @db.Decimal(10, 2)
+  other_allowances    Decimal @default(0) @db.Decimal(10, 2)
+
+  // Overtime
+  overtime_hourly_rate Decimal? @db.Decimal(10, 2) // If null, calculate from basic salary
+
+  // Status
+  is_active      Boolean   @default(true)
+  effective_from DateTime  @default(now())
+  effective_to   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([is_active])
+  @@index([effective_from])
+  @@map("salary_structures")
+}
+
+// Salary Increment History
+model SalaryIncrement {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  previous_basic       Decimal  @db.Decimal(10, 2)
+  new_basic            Decimal  @db.Decimal(10, 2)
+  increment_amount     Decimal  @db.Decimal(10, 2)
+  increment_percentage Decimal? @db.Decimal(5, 2)
+
+  reason         String?
+  notes          String?
+  effective_date DateTime
+
+  created_by_user_id Int?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  // Relations
+  user       User     @relation("EmployeeSalaryIncrements", fields: [user_id], references: [id], onDelete: Cascade)
+  consumer   Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  created_by User?    @relation("SalaryIncrementCreator", fields: [created_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([effective_date])
+  @@index([created_by_user_id])
+  @@map("salary_increments")
+}
+
+// Daily Attendance
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+  date        DateTime @db.Date
+
+  // Check In/Out
+  check_in_time  DateTime?
+  check_out_time DateTime?
+
+  // GPS Location (optional)
+  check_in_latitude   Decimal? @db.Decimal(10, 8)
+  check_in_longitude  Decimal? @db.Decimal(11, 8)
+  check_out_latitude  Decimal? @db.Decimal(10, 8)
+  check_out_longitude Decimal? @db.Decimal(11, 8)
+
+  // Status
+  status       AttendanceStatus @default(PRESENT)
+  worked_hours Decimal?         @db.Decimal(5, 2) // Auto-calculated from check-in/out
+  notes        String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, date])
+  @@index([consumer_id])
+  @@index([date])
+  @@index([status])
+  @@map("attendances")
+}
+
+// Leave Management
+model Leave {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  leave_type  String // sick, casual, annual, unpaid, maternity, paternity, etc.
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  is_half_day Boolean  @default(false)
+  total_days  Decimal  @db.Decimal(5, 2) // Can be 0.5 for half day
+
+  reason String?
+  status LeaveStatus @default(PENDING)
+
+  approved_by_user_id Int?
+  approved_at         DateTime?
+  rejection_reason    String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user        User     @relation("EmployeeLeaves", fields: [user_id], references: [id], onDelete: Cascade)
+  consumer    Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  approved_by User?    @relation("LeaveApprover", fields: [approved_by_user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([leave_type])
+  @@index([status])
+  @@index([start_date])
+  @@index([approved_by_user_id])
+  @@map("leaves")
+}
+
+// Overtime Management
+model Overtime {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+  date        DateTime @db.Date
+
+  hours        Decimal  @db.Decimal(5, 2)
+  hourly_rate  Decimal? @db.Decimal(10, 2) // If null, use from salary structure
+  total_amount Decimal  @db.Decimal(10, 2)
+
+  reason String?
+  status OvertimeStatus @default(PENDING)
+
+  approved_by_user_id Int?
+  approved_at         DateTime?
+  rejection_reason    String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user              User              @relation("EmployeeOvertimes", fields: [user_id], references: [id], onDelete: Cascade)
+  consumer          Consumer          @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  approved_by       User?             @relation("OvertimeApprover", fields: [approved_by_user_id], references: [id], onDelete: SetNull)
+  overtime_payments OvertimePayment[]
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([date])
+  @@index([status])
+  @@index([approved_by_user_id])
+  @@map("overtimes")
+}
+
+// Employee Expenses
+model Expense {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  category          String // travel, entertainment, operational, meeting, etc. (free text)
+  amount            Decimal  @db.Decimal(10, 2)
+  date              DateTime @db.Date
+  description       String?
+  receipt_url       String? // Optional receipt/bill attachment
+  include_in_salary Boolean  @default(false) // Whether to add to salary
+
+  status ExpenseStatus @default(PENDING)
+
+  approved_by_user_id Int?
+  approved_at         DateTime?
+  rejection_reason    String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user             User             @relation("EmployeeExpenses", fields: [user_id], references: [id], onDelete: Cascade)
+  consumer         Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  approved_by      User?            @relation("ExpenseApprover", fields: [approved_by_user_id], references: [id], onDelete: SetNull)
+  expense_payments ExpensePayment[]
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([category])
+  @@index([status])
+  @@index([date])
+  @@index([include_in_salary])
+  @@index([approved_by_user_id])
+  @@map("expenses")
+}
+
+// Deductions (Manual deductions, penalties, etc.)
+model Deduction {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  type   String // penalty, loan_deduction, tax, other
+  amount Decimal  @db.Decimal(10, 2)
+  date   DateTime @db.Date
+  reason String
+  notes  String?
+
+  status DeductionStatus @default(PENDING)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user               User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consumer           Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  deduction_payments DeductionPayment[]
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([type])
+  @@index([status])
+  @@index([date])
+  @@map("deductions")
+}
+
+// Advance Payments
+model Advance {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  amount       Decimal  @db.Decimal(10, 2)
+  request_date DateTime @db.Date
+  reason       String?
+
+  status AdvanceStatus @default(PENDING)
+
+  approved_by_user_id Int?
+  approved_at         DateTime?
+  rejection_reason    String?
+
+  paid_date DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user             User             @relation("EmployeeAdvances", fields: [user_id], references: [id], onDelete: Cascade)
+  consumer         Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  approved_by      User?            @relation("AdvanceApprover", fields: [approved_by_user_id], references: [id], onDelete: SetNull)
+  advance_payments AdvancePayment[]
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([status])
+  @@index([request_date])
+  @@index([approved_by_user_id])
+  @@map("advances")
+}
+
+// Salary Payment Record (when actual payment is made)
+model SalaryPayment {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  consumer_id Int
+
+  // Period
+  period_start DateTime @db.Date
+  period_end   DateTime @db.Date
+
+  // Calculation Snapshot (what was included)
+  calculation_details Json? // Store breakdown: salary structure, attendance summary, etc.
+
+  // Salary Components (from SalaryStructure)
+  basic_salary        Decimal @default(0) @db.Decimal(10, 2)
+  house_allowance     Decimal @default(0) @db.Decimal(10, 2)
+  medical_allowance   Decimal @default(0) @db.Decimal(10, 2)
+  transport_allowance Decimal @default(0) @db.Decimal(10, 2)
+  food_allowance      Decimal @default(0) @db.Decimal(10, 2)
+  other_allowances    Decimal @default(0) @db.Decimal(10, 2)
+
+  // Overtime
+  overtime_amount Decimal @default(0) @db.Decimal(10, 2)
+
+  // Expenses
+  reimbursable_expenses Decimal @default(0) @db.Decimal(10, 2)
+
+  // Totals
+  gross_salary     Decimal @db.Decimal(10, 2)
+  total_deductions Decimal @default(0) @db.Decimal(10, 2)
+  net_salary       Decimal @db.Decimal(10, 2)
+  paid_amount      Decimal @db.Decimal(10, 2) // Actual amount paid (can be partial)
+
+  // Payment Details
+  payment_date      DateTime
+  payment_method    PaymentMethodEnum // cash, bank_transfer, card, etc.
+  payment_reference String?
+  notes             String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user               User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  consumer           Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  expense_payments   ExpensePayment[]
+  deduction_payments DeductionPayment[]
+  advance_payments   AdvancePayment[]
+  overtime_payments  OvertimePayment[]
+
+  @@index([user_id])
+  @@index([consumer_id])
+  @@index([period_start])
+  @@index([period_end])
+  @@index([payment_date])
+  @@map("salary_payments")
+}
+
+// Junction table: Track which expenses were paid in which salary payment
+model ExpensePayment {
+  id                Int     @id @default(autoincrement())
+  salary_payment_id Int
+  expense_id        Int
+  amount_paid       Decimal @db.Decimal(10, 2) // Amount paid (can be partial)
+
+  created_at DateTime @default(now())
+
+  // Relations
+  salary_payment SalaryPayment @relation(fields: [salary_payment_id], references: [id], onDelete: Cascade)
+  expense        Expense       @relation(fields: [expense_id], references: [id], onDelete: Cascade)
+
+  @@unique([salary_payment_id, expense_id])
+  @@index([expense_id])
+  @@map("expense_payments")
+}
+
+// Junction table: Track which deductions were applied in which salary payment
+model DeductionPayment {
+  id                Int     @id @default(autoincrement())
+  salary_payment_id Int
+  deduction_id      Int
+  amount_deducted   Decimal @db.Decimal(10, 2) // Amount deducted (can be partial)
+
+  created_at DateTime @default(now())
+
+  // Relations
+  salary_payment SalaryPayment @relation(fields: [salary_payment_id], references: [id], onDelete: Cascade)
+  deduction      Deduction     @relation(fields: [deduction_id], references: [id], onDelete: Cascade)
+
+  @@unique([salary_payment_id, deduction_id])
+  @@index([deduction_id])
+  @@map("deduction_payments")
+}
+
+// Junction table: Track which advances were deducted in which salary payment
+model AdvancePayment {
+  id                Int     @id @default(autoincrement())
+  salary_payment_id Int
+  advance_id        Int
+  amount_deducted   Decimal @db.Decimal(10, 2) // Amount deducted (can be partial)
+
+  created_at DateTime @default(now())
+
+  // Relations
+  salary_payment SalaryPayment @relation(fields: [salary_payment_id], references: [id], onDelete: Cascade)
+  advance        Advance       @relation(fields: [advance_id], references: [id], onDelete: Cascade)
+
+  @@unique([salary_payment_id, advance_id])
+  @@index([advance_id])
+  @@map("advance_payments")
+}
+
+// Junction table: Track which overtimes were paid in which salary payment
+model OvertimePayment {
+  id                Int     @id @default(autoincrement())
+  salary_payment_id Int
+  overtime_id       Int
+  amount_paid       Decimal @db.Decimal(10, 2) // Amount paid (can be partial)
+
+  created_at DateTime @default(now())
+
+  // Relations
+  salary_payment SalaryPayment @relation(fields: [salary_payment_id], references: [id], onDelete: Cascade)
+  overtime       Overtime      @relation(fields: [overtime_id], references: [id], onDelete: Cascade)
+
+  @@unique([salary_payment_id, overtime_id])
+  @@index([overtime_id])
+  @@map("overtime_payments")
 }
