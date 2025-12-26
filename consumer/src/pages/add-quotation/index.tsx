@@ -164,12 +164,19 @@ const NewQuotation = () => {
 			// Set items
 			const items = quotation.items.map((item: any) => ({
 				variant_id: item.variant_id,
-				variant: item.variant,
+				variant_name: item.variant?.name || '',
+				variant_sku: item.variant?.sku,
 				quantity: item.quantity,
 				unit_price: Number(item.unit_price),
 				discount_amount: Number(item.discount_amount || 0),
 				tax_amount: Number(item.tax_amount),
 				line_total: Number(item.line_total),
+				product_name: item.variant?.product_name || '',
+				regular_price: Number(item.variant?.regular_price || 0),
+				wholesale_price: item.variant?.wholesale_price ? Number(item.variant.wholesale_price) : undefined,
+				image: item.variant?.image,
+				unit_name: item.variant?.unit_name || '',
+				tax_percentage: Number(item.variant?.tax_percentage || 0),
 			}));
 			setSelectedItems(items);
 		}
