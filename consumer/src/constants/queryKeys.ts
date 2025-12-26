@@ -33,6 +33,8 @@ export const queryKeys = {
   returns: "returns",
   return: "return",
   eod: "eod-report",
+  quotations: "quotations",
+  quotation: "quotation",
 };
 
 // Stale time configurations for different data types
@@ -78,6 +80,8 @@ export const queryStaleTimeMap = {
   [queryKeys.adjustments]: staleTimeConfig.dynamic,
   [queryKeys.transfers]: staleTimeConfig.dynamic,
   [queryKeys.rules]: staleTimeConfig.dynamic,
+  [queryKeys.quotations]: staleTimeConfig.dynamic,
+  [queryKeys.quotation]: staleTimeConfig.dynamic,
   
   // Real-time data
   [queryKeys.inventorySummary]: staleTimeConfig.realTime,

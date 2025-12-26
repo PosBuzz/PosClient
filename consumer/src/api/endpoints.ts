@@ -60,9 +60,11 @@ export const endpoints = {
 
   // Customer management
   getCustomers: "/consumer/customers",
+  getCustomer: (id: number) => `/consumer/customers/${id}`,
   createCustomer: "/consumer/customers",
   updateCustomer: (id: number) => `/consumer/customers/${id}`,
   deleteCustomer: (id: number) => `/consumer/customers/${id}`,
+  searchCustomers: "/consumer/customers/search",
 
   // Inventory Management
   inventorySummary: "/consumer/inventory/summary",
@@ -105,11 +107,17 @@ export const endpoints = {
   // Sales Management
   getSales: "/consumer/sales",
   getSale: (id: number) => `/consumer/sales/${id}`,
+  getSaleBySaleNumber: (saleNumber: string) => `/consumer/sales/search/${saleNumber}`,
   createSale: "/consumer/sales",
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
+
+  // Quotation Management
+  getQuotations: "/consumer/sales/quotations/list",
+  getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
+  createQuotation: "/consumer/sales",
 
   // Returns Management
   getReturns: "/consumer/returns",
@@ -136,4 +144,7 @@ export const endpoints = {
   getCustomerTransactions: (id: number) => `/consumer/rewards/customers/${id}/transactions`,
   expirePoints: "/consumer/rewards/expire-points",
   getRedemptionValue: (points: number) => `/consumer/rewards/redemption-value/${points}`,
+
+  // Cache Management
+  invalidateAllCaches: "/consumer/cache/invalidate-all",
 };

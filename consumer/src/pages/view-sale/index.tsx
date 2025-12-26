@@ -336,6 +336,32 @@ const SaleDetail: React.FC = () => {
 
       <Row gutter={16}>
         <Col span={16}>
+          {/* Show quotation banner if converted from quotation */}
+          {sale.converted_from_quotations && sale.converted_from_quotations.length > 0 && (() => {
+            const sourceQuotation = sale.converted_from_quotations?.[0];
+            if (!sourceQuotation) return null;
+
+            return (
+              <Card style={{ marginBottom: 16 }}>
+                <Space direction="vertical">
+                  <Text strong>This sale was converted from a quotation</Text>
+                  <Text type="secondary">
+                    Original Quotation: {sourceQuotation.sale_number}
+                  </Text>
+                  <Text type="secondary">
+                    Quotation Date: {dayjs(sourceQuotation.created_at).format('MMM DD, YYYY hh:mm A')}
+                  </Text>
+                  <Button 
+                    type="link" 
+                    onClick={() => navigate(`/quotations/view/${sourceQuotation.id}`)}
+                  >
+                    View Original Quotation →
+                  </Button>
+                </Space>
+              </Card>
+            );
+          })()}
+
           {/* Sale Details */}
           <Card title="Sale Information" style={{ marginBottom: 16 }}>
             <Descriptions column={2} bordered>

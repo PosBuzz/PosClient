@@ -55,6 +55,9 @@ const CreateReturn = lazy(() => import("./pages/returns/create"));
 const ViewReturn = lazy(() => import("./pages/view-return"));
 const RewardsSettings = lazy(() => import("./pages/rewards-settings"));
 const RewardPoints = lazy(() => import("./pages/customer-rewards"));
+const Quotations = lazy(() => import("./pages/quotations"));
+const AddQuotation = lazy(() => import("./pages/add-quotation"));
+const ViewQuotation = lazy(() => import("./pages/view-quotation"));
 
 export const routes = [
   {
@@ -329,6 +332,31 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <SaleDetail />
+          </RequirePermission>
+        ),
+      },
+      // Quotation Routes
+      {
+        path: "quotations",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <Quotations />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "add-quotation",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <AddQuotation />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "quotations/view/:id",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <ViewQuotation />
           </RequirePermission>
         ),
       },

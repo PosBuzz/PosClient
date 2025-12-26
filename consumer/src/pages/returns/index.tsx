@@ -269,7 +269,7 @@ const ReturnsTable = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={8} lg={6}>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/returns/create")}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/returns/new")}>
               Create Return
             </Button>
           </Col>

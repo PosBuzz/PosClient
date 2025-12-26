@@ -47,4 +47,8 @@ export class SaleListFiltersDto {
   @IsOptional()
   @IsString()
   sort_order?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsString()
+  source?: 'pending' | 'converted' | 'quotation' | 'direct';
 }

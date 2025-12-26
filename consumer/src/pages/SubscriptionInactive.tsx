@@ -46,7 +46,7 @@ const SubscriptionInactive = () => {
         }
       } else if (validation.exists && !validation.active) {
         // Still inactive, just reload the page to show fresh data
-        window.location.reload();
+        navigate(0);
       } else {
         // Subdomain doesn't exist, navigate to 404
         navigate("/404", { replace: true });

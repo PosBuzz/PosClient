@@ -63,8 +63,7 @@ export const salesApi = {
 
   // Search sale by sale number
   getSaleBySaleNumber: async (saleNumber: string): Promise<Sale> => {
-    const response = await axiosInstance.get(`/consumer/sales/search/${saleNumber}`);
-    return response.data;
+    return get(endpoints.getSaleBySaleNumber(saleNumber));
   },
 
   // Get End of Day report
@@ -81,5 +80,24 @@ export const salesApi = {
 
     const response = await get(`${endpoints.getSales}/reports/eod?${queryParams.toString()}`);
     return response;
+  },
+
+  // ========== QUOTATION METHODS ==========
+
+  // Get all quotations with filters
+  getQuotations: async (filters: SaleListFilters): Promise<SaleListResponse> => {
+    return await get(endpoints.getQuotations, filters);
+  },
+
+  // Get a single quotation by ID
+  getQuotation: async (id: number): Promise<Sale> => {
+    return await get(endpoints.getQuotation(id));
+  },
+
+  // Create a new quotation
+  createQuotation: async (quotationData: SaleFormData): Promise<Sale> => {
+    // Set sale_type to 'quotation'
+    const data = { ...quotationData, sale_type: 'quotation' };
+    return await post(endpoints.createQuotation, data);
   },
 };
