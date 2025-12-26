@@ -667,6 +667,7 @@ const NewSale = () => {
 					display: "flex",
 					flexDirection: "column",
 					minHeight: 0,
+					height: "100vh",
 				}}
 			>
 				<CustomerModal
