@@ -118,6 +118,7 @@ export const endpoints = {
   getQuotations: "/consumer/sales/quotations/list",
   getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
   createQuotation: "/consumer/sales",
+  downloadQuotationPdf: (id: number) => `/consumer/sales/quotations/${id}/pdf?download=true`,
 
   // Returns Management
   getReturns: "/consumer/returns",

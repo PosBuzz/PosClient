@@ -100,4 +100,12 @@ export const salesApi = {
     const data = { ...quotationData, sale_type: 'quotation' };
     return await post(endpoints.createQuotation, data);
   },
+
+  // Download quotation PDF
+  downloadQuotationPdf: async (id: number): Promise<Blob> => {
+    const response = await axiosInstance.get(endpoints.downloadQuotationPdf(id), {
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };

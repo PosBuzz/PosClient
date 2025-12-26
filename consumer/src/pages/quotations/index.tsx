@@ -1,25 +1,26 @@
 import {
-    EyeOutlined,
-    PlusOutlined,
-    SearchOutlined,
-    SwapOutlined,
-    CopyOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  SwapOutlined,
+  CopyOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
-    Button,
-    Card,
-    Col,
-    DatePicker,
-    Input,
-    Row,
-    Select,
-    Space,
-    Statistic,
-    Table,
-    Tag,
-    Tooltip,
-    Typography
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Input,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
@@ -29,11 +30,10 @@ import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
-import type {
-    Sale,
-    SaleListFilters,
-} from "../../types/sale.types";
+import type { Sale, SaleListFilters } from "../../types/sale.types";
+import saveAs from "file-saver";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -42,6 +42,7 @@ const { RangePicker } = DatePicker;
 const QuotationsTable = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { messageApi } = useMessageStore();
 
   const [filters, setFilters] = useState<SaleListFilters>({
     page: 1,
@@ -91,6 +92,24 @@ const QuotationsTable = () => {
       limit: 20,
       search: "",
     });
+  };
+
+  const handleDownloadPdf = async (id: number, saleNumber: string) => {
+    try {
+      // Call the API to generate and download PDF (similar to admin billing approach)
+      const pdfBlob = await salesApi.downloadQuotationPdf(id);
+
+      // Get the filename - you could also get this from response headers if backend sets it
+      const filename = `${saleNumber}.pdf`;
+
+      // Use file-saver to download the PDF
+      saveAs(pdfBlob, filename);
+
+      messageApi?.success("PDF receipt downloaded successfully!");
+    } catch (error: any) {
+      console.error("PDF download error:", error);
+      messageApi?.error("Failed to download PDF receipt");
+    }
   };
 
   useEffect(() => {
@@ -168,7 +187,13 @@ const QuotationsTable = () => {
               onClick={() => navigate(`/quotations/view/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title={record.converted_to_sale_id ? "Already Converted" : "Convert to Sale"}>
+          <Tooltip
+            title={
+              record.converted_to_sale_id
+                ? "Already Converted"
+                : "Convert to Sale"
+            }
+          >
             <Button
               type="text"
               icon={<SwapOutlined />}
@@ -181,6 +206,13 @@ const QuotationsTable = () => {
               type="text"
               icon={<CopyOutlined />}
               onClick={() => navigate(`/add-quotation?copy_from=${record.id}`)}
+            />
+          </Tooltip>
+          <Tooltip title="Download PDF Receipt">
+            <Button
+              type="text"
+              icon={<FilePdfOutlined />}
+              onClick={() => handleDownloadPdf(record.id!, record.sale_number)}
             />
           </Tooltip>
         </Space>
@@ -196,10 +228,7 @@ const QuotationsTable = () => {
     <div>
       <PageTitle
         title="Quotations"
-        breadcrumbs={[
-          { title: "Home", href: "/" },
-          { title: "Quotations" },
-        ]}
+        breadcrumbs={[{ title: "Home", href: "/" }, { title: "Quotations" }]}
         rightSection={
           <Button
             type="primary"
