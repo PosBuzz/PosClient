@@ -1,12 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Typography } from "antd";
+import { Button, Card, Form, Input } from "antd";
+import { useNavigate } from "react-router-dom";
 import { patch } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
-import { useNavigate } from "react-router-dom";
 
 function ProfilePage() {
   const [form] = Form.useForm();
