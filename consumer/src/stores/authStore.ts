@@ -12,6 +12,9 @@ type User = {
   created_by_id: number | null;
   company_name: string;
   company_email: string;
+  secondary_email: string;
+  phone: string;
+  address: string;
   role: string;
   permissions: string[];
   branches: Array<{
@@ -62,7 +65,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user }),
   setAuthenticated: (auth) => set({ isAuthenticated: auth }),
   setCsrfToken: (token) => set({ csrfToken: token }),
-  setSubdomainValidation: (validation) => set({ subdomainValidation: validation }),
+  setSubdomainValidation: (validation) =>
+    set({ subdomainValidation: validation }),
 
   login: async (email, password) => {
     await axiosInstance.post(endpoints.login, { email, password });
@@ -112,7 +116,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       } else if (parts.length === 2 && parts[1].toLowerCase() === "localhost") {
         const candidate = parts[0];
         const excludedSubdomains = ["www", "api", "admin", "app"];
-        if (candidate && !excludedSubdomains.includes(candidate.toLowerCase())) {
+        if (
+          candidate &&
+          !excludedSubdomains.includes(candidate.toLowerCase())
+        ) {
           needsValidation = true;
           currentSubdomain = candidate.toLowerCase();
         }
@@ -141,11 +148,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Call backend validation endpoint
       const response = await axiosInstance.get(endpoints.validateSubdomain);
-      
+
       // Handle 304 Not Modified or successful responses
       const data = response.data || response;
-      
-      if (data && typeof data === 'object') {
+
+      if (data && typeof data === "object") {
         set({
           subdomainValidation: {
             checked: true,

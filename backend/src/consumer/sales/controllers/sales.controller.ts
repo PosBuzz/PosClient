@@ -144,6 +144,7 @@ export class SalesController {
     return this.salesService.findBySaleNumber(saleNumber, req.user.consumer_id!);
   }
 
+  @HasPermissions([ConsumerPermission.quotations])
   @Get('quotations/list')
   async findAllQuotations(
     @Query() filters: SaleListFiltersDto,
@@ -152,6 +153,7 @@ export class SalesController {
     return this.salesService.findAllQuotations(filters, req.user.consumer_id!);
   }
 
+  @HasPermissions([ConsumerPermission.quotations])
   @Get('quotations/:id')
   async findOneQuotation(
     @Param('id', ParseIntPipe) id: number,
@@ -160,6 +162,7 @@ export class SalesController {
     return this.salesService.findOneQuotation(id, req.user.consumer_id!);
   }
 
+  @HasPermissions([ConsumerPermission.quotations])
   @Get('quotations/:id/pdf')
   async generateQuotationPdf(
     @Param('id', ParseIntPipe) id: number,

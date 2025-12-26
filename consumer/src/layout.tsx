@@ -95,7 +95,7 @@ const AppLayout = () => {
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <h2 className="m-0 text-lg hidden md:block">{user?.name}</h2>
+            <h2 className="m-0 text-lg hidden md:block">{user?.company_name}</h2>
           </div>          <div className="flex">
             <CacheInvalidationButton />
             <ThemeDropdown />

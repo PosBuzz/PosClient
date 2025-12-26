@@ -27,6 +27,8 @@ function index() {
       );
     },
   });
+  
+ 
 
   const handlePasswordChange = (values: {
     old_password: string;
@@ -64,6 +66,8 @@ function index() {
           </Text>
         </Space>
       </Card>
+
+      
 
       <Card title="Change Password">
         <Form form={form} layout="vertical" onFinish={handlePasswordChange}>

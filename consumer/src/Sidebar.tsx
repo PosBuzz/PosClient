@@ -161,22 +161,22 @@ const SideBar: React.FC = () => {
         {
           label: <span title="All Sales">View Sales</span>,
           key: "/sales",
-          permissions: [Permissions.branches],
+          permissions: [Permissions.sales],
         },
         {
           label: <span title="New Sale">New Sale</span>,
           key: "/sales/add",
-          permissions: [Permissions.branches],
+          permissions: [Permissions.sales],
         },
         {
           label: <span title="Quotations">Quotations</span>,
           key: "/quotations",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.quotations],
         },
         {
           label: <span title="New Quotation">New Quotation</span>,
           key: "/add-quotation",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.quotations],
         },
         {
           label: <span title="Returns">Returns</span>,
@@ -200,6 +200,11 @@ const SideBar: React.FC = () => {
       key: "/settings",
       icon: <SettingOutlined />,
       children: [
+        {
+          label: <span title="Company Profile">Company Profile</span>,
+          key: "/profile",
+          permissions: [Permissions.companyProfile],
+        },
         {
           label: <span title="Branches">Branches</span>,
           key: "/branches",

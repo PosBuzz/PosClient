@@ -3,6 +3,7 @@ import { BranchModule } from './branch/branch.module';
 import { BrandModule } from './brand/brand.module';
 import { CategoryModule } from './category/category.module';
 import { ChangePasswordModule } from './change-password/change-password.module';
+import { ProfileModule } from './profile/profile.module';
 import { TagModule } from './tag/tag.module';
 import { UnitModule } from './unit/unit.module';
 import { UsersModule } from './users/users.module';
@@ -18,6 +19,7 @@ import { RewardsModule } from './rewards/rewards.module';
 @Module({
   imports: [
     ChangePasswordModule,
+    ProfileModule,
     UsersModule,
     CategoryModule,
     TagModule,
