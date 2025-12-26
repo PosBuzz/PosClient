@@ -93,6 +93,7 @@ export class AuthController {
     const user = await this.authService.validateUser(
       loginDto.email,
       loginDto.password,
+      subdomain,
     );
 
     // Validate user belongs to the subdomain they're trying to access
