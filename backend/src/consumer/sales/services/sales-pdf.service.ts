@@ -79,21 +79,45 @@ export class SalesPdfService {
   private addCompanyInfo(doc: PDFKit.PDFDocument, sale: any): void {
     const pageWidth = doc.page.width;
     
-    // Compact company info
-    if (sale.branch) {
+    // Compact company info with proper company name - branch name format
+    if (sale.consumer) {
+      // Get company name directly from consumer or fallback to branch.consumer
+      const companyName = sale.consumer?.company_name || 'Company Name';
+      const branchName = sale.branch?.name || 'Main Store';
+      
+      const headerY = doc.y;
+
       doc
         .font('Helvetica-Bold')
         .fontSize(14)
         .fillColor('#2C3E50')
-        .text(sale.branch.name || 'Main Store', 0, doc.y, { align: 'center', width: pageWidth });
+        .text(`${companyName} - ${branchName}`, 0, headerY, { align: 'center', width: pageWidth });
 
-      if (sale.branch.address) {
+      let detailsY = headerY + 18;
+
+      if (sale.branch?.address) {
         doc
           .font('Helvetica')
           .fontSize(10)
           .fillColor('#7F8C8D')
-          .text(sale.branch.address, 0, doc.y + 15, { align: 'center', width: pageWidth });
+          .text(sale.branch.address, 0, detailsY, { align: 'center', width: pageWidth });
+        detailsY += 12;
       }
+
+      const contacts: string[] = [];
+      if (sale.branch?.phone) contacts.push(`Phone: ${sale.branch.phone}`);
+      if (sale.branch?.email) contacts.push(`Email: ${sale.branch.email}`);
+
+      if (contacts.length) {
+        doc
+          .font('Helvetica')
+          .fontSize(10)
+          .fillColor('#7F8C8D')
+          .text(contacts.join(' | '), 0, detailsY, { align: 'center', width: pageWidth });
+        detailsY += 12;
+      }
+
+      doc.y = detailsY;
     }
 
     doc.y += 35;
@@ -396,6 +420,30 @@ export class SalesPdfService {
         });
 
       doc.text(`$${Number(sale.tax_amount).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
+        width: actualWidths.total - 10, 
+        align: 'right' 
+      });
+      currentY += rowHeight;
+    }
+
+    // Shipping row (if applicable)
+    if (sale.shipping_cost && Number(sale.shipping_cost) > 0) {
+      doc.rect(tableLeft, currentY, tableWidth, rowHeight)
+         .fill('#F8F9FA')
+         .strokeColor('#E9ECEF')
+         .lineWidth(0.5)
+         .stroke();
+
+      doc
+        .font('Helvetica')
+        .fontSize(10)
+        .fillColor('#2C3E50')
+        .text('Shipping:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
+          width: actualWidths.price - 10, 
+          align: 'right' 
+        });
+
+      doc.text(`$${Number(sale.shipping_cost).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
         width: actualWidths.total - 10, 
         align: 'right' 
       });

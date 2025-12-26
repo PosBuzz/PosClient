@@ -15,6 +15,7 @@ import {
 import { Response } from 'express';
 import { SalesService } from '../services/sales.service';
 import { SalesPdfService } from '../services/sales-pdf.service';
+import { QuotationPdfService } from '../services/quotation-pdf.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { EODReportDto } from '../dto/eod-report.dto';
@@ -31,6 +32,7 @@ export class SalesController {
   constructor(
     private readonly salesService: SalesService,
     private readonly salesPdfService: SalesPdfService,
+    private readonly quotationPdfService: QuotationPdfService,
   ) {}
 
   @Post()
@@ -156,6 +158,38 @@ export class SalesController {
     @Req() req: Request,
   ) {
     return this.salesService.findOneQuotation(id, req.user.consumer_id!);
+  }
+
+  @Get('quotations/:id/pdf')
+  async generateQuotationPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('download') download?: string,
+  ) {
+    // Get the quotation data
+    const quotation = await this.salesService.findOneQuotation(id, req.user.consumer_id!);
+    
+    if (!quotation) {
+      return res.status(404).json({ message: 'Quotation not found' });
+    }
+
+    // Generate PDF
+    const pdfBuffer = await this.quotationPdfService.generateQuotationPdf(quotation);
+
+    // Set response headers
+    const filename = `quotation-${(quotation as any).sale_number || 'unknown'}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    if (download === 'true') {
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    } else {
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    }
+
+    // Send the PDF
+    res.send(pdfBuffer);
   }
 
   @Get(':id')

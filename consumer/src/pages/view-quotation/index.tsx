@@ -1,35 +1,42 @@
-import { ArrowLeftOutlined, SwapOutlined, CopyOutlined } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
 import {
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Divider,
-    message,
-    Row,
-    Space,
-    Spin,
-    Table,
-    Tag,
-    Typography,
-} from 'antd';
-import dayjs from 'dayjs';
-import React, { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { salesApi } from '../../api/sales-api';
-import PageTitle from '../../components/PageTitle';
-import { queryKeys, queryStaleTimeMap } from '../../constants/queryKeys';
-import { setPageTitle } from '../../utils/setPageTitle';
+  ArrowLeftOutlined,
+  CopyOutlined,
+  DownloadOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  Row,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography
+} from "antd";
+import dayjs from "dayjs";
+import saveAs from "file-saver";
+import React, { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { salesApi } from "../../api/sales-api";
+import PageTitle from "../../components/PageTitle";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { useMessageStore } from "../../stores/messageStore";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 
 const QuotationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { messageApi } = useMessageStore();
 
   const quotationQuery = useQuery({
-    queryKey: [queryKeys.quotation, parseInt(id || '0')],
+    queryKey: [queryKeys.quotation, parseInt(id || "0")],
     queryFn: () => salesApi.getQuotation(parseInt(id!)),
     enabled: !!id,
     staleTime: queryStaleTimeMap[queryKeys.quotation],
@@ -46,8 +53,8 @@ const QuotationDetail: React.FC = () => {
 
   useEffect(() => {
     if (quotationQuery.isError) {
-      message.error('Failed to load quotation details');
-      navigate('/quotations');
+      messageApi?.error("Failed to load quotation details");
+      navigate("/quotations");
     }
   }, [quotationQuery.isError, navigate]);
 
@@ -62,17 +69,38 @@ const QuotationDetail: React.FC = () => {
     navigate(`/sales/add?quotation_id=${quotation.id}`);
   };
 
+  const handleDownloadPdf = async () => {
+    if (!quotation) return;
+
+    try {
+      const pdfBlob = await salesApi.downloadQuotationPdf(Number(quotation.id));
+
+      const filename = `quotation-${quotation.sale_number}.pdf`;
+
+      saveAs(pdfBlob, filename);
+
+      messageApi?.success({
+        content: "PDF downloaded successfully!",
+      });
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      messageApi?.error({
+        content: "Failed to download PDF",
+      });
+    }
+  };
+
   const itemColumns = [
     {
-      title: 'Product',
-      key: 'product',
+      title: "Product",
+      key: "product",
       render: (record: any) => (
         <div>
           <div style={{ fontWeight: 500 }}>
-            {record.variant?.product?.name || 'Product'}
+            {record.variant?.product?.name || "Product"}
           </div>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.variant?.name || ''}
+            {record.variant?.name || ""}
           </Text>
           {record.variant?.sku && (
             <div>
@@ -85,40 +113,40 @@ const QuotationDetail: React.FC = () => {
       ),
     },
     {
-      title: 'Unit Price',
-      dataIndex: 'unit_price',
-      key: 'unit_price',
+      title: "Unit Price",
+      dataIndex: "unit_price",
+      key: "unit_price",
       render: (price: number) => `$${Number(price || 0).toFixed(2)}`,
     },
     {
-      title: 'Quantity',
-      key: 'quantity',
+      title: "Quantity",
+      key: "quantity",
       render: (record: any) => (
         <div>
           <div>{record.quantity}</div>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            {record.variant?.sale_unit?.name || ''}
+            {record.variant?.sale_unit?.name || ""}
           </Text>
         </div>
       ),
     },
     {
-      title: 'Tax',
-      dataIndex: 'tax_amount',
-      key: 'tax_amount',
+      title: "Tax",
+      dataIndex: "tax_amount",
+      key: "tax_amount",
       render: (tax: number) => `$${Number(tax || 0).toFixed(2)}`,
     },
     {
-      title: 'Line Total',
-      dataIndex: 'line_total',
-      key: 'line_total',
+      title: "Line Total",
+      dataIndex: "line_total",
+      key: "line_total",
       render: (total: number) => `$${Number(total || 0).toFixed(2)}`,
     },
   ];
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
+      <div style={{ textAlign: "center", padding: "50px" }}>
         <Spin size="large" />
       </div>
     );
@@ -133,23 +161,28 @@ const QuotationDetail: React.FC = () => {
       <PageTitle
         title={`Quotation #${quotation.sale_number}`}
         breadcrumbs={[
-          { title: 'Home', href: '/' },
-          { title: 'Quotations', href: '/quotations' },
+          { title: "Home", href: "/" },
+          { title: "Quotations", href: "/quotations" },
           { title: `Quotation #${quotation.sale_number}` },
         ]}
         rightSection={
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/quotations')}
+              onClick={() => navigate("/quotations")}
             >
               Back to Quotations
             </Button>
             <Button
               icon={<CopyOutlined />}
-              onClick={() => navigate(`/add-quotation?copy_from=${quotation.id}`)}
+              onClick={() =>
+                navigate(`/add-quotation?copy_from=${quotation.id}`)
+              }
             >
               Copy Quotation
+            </Button>
+            <Button icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
+              Download PDF
             </Button>
             <Button
               type="primary"
@@ -157,7 +190,9 @@ const QuotationDetail: React.FC = () => {
               onClick={handleConvertToSale}
               disabled={!!quotation.converted_to_sale_id}
             >
-              {quotation.converted_to_sale_id ? 'Already Converted' : 'Convert to Sale'}
+              {quotation.converted_to_sale_id
+                ? "Already Converted"
+                : "Convert to Sale"}
             </Button>
           </Space>
         }
@@ -168,11 +203,16 @@ const QuotationDetail: React.FC = () => {
           <Space direction="vertical">
             <Text strong>This quotation has been converted to a sale</Text>
             <Text type="secondary">
-              Converted on: {quotation.converted_at ? dayjs(quotation.converted_at).format('MMM DD, YYYY hh:mm A') : 'N/A'}
+              Converted on:{" "}
+              {quotation.converted_at
+                ? dayjs(quotation.converted_at).format("MMM DD, YYYY hh:mm A")
+                : "N/A"}
             </Text>
-            <Button 
-              type="link" 
-              onClick={() => navigate(`/sales/view/${quotation.converted_to_sale_id}`)}
+            <Button
+              type="link"
+              onClick={() =>
+                navigate(`/sales/view/${quotation.converted_to_sale_id}`)
+              }
             >
               View Sale →
             </Button>
@@ -188,34 +228,44 @@ const QuotationDetail: React.FC = () => {
                 <Text strong>{quotation.sale_number}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Date">
-                {dayjs(quotation.sale_date).format('MMM DD, YYYY HH:mm')}
+                {dayjs(quotation.sale_date).format("MMM DD, YYYY HH:mm")}
               </Descriptions.Item>
               <Descriptions.Item label="Branch">
-                {quotation.branch?.name || 'N/A'}
+                {quotation.branch?.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Created By">
-                {quotation.user?.name || 'N/A'}
+                {quotation.user?.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Customer" span={2}>
-                {quotation.customer_name || quotation.customer?.name || 'Walk-in Customer'}
+                {quotation.customer_name ||
+                  quotation.customer?.name ||
+                  "Walk-in Customer"}
                 {(quotation.customer_phone || quotation.customer?.phone) && (
                   <div>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Phone: {quotation.customer_phone || quotation.customer?.phone}
+                      Phone:{" "}
+                      {quotation.customer_phone || quotation.customer?.phone}
                     </Text>
                   </div>
                 )}
                 {(quotation.customer_email || quotation.customer?.email) && (
                   <div>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Email: {quotation.customer_email || quotation.customer?.email}
+                      Email:{" "}
+                      {quotation.customer_email || quotation.customer?.email}
                     </Text>
                   </div>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Price Type">
-                <Tag color={quotation.price_type === 'wholesale' ? 'blue' : 'default'}>
-                  {quotation.price_type === 'wholesale' ? 'Wholesale' : 'Regular'}
+                <Tag
+                  color={
+                    quotation.price_type === "wholesale" ? "blue" : "default"
+                  }
+                >
+                  {quotation.price_type === "wholesale"
+                    ? "Wholesale"
+                    : "Regular"}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Status">
@@ -253,33 +303,37 @@ const QuotationDetail: React.FC = () => {
 
         <Col xs={24} lg={8}>
           <Card title="Summary">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Subtotal:</Text>
-                <Text strong>${Number(quotation.subtotal || 0).toFixed(2)}</Text>
+                <Text strong>
+                  ${Number(quotation.subtotal || 0).toFixed(2)}
+                </Text>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Tax:</Text>
                 <Text>${Number(quotation.tax_amount || 0).toFixed(2)}</Text>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Discount:</Text>
-                <Text>-${Number(quotation.discount_amount || 0).toFixed(2)}</Text>
+                <Text>
+                  -${Number(quotation.discount_amount || 0).toFixed(2)}
+                </Text>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Shipping:</Text>
                 <Text>${Number(quotation.shipping_cost || 0).toFixed(2)}</Text>
               </div>
-              <Divider style={{ margin: '12px 0' }} />
+              <Divider style={{ margin: "12px 0" }} />
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
+                  display: "flex",
+                  justifyContent: "space-between",
                   fontSize: 18,
                 }}
               >
                 <Text strong>Total:</Text>
-                <Text strong style={{ color: '#1890ff' }}>
+                <Text strong style={{ color: "#1890ff" }}>
                   ${Number(quotation.total_amount || 0).toFixed(2)}
                 </Text>
               </div>
@@ -287,7 +341,7 @@ const QuotationDetail: React.FC = () => {
           </Card>
 
           <Card title="Actions" style={{ marginTop: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: "100%" }}>
               <Button
                 type="primary"
                 icon={<SwapOutlined />}

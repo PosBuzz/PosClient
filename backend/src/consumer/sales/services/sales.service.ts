@@ -19,6 +19,7 @@ import {
   EODSummary,
 } from '../dto/eod-report.dto';
 import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
+import { QuotationPdfService } from './quotation-pdf.service';
 
 @Injectable()
 export class SalesService {
@@ -26,6 +27,7 @@ export class SalesService {
     private prisma: PrismaService,
     private cacheService: CacheService,
     private rewardsService: RewardsService,
+    private quotationPdfService: QuotationPdfService,
   ) {}
 
   async create(
@@ -572,6 +574,7 @@ export class SalesService {
       },
       include: {
         customer: true,
+        consumer: true, // Include consumer data directly
         branch: true,
         user: { select: { id: true, name: true } },
         payments: true, // Include payment details
@@ -1400,6 +1403,7 @@ export class SalesService {
           },
           include: {
             customer: true,
+            consumer: true, // Include consumer data directly
             branch: true,
             user: { select: { id: true, name: true } },
             items: {
@@ -1423,6 +1427,11 @@ export class SalesService {
     }
 
     return quotation;
+  }
+
+  async generateQuotationPdf(quotationId: number, consumerId: number): Promise<Buffer> {
+    const quotation = await this.findOneQuotation(quotationId, consumerId);
+    return this.quotationPdfService.generateQuotationPdf(quotation);
   }
 
   async convertQuotationToSale(
