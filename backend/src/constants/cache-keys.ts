@@ -146,8 +146,8 @@ export const generateCacheKey = {
     `${consumerId}:warehouse-branch`,
 
   // Sales cache helpers
-  salesList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, paymentMethod?: string, paymentStatus?: string, dateFrom?: string, dateTo?: string, sortBy?: string, sortOrder?: string) =>
-    `${consumerId}:sales:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${paymentMethod || 'all'}:${paymentStatus || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}:${sortBy || 'created_at'}:${sortOrder || 'desc'}`,
+  salesList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, paymentMethod?: string, paymentStatus?: string, dateFrom?: string, dateTo?: string, sortBy?: string, sortOrder?: string, source?: string) =>
+    `${consumerId}:sales:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${paymentMethod || 'all'}:${paymentStatus || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}:${sortBy || 'created_at'}:${sortOrder || 'desc'}:${source || 'all'}`,
 
   salesDetail: (saleId: number, consumerId: number) =>
     `${consumerId}:sales:detail:${saleId}`,
@@ -163,6 +163,13 @@ export const generateCacheKey = {
 
   productByBarcode: (consumerId: number, branchId: number, barcode: string) =>
     `${consumerId}:product-barcode:${branchId}:${barcode}`,
+
+  // Quotation cache helpers
+  quotationsList: (consumerId: number, page?: number, limit?: number, search?: string, branchId?: number, dateFrom?: string, dateTo?: string, sortBy?: string, sortOrder?: string, source?: string) =>
+    `${consumerId}:quotations:list:${page || 1}:${limit || 20}:${search || 'all'}:${branchId || 'all'}:${dateFrom || 'all'}:${dateTo || 'all'}:${sortBy || 'created_at'}:${sortOrder || 'desc'}:${source || 'all'}`,
+
+  quotationDetail: (quotationId: number, consumerId: number) =>
+    `${consumerId}:quotations:detail:${quotationId}`,
 
   // Returns cache helpers
   returnList: (consumerId: number, page?: number, limit?: number, branchId?: number, originalSaleId?: number) =>
@@ -228,6 +235,9 @@ export const generateCachePatterns = {
   allSales: (consumerId: number) => `${consumerId}:sales*`,
   allProductsForSale: (consumerId: number) => `${consumerId}:products-for-sale*`,
   allProductBarcodes: (consumerId: number) => `${consumerId}:product-barcode*`,
+  
+  // Quotation patterns
+  allQuotations: (consumerId: number) => `${consumerId}:quotations*`,
   
   // Combined patterns for operations that affect multiple entities
   allInventoryRelated: (consumerId: number) => [

@@ -1,4 +1,5 @@
-import axiosInstance from './axiosInstance';
+import { deleteApi } from "./crud-api";
+import { endpoints } from "./endpoints";
 
 export const cacheApi = {
   /**
@@ -10,7 +11,6 @@ export const cacheApi = {
     invalidated_keys_count?: number;
     timestamp: string;
   }> => {
-    const response = await axiosInstance.delete('/consumer/cache/invalidate-all');
-    return response.data;
+    return deleteApi(endpoints.invalidateAllCaches);
   },
 };

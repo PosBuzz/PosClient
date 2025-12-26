@@ -169,6 +169,16 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.branches],
         },
         {
+          label: <span title="Quotations">Quotations</span>,
+          key: "/quotations",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="New Quotation">New Quotation</span>,
+          key: "/add-quotation",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Returns">Returns</span>,
           key: "/returns",
           permissions: [Permissions.sales],

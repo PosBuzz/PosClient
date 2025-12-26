@@ -2,21 +2,20 @@ import {
   Body,
   Controller,
   Get,
-  Post,
-  Put,
-  Query,
   Param,
-  UseGuards,
   ParseIntPipe,
+  Patch,
+  Post,
+  Query,
   Req,
+  UseGuards
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
-import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
-import { RewardsService } from '../services/rewards.service';
+import { RewardsFiltersDto } from '../dto/rewards-filters.dto';
 import {
   CreateRewardsSettingsDto,
   UpdateRewardsSettingsDto,
@@ -25,7 +24,7 @@ import {
   AdjustPointsDto,
   RedeemPointsDto,
 } from '../dto/rewards-transaction.dto';
-import { RewardsFiltersDto } from '../dto/rewards-filters.dto';
+import { RewardsService } from '../services/rewards.service';
 
 @Controller('consumer/rewards')
 @UseGuards(ClientAuthGuard, PermissionsGuard)
@@ -47,7 +46,7 @@ export class RewardsController {
     return await this.rewardsService.createOrUpdateSettings(Number(req.user.consumer_id), dto);
   }
 
-  @Put('settings')
+  @Patch('settings')
   async updateSettings(
     @Req() req: Request,
     @Body() dto: UpdateRewardsSettingsDto,

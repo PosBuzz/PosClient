@@ -1,3 +1,10 @@
+export interface Customer {
+  id: number;
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface SaleItem {
   id?: number;
   variant_id: number;
@@ -31,16 +38,12 @@ export interface Sale {
   branch?: Branch; // Include branch object from Prisma relation
   user_id?: number;
   user_name?: string;
-  user?: { // Include user object from Prisma relation
+  user?: {
+    // Include user object from Prisma relation
     id: number;
     name: string;
   };
-  customer?: { // Include customer object from Prisma relation
-    id: number;
-    name: string;
-    phone?: string;
-    email?: string;
-  };
+  customer?: Customer;
   sale_date: string;
   sale_type: SaleType;
   price_type: PriceType;
@@ -54,6 +57,13 @@ export interface Sale {
   received_amount: number;
   change_amount: number;
   notes?: string;
+  converted_to_sale_id?: number; // For quotations: which sale it was converted to
+  converted_at?: string; // For quotations: timestamp when converted to sale
+  converted_from_quotations?: Array<{ // For sales: original quotations if converted
+    id: number;
+    sale_number: string;
+    created_at: string;
+  }>;
   items: SaleItem[];
   payments?: SalePayment[]; // New: support for partial payments
   created_at?: string;
@@ -66,6 +76,7 @@ export interface SaleFormData {
   customer_phone?: string;
   customer_email?: string;
   branch_id: number;
+  quotation_id?: number; // For converting quotation to sale
   sale_type: SaleType;
   price_type: PriceType;
   discount_type: DiscountType;
@@ -128,6 +139,7 @@ export interface SaleListFilters {
   date_to?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+  source?: "pending" | "converted" | "quotation" | "direct"; // Unified filter: pending/converted for quotations, quotation/direct for sales
 }
 
 export interface SaleListResponse {

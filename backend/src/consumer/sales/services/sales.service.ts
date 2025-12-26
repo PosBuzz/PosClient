@@ -5,10 +5,19 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
+import {
+  generateCacheKey,
+  generateCachePatterns,
+} from '../../../constants/cache-keys';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
-import { EODReportDto, EODReportResponse, PaymentMethodBreakdown, ProductSalesStats, EODSummary } from '../dto/eod-report.dto';
+import {
+  EODReportDto,
+  EODReportResponse,
+  PaymentMethodBreakdown,
+  ProductSalesStats,
+  EODSummary,
+} from '../dto/eod-report.dto';
 import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
 
 @Injectable()
@@ -19,24 +28,55 @@ export class SalesService {
     private rewardsService: RewardsService,
   ) {}
 
-  async create(createSaleDto: CreateSaleDto, consumerId: number, userId: number) {
+  async create(
+    createSaleDto: CreateSaleDto,
+    consumerId: number,
+    userId: number,
+  ) {
+    // If quotation_id is provided, validate and mark quotation as converted
+    if (createSaleDto.quotation_id) {
+      const quotation = await this.prisma.sale.findFirst({
+        where: {
+          id: createSaleDto.quotation_id,
+          consumer_id: consumerId,
+          sale_type: SaleType.QUOTATION,
+        },
+      });
+
+      if (!quotation) {
+        throw new NotFoundException('Quotation not found');
+      }
+
+      if (quotation.converted_to_sale_id) {
+        throw new BadRequestException(
+          `Quotation has already been converted to sale #${quotation.converted_to_sale_id}`,
+        );
+      }
+    }
+
     // Validate CREDIT payments before processing
     if (createSaleDto.payments) {
-      const creditPayments = createSaleDto.payments.filter(p => p.payment_method === 'CREDIT');
-      
+      const creditPayments = createSaleDto.payments.filter(
+        (p) => p.payment_method === 'CREDIT',
+      );
+
       if (creditPayments.length > 0 && !createSaleDto.customer_id) {
-        throw new BadRequestException('CREDIT payments require a customer account');
+        throw new BadRequestException(
+          'CREDIT payments require a customer account',
+        );
       }
-      
+
       for (const creditPayment of creditPayments) {
         const validation = await this.rewardsService.validateCreditPayment(
           consumerId,
           createSaleDto.customer_id!,
-          Number(creditPayment.amount)
+          Number(creditPayment.amount),
         );
-        
+
         if (!validation.isValid) {
-          throw new BadRequestException(`Credit payment validation failed: ${validation.reason}`);
+          throw new BadRequestException(
+            `Credit payment validation failed: ${validation.reason}`,
+          );
         }
       }
     }
@@ -60,7 +100,8 @@ export class SalesService {
       }
     }
 
-    // Validate items and check stock
+    // Validate items and check stock (skip stock validation for quotations)
+    const isQuotation = createSaleDto.sale_type === SaleType.QUOTATION;
     const validationResults = await Promise.all(
       createSaleDto.items.map(async (item) => {
         const variant = await this.prisma.productVariant.findFirst({
@@ -81,7 +122,12 @@ export class SalesService {
           );
         }
 
-        // Check stock availability
+        // Skip stock validation for quotations
+        if (isQuotation) {
+          return { ...item, selectedBatch: null };
+        }
+
+        // Check stock availability for sales
         let availableStock = 0;
         let selectedBatch: any = null;
 
@@ -100,7 +146,7 @@ export class SalesService {
           selectedBatch = variant.inventory_items
             .filter((batch) => batch.quantity > 0)
             .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())[0];
-          
+
           if (!selectedBatch) {
             throw new BadRequestException(
               `No stock available for variant ${item.variant_id}`,
@@ -119,8 +165,11 @@ export class SalesService {
       }),
     );
 
-    // Generate sale number
-    const saleNumber = await this.generateSaleNumber(consumerId);
+    // Generate sale or quotation number based on sale_type
+    const saleNumber =
+      createSaleDto.sale_type === SaleType.QUOTATION
+        ? await this.generateQuotationNumber(consumerId)
+        : await this.generateSaleNumber(consumerId);
 
     // DEBUG: Log the incoming data to understand the calculation mismatch
     console.log('=== SALE CREATION DEBUG ===');
@@ -132,53 +181,56 @@ export class SalesService {
         unit_price: item.unit_price,
         line_total: item.line_total,
         tax_amount: item.tax_amount,
-        calculated_base: Number(item.line_total) - Number(item.tax_amount || 0)
+        calculated_base: Number(item.line_total) - Number(item.tax_amount || 0),
       });
     });
-    
+
     // Calculate totals using frontend-calculated values
     // The frontend has already calculated correct subtotal, tax, and totals considering INCLUSIVE/EXCLUSIVE tax
     // We should trust the frontend calculations instead of recalculating here
-    
+
     // Use the frontend's calculated subtotal directly (it's passed in the DTO if available)
     // If not available, calculate it properly by checking each item's tax method
     let subtotal = 0;
     let totalTax = 0;
-    
+
     // For now, use the simpler approach: trust frontend calculations
     // Subtotal = sum of (line_total - tax_amount) for all items
     subtotal = createSaleDto.items.reduce((sum, item) => {
       return sum + (Number(item.line_total) - Number(item.tax_amount || 0));
     }, 0);
-    
+
     totalTax = createSaleDto.items.reduce(
       (sum, item) => sum + (Number(item.tax_amount) || 0),
       0,
     );
-    
+
     const discountAmount = Number(createSaleDto.discount_amount) || 0;
     const shippingCost = Number(createSaleDto.shipping_cost) || 0;
-    
+
     // Total = subtotal - discount + tax + shipping (same as frontend)
     const totalAmount = subtotal - discountAmount + totalTax + shippingCost;
-    
+
     console.log('Backend calculated totals:', {
       subtotal,
       totalTax,
       discountAmount,
       shippingCost,
-      totalAmount
+      totalAmount,
     });
     console.log('=== END DEBUG ===');
     const receivedAmount = createSaleDto.received_amount || 0;
     // Calculate payment totals and determine payment status
     let totalPaymentAmount = 0;
     let paymentMethods: string[] = [];
-    
+
     if (createSaleDto.payments && createSaleDto.payments.length > 0) {
       // Using new partial payment system
-      totalPaymentAmount = createSaleDto.payments.reduce((sum, payment) => sum + payment.amount, 0);
-      paymentMethods = createSaleDto.payments.map(p => p.payment_method);
+      totalPaymentAmount = createSaleDto.payments.reduce(
+        (sum, payment) => sum + payment.amount,
+        0,
+      );
+      paymentMethods = createSaleDto.payments.map((p) => p.payment_method);
     } else {
       // No payments provided - set as due
       totalPaymentAmount = 0;
@@ -223,10 +275,21 @@ export class SalesService {
         },
       });
 
+      // If converting from quotation, mark the quotation as converted
+      if (createSaleDto.quotation_id) {
+        await tx.sale.update({
+          where: { id: createSaleDto.quotation_id },
+          data: { 
+            converted_to_sale_id: sale.id,
+            converted_at: new Date(),
+          },
+        });
+      }
+
       // Create sale payments if using new system
       if (createSaleDto.payments && createSaleDto.payments.length > 0) {
         await Promise.all(
-          createSaleDto.payments.map(async payment => {
+          createSaleDto.payments.map(async (payment) => {
             // Skip CREDIT payment processing inside transaction - will handle after
             return tx.salePayment.create({
               data: {
@@ -237,7 +300,7 @@ export class SalesService {
                 notes: payment.notes,
               },
             });
-          })
+          }),
         );
       }
 
@@ -249,7 +312,7 @@ export class SalesService {
             data: {
               sale_id: sale.id,
               variant_id: item.variant_id,
-              batch_id: item.selectedBatch.id,
+              batch_id: item.selectedBatch?.id || null,
               quantity: item.quantity,
               unit_price: item.unit_price,
               discount_amount: item.discount_amount || 0,
@@ -258,13 +321,15 @@ export class SalesService {
             },
           });
 
-          // Update inventory
-          await tx.inventoryBatch.update({
-            where: { id: item.selectedBatch.id },
-            data: {
-              quantity: { decrement: item.quantity },
-            },
-          });
+          // Only update inventory for actual sales, not quotations
+          if (!isQuotation && item.selectedBatch) {
+            await tx.inventoryBatch.update({
+              where: { id: item.selectedBatch.id },
+              data: {
+                quantity: { decrement: item.quantity },
+              },
+            });
+          }
         }),
       );
 
@@ -273,10 +338,10 @@ export class SalesService {
 
     // Process CREDIT payments after sale is committed
     if (createSaleDto.payments && createSaleDto.payments.length > 0) {
-      const creditPayments = createSaleDto.payments.filter(payment => 
-        payment.payment_method === 'CREDIT' && result.customer_id
+      const creditPayments = createSaleDto.payments.filter(
+        (payment) => payment.payment_method === 'CREDIT' && result.customer_id,
       );
-      
+
       for (const payment of creditPayments) {
         try {
           await this.rewardsService.processCreditPayment(
@@ -284,11 +349,11 @@ export class SalesService {
             result.customer_id!,
             Number(payment.amount),
             result.id,
-            payment.reference
+            payment.reference,
           );
         } catch (error) {
           console.error('Failed to process CREDIT payment:', error);
-          // Note: At this point the sale is already committed, 
+          // Note: At this point the sale is already committed,
           // so we log the error but don't fail the sale
           // You might want to implement compensation logic here
         }
@@ -298,18 +363,20 @@ export class SalesService {
     // Award rewards points if sale is completed and customer is provided
     // Exclude CREDIT payment amounts from rewards calculation
     if (
-      result.customer_id && 
-      result.payment_status === 'paid' && 
+      result.customer_id &&
+      result.payment_status === 'paid' &&
       result.sale_type === 'sale'
     ) {
       try {
         // Calculate amount eligible for rewards (exclude CREDIT payments)
-        const creditPaymentAmount = createSaleDto.payments
-          ?.filter(payment => payment.payment_method === 'CREDIT')
-          .reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
-        
-        const rewardEligibleAmount = Number(result.total_amount) - creditPaymentAmount;
-        
+        const creditPaymentAmount =
+          createSaleDto.payments
+            ?.filter((payment) => payment.payment_method === 'CREDIT')
+            .reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+
+        const rewardEligibleAmount =
+          Number(result.total_amount) - creditPaymentAmount;
+
         // Only award points if there's a positive eligible amount
         if (rewardEligibleAmount > 0) {
           await this.rewardsService.earnPoints(
@@ -325,11 +392,24 @@ export class SalesService {
       }
     }
 
-    // Invalidate related caches after successful sale creation
-    await this.invalidateSalesCaches(consumerId, createSaleDto.branch_id);
+    // Invalidate related caches after successful sale/quotation creation
+    if (isQuotation) {
+      await this.invalidateQuotationsCaches(consumerId);
+    } else {
+      await this.invalidateSalesCaches(consumerId, createSaleDto.branch_id);
+      
+      // If sale was created from a quotation, also invalidate quotation caches
+      if (createSaleDto.quotation_id) {
+        await this.invalidateQuotationsCaches(consumerId);
+      }
+    }
 
-    // Return created sale with full details
-    return this.findOne(result.id, consumerId);
+    // Return created sale/quotation with full details
+    if (isQuotation) {
+      return this.findOneQuotation(result.id, consumerId);
+    } else {
+      return this.findOne(result.id, consumerId);
+    }
   }
 
   async findAll(filters: SaleListFiltersDto, consumerId: number) {
@@ -344,6 +424,7 @@ export class SalesService {
       date_to,
       sort_by = 'created_at',
       sort_order = 'desc',
+      source,
     } = filters;
 
     // Generate cache key for this specific query
@@ -359,6 +440,7 @@ export class SalesService {
       date_to,
       sort_by,
       sort_order,
+      source,
     );
 
     // Try to get from cache first
@@ -371,6 +453,7 @@ export class SalesService {
 
     const where: any = {
       consumer_id: consumerId,
+      sale_type: SaleType.SALE, // Only return actual sales, not quotations
     };
 
     if (search) {
@@ -390,8 +473,8 @@ export class SalesService {
       // For new multi-payment system, search in SalePayment table
       where.payments = {
         some: {
-          payment_method: payment_method
-        }
+          payment_method: payment_method,
+        },
       };
     }
 
@@ -407,6 +490,19 @@ export class SalesService {
       if (date_to) {
         where.sale_date.lte = new Date(date_to);
       }
+    }
+
+    // Filter sales by source (quotation or direct)
+    if (source === 'quotation') {
+      // Show only sales that were converted from quotations
+      where.converted_from_quotations = {
+        some: {},
+      };
+    } else if (source === 'direct') {
+      // Show only sales that were NOT converted from quotations
+      where.converted_from_quotations = {
+        none: {},
+      };
     }
 
     const [sales, total] = await Promise.all([
@@ -469,12 +565,23 @@ export class SalesService {
     }
 
     const sale = await this.prisma.sale.findFirst({
-      where: { id, consumer_id: consumerId },
+      where: {
+        id,
+        consumer_id: consumerId,
+        sale_type: SaleType.SALE, // Only return actual sales, not quotations
+      },
       include: {
         customer: true,
         branch: true,
         user: { select: { id: true, name: true } },
         payments: true, // Include payment details
+        converted_from_quotations: { // Include original quotations if converted
+          select: {
+            id: true,
+            sale_number: true,
+            created_at: true,
+          },
+        },
         items: {
           include: {
             variant: {
@@ -510,9 +617,10 @@ export class SalesService {
     }
 
     const sale = await this.prisma.sale.findFirst({
-      where: { 
-        sale_number: saleNumber, 
-        consumer_id: consumerId 
+      where: {
+        sale_number: saleNumber,
+        consumer_id: consumerId,
+        sale_type: SaleType.SALE, // Only return actual sales, not quotations
       },
       include: {
         customer: true,
@@ -559,7 +667,7 @@ export class SalesService {
             ...item,
             available_for_return: Math.max(0, availableForReturn), // Ensure it's never negative
           };
-        })
+        }),
       ),
     };
 
@@ -575,10 +683,17 @@ export class SalesService {
     });
 
     // Calculate totals from all returns
-    const totalRefunded = returns.reduce((sum, ret) => sum + parseFloat(ret.total_refund.toString()), 0);
-    const totalExchanged = returns.reduce((sum, ret) => sum + parseFloat(ret.total_exchange.toString()), 0);
+    const totalRefunded = returns.reduce(
+      (sum, ret) => sum + parseFloat(ret.total_refund.toString()),
+      0,
+    );
+    const totalExchanged = returns.reduce(
+      (sum, ret) => sum + parseFloat(ret.total_exchange.toString()),
+      0,
+    );
     const totalAlreadyReturned = totalRefunded + totalExchanged;
-    const availableAmount = parseFloat(sale.total_amount.toString()) - totalAlreadyReturned;
+    const availableAmount =
+      parseFloat(sale.total_amount.toString()) - totalAlreadyReturned;
 
     const returnSummary = {
       total_returned: returns.length,
@@ -586,7 +701,7 @@ export class SalesService {
       total_exchanged: totalExchanged,
       total_already_returned: totalAlreadyReturned,
       available_amount: Math.max(0, availableAmount), // Ensure it's never negative
-      returns: returns.map(ret => ({
+      returns: returns.map((ret) => ({
         id: ret.id,
         return_number: ret.return_number,
         return_date: ret.return_date,
@@ -607,9 +722,17 @@ export class SalesService {
     return saleWithReturnSummary;
   }
 
-  async getProductsForSale(consumerId: number, branchId: number, search?: string) {
+  async getProductsForSale(
+    consumerId: number,
+    branchId: number,
+    search?: string,
+  ) {
     // Generate cache key for this specific query
-    const cacheKey = generateCacheKey.productsForSale(consumerId, branchId, search);
+    const cacheKey = generateCacheKey.productsForSale(
+      consumerId,
+      branchId,
+      search,
+    );
 
     // Try to get from cache first
     const cached = await this.cacheService.get(cacheKey);
@@ -672,9 +795,17 @@ export class SalesService {
     return result;
   }
 
-  async getProductByBarcode(consumerId: number, branchId: number, barcode: string) {
+  async getProductByBarcode(
+    consumerId: number,
+    branchId: number,
+    barcode: string,
+  ) {
     // Generate cache key for this specific query
-    const cacheKey = generateCacheKey.productByBarcode(consumerId, branchId, barcode);
+    const cacheKey = generateCacheKey.productByBarcode(
+      consumerId,
+      branchId,
+      barcode,
+    );
 
     // Try to get from cache first
     const cached = await this.cacheService.get(cacheKey);
@@ -732,8 +863,16 @@ export class SalesService {
 
   async getSalesStats(consumerId: number, branchId?: number) {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const weekStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - now.getDay(),
+    );
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const baseWhere: any = {
@@ -818,7 +957,8 @@ export class SalesService {
 
     // Build where clause
     const whereClause: any = {
-      consumer_id: consumerId,
+      sale_type: SaleType.SALE, // Only include actual sales in EOD, not quotations
+      sale_mer_id: consumerId,
       sale_date: {
         gte: startOfDay,
         lte: endOfDay,
@@ -858,27 +998,38 @@ export class SalesService {
 
     // Calculate summary statistics
     const totalSales = sales.length;
-    const totalAmount = sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-    const totalItemsSold = sales.reduce((sum, sale) => 
-      sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
+    const totalAmount = sales.reduce(
+      (sum, sale) => sum + Number(sale.total_amount),
+      0,
+    );
+    const totalItemsSold = sales.reduce(
+      (sum, sale) =>
+        sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+      0,
     );
 
     // Get unique products sold
     const uniqueProductIds = new Set();
-    sales.forEach(sale => {
-      sale.items.forEach(item => {
+    sales.forEach((sale) => {
+      sale.items.forEach((item) => {
         uniqueProductIds.add(item.variant_id);
       });
     });
 
     // Payment method breakdown
-    const paymentMethodMap = new Map<string, { total_amount: number; transaction_count: number }>();
-    
-    sales.forEach(sale => {
+    const paymentMethodMap = new Map<
+      string,
+      { total_amount: number; transaction_count: number }
+    >();
+
+    sales.forEach((sale) => {
       if (sale.payments && sale.payments.length > 0) {
-        sale.payments.forEach(payment => {
+        sale.payments.forEach((payment) => {
           const method = payment.payment_method;
-          const existing = paymentMethodMap.get(method) || { total_amount: 0, transaction_count: 0 };
+          const existing = paymentMethodMap.get(method) || {
+            total_amount: 0,
+            transaction_count: 0,
+          };
           paymentMethodMap.set(method, {
             total_amount: existing.total_amount + Number(payment.amount),
             transaction_count: existing.transaction_count + 1,
@@ -887,25 +1038,28 @@ export class SalesService {
       }
     });
 
-    const paymentMethodBreakdown: PaymentMethodBreakdown[] = Array.from(paymentMethodMap.entries()).map(
-      ([method, data]) => ({
-        payment_method: method,
-        total_amount: data.total_amount,
-        transaction_count: data.transaction_count,
-      })
-    );
+    const paymentMethodBreakdown: PaymentMethodBreakdown[] = Array.from(
+      paymentMethodMap.entries(),
+    ).map(([method, data]) => ({
+      payment_method: method,
+      total_amount: data.total_amount,
+      transaction_count: data.transaction_count,
+    }));
 
     // Product sales statistics
-    const productSalesMap = new Map<number, {
-      variant_name: string;
-      product_name: string;
-      sku?: string;
-      quantity_sold: number;
-      total_amount: number;
-    }>();
+    const productSalesMap = new Map<
+      number,
+      {
+        variant_name: string;
+        product_name: string;
+        sku?: string;
+        quantity_sold: number;
+        total_amount: number;
+      }
+    >();
 
-    sales.forEach(sale => {
-      sale.items.forEach(item => {
+    sales.forEach((sale) => {
+      sale.items.forEach((item) => {
         const existing = productSalesMap.get(item.variant_id) || {
           variant_name: item.variant.name,
           product_name: item.variant.product.name,
@@ -913,7 +1067,7 @@ export class SalesService {
           quantity_sold: 0,
           total_amount: 0,
         };
-        
+
         productSalesMap.set(item.variant_id, {
           ...existing,
           quantity_sold: existing.quantity_sold + item.quantity,
@@ -922,8 +1076,10 @@ export class SalesService {
       });
     });
 
-    const productSales: ProductSalesStats[] = Array.from(productSalesMap.entries()).map(
-      ([variantId, data]) => ({
+    const productSales: ProductSalesStats[] = Array.from(
+      productSalesMap.entries(),
+    )
+      .map(([variantId, data]) => ({
         variant_id: variantId,
         variant_name: data.variant_name,
         product_name: data.product_name,
@@ -931,16 +1087,19 @@ export class SalesService {
         quantity_sold: data.quantity_sold,
         total_amount: data.total_amount,
         average_unit_price: data.total_amount / data.quantity_sold,
-      })
-    ).sort((a, b) => b.total_amount - a.total_amount); // Sort by total amount descending
+      }))
+      .sort((a, b) => b.total_amount - a.total_amount); // Sort by total amount descending
 
     // Hourly sales breakdown
-    const hourlySalesMap = new Map<number, { sales_count: number; total_amount: number }>();
+    const hourlySalesMap = new Map<
+      number,
+      { sales_count: number; total_amount: number }
+    >();
     for (let hour = 0; hour < 24; hour++) {
       hourlySalesMap.set(hour, { sales_count: 0, total_amount: 0 });
     }
 
-    sales.forEach(sale => {
+    sales.forEach((sale) => {
       const hour = new Date(sale.sale_date).getHours();
       const existing = hourlySalesMap.get(hour)!;
       hourlySalesMap.set(hour, {
@@ -949,16 +1108,24 @@ export class SalesService {
       });
     });
 
-    const hourlySales = Array.from(hourlySalesMap.entries()).map(([hour, data]) => ({
-      hour,
-      sales_count: data.sales_count,
-      total_amount: data.total_amount,
-    }));
+    const hourlySales = Array.from(hourlySalesMap.entries()).map(
+      ([hour, data]) => ({
+        hour,
+        sales_count: data.sales_count,
+        total_amount: data.total_amount,
+      }),
+    );
 
     // Payment status breakdown
-    const paymentStatusMap = new Map<string, { count: number; total_amount: number }>();
-    sales.forEach(sale => {
-      const existing = paymentStatusMap.get(sale.payment_status) || { count: 0, total_amount: 0 };
+    const paymentStatusMap = new Map<
+      string,
+      { count: number; total_amount: number }
+    >();
+    sales.forEach((sale) => {
+      const existing = paymentStatusMap.get(sale.payment_status) || {
+        count: 0,
+        total_amount: 0,
+      };
       paymentStatusMap.set(sale.payment_status, {
         count: existing.count + 1,
         total_amount: existing.total_amount + Number(sale.total_amount),
@@ -970,11 +1137,13 @@ export class SalesService {
         status,
         count: data.count,
         total_amount: data.total_amount,
-      })
+      }),
     );
 
     // Calculate cash vs non-cash sales
-    const cashSales = paymentMethodBreakdown.find(p => p.payment_method === 'CASH')?.total_amount || 0;
+    const cashSales =
+      paymentMethodBreakdown.find((p) => p.payment_method === 'CASH')
+        ?.total_amount || 0;
     const nonCashSales = totalAmount - cashSales;
 
     const summary: EODSummary = {
@@ -1004,14 +1173,15 @@ export class SalesService {
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
-    
+
     const prefix = `SAL-${year}${month}${day}`;
-    
+
     // Find the latest sale number for today
     const latestSale = await this.prisma.sale.findFirst({
       where: {
         consumer_id: consumerId,
         sale_number: { startsWith: prefix },
+        sale_type: SaleType.SALE, // Only count actual sales, not quotations
       },
       orderBy: { sale_number: 'desc' },
     });
@@ -1019,6 +1189,33 @@ export class SalesService {
     let sequenceNumber = 1;
     if (latestSale) {
       const lastSequence = latestSale.sale_number.split('-').pop();
+      sequenceNumber = parseInt(lastSequence || '0') + 1;
+    }
+
+    return `${prefix}-${String(sequenceNumber).padStart(4, '0')}`;
+  }
+
+  private async generateQuotationNumber(consumerId: number): Promise<string> {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    const prefix = `QUO-${year}${month}${day}`;
+
+    // Find the latest quotation number for today
+    const latestQuotation = await this.prisma.sale.findFirst({
+      where: {
+        consumer_id: consumerId,
+        sale_number: { startsWith: prefix },
+        sale_type: SaleType.QUOTATION,
+      },
+      orderBy: { sale_number: 'desc' },
+    });
+
+    let sequenceNumber = 1;
+    if (latestQuotation) {
+      const lastSequence = latestQuotation.sale_number.split('-').pop();
       sequenceNumber = parseInt(lastSequence || '0') + 1;
     }
 
@@ -1051,7 +1248,323 @@ export class SalesService {
         await this.cacheService.delPattern(pattern);
       }
     } catch (error) {
-      this.cacheService['logger'].error(`Failed to invalidate sales caches:`, error);
+      this.cacheService['logger'].error(
+        `Failed to invalidate sales caches:`,
+        error,
+      );
     }
+  }
+
+  /**
+   * Invalidate quotation-related caches after operations that modify data
+   */
+  private async invalidateQuotationsCaches(consumerId: number) {
+    try {
+      // Invalidate all quotation-related caches for this consumer
+      const pattern = generateCachePatterns.allQuotations(consumerId);
+      await this.cacheService.delPattern(pattern);
+    } catch (error) {
+      this.cacheService['logger'].error(
+        `Failed to invalidate quotation caches:`,
+        error,
+      );
+    }
+  }
+
+  // ========== QUOTATION METHODS ==========
+
+  async findAllQuotations(filters: SaleListFiltersDto, consumerId: number) {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      branch_id,
+      date_from,
+      date_to,
+      sort_by = 'created_at',
+      sort_order = 'desc',
+      source,
+    } = filters;
+
+    // Generate cache key for quotations query
+    const cacheKey = generateCacheKey.quotationsList(
+      consumerId,
+      page,
+      limit,
+      search,
+      branch_id,
+      date_from,
+      date_to,
+      sort_by,
+      sort_order,
+      source,
+    );
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+          consumer_id: consumerId,
+          sale_type: SaleType.QUOTATION, // Only quotations
+        };
+
+        if (search) {
+          where.OR = [
+            { sale_number: { contains: search, mode: 'insensitive' } },
+            { customer_name: { contains: search, mode: 'insensitive' } },
+            { customer_phone: { contains: search, mode: 'insensitive' } },
+            { customer_email: { contains: search, mode: 'insensitive' } },
+          ];
+        }
+
+        if (branch_id) {
+          where.branch_id = branch_id;
+        }
+
+        if (date_from || date_to) {
+          where.sale_date = {};
+          if (date_from) {
+            where.sale_date.gte = new Date(date_from);
+          }
+          if (date_to) {
+            where.sale_date.lte = new Date(date_to);
+          }
+        }
+
+        // Filter by conversion status using unified 'source' field
+        if (source === 'converted') {
+          where.converted_to_sale_id = { not: null };
+        } else if (source === 'pending') {
+          where.converted_to_sale_id = null;
+        }
+
+        const [quotations, total] = await Promise.all([
+          this.prisma.sale.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { [sort_by]: sort_order },
+            include: {
+              customer: true,
+              branch: true,
+              user: { select: { id: true, name: true } },
+              items: {
+                include: {
+                  variant: {
+                    include: {
+                      product: true,
+                      sale_unit: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          this.prisma.sale.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        // Calculate summary stats
+        const summary = await this.calculateSummaryStats(where);
+
+        return {
+          data: quotations,
+          meta: {
+            total,
+            page,
+            limit,
+            total_pages: totalPages,
+          },
+          summary,
+        };
+      },
+      120,
+    );
+  }
+
+  async findOneQuotation(id: number, consumerId: number) {
+    // Generate cache key for this specific quotation
+    const cacheKey = generateCacheKey.quotationDetail(id, consumerId);
+
+    const quotation = await this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        return this.prisma.sale.findFirst({
+          where: {
+            id,
+            consumer_id: consumerId,
+            sale_type: SaleType.QUOTATION,
+          },
+          include: {
+            customer: true,
+            branch: true,
+            user: { select: { id: true, name: true } },
+            items: {
+              include: {
+                variant: {
+                  include: {
+                    product: true,
+                    sale_unit: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+      },
+      300,
+    );
+
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    return quotation;
+  }
+
+  async convertQuotationToSale(
+    quotationId: number,
+    consumerId: number,
+    userId: number,
+  ) {
+    // Get the quotation
+    const quotation: any = await this.findOneQuotation(quotationId, consumerId);
+
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    // Check if quotation was already converted
+    if (quotation.converted_to_sale_id) {
+      throw new BadRequestException(
+        `Quotation has already been converted to sale #${quotation.converted_to_sale_id}`,
+      );
+    }
+
+    // Generate new sale number
+    const saleNumber = await this.generateSaleNumber(consumerId);
+
+    // Validate stock availability for all items
+    const validationResults = await Promise.all(
+      quotation.items.map(async (item: any) => {
+        const variant = await this.prisma.productVariant.findFirst({
+          where: {
+            id: item.variant_id,
+            product: { consumer_id: consumerId },
+          },
+          include: {
+            inventory_items: {
+              where: { branch_id: quotation.branch_id },
+            },
+          },
+        });
+
+        if (!variant) {
+          throw new BadRequestException(
+            `Product variant ${item.variant_id} not found`,
+          );
+        }
+
+        // Use FIFO for batch selection
+        const selectedBatch = variant.inventory_items
+          .filter((batch) => batch.quantity > 0)
+          .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())[0];
+
+        if (!selectedBatch) {
+          throw new BadRequestException(
+            `No stock available for variant ${item.variant_id}`,
+          );
+        }
+
+        const availableStock = selectedBatch.quantity;
+
+        if (availableStock < item.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for variant ${item.variant_id}. Available: ${availableStock}, Requested: ${item.quantity}`,
+          );
+        }
+
+        return { ...item, selectedBatch };
+      }),
+    );
+
+    // Create the sale in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create sale
+      const sale = await tx.sale.create({
+        data: {
+          sale_number: saleNumber,
+          consumer_id: consumerId,
+          customer_id: quotation.customer_id,
+          customer_name: quotation.customer_name,
+          customer_phone: quotation.customer_phone,
+          customer_email: quotation.customer_email,
+          branch_id: quotation.branch_id,
+          user_id: userId,
+          sale_type: SaleType.SALE, // Convert to actual sale
+          price_type: quotation.price_type,
+          subtotal: quotation.subtotal,
+          discount_type: quotation.discount_type,
+          discount_amount: quotation.discount_amount,
+          shipping_cost: quotation.shipping_cost,
+          tax_amount: quotation.tax_amount,
+          total_amount: quotation.total_amount,
+          payment_status: PaymentStatus.DUE, // Default to DUE, user will process payment
+          received_amount: 0,
+          change_amount: 0,
+          notes: quotation.notes,
+        },
+      });
+
+      // Create sale items and update inventory
+      await Promise.all(
+        validationResults.map(async (item) => {
+          // Create sale item
+          await tx.saleItem.create({
+            data: {
+              sale_id: sale.id,
+              variant_id: item.variant_id,
+              batch_id: item.selectedBatch.id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              discount_amount: item.discount_amount || 0,
+              tax_amount: item.tax_amount || 0,
+              line_total: item.line_total,
+            },
+          });
+
+          // Update batch quantity
+          await tx.inventoryBatch.update({
+            where: { id: item.selectedBatch.id },
+            data: {
+              quantity: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }),
+      );
+
+      // Mark quotation as converted
+      await tx.sale.update({
+        where: { id: quotationId },
+        data: {
+          converted_to_sale_id: sale.id,
+        },
+      });
+
+      return sale;
+    });
+
+    // Invalidate both sales and quotation caches
+    await Promise.all([
+      this.invalidateSalesCaches(consumerId, quotation.branch_id),
+      this.invalidateQuotationsCaches(consumerId),
+    ]);
+
+    return result;
   }
 }

@@ -15,7 +15,7 @@ import {
 	Typography,
 } from "antd";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
@@ -43,9 +43,13 @@ const { Text } = Typography;
 const NewSale = () => {
 	const [form] = Form.useForm();
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 	const queryClient = useQueryClient();
 	const { user } = useAuthStore();
 	const { messageApi } = useMessageStore();
+
+	// Get quotation_id from URL if converting from quotation
+	const quotationId = searchParams.get("quotation_id");
 
 	// Watch form values for real-time calculations
 	const discountAmount = Form.useWatch("discount_amount", form) || 0;
@@ -136,6 +140,86 @@ const NewSale = () => {
 	useEffect(() => {
 		setPageTitle("New Sale");
 	}, []);
+
+	// Load quotation data if converting from quotation
+	const quotationQuery = useQuery({
+		queryKey: [queryKeys.quotation, parseInt(quotationId || "0")],
+		queryFn: () => salesApi.getQuotation(parseInt(quotationId!)),
+		enabled: !!quotationId,
+		staleTime: 0, // Don't cache, always fetch fresh
+	});
+
+	// Check if quotation is already converted and redirect if so
+	useEffect(() => {
+		if (quotationQuery.data && quotationQuery.data.converted_to_sale_id) {
+			messageApi?.error("This quotation has already been converted to a sale");
+			navigate(`/quotations/view/${quotationQuery.data.id}`);
+		}
+	}, [quotationQuery.data, navigate, messageApi]);
+
+	// Pre-fill form from quotation data
+	useEffect(() => {
+		if (quotationQuery.data && productsForSaleQuery.data) {
+			const quotation = quotationQuery.data;
+
+			// Set branch
+			setSelectedBranch(quotation.branch_id);
+
+			// Set customer
+			if (quotation.customer_id) {
+				const customer = customers.find((c) => c.id === quotation.customer_id);
+				if (customer) {
+					setSelectedCustomer(customer);
+				}
+			}
+
+			// Set price type
+			setPriceType(quotation.price_type as PriceType);
+
+			// Set discount type
+			setDiscountType(quotation.discount_type as DiscountType);
+
+			// Calculate discount amount from quotation
+			const discountValue =
+				quotation.discount_type === "percentage"
+					? (Number(quotation.discount_amount) / Number(quotation.subtotal)) * 100
+					: Number(quotation.discount_amount);
+
+			// Set form values
+			form.setFieldsValue({
+				branch_id: quotation.branch_id,
+				customer_id: quotation.customer_id,
+				customer_name: quotation.customer_name,
+				customer_phone: quotation.customer_phone,
+				customer_email: quotation.customer_email,
+				discount_amount: discountValue,
+				shipping_cost: quotation.shipping_cost,
+				notes: quotation.notes,
+			});
+
+			// Pre-fill items from quotation
+			const items: SaleItem[] = quotation.items?.map((item: any) => ({
+				variant_id: item.variant_id,
+				variant_name: item.variant?.name || "",
+				variant_sku: item.variant?.sku || "",
+				quantity: item.quantity,
+				unit_price: Number(item.unit_price),
+				discount_amount: Number(item.discount_amount) || 0,
+				tax_amount: Number(item.tax_amount) || 0,
+				line_total: Number(item.line_total),
+				product_name: item.variant?.product?.name || "",
+				regular_price: Number(item.variant?.regular_price) || 0,
+				wholesale_price: item.variant?.wholesale_price
+					? Number(item.variant.wholesale_price)
+					: undefined,
+				image: item.variant?.image,
+				unit_name: item.variant?.sale_unit?.name || "",
+				tax_percentage: 0, // Will be filled from variant data
+			})) || [];
+
+			setSelectedItems(items);
+		}
+	}, [quotationQuery.data, productsForSaleQuery.data, customers, form, messageApi]);
 
 	const handleBranchChange = (branchId: number) => {
 		setSelectedBranch(branchId);
@@ -470,6 +554,7 @@ const NewSale = () => {
 			payment_status: paymentStatus,
 			received_amount: totalPaymentAmount,
 			payments: salePayments,
+			quotation_id: quotationId ? parseInt(quotationId) : undefined,
 		};
 
 		try {
