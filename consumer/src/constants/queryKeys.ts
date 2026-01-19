@@ -35,6 +35,8 @@ export const queryKeys = {
   eod: "eod-report",
   quotations: "quotations",
   quotation: "quotation",
+  partialPayments: "partial-payments",
+  saleForPayment: "sale-for-payment",
 };
 
 // Stale time configurations for different data types
@@ -82,6 +84,8 @@ export const queryStaleTimeMap = {
   [queryKeys.rules]: staleTimeConfig.dynamic,
   [queryKeys.quotations]: staleTimeConfig.dynamic,
   [queryKeys.quotation]: staleTimeConfig.dynamic,
+  [queryKeys.partialPayments]: staleTimeConfig.dynamic,
+  [queryKeys.saleForPayment]: staleTimeConfig.dynamic,
   
   // Real-time data
   [queryKeys.inventorySummary]: staleTimeConfig.realTime,
