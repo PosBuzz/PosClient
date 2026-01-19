@@ -59,6 +59,8 @@ const RewardPoints = lazy(() => import("./pages/customer-rewards"));
 const Quotations = lazy(() => import("./pages/quotations"));
 const AddQuotation = lazy(() => import("./pages/add-quotation"));
 const ViewQuotation = lazy(() => import("./pages/view-quotation"));
+const PartialPayments = lazy(() => import("./pages/partial-payments"));
+const MakePayment = lazy(() => import("./pages/partial-payments/make-payment"));
 
 export const routes = [
   {
@@ -408,6 +410,23 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <ViewReturn />
+          </RequirePermission>
+        ),
+      },
+      // Partial Payments Routes
+      {
+        path: "partial-payments",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <PartialPayments />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "partial-payments/:id/pay",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <MakePayment />
           </RequirePermission>
         ),
       },
