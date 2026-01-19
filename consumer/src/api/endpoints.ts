@@ -147,6 +147,12 @@ export const endpoints = {
   expirePoints: "/consumer/rewards/expire-points",
   getRedemptionValue: (points: number) => `/consumer/rewards/redemption-value/${points}`,
 
+  // Payments Management
+  getPartiallyPaidSales: "/consumer/payments/partial-sales",
+  getSaleForPayment: (id: number) => `/consumer/payments/sales/${id}`,
+  makePayment: "/consumer/payments/make-payment",
+  getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
+
   // Cache Management
   invalidateAllCaches: "/consumer/cache/invalidate-all",
 };

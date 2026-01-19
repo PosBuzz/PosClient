@@ -1262,7 +1262,7 @@ const NewSale = () => {
 											style={{
 												flex: 1,
 												minHeight: 0,
-												maxHeight: "150px",
+												maxHeight: "250px",
 												overflowY: "auto",
 												overflowX: "hidden",
 											}}
