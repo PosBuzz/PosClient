@@ -7,6 +7,8 @@ import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import ImageInput from "../../components/ImageInput";
+import { getImageUrlForCloudinaryImage } from "../../utils/upload";
 
 function ProfilePage() {
   const [form] = Form.useForm();
@@ -23,11 +25,19 @@ function ProfilePage() {
     },
     onError: (err) => {
       messageApi?.error(
-        (err as any)?.response?.data?.message || "An error occurred"
+        (err as any)?.response?.data?.message || "An error occurred",
       );
     },
   });
 
+  const onFinish = async (formValues: any) => {
+    if (formValues.logo) {
+      const url = getImageUrlForCloudinaryImage(formValues, "logo");
+      formValues.logo = url;
+    }
+
+    updateProfile.mutate(formValues);
+  };
   return (
     <>
       {setPageTitle("Profile")}
@@ -40,12 +50,19 @@ function ProfilePage() {
         <Form
           form={form}
           layout="vertical"
-          onFinish={(values) => updateProfile.mutate(values)}
+          onFinish={onFinish}
           initialValues={{
-            company_name: (userData as any)?.company_name,
-            secondary_email: (userData as any)?.secondary_email,
-            phone: (userData as any)?.phone,
-            address: (userData as any)?.address,
+            company_name: userData?.company_name,
+            secondary_email: userData?.secondary_email,
+            phone: userData?.phone,
+            address: userData?.address,
+            logo: [
+              {
+                uid: "-1",
+                status: "done",
+                thumbUrl: userData?.logo,
+              },
+            ],
           }}
         >
           <Form.Item label="Company Name" name="company_name">
@@ -67,6 +84,8 @@ function ProfilePage() {
           <Form.Item label="Address" name="address">
             <Input.TextArea rows={3} />
           </Form.Item>
+
+          <ImageInput name="logo" label="logo" />
 
           <Form.Item>
             <Button

@@ -13,6 +13,7 @@ type User = {
   company_name: string;
   company_email: string;
   secondary_email: string;
+  logo: string;
   phone: string;
   address: string;
   role: string;
