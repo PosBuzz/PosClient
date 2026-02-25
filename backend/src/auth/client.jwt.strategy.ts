@@ -76,6 +76,7 @@ export class JwtClientStrategy extends PassportStrategy(
       secondary_email: user.consumer.secondary_email,
       phone: user.consumer.phone,
       address: user.consumer.address,
+      logo: user.consumer.logo,
       consumer_subdomain: consumer_subdomain || user.consumer.subdomain, // Use from JWT or fallback to DB
       branches, // attach branch access to request.user
     };
