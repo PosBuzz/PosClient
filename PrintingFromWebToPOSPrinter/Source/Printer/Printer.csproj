@@ -67,6 +67,15 @@
     <Compile Include="ConfigurationForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="LogViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PasswordDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChangePasswordDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="StartupManager.cs" />
     <Compile Include="TextColumn.cs" />
   </ItemGroup>

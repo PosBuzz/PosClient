@@ -11,6 +11,7 @@ import {
   Res,
   BadRequestException,
   NotFoundException,
+  Patch,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { SalesService } from '../services/sales.service';
@@ -19,6 +20,7 @@ import { QuotationPdfService } from '../services/quotation-pdf.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { EODReportDto } from '../dto/eod-report.dto';
+import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
@@ -201,5 +203,39 @@ export class SalesController {
     @Req() req: Request,
   ) {
     return this.salesService.findOne(id, req.user.consumer_id!);
+  }
+
+  // ========== ONLINE ORDERS ENDPOINTS ==========
+
+  @Get('online-orders/list')
+  async findAllOnlineOrders(
+    @Query() filters: any,
+    @Req() req: Request,
+  ) {
+    return this.salesService.findAllOnlineOrders(filters, req.user.consumer_id!);
+  }
+
+  @Get('online-orders/stats')
+  async getOnlineOrderStats(
+    @Query('branch_id') branchId: number,
+    @Req() req: Request,
+  ) {
+    return this.salesService.getOnlineOrderStats(
+      req.user.consumer_id!,
+      branchId ? parseInt(branchId.toString()) : undefined,
+    );
+  }
+
+  @Patch('online-orders/:id/status')
+  async updateOnlineOrderStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateStatusDto: UpdateOnlineOrderStatusDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.updateOnlineOrderStatus(
+      id,
+      updateStatusDto.status,
+      req.user.consumer_id!,
+    );
   }
 }

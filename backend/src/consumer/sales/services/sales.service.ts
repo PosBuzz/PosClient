@@ -274,6 +274,10 @@ export class SalesService {
           received_amount: totalPaymentAmount,
           change_amount: changeAmount,
           notes: createSaleDto.notes,
+          is_online_order: createSaleDto.is_online_order || false,
+          online_order_status: createSaleDto.is_online_order
+            ? createSaleDto.online_order_status || 'PENDING'
+            : null,
         },
       });
 
@@ -281,7 +285,7 @@ export class SalesService {
       if (createSaleDto.quotation_id) {
         await tx.sale.update({
           where: { id: createSaleDto.quotation_id },
-          data: { 
+          data: {
             converted_to_sale_id: sale.id,
             converted_at: new Date(),
           },
@@ -399,7 +403,7 @@ export class SalesService {
       await this.invalidateQuotationsCaches(consumerId);
     } else {
       await this.invalidateSalesCaches(consumerId, createSaleDto.branch_id);
-      
+
       // If sale was created from a quotation, also invalidate quotation caches
       if (createSaleDto.quotation_id) {
         await this.invalidateQuotationsCaches(consumerId);
@@ -578,7 +582,8 @@ export class SalesService {
         branch: true,
         user: { select: { id: true, name: true } },
         payments: true, // Include payment details
-        converted_from_quotations: { // Include original quotations if converted
+        converted_from_quotations: {
+          // Include original quotations if converted
           select: {
             id: true,
             sale_number: true,
@@ -1429,7 +1434,10 @@ export class SalesService {
     return quotation;
   }
 
-  async generateQuotationPdf(quotationId: number, consumerId: number): Promise<Buffer> {
+  async generateQuotationPdf(
+    quotationId: number,
+    consumerId: number,
+  ): Promise<Buffer> {
     const quotation = await this.findOneQuotation(quotationId, consumerId);
     return this.quotationPdfService.generateQuotationPdf(quotation);
   }
@@ -1575,5 +1583,220 @@ export class SalesService {
     ]);
 
     return result;
+  }
+
+  // ========== ONLINE ORDER METHODS ==========
+
+  async findAllOnlineOrders(filters: any, consumerId: number) {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      branch_id,
+      status,
+      date_from,
+      date_to,
+      sort_by = 'created_at',
+      sort_order = 'desc',
+    } = filters;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      consumer_id: consumerId,
+      sale_type: SaleType.SALE,
+      is_online_order: true,
+    };
+
+    if (search) {
+      where.OR = [
+        { sale_number: { contains: search, mode: 'insensitive' } },
+        { customer_name: { contains: search, mode: 'insensitive' } },
+        { customer_phone: { contains: search, mode: 'insensitive' } },
+        { customer_email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (branch_id) {
+      where.branch_id = branch_id;
+    }
+
+    if (status) {
+      where.online_order_status = status;
+    }
+
+    if (date_from || date_to) {
+      where.sale_date = {};
+      if (date_from) {
+        where.sale_date.gte = new Date(date_from);
+      }
+      if (date_to) {
+        where.sale_date.lte = new Date(date_to);
+      }
+    }
+
+    const [orders, total] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { [sort_by]: sort_order },
+        include: {
+          customer: true,
+          branch: true,
+          user: { select: { id: true, name: true } },
+          payments: true,
+          items: {
+            include: {
+              variant: {
+                include: {
+                  product: true,
+                  sale_unit: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.sale.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    // Calculate summary stats by status
+    const statusCounts = await this.prisma.sale.groupBy({
+      by: ['online_order_status'],
+      where: {
+        consumer_id: consumerId,
+        is_online_order: true,
+      },
+      _count: true,
+      _sum: { total_amount: true },
+    });
+
+    const summary = statusCounts.reduce(
+      (acc, item) => {
+        const status = item.online_order_status || 'PENDING';
+        acc[status.toLowerCase()] = {
+          count: item._count,
+          total: Number(item._sum.total_amount) || 0,
+        };
+        return acc;
+      },
+      {} as Record<string, { count: number; total: number }>,
+    );
+
+    return {
+      data: orders,
+      meta: {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        total_pages: totalPages,
+      },
+      summary,
+    };
+  }
+
+  async updateOnlineOrderStatus(
+    id: number,
+    status: string,
+    consumerId: number,
+  ) {
+    // Verify the sale exists and is an online order
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+        is_online_order: true,
+      },
+    });
+
+    if (!sale) {
+      throw new Error('Online order not found');
+    }
+
+    // Update the order status
+    const updatedSale = await this.prisma.sale.update({
+      where: { id },
+      data: { online_order_status: status },
+      include: {
+        customer: true,
+        branch: true,
+        user: { select: { id: true, name: true } },
+        payments: true,
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+                sale_unit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Invalidate caches
+    await this.invalidateSalesCaches(consumerId, sale.branch_id);
+
+    return updatedSale;
+  }
+
+  async getOnlineOrderStats(consumerId: number, branchId?: number) {
+    const baseWhere: any = {
+      consumer_id: consumerId,
+      is_online_order: true,
+      sale_type: 'sale',
+    };
+
+    if (branchId) {
+      baseWhere.branch_id = branchId;
+    }
+
+    // Get counts by status
+    const statusCounts = await this.prisma.sale.groupBy({
+      by: ['online_order_status'],
+      where: baseWhere,
+      _count: true,
+      _sum: { total_amount: true },
+    });
+
+    const stats = statusCounts.reduce(
+      (acc, item) => {
+        const status = item.online_order_status || 'PENDING';
+        acc[status.toLowerCase()] = {
+          count: item._count,
+          total: Number(item._sum.total_amount) || 0,
+        };
+        return acc;
+      },
+      {} as Record<string, { count: number; total: number }>,
+    );
+
+    // Get today's online orders
+    const now = new Date();
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    const todayStats = await this.prisma.sale.aggregate({
+      where: { ...baseWhere, sale_date: { gte: todayStart } },
+      _count: true,
+      _sum: { total_amount: true },
+    });
+
+    return {
+      by_status: stats,
+      today: {
+        count: todayStats._count || 0,
+        total: Number(todayStats._sum.total_amount) || 0,
+      },
+    };
   }
 }

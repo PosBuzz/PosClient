@@ -125,22 +125,55 @@ namespace Printer
                 }
             }
 
-            // Store information
-            if (!string.IsNullOrEmpty(config.StoreName))
+            // Store information - Show "Shop Name — Branch Name" format
+            string headerText = "";
+            
+            // Build header with Shop Name and Branch Name
+            if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Name))
             {
-                y += this.DrawCenteredText(g, y, config.StoreName, 10f, FontStyle.Bold);
+                // If we have branch info from receipt data, use Shop Name — Branch Name format
+                if (!string.IsNullOrEmpty(config.StoreName))
+                {
+                    headerText = config.StoreName + " — " + receiptData.Branch.Name;
+                }
+                else
+                {
+                    headerText = receiptData.Branch.Name;
+                }
+            }
+            else if (!string.IsNullOrEmpty(config.StoreName))
+            {
+                // Fallback to just store name if no branch info
+                headerText = config.StoreName;
+            }
+            
+            if (!string.IsNullOrEmpty(headerText))
+            {
+                y += this.DrawCenteredText(g, y, headerText, 12f, FontStyle.Bold);
                 y += 2;
             }
 
-            if (!string.IsNullOrEmpty(config.Address))
+            // Branch address if available
+            if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Address))
             {
-                y += this.DrawCenteredText(g, y, config.Address, 7f);
+                y += this.DrawCenteredText(g, y, receiptData.Branch.Address, 9f);
+                y += 1;
+            }
+            else if (!string.IsNullOrEmpty(config.Address))
+            {
+                y += this.DrawCenteredText(g, y, config.Address, 9f);
                 y += 1;
             }
 
-            if (!string.IsNullOrEmpty(config.Phone))
+            // Branch phone if available
+            if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Phone))
             {
-                y += this.DrawCenteredText(g, y, config.Phone, 7f);
+                y += this.DrawCenteredText(g, y, receiptData.Branch.Phone, 9f);
+                y += 3;
+            }
+            else if (!string.IsNullOrEmpty(config.Phone))
+            {
+                y += this.DrawCenteredText(g, y, config.Phone, 9f);
                 y += 3;
             }
 
