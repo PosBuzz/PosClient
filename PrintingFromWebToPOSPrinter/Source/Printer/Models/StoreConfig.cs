@@ -13,6 +13,7 @@ namespace Printer.Models
         public string BarcodePrinterName { get; set; }
         public string Currency { get; set; }
         public int Port { get; set; }
+        public string Password { get; set; }
 
         public StoreConfig()
         {
@@ -25,6 +26,7 @@ namespace Printer.Models
             BarcodePrinterName = "";
             Currency = "$";
             Port = 8080;
+            Password = "123456"; // Default password
         }
     }
 }

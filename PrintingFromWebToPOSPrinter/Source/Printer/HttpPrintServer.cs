@@ -15,9 +15,56 @@ namespace Printer
         private HttpListener listener;
         private bool isRunning;
         private Thread listenerThread;
+        
+        // Static log storage
+        private static readonly object logLock = new object();
+        private static StringBuilder logBuffer = new StringBuilder();
+        private static readonly int MAX_LOG_SIZE = 100000; // ~100KB of log data
 
         public HttpPrintServer()
         {
+        }
+        
+        // Public methods to access logs
+        public static string GetLogs()
+        {
+            lock (logLock)
+            {
+                return logBuffer.ToString();
+            }
+        }
+        
+        public static void ClearLogs()
+        {
+            lock (logLock)
+            {
+                logBuffer.Clear();
+                LogMessage("=== LOGS CLEARED ===");
+            }
+        }
+        
+        private static void LogMessage(string message)
+        {
+            lock (logLock)
+            {
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                string logEntry = $"[{timestamp}] {message}\r\n";
+                
+                // Write to console
+                Console.Write(logEntry);
+                
+                // Append to buffer
+                logBuffer.Append(logEntry);
+                
+                // Trim if too large (keep last ~100KB)
+                if (logBuffer.Length > MAX_LOG_SIZE)
+                {
+                    string currentLogs = logBuffer.ToString();
+                    int keepFromIndex = currentLogs.Length - (MAX_LOG_SIZE / 2);
+                    logBuffer.Clear();
+                    logBuffer.Append(currentLogs.Substring(keepFromIndex));
+                }
+            }
         }
 
         public void Start(int port = 8080)
@@ -33,26 +80,26 @@ namespace Printer
                 listener.Start();
                 isRunning = true;
                 
-                Console.WriteLine("HTTP Print Server started on port {0}", port);
-                Console.WriteLine("Endpoints:");
-                Console.WriteLine("  POST http://localhost:{0}/print - Print receipt", port);
-                Console.WriteLine("  GET  http://localhost:{0}/status - Server status", port);
-                Console.WriteLine("  GET  http://localhost:{0}/config - Get configuration", port);
-                Console.WriteLine("  POST http://localhost:{0}/config - Update configuration", port);
-                Console.WriteLine("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port);
-                Console.WriteLine("  POST http://localhost:{0}/print-barcode-label - Print barcode label", port);
-                Console.WriteLine("  GET  http://localhost:{0}/test-barcode-label - Test barcode print", port);
-                Console.WriteLine("  GET  http://localhost:{0}/test-receipt - Test receipt print", port);
-                Console.WriteLine();
-                Console.WriteLine("Press 'q' to quit the server...");
+                LogMessage(string.Format("HTTP Print Server started on port {0}", port));
+                LogMessage("Endpoints:");
+                LogMessage(string.Format("  POST http://localhost:{0}/print - Print receipt", port));
+                LogMessage(string.Format("  GET  http://localhost:{0}/status - Server status", port));
+                LogMessage(string.Format("  GET  http://localhost:{0}/config - Get configuration", port));
+                LogMessage(string.Format("  POST http://localhost:{0}/config - Update configuration", port));
+                LogMessage(string.Format("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port));
+                LogMessage(string.Format("  POST http://localhost:{0}/print-barcode-label - Print barcode label", port));
+                LogMessage(string.Format("  GET  http://localhost:{0}/test-barcode-label - Test barcode print", port));
+                LogMessage(string.Format("  GET  http://localhost:{0}/test-receipt - Test receipt print", port));
+                LogMessage("");
+                LogMessage("Server is ready. Use right-click tray icon → View Logs to see activity.");
 
                 listenerThread = new Thread(HandleRequests);
                 listenerThread.Start();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to start HTTP server: " + ex.Message);
-                Console.WriteLine("Make sure you run as Administrator or the port is not in use.");
+                LogMessage("Failed to start HTTP server: " + ex.Message);
+                LogMessage("Make sure you run as Administrator or the port is not in use.");
             }
         }
 
@@ -63,7 +110,7 @@ namespace Printer
             isRunning = false;
             listener.Stop();
             listenerThread.Join(5000);
-            Console.WriteLine("HTTP Print Server stopped.");
+            LogMessage("HTTP Print Server stopped.");
         }
 
         private void HandleRequests()
@@ -79,7 +126,7 @@ namespace Printer
                 {
                     if (isRunning)
                     {
-                        Console.WriteLine("Error handling request: " + ex.Message);
+                        LogMessage("Error handling request: " + ex.Message);
                     }
                 }
             }
@@ -93,14 +140,7 @@ namespace Printer
 
             try
             {
-                Console.WriteLine();
-                Console.WriteLine("=== INCOMING REQUEST ===");
-                Console.WriteLine("Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                Console.WriteLine("Method: " + request.HttpMethod);
-                Console.WriteLine("URL: " + request.Url);
-                Console.WriteLine("Content-Type: " + request.ContentType);
-                Console.WriteLine("Content-Length: " + request.ContentLength64);
-                Console.WriteLine("User-Agent: " + request.UserAgent);
+                LogMessage(string.Format("--> {0} {1}", request.HttpMethod, request.Url.AbsolutePath));
                 
                 string responseText = "";
                 int statusCode = 200;
@@ -161,14 +201,11 @@ namespace Printer
                 response.OutputStream.Write(buffer, 0, buffer.Length);
                 response.OutputStream.Close();
 
-                Console.WriteLine("=== RESPONSE SENT ===");
-                Console.WriteLine("Status Code: " + statusCode);
-                Console.WriteLine("Response Length: " + buffer.Length + " bytes");
-                Console.WriteLine("Response: " + responseText.Substring(0, Math.Min(200, responseText.Length)) + "...");
-                Console.WriteLine("========================");
+                LogMessage(string.Format("<-- {0} {1} ({2} bytes)", statusCode, request.Url.AbsolutePath, buffer.Length));
             }
             catch (Exception ex)
             {
+                LogMessage("ERROR processing request: " + ex.Message);
                 Console.WriteLine("Error processing request: " + ex.Message);
                 try
                 {
@@ -185,6 +222,7 @@ namespace Printer
         {
             try
             {
+                LogMessage("Processing print request...");
                 Console.WriteLine("=== PRINT REQUEST DETAILS ===");
                 
                 string body = "";
@@ -237,6 +275,7 @@ namespace Printer
                 bool success = printer.Print("", receiptData);
                 
                 Console.WriteLine("Print Result: " + (success ? "SUCCESS" : "FAILED"));
+                LogMessage("Print result: " + (success ? "SUCCESS" : "FAILED"));
                 Console.WriteLine("===========================");
 
                 if (success)
@@ -434,41 +473,26 @@ namespace Printer
         {
             try
             {
-                Console.WriteLine("=== BARCODE LABEL PRINT REQUEST ===");
-                
+                LogMessage("Barcode label print request received");
                 string body = "";
                 using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
                 {
                     body = reader.ReadToEnd();
                 }
-                
-                Console.WriteLine("Barcode request body: " + body);
-                
                 var printRequest = JsonConvert.DeserializeObject<BarcodeLabelPrintRequest>(body);
-                
                 if (printRequest == null)
                 {
-                    Console.WriteLine("ERROR: Failed to parse barcode print request");
+                    LogMessage("ERROR: Failed to parse barcode print request");
                     return "{\"error\":\"Invalid request format\"}";
                 }
-                
-                Console.WriteLine("Printing barcode label:");
-                Console.WriteLine("  Barcode Value: " + printRequest.BarcodeValue);
-                Console.WriteLine("  Product Name: " + printRequest.ProductName);
-                Console.WriteLine("  Price: " + printRequest.Price);
-                Console.WriteLine("  VAT Included: " + printRequest.VatIncluded);
-                Console.WriteLine("  VAT Percentage: " + printRequest.VatPercentage + "%");
-                Console.WriteLine("  Quantity: " + printRequest.Quantity);
-                Console.WriteLine("  Print Barcode Only: " + printRequest.PrintBarcodeOnly);
-                
-                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly, printRequest.VatIncluded, printRequest.VatPercentage, printRequest.Quantity);
-                
-                Console.WriteLine("✓ Barcode label printed successfully!");
+                LogMessage(string.Format("Printing barcode: {0} | product: {1} | qty: {2}", printRequest.BarcodeValue, printRequest.ProductName, printRequest.Quantity));
+                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly, printRequest.VatIncluded, printRequest.VatPercentage, printRequest.Quantity, printRequest.ShopName, printRequest.BranchName, printRequest.Location);
+                LogMessage("Barcode label printed successfully");
                 return "{\"success\":true,\"message\":\"Barcode label printed successfully\"}";
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Barcode print error: " + ex.Message);
+                LogMessage("Barcode print error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }
@@ -477,17 +501,14 @@ namespace Printer
         {
             try
             {
-                Console.WriteLine("=== TEST BARCODE LABEL PRINT ===");
-                Console.WriteLine("Printing test barcode label...");
-                
+                LogMessage("Test barcode label print requested");
                 BarcodeLabelPrint.PrintLabel("123456789012", "Test Product", "9.99", false, true, 21.0m);
-                
-                Console.WriteLine("✓ Test barcode label printed successfully!");
+                LogMessage("Test barcode label printed successfully");
                 return "{\"success\":true,\"message\":\"Test barcode label printed successfully\"}";
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Test barcode print error: " + ex.Message);
+                LogMessage("Test barcode print error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }

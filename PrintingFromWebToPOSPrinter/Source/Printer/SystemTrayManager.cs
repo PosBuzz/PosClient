@@ -35,7 +35,9 @@ namespace Printer
             // Add menu items
             var startServerItem = new ToolStripMenuItem("Start Server", null, StartServer_Click);
             var stopServerItem = new ToolStripMenuItem("Stop Server", null, StopServer_Click);
+            var viewLogsItem = new ToolStripMenuItem("View Logs", null, ViewLogs_Click);
             var configureItem = new ToolStripMenuItem("Configure", null, Configure_Click);
+            var changePasswordItem = new ToolStripMenuItem("Change Password", null, ChangePassword_Click);
             var testReceiptItem = new ToolStripMenuItem("Test Receipt", null, TestReceipt_Click);
             var testBarcodeItem = new ToolStripMenuItem("Test Barcode", null, TestBarcode_Click);
             var exitItem = new ToolStripMenuItem("Exit", null, Exit_Click);
@@ -43,7 +45,10 @@ namespace Printer
             contextMenu.Items.Add(startServerItem);
             contextMenu.Items.Add(stopServerItem);
             contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(viewLogsItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(configureItem);
+            contextMenu.Items.Add(changePasswordItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(testReceiptItem);
             contextMenu.Items.Add(testBarcodeItem);
@@ -85,7 +90,9 @@ namespace Printer
 
         private void StartServer_Click(object sender, EventArgs e) => StartServer();
         private void StopServer_Click(object sender, EventArgs e) => StopServer();
+        private void ViewLogs_Click(object sender, EventArgs e) => ShowLogViewer();
         private void Configure_Click(object sender, EventArgs e) => ShowConfigurationDialog();
+        private void ChangePassword_Click(object sender, EventArgs e) => ShowChangePasswordDialog();
         private void TestReceipt_Click(object sender, EventArgs e) => TestReceipt();
         private void TestBarcode_Click(object sender, EventArgs e) => TestBarcode();
         private void Exit_Click(object sender, EventArgs e) => Exit();
@@ -150,14 +157,50 @@ namespace Printer
             }
         }
 
+        private void ShowLogViewer()
+        {
+            try
+            {
+                var logViewer = new LogViewerForm();
+                logViewer.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowBalloonTip("Log Viewer Error", "Error opening log viewer: " + ex.Message, ToolTipIcon.Error);
+            }
+        }
+
         private void ShowConfigurationDialog()
         {
+            // Require password authentication
             var config = ConfigManager.GetConfig();
+            string currentPassword = string.IsNullOrEmpty(config.Password) ? "123456" : config.Password;
+
+            if (!PasswordDialog.Authenticate(currentPassword))
+            {
+                ShowBalloonTip("Access Denied", "Incorrect password", ToolTipIcon.Warning);
+                return;
+            }
+
+            // Show configuration form if authenticated
             var configForm = new ConfigurationForm(config);
             if (configForm.ShowDialog() == DialogResult.OK)
             {
                 ConfigManager.UpdateConfig(configForm.UpdatedConfig);
                 ShowBalloonTip("Configuration Updated", "Settings have been saved successfully", ToolTipIcon.Info);
+            }
+        }
+
+        private void ShowChangePasswordDialog()
+        {
+            try
+            {
+                var changePasswordForm = new ChangePasswordDialog();
+                changePasswordForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowBalloonTip("Password Change Error", "Error: " + ex.Message, ToolTipIcon.Error);
             }
         }
 
@@ -188,7 +231,11 @@ namespace Printer
         {
             try
             {
-                BarcodeLabelPrint.PrintLabel("1234567890123", "Test Product", "19.99", false, true, 21.0m, 1);
+                var config = ConfigManager.GetConfig();
+                string shopName = !string.IsNullOrEmpty(config.StoreName) ? config.StoreName : "PosBuzz";
+                string branchName = "Main Branch";
+                string location = !string.IsNullOrEmpty(config.Address) ? config.Address : "Test Location";
+                BarcodeLabelPrint.PrintLabel("1234567890123", "Test Product", "19.99", false, true, 21.0m, 1, shopName, branchName, location);
                 ShowBalloonTip("Test Barcode", "Test barcode printed successfully", ToolTipIcon.Info);
             }
             catch (Exception ex)
@@ -204,7 +251,7 @@ namespace Printer
             {
                 SaleNumber = "TEST-001",
                 OrderDate = DateTime.Now,
-                Branch = new Models.BranchInfo { Name = config.StoreName, Address = config.Address, Phone = config.Phone },
+                Branch = new Models.BranchInfo { Name = "Test Branch", Address = config.Address, Phone = config.Phone },
                 Cashier = new Models.UserInfo { Name = "System Test" },
                 Customer = new Models.CustomerInfo { Name = "Test Customer" },
                 Items = new System.Collections.Generic.List<Models.ReceiptItem>

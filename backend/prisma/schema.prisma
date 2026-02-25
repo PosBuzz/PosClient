@@ -24,6 +24,17 @@ enum PaymentMethodEnum {
   EXCHANGE
 }
 
+enum OnlineOrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
 // ERP Enums
 enum EmploymentStatus {
   ACTIVE
@@ -787,6 +798,8 @@ model Sale {
   notes                String?
   converted_to_sale_id Int? // For quotations: tracks which sale it was converted to
   converted_at         DateTime? // For quotations: timestamp when converted to sale
+  is_online_order      Boolean   @default(false) // Track if this is an online order
+  online_order_status  String?   @default("PENDING") // PENDING, CONFIRMED, PROCESSING, READY, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, RETURNED
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -811,6 +824,8 @@ model Sale {
   @@index([payment_status])
   @@index([sale_type])
   @@index([converted_to_sale_id])
+  @@index([is_online_order])
+  @@index([online_order_status])
   @@map("sales")
 }
 

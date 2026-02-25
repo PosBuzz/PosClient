@@ -7,6 +7,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
+  Checkbox,
   Col,
   Divider,
   Form,
@@ -76,6 +77,7 @@ const NewSale = () => {
     DiscountType.FLAT,
   );
   const [loading, setLoading] = useState(false);
+  const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const [salePayments, setSalePayments] = useState<SalePayment[]>([
     {
       payment_method: PaymentMethod.CASH,
@@ -593,6 +595,8 @@ const NewSale = () => {
       received_amount: totalPaymentAmount,
       payments: salePayments,
       quotation_id: quotationId ? parseInt(quotationId) : undefined,
+      is_online_order: isOnlineOrder,
+      online_order_status: isOnlineOrder ? 'PENDING' : undefined,
     };
 
     try {
@@ -1236,6 +1240,18 @@ const NewSale = () => {
                   rows={4}
                   placeholder="Optional notes about this sale"
                 />
+              </Form.Item>
+              <Form.Item
+                name="is_online_order"
+                valuePropName="checked"
+                style={{ marginTop: 12, marginBottom: 0 }}
+              >
+                <Checkbox
+                  checked={isOnlineOrder}
+                  onChange={(e) => setIsOnlineOrder(e.target.checked)}
+                >
+                  This is an Online Order
+                </Checkbox>
               </Form.Item>
             </Col>
             <Col span={6}>

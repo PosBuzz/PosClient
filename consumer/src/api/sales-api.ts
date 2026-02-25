@@ -1,4 +1,4 @@
-import { get, post } from './crud-api';
+import { get, post, patch } from './crud-api';
 import { endpoints } from './endpoints';
 import { 
   Sale, 
@@ -7,7 +7,8 @@ import {
   SaleListResponse, 
   SalesStats, 
   ProductVariantForSale,
-  EODReportResponse
+  EODReportResponse,
+  OnlineOrderStatus
 } from '../types/sale.types';
 import axiosInstance from './axiosInstance';
 
@@ -107,5 +108,26 @@ export const salesApi = {
       responseType: "blob",
     });
     return response.data;
+  },
+
+  // ========== ONLINE ORDER METHODS ==========
+
+  // Get all online orders with filters
+  getOnlineOrders: async (filters: any): Promise<SaleListResponse> => {
+    return await get(`${endpoints.getSales}/online-orders/list`, filters);
+  },
+
+  // Get online order statistics
+  getOnlineOrderStats: async (branchId?: number): Promise<any> => {
+    const params: any = {};
+    if (branchId) {
+      params.branch_id = branchId;
+    }
+    return await get(`${endpoints.getSales}/online-orders/stats`, params);
+  },
+
+  // Update online order status
+  updateOnlineOrderStatus: async (id: number, status: OnlineOrderStatus): Promise<Sale> => {
+    return await patch(`${endpoints.getSales}/online-orders/${id}/status`, { status });
   },
 };
