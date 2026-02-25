@@ -18,6 +18,7 @@ export class ProfileService {
       'phone',
       'address',
       'company_name',
+      'logo',
     ];
 
     const data: any = {};
@@ -39,6 +40,7 @@ export class ProfileService {
         secondary_email: true,
         phone: true,
         address: true,
+        logo: true,
       },
     });
 

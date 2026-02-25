@@ -129,6 +129,7 @@ model Consumer {
   company_name      String
   business_category String?
   secondary_email   String?
+  logo              String?
   max_branch        Int      @default(1)
   email             String
   phone             String?
@@ -298,7 +299,7 @@ model User {
   salary_increments         SalaryIncrement[] @relation("EmployeeSalaryIncrements")
   salary_increments_created SalaryIncrement[] @relation("SalaryIncrementCreator")
   salary_payments           SalaryPayment[]
- 
+
   @@unique([consumer_id, email])
   @@index([role_id])
   @@index([name])
