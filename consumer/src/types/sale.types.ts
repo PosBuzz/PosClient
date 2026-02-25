@@ -64,6 +64,8 @@ export interface Sale {
     sale_number: string;
     created_at: string;
   }>;
+  is_online_order?: boolean;
+  online_order_status?: OnlineOrderStatus | string;
   items: SaleItem[];
   payments?: SalePayment[]; // New: support for partial payments
   created_at?: string;
@@ -87,6 +89,8 @@ export interface SaleFormData {
   notes?: string;
   items: SaleItem[];
   payments?: SalePayment[]; // New: support for partial payments
+  is_online_order?: boolean;
+  online_order_status?: OnlineOrderStatus | string;
 }
 
 export enum PaymentMethod {
@@ -126,6 +130,17 @@ export enum DiscountType {
 export enum TaxMethod {
   INCLUSIVE = "INCLUSIVE",
   EXCLUSIVE = "EXCLUSIVE",
+}
+
+export enum OnlineOrderStatus {
+  PENDING = "PENDING",
+  CONFIRMED = "CONFIRMED",
+  PROCESSING = "PROCESSING",
+  READY = "READY",
+  OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY",
+  DELIVERED = "DELIVERED",
+  CANCELLED = "CANCELLED",
+  RETURNED = "RETURNED",
 }
 
 export interface SaleListFilters {

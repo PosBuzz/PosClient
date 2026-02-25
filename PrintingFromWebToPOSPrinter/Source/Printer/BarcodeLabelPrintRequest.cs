@@ -9,5 +9,8 @@ namespace Printer
         public bool VatIncluded { get; set; }
         public decimal VatPercentage { get; set; }
         public int Quantity { get; set; } = 1;
+        public string ShopName { get; set; }
+        public string BranchName { get; set; }
+        public string Location { get; set; }
     }
 }

@@ -15,13 +15,15 @@ import {
   Space,
   Switch,
 } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Barcode from "react-barcode";
 import { productApi } from "../../api/product-api";
+import { inventoryApi } from "../../api/inventory-api";
 import PageTitle from "../../components/PageTitle";
 import { Product, ProductVariantDetailed } from "../../types/product.types";
 import { queryKeys } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { useAuthStore } from "../../stores/authStore";
 
 const { Option } = Select;
 
@@ -33,6 +35,9 @@ interface BarcodePrintData {
   VatIncluded?: boolean;
   VatPercentage?: number;
   Quantity: number;
+  ShopName?: string;
+  BranchName?: string;
+  Location?: string;
 }
 
 interface ProductOption {
@@ -48,10 +53,33 @@ interface ProductOption {
 
 const BarcodePrinting = () => {
   const [form] = Form.useForm();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [previewData, setPreviewData] = useState<BarcodePrintData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
+
+  // Fetch branches
+  const { data: branches = [], isLoading: loadingBranches } = useQuery({
+    queryKey: [queryKeys.branches],
+    queryFn: () => inventoryApi.getBranches(),
+  });
+
+  // Fetch consumer profile for shop name
+  const { data: consumerData } = useQuery({
+    queryKey: ["consumer"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/client");
+      return response.json();
+    },
+  });
+
+  // Set initial shop name when consumer data loads
+  useEffect(() => {
+    if (consumerData?.company_name) {
+      form.setFieldValue("ShopName", consumerData.company_name);
+    }
+  }, [consumerData, form]);
 
   // Fetch products with variants that have barcodes
   const { data: productOptions = [], isLoading: loadingProducts } = useQuery({
@@ -106,6 +134,17 @@ const BarcodePrinting = () => {
     }
   };
 
+  // Handle branch selection
+  const handleBranchSelect = (branchId: string) => {
+    const branch = branches.find((b) => b.id.toString() === branchId);
+    if (branch) {
+      form.setFieldsValue({
+        BranchName: branch.name,
+        Location: branch.address || "",
+      });
+    }
+  };
+
   const handlePreview = () => {
     const values = form.getFieldsValue();
 
@@ -133,6 +172,17 @@ const BarcodePrinting = () => {
         printData.VatIncluded = values.vatIncluded === true; // Ensure boolean
         printData.VatPercentage = values.vatPercentage;
       }
+    }
+
+    // Include shop related fields if provided
+    if (values.ShopName?.trim()) {
+      printData.ShopName = values.ShopName.trim();
+    }
+    if (values.BranchName?.trim()) {
+      printData.BranchName = values.BranchName.trim();
+    }
+    if (values.Location?.trim()) {
+      printData.Location = values.Location.trim();
     }
 
     console.log("Print data:", printData);
@@ -172,6 +222,17 @@ const BarcodePrinting = () => {
         }
       }
 
+      // Include shop related fields if provided
+      if (values.ShopName?.trim()) {
+        printData.ShopName = values.ShopName.trim();
+      }
+      if (values.BranchName?.trim()) {
+        printData.BranchName = values.BranchName.trim();
+      }
+      if (values.Location?.trim()) {
+        printData.Location = values.Location.trim();
+      }
+
       console.log("Sending barcode print request:", printData);
 
       const response = await fetch(
@@ -182,7 +243,7 @@ const BarcodePrinting = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(printData),
-        }
+        },
       );
 
       if (response.ok) {
@@ -195,11 +256,11 @@ const BarcodePrinting = () => {
       console.error("Print error:", error);
       if (error.message?.includes("fetch")) {
         message.error(
-          "Printing agent is not running. Please start the printing agent and try again."
+          "Printing agent is not running. Please start the printing agent and try again.",
         );
       } else {
         message.error(
-          "Failed to print barcode label. Please check your input."
+          "Failed to print barcode label. Please check your input.",
         );
       }
     } finally {
@@ -231,12 +292,83 @@ const BarcodePrinting = () => {
               form={form}
               layout="vertical"
               initialValues={{
+                ShopName: user?.company_name || "",
                 Quantity: 1,
                 PrintBarcodeOnly: false,
                 vatIncluded: true,
                 vatPercentage: 21.0,
               }}
             >
+              <Row gutter={16}>
+                <Col xs={24} lg={12}>
+                  <Form.Item
+                    label="Shop Name"
+                    name="ShopName"
+                    extra="Shop name will be prefilled from your account"
+                  >
+                    <Input placeholder="Enter shop name (optional)" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} lg={12}>
+                  <Form.Item
+                    label="Select Branch"
+                    name="selectedBranch"
+                    extra="Choose a branch to auto-fill branch name and location"
+                  >
+                    <Select
+                      showSearch
+                      placeholder="Select a branch..."
+                      optionFilterProp="children"
+                      loading={loadingBranches}
+                      allowClear
+                      onSelect={handleBranchSelect}
+                      onClear={() => {
+                        form.setFieldsValue({
+                          BranchName: "",
+                          Location: "",
+                        });
+                      }}
+                      filterOption={(input, option) =>
+                        option?.children
+                          ?.toString()
+                          .toLowerCase()
+                          .includes(input.toLowerCase()) ?? false
+                      }
+                    >
+                      {branches.map((branch) => (
+                        <Option key={branch.id} value={branch.id.toString()}>
+                          {branch.name}
+                          {branch.address && ` - ${branch.address}`}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col xs={24} lg={12}>
+                  <Form.Item
+                    label="Branch Name"
+                    name="BranchName"
+                    extra="Leave empty to hide branch name on label"
+                  >
+                    <Input placeholder="Enter branch name (optional)" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} lg={12}>
+                  <Form.Item
+                    label="Location"
+                    name="Location"
+                    extra="Leave empty to hide location on label"
+                  >
+                    <Input placeholder="Enter location (optional)" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider />
+
               <Row gutter={16}>
                 <Col xs={24} lg={12}>
                   <Form.Item
@@ -252,7 +384,13 @@ const BarcodePrinting = () => {
                       allowClear
                       onSelect={handleProductSelect}
                       onClear={() => {
-                        form.resetFields();
+                        form.resetFields([
+                          "BarcodeValue",
+                          "ProductName",
+                          "Price",
+                          "vatIncluded",
+                          "vatPercentage",
+                        ]);
                       }}
                       onSearch={setSearchTerm}
                       filterOption={(input, option) =>
@@ -422,6 +560,45 @@ const BarcodePrinting = () => {
               alignItems: "center",
             }}
           >
+            <div className="flex items-center mb-1">
+              {/* Shop info */}
+              {previewData.ShopName && (
+                <div
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    color: "#000000",
+                  }}
+                >
+                  {previewData.ShopName}&nbsp;
+                </div>
+              )}
+              {/* Branch info */}
+              {previewData.BranchName && (
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: "10px",
+                    color: "#000000",
+                  }}
+                >
+                  {`- ${previewData.BranchName}`}
+                </div>
+              )}
+            </div>
+
+            {/* Location info */}
+            {previewData.Location && (
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#000000",
+                }}
+              >
+                {previewData.Location}
+              </div>
+            )}
+
             {/* Barcode component */}
             <div
               style={{

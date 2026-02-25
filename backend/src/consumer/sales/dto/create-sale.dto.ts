@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsDecimal,
   IsEnum,
   IsInt,
@@ -22,6 +23,17 @@ export enum PaymentMethod {
   DEPOSIT = 'DEPOSIT',
   CREDIT = 'CREDIT',
   EXCHANGE = 'EXCHANGE',
+}
+
+export enum OnlineOrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PROCESSING = 'PROCESSING',
+  READY = 'READY',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+  RETURNED = 'RETURNED',
 }
 
 export enum PaymentStatus {
@@ -139,6 +151,14 @@ export class CreateSaleDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_online_order?: boolean;
+
+  @IsOptional()
+  @IsEnum(OnlineOrderStatus)
+  online_order_status?: OnlineOrderStatus;
 
   @IsArray()
   @ValidateNested({ each: true })
