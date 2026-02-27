@@ -8,22 +8,22 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Modal,
   Row,
   Select,
   Space,
-  Switch,
+  Switch
 } from "antd";
 import { useEffect, useState } from "react";
 import Barcode from "react-barcode";
-import { productApi } from "../../api/product-api";
 import { inventoryApi } from "../../api/inventory-api";
+import { productApi } from "../../api/product-api";
 import PageTitle from "../../components/PageTitle";
-import { Product, ProductVariantDetailed } from "../../types/product.types";
 import { queryKeys } from "../../constants/queryKeys";
-import { setPageTitle } from "../../utils/setPageTitle";
 import { useAuthStore } from "../../stores/authStore";
+import { useMessageStore } from "../../stores/messageStore";
+import { Product, ProductVariantDetailed } from "../../types/product.types";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 
@@ -54,6 +54,7 @@ interface ProductOption {
 const BarcodePrinting = () => {
   const [form] = Form.useForm();
   const { user } = useAuthStore();
+  const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
   const [previewData, setPreviewData] = useState<BarcodePrintData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -247,19 +248,19 @@ const BarcodePrinting = () => {
       );
 
       if (response.ok) {
-        message.success("Barcode label printed successfully!");
+        messageApi?.success("Barcode label printed successfully!");
       } else {
         const errorText = await response.text();
-        message.error("Failed to print barcode label: " + errorText);
+        messageApi?.error("Failed to print barcode label: " + errorText);
       }
     } catch (error: any) {
       console.error("Print error:", error);
       if (error.message?.includes("fetch")) {
-        message.error(
+        messageApi?.error(
           "Printing agent is not running. Please start the printing agent and try again.",
         );
       } else {
-        message.error(
+        messageApi?.error(
           "Failed to print barcode label. Please check your input.",
         );
       }

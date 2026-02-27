@@ -48,11 +48,15 @@ namespace Printer.Services
                                     case "Address": _config.Address = value; break;
                                     case "Phone": _config.Phone = value; break;
                                     case "Email": _config.Email = value; break;
+                                    case "ContactInfo": _config.ContactInfo = value; break;
                                     case "LogoPath": _config.LogoPath = value; break;
                                     case "PrinterName": _config.PrinterName = value; break;
                                     case "BarcodePrinterName": _config.BarcodePrinterName = value; break;
                                     case "Currency": _config.Currency = value; break;
                                     case "Port": _config.Port = int.Parse(value); break;
+                                    case "HeaderText": _config.HeaderText = value; break;
+                                    case "VatRegistrationNumber": _config.VatRegistrationNumber = value; break;
+                                    case "FooterTerms": _config.FooterTerms = value; break;
                                 }
                             }
                         }
@@ -81,11 +85,15 @@ namespace Printer.Services
                     "Address=" + _config.Address,
                     "Phone=" + _config.Phone,
                     "Email=" + _config.Email,
+                    "ContactInfo=" + _config.ContactInfo,
                     "LogoPath=" + _config.LogoPath,
                     "PrinterName=" + _config.PrinterName,
                     "BarcodePrinterName=" + _config.BarcodePrinterName,
                     "Currency=" + _config.Currency,
-                    "Port=" + _config.Port
+                    "Port=" + _config.Port,
+                    "HeaderText=" + _config.HeaderText,
+                    "VatRegistrationNumber=" + _config.VatRegistrationNumber,
+                    "FooterTerms=" + _config.FooterTerms
                 };
                 
                 File.WriteAllLines(ConfigPath, lines);
@@ -122,6 +130,8 @@ namespace Printer.Services
                 _config.Phone = fieldsToUpdate.Phone;
             if (fieldsToUpdate.Email != null)
                 _config.Email = fieldsToUpdate.Email;
+            if (fieldsToUpdate.ContactInfo != null)
+                _config.ContactInfo = fieldsToUpdate.ContactInfo;
             if (fieldsToUpdate.LogoPath != null)
                 _config.LogoPath = fieldsToUpdate.LogoPath;
             if (fieldsToUpdate.PrinterName != null)
@@ -130,6 +140,12 @@ namespace Printer.Services
                 _config.BarcodePrinterName = fieldsToUpdate.BarcodePrinterName;
             if (fieldsToUpdate.Currency != null)
                 _config.Currency = fieldsToUpdate.Currency;
+            if (fieldsToUpdate.HeaderText != null)
+                _config.HeaderText = fieldsToUpdate.HeaderText;
+            if (fieldsToUpdate.VatRegistrationNumber != null)
+                _config.VatRegistrationNumber = fieldsToUpdate.VatRegistrationNumber;
+            if (fieldsToUpdate.FooterTerms != null)
+                _config.FooterTerms = fieldsToUpdate.FooterTerms;
             
             SaveConfig();
             Console.WriteLine("ConfigManager: Individual fields updated and saved");
