@@ -104,15 +104,25 @@ namespace Printer
         {
             float y = 2; // Reduced top margin
 
-            // Print logo if available
+            // Print header text (configurable tax invoice header)
+            if (!string.IsNullOrEmpty(config.HeaderText))
+            {
+                y += this.DrawWrappedText(g, y, config.HeaderText, 7f, FontStyle.Regular);
+                y += 3;
+                y += this.DrawDashedLine(g, y);
+                y += 3;
+            }
+
+            // Print logo if available with fixed dimensions
             if (!string.IsNullOrEmpty(config.LogoPath) && File.Exists(config.LogoPath))
             {
                 try
                 {
                     using (Image logoImage = Image.FromFile(config.LogoPath))
                     {
-                        float logoWidth = Math.Min(40, logoImage.Width * 40 / logoImage.Height);
-                        float logoHeight = logoImage.Height * logoWidth / logoImage.Width;
+                        // Fixed dimensions for logo
+                        float logoWidth = 50; // Fixed width in mm
+                        float logoHeight = 25; // Fixed height in mm
                         float logoX = (this.width - logoWidth) / 2;
                         
                         g.DrawImage(logoImage, logoX, y, logoWidth, logoHeight);
@@ -153,28 +163,48 @@ namespace Printer
                 y += 2;
             }
 
-            // Branch address if available
-            if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Address))
+            // Contact information - Use ContactInfo if available, otherwise legacy fields
+            string contactToDisplay = "";
+            
+            if (!string.IsNullOrEmpty(config.ContactInfo))
             {
-                y += this.DrawCenteredText(g, y, receiptData.Branch.Address, 9f);
-                y += 1;
+                // Use new unified contact field - preserves line breaks
+                contactToDisplay = config.ContactInfo;
             }
-            else if (!string.IsNullOrEmpty(config.Address))
+            else
             {
-                y += this.DrawCenteredText(g, y, config.Address, 9f);
-                y += 1;
+                // Fallback to legacy fields for backwards compatibility
+                if (receiptData.Branch != null)
+                {
+                    if (!string.IsNullOrEmpty(receiptData.Branch.Address))
+                        contactToDisplay += receiptData.Branch.Address + "\n";
+                    if (!string.IsNullOrEmpty(receiptData.Branch.Phone))
+                        contactToDisplay += receiptData.Branch.Phone + "\n";
+                    if (!string.IsNullOrEmpty(receiptData.Branch.Email))
+                        contactToDisplay += receiptData.Branch.Email;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(config.Address))
+                        contactToDisplay += config.Address + "\n";
+                    if (!string.IsNullOrEmpty(config.Phone))
+                        contactToDisplay += config.Phone + "\n";
+                    if (!string.IsNullOrEmpty(config.Email))
+                        contactToDisplay += config.Email;
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(contactToDisplay))
+            {
+                y += this.DrawWrappedText(g, y, contactToDisplay.Trim(), 8f);
+                y += 3;
             }
 
-            // Branch phone if available
-            if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Phone))
+            // VAT Registration Number
+            if (!string.IsNullOrEmpty(config.VatRegistrationNumber))
             {
-                y += this.DrawCenteredText(g, y, receiptData.Branch.Phone, 9f);
-                y += 3;
-            }
-            else if (!string.IsNullOrEmpty(config.Phone))
-            {
-                y += this.DrawCenteredText(g, y, config.Phone, 9f);
-                y += 3;
+                y += this.DrawCenteredText(g, y, "VAT Reg: " + config.VatRegistrationNumber, 7f);
+                y += 2;
             }
 
             // Order information
@@ -351,6 +381,16 @@ namespace Printer
                 y += this.DrawCenteredText(g, y, receiptData.Notes, 7f, FontStyle.Italic);
             }
 
+            // Footer terms and conditions (before thank you)
+            if (!string.IsNullOrEmpty(config.FooterTerms))
+            {
+                y += 4;
+                y += this.DrawDashedLine(g, y);
+                y += 2;
+                y += this.DrawWrappedText(g, y, config.FooterTerms, 7f, FontStyle.Regular);
+                y += 2;
+            }
+
             // Footer
             y += 6; // Reduced gap before thanks
             y += this.DrawCenteredText(g, y, "Thank you for your business!", 8f, FontStyle.Bold);
@@ -371,6 +411,46 @@ namespace Printer
                 float x = (this.width - textSize.Width) / 2;
                 g.DrawString(text, font, Brushes.Black, x, y);
                 return textSize.Height;
+            }
+        }
+
+        private float DrawWrappedText(Graphics g, float y, string text, float fontSize, FontStyle style = FontStyle.Regular)
+        {
+            using (Font font = new Font("Arial", fontSize, style))
+            {
+                // Handle explicit line breaks in the text
+                string[] lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                float totalHeight = 0;
+                
+                foreach (string line in lines)
+                {
+                    // Measure and wrap the line if needed (including empty lines)
+                    // Increased width by reducing margins from 5+5 to 2+2
+                    RectangleF layoutRect = new RectangleF(2, y + totalHeight, this.width - 4, 1000);
+                    StringFormat format = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Near,
+                        Trimming = StringTrimming.Word
+                    };
+                    
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        // Empty line - use minimal spacing (just the font height)
+                        using (Font measureFont = new Font("Arial", fontSize, style))
+                        {
+                            totalHeight += measureFont.Height;
+                        }
+                    }
+                    else
+                    {
+                        SizeF textSize = g.MeasureString(line, font, (int)(this.width - 4), format);
+                        g.DrawString(line, font, Brushes.Black, layoutRect, format);
+                        totalHeight += textSize.Height;
+                    }
+                }
+                
+                return totalHeight;
             }
         }
 
