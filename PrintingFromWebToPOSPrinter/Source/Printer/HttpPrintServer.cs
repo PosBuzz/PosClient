@@ -305,21 +305,31 @@ namespace Printer
             try
             {
                 StoreConfig config = ConfigManager.GetConfig();
-                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"logoPath\":\"{4}\",\"printerName\":\"{5}\",\"barcodePrinterName\":\"{6}\",\"currency\":\"{7}\",\"port\":{8}}}",
-                    (config.StoreName ?? "").Replace("\"", "\\\""),
-                    (config.Address ?? "").Replace("\"", "\\\""),
-                    (config.Phone ?? "").Replace("\"", "\\\""),
-                    (config.Email ?? "").Replace("\"", "\\\""),
-                    (config.LogoPath ?? "").Replace("\"", "\\\""),
-                    (config.PrinterName ?? "").Replace("\"", "\\\""),
-                    (config.BarcodePrinterName ?? "").Replace("\"", "\\\""),
-                    (config.Currency ?? "$").Replace("\"", "\\\""),
-                    config.Port);
+                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"contactInfo\":\"{4}\",\"logoPath\":\"{5}\",\"printerName\":\"{6}\",\"barcodePrinterName\":\"{7}\",\"currency\":\"{8}\",\"port\":{9},\"headerText\":\"{10}\",\"vatRegistrationNumber\":\"{11}\",\"footerTerms\":\"{12}\"}}",
+                    EscapeJson(config.StoreName),
+                    EscapeJson(config.Address),
+                    EscapeJson(config.Phone),
+                    EscapeJson(config.Email),
+                    EscapeJson(config.ContactInfo),
+                    EscapeJson(config.LogoPath),
+                    EscapeJson(config.PrinterName),
+                    EscapeJson(config.BarcodePrinterName),
+                    EscapeJson(config.Currency),
+                    config.Port,
+                    EscapeJson(config.HeaderText),
+                    EscapeJson(config.VatRegistrationNumber),
+                    EscapeJson(config.FooterTerms));
             }
             catch (Exception ex)
             {
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
+        }
+        
+        private string EscapeJson(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
         }
 
         private string HandleUpdateConfig(HttpListenerRequest request)
@@ -400,6 +410,39 @@ namespace Printer
                 if (currency != null) {
                     updatedFields.Currency = currency;
                     Console.WriteLine("HTTP: Setting Currency = " + currency);
+                }
+                
+                // Handle new fields
+                string contactInfo = GetFirstNonNull(
+                    ExtractJsonString(body, "contactInfo"),
+                    ExtractJsonString(body, "ContactInfo"));
+                if (contactInfo != null) {
+                    updatedFields.ContactInfo = contactInfo;
+                    Console.WriteLine("HTTP: Setting ContactInfo = " + contactInfo);
+                }
+                
+                string headerText = GetFirstNonNull(
+                    ExtractJsonString(body, "headerText"),
+                    ExtractJsonString(body, "HeaderText"));
+                if (headerText != null) {
+                    updatedFields.HeaderText = headerText;
+                    Console.WriteLine("HTTP: Setting HeaderText = " + headerText);
+                }
+                
+                string vatRegNumber = GetFirstNonNull(
+                    ExtractJsonString(body, "vatRegistrationNumber"),
+                    ExtractJsonString(body, "VatRegistrationNumber"));
+                if (vatRegNumber != null) {
+                    updatedFields.VatRegistrationNumber = vatRegNumber;
+                    Console.WriteLine("HTTP: Setting VatRegistrationNumber = " + vatRegNumber);
+                }
+                
+                string footerTerms = GetFirstNonNull(
+                    ExtractJsonString(body, "footerTerms"),
+                    ExtractJsonString(body, "FooterTerms"));
+                if (footerTerms != null) {
+                    updatedFields.FooterTerms = footerTerms;
+                    Console.WriteLine("HTTP: Setting FooterTerms = " + footerTerms);
                 }
                 
                 // Handle integer fields  
@@ -520,6 +563,25 @@ namespace Printer
                 Console.WriteLine("=== TEST RECEIPT PRINT ===");
                 Console.WriteLine("Printing comprehensive test receipt with all properties...");
                 
+                // Temporarily set test config values to demonstrate new features
+                StoreConfig originalConfig = ConfigManager.GetConfig();
+                StoreConfig testConfig = new StoreConfig
+                {
+                    StoreName = originalConfig.StoreName,
+                    ContactInfo = "123 Test Street, Business District\nTest City, State 12345\nPhone: (555) 123-4567\nEmail: test@store.com",
+                    LogoPath = originalConfig.LogoPath,
+                    PrinterName = originalConfig.PrinterName,
+                    BarcodePrinterName = originalConfig.BarcodePrinterName,
+                    Currency = originalConfig.Currency,
+                    Port = originalConfig.Port,
+                    Password = originalConfig.Password,
+                    HeaderText = "Government of the People's Republic of Bangladesh:\nNational Board of Revenue, \"Tax Invoice\": Musahk-6.3;\n[See clauses (c) and (f) of Rule 40]",
+                    VatRegistrationNumber = "123456789-VAT",
+                    FooterTerms = "Terms & Conditions:\n1. All sales are final\n2. Goods once sold cannot be returned\n3. Please retain this receipt for warranty claims"
+                };
+                
+                ConfigManager.SetConfig(testConfig);
+                
                 // Create a comprehensive test receipt with all properties
                 ReceiptData testReceipt = new ReceiptData
                 {
@@ -544,7 +606,7 @@ namespace Printer
                 // Add store info
                 testReceipt.Branch = new BranchInfo
                 {
-                    Name = "PosBuzz Test Store",
+                    Name = "Test Branch Location",
                     Address = "123 Main Street, Business District, Test City 12345",
                     Phone = "(555) 123-4567"
                 };
@@ -629,10 +691,16 @@ namespace Printer
                 SimpleReceiptPrint printer = new SimpleReceiptPrint();
                 bool success = printer.Print("", testReceipt);
                 
+                // Restore original config
+                ConfigManager.SetConfig(originalConfig);
+                
                 if (success)
                 {
                     Console.WriteLine("✓ Comprehensive test receipt printed successfully!");
-                    Console.WriteLine("✓ Receipt should show:");
+                    Console.WriteLine("✓ Receipt includes:");
+                    Console.WriteLine("   - Custom header text (tax invoice info)");
+                    Console.WriteLine("   - Contact info with wrapping");
+                    Console.WriteLine("   - VAT registration number");
                     Console.WriteLine("   - Subtotal: $180.00 (3 items)");
                     Console.WriteLine("   - Discount: -$20.00");
                     Console.WriteLine("   - Shipping: $15.00");
@@ -640,7 +708,8 @@ namespace Printer
                     Console.WriteLine("   - TOTAL: $200.00");
                     Console.WriteLine("   - Paid: $250.00 (Cash: $150 + Card: $100)");
                     Console.WriteLine("   - Change: $50.00");
-                    return "{\"success\":true,\"message\":\"Comprehensive test receipt printed with all properties\"}";
+                    Console.WriteLine("   - Footer terms and conditions");
+                    return "{\"success\":true,\"message\":\"Comprehensive test receipt printed with all new features\"}";
                 }
                 else
                 {
