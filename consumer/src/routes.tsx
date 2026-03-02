@@ -19,24 +19,24 @@ const AddEditBatch = lazy(() => import("./pages/add-or-edit-inventory"));
 const Inventory = lazy(() => import("./pages/inventory"));
 const InventoryTransfers = lazy(() => import("./pages/inventory-transfers"));
 const AddInventoryTransfers = lazy(
-  () => import("./pages/create-inventory-transfer")
+  () => import("./pages/create-inventory-transfer"),
 );
 const InventoryAdjustments = lazy(
-  () => import("./pages/inventory-adjustments")
+  () => import("./pages/inventory-adjustments"),
 );
 const AddInventoryAdjustments = lazy(
-  () => import("./pages/add-inventory-adjustment")
+  () => import("./pages/add-inventory-adjustment"),
 );
 const InventoryStockByVariant = lazy(
-  () => import("./pages/inventory-stock-by-variant")
+  () => import("./pages/inventory-stock-by-variant"),
 );
 const InventoryExpiring = lazy(() => import("./pages/inventory-expiring"));
 const InventoryVariantStock = lazy(
-  () => import("./pages/inventory-variant-stock")
+  () => import("./pages/inventory-variant-stock"),
 );
 const InventoryLowStock = lazy(() => import("./pages/inventory-low-stock"));
 const InventoryMovementHistory = lazy(
-  () => import("./pages/inventory-movement-history")
+  () => import("./pages/inventory-movement-history"),
 );
 const Vendors = lazy(() => import("./pages/vendors"));
 const Branches = lazy(() => import("./pages/branches"));
@@ -84,7 +84,9 @@ export const routes = [
     path: "/pos",
     element: (
       <RequireAuth>
-        <POSPage />
+        <RequirePermission permission={Permissions.sales}>
+          <POSPage />
+        </RequirePermission>
       </RequireAuth>
     ),
   },
