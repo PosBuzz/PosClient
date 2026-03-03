@@ -1,29 +1,34 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../stores/authStore";
+// import { useEffect } from "react";
+// import { useLocation} from "react-router-dom";
+// import { useAuthStore } from "../stores/authStore";
 
 const NotFound = () => {
-  const navigate = useNavigate();
-  const { subdomainValidation, isAuthenticated } = useAuthStore();
+  // const navigate = useNavigate();
+  // const location = useLocation();
+  // const { subdomainValidation, isAuthenticated } = useAuthStore();
 
   // Check if user should even be on this page
-  useEffect(() => {
-    // If validation is complete and subdomain exists, redirect away
-    if (subdomainValidation.checked && subdomainValidation.exists) {
-      if (subdomainValidation.active) {
-        // Subdomain exists and is active
-        if (isAuthenticated) {
-          navigate("/", { replace: true });
-        } else {
-          navigate("/login", { replace: true });
-        }
-      } else {
-        // Subdomain exists but is inactive
-        navigate("/inactive", { replace: true });
-      }
-    }
-    // If subdomain doesn't exist, stay on 404 (correct state)
-  }, [subdomainValidation, isAuthenticated, navigate]);
+  // useEffect(() => {
+  //   const isExplicit404 = location.pathname === "/404";
+  //   if (!isExplicit404) {
+  //     return;
+  //   }
+  //   // If validation is complete and subdomain exists, redirect away
+  //   if (subdomainValidation.checked && subdomainValidation.exists) {
+  //     if (subdomainValidation.active) {
+  //       // Subdomain exists and is active
+  //       if (isAuthenticated) {
+  //         navigate("/", { replace: true });
+  //       } else {
+  //         navigate("/login", { replace: true });
+  //       }
+  //     } else {
+  //       // Subdomain exists but is inactive
+  //       navigate("/inactive", { replace: true });
+  //     }
+  //   }
+  //   // If subdomain doesn't exist, stay on 404 (correct state)
+  // }, [subdomainValidation, isAuthenticated, navigate, location]);
 
   return (
     <div className="lg:px-24 lg:py-24 md:py-20 md:px-44 px-4 py-24 items-center flex justify-center flex-col-reverse lg:flex-row md:gap-28 gap-16">
