@@ -56,7 +56,7 @@ export const AuthLoader = () => {
     if (subdomainValidation.checked && subdomainValidation.active) {
       checkAuth();
     }
-  }, [isAuthenticated, subdomainValidation, checkAuth]);
+  }, [isAuthenticated, subdomainValidation]);
 
   return null;
 };
