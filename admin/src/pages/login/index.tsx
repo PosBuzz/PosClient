@@ -5,9 +5,10 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import FullScreenLoader from "../../components/FullScreenLoader";
 
 export default function LoginPage() {
-  const { isAuthenticated, login } = useAuthStore();
+  const { isAuthenticated, login,isAuthLoading } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isDarkMode = useDarkMode();
@@ -28,7 +29,7 @@ export default function LoginPage() {
       navigate(from);
     } catch (err) {
       messageApi?.error(
-        (err as any)?.response?.data?.message || "Login failed"
+        (err as any)?.response?.data?.message || "Login failed",
       );
     } finally {
       setLoading(false);
