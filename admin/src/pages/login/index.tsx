@@ -5,10 +5,9 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
-import FullScreenLoader from "../../components/FullScreenLoader";
 
 export default function LoginPage() {
-  const { isAuthenticated, login,isAuthLoading } = useAuthStore();
+  const { isAuthenticated, login } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isDarkMode = useDarkMode();
