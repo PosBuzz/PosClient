@@ -1,5 +1,3 @@
-using System;
-
 namespace Printer.Models
 {
     public class StoreConfig

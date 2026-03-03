@@ -11,9 +11,6 @@ namespace Printer
         private StoreConfig config; // Current config reference for logo updates
 
         private TextBox txtStoreName;
-        private TextBox txtAddress;
-        private TextBox txtPhone;
-        private TextBox txtEmail;
         private TextBox txtContactInfo;
         private TextBox txtHeaderText;
         private TextBox txtVatRegNumber;
@@ -74,22 +71,6 @@ namespace Printer
                 AcceptsReturn = true
             };
             yPos += 70;
-
-            // Legacy fields (kept for backwards compatibility, smaller)
-            var lblLegacy = new Label { Text = "Legacy Fields (optional):", Location = new Point(20, yPos), Size = new Size(200, 15), Font = new Font("Arial", 7f, FontStyle.Italic), ForeColor = Color.Gray };
-            yPos += 20;
-            
-            var lblAddress = new Label { Text = "Address:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtAddress = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
-            yPos += 25;
-
-            var lblPhone = new Label { Text = "Phone:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtPhone = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
-            yPos += 25;
-
-            var lblEmail = new Label { Text = "Email:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtEmail = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
-            yPos += 35;
 
             // VAT Registration Number
             var lblVatRegNumber = new Label { Text = "VAT Reg. Number:", Location = new Point(20, yPos), Size = new Size(120, 20) };
@@ -174,10 +155,6 @@ namespace Printer
                 lblStoreName, txtStoreName,
                 lblHeaderText, txtHeaderText,
                 lblContactInfo, txtContactInfo,
-                lblLegacy,
-                lblAddress, txtAddress,
-                lblPhone, txtPhone,
-                lblEmail, txtEmail,
                 lblVatRegNumber, txtVatRegNumber,
                 lblPrinterName, txtPrinterName,
                 lblBarcodePrinter, txtBarcodePrinterName,
@@ -198,9 +175,6 @@ namespace Printer
             txtStoreName.Text = config.StoreName ?? "";
             txtHeaderText.Text = config.HeaderText ?? "";
             txtContactInfo.Text = config.ContactInfo ?? "";
-            txtAddress.Text = config.Address ?? "";
-            txtPhone.Text = config.Phone ?? "";
-            txtEmail.Text = config.Email ?? "";
             txtVatRegNumber.Text = config.VatRegistrationNumber ?? "";
             txtPrinterName.Text = config.PrinterName ?? "";
             txtBarcodePrinterName.Text = config.BarcodePrinterName ?? "";
@@ -223,9 +197,6 @@ namespace Printer
                 StoreName = txtStoreName.Text,
                 HeaderText = txtHeaderText.Text,
                 ContactInfo = txtContactInfo.Text,
-                Address = txtAddress.Text,
-                Phone = txtPhone.Text,
-                Email = txtEmail.Text,
                 VatRegistrationNumber = txtVatRegNumber.Text,
                 PrinterName = txtPrinterName.Text,
                 BarcodePrinterName = txtBarcodePrinterName.Text,

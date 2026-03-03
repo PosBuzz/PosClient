@@ -387,7 +387,7 @@ namespace Printer
                 y += 4;
                 y += this.DrawDashedLine(g, y);
                 y += 2;
-                y += this.DrawWrappedText(g, y, config.FooterTerms, 7f, FontStyle.Regular);
+                y += this.DrawWrappedTextLeftAligned(g, y, config.FooterTerms, 7f, FontStyle.Regular);
                 y += 2;
             }
 
@@ -445,6 +445,45 @@ namespace Printer
                     else
                     {
                         SizeF textSize = g.MeasureString(line, font, (int)(this.width - 4), format);
+                        g.DrawString(line, font, Brushes.Black, layoutRect, format);
+                        totalHeight += textSize.Height;
+                    }
+                }
+                
+                return totalHeight;
+            }
+        }
+
+        private float DrawWrappedTextLeftAligned(Graphics g, float y, string text, float fontSize, FontStyle style = FontStyle.Regular)
+        {
+            using (Font font = new Font("Arial", fontSize, style))
+            {
+                // Handle explicit line breaks in the text
+                string[] lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                float totalHeight = 0;
+                
+                foreach (string line in lines)
+                {
+                    // Measure and wrap the line if needed (including empty lines)
+                    RectangleF layoutRect = new RectangleF(5, y + totalHeight, this.width - 10, 1000);
+                    StringFormat format = new StringFormat
+                    {
+                        Alignment = StringAlignment.Near,
+                        LineAlignment = StringAlignment.Near,
+                        Trimming = StringTrimming.Word
+                    };
+                    
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        // Empty line - use minimal spacing (just the font height)
+                        using (Font measureFont = new Font("Arial", fontSize, style))
+                        {
+                            totalHeight += measureFont.Height;
+                        }
+                    }
+                    else
+                    {
+                        SizeF textSize = g.MeasureString(line, font, (int)(this.width - 10), format);
                         g.DrawString(line, font, Brushes.Black, layoutRect, format);
                         totalHeight += textSize.Height;
                     }
