@@ -37,6 +37,7 @@ interface SubdomainValidationState {
 
 interface AuthState {
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
   user: User | null;
   csrfToken: string | null;
   subdomainValidation: SubdomainValidationState;
@@ -52,7 +53,8 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: true,
+  isAuthenticated: false,
+  isAuthLoading: true,
   user: null,
   csrfToken: null,
   subdomainValidation: {
@@ -80,11 +82,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   checkAuth: async () => {
+    set({ isAuthLoading: true });
     try {
       const response = await axiosInstance.get(endpoints.getMe);
-      set({ user: response.data?.user, isAuthenticated: true });
+      set({ user: response.data?.user, isAuthenticated: true, isAuthLoading: false });
     } catch (err) {
-      set({ isAuthenticated: false, user: null });
+      set({ isAuthenticated: false, user: null, isAuthLoading: false });
     }
   },
 
