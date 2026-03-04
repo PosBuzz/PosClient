@@ -78,7 +78,7 @@ const SubscriptionInactive = () => {
               <div className="flex gap-4">
                 <Link
                   to="mailto:support@posbuzz.com"
-                  className="!my-2 !border !rounded !py-4 !px-8 !text-center !bg-indigo-600 !text-white !hover:bg-indigo-700 focus:!outline-none focus:!ring-2 focus:!ring-indigo-700 focus:!ring-opacity-50 !cursor-pointer"
+                  className="my-2! border! rounded! py-4! px-8! text-center! bg-indigo-600! text-white! !hover:bg-indigo-700 focus:outline-none! focus:ring-2! focus:ring-indigo-700! focus:ring-opacity-50! cursor-pointer!"
                 >
                   Contact Support
                 </Link>
