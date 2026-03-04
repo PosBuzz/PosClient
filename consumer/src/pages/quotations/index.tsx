@@ -62,7 +62,7 @@ const QuotationsTable = () => {
     debounce((value: string) => {
       setFilters((prev) => ({ ...prev, search: value, page: 1 }));
     }, 300),
-    []
+    [],
   );
 
   // Cleanup debounced function on unmount
@@ -198,7 +198,7 @@ const QuotationsTable = () => {
               type="text"
               icon={<SwapOutlined />}
               disabled={!!record.converted_to_sale_id}
-              onClick={() => navigate(`/sales/add?quotation_id=${record.id}`)}
+              onClick={() => navigate(`/sales/new?quotation_id=${record.id}`)}
             />
           </Tooltip>
           <Tooltip title="Copy Quotation">

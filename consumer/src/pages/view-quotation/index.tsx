@@ -16,7 +16,7 @@ import {
   Spin,
   Table,
   Tag,
-  Typography
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
@@ -66,7 +66,7 @@ const QuotationDetail: React.FC = () => {
 
   const handleConvertToSale = () => {
     if (!quotation) return;
-    navigate(`/sales/add?quotation_id=${quotation.id}`);
+    navigate(`/sales/new?quotation_id=${quotation.id}`);
   };
 
   const handleDownloadPdf = async () => {
