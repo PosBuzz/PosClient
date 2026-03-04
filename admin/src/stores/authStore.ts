@@ -16,6 +16,7 @@ type User = {
 
 interface AuthState {
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
   user: User | null;
   csrfToken: string | null; // <-- ADD THIS
   setUser: (user: User | null) => void;
@@ -28,7 +29,8 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: true,
+  isAuthenticated: false,
+  isAuthLoading: true,
   user: null,
   csrfToken: null, // <-- INITIALLY null
 
@@ -38,7 +40,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     await axiosInstance.post(endpoints.login, { email, password });
-    set({ isAuthenticated: true });
+    // set({ isAuthenticated: true });
+    await useAuthStore.getState().checkAuth();
   },
 
   logout: async () => {
@@ -47,11 +50,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   checkAuth: async () => {
+    set({ isAuthLoading: true });
     try {
       const response = await axiosInstance.get(endpoints.getMe);
-      set({ user: response.data?.user, isAuthenticated: true });
+      set({ user: response.data?.user, isAuthenticated: true, isAuthLoading: false });
     } catch (err) {
-      set({ isAuthenticated: false, user: null });
+      set({ isAuthenticated: false, user: null, isAuthLoading: false });
     }
   },
 

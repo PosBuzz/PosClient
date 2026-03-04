@@ -439,7 +439,7 @@ export default function ProductForm() {
           activeKey={activeTab}
           onChange={setActiveTab}
           items={tabItems}
-          className="min-h-[500px]"
+          className="min-h-125"
         />
       </Card>
     </>
