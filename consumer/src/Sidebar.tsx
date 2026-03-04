@@ -170,7 +170,7 @@ const SideBar: React.FC = () => {
         },
         {
           label: <span title="New Sale">New Sale</span>,
-          key: "/sales/add",
+          key: "/sales/new",
           permissions: [Permissions.sales],
         },
         {
@@ -253,7 +253,7 @@ const SideBar: React.FC = () => {
 
       // Check if any child matches exactly
       const exactChildMatch = item.children.some(
-        (child) => child.key === currentPath
+        (child) => child.key === currentPath,
       );
       if (exactChildMatch) return true;
 
