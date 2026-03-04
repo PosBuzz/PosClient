@@ -334,14 +334,6 @@ export const routes = [
         ),
       },
       {
-        path: "sales/add",
-        element: (
-          <RequirePermission permission={Permissions.sales}>
-            <AddSale />
-          </RequirePermission>
-        ),
-      },
-      {
         path: "sales/view/:id",
         element: (
           <RequirePermission permission={Permissions.sales}>
