@@ -134,11 +134,12 @@ const NewSale = () => {
 
   // Load served by users using React Query
   const servedByUsersQuery = useQuery({
-    queryKey: [queryKeys.users],
+    queryKey: [queryKeys.users,selectedBranch],
     queryFn: async () => {
-      const data = await get(endpoints.user);
+      const data = await get(endpoints.user,{ branch_id: selectedBranch });
       return data.data || data;
     },
+    enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.users],
   });
 
