@@ -102,6 +102,18 @@ export class SalesService {
       }
     }
 
+    // Validate served_by user if provided
+    if (createSaleDto.served_by_id) {
+      const servedByUser = await this.prisma.user.findFirst({
+        where: { id: createSaleDto.served_by_id, consumer_id: consumerId },
+      });
+      if (!servedByUser) {
+        throw new BadRequestException(
+          'Served by user not found or not accessible',
+        );
+      }
+    }
+
     // Validate items and check stock (skip stock validation for quotations)
     const isQuotation = createSaleDto.sale_type === SaleType.QUOTATION;
     const validationResults = await Promise.all(
@@ -262,6 +274,7 @@ export class SalesService {
           customer_email: createSaleDto.customer_email,
           branch_id: createSaleDto.branch_id,
           user_id: userId,
+          served_by_id: createSaleDto.served_by_id,
           sale_type: createSaleDto.sale_type || SaleType.SALE,
           price_type: createSaleDto.price_type || 'regular',
           subtotal,
@@ -521,6 +534,7 @@ export class SalesService {
           customer: true,
           branch: true,
           user: { select: { id: true, name: true } },
+          served_by: { select: { id: true, name: true } },
           payments: true, // Include payment details
           items: {
             include: {
@@ -581,6 +595,7 @@ export class SalesService {
         consumer: true, // Include consumer data directly
         branch: true,
         user: { select: { id: true, name: true } },
+        served_by: { select: { id: true, name: true } },
         payments: true, // Include payment details
         converted_from_quotations: {
           // Include original quotations if converted
@@ -634,6 +649,7 @@ export class SalesService {
         customer: true,
         branch: true,
         user: { select: { id: true, name: true } },
+        served_by: { select: { id: true, name: true } },
         payments: true,
         items: {
           include: {
@@ -1358,6 +1374,7 @@ export class SalesService {
               customer: true,
               branch: true,
               user: { select: { id: true, name: true } },
+              served_by: { select: { id: true, name: true } },
               items: {
                 include: {
                   variant: {
@@ -1410,6 +1427,7 @@ export class SalesService {
             customer: true,
             consumer: true, // Include consumer data directly
             branch: true,
+            served_by: { select: { id: true, name: true } },
             user: { select: { id: true, name: true } },
             items: {
               include: {
@@ -1521,6 +1539,7 @@ export class SalesService {
           customer_email: quotation.customer_email,
           branch_id: quotation.branch_id,
           user_id: userId,
+          served_by_id: quotation.served_by_id,
           sale_type: SaleType.SALE, // Convert to actual sale
           price_type: quotation.price_type,
           subtotal: quotation.subtotal,
@@ -1647,6 +1666,7 @@ export class SalesService {
           customer: true,
           branch: true,
           user: { select: { id: true, name: true } },
+          served_by: { select: { id: true, name: true } },
           payments: true,
           items: {
             include: {
@@ -1726,6 +1746,7 @@ export class SalesService {
         customer: true,
         branch: true,
         user: { select: { id: true, name: true } },
+        served_by: { select: { id: true, name: true } },
         payments: true,
         items: {
           include: {
