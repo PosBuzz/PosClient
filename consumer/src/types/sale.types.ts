@@ -59,7 +59,8 @@ export interface Sale {
   notes?: string;
   converted_to_sale_id?: number; // For quotations: which sale it was converted to
   converted_at?: string; // For quotations: timestamp when converted to sale
-  converted_from_quotations?: Array<{ // For sales: original quotations if converted
+  converted_from_quotations?: Array<{
+    // For sales: original quotations if converted
     id: number;
     sale_number: string;
     created_at: string;
@@ -93,6 +94,29 @@ export interface SaleFormData {
   online_order_status?: OnlineOrderStatus | string;
 }
 
+export interface DailyTargetRow {
+  product_id: number;
+  product_name: string;
+  variant_id: number;
+  variant_name: string;
+  sku?: string;
+  daily_target: number;
+  actual_sold: number;
+  achievement_pct: number;
+  gap: number;
+}
+
+export interface DailyTargetReportResponse {
+  date: string;
+  branch_id?: number;
+  branch_name?: string;
+  rows: DailyTargetRow[];
+  summary: {
+    total_target: number;
+    total_sold: number;
+    overall_achievement_pct: number;
+  };
+}
 export enum PaymentMethod {
   CASH = "CASH",
   CARD = "CARD",

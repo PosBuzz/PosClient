@@ -26,6 +26,7 @@ import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { Request } from 'express';
+import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
@@ -47,10 +48,7 @@ export class SalesController {
   }
 
   @Get()
-  async findAll(
-    @Query() filters: SaleListFiltersDto,
-    @Req() req: Request,
-  ) {
+  async findAll(@Query() filters: SaleListFiltersDto, @Req() req: Request) {
     return this.salesService.findAll(filters, req.user.consumer_id!);
   }
 
@@ -99,11 +97,19 @@ export class SalesController {
   }
 
   @Get('reports/eod')
-  async getEODReport(
-    @Query() eodDto: EODReportDto,
+  async getEODReport(@Query() eodDto: EODReportDto, @Req() req: Request) {
+    return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
+  }
+
+  @Get('reports/daily-target')
+  async getDailyTargetReport(
+    @Query() dailyTargetDto: DailyTargetReportDto,
     @Req() req: Request,
   ) {
-    return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
+    return this.salesService.getDailyTargetReport(
+      req.user.consumer_id!,
+      dailyTargetDto,
+    );
   }
 
   @Get('receipt/:id')
@@ -115,7 +121,7 @@ export class SalesController {
   ) {
     // Get the sale data
     const sale = await this.salesService.findOne(id, req.user.consumer_id!);
-    
+
     if (!sale) {
       return res.status(404).json({ message: 'Sale not found' });
     }
@@ -127,9 +133,12 @@ export class SalesController {
     const filename = `receipt-${(sale as any).sale_number || 'unknown'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+
     if (download === 'true') {
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
     } else {
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     }
@@ -143,7 +152,10 @@ export class SalesController {
     @Param('saleNumber') saleNumber: string,
     @Req() req: Request,
   ) {
-    return this.salesService.findBySaleNumber(saleNumber, req.user.consumer_id!);
+    return this.salesService.findBySaleNumber(
+      saleNumber,
+      req.user.consumer_id!,
+    );
   }
 
   @HasPermissions([ConsumerPermission.quotations])
@@ -173,22 +185,29 @@ export class SalesController {
     @Query('download') download?: string,
   ) {
     // Get the quotation data
-    const quotation = await this.salesService.findOneQuotation(id, req.user.consumer_id!);
-    
+    const quotation = await this.salesService.findOneQuotation(
+      id,
+      req.user.consumer_id!,
+    );
+
     if (!quotation) {
       return res.status(404).json({ message: 'Quotation not found' });
     }
 
     // Generate PDF
-    const pdfBuffer = await this.quotationPdfService.generateQuotationPdf(quotation);
+    const pdfBuffer =
+      await this.quotationPdfService.generateQuotationPdf(quotation);
 
     // Set response headers
     const filename = `quotation-${(quotation as any).sale_number || 'unknown'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+
     if (download === 'true') {
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
     } else {
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     }
@@ -198,21 +217,18 @@ export class SalesController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
-  ) {
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.salesService.findOne(id, req.user.consumer_id!);
   }
 
   // ========== ONLINE ORDERS ENDPOINTS ==========
 
   @Get('online-orders/list')
-  async findAllOnlineOrders(
-    @Query() filters: any,
-    @Req() req: Request,
-  ) {
-    return this.salesService.findAllOnlineOrders(filters, req.user.consumer_id!);
+  async findAllOnlineOrders(@Query() filters: any, @Req() req: Request) {
+    return this.salesService.findAllOnlineOrders(
+      filters,
+      req.user.consumer_id!,
+    );
   }
 
   @Get('online-orders/stats')

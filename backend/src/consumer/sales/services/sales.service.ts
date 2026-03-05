@@ -12,6 +12,11 @@ import {
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import {
+  DailyTargetReportDto,
+  DailyTargetReportResponse,
+  DailyTargetRow,
+} from '../dto/daily-target-report.dto';
+import {
   EODReportDto,
   EODReportResponse,
   PaymentMethodBreakdown,
@@ -1797,6 +1802,142 @@ export class SalesService {
         count: todayStats._count || 0,
         total: Number(todayStats._sum.total_amount) || 0,
       },
+    };
+  }
+
+  async getDailyTargetReport(
+    consumerId: number,
+    dailyTargetDto: DailyTargetReportDto,
+  ) {
+    const reportDate = dailyTargetDto.date
+      ? new Date(dailyTargetDto.date)
+      : new Date();
+    const startOfDay = new Date(reportDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(reportDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const branchId = dailyTargetDto.branch_id ?? undefined;
+
+    // Resolve branch name if a branch was requested
+    let branchName: string | undefined;
+    if (branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: branchId },
+        select: { name: true },
+      });
+      branchName = branch?.name;
+    }
+
+    // QUERY 1A — Date-specific targets
+    // Priority: branch-specific target > store-wide target > product default
+    const dateTargets = await this.prisma.dailySalesTarget.findMany({
+      where: {
+        consumer_id: consumerId,
+        date: reportDate,
+        ...(branchId
+          ? { OR: [{ branch_id: branchId }, { branch_id: null }] }
+          : { branch_id: null }),
+      },
+      select: { product_id: true, target_qty: true, branch_id: true },
+    });
+
+    // Branch-specific entry wins over store-wide (null) entry
+    const dateTargetMap = new Map<number, number>();
+    // Add store-wide entries first (lower priority)
+    dateTargets
+      .filter((t) => t.branch_id === null)
+      .forEach((t) => dateTargetMap.set(t.product_id, t.target_qty));
+    // Branch-specific entries overwrite store-wide
+    dateTargets
+      .filter((t) => t.branch_id !== null)
+      .forEach((t) => dateTargetMap.set(t.product_id, t.target_qty));
+
+    // QUERY 1B — Variants with a product-level default target
+    const variantsWithTarget = await this.prisma.productVariant.findMany({
+      where: {
+        product: {
+          consumer_id: consumerId,
+          daily_sale_objective: { gt: 0 },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        product: {
+          select: { id: true, name: true, daily_sale_objective: true },
+        },
+      },
+    });
+
+    if (variantsWithTarget.length === 0 && dateTargets.length === 0) {
+      return {
+        date: reportDate.toISOString().split('T')[0],
+        branch_id: branchId,
+        branch_name: branchName,
+        rows: [],
+        summary: { total_target: 0, total_sold: 0, overall_achievement_pct: 0 },
+      };
+    }
+
+    // QUERY 2 — ACTUAL DIMENSION (pivot aggregation)
+    // Collapse many SaleItem rows → one quantity-sum per variant_id
+    // When branch is selected, only count sales from that branch
+    const soldGrouped = await this.prisma.saleItem.groupBy({
+      by: ['variant_id'],
+      where: {
+        sale: {
+          consumer_id: consumerId,
+          sale_type: SaleType.SALE,
+          sale_date: { gte: startOfDay, lte: endOfDay },
+          ...(branchId ? { branch_id: branchId } : {}),
+        },
+      },
+      _sum: { quantity: true },
+    });
+
+    // PIVOT MERGE
+    const actualMap = new Map<number, number>(
+      soldGrouped.map((row) => [row.variant_id, row._sum.quantity ?? 0]),
+    );
+
+    const rows: DailyTargetRow[] = variantsWithTarget.map((variant) => {
+      const daily_target =
+        dateTargetMap.get(variant.product.id) ??
+        variant.product.daily_sale_objective ??
+        0;
+      const actual_sold = actualMap.get(variant.id) ?? 0;
+      const achievement_pct =
+        daily_target > 0
+          ? Math.round((actual_sold / daily_target) * 10000) / 100
+          : 0;
+      return {
+        product_id: variant.product.id,
+        product_name: variant.product.name,
+        variant_id: variant.id,
+        variant_name: variant.name,
+        sku: variant.sku ?? undefined,
+        daily_target,
+        actual_sold,
+        achievement_pct,
+        gap: actual_sold - daily_target,
+      };
+    });
+
+    const total_target = rows.reduce((s, r) => s + r.daily_target, 0);
+    const total_sold = rows.reduce((s, r) => s + r.actual_sold, 0);
+    const overall_achievement_pct =
+      total_target > 0
+        ? Math.round((total_sold / total_target) * 10000) / 100
+        : 0;
+
+    return {
+      date: reportDate.toISOString().split('T')[0],
+      branch_id: branchId,
+      branch_name: branchName,
+      rows,
+      summary: { total_target, total_sold, overall_achievement_pct },
     };
   }
 }
