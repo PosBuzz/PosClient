@@ -164,6 +164,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
+          label: <span title="Daily Sales Target">Daily Sales Target</span>,
+          key: "/daily-target",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Online Orders">Online Orders</span>,
           key: "/online-orders",
           permissions: [Permissions.sales],

@@ -170,6 +170,7 @@ model Consumer {
   RewardsSettings          RewardsSettings?
   CustomerRewardsPoints    CustomerRewardsPoints[]
   RewardsPointTransactions RewardsPointTransaction[]
+  daily_targets            DailySalesTarget[]
 
   // ERP Relations
   erp_settings      ERPSettings?
@@ -383,12 +384,38 @@ model Product {
   brand    Brand?           @relation(fields: [brand_id], references: [id], onDelete: SetNull)
   variants ProductVariant[]
 
+  daily_targets        DailySalesTarget[] 
+
   @@unique([consumer_id, name])
   @@unique([consumer_id, code])
   @@index([name])
   @@index([category_id])
   @@index([brand_id])
   @@map("products")
+}
+
+model DailySalesTarget {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  product_id  Int
+  branch_id   Int?     // null = applies to ALL branches (store-wide target)
+  date        DateTime @db.Date // The specific date this target applies to
+  target_qty  Int      // Number of units to sell that day
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  product  Product   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  branch   Branch?   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  // One target per (consumer + product + branch + date)
+  @@unique([consumer_id, product_id, branch_id, date])
+  @@index([consumer_id, date])
+  @@index([product_id])
+  @@index([branch_id])
+  @@map("daily_sales_targets")
 }
 
 model ProductSerial {
@@ -550,6 +577,7 @@ model Branch {
   InventoryAdjustment InventoryAdjustment[]
   Sales               Sale[]
   Returns             Return[]
+  daily_targets       DailySalesTarget[]
 
   @@unique([consumer_id, name])
   @@index([name])
