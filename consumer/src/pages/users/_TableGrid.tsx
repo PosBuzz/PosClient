@@ -23,9 +23,16 @@ import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
-export default function _TableGrid({ onClickEdit, roleOptions = [], branchOptions = [] }) {
+export default function _TableGrid({
+  onClickEdit,
+  roleOptions = [],
+  branchOptions = [],
+}) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedBranch, setSelectedBranch] = useState<number | undefined>(
+    undefined,
+  );
   const { messageApi } = useMessageStore();
   const { user } = useAuthStore();
 
@@ -34,7 +41,7 @@ export default function _TableGrid({ onClickEdit, roleOptions = [], branchOption
   // Debounced API call function using lodash's debounce
   const debouncedSearch = useCallback(
     debounce((nextValue) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -50,11 +57,17 @@ export default function _TableGrid({ onClickEdit, roleOptions = [], branchOption
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: [queryKeys.users, debouncedSearchText, selectedRole],
+    queryKey: [
+      queryKeys.users,
+      debouncedSearchText,
+      selectedRole,
+      selectedBranch,
+    ],
     queryFn: () =>
       get(endpoints.user, {
         search_text: debouncedSearchText,
         role_id: selectedRole,
+        branch_id: selectedBranch,
       }),
     staleTime: queryStaleTimeMap[queryKeys.users],
   });
@@ -101,7 +114,7 @@ export default function _TableGrid({ onClickEdit, roleOptions = [], branchOption
           return <Tag color="green">All branches</Tag>;
         }
         return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {branches.map((ub: any) => (
               <Tag key={ub.branch.id} color="blue" style={{ marginBottom: 4 }}>
                 {ub.branch.name}
@@ -165,6 +178,16 @@ export default function _TableGrid({ onClickEdit, roleOptions = [], branchOption
             value={selectedRole}
             onChange={(value) => setSelectedRole(value)}
             options={roleOptions}
+          />
+        </Col>
+        <Col xs={24} md={6} lg={6}>
+          <Select
+            allowClear
+            placeholder="Filter by Branch"
+            style={{ width: "100%" }}
+            value={selectedBranch}
+            onChange={(value) => setSelectedBranch(value)}
+            options={branchOptions}
           />
         </Col>
       </Row>

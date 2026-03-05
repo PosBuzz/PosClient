@@ -43,6 +43,13 @@ export interface Sale {
     id: number;
     name: string;
   };
+  served_by_id?: number;
+  served_by_name?: string;
+  served_by?: {
+    // Include served_by user object from Prisma relation
+    id: number;
+    name: string;
+  };
   customer?: Customer;
   sale_date: string;
   sale_type: SaleType;
@@ -78,6 +85,7 @@ export interface SaleFormData {
   customer_phone?: string;
   customer_email?: string;
   branch_id: number;
+  served_by_id?: number;
   quotation_id?: number; // For converting quotation to sale
   sale_type: SaleType;
   price_type: PriceType;
