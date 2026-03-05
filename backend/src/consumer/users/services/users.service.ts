@@ -87,14 +87,16 @@ export class UsersService {
     consumer_id: number,
     search_text?: string | null,
     role_id?: number,
+    branch_id?: number,
   ) {
-    console.log({ consumer_id, search_text, role_id });
+    console.log({ consumer_id, search_text, role_id, branch_id });
 
     // Generate cache key
     const cacheKey = generateCacheKey.userList(
       consumer_id,
       search_text || undefined,
       role_id,
+      branch_id,
     );
 
     // Try to get from cache first
@@ -109,6 +111,7 @@ export class UsersService {
             ],
           }),
           ...(role_id && { role_id }),
+          ...(branch_id && { branches: { some: { branch_id } } }),
         },
         include: {
           role: true,

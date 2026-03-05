@@ -64,6 +64,7 @@ const NewSale = () => {
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [servedByUsers, setServedByUsers] = useState<{ id: number; name: string }[]>([]);
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
   >([]);
@@ -71,6 +72,7 @@ const NewSale = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
+    const [selectedServedByUser, setSelectedServedByUser] = useState<{ id: number; name: string } | null>(null);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
   const [discountType, setDiscountType] = useState<DiscountType>(
@@ -113,6 +115,17 @@ const NewSale = () => {
     staleTime: queryStaleTimeMap[queryKeys.customers],
   });
 
+  // Load served_by users for dropdown (optional)
+  const servedByUsersQuery = useQuery({
+    queryKey: [queryKeys.users,selectedBranch],
+    queryFn: async () => {
+      const data = await get(endpoints.user,{ branch_id: selectedBranch });
+      return data.data || data;
+    },
+    enabled: !!selectedBranch, // Only load when branch is selected
+    staleTime: queryStaleTimeMap[queryKeys.users],
+  });
+
   // Load products for sale when branch is selected
   const productsForSaleQuery = useQuery({
     queryKey: [queryKeys.productsForSale, selectedBranch],
@@ -142,6 +155,12 @@ const NewSale = () => {
       setCustomers(customersQuery.data);
     }
   }, [customersQuery.data]);
+
+  useEffect(() => {
+    if (servedByUsersQuery.data) {
+      setServedByUsers(servedByUsersQuery.data);
+    }
+  }, [servedByUsersQuery.data]);
 
   useEffect(() => {
     if (productsForSaleQuery.data) {
@@ -578,6 +597,7 @@ const NewSale = () => {
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
+      served_by_id: selectedServedByUser?.id || values.served_by_id,
       items: selectedItems.map((item) => ({
         variant_id: item.variant_id,
         quantity: item.quantity,
@@ -805,7 +825,7 @@ const NewSale = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={8}>
               <Form.Item label="Customer" name="customer_id">
                 <div style={{ display: "flex", gap: 8 }}>
                   <Select
@@ -832,6 +852,36 @@ const NewSale = () => {
                     onClick={() => setCustomerModalOpen(true)}
                     title="Add new customer"
                   />
+                </div>
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="Served By" name="served_by_id">
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Select
+                    placeholder="Select Staff"
+                    showSearch
+                    allowClear
+                    optionFilterProp="children"
+                    value={selectedServedByUser?.id}
+                    onChange={(value) => {
+                      const servedByUser = servedByUsers.find((u) => u.id === value);
+                      setSelectedServedByUser(servedByUser || null);
+                      form.setFieldsValue({ served_by_id: value });
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    {servedByUsers.map((user) => (
+                      <Option key={user.id} value={user.id}>
+                        {user.name}
+                      </Option>
+                    ))}
+                  </Select>
+                  {/* <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => setCustomerModalOpen(true)}
+                    title="Add new customer"
+                  /> */}
                 </div>
               </Form.Item>
             </Col>
