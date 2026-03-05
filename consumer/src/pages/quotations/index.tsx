@@ -176,6 +176,11 @@ const QuotationsTable = () => {
       key: "user",
     },
     {
+      title: "Served By",
+      key: "served_by",
+      render: (record: Sale) => record.served_by?.name || "—",
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (record: Sale) => (
