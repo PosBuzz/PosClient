@@ -257,6 +257,11 @@ const QuotationDetail: React.FC = () => {
                   </div>
                 )}
               </Descriptions.Item>
+              <Descriptions.Item label="Served By" span={2}>
+                {quotation.served_by_name ||
+                  quotation.served_by?.name ||
+                  "Self Served"}
+              </Descriptions.Item>
               <Descriptions.Item label="Price Type">
                 <Tag
                   color={
