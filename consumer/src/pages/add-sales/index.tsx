@@ -117,11 +117,12 @@ const NewSale = () => {
 
   // Load served_by users for dropdown (optional)
   const servedByUsersQuery = useQuery({
-    queryKey: [queryKeys.users],
+    queryKey: [queryKeys.users,selectedBranch],
     queryFn: async () => {
-      const data = await get(endpoints.user);
+      const data = await get(endpoints.user,{ branch_id: selectedBranch });
       return data.data || data;
     },
+    enabled: !!selectedBranch, // Only load when branch is selected
     staleTime: queryStaleTimeMap[queryKeys.users],
   });
 

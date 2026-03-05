@@ -67,8 +67,8 @@ export const generateCacheKey = {
   customer: (consumerId: number, customerId: number) =>
     `${consumerId}:customer:detail:${customerId}`,
 
-  userList: (consumerId: number, search?: string, roleId?: number) =>
-    `${consumerId}:users:list:${search || 'all'}:${roleId || 'all'}`,
+  userList: (consumerId: number, search?: string, roleId?: number,branchId?: number) =>
+    `${consumerId}:users:list:${search || 'all'}:${roleId || 'all'}:${branchId || 'all'}`,
 
   userDetail: (userId: number, consumerId: number) =>
     `${consumerId}:user:detail:${userId}`,

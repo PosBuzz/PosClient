@@ -32,15 +32,19 @@ export class UsersController {
   getUsers(
     @Query('search_text') search_text: string,
     @Query('role_id') role_id: string,
+    @Query('branch_id') branch_id: string,
     @Req() req: Request,
   ) {
     const parsedRoleId =
       role_id && role_id !== 'null' ? Number(role_id) : undefined;
+    const parsedBranchId =
+      branch_id && branch_id !== 'null' ? Number(branch_id) : undefined;
 
     return this.usersService.getUsers(
       Number(req?.user?.consumer_id),
       search_text !== 'null' ? search_text : undefined,
       parsedRoleId,
+      parsedBranchId,
     );
   }
 
