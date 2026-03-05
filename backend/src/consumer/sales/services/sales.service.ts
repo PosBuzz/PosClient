@@ -1808,7 +1808,7 @@ export class SalesService {
   async getDailyTargetReport(
     consumerId: number,
     dailyTargetDto: DailyTargetReportDto,
-  ) {
+  ): Promise<DailyTargetReportResponse> {
     const reportDate = dailyTargetDto.date
       ? new Date(dailyTargetDto.date)
       : new Date();
@@ -1829,8 +1829,7 @@ export class SalesService {
       branchName = branch?.name;
     }
 
-    // QUERY 1A — Date-specific targets
-    // Priority: branch-specific target > store-wide target > product default
+    // Date-specific targets
     const dateTargets = await this.prisma.dailySalesTarget.findMany({
       where: {
         consumer_id: consumerId,
@@ -1853,7 +1852,7 @@ export class SalesService {
       .filter((t) => t.branch_id !== null)
       .forEach((t) => dateTargetMap.set(t.product_id, t.target_qty));
 
-    // QUERY 1B — Variants with a product-level default target
+    //Variants with a product-level default target
     const variantsWithTarget = await this.prisma.productVariant.findMany({
       where: {
         product: {
@@ -1881,7 +1880,7 @@ export class SalesService {
       };
     }
 
-    // QUERY 2 — ACTUAL DIMENSION (pivot aggregation)
+    // (pivot aggregation)
     // Collapse many SaleItem rows → one quantity-sum per variant_id
     // When branch is selected, only count sales from that branch
     const soldGrouped = await this.prisma.saleItem.groupBy({
