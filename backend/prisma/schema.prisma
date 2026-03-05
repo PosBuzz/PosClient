@@ -292,6 +292,7 @@ model User {
   InventoryAdjustment          InventoryAdjustment[]
   PriceHistory                 PriceHistory[]
   Sales                        Sale[]
+  served_by_sales              Sale[]                    @relation("ServedBy")
   Returns                      Return[]
   created_rewards_transactions RewardsPointTransaction[]
 
@@ -783,6 +784,7 @@ model Sale {
   customer_email       String?
   branch_id            Int
   user_id              Int?
+  served_by_id         Int?
   sale_date            DateTime  @default(now())
   sale_type            String    @default("sale") // sale, quotation
   price_type           String    @default("regular") // regular, wholesale
@@ -808,6 +810,7 @@ model Sale {
   customer                   Customer?                 @relation(fields: [customer_id], references: [id], onDelete: SetNull)
   branch                     Branch                    @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   user                       User?                     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  served_by                  User?                     @relation("ServedBy", fields: [served_by_id], references: [id], onDelete: SetNull)
   items                      SaleItem[]
   payments                   SalePayment[]
   returns_as_original        Return[]                  @relation("OriginalSale")

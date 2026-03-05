@@ -409,8 +409,11 @@ const SaleDetail: React.FC = () => {
               <Descriptions.Item label="Branch">
                 {sale.branch?.name || "N/A"}
               </Descriptions.Item>
-              <Descriptions.Item label="Served By">
+              <Descriptions.Item label="Created By">
                 {sale.user?.name || sale.user_name || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Served By">
+                {sale.served_by?.name || sale.served_by_name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Sale Type">
                 <Tag color="blue">{sale.sale_type?.toUpperCase()}</Tag>

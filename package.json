@@ -1,7 +1,8 @@
 {
   "name": "posbuzz",
   "version": "1.0.0",
-  "main": "index.js",  "scripts": {
+  "main": "index.js",
+  "scripts": {
     "dev": "concurrently -n BACKEND,ADMIN,CONSUMER,AI -c green,blue,magenta,yellow \"npm run start:dev --prefix backend\" \"npm run dev --prefix admin\" \"npm run dev --prefix consumer\" \"cd ai-service && (source .venv/bin/activate || .venv\\\\Scripts\\\\activate) && python run.py\"",
     "build": "concurrently -n BACKEND,ADMIN,CONSUMER,AI -c green,blue,magenta,yellow \"npm run build --prefix backend\" \"npm run build --prefix admin\" \"npm run build --prefix consumer\" \"npm run build --prefix ai-service\"",
     "start": "concurrently -n BACKEND,ADMIN,CONSUMER,AI -c green,blue,magenta,yellow \"npm run start --prefix backend\" \"npm run preview --prefix admin\" \"npm run preview --prefix consumer\" \"cd ai-service && (source .venv/bin/activate || .venv\\\\Scripts\\\\activate) && python run.py\"",
