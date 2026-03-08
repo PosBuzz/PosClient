@@ -114,6 +114,8 @@ export const endpoints = {
   getProductsForSale: "/consumer/sales/products",
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
+  getUserSalesStats: "/consumer/sales/user-sales-stats",
+  getUserSalesDetail: (userId: number) => `/consumer/sales/user-sales-stats/${userId}`,
 
   // Quotation Management
   getQuotations: "/consumer/sales/quotations/list",
