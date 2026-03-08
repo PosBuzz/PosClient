@@ -33,6 +33,14 @@ export interface Sale {
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
+  promotion_id?: number;
+  promotion?: {
+    id: number;
+    name: string;
+    scope: string;
+    discount_type: string;
+    discount_value: number;
+  };
   branch_id: number;
   branch_name?: string;
   branch?: Branch; // Include branch object from Prisma relation
@@ -56,7 +64,8 @@ export interface Sale {
   price_type: PriceType;
   subtotal: number;
   discount_type: DiscountType;
-  discount_amount: number;
+  discount_amount: number; // Manual discount only
+  promotion_discount: number; // Promotion discount (tracked separately for stats)
   shipping_cost: number;
   tax_amount: number;
   total_amount: number;
@@ -84,6 +93,7 @@ export interface SaleFormData {
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
+  applied_promotion_id?: number;
   branch_id: number;
   served_by_id?: number;
   quotation_id?: number; // For converting quotation to sale
@@ -185,6 +195,7 @@ export interface ProductVariantForSale {
   name: string;
   sku?: string;
   barcode?: string;
+  brand_id?: number;
   regular_price: number;
   wholesale_price?: number;
   image?: string;

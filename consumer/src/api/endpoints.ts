@@ -115,6 +115,17 @@ export const endpoints = {
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
 
+  // Promotions Management
+  getPromotions: "/consumer/promotions",
+  getPromotion: (id: number) => `/consumer/promotions/${id}`,
+  createPromotion: "/consumer/promotions",
+  updatePromotion: (id: number) => `/consumer/promotions/${id}`,
+  deletePromotion: (id: number) => `/consumer/promotions/${id}`,
+  promotionOptions: "/consumer/promotions/options",
+  activePromotions: "/consumer/promotions/active/list",
+  validatePromotionCart: (id: number) => `/consumer/promotions/${id}/validate-cart`,
+  promotionSales: (id: number) => `/consumer/promotions/${id}/sales`,
+
   // Quotation Management
   getQuotations: "/consumer/sales/quotations/list",
   getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
