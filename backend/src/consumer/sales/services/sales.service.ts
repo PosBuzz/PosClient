@@ -1604,6 +1604,141 @@ export class SalesService {
     return result;
   }
 
+  // === USER SALES STATS METHODS ===
+
+  async getUserSalesStats(
+    consumerId: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+  ) {
+    const start = new Date(startDate);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const whereClause: any = {
+      consumer_id: consumerId,
+      sale_type: SaleType.SALE,
+      served_by_id: { not: null },
+      sale_date: {
+        gte: start,
+        lte: end,
+      },
+    };
+
+    if (branchId) {
+      whereClause.branch_id = branchId;
+    }
+
+    const grouped = await this.prisma.sale.groupBy({
+      by: ['served_by_id'],
+      where: whereClause,
+      _sum: {
+        total_amount: true,
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        _sum: {
+          total_amount: 'desc',
+        },
+      },
+    });
+
+    const userIds = grouped.map((g) => g.served_by_id as number);
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return grouped.map((g) => {
+      const userId = g.served_by_id as number;
+
+      return {
+        id: userId,
+        name: userMap.get(userId)?.name,
+        email: userMap.get(userId)?.email,
+        totalSales: Number(g._sum.total_amount || 0),
+        salesCount: g._count.id,
+      };
+    });
+  }
+
+  async getUserSalesDetail(
+    consumerId: number,
+    servedById: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const where: any = {
+      consumer_id: consumerId,
+      sale_type: SaleType.SALE,
+      served_by_id: servedById,
+      sale_date: {
+        gte: start,
+        lte: end,
+      },
+    };
+
+    if (branchId) {
+      where.branch_id = branchId;
+    }
+
+    const servedByUser = await this.prisma.user.findFirst({
+      where: { id: servedById, consumer_id: consumerId },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!servedByUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const sales = await this.prisma.sale.findMany({
+      where,
+      orderBy: { sale_date: 'desc' },
+      include: {
+        customer: true,
+        branch: true,
+        served_by: { select: { id: true, name: true } },
+        payments: true,
+        items: {
+          include: {
+            variant: {
+              include: { product: true, sale_unit: true },
+            },
+          },
+        },
+      },
+    });
+
+    const totalAmount = sales.reduce(
+      (sum, s) => sum + Number(s.total_amount),
+      0,
+    );
+
+    return {
+      user: servedByUser,
+      data: sales,
+      meta: {
+        total: sales.length,
+        total_amount: totalAmount,
+      },
+    };
+  }
   // ========== ONLINE ORDER METHODS ==========
 
   async findAllOnlineOrders(filters: any, consumerId: number) {
