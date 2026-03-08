@@ -50,7 +50,7 @@ export const salesApi = {
   },
   getUserSalesDetail: async (
     userId: number,
-    params: { startDate: string; endDate: string },
+    params: { startDate: string; endDate: string; page: number; limit: number },
   ): Promise<any> => {
     return await get(endpoints.getUserSalesDetail(userId), params);
   },
