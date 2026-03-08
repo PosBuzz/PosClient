@@ -45,6 +45,9 @@ const SaleDetail: React.FC = () => {
 
   const sale = saleQuery.data;
   const loading = saleQuery.isLoading;
+  const promotionDiscount = Number(sale?.promotion_discount) || 0;
+  const manualDiscount = Number(sale?.discount_amount) || 0;
+  const totalDiscount = promotionDiscount + manualDiscount;
 
   useEffect(() => {
     if (saleQuery.isError) {
@@ -163,7 +166,7 @@ const SaleDetail: React.FC = () => {
             total: Number(item.line_total) || 0,
           })) || [],
         subtotal: Number(sale?.subtotal) || 0,
-        discount: Number(sale?.discount_amount) || 0,
+        discount: totalDiscount,
         shipping: Number(sale?.shipping_cost) || 0,
         tax: Number(sale?.tax_amount) || 0,
         total: getCorrectTotal(sale),
@@ -415,6 +418,11 @@ const SaleDetail: React.FC = () => {
               <Descriptions.Item label="Served By">
                 {sale.served_by?.name || sale.served_by_name || "N/A"}
               </Descriptions.Item>
+              {sale.promotion && (
+                <Descriptions.Item label="Promotion Applied">
+                  <Tag color="green">{sale.promotion.name}</Tag>
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Sale Type">
                 <Tag color="blue">{sale.sale_type?.toUpperCase()}</Tag>
               </Descriptions.Item>
@@ -535,7 +543,7 @@ const SaleDetail: React.FC = () => {
                 <Text>Subtotal:</Text>
                 <Text>${(Number(sale?.subtotal) || 0).toFixed(2)}</Text>
               </div>
-              {(Number(sale?.discount_amount) || 0) > 0 && (
+              {promotionDiscount > 0 && (
                 <div
                   style={{
                     display: "flex",
@@ -543,12 +551,36 @@ const SaleDetail: React.FC = () => {
                     marginBottom: 8,
                   }}
                 >
-                  <Text>Discount:</Text>
-                  <Text>
-                    -${(Number(sale?.discount_amount) || 0).toFixed(2)}
+                  <Text style={{ color: "#52c41a" }}>Promo Discount:</Text>
+                  <Text style={{ color: "#52c41a" }}>
+                    -${promotionDiscount.toFixed(2)}
                   </Text>
                 </div>
               )}
+              {manualDiscount > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text>Manual Discount:</Text>
+                  <Text>-${manualDiscount.toFixed(2)}</Text>
+                </div>
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                }}
+              >
+                <Text strong>Total Discount:</Text>
+                <Text strong>
+                  {totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : "$0.00"}
+                </Text>
+              </div>
               {(Number(sale?.shipping_cost) || 0) > 0 && (
                 <div
                   style={{

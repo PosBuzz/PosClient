@@ -107,6 +107,11 @@ export class CreateSaleDto {
   @IsString()
   customer_email?: string;
 
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  applied_promotion_id?: number;
+
   @IsInt()
   @Min(1)
   branch_id: number;

@@ -5,9 +5,10 @@ import { SalesPdfService } from './services/sales-pdf.service';
 import { QuotationPdfService } from './services/quotation-pdf.service';
 import { SalesService } from './services/sales.service';
 import { RewardsModule } from '../rewards/rewards.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 
 @Module({
-  imports: [RewardsModule],
+  imports: [RewardsModule, PromotionsModule],
   controllers: [SalesController],
   providers: [SalesService, SalesPdfService, QuotationPdfService],
   exports: [SalesService, SalesPdfService, QuotationPdfService],

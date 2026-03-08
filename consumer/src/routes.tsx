@@ -46,6 +46,7 @@ const Brands = lazy(() => import("./pages/brands"));
 const Units = lazy(() => import("./pages/units"));
 const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
+const Promotions = lazy(() => import("./pages/promotions"));
 const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
@@ -322,6 +323,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <Sales />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "promotions",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <Promotions />
           </RequirePermission>
         ),
       },
