@@ -291,6 +291,7 @@ model User {
   InventoryTransfer            InventoryTransfer[]
   InventoryAdjustment          InventoryAdjustment[]
   PriceHistory                 PriceHistory[]
+  promotions                   Promotion[]
   Sales                        Sale[]
   served_by_sales              Sale[]                    @relation("ServedBy")
   Returns                      Return[]
@@ -494,8 +495,9 @@ model Brand {
   updated_at  DateTime @updatedAt
 
   // Relations
-  consumer Consumer  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products Product[]
+  consumer   Consumer    @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  products   Product[]
+  promotions Promotion[]
 
   @@unique([consumer_id, name])
   @@index([name])
@@ -726,24 +728,42 @@ model PriceHistory {
 model Promotion {
   id              Int       @id @default(autoincrement())
   consumer_id     Int
+  created_by_user_id Int?
   name            String
   description     String?
+  scope           String    @default("SINGLE_PRODUCT") // SINGLE_PRODUCT, BUNDLE, BRAND
   discount_type   String // percentage, fixed_amount
   discount_value  Decimal   @db.Decimal(10, 2)
   start_date      DateTime
   end_date        DateTime?
   is_active       Boolean   @default(true)
+  brand_id        Int?
+  min_quantity    Int?      @default(1)
+  usage_limit     Int?
+  cap_quantity    Int?
   min_purchase    Decimal?  @db.Decimal(10, 2)
+  max_discount_amount Decimal? @db.Decimal(10, 2)
+  cap_discount_amount Decimal? @db.Decimal(10, 2)
+  member_only     Boolean   @default(false)
+  limit_per_customer Boolean @default(false)
+  customer_usage_limit Int?
+  customer_usage_daily_reset Boolean @default(false)
+  auto_apply      Boolean   @default(false)
   branch_specific Boolean   @default(false)
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
 
   // Relations
-  consumer Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
-  products PromotionProduct[]
-  branches PromotionBranch[]
+  consumer        Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  created_by_user User?              @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull)
+  brand           Brand?             @relation(fields: [brand_id], references: [id], onDelete: SetNull)
+  products        PromotionProduct[]
+  branches        PromotionBranch[]
+  sales           Sale[]
 
   @@index([consumer_id, is_active])
+  @@index([brand_id])
+  @@index([created_by_user_id])
   @@index([start_date, end_date])
   @@map("promotions")
 }
@@ -782,16 +802,18 @@ model Sale {
   customer_name        String?
   customer_phone       String?
   customer_email       String?
+  promotion_id         Int?
   branch_id            Int
   user_id              Int?
   served_by_id         Int?
   sale_date            DateTime  @default(now())
   sale_type            String    @default("sale") // sale, quotation
   price_type           String    @default("regular") // regular, wholesale
-  subtotal             Decimal   @db.Decimal(10, 2)
-  discount_type        String    @default("flat") // flat, percentage
-  discount_amount      Decimal   @default(0) @db.Decimal(10, 2)
-  shipping_cost        Decimal   @default(0) @db.Decimal(10, 2)
+  subtotal                Decimal   @db.Decimal(10, 2)
+  discount_type           String    @default("flat") // flat, percentage
+  discount_amount         Decimal   @default(0) @db.Decimal(10, 2) // Manual discount only
+  promotion_discount      Decimal   @default(0) @db.Decimal(10, 2) // Promotion discount (tracked separately for stats)
+  shipping_cost           Decimal   @default(0) @db.Decimal(10, 2)
   tax_amount           Decimal   @default(0) @db.Decimal(10, 2)
   total_amount         Decimal   @db.Decimal(10, 2)
   payment_status       String    @default("paid") // paid, partial, due, cancelled
@@ -808,6 +830,7 @@ model Sale {
   // Relations
   consumer                   Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   customer                   Customer?                 @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  promotion                  Promotion?                @relation(fields: [promotion_id], references: [id], onDelete: SetNull)
   branch                     Branch                    @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   user                       User?                     @relation(fields: [user_id], references: [id], onDelete: SetNull)
   served_by                  User?                     @relation("ServedBy", fields: [served_by_id], references: [id], onDelete: SetNull)
@@ -822,6 +845,7 @@ model Sale {
   @@unique([sale_number, consumer_id])
   @@index([consumer_id])
   @@index([customer_id])
+  @@index([promotion_id])
   @@index([branch_id])
   @@index([sale_date])
   @@index([payment_status])

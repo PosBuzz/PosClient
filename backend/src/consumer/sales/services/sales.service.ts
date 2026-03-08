@@ -20,6 +20,7 @@ import {
 } from '../dto/eod-report.dto';
 import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
 import { QuotationPdfService } from './quotation-pdf.service';
+import { PromotionsService } from '../../promotions/services/promotions.service';
 
 @Injectable()
 export class SalesService {
@@ -28,6 +29,7 @@ export class SalesService {
     private cacheService: CacheService,
     private rewardsService: RewardsService,
     private quotationPdfService: QuotationPdfService,
+    private promotionsService: PromotionsService,
   ) {}
 
   async create(
@@ -219,16 +221,60 @@ export class SalesService {
       0,
     );
 
-    const discountAmount = Number(createSaleDto.discount_amount) || 0;
+    let manualDiscountAmount = Number(createSaleDto.discount_amount) || 0;
+    let promotionDiscountAmount = 0;
+    let promotionId: number | null = null;
+
+    // Validate and apply promotion if provided
+    if (createSaleDto.applied_promotion_id) {
+      // Server-side validation: Ensure promotion exists, is active, and matches all conditions
+      try {
+        const promotionEvaluation =
+          await this.promotionsService.assertAndCalculateDiscount(
+            createSaleDto.applied_promotion_id,
+            consumerId,
+            createSaleDto.branch_id,
+            createSaleDto.customer_id,
+            createSaleDto.items.map((item) => ({
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              line_total: item.line_total,
+            })),
+          );
+
+        if (!promotionEvaluation || !promotionEvaluation.is_eligible) {
+          throw new BadRequestException(
+            promotionEvaluation?.reason ||
+              'Promotion is not eligible for this sale',
+          );
+        }
+
+        promotionDiscountAmount = Number(promotionEvaluation.discount_amount) || 0;
+        promotionId = createSaleDto.applied_promotion_id;
+      } catch (error) {
+        // Re-throw promotion validation errors with context
+        if (error instanceof BadRequestException || error instanceof NotFoundException) {
+          throw error;
+        }
+        throw new BadRequestException(
+          `Promotion validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+
+    const totalDiscountAmount = manualDiscountAmount + promotionDiscountAmount;
     const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
-    // Total = subtotal - discount + tax + shipping (same as frontend)
-    const totalAmount = subtotal - discountAmount + totalTax + shippingCost;
+    // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
+    const totalAmount = subtotal - totalDiscountAmount + totalTax + shippingCost;
 
     console.log('Backend calculated totals:', {
       subtotal,
       totalTax,
-      discountAmount,
+      manualDiscountAmount,
+      promotionDiscountAmount,
+      totalDiscountAmount,
       shippingCost,
       totalAmount,
     });
@@ -264,14 +310,14 @@ export class SalesService {
     // Create sale with items in transaction
     const result = await this.prisma.$transaction(async (tx) => {
       // Create sale
-      const sale = await tx.sale.create({
-        data: {
+      const saleData: any = {
           sale_number: saleNumber,
           consumer_id: consumerId,
           customer_id: createSaleDto.customer_id,
           customer_name: createSaleDto.customer_name,
           customer_phone: createSaleDto.customer_phone,
           customer_email: createSaleDto.customer_email,
+          promotion_id: promotionId,
           branch_id: createSaleDto.branch_id,
           user_id: userId,
           served_by_id: createSaleDto.served_by_id,
@@ -279,7 +325,8 @@ export class SalesService {
           price_type: createSaleDto.price_type || 'regular',
           subtotal,
           discount_type: createSaleDto.discount_type || 'flat',
-          discount_amount: discountAmount,
+          discount_amount: manualDiscountAmount,
+          promotion_discount: promotionDiscountAmount,
           shipping_cost: shippingCost,
           tax_amount: totalTax,
           total_amount: totalAmount,
@@ -291,7 +338,10 @@ export class SalesService {
           online_order_status: createSaleDto.is_online_order
             ? createSaleDto.online_order_status || 'PENDING'
             : null,
-        },
+      };
+
+      const sale = await tx.sale.create({
+        data: saleData,
       });
 
       // If converting from quotation, mark the quotation as converted
@@ -354,6 +404,13 @@ export class SalesService {
 
       return sale;
     });
+
+    if (promotionId) {
+      await this.promotionsService.closePromotionIfExhausted(
+        promotionId,
+        consumerId,
+      );
+    }
 
     // Process CREDIT payments after sale is committed
     if (createSaleDto.payments && createSaleDto.payments.length > 0) {
@@ -596,6 +653,15 @@ export class SalesService {
         branch: true,
         user: { select: { id: true, name: true } },
         served_by: { select: { id: true, name: true } },
+        promotion: {
+          select: {
+            id: true,
+            name: true,
+            scope: true,
+            discount_type: true,
+            discount_value: true,
+          },
+        },
         payments: true, // Include payment details
         converted_from_quotations: {
           // Include original quotations if converted
@@ -650,6 +716,15 @@ export class SalesService {
         branch: true,
         user: { select: { id: true, name: true } },
         served_by: { select: { id: true, name: true } },
+        promotion: {
+          select: {
+            id: true,
+            name: true,
+            scope: true,
+            discount_type: true,
+            discount_value: true,
+          },
+        },
         payments: true,
         items: {
           include: {
@@ -804,6 +879,7 @@ export class SalesService {
       name: variant.name,
       sku: variant.sku,
       barcode: variant.barcode,
+      brand_id: variant.product.brand_id,
       regular_price: variant.regular_price,
       wholesale_price: variant.wholesale_price,
       image: variant.image,
@@ -870,6 +946,7 @@ export class SalesService {
       name: variant.name,
       sku: variant.sku,
       barcode: variant.barcode,
+      brand_id: variant.product.brand_id,
       regular_price: variant.regular_price,
       wholesale_price: variant.wholesale_price,
       image: variant.image,
@@ -1375,6 +1452,15 @@ export class SalesService {
               branch: true,
               user: { select: { id: true, name: true } },
               served_by: { select: { id: true, name: true } },
+              promotion: {
+                select: {
+                  id: true,
+                  name: true,
+                  scope: true,
+                  discount_type: true,
+                  discount_value: true,
+                },
+              },
               items: {
                 include: {
                   variant: {
@@ -1428,6 +1514,15 @@ export class SalesService {
             consumer: true, // Include consumer data directly
             branch: true,
             served_by: { select: { id: true, name: true } },
+            promotion: {
+              select: {
+                id: true,
+                name: true,
+                scope: true,
+                discount_type: true,
+                discount_value: true,
+              },
+            },
             user: { select: { id: true, name: true } },
             items: {
               include: {
@@ -1529,14 +1624,14 @@ export class SalesService {
     // Create the sale in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
       // Create sale
-      const sale = await tx.sale.create({
-        data: {
+      const saleData: any = {
           sale_number: saleNumber,
           consumer_id: consumerId,
           customer_id: quotation.customer_id,
           customer_name: quotation.customer_name,
           customer_phone: quotation.customer_phone,
           customer_email: quotation.customer_email,
+          promotion_id: quotation.promotion_id,
           branch_id: quotation.branch_id,
           user_id: userId,
           served_by_id: quotation.served_by_id,
@@ -1545,6 +1640,7 @@ export class SalesService {
           subtotal: quotation.subtotal,
           discount_type: quotation.discount_type,
           discount_amount: quotation.discount_amount,
+          promotion_discount: quotation.promotion_discount || 0,
           shipping_cost: quotation.shipping_cost,
           tax_amount: quotation.tax_amount,
           total_amount: quotation.total_amount,
@@ -1552,7 +1648,10 @@ export class SalesService {
           received_amount: 0,
           change_amount: 0,
           notes: quotation.notes,
-        },
+      };
+
+      const sale = await tx.sale.create({
+        data: saleData,
       });
 
       // Create sale items and update inventory
@@ -1594,6 +1693,13 @@ export class SalesService {
 
       return sale;
     });
+
+    if (result.promotion_id) {
+      await this.promotionsService.closePromotionIfExhausted(
+        result.promotion_id,
+        consumerId,
+      );
+    }
 
     // Invalidate both sales and quotation caches
     await Promise.all([
