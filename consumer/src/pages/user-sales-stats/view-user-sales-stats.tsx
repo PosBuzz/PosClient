@@ -39,15 +39,20 @@ const ViewUserSalesStats = () => {
     state.startDate ? dayjs(state.startDate) : dayjs().startOf("month"),
     state.endDate ? dayjs(state.endDate) : dayjs(),
   ]);
-
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+  });
   const userName = state.userName ?? `User #${userId}`;
 
   const { data, isLoading } = useQuery({
-    queryKey: [queryKeys.userSalesStats, "detail", userId, dateRange],
+    queryKey: [queryKeys.userSalesStats, "detail", userId, dateRange, pagination.page],
     queryFn: () =>
       salesApi.getUserSalesDetail(Number(userId), {
         startDate: dateRange[0].format("YYYY-MM-DD"),
         endDate: dateRange[1].format("YYYY-MM-DD"),
+        page: pagination.page,
+        limit: pagination.limit,
       }),
     enabled: !!userId,
   });
@@ -176,6 +181,14 @@ const ViewUserSalesStats = () => {
               rowKey="id"
               loading={isLoading}
               scroll={{ x: "max-content" }}
+              pagination={{
+                current: pagination.page,
+                pageSize: pagination.limit,
+                total: data?.meta?.total,
+                showSizeChanger: true,
+                onChange: (page, pageSize) =>
+                  setPagination({ page, limit: pageSize }),
+              }}
             />
           </Card>
         </Col>

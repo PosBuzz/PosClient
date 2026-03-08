@@ -1679,6 +1679,8 @@ export class SalesService {
     startDate: string,
     endDate: string,
     branchId?: number,
+    page: number = 1,
+    limit: number = 20,
   ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -1707,23 +1709,30 @@ export class SalesService {
       throw new NotFoundException('User not found');
     }
 
-    const sales = await this.prisma.sale.findMany({
-      where,
-      orderBy: { sale_date: 'desc' },
-      include: {
-        customer: true,
-        branch: true,
-        served_by: { select: { id: true, name: true } },
-        payments: true,
-        items: {
-          include: {
-            variant: {
-              include: { product: true, sale_unit: true },
+    const skip = (page - 1) * limit;
+
+    const [sales, total] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { sale_date: 'desc' },
+        include: {
+          customer: true,
+          branch: true,
+          served_by: { select: { id: true, name: true } },
+          payments: true,
+          items: {
+            include: {
+              variant: {
+                include: { product: true, sale_unit: true },
+              },
             },
           },
         },
-      },
-    });
+      }),
+      this.prisma.sale.count({ where }),
+    ]);
 
     const totalAmount = sales.reduce(
       (sum, s) => sum + Number(s.total_amount),
@@ -1736,6 +1745,9 @@ export class SalesService {
       meta: {
         total: sales.length,
         total_amount: totalAmount,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
       },
     };
   }
