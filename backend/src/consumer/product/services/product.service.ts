@@ -10,7 +10,6 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductService {  constructor(
@@ -98,11 +97,8 @@ export class ProductService {  constructor(
       tagIds,
     } = options;
 
-    // Generate cache key
-    const cacheKey = generateCacheKey.productList(consumerId, page, limit, search);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+  
+  
       const skip = (page - 1) * limit;
 
       // Build the where clause properly for Prisma
@@ -223,15 +219,11 @@ export class ProductService {  constructor(
           totalPages: Math.ceil(total / limit),
         },
       };
-    });
+    
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.productDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       const product = await this.prisma.product.findFirst({
         where: {
           id,
@@ -536,7 +528,7 @@ export class ProductService {  constructor(
         ...enrichedProduct,
         metrics: productMetrics,
       };
-    });
+    
   }
   async update(id: number, dto: UpdateProductDto, consumerId: number) {
     // First check if product exists and belongs to this consumer

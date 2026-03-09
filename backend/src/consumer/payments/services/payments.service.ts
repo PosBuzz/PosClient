@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCachePatterns } from '../../../constants/cache-keys';
 import { MakePaymentDto } from '../dto/make-payment.dto';
 import { PartialPaymentFiltersDto } from '../dto/partial-payment-filters.dto';
 import { Prisma } from '@prisma/client';
@@ -336,11 +335,7 @@ export class PaymentsService {
     consumerId: number,
     branchId?: number,
   ): Promise<void> {
-    const patterns = generateCachePatterns.allSalesRelated(consumerId);
     
-    for (const pattern of patterns) {
-      await this.cacheService.delPattern(pattern);
-    }
 
     // Also invalidate specific patterns for partial payments
     await this.cacheService.delPattern(`${consumerId}:sales:*`);

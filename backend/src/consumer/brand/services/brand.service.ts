@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/update-brand.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class BrandService {
@@ -28,24 +27,16 @@ export class BrandService {
   }
 
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.brandList(consumerId);
     
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.brand.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.brandDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+  
       const brand = await this.prismaService.brand.findFirst({
         where: { 
           id,
@@ -58,7 +49,7 @@ export class BrandService {
       }
 
       return brand;
-    });
+    
   }
 
   async update(id: number, updateBrandDto: UpdateBrandDto, consumerId: number) {

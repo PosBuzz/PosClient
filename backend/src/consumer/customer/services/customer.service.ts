@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class CustomerService {
@@ -31,27 +30,22 @@ export class CustomerService {
   }
 
   async findAll(consumerId: number) {
-    const cacheKey = generateCacheKey.customerList(consumerId);
-
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.customer.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    
   }
 
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.customer(consumerId, id);
 
-    const customer = await this.cacheService.getOrSet(cacheKey, async () => {
-      return this.prismaService.customer.findFirst({
+    const customer = await this.prismaService.customer.findFirst({
         where: {
           id,
           consumer_id: consumerId,
         },
       });
-    });
+    
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -81,7 +75,7 @@ export class CustomerService {
 
     // Invalidate customer caches
     await this.cacheService.invalidateEntityCaches(consumerId, 'customers');
-    await this.cacheService.del(generateCacheKey.customer(consumerId, id));
+
 
     return result;
   }
@@ -96,7 +90,6 @@ export class CustomerService {
 
     // Invalidate customer caches
     await this.cacheService.invalidateEntityCaches(consumerId, 'customers');
-    await this.cacheService.del(generateCacheKey.customer(consumerId, id));
 
     return result;
   }
@@ -107,9 +100,7 @@ export class CustomerService {
     }
 
     const searchTerm = query.trim();
-    const cacheKey = generateCacheKey.customerSearch(consumerId, searchTerm);
-
-    return this.cacheService.getOrSet(cacheKey, async () => {
+   
       const result = this.prismaService.customer.findMany({
         where: {
           consumer_id: consumerId,
@@ -125,7 +116,7 @@ export class CustomerService {
       return {
         data: result,
       };
-    });
+    
   }
 
   async findAllWithFilters(
@@ -161,16 +152,6 @@ export class CustomerService {
       whereClause.customer_type = filters.customer_type;
     }
 
-    // Use centralized cache key function
-    const cacheKey = generateCacheKey.customerFiltered(
-      consumerId,
-      filters.search,
-      filters.customer_type,
-      page,
-      limit
-    );
-
-    return this.cacheService.getOrSet(cacheKey, async () => {
       // Get total count for pagination
       const total = await this.prismaService.customer.count({
         where: whereClause,
@@ -193,6 +174,6 @@ export class CustomerService {
           total_pages: Math.ceil(total / limit),
         },
       };
-    });
+    
   }
 }

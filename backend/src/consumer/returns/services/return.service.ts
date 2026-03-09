@@ -6,7 +6,6 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 import { RewardsService } from '../../rewards/services/rewards.service';
 
 @Injectable()
@@ -350,9 +349,8 @@ export class ReturnService {
     } = {},
   ) {
     const { page = 1, limit = 10, branch_id, original_sale_id } = options;
-    const cacheKey = generateCacheKey.returnList(consumerId, page, limit, branch_id, original_sale_id);
     
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       const skip = (page - 1) * limit;
 
       const whereClause: any = {
@@ -426,13 +424,11 @@ export class ReturnService {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    }, 300); // 5 minutes cache
+   
   }
 
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.returnDetail(id, consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+   
       const returnRecord = await this.prisma.return.findFirst({
         where: {
           id,
@@ -503,7 +499,7 @@ export class ReturnService {
       }
 
       return returnRecord;
-    }, 300); // 5 minutes cache
+    
   }
 
   private async generateReturnNumber(consumerId: number): Promise<string> {
@@ -537,8 +533,6 @@ export class ReturnService {
       // 2. ALL sales-related caches (because returns affect sales data)
       // 3. Return-specific caches
       const patterns = [
-        ...generateCachePatterns.allInventoryRelated(consumerId),
-        ...generateCachePatterns.allSalesRelated(consumerId),
         `${consumerId}:return*`, // All return caches
       ];
 

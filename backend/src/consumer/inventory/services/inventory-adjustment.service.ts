@@ -6,7 +6,6 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryAdjustmentService {
@@ -122,9 +121,6 @@ export class InventoryAdjustmentService {
     } = {},
   ) {
     const { page = 1, limit = 10, variant_id, branch_id } = options;
-    const cacheKey = generateCacheKey.inventoryAdjustmentList(consumerId, page, limit, undefined, branch_id, variant_id);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const skip = (page - 1) * limit;
 
       const whereClause: any = {
@@ -177,12 +173,10 @@ export class InventoryAdjustmentService {
           totalPages: Math.ceil(total / limit),
         },
       };
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.inventoryAdjustmentDetail(id, consumerId);
     
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const adjustment = await this.prisma.inventoryAdjustment.findFirst({
         where: {
           id,
@@ -214,7 +208,7 @@ export class InventoryAdjustmentService {
       }
 
       return adjustment;
-    });
+    
   }  // Cache invalidation helper methods
   private async invalidateInventoryAdjustmentCaches(consumerId: number, variantId?: number, branchId?: number) {
     try {

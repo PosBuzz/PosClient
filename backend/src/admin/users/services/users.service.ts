@@ -6,7 +6,7 @@ import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
+
 
 @Injectable()
 export class UsersService {
@@ -39,9 +39,7 @@ export class UsersService {
     return result;
   }
   async findAllRoles() {
-    const cacheKey = generateCacheKey.roleList(0); // Admin roles use 0 as consumer ID
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       return await this.prisma.superAdminRole.findMany({
         include: {
           permissions: {
@@ -52,7 +50,7 @@ export class UsersService {
         },
         orderBy: { id: 'asc' },
       });
-    });
+
   }
 
   async findOneRole(id: number) {
@@ -228,10 +226,7 @@ export class UsersService {
   }  // Cache invalidation helper methods
   private async invalidateAdminCaches(userId?: number, roleId?: number) {
     try {
-      // Use proper cache invalidation patterns for admin operations
-      const patterns = generateCachePatterns.allAdminRelated();
-      
-      await this.cacheService.delPatterns(patterns);
+
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }

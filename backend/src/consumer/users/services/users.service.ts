@@ -6,10 +6,6 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import {
-  generateCacheKey,
-  generateCachePatterns,
-} from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
@@ -31,11 +27,7 @@ export class UsersService {
     });
   }
   async getRoles(consumer_id: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.roleList(consumer_id);
 
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.role.findMany({
         where: { consumer_id },
         include: {
@@ -46,7 +38,7 @@ export class UsersService {
           },
         },
       });
-    });
+  
   }
   async deleteRole(id: number, consumer_id: number) {
     const result = await this.prisma.role.delete({
@@ -91,16 +83,7 @@ export class UsersService {
   ) {
     console.log({ consumer_id, search_text, role_id, branch_id });
 
-    // Generate cache key
-    const cacheKey = generateCacheKey.userList(
-      consumer_id,
-      search_text || undefined,
-      role_id,
-      branch_id,
-    );
-
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    
       return await this.prisma.user.findMany({
         where: {
           consumer_id,
@@ -122,7 +105,7 @@ export class UsersService {
           },
         },
       });
-    });
+    
   }
   async deleteUser(id: number, consumer_id: number) {
     const result = await this.prisma.user.delete({
