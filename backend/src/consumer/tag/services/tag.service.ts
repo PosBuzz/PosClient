@@ -2,13 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class TagService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
   ) {}
   async create(createTagDto: CreateTagDto, consumerId: number) {
     const result = await this.prismaService.tag.create({      data: {
@@ -17,8 +15,6 @@ export class TagService {
       },
     });
 
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
 
     return result;
   }
@@ -53,8 +49,6 @@ export class TagService {
       data: { name: updateTagDto.name },
     });
 
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
 
     return result;
   }
@@ -66,8 +60,7 @@ export class TagService {
       where: { id },
     });
     
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
+    
     
     return { success: true };
   }

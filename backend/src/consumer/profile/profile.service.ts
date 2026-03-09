@@ -1,12 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CacheService } from 'src/common/services/cache.service';
 
 @Injectable()
 export class ProfileService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
+   
   ) {}
 
   /**
@@ -43,14 +42,6 @@ export class ProfileService {
         logo: true,
       },
     });
-
-    // Invalidate consumer caches
-    try {
-      await this.cacheService.invalidateConsumerCache(consumerId);
-      await this.cacheService.invalidateGlobalConsumerCaches();
-    } catch (err) {
-      console.error('Failed to invalidate caches after consumer update', err);
-    }
 
     return updated;
   }

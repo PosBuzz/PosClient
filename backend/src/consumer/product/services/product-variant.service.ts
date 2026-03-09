@@ -2,13 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class ProductVariantService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
   ) {}
 
   async create(productId: number, dto: CreateProductVariantDto) {
@@ -94,10 +92,6 @@ export class ProductVariantService {
       select: { consumer_id: true }
     });
     
-    if (product) {
-      // Clear all inventory-related caches since variants affect inventory
-      await this.cacheService.invalidateAllInventoryCaches(product.consumer_id);
-    }
 
     return this.findOne(variant.id);
   }
@@ -314,11 +308,6 @@ export class ProductVariantService {
       },
     });
 
-    if (variant) {
-      // Clear all inventory-related caches since variants affect inventory
-      await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
-    }
-
     return this.findOne(id);
   }
   async remove(id: number) {
@@ -340,8 +329,6 @@ export class ProductVariantService {
       where: { id },
     });
 
-    // Clear all inventory-related caches since variants affect inventory
-    await this.cacheService.invalidateAllInventoryCaches(variant.product.consumer_id);
 
     return { success: true, message: 'Variant deleted successfully' };
   }}
