@@ -3,13 +3,11 @@ import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class ConsumerService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
   ) {}
 
   async create(data: CreateConsumerDto) {
@@ -94,9 +92,6 @@ export class ConsumerService {
         consumer,
       };
     });
-
-    // Invalidate consumer caches
-    await this.invalidateConsumerCaches();
   }
 
   async update(consumerId: number, data: UpdateConsumerDto) {
@@ -162,27 +157,16 @@ export class ConsumerService {
         })),
       });
     }
-    // Invalidate consumer caches
-    await this.invalidateConsumerCaches();
+
     return {
       message: 'Consumer, admin user, and permissions updated successfully',
     };
   }
   async checkSubdomain(value: string) {
-    
-      const exists = await this.prisma.consumer.findUnique({
-        where: { subdomain: value },
-        select: { id: true },
-      });
-      return { available: !exists };
-    
-  }
-  private async invalidateConsumerCaches(): Promise<void> {
-    try {
-      // Invalidate all global consumer-related caches (subdomain validation, consumer details, etc.)
-      await this.cacheService.invalidateGlobalConsumerCaches();
-    } catch (error) {
-      console.warn('Cache invalidation failed:', error);
-    }
+    const exists = await this.prisma.consumer.findUnique({
+      where: { subdomain: value },
+      select: { id: true },
+    });
+    return { available: !exists };
   }
 }

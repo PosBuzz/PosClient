@@ -5,15 +5,10 @@ import { CreateSuperAdminUserDto } from '../dtos/create-user.dto';
 import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
-import { CacheService } from '../../../common/services/cache.service';
-
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
   async createRole(dto: CreateSuperAdminRoleDto) {
     const result = await this.prisma.superAdminRole.create({
       data: {
@@ -39,84 +34,73 @@ export class UsersService {
     return result;
   }
   async findAllRoles() {
-
-      return await this.prisma.superAdminRole.findMany({
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
+    return await this.prisma.superAdminRole.findMany({
+      include: {
+        permissions: {
+          include: {
+            permission: true,
           },
         },
-        orderBy: { id: 'asc' },
-      });
-
+      },
+      orderBy: { id: 'asc' },
+    });
   }
 
   async findOneRole(id: number) {
     const cacheKey = `admin:roles:detail:${id}`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prisma.superAdminRole.findUnique({
-        where: { id },
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
+    return await this.prisma.superAdminRole.findUnique({
+      where: { id },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
           },
         },
-      });
+      },
     });
   }
 
   async findAllUsers() {
     const cacheKey = `admin:users:list`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prisma.superAdmin.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true,
-                },
+
+    return await this.prisma.superAdmin.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
               },
             },
           },
-          created_at: true,
         },
-        orderBy: { id: 'asc' },
-      });
+        created_at: true,
+      },
+      orderBy: { id: 'asc' },
     });
   }
 
   async findOneUser(id: number) {
-    const cacheKey = `admin:users:detail:${id}`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prisma.superAdmin.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true,
-                },
+    return await this.prisma.superAdmin.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
               },
             },
           },
-          created_at: true,
         },
-      });
+        created_at: true,
+      },
     });
   }
   async createUser(dto: CreateSuperAdminUserDto) {
@@ -162,7 +146,8 @@ export class UsersService {
           role_id: id,
           permission_id: pid,
         })),
-      });    }
+      });
+    }
 
     // Invalidate related caches
     await this.invalidateAdminCaches(id);
@@ -214,7 +199,7 @@ export class UsersService {
         { message: 'Old password is incorrect' },
         HttpStatus.EXPECTATION_FAILED,
       );
-    }    // Hash the new password
+    } // Hash the new password
     const hashedNewPassword = await bcryptjs.hash(new_password, 10);
 
     // Update the user's password
@@ -223,10 +208,9 @@ export class UsersService {
       data: { password: hashedNewPassword },
       select: { id: true, email: true, name: true },
     });
-  }  // Cache invalidation helper methods
+  } // Cache invalidation helper methods
   private async invalidateAdminCaches(userId?: number, roleId?: number) {
     try {
-
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }

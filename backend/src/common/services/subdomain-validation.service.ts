@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CacheService } from './cache.service';
 import { SubdomainUtilService } from './subdomain-util.service';
 import * as dayjs from 'dayjs';
 
@@ -17,7 +16,6 @@ export class SubdomainValidationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cacheService: CacheService,
     private readonly subdomainUtil: SubdomainUtilService,
   ) {}
 

@@ -5,13 +5,11 @@ import { CreateRoleDto } from '../dtos/create-role.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
   ) {}
 
   async permissionOptions(plan_id: number) {
@@ -45,8 +43,7 @@ export class UsersService {
       where: { consumer_id, id },
     });
 
-    // Invalidate user caches
-    await this.invalidateUserCaches(consumer_id);
+  
 
     return result;
   }
@@ -70,8 +67,7 @@ export class UsersService {
       },
     });
 
-    // Invalidate user caches
-    await this.invalidateUserCaches(consumer_id);
+   
 
     return result;
   }
@@ -112,8 +108,7 @@ export class UsersService {
       where: { consumer_id, id },
     });
 
-    // Invalidate user caches
-    await this.invalidateUserCaches(consumer_id);
+    
 
     return result;
   }
@@ -184,8 +179,7 @@ export class UsersService {
       return userWithBranches;
     });
 
-    // Invalidate user caches
-    await this.invalidateUserCaches(consumer_id);
+    
 
     return result;
   }
@@ -217,11 +211,6 @@ export class UsersService {
       where: { id },
       select: { consumer_id: true },
     });
-
-    if (role) {
-      // Invalidate user caches
-      await this.invalidateUserCaches(role.consumer_id);
-    }
 
     return updatedRole;
   }
@@ -312,22 +301,8 @@ export class UsersService {
       return userWithBranches;
     });
 
-    // Invalidate user caches
-    if (result) {
-      await this.invalidateUserCaches(result.consumer_id);
-    }
 
     return result;
   }
 
-  private async invalidateUserCaches(consumer_id: number): Promise<void> {
-    try {
-      // Invalidate user and role caches for this consumer
-      await this.cacheService.invalidateEntityCaches(consumer_id, 'users');
-      // Also invalidate branch caches since user-branch relationships changed
-      await this.cacheService.invalidateEntityCaches(consumer_id, 'branches');
-    } catch (error) {
-      console.warn('Cache invalidation failed:', error);
-    }
-  }
 }

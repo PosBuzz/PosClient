@@ -2,14 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class BranchService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
   async create(createBranchDto: CreateBranchDto, consumerId: number) {
     // Get count of existing branches
     const branchCount = await this.prismaService.branch.count({
@@ -67,24 +63,7 @@ export class BranchService {
     } // Auto-assign new branch to admin users
     await this.autoAssignBranchToAdmins(consumerId, result.id);
 
-    // Invalidate both branch and user caches
-    await this.invalidateBranchRelatedCaches(consumerId);
-
     return result;
-  }
-
-  private async invalidateBranchRelatedCaches(
-    consumerId: number,
-  ): Promise<void> {
-    try {
-      // Invalidate branch caches
-      await this.cacheService.invalidateEntityCaches(consumerId, 'branches');
-      // Also invalidate user caches since branch assignments affect user data
-      await this.cacheService.invalidateEntityCaches(consumerId, 'users');
-
-    } catch (error) {
-      console.warn('Cache invalidation failed:', error);
-    }
   }
 
   // Auto-assign branches to existing admin users when a new branch is created
@@ -118,50 +97,44 @@ export class BranchService {
   }
 
   async findAll(consumerId: number) {
-
-      return this.prismaService.branch.findMany({
-        where: { consumer_id: consumerId },
-        orderBy: [
-          { is_main: 'desc' }, // Main branch first
-          { name: 'asc' }, // Then alphabetically
-        ],
-      });
-    
+    return this.prismaService.branch.findMany({
+      where: { consumer_id: consumerId },
+      orderBy: [
+        { is_main: 'desc' }, // Main branch first
+        { name: 'asc' }, // Then alphabetically
+      ],
+    });
   }
 
   async getBranchOptions(consumerId: number) {
-
-      return this.prismaService.branch.findMany({
-        where: { consumer_id: consumerId },
-        select: {
-          id: true,
-          name: true,
-          is_main: true,
-          is_warehouse: true,
-        },
-        orderBy: [
-          { is_main: 'desc' }, // Main branch first
-          { name: 'asc' }, // Then alphabetically
-        ],
-      });
-    
+    return this.prismaService.branch.findMany({
+      where: { consumer_id: consumerId },
+      select: {
+        id: true,
+        name: true,
+        is_main: true,
+        is_warehouse: true,
+      },
+      orderBy: [
+        { is_main: 'desc' }, // Main branch first
+        { name: 'asc' }, // Then alphabetically
+      ],
+    });
   }
 
   async findOne(id: number, consumerId: number) {
+    const branch = await this.prismaService.branch.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+      },
+    });
 
-      const branch = await this.prismaService.branch.findFirst({
-        where: {
-          id,
-          consumer_id: consumerId,
-        },
-      });
+    if (!branch) {
+      throw new NotFoundException(`Branch with ID ${id} not found`);
+    }
 
-      if (!branch) {
-        throw new NotFoundException(`Branch with ID ${id} not found`);
-      }
-
-      return branch;
-  
+    return branch;
   }
   async update(
     id: number,
@@ -220,9 +193,6 @@ export class BranchService {
       });
     }
 
-    // Invalidate both branch and user caches
-    await this.invalidateBranchRelatedCaches(consumerId);
-
     return result;
   }
   async remove(id: number, consumerId: number) {
@@ -247,9 +217,6 @@ export class BranchService {
       where: { id },
     });
 
-    // Invalidate both branch and user caches
-    await this.invalidateBranchRelatedCaches(consumerId);
-
     return { success: true };
   }
   async setMainBranch(id: number, consumerId: number) {
@@ -270,9 +237,6 @@ export class BranchService {
         data: { is_main: true },
       });
     });
-
-    // Invalidate both branch and user caches since main branch status affects user access
-    await this.invalidateBranchRelatedCaches(consumerId);
 
     return result;
   }

@@ -5,14 +5,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
-import { CacheService } from '../../../common/services/cache.service';
 import { RewardsService } from '../../rewards/services/rewards.service';
 
 @Injectable()
 export class ReturnService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
     private rewardsService: RewardsService,
   ) {}
 
@@ -46,18 +44,26 @@ export class ReturnService {
     }
 
     // Validate return items against original sale items
-    const saleItemIds = originalSale.items.map(item => item.id);
-    const invalidItems = dto.items.filter(item => !saleItemIds.includes(item.sale_item_id));
-    
+    const saleItemIds = originalSale.items.map((item) => item.id);
+    const invalidItems = dto.items.filter(
+      (item) => !saleItemIds.includes(item.sale_item_id),
+    );
+
     if (invalidItems.length > 0) {
-      throw new BadRequestException('Some return items do not belong to the original sale');
+      throw new BadRequestException(
+        'Some return items do not belong to the original sale',
+      );
     }
 
     // Validate return quantities don't exceed original quantities
     for (const returnItem of dto.items) {
-      const originalItem = originalSale.items.find(item => item.id === returnItem.sale_item_id);
+      const originalItem = originalSale.items.find(
+        (item) => item.id === returnItem.sale_item_id,
+      );
       if (!originalItem) {
-        throw new BadRequestException(`Sale item ${returnItem.sale_item_id} not found`);
+        throw new BadRequestException(
+          `Sale item ${returnItem.sale_item_id} not found`,
+        );
       }
 
       // Check if we already have returns for this item
@@ -73,7 +79,7 @@ export class ReturnService {
       const totalReturned = existingReturns._sum?.quantity || 0;
       if (totalReturned + returnItem.quantity > originalItem.quantity) {
         throw new BadRequestException(
-          `Return quantity exceeds available quantity for item ${returnItem.sale_item_id}. Available: ${originalItem.quantity - totalReturned}, Requested: ${returnItem.quantity}`
+          `Return quantity exceeds available quantity for item ${returnItem.sale_item_id}. Available: ${originalItem.quantity - totalReturned}, Requested: ${returnItem.quantity}`,
         );
       }
     }
@@ -81,30 +87,36 @@ export class ReturnService {
     // Calculate totals based on business logic:
     // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE'
     // - totalExchange = sum of only 'EXCHANGE' payment methods
-    
-    const totalRefund = dto.payments?.reduce((sum, payment) => {
-      const method = payment.payment_method.toString().toUpperCase();
-    
-      if (method !== 'EXCHANGE') {
-        console.log(`Adding ${payment.amount} to refund total`);
-        return sum + parseFloat(payment.amount.toString());
-      }
-  
-      return sum;
-    }, 0) || 0;
-    
-    const totalExchange = dto.payments?.reduce((sum, payment) => {
-      const method = payment.payment_method.toString().toUpperCase();
-      if (method === 'EXCHANGE') {
-        console.log(`Adding ${payment.amount} to exchange total`);
-        return sum + parseFloat(payment.amount.toString());
-      }
-      return sum;
-    }, 0) || 0;
-    
+
+    const totalRefund =
+      dto.payments?.reduce((sum, payment) => {
+        const method = payment.payment_method.toString().toUpperCase();
+
+        if (method !== 'EXCHANGE') {
+          console.log(`Adding ${payment.amount} to refund total`);
+          return sum + parseFloat(payment.amount.toString());
+        }
+
+        return sum;
+      }, 0) || 0;
+
+    const totalExchange =
+      dto.payments?.reduce((sum, payment) => {
+        const method = payment.payment_method.toString().toUpperCase();
+        if (method === 'EXCHANGE') {
+          console.log(`Adding ${payment.amount} to exchange total`);
+          return sum + parseFloat(payment.amount.toString());
+        }
+        return sum;
+      }, 0) || 0;
+
     console.log('Calculated totals:', { totalRefund, totalExchange });
-    
-    const totalPayments = dto.payments?.reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0) || 0;
+
+    const totalPayments =
+      dto.payments?.reduce(
+        (sum, payment) => sum + parseFloat(payment.amount.toString()),
+        0,
+      ) || 0;
 
     // Calculate available amount by checking existing returns for this sale
     const existingReturns = await this.prisma.return.findMany({
@@ -113,16 +125,21 @@ export class ReturnService {
       },
     });
 
-    const totalAlreadyReturned = existingReturns.reduce((sum, ret) => 
-      sum + parseFloat(ret.total_refund.toString()) + parseFloat(ret.total_exchange.toString()), 0
+    const totalAlreadyReturned = existingReturns.reduce(
+      (sum, ret) =>
+        sum +
+        parseFloat(ret.total_refund.toString()) +
+        parseFloat(ret.total_exchange.toString()),
+      0,
     );
 
-    const availableAmount = parseFloat(originalSale.total_amount.toString()) - totalAlreadyReturned;
+    const availableAmount =
+      parseFloat(originalSale.total_amount.toString()) - totalAlreadyReturned;
 
     // Validate that total refund + exchange doesn't exceed available amount
     if (totalRefund + totalExchange > availableAmount) {
       throw new BadRequestException(
-        `Total refund and exchange amount ($${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)}). Already returned: $${totalAlreadyReturned.toFixed(2)}`
+        `Total refund and exchange amount ($${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)}). Already returned: $${totalAlreadyReturned.toFixed(2)}`,
       );
     }
     // Start transaction
@@ -220,7 +237,10 @@ export class ReturnService {
       if (dto.payments) {
         for (const paymentDto of dto.payments) {
           // Handle CREDIT refund - add points back to customer
-          if (paymentDto.payment_method === 'CREDIT' && originalSale.customer_id) {
+          if (
+            paymentDto.payment_method === 'CREDIT' &&
+            originalSale.customer_id
+          ) {
             try {
               await this.rewardsService.processCreditRefund(
                 consumerId,
@@ -228,7 +248,7 @@ export class ReturnService {
                 Number(paymentDto.amount),
                 originalSale.id,
                 returnRecord.id,
-                paymentDto.reference
+                paymentDto.reference,
               );
             } catch (error) {
               console.error('Failed to process CREDIT refund:', error);
@@ -263,7 +283,9 @@ export class ReturnService {
           });
 
           if (!exchangeVariant) {
-            throw new NotFoundException(`Exchange variant ${exchangeDto.variant_id} not found`);
+            throw new NotFoundException(
+              `Exchange variant ${exchangeDto.variant_id} not found`,
+            );
           }
 
           const returnExchange = await prisma.returnExchange.create({
@@ -296,7 +318,7 @@ export class ReturnService {
 
             if (!batch || batch.quantity < exchangeDto.quantity) {
               throw new BadRequestException(
-                `Insufficient stock for exchange item ${exchangeDto.variant_id}. Available: ${batch?.quantity || 0}, Required: ${exchangeDto.quantity}`
+                `Insufficient stock for exchange item ${exchangeDto.variant_id}. Available: ${batch?.quantity || 0}, Required: ${exchangeDto.quantity}`,
               );
             }
 
@@ -333,9 +355,6 @@ export class ReturnService {
       };
     });
 
-    // Invalidate related caches after successful creation
-    await this.invalidateReturnCaches(consumerId, dto.branch_id, dto.original_sale_id);
-
     return result;
   }
 
@@ -349,104 +368,30 @@ export class ReturnService {
     } = {},
   ) {
     const { page = 1, limit = 10, branch_id, original_sale_id } = options;
-    
 
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const whereClause: any = {
-        consumer_id: consumerId,
-      };
+    const whereClause: any = {
+      consumer_id: consumerId,
+    };
 
-      if (branch_id) {
-        whereClause.branch_id = branch_id;
-      }
+    if (branch_id) {
+      whereClause.branch_id = branch_id;
+    }
 
-      if (original_sale_id) {
-        whereClause.original_sale_id = original_sale_id;
-      }
+    if (original_sale_id) {
+      whereClause.original_sale_id = original_sale_id;
+    }
 
-      const [returns, total] = await Promise.all([
-        this.prisma.return.findMany({
-          where: whereClause,
-          include: {
-            original_sale: {
-              select: {
-                id: true,
-                sale_number: true,
-                customer_name: true,
-              },
-            },
-            branch: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            user: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            items: {
-              include: {
-                variant: {
-                  include: {
-                    product: { select: { id: true, name: true } },
-                  },
-                },
-              },
-            },
-            payments: true,
-            exchanges: {
-              include: {
-                variant: {
-                  include: {
-                    product: { select: { id: true, name: true } },
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { created_at: 'desc' },
-          skip,
-          take: limit,
-        }),
-        this.prisma.return.count({
-          where: whereClause,
-        }),
-      ]);
-
-      return {
-        data: returns,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      };
-   
-  }
-
-  async findOne(id: number, consumerId: number) {
-   
-      const returnRecord = await this.prisma.return.findFirst({
-        where: {
-          id,
-          consumer_id: consumerId,
-        },
+    const [returns, total] = await Promise.all([
+      this.prisma.return.findMany({
+        where: whereClause,
         include: {
           original_sale: {
-            include: {
-              items: {
-                include: {
-                  variant: {
-                    include: {
-                      product: { select: { id: true, name: true } },
-                    },
-                  },
-                },
-              },
-              payments: true,
+            select: {
+              id: true,
+              sale_number: true,
+              customer_name: true,
             },
           },
           branch: {
@@ -463,21 +408,11 @@ export class ReturnService {
           },
           items: {
             include: {
-              sale_item: {
-                include: {
-                  variant: {
-                    include: {
-                      product: { select: { id: true, name: true } },
-                    },
-                  },
-                },
-              },
               variant: {
                 include: {
                   product: { select: { id: true, name: true } },
                 },
               },
-              batch: true,
             },
           },
           payments: true,
@@ -488,29 +423,109 @@ export class ReturnService {
                   product: { select: { id: true, name: true } },
                 },
               },
-              batch: true,
             },
           },
         },
-      });
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.return.count({
+        where: whereClause,
+      }),
+    ]);
 
-      if (!returnRecord) {
-        throw new NotFoundException('Return not found');
-      }
+    return {
+      data: returns,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
-      return returnRecord;
-    
+  async findOne(id: number, consumerId: number) {
+    const returnRecord = await this.prisma.return.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+      },
+      include: {
+        original_sale: {
+          include: {
+            items: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+            payments: true,
+          },
+        },
+        branch: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        items: {
+          include: {
+            sale_item: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+            variant: {
+              include: {
+                product: { select: { id: true, name: true } },
+              },
+            },
+            batch: true,
+          },
+        },
+        payments: true,
+        exchanges: {
+          include: {
+            variant: {
+              include: {
+                product: { select: { id: true, name: true } },
+              },
+            },
+            batch: true,
+          },
+        },
+      },
+    });
+
+    if (!returnRecord) {
+      throw new NotFoundException('Return not found');
+    }
+
+    return returnRecord;
   }
 
   private async generateReturnNumber(consumerId: number): Promise<string> {
     const prefix = 'RET';
     const today = new Date();
     const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
+
     // Get the count of returns created today for this consumer
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-    
+
     const count = await this.prisma.return.count({
       where: {
         consumer_id: consumerId,
@@ -523,22 +538,5 @@ export class ReturnService {
 
     const sequence = String(count + 1).padStart(4, '0');
     return `${prefix}-${dateString}-${sequence}`;
-  }
-
-  // Cache invalidation helper methods
-  private async invalidateReturnCaches(consumerId: number, branchId?: number, saleId?: number) {
-    try {
-      // For return operations, invalidate:
-      // 1. ALL inventory-related caches (because we're adjusting inventory)
-      // 2. ALL sales-related caches (because returns affect sales data)
-      // 3. Return-specific caches
-      const patterns = [
-        `${consumerId}:return*`, // All return caches
-      ];
-
-      await this.cacheService.delPatterns(patterns);
-    } catch (error) {
-      console.error('Return cache invalidation error:', error);
-    }
   }
 }

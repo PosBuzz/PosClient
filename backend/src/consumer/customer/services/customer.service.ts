@@ -2,14 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class CustomerService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async create(createCustomerDto: CreateCustomerDto, consumerId: number) {
     const result = await this.prismaService.customer.create({
@@ -23,29 +19,23 @@ export class CustomerService {
       },
     });
 
-    // Invalidate only customer caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'customers');
-
     return result;
   }
 
   async findAll(consumerId: number) {
-      return this.prismaService.customer.findMany({
-        where: { consumer_id: consumerId },
-        orderBy: { name: 'asc' },
-      });
-    
+    return this.prismaService.customer.findMany({
+      where: { consumer_id: consumerId },
+      orderBy: { name: 'asc' },
+    });
   }
 
   async findOne(id: number, consumerId: number) {
-
     const customer = await this.prismaService.customer.findFirst({
-        where: {
-          id,
-          consumer_id: consumerId,
-        },
-      });
-    
+      where: {
+        id,
+        consumer_id: consumerId,
+      },
+    });
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -73,10 +63,6 @@ export class CustomerService {
       },
     });
 
-    // Invalidate customer caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'customers');
-
-
     return result;
   }
 
@@ -88,9 +74,6 @@ export class CustomerService {
       where: { id },
     });
 
-    // Invalidate customer caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'customers');
-
     return result;
   }
 
@@ -100,23 +83,22 @@ export class CustomerService {
     }
 
     const searchTerm = query.trim();
-   
-      const result = this.prismaService.customer.findMany({
-        where: {
-          consumer_id: consumerId,
-          OR: [
-            { name: { contains: searchTerm, mode: 'insensitive' } },
-            { email: { contains: searchTerm, mode: 'insensitive' } },
-            { phone: { contains: searchTerm, mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { name: 'asc' },
-        take: 20, // Limit search results
-      });
-      return {
-        data: result,
-      };
-    
+
+    const result = this.prismaService.customer.findMany({
+      where: {
+        consumer_id: consumerId,
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { email: { contains: searchTerm, mode: 'insensitive' } },
+          { phone: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { name: 'asc' },
+      take: 20, // Limit search results
+    });
+    return {
+      data: result,
+    };
   }
 
   async findAllWithFilters(
@@ -152,28 +134,27 @@ export class CustomerService {
       whereClause.customer_type = filters.customer_type;
     }
 
-      // Get total count for pagination
-      const total = await this.prismaService.customer.count({
-        where: whereClause,
-      });
+    // Get total count for pagination
+    const total = await this.prismaService.customer.count({
+      where: whereClause,
+    });
 
-      // Get customers with pagination
-      const customers = await this.prismaService.customer.findMany({
-        where: whereClause,
-        orderBy: { name: 'asc' },
-        skip,
-        take: limit,
-      });
+    // Get customers with pagination
+    const customers = await this.prismaService.customer.findMany({
+      where: whereClause,
+      orderBy: { name: 'asc' },
+      skip,
+      take: limit,
+    });
 
-      return {
-        data: customers,
-        meta: {
-          total,
-          page,
-          limit,
-          total_pages: Math.ceil(total / limit),
-        },
-      };
-    
+    return {
+      data: customers,
+      meta: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
   }
 }
