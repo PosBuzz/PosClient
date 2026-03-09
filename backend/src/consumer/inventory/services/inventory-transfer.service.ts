@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryTransferService {
@@ -108,9 +107,7 @@ export class InventoryTransferService {
   } = {}) {
     const page = options.page || 1;
     const limit = options.limit || 10;
-    const cacheKey = generateCacheKey.inventoryTransferList(consumerId, page, limit, options.status, options.branch_id);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       const skip = (page - 1) * limit;
 
       const where: any = {
@@ -176,12 +173,10 @@ export class InventoryTransferService {
           last_page: Math.ceil(total / limit),
         },
       };
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.inventoryTransferDetail(id, consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       const transfer = await this.prisma.inventoryTransfer.findFirst({
         where: {
           id,
@@ -223,7 +218,7 @@ export class InventoryTransferService {
       }
 
       return transfer;
-    });
+    
   }
 
   async completeTransfer(id: number, consumerId: number) {

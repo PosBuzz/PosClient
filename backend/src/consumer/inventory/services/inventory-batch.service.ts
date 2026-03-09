@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryBatchService {
@@ -86,9 +85,7 @@ export class InventoryBatchService {
     variant_id?: number;
   } = {}) {
     const { page = 1, limit, search, branch_id, variant_id } = options;
-    const cacheKey = generateCacheKey.inventoryBatchList(consumerId, page, limit, search, branch_id, variant_id);
     
-    return this.cacheService.getOrSet(cacheKey, async () => {
       // Only apply pagination if limit is specified
       const skip = limit ? (page - 1) * limit : undefined;
 
@@ -148,12 +145,9 @@ export class InventoryBatchService {
           totalPages: limit ? Math.ceil(total / limit) : 1,
         },
       };
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.inventoryBatchDetail(id, consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const batch = await this.prisma.inventoryBatch.findFirst({
         where: {
           id,
@@ -185,7 +179,7 @@ export class InventoryBatchService {
       }
 
       return batch;
-    });
+    
   }
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
     const batch = await this.findOne(id, consumerId);

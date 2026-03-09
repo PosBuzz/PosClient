@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ProductVariantService {
@@ -115,9 +114,6 @@ export class ProductVariantService {
       }
     }
 
-    const cacheKey = generateCacheKey.productVariantDetail(id, consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const variant = await this.prisma.productVariant.findUnique({
         where: { id },
         include: {
@@ -165,7 +161,7 @@ export class ProductVariantService {
         is_low_stock: isLowStock,
         available_serials_count: variant.serials.filter(s => s.status === 'available').length,
       };
-    });
+    
   }
 
   async update(id: number, dto: UpdateProductVariantDto) {
