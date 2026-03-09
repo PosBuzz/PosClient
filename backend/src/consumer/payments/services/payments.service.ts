@@ -4,17 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CacheService } from '../../../common/services/cache.service';
 import { MakePaymentDto } from '../dto/make-payment.dto';
 import { PartialPaymentFiltersDto } from '../dto/partial-payment-filters.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PaymentsService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Get all partially paid sales with filters
@@ -99,7 +95,8 @@ export class PaymentsService {
     const salesWithRemaining = sales.map((sale) => ({
       ...sale,
       branch_name: sale.branch.name,
-      remaining_amount: Number(sale.total_amount) - Number(sale.received_amount),
+      remaining_amount:
+        Number(sale.total_amount) - Number(sale.received_amount),
     }));
 
     return {
@@ -170,7 +167,8 @@ export class PaymentsService {
     return {
       ...sale,
       branch_name: sale.branch.name,
-      remaining_amount: Number(sale.total_amount) - Number(sale.received_amount),
+      remaining_amount:
+        Number(sale.total_amount) - Number(sale.received_amount),
     };
   }
 
@@ -192,7 +190,9 @@ export class PaymentsService {
     );
 
     if (totalPaymentAmount <= 0) {
-      throw new BadRequestException('Total payment amount must be greater than 0');
+      throw new BadRequestException(
+        'Total payment amount must be greater than 0',
+      );
     }
 
     // Get the sale and validate
@@ -279,9 +279,6 @@ export class PaymentsService {
       return { payments: createdPayments, sale: updatedSale };
     });
 
-    // Invalidate all related caches
-    await this.invalidateSalesCaches(consumerId, sale.branch_id);
-
     // Calculate remaining amount for response
     const remainingAfterPayment =
       Number(result.sale.total_amount) - Number(result.sale.received_amount);
@@ -326,25 +323,5 @@ export class PaymentsService {
     });
 
     return { payments };
-  }
-
-  /**
-   * Invalidate all sales-related caches
-   */
-  private async invalidateSalesCaches(
-    consumerId: number,
-    branchId?: number,
-  ): Promise<void> {
-    
-
-    // Also invalidate specific patterns for partial payments
-    await this.cacheService.delPattern(`${consumerId}:sales:*`);
-    await this.cacheService.delPattern(`${consumerId}:sale:*`);
-    await this.cacheService.delPattern(`${consumerId}:sales-stats:*`);
-    await this.cacheService.delPattern(`${consumerId}:quotations:*`);
-    
-    if (branchId) {
-      await this.cacheService.delPattern(`${consumerId}:sales:branch:${branchId}:*`);
-    }
   }
 }

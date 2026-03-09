@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CacheService } from '../../../common/services/cache.service';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import {
@@ -21,7 +20,6 @@ import { QuotationPdfService } from './quotation-pdf.service';
 export class SalesService {
   constructor(
     private prisma: PrismaService,
-    private cacheService: CacheService,
     private rewardsService: RewardsService,
     private quotationPdfService: QuotationPdfService,
   ) {}
@@ -407,17 +405,6 @@ export class SalesService {
       }
     }
 
-    // Invalidate related caches after successful sale/quotation creation
-    if (isQuotation) {
-      await this.invalidateQuotationsCaches(consumerId);
-    } else {
-      await this.invalidateSalesCaches(consumerId, createSaleDto.branch_id);
-
-      // If sale was created from a quotation, also invalidate quotation caches
-      if (createSaleDto.quotation_id) {
-        await this.invalidateQuotationsCaches(consumerId);
-      }
-    }
 
     // Return created sale/quotation with full details
     if (isQuotation) {
@@ -913,7 +900,7 @@ export class SalesService {
     // Build where clause
     const whereClause: any = {
       sale_type: SaleType.SALE, // Only include actual sales in EOD, not quotations
-      sale_mer_id: consumerId,
+      consumer_id: consumerId,
       sale_date: {
         gte: startOfDay,
         lte: endOfDay,
@@ -1192,33 +1179,6 @@ export class SalesService {
     };
   }
 
-  /**
-   * Invalidate sales-related caches after operations that modify data
-   */
-  private async invalidateSalesCaches(consumerId: number, branchId?: number) {
-    try {
-      
-    } catch (error) {
-      this.cacheService['logger'].error(
-        `Failed to invalidate sales caches:`,
-        error,
-      );
-    }
-  }
-
-  /**
-   * Invalidate quotation-related caches after operations that modify data
-   */
-  private async invalidateQuotationsCaches(consumerId: number) {
-    try {
-    
-    } catch (error) {
-      this.cacheService['logger'].error(
-        `Failed to invalidate quotation caches:`,
-        error,
-      );
-    }
-  }
 
   // ========== QUOTATION METHODS ==========
 
@@ -1497,11 +1457,6 @@ export class SalesService {
       return sale;
     });
 
-    // Invalidate both sales and quotation caches
-    await Promise.all([
-      this.invalidateSalesCaches(consumerId, quotation.branch_id),
-      this.invalidateQuotationsCaches(consumerId),
-    ]);
 
     return result;
   }
@@ -1663,8 +1618,7 @@ export class SalesService {
       },
     });
 
-    // Invalidate caches
-    await this.invalidateSalesCaches(consumerId, sale.branch_id);
+    
 
     return updatedSale;
   }

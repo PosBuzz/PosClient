@@ -1,14 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { InventoryHelperService } from './inventory-helper.service';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class InventoryService {
   constructor(
     private prisma: PrismaService,
     private inventoryHelper: InventoryHelperService,
-    private cacheService: CacheService,
+    
   ) {}
   async getInventorySummary(consumerId: number, branchId?: number) {
       const whereClause: any = {

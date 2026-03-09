@@ -1,23 +1,29 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class InventoryTransferService {
   constructor(
     private prisma: PrismaService,
     private inventoryHelper: InventoryHelperService,
-    private cacheService: CacheService,
   ) {}
 
-  async create(consumerId: number, userId: number, dto: CreateInventoryTransferDto) {
+  async create(
+    consumerId: number,
+    userId: number,
+    dto: CreateInventoryTransferDto,
+  ) {
     // Validate source branch
     const sourceBranch = await this.prisma.branch.findFirst({
-      where: { 
-        id: dto.source_branch_id, 
-        consumer_id: consumerId 
+      where: {
+        id: dto.source_branch_id,
+        consumer_id: consumerId,
       },
     });
     if (!sourceBranch) {
@@ -26,9 +32,9 @@ export class InventoryTransferService {
 
     // Validate destination branch
     const destinationBranch = await this.prisma.branch.findFirst({
-      where: { 
-        id: dto.destination_branch_id, 
-        consumer_id: consumerId 
+      where: {
+        id: dto.destination_branch_id,
+        consumer_id: consumerId,
       },
     });
     if (!destinationBranch) {
@@ -37,7 +43,9 @@ export class InventoryTransferService {
 
     // Check if source and destination are the same
     if (dto.source_branch_id === dto.destination_branch_id) {
-      throw new BadRequestException('Source and destination branches cannot be the same');
+      throw new BadRequestException(
+        'Source and destination branches cannot be the same',
+      );
     }
 
     // Verify all batches exist and have sufficient quantity
@@ -54,15 +62,17 @@ export class InventoryTransferService {
 
       if (!batch) {
         const branchName = this.inventoryHelper.getLocationName(sourceBranch);
-        throw new NotFoundException(`Batch with ID ${item.batch_id} not found in ${branchName}`);
+        throw new NotFoundException(
+          `Batch with ID ${item.batch_id} not found in ${branchName}`,
+        );
       }
 
       if (batch.quantity < item.quantity) {
         throw new BadRequestException(
-          `Insufficient quantity in batch ${item.batch_id}. Available: ${batch.quantity}, Requested: ${item.quantity}`
+          `Insufficient quantity in batch ${item.batch_id}. Available: ${batch.quantity}, Requested: ${item.quantity}`,
         );
       }
-    }    // Create transfer with items
+    } // Create transfer with items
     const transfer = await this.prisma.inventoryTransfer.create({
       data: {
         source_branch_id: dto.source_branch_id,
@@ -70,7 +80,7 @@ export class InventoryTransferService {
         notes: dto.notes,
         created_by_user_id: userId,
         items: {
-          create: dto.items.map(item => ({
+          create: dto.items.map((item) => ({
             batch_id: item.batch_id,
             quantity: item.quantity,
           })),
@@ -78,7 +88,9 @@ export class InventoryTransferService {
       },
       include: {
         source_branch: { select: { id: true, name: true, is_warehouse: true } },
-        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: {
+          select: { id: true, name: true, is_warehouse: true },
+        },
         created_by_user: { select: { id: true, name: true } },
         items: {
           include: {
@@ -94,108 +106,60 @@ export class InventoryTransferService {
           },
         },
       },
-    });    // Invalidate related caches after successful creation
-    await this.invalidateInventoryTransferCaches(consumerId, dto.source_branch_id, dto.destination_branch_id);
+    });
 
     return transfer;
   }
-  async findAll(consumerId: number, options: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    branch_id?: number;
-  } = {}) {
+  async findAll(
+    consumerId: number,
+    options: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      branch_id?: number;
+    } = {},
+  ) {
     const page = options.page || 1;
     const limit = options.limit || 10;
 
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const where: any = {
-        OR: [
-          {
-            source_branch: {
-              consumer_id: consumerId,
-            },
+    const where: any = {
+      OR: [
+        {
+          source_branch: {
+            consumer_id: consumerId,
           },
-          {
-            destination_branch: {
-              consumer_id: consumerId,
-            },
-          },
-        ],
-      };
-
-      if (options.status) {
-        where.status = options.status;
-      }
-
-      if (options.branch_id !== undefined) {
-        where.OR = [
-          { source_branch_id: options.branch_id },
-          { destination_branch_id: options.branch_id },
-        ];
-      }
-
-      const [transfers, total] = await Promise.all([
-        this.prisma.inventoryTransfer.findMany({
-          where,
-          include: {
-            source_branch: { select: { id: true, name: true, is_warehouse: true } },
-            destination_branch: { select: { id: true, name: true, is_warehouse: true } },
-            created_by_user: { select: { id: true, name: true } },
-            items: {
-              include: {
-                batch: {
-                  include: {
-                    variant: {
-                      include: {
-                        product: { select: { id: true, name: true } },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { created_at: 'desc' },
-          skip,
-          take: limit,
-        }),
-        this.prisma.inventoryTransfer.count({ where }),
-      ]);
-
-      return {
-        data: transfers,
-        meta: {
-          current_page: page,
-          per_page: limit,
-          total,
-          last_page: Math.ceil(total / limit),
         },
-      };
-    
-  }
-  async findOne(id: number, consumerId: number) {
-
-      const transfer = await this.prisma.inventoryTransfer.findFirst({
-        where: {
-          id,
-          OR: [
-            {
-              source_branch: {
-                consumer_id: consumerId,
-              },
-            },
-            {
-              destination_branch: {
-                consumer_id: consumerId,
-              },
-            },
-          ],
+        {
+          destination_branch: {
+            consumer_id: consumerId,
+          },
         },
+      ],
+    };
+
+    if (options.status) {
+      where.status = options.status;
+    }
+
+    if (options.branch_id !== undefined) {
+      where.OR = [
+        { source_branch_id: options.branch_id },
+        { destination_branch_id: options.branch_id },
+      ];
+    }
+
+    const [transfers, total] = await Promise.all([
+      this.prisma.inventoryTransfer.findMany({
+        where,
         include: {
-          source_branch: { select: { id: true, name: true, is_warehouse: true } },
-          destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+          source_branch: {
+            select: { id: true, name: true, is_warehouse: true },
+          },
+          destination_branch: {
+            select: { id: true, name: true, is_warehouse: true },
+          },
           created_by_user: { select: { id: true, name: true } },
           items: {
             include: {
@@ -211,14 +175,67 @@ export class InventoryTransferService {
             },
           },
         },
-      });
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.inventoryTransfer.count({ where }),
+    ]);
 
-      if (!transfer) {
-        throw new NotFoundException('Transfer not found');
-      }
+    return {
+      data: transfers,
+      meta: {
+        current_page: page,
+        per_page: limit,
+        total,
+        last_page: Math.ceil(total / limit),
+      },
+    };
+  }
+  async findOne(id: number, consumerId: number) {
+    const transfer = await this.prisma.inventoryTransfer.findFirst({
+      where: {
+        id,
+        OR: [
+          {
+            source_branch: {
+              consumer_id: consumerId,
+            },
+          },
+          {
+            destination_branch: {
+              consumer_id: consumerId,
+            },
+          },
+        ],
+      },
+      include: {
+        source_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: {
+          select: { id: true, name: true, is_warehouse: true },
+        },
+        created_by_user: { select: { id: true, name: true } },
+        items: {
+          include: {
+            batch: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-      return transfer;
-    
+    if (!transfer) {
+      throw new NotFoundException('Transfer not found');
+    }
+
+    return transfer;
   }
 
   async completeTransfer(id: number, consumerId: number) {
@@ -241,7 +258,9 @@ export class InventoryTransferService {
       },
       include: {
         source_branch: { select: { id: true, name: true, is_warehouse: true } },
-        destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+        destination_branch: {
+          select: { id: true, name: true, is_warehouse: true },
+        },
         created_by_user: { select: { id: true, name: true } },
         items: {
           include: {
@@ -327,8 +346,12 @@ export class InventoryTransferService {
           completed_date: new Date(),
         },
         include: {
-          source_branch: { select: { id: true, name: true, is_warehouse: true } },
-          destination_branch: { select: { id: true, name: true, is_warehouse: true } },
+          source_branch: {
+            select: { id: true, name: true, is_warehouse: true },
+          },
+          destination_branch: {
+            select: { id: true, name: true, is_warehouse: true },
+          },
           created_by_user: { select: { id: true, name: true } },
           items: {
             include: {
@@ -344,10 +367,8 @@ export class InventoryTransferService {
             },
           },
         },
-      });    });
-
-    // Invalidate related caches after successful completion
-    await this.invalidateInventoryTransferCaches(consumerId, transfer.source_branch_id, transfer.destination_branch_id);
+      });
+    });
 
     return result;
   }
@@ -357,24 +378,14 @@ export class InventoryTransferService {
 
     if (transfer.status !== 'pending') {
       throw new BadRequestException('Transfer is not in pending status');
-    }    const updatedTransfer = await this.prisma.inventoryTransfer.update({
+    }
+    const updatedTransfer = await this.prisma.inventoryTransfer.update({
       where: { id },
       data: {
         status: 'cancelled',
       },
     });
 
-    // Invalidate related caches after cancellation
-    await this.invalidateInventoryTransferCaches(consumerId, transfer.source_branch_id, transfer.destination_branch_id);
-
     return updatedTransfer;
-  }  // Cache invalidation helper methods
-  private async invalidateInventoryTransferCaches(consumerId: number, sourceBranchId?: number, destinationBranchId?: number) {
-    try {
-      // For any transfer operation, invalidate ALL inventory-related caches
-      await this.cacheService.invalidateAllInventoryCaches(consumerId);
-    } catch (error) {
-      console.error('Transfer cache invalidation error:', error);
-    }
   }
 }

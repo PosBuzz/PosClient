@@ -2,13 +2,11 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUnitDto } from '../dto/create-unit.dto';
 import { UpdateUnitDto } from '../dto/update-unit.dto';
-import { CacheService } from '../../../common/services/cache.service';
 
 @Injectable()
 export class UnitService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
   ) {}
   async create(createUnitDto: CreateUnitDto, consumerId: number) {
     // Check if unit with the same name already exists for this consumer
@@ -30,8 +28,7 @@ export class UnitService {
       },
     });
 
-    // Invalidate only unit caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
+   
 
     return result;
   }
@@ -81,8 +78,7 @@ export class UnitService {
       data: { name: updateUnitDto.name },
     });
 
-    // Invalidate only unit caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
+    
 
     return result;
   }
@@ -92,8 +88,7 @@ export class UnitService {
       where: { id },
     });
     
-    // Invalidate only unit caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'units');
+   
     
     return { success: true };
   }
