@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUnitDto } from '../dto/create-unit.dto';
 import { UpdateUnitDto } from '../dto/update-unit.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class UnitService {
@@ -37,23 +36,15 @@ export class UnitService {
     return result;
   }
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.unitList(consumerId);
     
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.unit.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.unitDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+   
       const unit = await this.prismaService.unit.findFirst({
         where: { 
           id,
@@ -66,7 +57,7 @@ export class UnitService {
       }
 
       return unit;
-    });
+    
   }
   async update(id: number, updateUnitDto: UpdateUnitDto, consumerId: number) {
     // First check if the unit exists and belongs to this consumer

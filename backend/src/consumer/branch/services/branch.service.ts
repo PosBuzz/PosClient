@@ -3,10 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import {
-  generateCacheKey,
-  generateCachePatterns,
-} from '../../../constants/cache-keys';
 
 @Injectable()
 export class BranchService {
@@ -86,9 +82,6 @@ export class BranchService {
       // Also invalidate user caches since branch assignments affect user data
       await this.cacheService.invalidateEntityCaches(consumerId, 'users');
 
-      // Specifically invalidate branch options cache
-      const branchOptionsKey = generateCacheKey.branchOptions(consumerId);
-      await this.cacheService.del(branchOptionsKey);
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }
@@ -125,11 +118,7 @@ export class BranchService {
   }
 
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.branchList(consumerId);
 
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.branch.findMany({
         where: { consumer_id: consumerId },
         orderBy: [
@@ -137,15 +126,11 @@ export class BranchService {
           { name: 'asc' }, // Then alphabetically
         ],
       });
-    });
+    
   }
 
   async getBranchOptions(consumerId: number) {
-    // Generate cache key for branch options (different from full branch list)
-    const cacheKey = generateCacheKey.branchOptions(consumerId);
 
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.branch.findMany({
         where: { consumer_id: consumerId },
         select: {
@@ -159,15 +144,11 @@ export class BranchService {
           { name: 'asc' }, // Then alphabetically
         ],
       });
-    });
+    
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.branchDetail(id, consumerId);
 
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const branch = await this.prismaService.branch.findFirst({
         where: {
           id,
@@ -180,7 +161,7 @@ export class BranchService {
       }
 
       return branch;
-    });
+  
   }
   async update(
     id: number,

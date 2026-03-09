@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class TagService {
@@ -24,23 +23,15 @@ export class TagService {
     return result;
   }
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.tagList(consumerId);
     
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return this.prismaService.tag.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.tagDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+   
       const tag = await this.prismaService.tag.findFirst({
         where: { 
           id,
@@ -53,7 +44,7 @@ export class TagService {
       }
 
       return tag;
-    });
+    
   }
   async update(id: number, updateTagDto: UpdateTagDto, consumerId: number) {
     // First check if the tag exists and belongs to this consumer

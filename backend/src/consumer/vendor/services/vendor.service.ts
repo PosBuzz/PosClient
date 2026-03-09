@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class VendorService {
@@ -28,19 +27,16 @@ export class VendorService {
     return result;
   }
   async findAll(consumerId: number) {
-    const cacheKey = generateCacheKey.vendorList(consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+  
       return this.prismaService.vendor.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    
   }
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.vendorDetail(id, consumerId);
+
     
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const vendor = await this.prismaService.vendor.findFirst({
         where: {
           id,
@@ -53,7 +49,7 @@ export class VendorService {
       }
 
       return vendor;
-    });
+    
   }
   async update(
     id: number,

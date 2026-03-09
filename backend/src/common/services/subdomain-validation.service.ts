@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CacheService } from './cache.service';
 import { SubdomainUtilService } from './subdomain-util.service';
-import { generateCacheKey } from 'src/constants/cache-keys';
 import * as dayjs from 'dayjs';
 
 export interface SubdomainValidationResult {
@@ -38,13 +37,10 @@ export class SubdomainValidationService {
     }
 
     const normalizedSubdomain = subdomain.toLowerCase().trim();
-    const cacheKey = generateCacheKey.consumerBySubdomain(normalizedSubdomain);
 
     try {
-      const cachedResult =
-        await this.cacheService.getOrSet<SubdomainValidationResult>(
-          cacheKey,
-          async () => {
+        
+          
             const consumer = await this.prisma.consumer.findUnique({
               where: { subdomain: normalizedSubdomain },
               select: {
@@ -88,11 +84,8 @@ export class SubdomainValidationService {
               isActive: true,
               message: 'Subdomain is valid',
             };
-          },
-          300,
-        );
-
-      return cachedResult;
+              
+        
     } catch (error) {
       this.logger.error(
         `❌ Subdomain validation error '${normalizedSubdomain}': ${error.message}`,

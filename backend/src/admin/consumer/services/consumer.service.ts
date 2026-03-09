@@ -4,7 +4,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class ConsumerService {
@@ -170,15 +169,13 @@ export class ConsumerService {
     };
   }
   async checkSubdomain(value: string) {
-    const cacheKey = generateCacheKey.subdomainAvailability(value);
-
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    
       const exists = await this.prisma.consumer.findUnique({
         where: { subdomain: value },
         select: { id: true },
       });
       return { available: !exists };
-    });
+    
   }
   private async invalidateConsumerCaches(): Promise<void> {
     try {

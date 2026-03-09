@@ -3,7 +3,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class CategoryService {
@@ -26,24 +25,16 @@ export class CategoryService {
   }
 
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.categoryList(consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+
       return this.prismaService.category.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+  
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.categoryDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+   
       const category = await this.prismaService.category.findFirst({
         where: { 
           id,
@@ -56,7 +47,7 @@ export class CategoryService {
       }
 
       return category;
-    });
+    
   }
 
   async update(id: number, updateCategoryDto: UpdateCategoryDto, consumerId: number) {

@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisCacheService } from 'nest-cache-redis';
-import { generateCachePatterns } from '../../constants/cache-keys';
 
 @Injectable()
 export class CacheService {
@@ -116,8 +115,8 @@ export class CacheService {
    * This is the most efficient way since all keys start with consumerId
    */
   async invalidateConsumerCache(consumerId: number): Promise<void> {
-    const pattern = generateCachePatterns.allForConsumer(consumerId);
-    await this.delPattern(pattern);
+   
+  
   }
 
   /**
@@ -125,24 +124,23 @@ export class CacheService {
    * This is used when consumer data changes (create, update, delete) in admin
    */
   async invalidateGlobalConsumerCaches(): Promise<void> {
-    const pattern = generateCachePatterns.allConsumerRelated();
-    await this.delPattern(pattern);
+   
+    
   }
 
   /**
    * Invalidate all plan-related caches
    */
   async invalidateGlobalPlanCaches(): Promise<void> {
-    const pattern = generateCachePatterns.allPlanRelated();
-    await this.delPattern(pattern);
+    
+    
   }
 
   /**
    * Invalidate ALL admin-related caches (consumers, plans, admin CRUD)
    */
   async invalidateAllAdminCaches(): Promise<void> {
-    const patterns = generateCachePatterns.allAdminRelated();
-    await this.delPatterns(patterns);
+    
   }
 
   /**
@@ -150,8 +148,7 @@ export class CacheService {
    * This is used for any inventory operation to ensure complete cache consistency
    */
   async invalidateAllInventoryCaches(consumerId: number): Promise<void> {
-    const patterns = generateCachePatterns.allInventoryRelated(consumerId);
-    await this.delPatterns(patterns);
+    
   }
   /**
    * Invalidate specific entity caches for a consumer
@@ -172,42 +169,42 @@ export class CacheService {
   ): Promise<void> {
     let pattern: string;
 
-    switch (entityType) {
-      case 'units':
-        pattern = generateCachePatterns.allUnits(consumerId);
-        break;
-      case 'vendors':
-        pattern = generateCachePatterns.allVendors(consumerId);
-        break;
-      case 'customers':
-        pattern = generateCachePatterns.allCustomers(consumerId);
-        break;
-      case 'categories':
-        pattern = generateCachePatterns.allCategories(consumerId);
-        break;
-      case 'brands':
-        pattern = generateCachePatterns.allBrands(consumerId);
-        break;
-      case 'tags':
-        pattern = generateCachePatterns.allTags(consumerId);
-        break;
-      case 'branches':
-        pattern = generateCachePatterns.allBranches(consumerId);
-        break;
-      case 'users':
-        await this.delPatterns([
-          generateCachePatterns.allUsers(consumerId),
-          generateCachePatterns.allRoles(consumerId),
-        ]);
-        return;
-      case 'roles':
-        await this.delPatterns([
-          generateCachePatterns.allUsers(consumerId),
-          generateCachePatterns.allRoles(consumerId),
-        ]);
-        return;
-    }
+    // switch (entityType) {
+    //   case 'units':
+    //     pattern = generateCachePatterns.allUnits(consumerId);
+    //     break;
+    //   case 'vendors':
+    //     pattern = generateCachePatterns.allVendors(consumerId);
+    //     break;
+    //   case 'customers':
+    //     pattern = generateCachePatterns.allCustomers(consumerId);
+    //     break;
+    //   case 'categories':
+    //     pattern = generateCachePatterns.allCategories(consumerId);
+    //     break;
+    //   case 'brands':
+    //     pattern = generateCachePatterns.allBrands(consumerId);
+    //     break;
+    //   case 'tags':
+    //     pattern = generateCachePatterns.allTags(consumerId);
+    //     break;
+    //   case 'branches':
+    //     pattern = generateCachePatterns.allBranches(consumerId);
+    //     break;
+    //   case 'users':
+    //     await this.delPatterns([
+    //       generateCachePatterns.allUsers(consumerId),
+    //       generateCachePatterns.allRoles(consumerId),
+    //     ]);
+    //     return;
+    //   case 'roles':
+    //     await this.delPatterns([
+    //       generateCachePatterns.allUsers(consumerId),
+    //       generateCachePatterns.allRoles(consumerId),
+    //     ]);
+    //     return;
+    // }
 
-    await this.delPattern(pattern);
+    // await this.delPattern(pattern);
   }
 }

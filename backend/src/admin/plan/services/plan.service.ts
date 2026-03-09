@@ -3,7 +3,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
 import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class PlanService {
@@ -31,9 +30,6 @@ export class PlanService {
   }
 
   async findAll() {
-    const cacheKey = generateCacheKey.planList();
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.plan.findMany({
         include: {
           permissions: {
@@ -44,13 +40,11 @@ export class PlanService {
         },
         orderBy: { id: 'asc' },
       });
-    });
+   
   }
 
   async findOne(id: number) {
-    const cacheKey = generateCacheKey.planDetail(id);
     
-    return this.cacheService.getOrSet(cacheKey, async () => {
       return await this.prisma.plan.findUnique({
         where: { id },
         include: {
@@ -61,7 +55,7 @@ export class PlanService {
           },
         },
       });
-    });
+    
   }
 
   async update(planId: number, data: UpdatePlanDto) {
@@ -187,14 +181,6 @@ export class PlanService {
   // Cache invalidation helper methods
   private async invalidatePlanCaches(planId?: number) {
     const cacheKeysToInvalidate: string[] = [];
-
-    // Invalidate plan list cache
-    cacheKeysToInvalidate.push(generateCacheKey.planList());
-
-    // Invalidate specific plan detail cache if planId is provided
-    if (planId) {
-      cacheKeysToInvalidate.push(generateCacheKey.planDetail(planId));
-    }
 
     await Promise.all(
       cacheKeysToInvalidate.map(key => this.cacheService.del(key))

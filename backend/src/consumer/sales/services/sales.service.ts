@@ -5,10 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheService } from '../../../common/services/cache.service';
-import {
-  generateCacheKey,
-  generateCachePatterns,
-} from '../../../constants/cache-keys';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import {
@@ -446,27 +442,6 @@ export class SalesService {
       source,
     } = filters;
 
-    // Generate cache key for this specific query
-    const cacheKey = generateCacheKey.salesList(
-      consumerId,
-      page,
-      limit,
-      search,
-      branch_id,
-      payment_method,
-      payment_status,
-      date_from,
-      date_to,
-      sort_by,
-      sort_order,
-      source,
-    );
-
-    // Try to get from cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
 
     const skip = (page - 1) * limit;
 
@@ -568,21 +543,12 @@ export class SalesService {
       summary,
     };
 
-    // Cache the result for 2 minutes (sales data changes frequently)
-    await this.cacheService.set(cacheKey, result, 120);
 
     return result;
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key for this specific sale
-    const cacheKey = generateCacheKey.salesDetail(id, consumerId);
 
-    // Try to get from cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
 
     const sale = await this.prisma.sale.findFirst({
       where: {
@@ -623,21 +589,13 @@ export class SalesService {
       throw new NotFoundException('Sale not found');
     }
 
-    // Cache the sale for 5 minutes (individual sales don't change often)
-    await this.cacheService.set(cacheKey, sale, 300);
+   
 
     return sale;
   }
 
   async findBySaleNumber(saleNumber: string, consumerId: number) {
-    // Generate cache key for this specific sale number search
-    const cacheKey = generateCacheKey.saleByNumber(saleNumber, consumerId);
-
-    // Try to get from cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+   
 
     const sale = await this.prisma.sale.findFirst({
       where: {
@@ -740,8 +698,6 @@ export class SalesService {
       return_summary: returnSummary,
     };
 
-    // Cache the sale with calculated quantities for 5 minutes
-    await this.cacheService.set(cacheKey, saleWithReturnSummary, 300);
 
     return saleWithReturnSummary;
   }
@@ -751,18 +707,7 @@ export class SalesService {
     branchId: number,
     search?: string,
   ) {
-    // Generate cache key for this specific query
-    const cacheKey = generateCacheKey.productsForSale(
-      consumerId,
-      branchId,
-      search,
-    );
-
-    // Try to get from cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+ 
 
     const where: any = {
       product: { consumer_id: consumerId },
@@ -813,8 +758,7 @@ export class SalesService {
       tax_method: variant.product.tax_method || 'exclusive',
     }));
 
-    // Cache the result for 30 seconds (inventory changes frequently)
-    await this.cacheService.set(cacheKey, result, 30);
+    
 
     return result;
   }
@@ -824,18 +768,7 @@ export class SalesService {
     branchId: number,
     barcode: string,
   ) {
-    // Generate cache key for this specific query
-    const cacheKey = generateCacheKey.productByBarcode(
-      consumerId,
-      branchId,
-      barcode,
-    );
-
-    // Try to get from cache first
-    const cached = await this.cacheService.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+   
 
     const variant = await this.prisma.productVariant.findFirst({
       where: {
@@ -879,8 +812,6 @@ export class SalesService {
       tax_method: variant.product.tax_method || 'exclusive',
     };
 
-    // Cache the result for 30 seconds (inventory changes frequently)
-    await this.cacheService.set(cacheKey, result, 30);
 
     return result;
   }
@@ -1266,11 +1197,7 @@ export class SalesService {
    */
   private async invalidateSalesCaches(consumerId: number, branchId?: number) {
     try {
-      // Invalidate all sales-related caches for this consumer
-      const patterns = generateCachePatterns.allSalesRelated(consumerId);
-      for (const pattern of patterns) {
-        await this.cacheService.delPattern(pattern);
-      }
+      
     } catch (error) {
       this.cacheService['logger'].error(
         `Failed to invalidate sales caches:`,
@@ -1284,9 +1211,7 @@ export class SalesService {
    */
   private async invalidateQuotationsCaches(consumerId: number) {
     try {
-      // Invalidate all quotation-related caches for this consumer
-      const pattern = generateCachePatterns.allQuotations(consumerId);
-      await this.cacheService.delPattern(pattern);
+    
     } catch (error) {
       this.cacheService['logger'].error(
         `Failed to invalidate quotation caches:`,
@@ -1310,23 +1235,7 @@ export class SalesService {
       source,
     } = filters;
 
-    // Generate cache key for quotations query
-    const cacheKey = generateCacheKey.quotationsList(
-      consumerId,
-      page,
-      limit,
-      search,
-      branch_id,
-      date_from,
-      date_to,
-      sort_by,
-      sort_order,
-      source,
-    );
 
-    return this.cacheService.getOrSet(
-      cacheKey,
-      async () => {
         const skip = (page - 1) * limit;
 
         const where: any = {
@@ -1405,19 +1314,14 @@ export class SalesService {
           },
           summary,
         };
-      },
-      120,
-    );
+      
+    
   }
 
   async findOneQuotation(id: number, consumerId: number) {
-    // Generate cache key for this specific quotation
-    const cacheKey = generateCacheKey.quotationDetail(id, consumerId);
+    
 
-    const quotation = await this.cacheService.getOrSet(
-      cacheKey,
-      async () => {
-        return this.prisma.sale.findFirst({
+    const quotation = await this.prisma.sale.findFirst({
           where: {
             id,
             consumer_id: consumerId,
@@ -1441,9 +1345,7 @@ export class SalesService {
             },
           },
         });
-      },
-      300,
-    );
+
 
     if (!quotation) {
       throw new NotFoundException('Quotation not found');
