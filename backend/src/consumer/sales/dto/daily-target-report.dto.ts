@@ -22,6 +22,8 @@ export interface DailyTargetRow {
   actual_sold: number;
   achievement_pct: number;
   gap: number;
+  // targeted_amount: number;
+  // actual_amount: number;   
 }
 
 export interface DailyTargetReportResponse {
@@ -33,5 +35,8 @@ export interface DailyTargetReportResponse {
     total_target: number;
     total_sold: number;
     overall_achievement_pct: number;
+    // targeted_amount: number;
+    // total_amount: number;
+    // average_amount: number;
   };
 }
