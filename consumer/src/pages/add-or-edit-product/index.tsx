@@ -106,7 +106,7 @@ export default function ProductForm() {
         variants: transformedVariants,
       };
     },
-    []
+    [],
   );
 
   const transformFormToApiData = useCallback(() => {
@@ -208,7 +208,7 @@ export default function ProductForm() {
       messageApi?.success(
         isEditMode
           ? "Product updated successfully"
-          : "Product saved successfully"
+          : "Product saved successfully",
       );
       queryClient.invalidateQueries({
         queryKey: [queryKeys.product],
@@ -247,7 +247,7 @@ export default function ProductForm() {
       messageApi?.error(
         `${
           isEditMode ? "Failed to update product" : "Failed to save product"
-        }: ${error.response?.data?.message || error.message || "Unknown error"}`
+        }: ${error.response?.data?.message || error.message || "Unknown error"}`,
       );
     },
   });
@@ -269,7 +269,7 @@ export default function ProductForm() {
     (variantId: string) => {
       deleteVariant(variantId);
     },
-    [deleteVariant]
+    [deleteVariant],
   );
 
   const handleAddVariant = useCallback(() => {
@@ -280,77 +280,77 @@ export default function ProductForm() {
     (variantId: string) => {
       duplicateVariant(variantId);
     },
-    [duplicateVariant]
+    [duplicateVariant],
   );
 
   const handleVariantUpdate = useCallback(
     (variantId: string, updates: any) => {
       updateVariant(variantId, updates);
     },
-    [updateVariant]
+    [updateVariant],
   );
 
   const handleAddVariantAttribute = useCallback(
     (variantId: string, attribute: any) => {
       addVariantAttribute(variantId, attribute);
     },
-    [addVariantAttribute]
+    [addVariantAttribute],
   );
 
   const handleUpdateVariantAttribute = useCallback(
     (variantId: string, attributeIndex: number, updates: any) => {
       updateVariantAttribute(variantId, attributeIndex, updates);
     },
-    [updateVariantAttribute]
+    [updateVariantAttribute],
   );
 
   const handleDeleteVariantAttribute = useCallback(
     (variantId: string, attributeIndex: number) => {
       deleteVariantAttribute(variantId, attributeIndex);
     },
-    [deleteVariantAttribute]
+    [deleteVariantAttribute],
   );
 
   const handleAddVariantSerial = useCallback(
     (variantId: string, serial: any) => {
       addVariantSerial(variantId, serial);
     },
-    [addVariantSerial]
+    [addVariantSerial],
   );
 
   const handleUpdateVariantSerial = useCallback(
     (variantId: string, serialIndex: number, updates: any) => {
       updateVariantSerial(variantId, serialIndex, updates);
     },
-    [updateVariantSerial]
+    [updateVariantSerial],
   );
 
   const handleDeleteVariantSerial = useCallback(
     (variantId: string, serialIndex: number) => {
       deleteVariantSerial(variantId, serialIndex);
     },
-    [deleteVariantSerial]
+    [deleteVariantSerial],
   );
 
   const handleUpdateVariantBatches = useCallback(
     (variantId: string, batches: any[]) => {
       updateVariantBatches(variantId, batches);
     },
-    [updateVariantBatches]
+    [updateVariantBatches],
   );
 
   const handleGenerateSKU = useCallback(
     (variantId: string) => {
       generateSKU(variantId);
     },
-    [generateSKU]
+    [generateSKU],
   );
 
   const handleGenerateBarcode = useCallback(
     (variantId: string) => {
       generateBarcode(variantId);
     },
-    [generateBarcode]
+    [generateBarcode],
   );
 
   // Show loading state
@@ -424,7 +424,7 @@ export default function ProductForm() {
               disabled={
                 saveProductMutation.isPending ||
                 Object.keys(validationState).some(
-                  (key) => validationState[key].status === "error"
+                  (key) => validationState[key].status === "error",
                 )
               }
             >

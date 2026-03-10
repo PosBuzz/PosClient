@@ -971,7 +971,7 @@ export class SalesService {
     // Build where clause
     const whereClause: any = {
       sale_type: SaleType.SALE, // Only include actual sales in EOD, not quotations
-      sale_mer_id: consumerId,
+      consumer_id: consumerId,
       sale_date: {
         gte: startOfDay,
         lte: endOfDay,
@@ -1829,28 +1829,8 @@ export class SalesService {
       branchName = branch?.name;
     }
 
-    // Date-specific targets
-    const dateTargets = await this.prisma.dailySalesTarget.findMany({
-      where: {
-        consumer_id: consumerId,
-        date: reportDate,
-        ...(branchId
-          ? { OR: [{ branch_id: branchId }, { branch_id: null }] }
-          : { branch_id: null }),
-      },
-      select: { product_id: true, target_qty: true, branch_id: true },
-    });
-
     // Branch-specific entry wins over store-wide (null) entry
     const dateTargetMap = new Map<number, number>();
-    // Add store-wide entries first (lower priority)
-    dateTargets
-      .filter((t) => t.branch_id === null)
-      .forEach((t) => dateTargetMap.set(t.product_id, t.target_qty));
-    // Branch-specific entries overwrite store-wide
-    dateTargets
-      .filter((t) => t.branch_id !== null)
-      .forEach((t) => dateTargetMap.set(t.product_id, t.target_qty));
 
     //Variants with a product-level default target
     const variantsWithTarget = await this.prisma.productVariant.findMany({
@@ -1859,27 +1839,22 @@ export class SalesService {
           consumer_id: consumerId,
           daily_sale_objective: { gt: 0 },
         },
+        // Only show variants that have inventory in the selected branch
+        ...(branchId
+          ? { inventory_items: { some: { branch_id: branchId } } }
+          : {}),
       },
+
       select: {
         id: true,
         name: true,
         sku: true,
+        regular_price: true,
         product: {
           select: { id: true, name: true, daily_sale_objective: true },
         },
       },
     });
-
-    if (variantsWithTarget.length === 0 && dateTargets.length === 0) {
-      return {
-        date: reportDate.toISOString().split('T')[0],
-        branch_id: branchId,
-        branch_name: branchName,
-        rows: [],
-        summary: { total_target: 0, total_sold: 0, overall_achievement_pct: 0 },
-      };
-    }
-
     // (pivot aggregation)
     // Collapse many SaleItem rows → one quantity-sum per variant_id
     // When branch is selected, only count sales from that branch
@@ -1893,12 +1868,18 @@ export class SalesService {
           ...(branchId ? { branch_id: branchId } : {}),
         },
       },
-      _sum: { quantity: true },
+      _sum: { quantity: true, line_total: true },
     });
 
     // PIVOT MERGE
-    const actualMap = new Map<number, number>(
-      soldGrouped.map((row) => [row.variant_id, row._sum.quantity ?? 0]),
+    const actualMap = new Map<number, { qty: number; amount: number }>(
+      soldGrouped.map((row) => [
+        row.variant_id,
+        {
+          qty: row._sum.quantity ?? 0,
+          amount: Number(row._sum.line_total ?? 0),
+        },
+      ]),
     );
 
     const rows: DailyTargetRow[] = variantsWithTarget.map((variant) => {
@@ -1906,11 +1887,20 @@ export class SalesService {
         dateTargetMap.get(variant.product.id) ??
         variant.product.daily_sale_objective ??
         0;
-      const actual_sold = actualMap.get(variant.id) ?? 0;
+
+      const actual = actualMap.get(variant.id) ?? { qty: 0, amount: 0 };
+      const actual_sold = actual.qty;
+      // const actual_amount = actual.amount;
+
+      const unit_price = Number(variant.regular_price ?? 0);
+      // const targeted_amount = daily_target * unit_price;
+
       const achievement_pct =
         daily_target > 0
           ? Math.round((actual_sold / daily_target) * 10000) / 100
           : 0;
+      const remaining_gap = daily_target - actual_sold;
+      const gap = remaining_gap > 0 ? remaining_gap : 0;
       return {
         product_id: variant.product.id,
         product_name: variant.product.name,
@@ -1920,12 +1910,18 @@ export class SalesService {
         daily_target,
         actual_sold,
         achievement_pct,
-        gap: actual_sold - daily_target,
+        gap,
+        // targeted_amount,
+        // actual_amount,
       };
     });
 
     const total_target = rows.reduce((s, r) => s + r.daily_target, 0);
     const total_sold = rows.reduce((s, r) => s + r.actual_sold, 0);
+    // const targeted_amount = rows.reduce((s, r) => s + r.targeted_amount, 0); // added
+    // const total_amount = rows.reduce((s, r) => s + r.actual_amount, 0); // added
+    // const average_amount = total_sold > 0 ? total_amount / total_sold : 0; // added
+
     const overall_achievement_pct =
       total_target > 0
         ? Math.round((total_sold / total_target) * 10000) / 100
@@ -1936,7 +1932,14 @@ export class SalesService {
       branch_id: branchId,
       branch_name: branchName,
       rows,
-      summary: { total_target, total_sold, overall_achievement_pct },
+      summary: {
+        total_target,
+        total_sold,
+        overall_achievement_pct,
+        // targeted_amount,
+        // total_amount,
+        // average_amount,
+      },
     };
   }
 }

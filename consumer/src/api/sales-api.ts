@@ -84,13 +84,19 @@ export const salesApi = {
   getDailyTargetReport: async (
     params: { date?: string; branch_id?: number } = {},
   ): Promise<DailyTargetReportResponse> => {
+
     const queryParams = new URLSearchParams();
+
     if (params.date) queryParams.append("date", params.date);
+
     if (params.branch_id)
       queryParams.append("branch_id", params.branch_id.toString());
-    return await get(
+
+    const response = await get(
       `${endpoints.getDailyTargetReport}?${queryParams.toString()}`,
     );
+    console.log(response)
+    return response;
   },
 
   // Get End of Day report
