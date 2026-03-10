@@ -8,7 +8,6 @@ import { UpdateCrudDto } from './dto/update-crud.dto';
 export class CrudService {
   constructor(private readonly prismaService: PrismaService) {} //TODO add type of the body based on the model
   async create(body: any, model: string) {
-    // console.log(body);
     const result = await this.prismaService[model].create({
       data: body,
     });

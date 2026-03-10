@@ -77,8 +77,6 @@ export class UsersService {
     role_id?: number,
     branch_id?: number,
   ) {
-    console.log({ consumer_id, search_text, role_id, branch_id });
-
     
       return await this.prisma.user.findMany({
         where: {
