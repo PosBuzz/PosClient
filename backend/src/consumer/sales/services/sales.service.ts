@@ -178,21 +178,7 @@ export class SalesService {
       createSaleDto.sale_type === SaleType.QUOTATION
         ? await this.generateQuotationNumber(consumerId)
         : await this.generateSaleNumber(consumerId);
-
-    // DEBUG: Log the incoming data to understand the calculation mismatch
-    console.log('=== SALE CREATION DEBUG ===');
-    console.log('Items received from frontend:');
-    createSaleDto.items.forEach((item, index) => {
-      console.log(`Item ${index + 1}:`, {
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        line_total: item.line_total,
-        tax_amount: item.tax_amount,
-        calculated_base: Number(item.line_total) - Number(item.tax_amount || 0),
-      });
-    });
-
+    
     // Calculate totals using frontend-calculated values
     // The frontend has already calculated correct subtotal, tax, and totals considering INCLUSIVE/EXCLUSIVE tax
     // We should trust the frontend calculations instead of recalculating here
@@ -218,16 +204,7 @@ export class SalesService {
 
     // Total = subtotal - discount + tax + shipping (same as frontend)
     const totalAmount = subtotal - discountAmount + totalTax + shippingCost;
-
-    console.log('Backend calculated totals:', {
-      subtotal,
-      totalTax,
-      discountAmount,
-      shippingCost,
-      totalAmount,
-    });
-    console.log('=== END DEBUG ===');
-    const receivedAmount = createSaleDto.received_amount || 0;
+  
     // Calculate payment totals and determine payment status
     let totalPaymentAmount = 0;
     let paymentMethods: string[] = [];
