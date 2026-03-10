@@ -93,7 +93,6 @@ export class ReturnService {
         const method = payment.payment_method.toString().toUpperCase();
 
         if (method !== 'EXCHANGE') {
-          console.log(`Adding ${payment.amount} to refund total`);
           return sum + parseFloat(payment.amount.toString());
         }
 
@@ -104,13 +103,10 @@ export class ReturnService {
       dto.payments?.reduce((sum, payment) => {
         const method = payment.payment_method.toString().toUpperCase();
         if (method === 'EXCHANGE') {
-          console.log(`Adding ${payment.amount} to exchange total`);
           return sum + parseFloat(payment.amount.toString());
         }
         return sum;
       }, 0) || 0;
-
-    console.log('Calculated totals:', { totalRefund, totalExchange });
 
     const totalPayments =
       dto.payments?.reduce(
