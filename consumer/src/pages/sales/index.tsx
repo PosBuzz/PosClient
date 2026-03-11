@@ -332,6 +332,11 @@ const SalesTable = () => {
       key: "user_name",
     },
     {
+      title: "Served By",
+      key: "served_by",
+      render: (record: Sale) => record.served_by?.name || "—",
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (record: Sale) => (

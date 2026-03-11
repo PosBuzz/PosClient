@@ -1,7 +1,6 @@
-import { ReloadOutlined } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, Tooltip, message } from 'antd';
-import { cacheApi } from '../api/cache-api';
+import { ReloadOutlined } from '@ant-design/icons';
 
 interface CacheInvalidationButtonProps {
   size?: 'small' | 'middle' | 'large';
@@ -15,30 +14,16 @@ export default function CacheInvalidationButton({
   const [messageApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
 
-  // Mutation for invalidating all caches
-  const invalidateAllMutation = useMutation({
-    mutationFn: cacheApi.invalidateAllCaches,
-    onSuccess: (data) => {
-      messageApi.success({
-        content: `All caches cleared! ${data.invalidated_keys_count ? `(${data.invalidated_keys_count} keys)` : ''}`,
+
+  const handleClearAll = async () => {
+   // Invalidate all queries in React Query
+     await queryClient.invalidateQueries();
+       messageApi.success({
+        content: `All caches cleared!`,
         duration: 3,
       });
-      // Invalidate all queries in React Query
-      queryClient.invalidateQueries();
-    },
-    onError: (error: any) => {
-      messageApi.error({
-        content: `Failed to clear caches: ${error?.response?.data?.message || error.message}`,
-        duration: 5,
-      });
-    },
-  });
-
-  const handleClearAll = () => {
-    invalidateAllMutation.mutate();
   };
 
-  const isLoading = invalidateAllMutation.isPending;
 
   return (
     <>
@@ -47,8 +32,8 @@ export default function CacheInvalidationButton({
         <Button
           type={type}
           size={size}
-          icon={<ReloadOutlined spin={isLoading} />}
-          loading={isLoading}
+          icon={<ReloadOutlined />}
+          // loading={isLoading}
           onClick={handleClearAll}
         />
       </Tooltip>

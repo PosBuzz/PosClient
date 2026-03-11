@@ -1,33 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryHelperService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}  /**
+  private readonly logger = new Logger(InventoryHelperService.name);
+  constructor(private prisma: PrismaService) {}
+  /**
    * Get warehouse branch for a consumer
    */
   async getWarehouseBranch(consumerId: number) {
-    const cacheKey = generateCacheKey.warehouseBranch(consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.branch.findFirst({
         where: {
           consumer_id: consumerId,
           is_warehouse: true,
         },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Error finding warehouse branch for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to find warehouse branch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   /**
    * Get standardized location name for display
    */
-  getLocationName(branch: { id: number; name: string; is_warehouse?: boolean }): string {
+  getLocationName(branch: {
+    id: number;
+    name: string;
+    is_warehouse?: boolean;
+  }): string {
     if (branch.is_warehouse || branch.name === 'Warehouse') {
       return 'Warehouse';
     }
@@ -37,7 +42,11 @@ export class InventoryHelperService {
   /**
    * Get location description for transactions
    */
-  getLocationDescription(branch: { id: number; name: string; is_warehouse?: boolean }): string {
+  getLocationDescription(branch: {
+    id: number;
+    name: string;
+    is_warehouse?: boolean;
+  }): string {
     if (branch.is_warehouse || branch.name === 'Warehouse') {
       return 'Central Warehouse';
     }

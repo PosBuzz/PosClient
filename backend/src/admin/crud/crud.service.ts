@@ -1,137 +1,158 @@
-/* eslint-disable */
-
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CacheService } from '../../common/services/cache.service';
 import { UpdateCrudDto } from './dto/update-crud.dto';
-import { generateCacheKey } from '../../constants/cache-keys';
 
 @Injectable()
 export class CrudService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private cacheService: CacheService,
-  ) {}  //TODO add type of the body based on the model
+  private readonly logger = new Logger(CrudService.name);
+
+  constructor(private readonly prismaService: PrismaService) {}
+
   async create(body: any, model: string) {
-    // console.log(body);
-    const result = await this.prismaService[model].create({
-      data: body,
-    });
-
-    // Invalidate related caches
-    await this.invalidateCrudCaches(model);
-
-    return result;
-  }  async findAll(model: string) {
-    const cacheKey = generateCacheKey.adminCrudList(model);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prismaService[model].findMany({
-        orderBy: {
-          id: 'asc',
-        },
+    try {
+      const result = await this.prismaService[model].create({
+        data: body,
       });
-    });
-  }  async findOne(id: number, model: string) {
-    const cacheKey = generateCacheKey.adminCrudDetail(model, id);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prismaService[model].findFirst({ where: { id } });
-    });
+
+      return result;
+    } catch (error) {
+      this.logger.error(`Create failed for model: ${model}`, error.stack);
+      throw new HttpException(
+        'Failed to create record',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
+  async findAll(model: string) {
+    try {
+      return await this.prismaService[model].findMany({
+        orderBy: { id: 'asc' },
+      });
+    } catch (error) {
+      this.logger.error(`FindAll failed for model: ${model}`, error.stack);
+      throw new HttpException(
+        'Failed to fetch records',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findOne(id: number, model: string) {
+    try {
+      const result = await this.prismaService[model].findFirst({
+        where: { id },
+      });
+
+      if (!result) {
+        throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `FindOne failed for model: ${model}, id: ${id}`,
+        error.stack,
+      );
+      throw new HttpException(
+        error.message || 'Failed to fetch record',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async update(id: number, updateCrudDto: UpdateCrudDto, model: string) {
-    const result = await this.prismaService[model].update({
-      where: { id },
-      data: updateCrudDto,
-    });
+    try {
+      const result = await this.prismaService[model].update({
+        where: { id },
+        data: updateCrudDto,
+      });
 
-    // Invalidate related caches
-    await this.invalidateCrudCaches(model, id);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Update failed for model: ${model}, id: ${id}`,
+        error.stack,
+      );
 
-    return result;
+      throw new HttpException(
+        'Failed to update record',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
+
   async remove(id: number, model: string) {
     try {
       await this.prismaService[model].delete({ where: { id } });
-      
-      // Invalidate related caches
-      await this.invalidateCrudCaches(model, id);
-    } catch (e) {
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Delete failed for model: ${model}, id: ${id}`,
+        error.stack,
+      );
+
       throw new HttpException(
-        { message: 'failed', error: e },
-        HttpStatus.EXPECTATION_FAILED,
+        'Failed to delete record',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    return { success: true };
   }
 
   async findAllByWhere(model: string, body: any) {
-    let findClause: any = {};
-    if (body.where) {
-      findClause.where = body.where;
-    }
-    if (body.include) {
-      findClause.include = body.include;
-    }
-    findClause.orderBy = {
-      id: 'asc',
-    };
+    try {
+      let findClause: any = {};
 
-    if (body.orderBy) {
-      findClause.orderBy = body.orderBy;
-    }
+      if (body.where) {
+        findClause.where = body.where;
+      }
 
-    return this.prismaService[model].findMany(findClause);
+      if (body.include) {
+        findClause.include = body.include;
+      }
+
+      findClause.orderBy = body.orderBy || { id: 'asc' };
+
+      return await this.prismaService[model].findMany(findClause);
+    } catch (error) {
+      this.logger.error(
+        `findAllByWhere failed for model: ${model}`,
+        error.stack,
+      );
+
+      throw new HttpException(
+        'Failed to fetch filtered records',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
-  async search(query, model: string, data: any) {
-    const whereClause: any = {};
-    const search = data?.map((item) => {
-      return {
+  async search(query: string, model: string, data: any) {
+    try {
+      const whereClause: any = {};
+
+      const search = data?.map((item) => ({
         [item?.value]: { contains: query, mode: 'insensitive' },
-      };
-    });
-    if (search.length) {
-      whereClause.OR = search;
-    }
+      }));
 
-    const searchResults = await this.prismaService[model].findMany({
-      where: whereClause,
-      orderBy: { id: 'asc' },
-    });
+      if (search?.length) {
+        whereClause.OR = search;
+      }
 
-    return searchResults;
-  }
-  // Cache invalidation helper methods
-  private async invalidateCrudCaches(model: string, id?: number) {
-    const cacheKeysToInvalidate: string[] = [];
+      const searchResults = await this.prismaService[model].findMany({
+        where: whereClause,
+        orderBy: { id: 'asc' },
+      });
 
-    // Invalidate list cache
-    cacheKeysToInvalidate.push(generateCacheKey.adminCrudList(model));
+      return searchResults;
+    } catch (error) {
+      this.logger.error(`Search failed for model: ${model}`, error.stack);
 
-    // Invalidate specific item cache if ID is provided
-    if (id) {
-      cacheKeysToInvalidate.push(generateCacheKey.adminCrudDetail(model, id));
-    }
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
-
-    // Invalidate global caches based on model type
-    // billing_logs affect consumer subdomain validation (billing status check)
-    if (model === 'BillingHistory') {
-      await this.cacheService.invalidateGlobalConsumerCaches();
-    }
-    
-    // Consumer changes affect subdomain validation and consumer details
-    if (model === 'Consumer') {
-      await this.cacheService.invalidateGlobalConsumerCaches();
-    }
-    
-    // Plan changes affect plan lists and related data
-    if (model === 'Plan') {
-      await this.cacheService.invalidateGlobalPlanCaches();
+      throw new HttpException(
+        'Search failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
