@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 import FilterCard from "./components/FilteredCard";
 import UserSalesTable from "./components/UserSalesTable";
@@ -24,6 +24,7 @@ const UserSalesStatsPage = () => {
   const { data: branchOptions = [] } = useQuery({
     queryKey: [queryKeys.branchOptions],
     queryFn: () => salesApi.getBranchOptions(),
+    staleTime: queryStaleTimeMap[queryKeys.branchOptions],
   });
 
   // Fetch aggregated stats from backend
@@ -35,6 +36,7 @@ const UserSalesStatsPage = () => {
         endDate: dateRange[1].format("YYYY-MM-DD"),
         branch_id: branchId,
       }),
+    staleTime: queryStaleTimeMap[queryKeys.userSalesStats],
   });
 
   const users = data ?? [];
@@ -59,7 +61,13 @@ const UserSalesStatsPage = () => {
       <Row gutter={[16, 16]}>
         {/* Filter Section */}
         <Col xs={24}>
-          <FilterCard dateRange={dateRange} setDateRange={setDateRange} branchId={branchId} setBranchId={setBranchId} branchOptions={branchOptions} />
+          <FilterCard
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            branchId={branchId}
+            setBranchId={setBranchId}
+            branchOptions={branchOptions}
+          />
         </Col>
 
         {/* Main Table */}

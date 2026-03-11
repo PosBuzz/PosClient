@@ -17,7 +17,7 @@ import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
 import type { Sale } from "../../types/sale.types";
 
@@ -46,7 +46,13 @@ const ViewUserSalesStats = () => {
   const userName = state.userName ?? `User #${userId}`;
 
   const { data, isLoading } = useQuery({
-    queryKey: [queryKeys.userSalesStats, "detail", userId, dateRange, pagination.page],
+    queryKey: [
+      queryKeys.userSalesStats,
+      queryKeys.detail,
+      userId,
+      dateRange,
+      pagination.page,
+    ],
     queryFn: () =>
       salesApi.getUserSalesDetail(Number(userId), {
         startDate: dateRange[0].format("YYYY-MM-DD"),
@@ -54,6 +60,7 @@ const ViewUserSalesStats = () => {
         page: pagination.page,
         limit: pagination.limit,
       }),
+    staleTime: queryStaleTimeMap[queryKeys.userSalesStats],
     enabled: !!userId,
   });
 
