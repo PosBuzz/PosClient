@@ -1606,18 +1606,17 @@ export class SalesService {
 
   // === USER SALES STATS METHODS ===
 
-  async getUserSalesStats(
+  async getUsersSalesStats(
     consumerId: number,
     startDate: string,
     endDate: string,
     branchId?: number,
   ) {
     const start = new Date(startDate);
-
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const whereClause: any = {
+    const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
       served_by_id: { not: null },
@@ -1628,12 +1627,12 @@ export class SalesService {
     };
 
     if (branchId) {
-      whereClause.branch_id = branchId;
+      where.branch_id = branchId;
     }
 
     const grouped = await this.prisma.sale.groupBy({
       by: ['served_by_id'],
-      where: whereClause,
+      where,
       _sum: {
         total_amount: true,
       },
@@ -1646,6 +1645,8 @@ export class SalesService {
         },
       },
     });
+
+    if (!grouped.length) return [];
 
     const userIds = grouped.map((g) => g.served_by_id as number);
 
@@ -1665,9 +1666,9 @@ export class SalesService {
 
       return {
         id: userId,
-        name: userMap.get(userId)?.name,
-        email: userMap.get(userId)?.email,
-        totalSales: Number(g._sum.total_amount || 0),
+        name: userMap.get(userId)?.name ?? 'Unknown',
+        email: userMap.get(userId)?.email ?? null,
+        totalSales: Number(g._sum.total_amount ?? 0),
         salesCount: g._count.id,
       };
     });
@@ -1679,8 +1680,8 @@ export class SalesService {
     startDate: string,
     endDate: string,
     branchId?: number,
-    page: number = 1,
-    limit: number = 20,
+    page = 1,
+    limit = 20,
   ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -1711,40 +1712,50 @@ export class SalesService {
 
     const skip = (page - 1) * limit;
 
-    const [sales, total] = await Promise.all([
+    const [sales, total, totals] = await Promise.all([
       this.prisma.sale.findMany({
         where,
         skip,
         take: limit,
         orderBy: { sale_date: 'desc' },
-        include: {
-          customer: true,
-          branch: true,
-          served_by: { select: { id: true, name: true } },
-          payments: true,
-          items: {
-            include: {
-              variant: {
-                include: { product: true, sale_unit: true },
-              },
+        select: {
+          id: true,
+          sale_number: true,
+          sale_date: true,
+          total_amount: true,
+          payment_status: true,
+          customer_name: true,
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          branch: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
       }),
-      this.prisma.sale.count({ where }),
-    ]);
 
-    const totalAmount = sales.reduce(
-      (sum, s) => sum + Number(s.total_amount),
-      0,
-    );
+      this.prisma.sale.count({ where }),
+
+      this.prisma.sale.aggregate({
+        where,
+        _sum: {
+          total_amount: true,
+        },
+      }),
+    ]);
 
     return {
       user: servedByUser,
       data: sales,
       meta: {
-        total: sales.length,
-        total_amount: totalAmount,
+        total,
+        total_amount: Number(totals._sum.total_amount ?? 0),
         page,
         limit,
         total_pages: Math.ceil(total / limit),
