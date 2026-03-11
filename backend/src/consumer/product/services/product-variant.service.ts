@@ -105,6 +105,7 @@ export class ProductVariantService {
 
       return this.findOne(variant.id);
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating product variant for ${productId}`,
         error.stack,
@@ -187,6 +188,7 @@ export class ProductVariantService {
         ).length,
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding product variant with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -359,6 +361,7 @@ export class ProductVariantService {
 
       return this.findOne(id);
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating product variant with ID ${id}`,
         error.stack,
@@ -391,6 +394,7 @@ export class ProductVariantService {
 
       return { success: true, message: 'Variant deleted successfully' };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting product variant with ID ${id}`,
         error.stack,

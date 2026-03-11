@@ -24,6 +24,7 @@ export class TagService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating tag for consumer ${consumerId}`,
         error.stack,
@@ -55,6 +56,7 @@ export class TagService {
 
       return tag;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching tag with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -76,6 +78,7 @@ export class TagService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating tag with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -97,6 +100,7 @@ export class TagService {
 
       return { success: true };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting tag with ID ${id} for consumer ${consumerId}`,
         error.stack,

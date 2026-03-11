@@ -19,7 +19,7 @@ export class ConsumerService {
     try {
       const { password, email, name, ...consumerData } = data;
 
-      this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         // Step 1: Create the consumer
         const consumer = await tx.consumer.create({
           data: {
@@ -99,6 +99,7 @@ export class ConsumerService {
         };
       });
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating consumer for ${data.email}`,
         error.stack,
@@ -179,6 +180,7 @@ export class ConsumerService {
         message: 'Consumer, admin user, and permissions updated successfully',
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating consumer for ${consumerId}`,
         error.stack,
