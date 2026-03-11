@@ -222,7 +222,7 @@ export class SalesController {
   async getUserSalesStats(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('branch_id') branchId: string,
+    @Query('branch_id') branchId: number,
     @Req() req: Request,
   ) {
     if (!startDate || !endDate) {
@@ -232,7 +232,7 @@ export class SalesController {
       req.user.consumer_id!,
       startDate,
       endDate,
-      branchId ? parseInt(branchId) : undefined,
+      branchId ? parseInt(branchId.toString()) : undefined,
     );
   }
 

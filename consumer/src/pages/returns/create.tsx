@@ -121,9 +121,6 @@ const CreateReturn = () => {
     },
   });
 
-  useEffect(() => {
-    setPageTitle("Create Return");
-  }, []);
 
   // Set default branch
   useEffect(() => {
@@ -587,6 +584,7 @@ const CreateReturn = () => {
 
   return (
     <div>
+      {setPageTitle("Create Return")}
       <PageTitle
         title="Create Return"
         breadcrumbs={[

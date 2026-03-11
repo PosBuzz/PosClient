@@ -47,7 +47,6 @@ export class ProductService {
           has_variants: dto.has_variants,
           tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
           tax: dto.tax || 0,
-          daily_sale_objective: dto.daily_sale_objective || 0,
         },
       });
 
@@ -580,7 +579,6 @@ export class ProductService {
           has_variants: dto.has_variants,
           tax_method: dto.tax_method,
           tax: dto.tax,
-          daily_sale_objective: dto.daily_sale_objective,
         },
       });
 

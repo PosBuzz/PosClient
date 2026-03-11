@@ -107,20 +107,37 @@ export const salesApi = {
 
   // Get Daily Target report
   getDailyTargetReport: async (
-    params: { date?: string; branch_id?: number } = {},
+    params: {
+      date?: string;
+      branch_id?: number;
+      page?: number;
+      limit?: number;
+    } = {},
   ): Promise<DailyTargetReportResponse> => {
+    const cleanParams: {
+      date?: string;
+      branch_id?: number;
+      page?: number;
+      limit?: number;
+    } = {};
 
-    const queryParams = new URLSearchParams();
+    if (params.date) {
+      cleanParams.date = params.date;
+    }
 
-    if (params.date) queryParams.append("date", params.date);
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
 
-    if (params.branch_id)
-      queryParams.append("branch_id", params.branch_id.toString());
+    if (params.page) {
+      cleanParams.page = params.page;
+    }
 
-    const response = await get(
-      `${endpoints.getDailyTargetReport}?${queryParams.toString()}`,
-    );
-    return response;
+    if (params.limit) {
+      cleanParams.limit = params.limit;
+    }
+
+    return await get(endpoints.getDailyTargetReport, cleanParams);
   },
 
   // Get End of Day report
@@ -140,6 +157,7 @@ export const salesApi = {
     const response = await get(
       `${endpoints.getSales}/reports/eod?${queryParams.toString()}`,
     );
+
     return response;
   },
 
