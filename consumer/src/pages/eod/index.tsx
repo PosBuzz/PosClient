@@ -28,7 +28,7 @@ import {
 } from "recharts";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { queryKeys } from "../../constants/queryKeys";
+import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import {
   PaymentMethodBreakdown,
@@ -70,7 +70,7 @@ const EODReport = () => {
         branch_id: selectedBranch,
       }),
     enabled: !!selectedDate,
-    staleTime: queryKeys[queryKeys.eod],
+    staleTime: queryStaleTimeMap[queryKeys.eod],
   });
 
   const getPaymentMethodDisplay = (method: string) => {

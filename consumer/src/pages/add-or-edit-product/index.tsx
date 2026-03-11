@@ -63,6 +63,7 @@ export default function ProductForm() {
           warranty_period: variant.warranty_period || undefined,
           image: variant.image || null,
           alert_quantity: variant.alert_quantity || 0,
+          daily_sale_objective: variant.daily_sale_objective || 0,
           is_default: variant.is_default || false,
           // Transform VariantAttribute to attributes
           attributes:
@@ -102,7 +103,6 @@ export default function ProductForm() {
         has_variants: product.has_variants ?? true,
         tax_method: product.tax_method || TaxMethod.EXCLUSIVE,
         tax: product.tax || 0,
-        daily_sale_objective: product.daily_sale_objective || 0,
         variants: transformedVariants,
       };
     },
@@ -123,6 +123,7 @@ export default function ProductForm() {
       warranty_period: variant.warranty_period || undefined,
       image: variant.image || null,
       alert_quantity: variant.alert_quantity || 0,
+      daily_sale_objective: variant.daily_sale_objective || 0,
       is_default: variant.is_default || false,
       attributes:
         variant.attributes?.map((attr) => ({
@@ -153,7 +154,6 @@ export default function ProductForm() {
       has_variants: formState.has_variants,
       tax_method: formState.tax_method,
       tax: formState.tax,
-      daily_sale_objective: formState.daily_sale_objective,
       variants,
     };
 

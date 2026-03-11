@@ -112,27 +112,28 @@ export interface DailyTargetRow {
   actual_sold: number;
   achievement_pct: number;
   gap: number;
-   targeted_amount?: number;
+  targeted_amount?: number;
   actual_amount?: number;
 }
 
 export interface DailyTargetReportResponse {
   date: string;
   branch_id?: number;
-  // branch_name?: string;
-  // branch_id?: number;
-  // productName: string;
-  // achievedAmount: number;
-  // targetAmount: number;
   branch_name?: string;
   rows: DailyTargetRow[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
   summary: {
     total_target: number;
     total_sold: number;
     overall_achievement_pct: number;
     targeted_amount?: number; // NEW
-    total_amount?: number;    // NEW
-    average_amount?: number; 
+    total_amount?: number; // NEW
+    average_amount?: number;
   };
 }
 export enum PaymentMethod {

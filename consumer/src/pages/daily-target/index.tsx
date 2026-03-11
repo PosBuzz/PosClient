@@ -41,12 +41,22 @@ const DailyTargetReport = () => {
   // State for the filter dropdown ('all', 'achieved', 'not_achieved')
   const [targetStatusFilter, setTargetStatusFilter] = useState<string>();
 
+  const [pagination, setPagination] = useState({ page: 1, limit: 20 });
+
   const { data, isLoading } = useQuery({
-    queryKey: [queryKeys.dailyTarget, selectedDate, selectedBranch],
+    queryKey: [
+      queryKeys.dailyTarget,
+      selectedDate,
+      selectedBranch,
+      pagination.page,
+      pagination.limit,
+    ],
     queryFn: () =>
       salesApi.getDailyTargetReport({
         date: selectedDate,
         branch_id: selectedBranch,
+        page: pagination.page,
+        limit: pagination.limit,
       }),
     enabled: !!selectedDate,
     staleTime: queryStaleTimeMap[queryKeys.dailyTarget],
@@ -64,28 +74,33 @@ const DailyTargetReport = () => {
 
   // filter
   const filteredRows = (data?.rows || []).filter((row) => {
-    if (targetStatusFilter === "all") return true;
+    // if (targetStatusFilter === "all") return true;
 
     // If percentage is 100 or more, it's achieved
     const isAchieved = row.achievement_pct >= 100;
+    let statusMatch = true;
 
-    if (targetStatusFilter === "achieved") return isAchieved;
-    if (targetStatusFilter === "not_achieved") return !isAchieved;
-
-    // B. Filter by Search Text
-    if (searchText) {
-      const lowerSearch = searchText.toLowerCase();
-      const matchProduct = row.product_name.toLowerCase().includes(lowerSearch);
-      const matchVariant = row.variant_name.toLowerCase().includes(lowerSearch);
-      const matchSku = row.sku?.toLowerCase().includes(lowerSearch);
-
-      // If search doesn't match any field, exclude this row
-      if (!matchProduct && !matchVariant && !matchSku) {
-        return false;
-      }
+    if (targetStatusFilter === "achieved") {
+      statusMatch = isAchieved;
+    } else if (targetStatusFilter === "not_achieved") {
+      statusMatch = !isAchieved;
     }
 
-    return true;
+    // B. Filter by Search Text
+    let searchMatch = true;
+    if (searchText) {
+      const lowerSearch = searchText.toLowerCase();
+
+      const matchProduct = row.product_name.toLowerCase().includes(lowerSearch);
+
+      const matchVariant = row.variant_name.toLowerCase().includes(lowerSearch);
+
+      const matchSku = (row.sku || "").toLowerCase().includes(lowerSearch);
+
+      searchMatch = matchProduct || matchVariant || matchSku;
+    }
+
+    return statusMatch && searchMatch;
   });
 
   const columns = [
@@ -155,6 +170,19 @@ const DailyTargetReport = () => {
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={16}>
           <Col span={6}>
+            <label>Search:</label>
+            <Input
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Search name, variant, SKU..."
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+              allowClear
+            />
+          </Col>
+          <Col span={6}>
             <label>Date:</label>
             <DatePicker
               style={{ width: "100%", marginTop: 4 }}
@@ -163,7 +191,10 @@ const DailyTargetReport = () => {
                 current && current > dayjs().endOf("day")
               }
               onChange={(date) => {
-                if (date) setSelectedDate(date.format("YYYY-MM-DD"));
+                if (date) {
+                  setSelectedDate(date.format("YYYY-MM-DD"));
+                  setPagination((prev) => ({ ...prev, page: 1 }));
+                }
               }}
               format="YYYY-MM-DD"
               allowClear={false}
@@ -173,9 +204,11 @@ const DailyTargetReport = () => {
             <label>Branch:</label>
             <Select
               style={{ width: "100%", marginTop: 4 }}
-              placeholder="All Branches"
               value={selectedBranch}
-              onChange={(value) => setSelectedBranch(value)}
+              onChange={(value) => {
+                setSelectedBranch(value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
             >
               {userBranches.map((branch) => (
                 <Option key={branch.id} value={branch.id}>
@@ -190,22 +223,15 @@ const DailyTargetReport = () => {
               placeholder="Filter Status"
               style={{ width: "100%", marginTop: 4 }}
               value={targetStatusFilter}
-              onChange={(value) => setTargetStatusFilter(value)}
+              onChange={(value) => {
+                setTargetStatusFilter(value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
               allowClear={true}
             >
               <Option value="achieved">Achieved</Option>
               <Option value="not_achieved">Not Achieved</Option>
             </Select>
-          </Col>
-          <Col span={6}>
-            <label>Search:</label>
-            <Input
-              style={{ width: "100%", marginTop: 4 }}
-              placeholder="Search name, variant, SKU..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              allowClear
-            />
           </Col>
         </Row>
       </Card>
@@ -218,14 +244,14 @@ const DailyTargetReport = () => {
           rowKey="variant_id"
           loading={isLoading}
           pagination={{
-            pageSize: 20,
+            current: pagination.page,
+            pageSize: pagination.limit,
+            total: data?.meta?.total || 0,
             showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal(total, range) {
-              return `${range[0]}-${range[1]} of ${total} items`;
-            },
+            showTotal: (total) => `Total ${total} items`,
+            onChange: (page, pageSize) =>
+              setPagination({ page, limit: pageSize }),
           }}
-          locale={{ emptyText: "No products with daily targets found." }}
         />
       </Card>
     </div>

@@ -20,13 +20,13 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
       badges.push(
         <Tag color="purple" key="variants">
           Has Variants ({product.variants?.length || 0})
-        </Tag>
+        </Tag>,
       );
     } else {
       badges.push(
         <Tag color="blue" key="simple">
           Simple Product
-        </Tag>
+        </Tag>,
       );
     }
 
@@ -37,7 +37,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
           total +
           (variant.inventory_items?.reduce(
             (sum, item) => sum + item.quantity,
-            0
+            0,
           ) || 0)
         );
       }, 0) || 0;
@@ -45,7 +45,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
     badges.push(
       <Tag color={totalStock > 0 ? "green" : "red"} key="stock">
         {totalStock > 0 ? `${totalStock} in stock` : "Out of stock"}
-      </Tag>
+      </Tag>,
     );
 
     // Calculate total serials
@@ -67,24 +67,27 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
       badges.push(
         <Tag color={availableSerials > 0 ? "cyan" : "orange"} key="serials">
           {availableSerials}/{totalSerials} serials available
-        </Tag>
+        </Tag>,
       );
-    }    // Check for low stock alerts (branch-based)
+    } // Check for low stock alerts (branch-based)
     const lowStockVariants =
       product.variants?.filter((variant) => {
         if (!variant.alert_quantity) return false;
-        
+
         // Group inventory by branch
-        const branchStockMap = variant.inventory_items?.reduce(
-          (acc, item) => {
-            acc[item.branch_id || 0] = (acc[item.branch_id || 0] || 0) + item.quantity;
-            return acc;
-          },
-          {} as Record<number, number>
-        ) || {};
-          // Check if any branch has low stock
+        const branchStockMap =
+          variant.inventory_items?.reduce(
+            (acc, item) => {
+              acc[item.branch_id || 0] =
+                (acc[item.branch_id || 0] || 0) + item.quantity;
+              return acc;
+            },
+            {} as Record<number, number>,
+          ) || {};
+        // Check if any branch has low stock
         return Object.values(branchStockMap).some(
-          branchStock => (branchStock as number) <= (variant.alert_quantity || 0)
+          (branchStock) =>
+            (branchStock as number) <= (variant.alert_quantity || 0),
         );
       }).length || 0;
 
@@ -92,7 +95,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
       badges.push(
         <Tag color="red" key="lowstock">
           {lowStockVariants} variant{lowStockVariants > 1 ? "s" : ""} low stock
-        </Tag>
+        </Tag>,
       );
     }
 
@@ -104,14 +107,14 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         return expiryDate <= thirtyDaysFromNow;
-      })
+      }),
     );
 
     if (hasExpiringInventory) {
       badges.push(
         <Tag color="orange" key="expiring">
           Expiring Stock
-        </Tag>
+        </Tag>,
       );
     }
 
@@ -130,6 +133,13 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
   };
 
   const priceRange = getPriceRange();
+  const totalDailyTarget =
+    product.variants?.reduce(
+      (total, variant) => total + (variant.daily_sale_objective || 0),
+      0,
+    ) || 0;
+  const simpleVariantDailyTarget =
+    product.variants?.[0]?.daily_sale_objective || 0;
 
   return (
     <Card>
@@ -175,14 +185,19 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
               </Text>
             </Descriptions.Item>
           )}
-          {product.daily_sale_objective > 0 && (
+          {(!product.has_variants && simpleVariantDailyTarget > 0) ||
+          (product.has_variants && totalDailyTarget > 0) ? (
             <Descriptions.Item label="Daily Sales Target">
               <Space>
-                <Text strong>{product.daily_sale_objective}</Text>
+                <Text strong>
+                  {product.has_variants
+                    ? totalDailyTarget
+                    : simpleVariantDailyTarget}
+                </Text>
                 <Text type="secondary">units/day</Text>
               </Space>
             </Descriptions.Item>
-          )}
+          ) : null}
           <Descriptions.Item label="Total Stock">
             <Text strong>
               {product.variants?.reduce((total, variant) => {
@@ -190,7 +205,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
                   total +
                   (variant.inventory_items?.reduce(
                     (sum, item) => sum + item.quantity,
-                    0
+                    0,
                   ) || 0)
                 );
               }, 0) || 0}{" "}
@@ -201,7 +216,7 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
             <Text>
               {product.variants?.reduce(
                 (total, variant) => total + (variant.serials?.length || 0),
-                0
+                0,
               ) || 0}
             </Text>
           </Descriptions.Item>

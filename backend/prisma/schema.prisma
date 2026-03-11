@@ -363,20 +363,19 @@ model RolePermission {
 }
 
 model Product {
-  id                   Int            @id @default(autoincrement())
-  consumer_id          Int
-  name                 String
-  code                 String?
-  description          String?
-  category_id          Int?
-  brand_id             Int?
-  tags                 TagOnProduct[]
-  has_variants         Boolean        @default(false)
-  tax_method           TaxMethod      @default(EXCLUSIVE) // inclusive, exclusive
-  tax                  Int            @default(0) // percentage as integer (e.g., 15 for 15%)
-  daily_sale_objective Int?           @default(0) // Daily sales target for this product
-  created_at           DateTime       @default(now())
-  updated_at           DateTime       @updatedAt
+  id           Int            @id @default(autoincrement())
+  consumer_id  Int
+  name         String
+  code         String?
+  description  String?
+  category_id  Int?
+  brand_id     Int?
+  tags         TagOnProduct[]
+  has_variants Boolean        @default(false)
+  tax_method   TaxMethod      @default(EXCLUSIVE) // inclusive, exclusive
+  tax          Int            @default(0) // percentage as integer (e.g., 15 for 15%)
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
 
   // Relations
   consumer Consumer         @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -414,34 +413,35 @@ model ProductSerial {
 }
 
 model ProductVariant {
-  id                  Int                   @id @default(autoincrement())
-  product_id          Int
-  name                String
-  sku                 String?
-  barcode             String?
-  regular_price       Decimal               @db.Decimal(10, 2)
-  wholesale_price     Decimal?              @db.Decimal(10, 2)
-  sale_unit_id        Int
-  purchase_unit_id    Int
-  warranty_period     Int? // warranty period in months only
-  image               String? // single image URL for variant
-  is_default          Boolean               @default(false)
-  alert_quantity      Int?                  @default(0) // Low stock alert threshold
-  created_at          DateTime              @default(now())
-  updated_at          DateTime              @updatedAt
+  id                   Int                   @id @default(autoincrement())
+  product_id           Int
+  name                 String
+  sku                  String?
+  barcode              String?
+  regular_price        Decimal               @db.Decimal(10, 2)
+  wholesale_price      Decimal?              @db.Decimal(10, 2)
+  sale_unit_id         Int
+  purchase_unit_id     Int
+  warranty_period      Int? // warranty period in months only
+  image                String? // single image URL for variant
+  is_default           Boolean               @default(false)
+  alert_quantity       Int?                  @default(0) // Low stock alert threshold
+  daily_sale_objective Int?                  @default(0) // Daily sales target for this product
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
   // Relations
-  product             Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  sale_unit           Unit                  @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
-  purchase_unit       Unit                  @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
-  inventory_items     InventoryBatch[]
-  price_history       PriceHistory[]
-  promotions          PromotionProduct[]
-  VariantAttribute    VariantAttribute[]
-  serials             ProductSerial[]
-  InventoryAdjustment InventoryAdjustment[]
-  SaleItems           SaleItem[]
-  ReturnItems         ReturnItem[]
-  ReturnExchanges     ReturnExchange[]
+  product              Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  sale_unit            Unit                  @relation("SaleUnit", fields: [sale_unit_id], references: [id], onDelete: Restrict)
+  purchase_unit        Unit                  @relation("PurchaseUnit", fields: [purchase_unit_id], references: [id], onDelete: Restrict)
+  inventory_items      InventoryBatch[]
+  price_history        PriceHistory[]
+  promotions           PromotionProduct[]
+  VariantAttribute     VariantAttribute[]
+  serials              ProductSerial[]
+  InventoryAdjustment  InventoryAdjustment[]
+  SaleItems            SaleItem[]
+  ReturnItems          ReturnItem[]
+  ReturnExchanges      ReturnExchange[]
 
   @@index([name])
   @@index([sku])
