@@ -1604,6 +1604,167 @@ export class SalesService {
     return result;
   }
 
+  // === USER SALES STATS METHODS ===
+
+  async getUsersSalesStats(
+    consumerId: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const where: any = {
+      consumer_id: consumerId,
+      sale_type: SaleType.SALE,
+      served_by_id: { not: null },
+      sale_date: {
+        gte: start,
+        lte: end,
+      },
+    };
+
+    if (branchId) {
+      where.branch_id = branchId;
+    }
+
+    const grouped = await this.prisma.sale.groupBy({
+      by: ['served_by_id'],
+      where,
+      _sum: {
+        total_amount: true,
+      },
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        _sum: {
+          total_amount: 'desc',
+        },
+      },
+    });
+
+    if (!grouped.length) return [];
+
+    const userIds = grouped.map((g) => g.served_by_id as number);
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+        consumer_id: consumerId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return grouped.map((g) => {
+      const userId = g.served_by_id as number;
+
+      return {
+        id: userId,
+        name: userMap.get(userId)?.name ?? 'Unknown',
+        email: userMap.get(userId)?.email ?? null,
+        totalSales: Number(g._sum.total_amount ?? 0),
+        salesCount: g._count.id,
+      };
+    });
+  }
+
+  async getUserSalesDetail(
+    consumerId: number,
+    servedById: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+    page = 1,
+    limit = 20,
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const where: any = {
+      consumer_id: consumerId,
+      sale_type: SaleType.SALE,
+      served_by_id: servedById,
+      sale_date: {
+        gte: start,
+        lte: end,
+      },
+    };
+
+    if (branchId) {
+      where.branch_id = branchId;
+    }
+
+    const servedByUser = await this.prisma.user.findFirst({
+      where: { id: servedById, consumer_id: consumerId },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!servedByUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [sales, total, totals] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { sale_date: 'desc' },
+        select: {
+          id: true,
+          sale_number: true,
+          sale_date: true,
+          total_amount: true,
+          payment_status: true,
+          customer_name: true,
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          branch: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.sale.count({ where }),
+
+      this.prisma.sale.aggregate({
+        where,
+        _sum: {
+          total_amount: true,
+        },
+      }),
+    ]);
+
+    return {
+      user: servedByUser,
+      data: sales,
+      meta: {
+        total,
+        total_amount: Number(totals._sum.total_amount ?? 0),
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
   // ========== ONLINE ORDER METHODS ==========
 
   async findAllOnlineOrders(filters: any, consumerId: number) {
