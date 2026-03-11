@@ -6,6 +6,7 @@ export const queryKeys = {
   batch: "batch",
   batches: "batches",
   categories: "categories",
+  detail:"detail",
   inventorySummary: "inventory-summary",
   stockByVariant: "stock-by-variant",
   expiringBatches: "expiring-batches",
@@ -95,6 +96,7 @@ export const queryStaleTimeMap = {
   [queryKeys.lowStockItems]: staleTimeConfig.realTime,
   [queryKeys.salesStats]: staleTimeConfig.realTime,
   [queryKeys.eod]: staleTimeConfig.realTime,
+  [queryKeys.userSalesStats]: staleTimeConfig.realTime,
   
   // Background data
   [queryKeys.movementHistory]: staleTimeConfig.background,
