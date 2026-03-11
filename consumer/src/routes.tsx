@@ -410,14 +410,14 @@ export const routes = [
           </RequirePermission>
         ),
       },
-      {
-        path: "eod",
-        element: (
-          <RequirePermission permission={Permissions.sales}>
-            <EODReport />
-          </RequirePermission>
-        ),
-      },
+      // {
+      //   path: "eod",
+      //   element: (
+      //     <RequirePermission permission={Permissions.sales}>
+      //       <EODReport />
+      //     </RequirePermission>
+      //   ),
+      // },
       // Returns Routes
       {
         path: "returns",

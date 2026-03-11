@@ -209,11 +209,11 @@ const SideBar: React.FC = () => {
           key: "/partial-payments",
           permissions: [Permissions.sales],
         },
-        {
-          label: <span title="End of Day Report">End of Day Report</span>,
-          key: "/eod",
-          permissions: [Permissions.sales],
-        },
+        // {
+        //   label: <span title="End of Day Report">End of Day Report</span>,
+        //   key: "/eod",
+        //   permissions: [Permissions.sales],
+        // },
       ],
     },
     {

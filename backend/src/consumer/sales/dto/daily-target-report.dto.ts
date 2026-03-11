@@ -1,4 +1,4 @@
-import { IsOptional, IsDateString, IsInt } from 'class-validator';
+import { IsOptional, IsDateString, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DailyTargetReportDto {
@@ -10,6 +10,18 @@ export class DailyTargetReportDto {
   @IsInt()
   @Type(() => Number)
   branch_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  limit?: number = 20;
 }
 
 export interface DailyTargetRow {
@@ -23,7 +35,7 @@ export interface DailyTargetRow {
   achievement_pct: number;
   gap: number;
   // targeted_amount: number;
-  // actual_amount: number;   
+  // actual_amount: number;
 }
 
 export interface DailyTargetReportResponse {
@@ -31,6 +43,12 @@ export interface DailyTargetReportResponse {
   branch_id?: number;
   branch_name?: string;
   rows: DailyTargetRow[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
   summary: {
     total_target: number;
     total_sold: number;

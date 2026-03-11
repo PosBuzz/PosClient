@@ -257,7 +257,7 @@ export class SalesService {
             customer_email: createSaleDto.customer_email,
             branch_id: createSaleDto.branch_id,
             user_id: userId,
-            served_by_id: createSaleDto.served_by_id,
+            served_by_id: createSaleDto.served_by_id ?? userId,
             sale_type: createSaleDto.sale_type || SaleType.SALE,
             price_type: createSaleDto.price_type || 'regular',
             subtotal,
@@ -1583,7 +1583,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error converting quotation ${quotationId} to sale for consumer ${consumerId} and user ${userId}`,
-        error.stack
+        error.stack,
       );
       throw new HttpException(
         'Error converting quotation to sale',
@@ -1600,9 +1600,11 @@ export class SalesService {
     endDate: string,
     branchId?: number,
   ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    // const start = new Date(startDate);
+    // const end = new Date(endDate);
+    // end.setHours(23, 59, 59, 999);
+    const start = this.parseLocalDateStart(startDate);
+const end = this.parseLocalDateEnd(endDate);
 
     const where: any = {
       consumer_id: consumerId,
@@ -1674,10 +1676,11 @@ export class SalesService {
     page = 1,
     limit = 20,
   ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
+    // const start = new Date(startDate);
+    // const end = new Date(endDate);
+    // end.setHours(23, 59, 59, 999);
+const start = this.parseLocalDateStart(startDate);
+const end = this.parseLocalDateEnd(endDate);
     const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
@@ -1753,6 +1756,29 @@ export class SalesService {
       },
     };
   }
+
+  // date helper
+  private parseLocalDateStart(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid date: ${dateStr}`);
+  }
+
+  return date;
+}
+
+private parseLocalDateEnd(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid date: ${dateStr}`);
+  }
+
+  return date;
+}
   // ========== ONLINE ORDER METHODS ==========
 
   async findAllOnlineOrders(filters: any, consumerId: number) {
@@ -2013,6 +2039,9 @@ export class SalesService {
     endOfDay.setHours(23, 59, 59, 999);
 
     const branchId = dailyTargetDto.branch_id ?? undefined;
+    const page = dailyTargetDto.page ?? 1;
+    const limit = dailyTargetDto.limit ?? 20;
+    const skip = (page - 1) * limit;
 
     // Resolve branch name if a branch was requested
     let branchName: string | undefined;
@@ -2024,15 +2053,12 @@ export class SalesService {
       branchName = branch?.name;
     }
 
-    // Branch-specific entry wins over store-wide (null) entry
-    const dateTargetMap = new Map<number, number>();
-
-    //Variants with a product-level default target
+    // Variants with variant-level daily target
     const variantsWithTarget = await this.prisma.productVariant.findMany({
       where: {
+        daily_sale_objective: { gt: 0 },
         product: {
           consumer_id: consumerId,
-          daily_sale_objective: { gt: 0 },
         },
         // Only show variants that have inventory in the selected branch
         ...(branchId
@@ -2045,8 +2071,9 @@ export class SalesService {
         name: true,
         sku: true,
         regular_price: true,
+        daily_sale_objective: true,
         product: {
-          select: { id: true, name: true, daily_sale_objective: true },
+          select: { id: true, name: true },
         },
       },
     });
@@ -2078,17 +2105,10 @@ export class SalesService {
     );
 
     const rows: DailyTargetRow[] = variantsWithTarget.map((variant) => {
-      const daily_target =
-        dateTargetMap.get(variant.product.id) ??
-        variant.product.daily_sale_objective ??
-        0;
+      const daily_target = variant.daily_sale_objective ?? 0;
 
       const actual = actualMap.get(variant.id) ?? { qty: 0, amount: 0 };
       const actual_sold = actual.qty;
-      // const actual_amount = actual.amount;
-
-      const unit_price = Number(variant.regular_price ?? 0);
-      // const targeted_amount = daily_target * unit_price;
 
       const achievement_pct =
         daily_target > 0
@@ -2106,27 +2126,31 @@ export class SalesService {
         actual_sold,
         achievement_pct,
         gap,
-        // targeted_amount,
-        // actual_amount,
       };
     });
 
     const total_target = rows.reduce((s, r) => s + r.daily_target, 0);
     const total_sold = rows.reduce((s, r) => s + r.actual_sold, 0);
-    // const targeted_amount = rows.reduce((s, r) => s + r.targeted_amount, 0); // added
-    // const total_amount = rows.reduce((s, r) => s + r.actual_amount, 0); // added
-    // const average_amount = total_sold > 0 ? total_amount / total_sold : 0; // added
 
     const overall_achievement_pct =
       total_target > 0
         ? Math.round((total_sold / total_target) * 10000) / 100
         : 0;
 
+    const total = rows.length;
+    const paginatedRows = rows.slice(skip, skip + limit);
+
     return {
       date: reportDate.toISOString().split('T')[0],
       branch_id: branchId,
       branch_name: branchName,
-      rows,
+      rows: paginatedRows,
+      meta: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
       summary: {
         total_target,
         total_sold,
