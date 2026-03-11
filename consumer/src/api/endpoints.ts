@@ -155,6 +155,5 @@ export const endpoints = {
   makePayment: "/consumer/payments/make-payment",
   getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
 
-  // Cache Management
-  invalidateAllCaches: "/consumer/cache/invalidate-all",
+  
 };
