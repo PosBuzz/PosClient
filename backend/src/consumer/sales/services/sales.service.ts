@@ -1651,7 +1651,10 @@ export class SalesService {
     const userIds = grouped.map((g) => g.served_by_id as number);
 
     const users = await this.prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: {
+        id: { in: userIds },
+        consumer_id: consumerId,
+      },
       select: {
         id: true,
         name: true,
