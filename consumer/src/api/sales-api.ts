@@ -95,7 +95,6 @@ export const salesApi = {
     const response = await get(
       `${endpoints.getDailyTargetReport}?${queryParams.toString()}`,
     );
-    console.log(response)
     return response;
   },
 
