@@ -112,9 +112,6 @@ const PartialPayments = () => {
     }
   };
 
-  useEffect(() => {
-    setPageTitle("Partial Payments");
-  }, []);
 
   const columns = [
     {
@@ -234,6 +231,7 @@ const PartialPayments = () => {
 
   return (
     <div>
+      {setPageTitle("Partial Payments")}
       <PageTitle
         title="Partial Payments"
         breadcrumbs={[{ title: "Home" }, { title: "Partial Payments" }]}

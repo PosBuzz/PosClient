@@ -1,40 +1,40 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   Col,
   DatePicker,
   Row,
   Select,
+  Spin,
   Statistic,
   Table,
-  Typography,
   Tag,
-  Spin,
+  Typography,
 } from "antd";
+import dayjs from "dayjs";
+import { useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import PageTitle from "../../components/PageTitle";
-import { setPageTitle } from "../../utils/setPageTitle";
-import { useAuthStore } from "../../stores/authStore";
 import { salesApi } from "../../api/sales-api";
+import PageTitle from "../../components/PageTitle";
+import { queryKeys } from "../../constants/queryKeys";
+import { useAuthStore } from "../../stores/authStore";
 import {
   PaymentMethodBreakdown,
   ProductSalesStats,
 } from "../../types/sale.types";
-import { queryKeys } from "../../constants/queryKeys";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -53,10 +53,10 @@ const COLORS = [
 const EODReport = () => {
   const { user } = useAuthStore();
   const [selectedDate, setSelectedDate] = useState<string>(
-    dayjs().format("YYYY-MM-DD")
+    dayjs().format("YYYY-MM-DD"),
   );
   const [selectedBranch, setSelectedBranch] = useState<number | undefined>(
-    undefined
+    undefined,
   );
 
   // Get user's branches
@@ -72,10 +72,6 @@ const EODReport = () => {
     enabled: !!selectedDate,
     staleTime: queryKeys[queryKeys.eod],
   });
-
-  useEffect(() => {
-    setPageTitle("End of Day Report");
-  }, []);
 
   const getPaymentMethodDisplay = (method: string) => {
     const displays: { [key: string]: string } = {
@@ -201,6 +197,7 @@ const EODReport = () => {
 
   return (
     <div>
+      {setPageTitle("End of Day Report")}
       <PageTitle
         title="End of Day Report"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "EOD Report" }]}
