@@ -6,7 +6,6 @@ export const queryKeys = {
   batch: "batch",
   batches: "batches",
   categories: "categories",
-  detail:"detail",
   inventorySummary: "inventory-summary",
   stockByVariant: "stock-by-variant",
   expiringBatches: "expiring-batches",

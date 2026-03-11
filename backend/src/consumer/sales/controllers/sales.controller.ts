@@ -214,7 +214,7 @@ export class SalesController {
     if (!startDate || !endDate) {
       throw new BadRequestException('startDate and endDate are required');
     }
-    return this.salesService.getUserSalesStats(
+    return this.salesService.getUsersSalesStats(
       req.user.consumer_id!,
       startDate,
       endDate,

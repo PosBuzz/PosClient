@@ -46,13 +46,7 @@ const ViewUserSalesStats = () => {
   const userName = state.userName ?? `User #${userId}`;
 
   const { data, isLoading } = useQuery({
-    queryKey: [
-      queryKeys.userSalesStats,
-      queryKeys.detail,
-      userId,
-      dateRange,
-      pagination.page,
-    ],
+    queryKey: [queryKeys.userSalesStats, userId, dateRange, pagination.page],
     queryFn: () =>
       salesApi.getUserSalesDetail(Number(userId), {
         startDate: dateRange[0].format("YYYY-MM-DD"),
@@ -65,8 +59,10 @@ const ViewUserSalesStats = () => {
   });
 
   const sales: Sale[] = data?.data ?? [];
-  const totalAmount = sales.reduce((sum, s) => sum + Number(s.total_amount), 0);
-  const averageAmount = sales.length > 0 ? totalAmount / sales.length : 0;
+  const totalAmount = data?.meta?.total_amount ?? 0;
+  const totalTransactions = data?.meta?.total ?? 0;
+  const averageAmount =
+    totalTransactions > 0 ? totalAmount / totalTransactions : 0;
 
   const disabledDate = (current: dayjs.Dayjs) =>
     current && current.isAfter(dayjs().endOf("day"));
