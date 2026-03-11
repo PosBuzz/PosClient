@@ -41,6 +41,7 @@ export class ChangePasswordService {
         select: { id: true, email: true, name: true },
       });
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error changing password with ID ${id}`, error.stack);
       throw new HttpException(
         'Failed to change password',
