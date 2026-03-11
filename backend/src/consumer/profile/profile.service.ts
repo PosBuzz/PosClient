@@ -47,6 +47,7 @@ export class ProfileService {
 
       return updated;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating consumer profile for ID ${consumerId}`,
         error.stack,

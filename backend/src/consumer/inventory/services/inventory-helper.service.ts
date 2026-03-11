@@ -4,7 +4,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 @Injectable()
 export class InventoryHelperService {
   private readonly logger = new Logger(InventoryHelperService.name);
-  constructor(private prisma: PrismaService) {} /**
+  constructor(private prisma: PrismaService) {}
+  /**
    * Get warehouse branch for a consumer
    */
   async getWarehouseBranch(consumerId: number) {
