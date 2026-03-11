@@ -22,6 +22,7 @@ export const queryKeys = {
   sales: "sales",
   sale: "sale",
   salesStats: "sales-stats",
+  userSalesStats: "user-sales-stats",
   productsForSale: "products-for-sale",
   customers: "customers",
   customer: "customer",
@@ -94,6 +95,7 @@ export const queryStaleTimeMap = {
   [queryKeys.lowStockItems]: staleTimeConfig.realTime,
   [queryKeys.salesStats]: staleTimeConfig.realTime,
   [queryKeys.eod]: staleTimeConfig.realTime,
+  [queryKeys.userSalesStats]: staleTimeConfig.realTime,
   
   // Background data
   [queryKeys.movementHistory]: staleTimeConfig.background,

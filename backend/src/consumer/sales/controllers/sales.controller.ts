@@ -47,10 +47,7 @@ export class SalesController {
   }
 
   @Get()
-  async findAll(
-    @Query() filters: SaleListFiltersDto,
-    @Req() req: Request,
-  ) {
+  async findAll(@Query() filters: SaleListFiltersDto, @Req() req: Request) {
     return this.salesService.findAll(filters, req.user.consumer_id!);
   }
 
@@ -99,10 +96,7 @@ export class SalesController {
   }
 
   @Get('reports/eod')
-  async getEODReport(
-    @Query() eodDto: EODReportDto,
-    @Req() req: Request,
-  ) {
+  async getEODReport(@Query() eodDto: EODReportDto, @Req() req: Request) {
     return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
   }
 
@@ -115,7 +109,7 @@ export class SalesController {
   ) {
     // Get the sale data
     const sale = await this.salesService.findOne(id, req.user.consumer_id!);
-    
+
     if (!sale) {
       return res.status(404).json({ message: 'Sale not found' });
     }
@@ -127,9 +121,12 @@ export class SalesController {
     const filename = `receipt-${(sale as any).sale_number || 'unknown'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+
     if (download === 'true') {
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
     } else {
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     }
@@ -143,7 +140,10 @@ export class SalesController {
     @Param('saleNumber') saleNumber: string,
     @Req() req: Request,
   ) {
-    return this.salesService.findBySaleNumber(saleNumber, req.user.consumer_id!);
+    return this.salesService.findBySaleNumber(
+      saleNumber,
+      req.user.consumer_id!,
+    );
   }
 
   @HasPermissions([ConsumerPermission.quotations])
@@ -173,22 +173,29 @@ export class SalesController {
     @Query('download') download?: string,
   ) {
     // Get the quotation data
-    const quotation = await this.salesService.findOneQuotation(id, req.user.consumer_id!);
-    
+    const quotation = await this.salesService.findOneQuotation(
+      id,
+      req.user.consumer_id!,
+    );
+
     if (!quotation) {
       return res.status(404).json({ message: 'Quotation not found' });
     }
 
     // Generate PDF
-    const pdfBuffer = await this.quotationPdfService.generateQuotationPdf(quotation);
+    const pdfBuffer =
+      await this.quotationPdfService.generateQuotationPdf(quotation);
 
     // Set response headers
     const filename = `quotation-${(quotation as any).sale_number || 'unknown'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);
-    
+
     if (download === 'true') {
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
     } else {
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     }
@@ -197,22 +204,61 @@ export class SalesController {
     res.send(pdfBuffer);
   }
 
-  @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
+  @Get('user-sales-stats')
+  async getUserSalesStats(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('branch_id') branchId: string,
     @Req() req: Request,
   ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+    return this.salesService.getUsersSalesStats(
+      req.user.consumer_id!,
+      startDate,
+      endDate,
+      branchId ? parseInt(branchId) : undefined,
+    );
+  }
+
+  @Get('user-sales-stats/:userId')
+  async getUserSalesDetail(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('branch_id', ParseIntPipe) branchId: number,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Req() req: Request,
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+    return this.salesService.getUserSalesDetail(
+      req.user.consumer_id!,
+      userId,
+      startDate,
+      endDate,
+      branchId ? branchId : undefined,
+      page ? page : 1,
+      limit ? limit : 20,
+    );
+  }
+
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.salesService.findOne(id, req.user.consumer_id!);
   }
 
   // ========== ONLINE ORDERS ENDPOINTS ==========
 
   @Get('online-orders/list')
-  async findAllOnlineOrders(
-    @Query() filters: any,
-    @Req() req: Request,
-  ) {
-    return this.salesService.findAllOnlineOrders(filters, req.user.consumer_id!);
+  async findAllOnlineOrders(@Query() filters: any, @Req() req: Request) {
+    return this.salesService.findAllOnlineOrders(
+      filters,
+      req.user.consumer_id!,
+    );
   }
 
   @Get('online-orders/stats')

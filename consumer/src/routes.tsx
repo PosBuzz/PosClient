@@ -48,6 +48,8 @@ const Customers = lazy(() => import("./pages/customers"));
 const Sales = lazy(() => import("./pages/sales"));
 const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
+const UserSalesStats = lazy(() => import("./pages/user-sales-stats"));
+const ViewUserSalesStats = lazy(() => import("./pages/user-sales-stats/view-user-sales-stats"));
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
 const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
@@ -338,6 +340,22 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <SaleDetail />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "user-sales-stats",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <UserSalesStats />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "user-sales-stats/:userId",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <ViewUserSalesStats />
           </RequirePermission>
         ),
       },
