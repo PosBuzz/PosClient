@@ -39,6 +39,7 @@ export class UnitService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating unit for consumer ${consumerId}`,
         error.stack,
@@ -70,6 +71,7 @@ export class UnitService {
 
       return unit;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching unit with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -107,6 +109,7 @@ export class UnitService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating unit with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -127,6 +130,7 @@ export class UnitService {
 
       return { success: true };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting unit with ID ${id} for consumer ${consumerId}`,
         error.stack,

@@ -101,6 +101,7 @@ export class AuthService {
       }
       return superAdmin;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error occurred while validating super admin for ${email}`,
         error.stack,
@@ -155,6 +156,7 @@ export class AuthService {
 
       return user;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error occurred while validating user for ${email}`,
         error.stack,
