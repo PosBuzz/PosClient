@@ -62,10 +62,6 @@ const DailyTargetReport = () => {
     }
   }, [userBranches, selectedBranch]);
 
-  useEffect(() => {
-    setPageTitle("Daily Sales Target");
-  }, []);
-
   // filter
   const filteredRows = (data?.rows || []).filter((row) => {
     if (targetStatusFilter === "all") return true;
@@ -146,6 +142,7 @@ const DailyTargetReport = () => {
 
   return (
     <div>
+      {setPageTitle("Daily Sales Target")}
       <PageTitle
         title="Daily Sales Target"
         breadcrumbs={[

@@ -112,9 +112,6 @@ const QuotationsTable = () => {
     }
   };
 
-  useEffect(() => {
-    setPageTitle("Quotations");
-  }, []);
 
   const columns = [
     {
@@ -226,6 +223,7 @@ const QuotationsTable = () => {
 
   return (
     <div>
+      {setPageTitle("Quotations")}
       <PageTitle
         title="Quotations"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "Quotations" }]}

@@ -16,7 +16,7 @@ import {
   Typography
 } from "antd";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { returnsApi } from "../../api/returns-api";
 import PageTitle from "../../components/PageTitle";
@@ -67,9 +67,6 @@ const ReturnsTable = () => {
     });
   };
 
-  useEffect(() => {
-    setPageTitle("Returns Management");
-  }, []);
 
   const columns = [
     {
@@ -161,6 +158,7 @@ const ReturnsTable = () => {
 
   return (
     <div>
+      {setPageTitle("Returns Management")}
       <PageTitle 
         title="Returns Management" 
         breadcrumbs={[

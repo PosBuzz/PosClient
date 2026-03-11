@@ -95,6 +95,7 @@ export const queryStaleTimeMap = {
   [queryKeys.lowStockItems]: staleTimeConfig.realTime,
   [queryKeys.salesStats]: staleTimeConfig.realTime,
   [queryKeys.eod]: staleTimeConfig.realTime,
+  [queryKeys.dailyTarget]: staleTimeConfig.realTime,
   
   // Background data
   [queryKeys.movementHistory]: staleTimeConfig.background,

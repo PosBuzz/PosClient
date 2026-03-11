@@ -19,7 +19,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
@@ -36,9 +36,7 @@ import type {
   Sale,
   SaleListFilters,
 } from "../../types/sale.types";
-import {
-  PaymentStatus,
-} from "../../types/sale.types";
+import { PaymentStatus } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -52,7 +50,7 @@ const SalesTable = () => {
 
   const showMessage = (
     content: string,
-    type: "success" | "error" | "info" = "info"
+    type: "success" | "error" | "info" = "info",
   ) => {
     messageApi?.[type](content);
   };
@@ -75,7 +73,7 @@ const SalesTable = () => {
     debounce((value: string) => {
       setFilters((prev) => ({ ...prev, search: value, page: 1 }));
     }, 300),
-    []
+    [],
   );
 
   // Cleanup debounced function on unmount
@@ -104,31 +102,37 @@ const SalesTable = () => {
   const handlePrint = async (saleId: number) => {
     try {
       showMessage("Preparing receipt for printing...", "info");
-      
+
       // Get sale data first
       const sale = await salesApi.getSale(saleId);
-      
+
       if (!sale) {
         showMessage("Failed to load sale data", "error");
         return;
       }
 
       // Format payment methods
-      const paymentMethods = sale.payments && sale.payments.length > 0 
-        ? sale.payments.map((payment: any) => {
-            const methods = {
-              CASH: "Cash",
-              CARD: "Card", 
-              BANK_TRANSFER: "Bank Transfer",
-              CHEQUE: "Cheque",
-              MOBILE_MONEY: "Mobile Money",
-              MFS: "MFS",
-              DEPOSIT: "Deposit",
-              CREDIT: "Credit",
-            };
-            return methods[payment.payment_method as keyof typeof methods] || payment.payment_method;
-          }).join(", ")
-        : "Cash";
+      const paymentMethods =
+        sale.payments && sale.payments.length > 0
+          ? sale.payments
+              .map((payment: any) => {
+                const methods = {
+                  CASH: "Cash",
+                  CARD: "Card",
+                  BANK_TRANSFER: "Bank Transfer",
+                  CHEQUE: "Cheque",
+                  MOBILE_MONEY: "Mobile Money",
+                  MFS: "MFS",
+                  DEPOSIT: "Deposit",
+                  CREDIT: "Credit",
+                };
+                return (
+                  methods[payment.payment_method as keyof typeof methods] ||
+                  payment.payment_method
+                );
+              })
+              .join(", ")
+          : "Cash";
 
       // Calculate correct total using database values
       const correctTotal = Number(sale?.total_amount) || 0;
@@ -140,31 +144,35 @@ const SalesTable = () => {
         time: dayjs(sale.sale_date).format("HH:mm:ss"),
         cashier: sale.user?.name || sale.user_name || "Staff",
         customer: sale.customer_name || "Walk-in Customer",
-        items: sale.items?.map((item: any) => ({
-          name: `${item.variant?.product?.name || 'Product'} - ${item.variant?.name || ''}`.trim(),
-          quantity: Number(item.quantity) || 0,
-          price: Number(item.unit_price) || 0,
-          total: Number(item.line_total) || 0
-        })) || [],
+        items:
+          sale.items?.map((item: any) => ({
+            name: `${item.variant?.product?.name || "Product"} - ${item.variant?.name || ""}`.trim(),
+            quantity: Number(item.quantity) || 0,
+            price: Number(item.unit_price) || 0,
+            total: Number(item.line_total) || 0,
+          })) || [],
         subtotal: Number(sale?.subtotal) || 0,
         discount: Number(sale?.discount_amount) || 0,
         shipping: Number(sale?.shipping_cost) || 0,
         tax: Number(sale?.tax_amount) || 0,
         total: correctTotal,
         amountPaid: Number(sale?.received_amount) || 0,
-        change: Math.max(0, (Number(sale?.received_amount) || 0) - correctTotal),
-        paymentMethod: paymentMethods
+        change: Math.max(
+          0,
+          (Number(sale?.received_amount) || 0) - correctTotal,
+        ),
+        paymentMethod: paymentMethods,
       };
 
       showMessage("Sending to printer...", "info");
 
       // Send direct request to localhost:8080/print
-      const response = await fetch('http://localhost:8080/print', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8080/print", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(receiptData)
+        body: JSON.stringify(receiptData),
       });
 
       if (response.ok) {
@@ -175,30 +183,35 @@ const SalesTable = () => {
         showMessage("Failed to print receipt: " + errorText, "error");
       }
     } catch (error: any) {
-      console.error('Print error:', error);
-      if (error.message.includes('fetch')) {
-        showMessage("Printing agent is not running. Please start the printing agent on your computer and try again.", "error");
+      console.error("Print error:", error);
+      if (error.message.includes("fetch")) {
+        showMessage(
+          "Printing agent is not running. Please start the printing agent on your computer and try again.",
+          "error",
+        );
       } else {
-        showMessage("Failed to print receipt. Please check your connection.", "error");
+        showMessage(
+          "Failed to print receipt. Please check your connection.",
+          "error",
+        );
       }
     }
   };
 
-  const handleDownloadPdf = async (saleId: number, saleNumber: string ) => {
+  const handleDownloadPdf = async (saleId: number, saleNumber: string) => {
     try {
-      
       // Call the API to generate and download PDF (similar to admin billing approach)
       const pdfBlob = await salesApi.generateReceipt(saleId);
-      
+
       // Get the filename - you could also get this from response headers if backend sets it
       const filename = `${saleNumber}.pdf`;
 
       // Use file-saver to download the PDF
       saveAs(pdfBlob, filename);
-      
+
       showMessage("PDF receipt downloaded successfully!", "success");
     } catch (error: any) {
-      console.error('PDF download error:', error);
+      console.error("PDF download error:", error);
       showMessage("Failed to download PDF receipt", "error");
     }
   };
@@ -366,12 +379,9 @@ const SalesTable = () => {
     },
   ];
 
-  useEffect(() => {
-    setPageTitle("Sales");
-  }, []);
-
   return (
     <div>
+      {setPageTitle("Sales")}
       <PageTitle
         title="Sales"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "Sales" }]}
@@ -425,7 +435,7 @@ const SalesTable = () => {
                 value={
                   filters.date_from && filters.date_to
                     ? `${dayjs(filters.date_from).format("MMM DD")} - ${dayjs(
-                        filters.date_to
+                        filters.date_to,
                       ).format("MMM DD")}`
                     : "All Time"
                 }
@@ -439,7 +449,7 @@ const SalesTable = () => {
       <Card>
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col  xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4}>
             <Input
               placeholder="Search sales..."
               prefix={<SearchOutlined />}
@@ -447,7 +457,7 @@ const SalesTable = () => {
               allowClear
             />
           </Col>
-          <Col  xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4}>
             <RangePicker
               style={{ width: "100%" }}
               value={
@@ -510,7 +520,7 @@ const SalesTable = () => {
               ]}
             />
           </Col>
-          <Col  xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4}>
             <Select
               placeholder="Payment Status"
               style={{ width: "100%" }}
@@ -530,7 +540,7 @@ const SalesTable = () => {
               <Option value="cancelled">Cancelled</Option>
             </Select>
           </Col>
-          <Col  xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4}>
             <Select
               placeholder="Payment Method"
               style={{ width: "100%" }}
@@ -554,7 +564,7 @@ const SalesTable = () => {
               <Option value="CREDIT">Credit</Option>
             </Select>
           </Col>
-          <Col  xs={24} sm={12} md={3}>
+          <Col xs={24} sm={12} md={3}>
             <Select
               placeholder="Branch"
               value={filters.branch_id}
@@ -575,7 +585,7 @@ const SalesTable = () => {
               ))}
             </Select>
           </Col>
-          <Col  xs={24} sm={12} md={3}>
+          <Col xs={24} sm={12} md={3}>
             <Select
               placeholder="Source"
               value={filters.source}
@@ -593,7 +603,7 @@ const SalesTable = () => {
               <Option value="direct">Direct Sale</Option>
             </Select>
           </Col>
-          <Col  xs={24} sm={12} md={2}>
+          <Col xs={24} sm={12} md={2}>
             <Button
               onClick={() => {
                 setFilters({
@@ -683,7 +693,7 @@ const SalesTable = () => {
                     Branch:{" "}
                     {
                       user?.branches.find(
-                        (branch) => branch.id === filters.branch_id
+                        (branch) => branch.id === filters.branch_id,
                       )?.name
                     }
                   </Tag>
@@ -718,8 +728,8 @@ const SalesTable = () => {
                 sorter.order === "ascend"
                   ? "asc"
                   : sorter.order === "descend"
-                  ? "desc"
-                  : undefined;
+                    ? "desc"
+                    : undefined;
 
               setFilters((prev) => ({
                 ...prev,
