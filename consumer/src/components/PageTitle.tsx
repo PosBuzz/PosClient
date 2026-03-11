@@ -1,10 +1,11 @@
 import { Breadcrumb, Typography } from "antd";
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import type { BreadcrumbItemType } from "antd/es/breadcrumb/Breadcrumb";
 
 const { Title } = Typography;
 
-interface BreadcrumbItem {
+interface BreadcrumbItem extends Omit<BreadcrumbItemType, "title"> {
   title: string;
   href?: string;
 }
@@ -15,13 +16,13 @@ interface PageTitleProps {
   rightSection?: ReactNode;
 }
 
-import type { BreadcrumbItemType } from "antd/es/breadcrumb/Breadcrumb";
+
 
 function itemRender(
   route: Partial<BreadcrumbItemType>,
   _params: any,
   routes: Partial<BreadcrumbItemType>[],
-  _paths: string[]
+  _paths: string[],
 ): ReactNode {
   const isLast = routes.indexOf(route) === routes.length - 1;
 
