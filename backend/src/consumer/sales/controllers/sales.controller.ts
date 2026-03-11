@@ -227,9 +227,9 @@ export class SalesController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('branch_id') branchId: string,
-    @Query('page') page: string,
-    @Query('limit') limit: string,
+    @Query('branch_id', ParseIntPipe) branchId: number,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
     @Req() req: Request,
   ) {
     if (!startDate || !endDate) {
@@ -240,9 +240,9 @@ export class SalesController {
       userId,
       startDate,
       endDate,
-      branchId ? parseInt(branchId) : undefined,
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
+      branchId ? branchId : undefined,
+      page ? page : 1,
+      limit ? limit : 20,
     );
   }
 
