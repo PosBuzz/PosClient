@@ -37,53 +37,49 @@ export class SubdomainValidationService {
     const normalizedSubdomain = subdomain.toLowerCase().trim();
 
     try {
-        
-          
-            const consumer = await this.prisma.consumer.findUnique({
-              where: { subdomain: normalizedSubdomain },
-              select: {
-                id: true,
-                subdomain: true,
-                billing_logs: {
-                  where: {
-                    billing_date: {
-                      gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
-                      lte: dayjs().endOf('day').toDate(),
-                    },
-                  },
-                  select: { id: true },
-                  take: 1,
-                  orderBy: { billing_date: 'desc' },
-                },
+      const consumer = await this.prisma.consumer.findUnique({
+        where: { subdomain: normalizedSubdomain },
+        select: {
+          id: true,
+          subdomain: true,
+          billing_logs: {
+            where: {
+              billing_date: {
+                gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
+                lte: dayjs().endOf('day').toDate(),
               },
-            });
+            },
+            select: { id: true },
+            take: 1,
+            orderBy: { billing_date: 'desc' },
+          },
+        },
+      });
 
-            if (!consumer) {
-              return {
-                exists: false,
-                message: 'Subdomain not found',
-              };
-            }
+      if (!consumer) {
+        return {
+          exists: false,
+          message: 'Subdomain not found',
+        };
+      }
 
-            const isActive = consumer.billing_logs.length > 0;
+      const isActive = consumer.billing_logs.length > 0;
 
-            if (!isActive) {
-              return {
-                exists: true,
-                consumerId: consumer.id,
-                isActive: false,
-                message: 'Subscription expired or billing failed',
-              };
-            }
+      if (!isActive) {
+        return {
+          exists: true,
+          consumerId: consumer.id,
+          isActive: false,
+          message: 'Subscription expired or billing failed',
+        };
+      }
 
-            return {
-              exists: true,
-              consumerId: consumer.id,
-              isActive: true,
-              message: 'Subdomain is valid',
-            };
-              
-        
+      return {
+        exists: true,
+        consumerId: consumer.id,
+        isActive: true,
+        message: 'Subdomain is valid',
+      };
     } catch (error) {
       this.logger.error(
         `❌ Subdomain validation error '${normalizedSubdomain}': ${error.message}`,
