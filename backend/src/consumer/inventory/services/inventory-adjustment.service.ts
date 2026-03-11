@@ -2,12 +2,16 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
+  HttpStatus,
+  HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 
 @Injectable()
 export class InventoryAdjustmentService {
+  private readonly logger = new Logger(InventoryAdjustmentService.name);
   constructor(private prisma: PrismaService) {}
 
   async create(
@@ -15,96 +19,107 @@ export class InventoryAdjustmentService {
     userId: number,
     dto: CreateInventoryAdjustmentDto,
   ) {
-    // Verify variant belongs to consumer
-    const variant = await this.prisma.productVariant.findFirst({
-      where: {
-        id: dto.variant_id,
-        product: { consumer_id: consumerId },
-      },
-    });
-
-    if (!variant) {
-      throw new NotFoundException('Product variant not found');
-    }
-
-    // Verify branch belongs to consumer (if provided)
-    if (dto.branch_id) {
-      const branch = await this.prisma.branch.findFirst({
+    try {
+      // Verify variant belongs to consumer
+      const variant = await this.prisma.productVariant.findFirst({
         where: {
-          id: dto.branch_id,
-          consumer_id: consumerId,
+          id: dto.variant_id,
+          product: { consumer_id: consumerId },
         },
       });
 
-      if (!branch) {
-        throw new NotFoundException('Branch not found');
-      }
-    } // Start transaction
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // If batch_id is provided, verify it exists and belongs to the correct branch/variant
-      const batch = await prisma.inventoryBatch.findFirst({
-        where: {
-          id: dto.batch_id,
-          variant_id: dto.variant_id,
-          branch_id: dto.branch_id,
-        },
-      });
-
-      if (!batch) {
-        throw new NotFoundException(
-          'Batch not found for the specified variant and branch',
-        );
+      if (!variant) {
+        throw new NotFoundException('Product variant not found');
       }
 
-      // For negative adjustments, check if sufficient quantity exists
-      if (
-        dto.quantity_change < 0 &&
-        batch.quantity < Math.abs(dto.quantity_change)
-      ) {
-        throw new BadRequestException(
-          `Insufficient quantity in batch. Available: ${batch.quantity}, Requested: ${Math.abs(dto.quantity_change)}`,
-        );
-      }
+      // Verify branch belongs to consumer (if provided)
+      if (dto.branch_id) {
+        const branch = await this.prisma.branch.findFirst({
+          where: {
+            id: dto.branch_id,
+            consumer_id: consumerId,
+          },
+        });
 
-      // Create adjustment record
-      const adjustment = await prisma.inventoryAdjustment.create({
-        data: {
-          variant_id: dto.variant_id,
-          branch_id: dto.branch_id,
-          batch_id: dto.batch_id,
-          quantity_change: dto.quantity_change,
-          reason: dto.reason,
-          notes: dto.notes,
-          created_by_user_id: userId,
-        },
-        include: {
-          batch: {
-            include: {
-              variant: {
-                include: {
-                  product: { select: { id: true, name: true } },
+        if (!branch) {
+          throw new NotFoundException('Branch not found');
+        }
+      } // Start transaction
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // If batch_id is provided, verify it exists and belongs to the correct branch/variant
+        const batch = await prisma.inventoryBatch.findFirst({
+          where: {
+            id: dto.batch_id,
+            variant_id: dto.variant_id,
+            branch_id: dto.branch_id,
+          },
+        });
+
+        if (!batch) {
+          throw new NotFoundException(
+            'Batch not found for the specified variant and branch',
+          );
+        }
+
+        // For negative adjustments, check if sufficient quantity exists
+        if (
+          dto.quantity_change < 0 &&
+          batch.quantity < Math.abs(dto.quantity_change)
+        ) {
+          throw new BadRequestException(
+            `Insufficient quantity in batch. Available: ${batch.quantity}, Requested: ${Math.abs(dto.quantity_change)}`,
+          );
+        }
+
+        // Create adjustment record
+        const adjustment = await prisma.inventoryAdjustment.create({
+          data: {
+            variant_id: dto.variant_id,
+            branch_id: dto.branch_id,
+            batch_id: dto.batch_id,
+            quantity_change: dto.quantity_change,
+            reason: dto.reason,
+            notes: dto.notes,
+            created_by_user_id: userId,
+          },
+          include: {
+            batch: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
                 },
               },
             },
+            branch: { select: { id: true, name: true } },
+            created_by_user: { select: { id: true, name: true } },
           },
-          branch: { select: { id: true, name: true } },
-          created_by_user: { select: { id: true, name: true } },
-        },
+        });
+
+        // Update batch quantity
+        await prisma.inventoryBatch.update({
+          where: { id: dto.batch_id },
+          data: {
+            quantity: {
+              increment: dto.quantity_change,
+            },
+          },
+        });
+        return adjustment;
       });
 
-      // Update batch quantity
-      await prisma.inventoryBatch.update({
-        where: { id: dto.batch_id },
-        data: {
-          quantity: {
-            increment: dto.quantity_change,
-          },
-        },
-      });
-      return adjustment;
-    });
-
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error creating inventory adjustment for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to create inventory adjustment',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async findAll(
     consumerId: number,
@@ -115,30 +130,84 @@ export class InventoryAdjustmentService {
       branch_id?: number;
     } = {},
   ) {
-    const { page = 1, limit = 10, variant_id, branch_id } = options;
-    const skip = (page - 1) * limit;
+    try {
+      const { page = 1, limit = 10, variant_id, branch_id } = options;
+      const skip = (page - 1) * limit;
 
-    const whereClause: any = {
-      batch: {
-        variant: {
-          product: {
-            consumer_id: consumerId,
+      const whereClause: any = {
+        batch: {
+          variant: {
+            product: {
+              consumer_id: consumerId,
+            },
           },
         },
-      },
-    };
+      };
 
-    if (variant_id) {
-      whereClause.variant_id = variant_id;
+      if (variant_id) {
+        whereClause.variant_id = variant_id;
+      }
+
+      if (branch_id) {
+        whereClause.branch_id = branch_id;
+      }
+
+      const [adjustments, total] = await Promise.all([
+        this.prisma.inventoryAdjustment.findMany({
+          where: whereClause,
+          include: {
+            batch: {
+              include: {
+                variant: {
+                  include: {
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+            branch: { select: { id: true, name: true } },
+            created_by_user: { select: { id: true, name: true } },
+          },
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+        }),
+        this.prisma.inventoryAdjustment.count({ where: whereClause }),
+      ]);
+
+      return {
+        data: adjustments,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error finding all inventory adjustments for ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to find inventory adjustments',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    if (branch_id) {
-      whereClause.branch_id = branch_id;
-    }
-
-    const [adjustments, total] = await Promise.all([
-      this.prisma.inventoryAdjustment.findMany({
-        where: whereClause,
+  }
+  async findOne(id: number, consumerId: number) {
+    try {
+      const adjustment = await this.prisma.inventoryAdjustment.findFirst({
+        where: {
+          id,
+          batch: {
+            variant: {
+              product: {
+                consumer_id: consumerId,
+              },
+            },
+          },
+        },
         include: {
           batch: {
             include: {
@@ -152,54 +221,22 @@ export class InventoryAdjustmentService {
           branch: { select: { id: true, name: true } },
           created_by_user: { select: { id: true, name: true } },
         },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      this.prisma.inventoryAdjustment.count({ where: whereClause }),
-    ]);
+      });
 
-    return {
-      data: adjustments,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-  async findOne(id: number, consumerId: number) {
-    const adjustment = await this.prisma.inventoryAdjustment.findFirst({
-      where: {
-        id,
-        batch: {
-          variant: {
-            product: {
-              consumer_id: consumerId,
-            },
-          },
-        },
-      },
-      include: {
-        batch: {
-          include: {
-            variant: {
-              include: {
-                product: { select: { id: true, name: true } },
-              },
-            },
-          },
-        },
-        branch: { select: { id: true, name: true } },
-        created_by_user: { select: { id: true, name: true } },
-      },
-    });
+      if (!adjustment) {
+        throw new NotFoundException(`Adjustment with ID ${id} not found`);
+      }
 
-    if (!adjustment) {
-      throw new NotFoundException(`Adjustment with ID ${id} not found`);
+      return adjustment;
+    } catch (error) {
+      this.logger.error(
+        `Error finding inventory adjustment ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to find inventory adjustment',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    return adjustment;
   }
 }

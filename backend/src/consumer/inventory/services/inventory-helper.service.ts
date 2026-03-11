@@ -1,18 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class InventoryHelperService {
+  private readonly logger = new Logger(InventoryHelperService.name);
   constructor(private prisma: PrismaService) {} /**
    * Get warehouse branch for a consumer
    */
   async getWarehouseBranch(consumerId: number) {
-    return await this.prisma.branch.findFirst({
-      where: {
-        consumer_id: consumerId,
-        is_warehouse: true,
-      },
-    });
+    try {
+      return await this.prisma.branch.findFirst({
+        where: {
+          consumer_id: consumerId,
+          is_warehouse: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error finding warehouse branch for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to find warehouse branch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   /**
