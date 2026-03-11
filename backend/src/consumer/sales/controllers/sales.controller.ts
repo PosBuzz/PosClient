@@ -12,6 +12,7 @@ import {
   BadRequestException,
   NotFoundException,
   Patch,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { SalesService } from '../services/sales.service';
@@ -26,6 +27,7 @@ import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { Request } from 'express';
+import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
@@ -225,27 +227,21 @@ export class SalesController {
   @Get('user-sales-stats/:userId')
   async getUserSalesDetail(
     @Param('userId', ParseIntPipe) userId: number,
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-    @Query('branch_id', ParseIntPipe) branchId: number,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query() query: GetUserSalesDetailDto,
     @Req() req: Request,
   ) {
-    if (!startDate || !endDate) {
-      throw new BadRequestException('startDate and endDate are required');
-    }
+    const { startDate, endDate, branch_id, page, limit } = query;
+
     return this.salesService.getUserSalesDetail(
       req.user.consumer_id!,
       userId,
       startDate,
       endDate,
-      branchId ? branchId : undefined,
-      page ? page : 1,
-      limit ? limit : 20,
+      branch_id,
+      page,
+      limit,
     );
   }
-
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.salesService.findOne(id, req.user.consumer_id!);
