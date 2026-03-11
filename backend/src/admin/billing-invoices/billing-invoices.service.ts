@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
 import { Readable } from 'stream';
@@ -63,83 +63,97 @@ interface Billing {
 
 @Injectable()
 export class BillingInvoicesService {
+  private readonly logger = new Logger(BillingInvoicesService.name);
+
   async generateBillingHistoryExcel(consumer: Consumer): Promise<Buffer> {
-    const sortedLogs = [...consumer.billing_logs].sort(
-      (a, b) =>
-        new Date(b.billing_date).getTime() - new Date(a.billing_date).getTime(),
-    );
+    try {
+      const sortedLogs = [...consumer.billing_logs].sort(
+        (a, b) =>
+          new Date(b.billing_date).getTime() -
+          new Date(a.billing_date).getTime(),
+      );
 
-    const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
+      const totalAmount = sortedLogs.reduce((sum, log) => sum + log.amount, 0);
 
-    const workbook = new ExcelJS.Workbook();
+      const workbook = new ExcelJS.Workbook();
 
-    // Create "Billing History" sheet
-    const billingSheet = workbook.addWorksheet('Billing History');
+      // Create "Billing History" sheet
+      const billingSheet = workbook.addWorksheet('Billing History');
 
-    // Add header row with Created On
-    billingSheet.addRow([
-      'No.',
-      'Created On',
-      'Billing Date',
-      'Reference',
-      'Plan Name',
-      'Amount',
-    ]);
-
-    // Add billing logs
-    sortedLogs.forEach((log, index) => {
+      // Add header row with Created On
       billingSheet.addRow([
-        index + 1,
-        new Date(log.created_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        new Date(log.billing_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        log.reference,
-        log.plan?.name || 'N/A',
-        log.amount,
+        'No.',
+        'Created On',
+        'Billing Date',
+        'Reference',
+        'Plan Name',
+        'Amount',
       ]);
-    });
 
-    // Add total row
-    billingSheet.addRow(['', '', '', '', 'Total', totalAmount]);
+      // Add billing logs
+      sortedLogs.forEach((log, index) => {
+        billingSheet.addRow([
+          index + 1,
+          new Date(log.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          new Date(log.billing_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          log.reference,
+          log.plan?.name || 'N/A',
+          log.amount,
+        ]);
+      });
 
-    // Create "Company Info" sheet
-    const infoSheet = workbook.addWorksheet('Company Info');
+      // Add total row
+      billingSheet.addRow(['', '', '', '', 'Total', totalAmount]);
 
-    const owner = consumer.users.find(
-      (user) => user.role?.name === 'Admin' && user?.role?.is_admin,
-    );
+      // Create "Company Info" sheet
+      const infoSheet = workbook.addWorksheet('Company Info');
 
-    const infoData = [
-      ['Company Name', consumer.company_name || 'N/A'],
-      ['Email', consumer.email || 'N/A'],
-      ['Secondary Email', consumer.secondary_email || 'N/A'],
-      ['Phone', consumer.phone || 'N/A'],
-      ['Address', consumer.address || 'N/A'],
-      ['Subdomain', consumer.subdomain || 'N/A'],
-      [
-        'Client Since',
-        new Date(consumer.created_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-      ],
-      ['Owner Name', owner?.name || 'N/A'],
-    ];
+      const owner = consumer.users.find(
+        (user) => user.role?.name === 'Admin' && user?.role?.is_admin,
+      );
 
-    infoData.forEach((row) => infoSheet.addRow(row));
+      const infoData = [
+        ['Company Name', consumer.company_name || 'N/A'],
+        ['Email', consumer.email || 'N/A'],
+        ['Secondary Email', consumer.secondary_email || 'N/A'],
+        ['Phone', consumer.phone || 'N/A'],
+        ['Address', consumer.address || 'N/A'],
+        ['Subdomain', consumer.subdomain || 'N/A'],
+        [
+          'Client Since',
+          new Date(consumer.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+        ],
+        ['Owner Name', owner?.name || 'N/A'],
+      ];
 
-    // Generate Excel buffer
-    const buffer = await workbook.xlsx.writeBuffer();
+      infoData.forEach((row) => infoSheet.addRow(row));
 
-    return Buffer.from(buffer);
+      // Generate Excel buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      return Buffer.from(buffer);
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate billing history Excel`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to generate billing history Excel',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async generateInvoicePdf(billing: Billing): Promise<Buffer> {
