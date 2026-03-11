@@ -84,7 +84,7 @@ export class CustomerService {
 
     const searchTerm = query.trim();
 
-    const result = this.prismaService.customer.findMany({
+    const result = await this.prismaService.customer.findMany({
       where: {
         consumer_id: consumerId,
         OR: [
