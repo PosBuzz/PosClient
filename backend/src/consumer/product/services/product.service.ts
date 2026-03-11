@@ -79,6 +79,7 @@ export class ProductService {
 
       return this.findOne(product.id, consumerId);
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating product for consumer ${consumerId}`,
         error.stack,
@@ -232,6 +233,7 @@ export class ProductService {
         },
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching products for consumer ${consumerId}`,
         error.stack,
@@ -550,6 +552,7 @@ export class ProductService {
         metrics: productMetrics,
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding product with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -650,6 +653,7 @@ export class ProductService {
 
       return this.findOne(id, consumerId);
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating product with ID ${id} for consumer ${consumerId}`,
         error.stack,
@@ -672,6 +676,7 @@ export class ProductService {
 
       return { success: true, message: 'Product deleted successfully' };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting product with ID ${id} for consumer ${consumerId}`,
         error.stack,

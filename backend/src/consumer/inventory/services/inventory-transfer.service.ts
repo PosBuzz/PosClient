@@ -117,6 +117,7 @@ export class InventoryTransferService {
 
       return transfer;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error creating inventory transfer for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to create inventory transfer',
@@ -207,6 +208,7 @@ export class InventoryTransferService {
         },
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error finding all inventory transfers for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to find all inventory transfers',
@@ -262,6 +264,7 @@ export class InventoryTransferService {
 
       return transfer;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error finding inventory transfer ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to find inventory transfer',
@@ -408,6 +411,7 @@ export class InventoryTransferService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error completing transfer with ID ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to complete transfer',
@@ -432,6 +436,7 @@ export class InventoryTransferService {
 
       return updatedTransfer;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error cancelling transfer with ID ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to cancel transfer',

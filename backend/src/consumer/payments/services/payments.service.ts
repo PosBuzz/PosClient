@@ -187,6 +187,7 @@ export class PaymentsService {
           Number(sale.total_amount) - Number(sale.received_amount),
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error getting sale for payment with ID ${saleId} for consumer ${consumerId}`,
         error.stack,
@@ -320,6 +321,7 @@ export class PaymentsService {
         },
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error making payment for sale with ID ${paymentData.sale_id} for consumer ${consumerId}`,
         error.stack,
@@ -364,6 +366,7 @@ export class PaymentsService {
 
       return { payments };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching sale payments with ID ${saleId} for consumer ${consumerId}`,
         error.stack,

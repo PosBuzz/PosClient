@@ -85,6 +85,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error creating inventory batch for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to create inventory batch',
@@ -170,6 +171,7 @@ export class InventoryBatchService {
         },
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding all inventory batches for ${consumerId}`,
         error.stack,
@@ -214,6 +216,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error finding inventory batch ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to find inventory batch',
@@ -237,6 +240,7 @@ export class InventoryBatchService {
 
       return updatedBatch;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error updating inventory batch ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to update inventory batch',
@@ -255,6 +259,7 @@ export class InventoryBatchService {
 
       return { success: true, message: 'Inventory batch deleted successfully' };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error deleting inventory batch ${id} for consumer ${consumerId}`, error.stack);
       throw new HttpException(
         'Failed to delete inventory batch',
