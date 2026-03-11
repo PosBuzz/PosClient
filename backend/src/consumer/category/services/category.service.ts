@@ -1,54 +1,46 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class CategoryService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(CategoryService.name);
 
-  async create(createCategoryDto: CreateCategoryDto, consumerId: number) {    const result = await this.prismaService.category.create({
-      data: {
-        name: createCategoryDto.name,
-        consumer_id: consumerId,
-      },
-    });
+  constructor(private readonly prismaService: PrismaService) {}
 
-    // Invalidate only category caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
+  async create(createCategoryDto: CreateCategoryDto, consumerId: number) {
+    try {
+      const result = await this.prismaService.category.create({
+        data: {
+          name: createCategoryDto.name,
+          consumer_id: consumerId,
+        },
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to create category for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to create category', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.categoryList(consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return this.prismaService.category.findMany({
+    try {
+      return await this.prismaService.category.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Failed to fetch categories for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to fetch categories', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.categoryDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       const category = await this.prismaService.category.findFirst({
-        where: { 
-          id,
-          consumer_id: consumerId
-        },
+        where: { id, consumer_id: consumerId },
       });
 
       if (!category) {
@@ -56,33 +48,44 @@ export class CategoryService {
       }
 
       return category;
-    });
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+
+      this.logger.error(`Failed to fetch category ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to fetch category', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async update(id: number, updateCategoryDto: UpdateCategoryDto, consumerId: number) {
-    // First check if the category exists and belongs to this consumer
-    await this.findOne(id, consumerId);    const result = await this.prismaService.category.update({
-      where: { id },
-      data: { name: updateCategoryDto.name },
-    });
+    try {
+      await this.findOne(id, consumerId); // Ensure category exists
 
-    // Invalidate only category caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
+      const result = await this.prismaService.category.update({
+        where: { id },
+        data: { name: updateCategoryDto.name },
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+
+      this.logger.error(`Failed to update category ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to update category', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async remove(id: number, consumerId: number) {
-    // First check if the category exists and belongs to this consumer
-    await this.findOne(id, consumerId);
+    try {
+      await this.findOne(id, consumerId); // Ensure category exists
 
-    await this.prismaService.category.delete({
-      where: { id },
-    });
-    
-    // Invalidate only category caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'categories');
-    
-    return { success: true };
+      await this.prismaService.category.delete({ where: { id } });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+
+      this.logger.error(`Failed to delete category ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to delete category', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
