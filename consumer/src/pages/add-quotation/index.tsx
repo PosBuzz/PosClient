@@ -60,10 +60,17 @@ const NewQuotation = () => {
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [servedByUsers, setServedByUsers] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
   >([]);
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
+  const [selectedServedByUser, setSelectedServedByUser] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
@@ -85,6 +92,17 @@ const NewQuotation = () => {
       return data.data || data;
     },
     staleTime: queryStaleTimeMap[queryKeys.customers],
+  });
+
+  // Load served by users using React Query
+  const servedByUsersQuery = useQuery({
+    queryKey: [queryKeys.users,selectedBranch],
+    queryFn: async () => {
+      const data = await get(endpoints.user,{ branch_id: selectedBranch });
+      return data.data || data;
+    },
+    enabled: !!selectedBranch,
+    staleTime: queryStaleTimeMap[queryKeys.users],
   });
 
   // Load products for sale when branch is selected
@@ -125,11 +143,25 @@ const NewQuotation = () => {
   }, [customersQuery.data]);
 
   useEffect(() => {
+    if (servedByUsersQuery.data) {
+      setServedByUsers(servedByUsersQuery.data);
+    }
+  }, [servedByUsersQuery.data]);
+
+  useEffect(() => {
     if (productsForSaleQuery.data) {
       setFilteredVariants(productsForSaleQuery.data);
     }
   }, [productsForSaleQuery.data]);
 
+  // Set initial page title
+  useEffect(() => {
+    if (copyFromId && copyFromQuotationQuery.data) {
+      setPageTitle("Copy Quotation");
+    } else {
+      setPageTitle("New Quotation");
+    }
+  }, [copyFromId, copyFromQuotationQuery.data]);
 
   // Populate form when copying from existing quotation
   useEffect(() => {
@@ -143,6 +175,7 @@ const NewQuotation = () => {
         customer_name: quotation.customer_name,
         customer_phone: quotation.customer_phone,
         customer_email: quotation.customer_email,
+        served_by_id: quotation.served_by_id,
         price_type: quotation.price_type,
         discount_type: quotation.discount_type,
         discount_amount: Number(quotation.discount_amount),
@@ -157,6 +190,10 @@ const NewQuotation = () => {
 
       if (quotation.customer) {
         setSelectedCustomer(quotation.customer);
+      }
+
+      if (quotation.served_by) {
+        setSelectedServedByUser(quotation.served_by);
       }
 
       // Set items
@@ -365,6 +402,7 @@ const NewQuotation = () => {
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
+      served_by_id: selectedServedByUser?.id || values.served_by_id,
       items: selectedItems.map((item) => ({
         variant_id: item.variant_id,
         quantity: item.quantity,
@@ -547,7 +585,7 @@ const NewQuotation = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={8}>
               <Form.Item label="Customer" name="customer_id">
                 <div style={{ display: "flex", gap: 8 }}>
                   <Select
@@ -574,6 +612,31 @@ const NewQuotation = () => {
                     onClick={() => setCustomerModalOpen(true)}
                     title="Add new customer"
                   />
+                </div>
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="Served By" name="served_by_id">
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Select
+                    placeholder="Select Staff"
+                    showSearch
+                    allowClear
+                    optionFilterProp="children"
+                    value={selectedServedByUser?.id}
+                    onChange={(value) => {
+                      const user = servedByUsers.find((u) => u.id === value);
+                      setSelectedServedByUser(user || null);
+                      form.setFieldsValue({ served_by_id: value });
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    {servedByUsers.map((user) => (
+                      <Option key={user.id} value={user.id}>
+                        {user.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </div>
               </Form.Item>
             </Col>

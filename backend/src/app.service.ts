@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
-import { CacheService } from './common/services/cache.service';
+import { RedisCacheService } from 'nest-cache-redis';
+
 
 @Injectable()
 export class AppService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cache: CacheService,
+    private readonly cache: RedisCacheService,
   ) {}
 
   getHello(): string {

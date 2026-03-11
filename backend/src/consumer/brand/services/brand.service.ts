@@ -1,56 +1,48 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/update-brand.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class BrandService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(BrandService.name);
 
-  async create(createBrandDto: CreateBrandDto, consumerId: number) {    const result = await this.prismaService.brand.create({
-      data: {
-        name: createBrandDto.name,
-        logo: createBrandDto.logo,
-        website: createBrandDto.website,
-        consumer_id: consumerId,
-      },
-    });
+  constructor(private readonly prismaService: PrismaService) {}
 
-    // Invalidate only brand caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
+  async create(createBrandDto: CreateBrandDto, consumerId: number) {
+    try {
+      const result = await this.prismaService.brand.create({
+        data: {
+          name: createBrandDto.name,
+          logo: createBrandDto.logo,
+          website: createBrandDto.website,
+          consumer_id: consumerId,
+        },
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to create brand for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to create brand', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.brandList(consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return this.prismaService.brand.findMany({
+    try {
+      return await this.prismaService.brand.findMany({
         where: { consumer_id: consumerId },
         orderBy: { name: 'asc' },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Failed to fetch brands for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to fetch brands', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.brandDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       const brand = await this.prismaService.brand.findFirst({
-        where: { 
-          id,
-          consumer_id: consumerId
-        },
+        where: { id, consumer_id: consumerId },
       });
 
       if (!brand) {
@@ -58,38 +50,48 @@ export class BrandService {
       }
 
       return brand;
-    });
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+
+      this.logger.error(`Failed to fetch brand ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to fetch brand', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async update(id: number, updateBrandDto: UpdateBrandDto, consumerId: number) {
-    // First check if the brand exists and belongs to this consumer
-    await this.findOne(id, consumerId);
+    try {
+      await this.findOne(id, consumerId); // ensure brand exists
 
-    const result = await this.prismaService.brand.update({
-      where: { id },      data: {
-        name: updateBrandDto.name,
-        website: updateBrandDto.website,
-        logo: updateBrandDto.logo,
-      },
-    });
+      const result = await this.prismaService.brand.update({
+        where: { id },
+        data: {
+          name: updateBrandDto.name,
+          website: updateBrandDto.website,
+          logo: updateBrandDto.logo,
+        },
+      });
 
-    // Invalidate only brand caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
 
-    return result;
+      this.logger.error(`Failed to update brand ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to update brand', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async remove(id: number, consumerId: number) {
-    // First check if the brand exists and belongs to this consumer
-    await this.findOne(id, consumerId);
+    try {
+      await this.findOne(id, consumerId); // ensure brand exists
 
-    await this.prismaService.brand.delete({
-      where: { id },
-    });
-    
-    // Invalidate only brand caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'brands');
-    
-    return { success: true };
+      await this.prismaService.brand.delete({ where: { id } });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+
+      this.logger.error(`Failed to delete brand ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException('Failed to delete brand', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

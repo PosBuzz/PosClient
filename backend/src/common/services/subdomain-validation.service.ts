@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CacheService } from './cache.service';
 import { SubdomainUtilService } from './subdomain-util.service';
-import { generateCacheKey } from 'src/constants/cache-keys';
 import * as dayjs from 'dayjs';
 
 export interface SubdomainValidationResult {
@@ -18,7 +16,6 @@ export class SubdomainValidationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cacheService: CacheService,
     private readonly subdomainUtil: SubdomainUtilService,
   ) {}
 
@@ -38,61 +35,51 @@ export class SubdomainValidationService {
     }
 
     const normalizedSubdomain = subdomain.toLowerCase().trim();
-    const cacheKey = generateCacheKey.consumerBySubdomain(normalizedSubdomain);
 
     try {
-      const cachedResult =
-        await this.cacheService.getOrSet<SubdomainValidationResult>(
-          cacheKey,
-          async () => {
-            const consumer = await this.prisma.consumer.findUnique({
-              where: { subdomain: normalizedSubdomain },
-              select: {
-                id: true,
-                subdomain: true,
-                billing_logs: {
-                  where: {
-                    billing_date: {
-                      gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
-                      lte: dayjs().endOf('day').toDate(),
-                    },
-                  },
-                  select: { id: true },
-                  take: 1,
-                  orderBy: { billing_date: 'desc' },
-                },
+      const consumer = await this.prisma.consumer.findUnique({
+        where: { subdomain: normalizedSubdomain },
+        select: {
+          id: true,
+          subdomain: true,
+          billing_logs: {
+            where: {
+              billing_date: {
+                gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
+                lte: dayjs().endOf('day').toDate(),
               },
-            });
-
-            if (!consumer) {
-              return {
-                exists: false,
-                message: 'Subdomain not found',
-              };
-            }
-
-            const isActive = consumer.billing_logs.length > 0;
-
-            if (!isActive) {
-              return {
-                exists: true,
-                consumerId: consumer.id,
-                isActive: false,
-                message: 'Subscription expired or billing failed',
-              };
-            }
-
-            return {
-              exists: true,
-              consumerId: consumer.id,
-              isActive: true,
-              message: 'Subdomain is valid',
-            };
+            },
+            select: { id: true },
+            take: 1,
+            orderBy: { billing_date: 'desc' },
           },
-          300,
-        );
+        },
+      });
 
-      return cachedResult;
+      if (!consumer) {
+        return {
+          exists: false,
+          message: 'Subdomain not found',
+        };
+      }
+
+      const isActive = consumer.billing_logs.length > 0;
+
+      if (!isActive) {
+        return {
+          exists: true,
+          consumerId: consumer.id,
+          isActive: false,
+          message: 'Subscription expired or billing failed',
+        };
+      }
+
+      return {
+        exists: true,
+        consumerId: consumer.id,
+        isActive: true,
+        message: 'Subdomain is valid',
+      };
     } catch (error) {
       this.logger.error(
         `❌ Subdomain validation error '${normalizedSubdomain}': ${error.message}`,

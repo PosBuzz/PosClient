@@ -34,6 +34,31 @@ export const salesApi = {
     return await get(endpoints.getSalesStats, { branch_id: branchId });
   },
 
+  // Get user sales statistics with date range
+  getUserSalesStats: async (params: {
+    startDate: string;
+    endDate: string;
+    branch_id?: number | null;
+  }): Promise<any> => {
+    const cleanParams: any = {
+      startDate: params.startDate,
+      endDate: params.endDate,
+    };
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
+    return await get(endpoints.getUserSalesStats, cleanParams);
+  },
+  getUserSalesDetail: async (
+    userId: number,
+    params: { startDate: string; endDate: string; page: number; limit: number },
+  ): Promise<any> => {
+    return await get(endpoints.getUserSalesDetail(userId), params);
+  },
+  getBranchOptions: async (): Promise<{ id: number; name: string }[]> => {
+    return await get(endpoints.getBranchOptions);
+  },
+
   // Get products available for sale
   getProductsForSale: async (
     branchId: number,
