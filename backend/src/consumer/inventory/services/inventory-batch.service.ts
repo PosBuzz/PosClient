@@ -1,94 +1,111 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class InventoryBatchService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(InventoryBatchService.name);
+  constructor(private prisma: PrismaService) {}
   async create(consumerId: number, dto: CreateInventoryBatchDto) {
-    // Verify variant belongs to consumer
-    const variant = await this.prisma.productVariant.findFirst({
-      where: {
-        id: dto.variant_id,
-        product: { consumer_id: consumerId },
-      },
-    });
-
-    if (!variant) {
-      throw new NotFoundException('Product variant not found');
-    }
-
-    // Verify branch belongs to consumer (if provided)
-    if (dto.branch_id) {
-      const branch = await this.prisma.branch.findFirst({
+    try {
+      // Verify variant belongs to consumer
+      const variant = await this.prisma.productVariant.findFirst({
         where: {
-          id: dto.branch_id,
-          consumer_id: consumerId,
+          id: dto.variant_id,
+          product: { consumer_id: consumerId },
         },
       });
 
-      if (!branch) {
-        throw new NotFoundException('Branch not found');
+      if (!variant) {
+        throw new NotFoundException('Product variant not found');
       }
-    }
 
-    // Check if batch number already exists for this variant
-    const existingBatch = await this.prisma.inventoryBatch.findFirst({
-      where: {
-        batch_number: dto.batch_number,
-        variant_id: dto.variant_id,
-      },
-    });
+      // Verify branch belongs to consumer (if provided)
+      if (dto.branch_id) {
+        const branch = await this.prisma.branch.findFirst({
+          where: {
+            id: dto.branch_id,
+            consumer_id: consumerId,
+          },
+        });
 
-    if (existingBatch) {
-      throw new BadRequestException('Batch number already exists for this variant');
-    }
+        if (!branch) {
+          throw new NotFoundException('Branch not found');
+        }
+      }
 
-    const batch = await this.prisma.inventoryBatch.create({
-      data: {
-        variant_id: dto.variant_id,
-        branch_id: dto.branch_id,
-        batch_number: dto.batch_number,
-        quantity: dto.quantity,
-        cost_price: dto.cost_price,
-        vendor_id: dto.vendor_id,
-        expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
-      },
-      include: {
-        variant: {
-          include: {
-            product: {
-              select: { id: true, name: true },
+      // Check if batch number already exists for this variant
+      const existingBatch = await this.prisma.inventoryBatch.findFirst({
+        where: {
+          batch_number: dto.batch_number,
+          variant_id: dto.variant_id,
+        },
+      });
+
+      if (existingBatch) {
+        throw new BadRequestException(
+          'Batch number already exists for this variant',
+        );
+      }
+
+      const batch = await this.prisma.inventoryBatch.create({
+        data: {
+          variant_id: dto.variant_id,
+          branch_id: dto.branch_id,
+          batch_number: dto.batch_number,
+          quantity: dto.quantity,
+          cost_price: dto.cost_price,
+          vendor_id: dto.vendor_id,
+          expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
+        },
+        include: {
+          variant: {
+            include: {
+              product: {
+                select: { id: true, name: true },
+              },
             },
           },
+          branch: {
+            select: { id: true, name: true },
+          },
+          vendor: {
+            select: { id: true, name: true },
+          },
         },
-        branch: {
-          select: { id: true, name: true },
-        },
-        vendor: {
-          select: { id: true, name: true },
-        },
-      },    });      // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId);
+      });
 
-    return batch;
-  }  async findAll(consumerId: number, options: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    branch_id?: number;
-    variant_id?: number;
-  } = {}) {
-    const { page = 1, limit, search, branch_id, variant_id } = options;
-    const cacheKey = generateCacheKey.inventoryBatchList(consumerId, page, limit, search, branch_id, variant_id);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+      return batch;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error creating inventory batch for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to create inventory batch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  async findAll(
+    consumerId: number,
+    options: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      branch_id?: number;
+      variant_id?: number;
+    } = {},
+  ) {
+    try {
+      const { page = 1, limit, search, branch_id, variant_id } = options;
+
       // Only apply pagination if limit is specified
       const skip = limit ? (page - 1) * limit : undefined;
 
@@ -104,7 +121,11 @@ export class InventoryBatchService {
         whereClause.OR = [
           { batch_number: { contains: search, mode: 'insensitive' } },
           { variant: { name: { contains: search, mode: 'insensitive' } } },
-          { variant: { product: { name: { contains: search, mode: 'insensitive' } } } },
+          {
+            variant: {
+              product: { name: { contains: search, mode: 'insensitive' } },
+            },
+          },
         ];
       }
 
@@ -114,7 +135,8 @@ export class InventoryBatchService {
 
       if (variant_id) {
         whereClause.variant_id = variant_id;
-      }      const [batches, total] = await Promise.all([
+      }
+      const [batches, total] = await Promise.all([
         this.prisma.inventoryBatch.findMany({
           where: whereClause,
           include: {
@@ -148,12 +170,20 @@ export class InventoryBatchService {
           totalPages: limit ? Math.ceil(total / limit) : 1,
         },
       };
-    });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error finding all inventory batches for ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to find inventory batches',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async findOne(id: number, consumerId: number) {
-    const cacheKey = generateCacheKey.inventoryBatchDetail(id, consumerId);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       const batch = await this.prisma.inventoryBatch.findFirst({
         where: {
           id,
@@ -185,45 +215,56 @@ export class InventoryBatchService {
       }
 
       return batch;
-    });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error finding inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to find inventory batch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
-    const batch = await this.findOne(id, consumerId);
+    try {
+      const batch = await this.findOne(id, consumerId);
 
-    const updatedBatch = await this.prisma.inventoryBatch.update({
-      where: { id },
-      data: {
-        cost_price: dto.cost_price,
-        branch_id: dto.branch_id,
-        vendor_id: dto.vendor_id,
-        expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
-      },
-    });
+      const updatedBatch = await this.prisma.inventoryBatch.update({
+        where: { id },
+        data: {
+          cost_price: dto.cost_price,
+          branch_id: dto.branch_id,
+          vendor_id: dto.vendor_id,
+          expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
+        },
+      });
 
-    // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId);
-
-    return updatedBatch;
+      return updatedBatch;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error updating inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to update inventory batch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async remove(id: number, consumerId: number) {
-    const batch = await this.findOne(id, consumerId);
-
-    await this.prisma.inventoryBatch.delete({
-      where: { id },
-    });
-
-    // Invalidate related caches
-    await this.invalidateInventoryBatchCaches(consumerId);
-
-    return { success: true, message: 'Inventory batch deleted successfully' };
-  }  // Cache invalidation helper methods
-  private async invalidateInventoryBatchCaches(consumerId: number) {
     try {
-      // For any batch operation, invalidate ALL inventory-related caches
-      await this.cacheService.invalidateAllInventoryCaches(consumerId);
+      const batch = await this.findOne(id, consumerId);
+
+      await this.prisma.inventoryBatch.delete({
+        where: { id },
+      });
+
+      return { success: true, message: 'Inventory batch deleted successfully' };
     } catch (error) {
-      console.error('Batch cache invalidation error:', error);
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Error deleting inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      throw new HttpException(
+        'Failed to delete inventory batch',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

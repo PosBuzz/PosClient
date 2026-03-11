@@ -113,6 +113,10 @@ export class CreateSaleDto {
 
   @IsOptional()
   @IsInt()
+  served_by_id?: number;
+
+  @IsOptional()
+  @IsInt()
   quotation_id?: number;
 
   @IsOptional()

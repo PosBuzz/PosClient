@@ -1,10 +1,11 @@
 import { Breadcrumb, Typography } from "antd";
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import type { BreadcrumbItemType } from "antd/es/breadcrumb/Breadcrumb";
 
 const { Title } = Typography;
 
-interface BreadcrumbItem {
+interface BreadcrumbItem extends Omit<BreadcrumbItemType, "title"> {
   title: string;
   href?: string;
 }
@@ -14,8 +15,6 @@ interface PageTitleProps {
   breadcrumbs: BreadcrumbItem[];
   rightSection?: ReactNode;
 }
-
-import type { BreadcrumbItemType } from "antd/es/breadcrumb/Breadcrumb";
 
 function itemRender(
   route: Partial<BreadcrumbItemType>,

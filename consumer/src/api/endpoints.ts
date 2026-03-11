@@ -115,6 +115,8 @@ export const endpoints = {
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
   getDailyTargetReport: "/consumer/sales/reports/daily-target",
+  getUserSalesStats: "/consumer/sales/user-sales-stats",
+  getUserSalesDetail: (userId: number) => `/consumer/sales/user-sales-stats/${userId}`,
 
   // Quotation Management
   getQuotations: "/consumer/sales/quotations/list",
@@ -154,6 +156,5 @@ export const endpoints = {
   makePayment: "/consumer/payments/make-payment",
   getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
 
-  // Cache Management
-  invalidateAllCaches: "/consumer/cache/invalidate-all",
+  
 };

@@ -1,50 +1,52 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class TagService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(TagService.name);
+  constructor(private readonly prismaService: PrismaService) {}
   async create(createTagDto: CreateTagDto, consumerId: number) {
-    const result = await this.prismaService.tag.create({      data: {
-        name: createTagDto.name,
-        consumer_id: consumerId,
-      },
-    });
+    try {
+      const result = await this.prismaService.tag.create({
+        data: {
+          name: createTagDto.name,
+          consumer_id: consumerId,
+        },
+      });
 
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
-
-    return result;
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error creating tag for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to create tag',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async findAll(consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.tagList(consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return this.prismaService.tag.findMany({
-        where: { consumer_id: consumerId },
-        orderBy: { name: 'asc' },
-      });
+    return this.prismaService.tag.findMany({
+      where: { consumer_id: consumerId },
+      orderBy: { name: 'asc' },
     });
   }
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.tagDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       const tag = await this.prismaService.tag.findFirst({
-        where: { 
+        where: {
           id,
-          consumer_id: consumerId
+          consumer_id: consumerId,
         },
       });
 
@@ -53,31 +55,60 @@ export class TagService {
       }
 
       return tag;
-    });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error fetching tag with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to fetch tag',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async update(id: number, updateTagDto: UpdateTagDto, consumerId: number) {
-    // First check if the tag exists and belongs to this consumer
-    await this.findOne(id, consumerId);    const result = await this.prismaService.tag.update({
-      where: { id },
-      data: { name: updateTagDto.name },
-    });
+    try {
+      // First check if the tag exists and belongs to this consumer
+      await this.findOne(id, consumerId);
+      const result = await this.prismaService.tag.update({
+        where: { id },
+        data: { name: updateTagDto.name },
+      });
 
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
-
-    return result;
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error updating tag with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to update tag',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async remove(id: number, consumerId: number) {
-    // First check if the tag exists and belongs to this consumer
-    await this.findOne(id, consumerId);
+    try {
+      // First check if the tag exists and belongs to this consumer
+      await this.findOne(id, consumerId);
 
-    await this.prismaService.tag.delete({
-      where: { id },
-    });
-    
-    // Invalidate only tag caches
-    await this.cacheService.invalidateEntityCaches(consumerId, 'tags');
-    
-    return { success: true };
+      await this.prismaService.tag.delete({
+        where: { id },
+      });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error deleting tag with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to delete tag',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

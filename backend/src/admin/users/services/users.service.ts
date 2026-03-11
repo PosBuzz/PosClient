@@ -1,47 +1,46 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreateSuperAdminRoleDto } from '../dtos/create-role.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSuperAdminUserDto } from '../dtos/create-user.dto';
 import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey, generateCachePatterns } from '../../../constants/cache-keys';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(UsersService.name);
+  constructor(private prisma: PrismaService) {}
   async createRole(dto: CreateSuperAdminRoleDto) {
-    const result = await this.prisma.superAdminRole.create({
-      data: {
-        name: dto.name,
-        permissions: {
-          create: dto.permission_ids.map((id) => ({
-            permission_id: id,
-          })),
-        },
-      },
-      include: {
-        permissions: {
-          include: {
-            permission: true,
+    try {
+      const result = await this.prisma.superAdminRole.create({
+        data: {
+          name: dto.name,
+          permissions: {
+            create: dto.permission_ids.map((id) => ({
+              permission_id: id,
+            })),
           },
         },
-      },
-    });
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+        },
+      });
 
-    // Invalidate related caches
-    await this.invalidateAdminCaches();
-
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(`Error creating super admin role`, error.stack);
+      throw new HttpException(
+        'Failed to create super admin role',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async findAllRoles() {
-    const cacheKey = generateCacheKey.roleList(0); // Admin roles use 0 as consumer ID
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.superAdminRole.findMany({
         include: {
           permissions: {
@@ -52,13 +51,17 @@ export class UsersService {
         },
         orderBy: { id: 'asc' },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Error finding all super admin roles`, error.stack);
+      throw new HttpException(
+        'Failed to find super admin roles',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOneRole(id: number) {
-    const cacheKey = `admin:roles:detail:${id}`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.superAdminRole.findUnique({
         where: { id },
         include: {
@@ -69,13 +72,17 @@ export class UsersService {
           },
         },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Error finding super admin role ${id}`, error.stack);
+      throw new HttpException(
+        'Failed to find super admin role',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findAllUsers() {
-    const cacheKey = `admin:users:list`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.superAdmin.findMany({
         select: {
           id: true,
@@ -94,13 +101,17 @@ export class UsersService {
         },
         orderBy: { id: 'asc' },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Error finding all super admin users`, error.stack);
+      throw new HttpException(
+        'Failed to find super admin users',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOneUser(id: number) {
-    const cacheKey = `admin:users:detail:${id}`;
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.superAdmin.findUnique({
         where: { id },
         select: {
@@ -119,121 +130,150 @@ export class UsersService {
           created_at: true,
         },
       });
-    });
+    } catch (error) {
+      this.logger.error(`Error finding super admin user ${id}`, error.stack);
+      throw new HttpException(
+        'Failed to find super admin user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async createUser(dto: CreateSuperAdminUserDto) {
-    const hashedPassword = await bcryptjs.hash(dto.password, 10);
-    const result = await this.prisma.superAdmin.create({
-      data: {
-        email: dto.email,
-        name: dto.name,
-        password: hashedPassword,
-        role_id: dto.role_id,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
-    });
+    try {
+      const hashedPassword = await bcryptjs.hash(dto.password, 10);
+      const result = await this.prisma.superAdmin.create({
+        data: {
+          email: dto.email,
+          name: dto.name,
+          password: hashedPassword,
+          role_id: dto.role_id,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
 
-    // Invalidate related caches
-    await this.invalidateAdminCaches();
-
-    return result;
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error creating super admin user for ${dto.email}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to create super admin user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async updateRole(id: number, dto: UpdateSuperAdminRoleDto) {
-    const updatedRole = await this.prisma.superAdminRole.update({
-      where: { id },
-      data: {
-        name: dto.name,
-      },
-    });
-
-    if (dto.permission_ids) {
-      // Remove existing permissions
-      await this.prisma.superAdminRolePermission.deleteMany({
-        where: { role_id: id },
+    try {
+      const updatedRole = await this.prisma.superAdminRole.update({
+        where: { id },
+        data: {
+          name: dto.name,
+        },
       });
 
-      // Re-add permissions
-      await this.prisma.superAdminRolePermission.createMany({
-        data: dto.permission_ids.map((pid) => ({
-          role_id: id,
-          permission_id: pid,
-        })),
-      });    }
+      if (dto.permission_ids) {
+        // Remove existing permissions
+        await this.prisma.superAdminRolePermission.deleteMany({
+          where: { role_id: id },
+        });
 
-    // Invalidate related caches
-    await this.invalidateAdminCaches(id);
+        // Re-add permissions
+        await this.prisma.superAdminRolePermission.createMany({
+          data: dto.permission_ids.map((pid) => ({
+            role_id: id,
+            permission_id: pid,
+          })),
+        });
+      }
 
-    return updatedRole;
+      return updatedRole;
+    } catch (error) {
+      this.logger.error(`Error updating super admin role ${id}`, error.stack);
+      throw new HttpException(
+        'Failed to update super admin role',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async updateUser(id: number, dto: UpdateSuperAdminUserDto) {
-    let hashedPassword: string | undefined = undefined;
-    if (dto.password) {
-      hashedPassword = await bcryptjs.hash(dto.password, 10);
-    }
+    try {
+      let hashedPassword: string | undefined = undefined;
+      if (dto.password) {
+        hashedPassword = await bcryptjs.hash(dto.password, 10);
+      }
 
-    return this.prisma.superAdmin.update({
-      where: { id },
-      data: {
-        email: dto.email,
-        name: dto.name,
-        password: hashedPassword,
-        role_id: dto.role_id,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
-    });
+      return this.prisma.superAdmin.update({
+        where: { id },
+        data: {
+          email: dto.email,
+          name: dto.name,
+          password: hashedPassword,
+          role_id: dto.role_id,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error updating super admin user ${id}`, error.stack);
+      throw new HttpException(
+        'Failed to update super admin user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async changePassword(id: number, old_password: string, new_password: string) {
-    // Fetch the user by ID
-    const user = await this.prisma.superAdmin.findUnique({
-      where: { id },
-      select: { password: true },
-    });
-
-    if (!user) {
-      throw new HttpException(
-        { message: 'User not found' },
-        HttpStatus.EXPECTATION_FAILED,
-      );
-    }
-
-    // Verify the old password
-    const isPasswordValid = await bcryptjs.compare(old_password, user.password);
-    if (!isPasswordValid) {
-      throw new HttpException(
-        { message: 'Old password is incorrect' },
-        HttpStatus.EXPECTATION_FAILED,
-      );
-    }    // Hash the new password
-    const hashedNewPassword = await bcryptjs.hash(new_password, 10);
-
-    // Update the user's password
-    return this.prisma.superAdmin.update({
-      where: { id },
-      data: { password: hashedNewPassword },
-      select: { id: true, email: true, name: true },
-    });
-  }  // Cache invalidation helper methods
-  private async invalidateAdminCaches(userId?: number, roleId?: number) {
     try {
-      // Use proper cache invalidation patterns for admin operations
-      const patterns = generateCachePatterns.allAdminRelated();
-      
-      await this.cacheService.delPatterns(patterns);
+      // Fetch the user by ID
+      const user = await this.prisma.superAdmin.findUnique({
+        where: { id },
+        select: { password: true },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.EXPECTATION_FAILED,
+        );
+      }
+
+      // Verify the old password
+      const isPasswordValid = await bcryptjs.compare(
+        old_password,
+        user.password,
+      );
+      if (!isPasswordValid) {
+        throw new HttpException(
+          { message: 'Old password is incorrect' },
+          HttpStatus.EXPECTATION_FAILED,
+        );
+      } // Hash the new password
+      const hashedNewPassword = await bcryptjs.hash(new_password, 10);
+
+      // Update the user's password
+      return this.prisma.superAdmin.update({
+        where: { id },
+        data: { password: hashedNewPassword },
+        select: { id: true, email: true, name: true },
+      });
     } catch (error) {
-      console.warn('Cache invalidation failed:', error);
+      this.logger.error(`Error changing password for user ${id}`, error.stack);
+      throw new HttpException(
+        'Failed to change password',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
