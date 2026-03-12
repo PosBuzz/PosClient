@@ -39,14 +39,12 @@ export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) 
     {
       title: "Name",
       key: "name",
-      render: (record: any) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{record.name}</div>
-          {record.description ? (
-            <div style={{ color: "#888", fontSize: 12 }}>{record.description}</div>
-          ) : null}
-        </div>
-      ),
+      dataIndex: "name",
+    },
+    {
+      title: "Description",
+      key: "description",
+      dataIndex: "description",
     },
     {
       title: "Type",
