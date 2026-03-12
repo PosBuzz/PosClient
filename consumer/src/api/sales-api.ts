@@ -7,6 +7,7 @@ import {
   SaleListResponse,
   SalesStats,
   ProductVariantForSale,
+  DailyTargetReportResponse,
   EODReportResponse,
   OnlineOrderStatus,
 } from "../types/sale.types";
@@ -104,6 +105,41 @@ export const salesApi = {
     return get(endpoints.getSaleBySaleNumber(saleNumber));
   },
 
+  // Get Daily Target report
+  getDailyTargetReport: async (
+    params: {
+      date?: string;
+      branch_id?: number;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<DailyTargetReportResponse> => {
+    const cleanParams: {
+      date?: string;
+      branch_id?: number;
+      page?: number;
+      limit?: number;
+    } = {};
+
+    if (params.date) {
+      cleanParams.date = params.date;
+    }
+
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
+
+    if (params.page) {
+      cleanParams.page = params.page;
+    }
+
+    if (params.limit) {
+      cleanParams.limit = params.limit;
+    }
+
+    return await get(endpoints.getDailyTargetReport, cleanParams);
+  },
+
   // Get End of Day report
   getEODReport: async (
     params: { date?: string; branch_id?: number } = {},
@@ -121,6 +157,7 @@ export const salesApi = {
     const response = await get(
       `${endpoints.getSales}/reports/eod?${queryParams.toString()}`,
     );
+
     return response;
   },
 

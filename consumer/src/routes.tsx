@@ -51,6 +51,7 @@ const SaleDetail = lazy(() => import("./pages/view-sale"));
 const UserSalesStats = lazy(() => import("./pages/user-sales-stats"));
 const ViewUserSalesStats = lazy(() => import("./pages/user-sales-stats/view-user-sales-stats"));
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
+const DailyTargetReport = lazy(() => import("./pages/daily-target"));
 const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
 const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
@@ -402,13 +403,21 @@ export const routes = [
         ),
       },
       {
-        path: "eod",
+        path: "daily-target",
         element: (
           <RequirePermission permission={Permissions.sales}>
-            <EODReport />
+            <DailyTargetReport />
           </RequirePermission>
         ),
       },
+      // {
+      //   path: "eod",
+      //   element: (
+      //     <RequirePermission permission={Permissions.sales}>
+      //       <EODReport />
+      //     </RequirePermission>
+      //   ),
+      // },
       // Returns Routes
       {
         path: "returns",

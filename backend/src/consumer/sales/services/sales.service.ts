@@ -10,6 +10,11 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import {
+  DailyTargetReportDto,
+  DailyTargetReportResponse,
+  DailyTargetRow,
+} from '../dto/daily-target-report.dto';
+import {
   EODReportDto,
   EODReportResponse,
   PaymentMethodBreakdown,
@@ -252,7 +257,7 @@ export class SalesService {
             customer_email: createSaleDto.customer_email,
             branch_id: createSaleDto.branch_id,
             user_id: userId,
-            served_by_id: createSaleDto.served_by_id,
+            served_by_id: createSaleDto.served_by_id ?? userId,
             sale_type: createSaleDto.sale_type || SaleType.SALE,
             price_type: createSaleDto.price_type || 'regular',
             subtotal,
@@ -1578,7 +1583,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error converting quotation ${quotationId} to sale for consumer ${consumerId} and user ${userId}`,
-        error.stack
+        error.stack,
       );
       throw new HttpException(
         'Error converting quotation to sale',
@@ -1595,9 +1600,11 @@ export class SalesService {
     endDate: string,
     branchId?: number,
   ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    // const start = new Date(startDate);
+    // const end = new Date(endDate);
+    // end.setHours(23, 59, 59, 999);
+    const start = this.parseLocalDateStart(startDate);
+const end = this.parseLocalDateEnd(endDate);
 
     const where: any = {
       consumer_id: consumerId,
@@ -1669,10 +1676,11 @@ export class SalesService {
     page = 1,
     limit = 20,
   ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
+    // const start = new Date(startDate);
+    // const end = new Date(endDate);
+    // end.setHours(23, 59, 59, 999);
+const start = this.parseLocalDateStart(startDate);
+const end = this.parseLocalDateEnd(endDate);
     const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
@@ -1748,6 +1756,29 @@ export class SalesService {
       },
     };
   }
+
+  // date helper
+  private parseLocalDateStart(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid date: ${dateStr}`);
+  }
+
+  return date;
+}
+
+private parseLocalDateEnd(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Invalid date: ${dateStr}`);
+  }
+
+  return date;
+}
   // ========== ONLINE ORDER METHODS ==========
 
   async findAllOnlineOrders(filters: any, consumerId: number) {
@@ -1993,5 +2024,141 @@ export class SalesService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getDailyTargetReport(
+    consumerId: number,
+    dailyTargetDto: DailyTargetReportDto,
+  ): Promise<DailyTargetReportResponse> {
+    const reportDate = dailyTargetDto.date
+      ? new Date(dailyTargetDto.date)
+      : new Date();
+    const startOfDay = new Date(reportDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(reportDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const branchId = dailyTargetDto.branch_id ?? undefined;
+    const page = dailyTargetDto.page ?? 1;
+    const limit = dailyTargetDto.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    // Resolve branch name if a branch was requested
+    let branchName: string | undefined;
+    if (branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: branchId },
+        select: { name: true },
+      });
+      branchName = branch?.name;
+    }
+
+    // Variants with variant-level daily target
+    const variantsWithTarget = await this.prisma.productVariant.findMany({
+      where: {
+        daily_sale_objective: { gt: 0 },
+        product: {
+          consumer_id: consumerId,
+        },
+        // Only show variants that have inventory in the selected branch
+        ...(branchId
+          ? { inventory_items: { some: { branch_id: branchId } } }
+          : {}),
+      },
+
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        regular_price: true,
+        daily_sale_objective: true,
+        product: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+    // (pivot aggregation)
+    // Collapse many SaleItem rows → one quantity-sum per variant_id
+    // When branch is selected, only count sales from that branch
+    const soldGrouped = await this.prisma.saleItem.groupBy({
+      by: ['variant_id'],
+      where: {
+        sale: {
+          consumer_id: consumerId,
+          sale_type: SaleType.SALE,
+          sale_date: { gte: startOfDay, lte: endOfDay },
+          ...(branchId ? { branch_id: branchId } : {}),
+        },
+      },
+      _sum: { quantity: true, line_total: true },
+    });
+
+    // PIVOT MERGE
+    const actualMap = new Map<number, { qty: number; amount: number }>(
+      soldGrouped.map((row) => [
+        row.variant_id,
+        {
+          qty: row._sum.quantity ?? 0,
+          amount: Number(row._sum.line_total ?? 0),
+        },
+      ]),
+    );
+
+    const rows: DailyTargetRow[] = variantsWithTarget.map((variant) => {
+      const daily_target = variant.daily_sale_objective ?? 0;
+
+      const actual = actualMap.get(variant.id) ?? { qty: 0, amount: 0 };
+      const actual_sold = actual.qty;
+
+      const achievement_pct =
+        daily_target > 0
+          ? Math.round((actual_sold / daily_target) * 10000) / 100
+          : 0;
+      const remaining_gap = daily_target - actual_sold;
+      const gap = remaining_gap > 0 ? remaining_gap : 0;
+      return {
+        product_id: variant.product.id,
+        product_name: variant.product.name,
+        variant_id: variant.id,
+        variant_name: variant.name,
+        sku: variant.sku ?? undefined,
+        daily_target,
+        actual_sold,
+        achievement_pct,
+        gap,
+      };
+    });
+
+    const total_target = rows.reduce((s, r) => s + r.daily_target, 0);
+    const total_sold = rows.reduce((s, r) => s + r.actual_sold, 0);
+
+    const overall_achievement_pct =
+      total_target > 0
+        ? Math.round((total_sold / total_target) * 10000) / 100
+        : 0;
+
+    const total = rows.length;
+    const paginatedRows = rows.slice(skip, skip + limit);
+
+    return {
+      date: reportDate.toISOString().split('T')[0],
+      branch_id: branchId,
+      branch_name: branchName,
+      rows: paginatedRows,
+      meta: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+      summary: {
+        total_target,
+        total_sold,
+        overall_achievement_pct,
+        // targeted_amount,
+        // total_amount,
+        // average_amount,
+      },
+    };
   }
 }

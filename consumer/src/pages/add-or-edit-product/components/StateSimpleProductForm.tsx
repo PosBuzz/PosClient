@@ -15,6 +15,7 @@ import {
 } from "antd";
 import {
   AlertOutlined,
+  AimOutlined,
   BarcodeOutlined,
   MinusCircleOutlined,
   PlusOutlined,
@@ -28,9 +29,7 @@ import { getValidationStatus } from "../utils/validation";
 import { FormAttribute, FormSerial } from "../../../types/product.types";
 import ImageInput from "../../../components/ImageInput";
 import CommonSelector from "../CommonSelector";
-import StateBatchAddingForm, {
-  BatchData,
-} from "./StateBatchAddingForm";
+import StateBatchAddingForm, { BatchData } from "./StateBatchAddingForm";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -44,14 +43,14 @@ interface StateSimpleProductFormProps {
   onUpdateVariantAttribute: (
     variantId: string,
     attributeIndex: number,
-    updates: any
+    updates: any,
   ) => void;
   onDeleteVariantAttribute: (variantId: string, attributeIndex: number) => void;
   onAddVariantSerial: (variantId: string, serial: FormSerial) => void;
   onUpdateVariantSerial: (
     variantId: string,
     serialIndex: number,
-    updates: any
+    updates: any,
   ) => void;
   onDeleteVariantSerial: (variantId: string, serialIndex: number) => void;
   onGenerateSKU: (variantId: string) => void;
@@ -84,14 +83,15 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
 
   const handleFieldUpdate = (field: string, value: any) => {
     onVariantUpdate(variantId, { [field]: value });
-  };  const handleImageChange = (urls: string[]) => {
+  };
+  const handleImageChange = (urls: string[]) => {
     handleFieldUpdate("image", urls[0] || null);
   };
 
   const getFieldValidationStatus = (field: string) => {
     return getValidationStatus(
       `variant_${variantId}_${field}`,
-      validationState
+      validationState,
     );
   };
 
@@ -305,6 +305,34 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
               )}
             </div>
           </Col>
+          <Col xs={12} sm={2}>
+            <div style={{ marginBottom: 4 }}>
+              <Text strong style={{ fontSize: 11 }}>
+                <Space size={2}>
+                  <AimOutlined />
+                  Daily Target
+                </Space>
+              </Text>
+              <InputNumber
+                type="number"
+                size="small"
+                placeholder="0"
+                min={0}
+                value={variant.daily_sale_objective || 0}
+                onChange={(value) =>
+                  handleFieldUpdate("daily_sale_objective", value || 0)
+                }
+                style={{ width: "100%" }}
+                addonAfter="/day"
+                status={getFieldValidationStatus("daily_sale_objective").status}
+              />
+              {getFieldValidationStatus("daily_sale_objective").help && (
+                <Text type="danger" style={{ fontSize: 10 }}>
+                  {getFieldValidationStatus("daily_sale_objective").help}
+                </Text>
+              )}
+            </div>
+          </Col>
           <Col xs={12} sm={3}>
             <div style={{ marginBottom: 4 }}>
               <Text strong style={{ fontSize: 11 }}>
@@ -348,8 +376,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
             </div>
           </Col>
         </Row>
-
-        <Divider style={{ margin: "8px 0" }} />        {/* Attributes Section */}
+        <Divider style={{ margin: "8px 0" }} /> {/* Attributes Section */}
         <Card
           size="small"
           title={
@@ -393,7 +420,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
                       status={
                         getValidationStatus(
                           `variant_${variantId}_attr_${index}_name`,
-                          validationState
+                          validationState,
                         ).status
                       }
                     />
@@ -411,7 +438,7 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
                       status={
                         getValidationStatus(
                           `variant_${variantId}_attr_${index}_value`,
-                          validationState
+                          validationState,
                         ).status
                       }
                     />
@@ -427,26 +454,26 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
                   <div>
                     {getValidationStatus(
                       `variant_${variantId}_attr_${index}_name`,
-                      validationState
+                      validationState,
                     ).help && (
                       <Text type="danger" style={{ fontSize: 10 }}>
                         {
                           getValidationStatus(
                             `variant_${variantId}_attr_${index}_name`,
-                            validationState
+                            validationState,
                           ).help
                         }
                       </Text>
                     )}
                     {getValidationStatus(
                       `variant_${variantId}_attr_${index}_value`,
-                      validationState
+                      validationState,
                     ).help && (
                       <Text type="danger" style={{ fontSize: 10 }}>
                         {
                           getValidationStatus(
                             `variant_${variantId}_attr_${index}_value`,
-                            validationState
+                            validationState,
                           ).help
                         }
                       </Text>
@@ -461,7 +488,6 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
             </Text>
           )}
         </Card>
-
         {/* Serial Numbers Section */}
         <Card
           size="small"
@@ -511,19 +537,19 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
                     status={
                       getValidationStatus(
                         `variant_${variantId}_serial_${index}_serial_number`,
-                        validationState
+                        validationState,
                       ).status
                     }
                   />
                   {getValidationStatus(
                     `variant_${variantId}_serial_${index}_serial_number`,
-                    validationState
+                    validationState,
                   ).help && (
                     <Text type="danger" style={{ fontSize: 10 }}>
                       {
                         getValidationStatus(
                           `variant_${variantId}_serial_${index}_serial_number`,
-                          validationState
+                          validationState,
                         ).help
                       }
                     </Text>
@@ -559,19 +585,19 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
                     status={
                       getValidationStatus(
                         `variant_${variantId}_serial_${index}_notes`,
-                        validationState
+                        validationState,
                       ).status
                     }
                   />
                   {getValidationStatus(
                     `variant_${variantId}_serial_${index}_notes`,
-                    validationState
+                    validationState,
                   ).help && (
                     <Text type="danger" style={{ fontSize: 10 }}>
                       {
                         getValidationStatus(
                           `variant_${variantId}_serial_${index}_notes`,
-                          validationState
+                          validationState,
                         ).help
                       }
                     </Text>
@@ -593,7 +619,9 @@ const StateSimpleProductForm: React.FC<StateSimpleProductFormProps> = ({
             <Text type="secondary" style={{ fontSize: 11 }}>
               No serial numbers added. Click 'Add' to add serial numbers.
             </Text>
-          )}{" "}        </Card>        {/* Inventory Management Section - Hidden in edit mode */}
+          )}{" "}
+        </Card>{" "}
+        {/* Inventory Management Section - Hidden in edit mode */}
         {!isEditMode && (
           <StateBatchAddingForm
             variantName={variant.name}
