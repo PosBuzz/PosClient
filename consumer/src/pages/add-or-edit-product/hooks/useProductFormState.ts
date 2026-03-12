@@ -200,24 +200,43 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     [],
   );
   const addVariant = useCallback(() => {
-    const variantKeys = Object.keys(formState.variants);
-    const newIndex = variantKeys.length;
-    const newVariant: ProductVariant = {
-      ...createDefaultVariant(formState.name),
-      name: `Variant ${newIndex + 1}`,
-      is_default: newIndex === 0,
-    };
+    let addedVariantNumber = 0;
 
-    setFormState((prev) => ({
-      ...prev,
-      variants: {
+    setFormState((prev) => {
+      const variantKeys = Object.keys(prev.variants);
+      const newIndex = variantKeys.length;
+      addedVariantNumber = newIndex + 1;
+
+      const newVariant: ProductVariant = {
+        ...createDefaultVariant(prev.name),
+        name: `Variant ${addedVariantNumber}`,
+        is_default: false,
+      };
+
+      const updatedVariants: Record<string, ProductVariant> = {
         ...prev.variants,
-        [newIndex.toString()]: newVariant,
-      },
-    }));
+      };
 
-    messageApi?.success(`Variant ${newIndex + 1} added successfully`);
-  }, [formState.variants, formState.name]);
+      // If the product was simple, treat the existing row as Variant 1 before adding a new one.
+      if (!prev.has_variants && updatedVariants["0"]) {
+        updatedVariants["0"] = {
+          ...updatedVariants["0"],
+          name: "Variant 1",
+          is_default: true,
+        };
+      }
+
+      updatedVariants[newIndex.toString()] = newVariant;
+
+      return {
+        ...prev,
+        has_variants: true,
+        variants: updatedVariants,
+      };
+    });
+
+    messageApi?.success(`Variant ${addedVariantNumber} added successfully`);
+  }, [messageApi]);
   const deleteVariant = useCallback(
     (variantId: string) => {
       const variants = { ...formState.variants };
