@@ -77,9 +77,9 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
       );
     }
 
-    this.logger.debug(
-      `Subdomain validated for ${method} ${url}: '${subdomain}' matches JWT for user ${user.id}`,
-    );
+    // this.logger.debug(
+    //   `Subdomain validated for ${method} ${url}: '${subdomain}' matches JWT for user ${user.id}`,
+    // );
 
     return true;
   }

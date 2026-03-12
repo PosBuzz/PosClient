@@ -1,9 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { CacheService } from '../../../common/services/cache.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   CreatePromotionDto,
@@ -16,10 +16,7 @@ import { ValidatePromotionDto } from '../dto/validate-promotion.dto';
 
 @Injectable()
 export class PromotionsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly cacheService: CacheService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private get promotionInclude() {
     return {
@@ -59,13 +56,6 @@ export class PromotionsService {
 
   private toNumber(value: any): number {
     return Number(value ?? 0);
-  }
-
-  private async invalidatePromotionCaches(consumerId: number) {
-    await Promise.all([
-      this.cacheService.delPattern(`${consumerId}:promotions*`),
-      this.cacheService.delPattern(`${consumerId}:sales*`),
-    ]);
   }
 
   private mapPromotion(promotion: any, summaryMap: Map<number, any>) {
@@ -150,7 +140,7 @@ export class PromotionsService {
   }
 
   private async ensurePromotionOwnedByConsumer(id: number, consumerId: number) {
-    const promotion = await (this.prisma.promotion as any).findFirst({
+    const promotion = await this.prisma.promotion.findFirst({
       where: {
         id,
         consumer_id: consumerId,
@@ -253,7 +243,9 @@ export class PromotionsService {
 
     if (input.scope === PromotionScope.BRAND) {
       if (!input.brand_id) {
-        throw new BadRequestException('brand_id is required for BRAND promotions');
+        throw new BadRequestException(
+          'brand_id is required for BRAND promotions',
+        );
       }
 
       if (variantIds.length > 0) {
@@ -279,7 +271,10 @@ export class PromotionsService {
         );
       }
 
-      if (input.scope === PromotionScope.SINGLE_PRODUCT && variantIds.length !== 1) {
+      if (
+        input.scope === PromotionScope.SINGLE_PRODUCT &&
+        variantIds.length !== 1
+      ) {
         throw new BadRequestException(
           'SINGLE_PRODUCT promotions must have exactly one variant_id',
         );
@@ -329,375 +324,452 @@ export class PromotionsService {
   }
 
   async create(dto: CreatePromotionDto, consumerId: number, userId: number) {
-    const validated = await this.validatePromotionRules(dto, consumerId);
+    try {
+      const validated = await this.validatePromotionRules(dto, consumerId);
 
-    const createData: any = {
-      consumer_id: consumerId,
-      created_by_user_id: userId,
-      name: dto.name,
-      description: dto.description,
-      scope: validated.scope,
-      discount_type: validated.discount_type,
-      discount_value: validated.discount_value,
-      start_date: validated.start_date,
-      end_date: validated.end_date,
-      is_active: validated.is_active,
-      min_purchase: validated.min_purchase,
-      min_quantity: validated.min_quantity,
-      usage_limit: validated.usage_limit,
-      cap_quantity: validated.cap_quantity,
-      max_discount_amount: validated.max_discount_amount,
-      cap_discount_amount: validated.cap_discount_amount,
-      member_only: validated.member_only,
-      limit_per_customer: validated.limit_per_customer,
-      customer_usage_limit: validated.customer_usage_limit,
-      customer_usage_daily_reset: validated.customer_usage_daily_reset,
-      auto_apply: validated.auto_apply,
-      branch_specific: validated.branch_specific,
-      brand_id: validated.brand_id,
-      products: validated.variant_ids.length
-        ? {
-            createMany: {
-              data: validated.variant_ids.map((variantId) => ({
-                variant_id: variantId,
-              })),
-            },
-          }
-        : undefined,
-      branches: validated.branch_ids.length
-        ? {
-            createMany: {
-              data: validated.branch_ids.map((branchId) => ({
-                branch_id: branchId,
-              })),
-            },
-          }
-        : undefined,
-    };
+      const createData: any = {
+        consumer_id: consumerId,
+        created_by_user_id: userId,
+        name: dto.name,
+        description: dto.description,
+        scope: validated.scope,
+        discount_type: validated.discount_type,
+        discount_value: validated.discount_value,
+        start_date: validated.start_date,
+        end_date: validated.end_date,
+        is_active: validated.is_active,
+        min_purchase: validated.min_purchase,
+        min_quantity: validated.min_quantity,
+        usage_limit: validated.usage_limit,
+        cap_quantity: validated.cap_quantity,
+        max_discount_amount: validated.max_discount_amount,
+        cap_discount_amount: validated.cap_discount_amount,
+        member_only: validated.member_only,
+        limit_per_customer: validated.limit_per_customer,
+        customer_usage_limit: validated.customer_usage_limit,
+        customer_usage_daily_reset: validated.customer_usage_daily_reset,
+        auto_apply: validated.auto_apply,
+        branch_specific: validated.branch_specific,
+        brand_id: validated.brand_id,
+        products: validated.variant_ids.length
+          ? {
+              createMany: {
+                data: validated.variant_ids.map((variantId) => ({
+                  variant_id: variantId,
+                })),
+              },
+            }
+          : undefined,
+        branches: validated.branch_ids.length
+          ? {
+              createMany: {
+                data: validated.branch_ids.map((branchId) => ({
+                  branch_id: branchId,
+                })),
+              },
+            }
+          : undefined,
+      };
 
-    const created = await (this.prisma.promotion as any).create({
-      data: createData,
-      include: this.promotionInclude,
-    });
+      const created = await this.prisma.promotion.create({
+        data: createData,
+        include: this.promotionInclude,
+      });
 
-    await this.invalidatePromotionCaches(consumerId);
-
-    const summaryMap = await this.getPromotionSalesSummary([created.id]);
-    return this.mapPromotion(created, summaryMap);
+      const summaryMap = await this.getPromotionSalesSummary([created.id]);
+      return this.mapPromotion(created, summaryMap);
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create promotion');
+    }
   }
 
   async findAll(consumerId: number) {
-    const promotions = await (this.prisma.promotion as any).findMany({
-      where: {
-        consumer_id: consumerId,
-      },
-      include: this.promotionInclude,
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+    try {
+      const promotions = await this.prisma.promotion.findMany({
+        where: {
+          consumer_id: consumerId,
+        },
+        include: this.promotionInclude,
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
 
-    const summaryMap = await this.getPromotionSalesSummary(
-      promotions.map((promotion) => promotion.id),
-    );
+      const summaryMap = await this.getPromotionSalesSummary(
+        promotions.map((promotion) => promotion.id),
+      );
 
-    return promotions.map((promotion) => this.mapPromotion(promotion, summaryMap));
+      return promotions.map((promotion) =>
+        this.mapPromotion(promotion, summaryMap),
+      );
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch promotions');
+    }
   }
 
   async findOne(id: number, consumerId: number) {
-    const promotion = await this.ensurePromotionOwnedByConsumer(id, consumerId);
-    const summaryMap = await this.getPromotionSalesSummary([promotion.id]);
-    return this.mapPromotion(promotion, summaryMap);
+    try {
+      const promotion = await this.ensurePromotionOwnedByConsumer(
+        id,
+        consumerId,
+      );
+      const summaryMap = await this.getPromotionSalesSummary([promotion.id]);
+      return this.mapPromotion(promotion, summaryMap);
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to fetch promotion');
+    }
   }
 
-  async update(
-    id: number,
-    updateDto: UpdatePromotionDto,
-    consumerId: number,
-  ) {
-    const existing = await this.ensurePromotionOwnedByConsumer(id, consumerId);
+  async update(id: number, updateDto: UpdatePromotionDto, consumerId: number) {
+    try {
+      const existing = await this.ensurePromotionOwnedByConsumer(
+        id,
+        consumerId,
+      );
 
-    const merged: CreatePromotionDto = {
-      name: updateDto.name ?? existing.name,
-      description: updateDto.description ?? existing.description ?? undefined,
-      scope: (updateDto.scope ?? existing.scope) as PromotionScope,
-      discount_type: (updateDto.discount_type ??
-        existing.discount_type) as PromotionDiscountType,
-      discount_value:
-        updateDto.discount_value ?? this.toNumber(existing.discount_value),
-      start_date: updateDto.start_date ?? existing.start_date.toISOString(),
-      end_date:
-        updateDto.end_date === undefined
-          ? existing.end_date?.toISOString()
-          : updateDto.end_date,
-      is_active: updateDto.is_active ?? existing.is_active,
-      min_purchase:
-        updateDto.min_purchase === undefined
-          ? existing.min_purchase !== null && existing.min_purchase !== undefined
-            ? this.toNumber(existing.min_purchase)
-            : undefined
-          : updateDto.min_purchase,
-      min_quantity: updateDto.min_quantity ?? existing.min_quantity ?? 1,
-      usage_limit:
-        updateDto.usage_limit === undefined
-          ? existing.usage_limit ?? undefined
-          : updateDto.usage_limit,
-      cap_quantity:
-        updateDto.cap_quantity === undefined
-          ? existing.cap_quantity ?? undefined
-          : updateDto.cap_quantity,
-      max_discount_amount:
-        updateDto.max_discount_amount === undefined
-          ? existing.max_discount_amount !== null &&
-            existing.max_discount_amount !== undefined
-            ? this.toNumber(existing.max_discount_amount)
-            : undefined
-          : updateDto.max_discount_amount,
-      cap_discount_amount:
-        updateDto.cap_discount_amount === undefined
-          ? existing.cap_discount_amount !== null &&
-            existing.cap_discount_amount !== undefined
-            ? this.toNumber(existing.cap_discount_amount)
-            : undefined
-          : updateDto.cap_discount_amount,
-      member_only: updateDto.member_only ?? existing.member_only,
-      limit_per_customer:
-        updateDto.limit_per_customer ?? existing.limit_per_customer,
-      customer_usage_limit:
-        updateDto.customer_usage_limit === undefined
-          ? existing.customer_usage_limit ?? undefined
-          : updateDto.customer_usage_limit,
-      customer_usage_daily_reset:
-        updateDto.customer_usage_daily_reset ?? existing.customer_usage_daily_reset,
-      auto_apply: updateDto.auto_apply ?? existing.auto_apply,
-      branch_specific: updateDto.branch_specific ?? existing.branch_specific,
-      branch_ids:
-        updateDto.branch_ids ?? existing.branches.map((branch) => branch.branch_id),
-      variant_ids:
-        updateDto.variant_ids ??
-        existing.products.map((product) => product.variant_id),
-      brand_id:
-        updateDto.brand_id === undefined
-          ? existing.brand_id ?? undefined
-          : updateDto.brand_id,
-    };
+      const merged: CreatePromotionDto = {
+        name: updateDto.name ?? existing.name,
+        description: updateDto.description ?? existing.description ?? undefined,
+        scope: (updateDto.scope ?? existing.scope) as PromotionScope,
+        discount_type: (updateDto.discount_type ??
+          existing.discount_type) as PromotionDiscountType,
+        discount_value:
+          updateDto.discount_value ?? this.toNumber(existing.discount_value),
+        start_date: updateDto.start_date ?? existing.start_date.toISOString(),
+        end_date:
+          updateDto.end_date === undefined
+            ? existing.end_date?.toISOString()
+            : updateDto.end_date,
+        is_active: updateDto.is_active ?? existing.is_active,
+        min_purchase:
+          updateDto.min_purchase === undefined
+            ? existing.min_purchase !== null &&
+              existing.min_purchase !== undefined
+              ? this.toNumber(existing.min_purchase)
+              : undefined
+            : updateDto.min_purchase,
+        min_quantity: updateDto.min_quantity ?? existing.min_quantity ?? 1,
+        usage_limit:
+          updateDto.usage_limit === undefined
+            ? (existing.usage_limit ?? undefined)
+            : updateDto.usage_limit,
+        cap_quantity:
+          updateDto.cap_quantity === undefined
+            ? (existing.cap_quantity ?? undefined)
+            : updateDto.cap_quantity,
+        max_discount_amount:
+          updateDto.max_discount_amount === undefined
+            ? existing.max_discount_amount !== null &&
+              existing.max_discount_amount !== undefined
+              ? this.toNumber(existing.max_discount_amount)
+              : undefined
+            : updateDto.max_discount_amount,
+        cap_discount_amount:
+          updateDto.cap_discount_amount === undefined
+            ? existing.cap_discount_amount !== null &&
+              existing.cap_discount_amount !== undefined
+              ? this.toNumber(existing.cap_discount_amount)
+              : undefined
+            : updateDto.cap_discount_amount,
+        member_only: updateDto.member_only ?? existing.member_only,
+        limit_per_customer:
+          updateDto.limit_per_customer ?? existing.limit_per_customer,
+        customer_usage_limit:
+          updateDto.customer_usage_limit === undefined
+            ? (existing.customer_usage_limit ?? undefined)
+            : updateDto.customer_usage_limit,
+        customer_usage_daily_reset:
+          updateDto.customer_usage_daily_reset ??
+          existing.customer_usage_daily_reset,
+        auto_apply: updateDto.auto_apply ?? existing.auto_apply,
+        branch_specific: updateDto.branch_specific ?? existing.branch_specific,
+        branch_ids:
+          updateDto.branch_ids ??
+          existing.branches.map((branch) => branch.branch_id),
+        variant_ids:
+          updateDto.variant_ids ??
+          existing.products.map((product) => product.variant_id),
+        brand_id:
+          updateDto.brand_id === undefined
+            ? (existing.brand_id ?? undefined)
+            : updateDto.brand_id,
+      };
 
-    const validated = await this.validatePromotionRules(merged, consumerId);
+      const validated = await this.validatePromotionRules(merged, consumerId);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await tx.promotionProduct.deleteMany({ where: { promotion_id: id } });
-      await tx.promotionBranch.deleteMany({ where: { promotion_id: id } });
+      const updated = await this.prisma.$transaction(async (tx) => {
+        await tx.promotionProduct.deleteMany({ where: { promotion_id: id } });
+        await tx.promotionBranch.deleteMany({ where: { promotion_id: id } });
 
-      return (tx.promotion as any).update({
-        where: { id },
-        data: {
-          name: merged.name,
-          description: merged.description,
-          scope: validated.scope,
-          discount_type: validated.discount_type,
-          discount_value: validated.discount_value,
-          start_date: validated.start_date,
-          end_date: validated.end_date,
-          is_active: validated.is_active,
-          min_purchase: validated.min_purchase,
-          min_quantity: validated.min_quantity,
-          usage_limit: validated.usage_limit,
-          cap_quantity: validated.cap_quantity,
-          max_discount_amount: validated.max_discount_amount,
-          cap_discount_amount: validated.cap_discount_amount,
-          member_only: validated.member_only,
-          limit_per_customer: validated.limit_per_customer,
-          customer_usage_limit: validated.customer_usage_limit,
-          customer_usage_daily_reset: validated.customer_usage_daily_reset,
-          auto_apply: validated.auto_apply,
-          branch_specific: validated.branch_specific,
-          brand_id: validated.brand_id,
-          products: validated.variant_ids.length
-            ? {
-                createMany: {
-                  data: validated.variant_ids.map((variantId) => ({
-                    variant_id: variantId,
-                  })),
-                },
-              }
-            : undefined,
-          branches: validated.branch_ids.length
-            ? {
-                createMany: {
-                  data: validated.branch_ids.map((branchId) => ({
-                    branch_id: branchId,
-                  })),
-                },
-              }
-            : undefined,
-        } as any,
-        include: this.promotionInclude,
+        return (tx.promotion as any).update({
+          where: { id },
+          data: {
+            name: merged.name,
+            description: merged.description,
+            scope: validated.scope,
+            discount_type: validated.discount_type,
+            discount_value: validated.discount_value,
+            start_date: validated.start_date,
+            end_date: validated.end_date,
+            is_active: validated.is_active,
+            min_purchase: validated.min_purchase,
+            min_quantity: validated.min_quantity,
+            usage_limit: validated.usage_limit,
+            cap_quantity: validated.cap_quantity,
+            max_discount_amount: validated.max_discount_amount,
+            cap_discount_amount: validated.cap_discount_amount,
+            member_only: validated.member_only,
+            limit_per_customer: validated.limit_per_customer,
+            customer_usage_limit: validated.customer_usage_limit,
+            customer_usage_daily_reset: validated.customer_usage_daily_reset,
+            auto_apply: validated.auto_apply,
+            branch_specific: validated.branch_specific,
+            brand_id: validated.brand_id,
+            products: validated.variant_ids.length
+              ? {
+                  createMany: {
+                    data: validated.variant_ids.map((variantId) => ({
+                      variant_id: variantId,
+                    })),
+                  },
+                }
+              : undefined,
+            branches: validated.branch_ids.length
+              ? {
+                  createMany: {
+                    data: validated.branch_ids.map((branchId) => ({
+                      branch_id: branchId,
+                    })),
+                  },
+                }
+              : undefined,
+          } as any,
+          include: this.promotionInclude,
+        });
       });
-    });
 
-    await this.invalidatePromotionCaches(consumerId);
-
-    const summaryMap = await this.getPromotionSalesSummary([updated.id]);
-    return this.mapPromotion(updated, summaryMap);
+      const summaryMap = await this.getPromotionSalesSummary([updated.id]);
+      return this.mapPromotion(updated, summaryMap);
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update promotion');
+    }
   }
 
   async remove(id: number, consumerId: number) {
-    await this.ensurePromotionOwnedByConsumer(id, consumerId);
+    try {
+      await this.ensurePromotionOwnedByConsumer(id, consumerId);
 
-    await this.prisma.promotion.delete({
-      where: { id },
-    });
+      await this.prisma.promotion.delete({
+        where: { id },
+      });
 
-    await this.invalidatePromotionCaches(consumerId);
-
-    return { success: true };
+      return { success: true };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete promotion');
+    }
   }
 
   async getOptions(consumerId: number) {
-    const [branches, brands, variants] = await Promise.all([
-      this.prisma.branch.findMany({
-        where: { consumer_id: consumerId },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      }),
-      this.prisma.brand.findMany({
-        where: { consumer_id: consumerId },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      }),
-      this.prisma.productVariant.findMany({
-        where: {
-          product: {
-            consumer_id: consumerId,
-          },
-        },
-        select: {
-          id: true,
-          name: true,
-          sku: true,
-          regular_price: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              brand_id: true,
+    try {
+      const [branches, brands, variants] = await Promise.all([
+        this.prisma.branch.findMany({
+          where: { consumer_id: consumerId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        this.prisma.brand.findMany({
+          where: { consumer_id: consumerId },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        this.prisma.productVariant.findMany({
+          where: {
+            product: {
+              consumer_id: consumerId,
             },
           },
-        },
-        orderBy: [{ product: { name: 'asc' } }, { name: 'asc' }],
-      }),
-    ]);
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            regular_price: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                brand_id: true,
+              },
+            },
+          },
+          orderBy: [{ product: { name: 'asc' } }, { name: 'asc' }],
+        }),
+      ]);
 
-    return {
-      branches,
-      brands,
-      variants: variants.map((variant) => ({
-        id: variant.id,
-        name: variant.name,
-        sku: variant.sku,
-        regular_price: this.toNumber(variant.regular_price),
-        product_id: variant.product.id,
-        product_name: variant.product.name,
-        brand_id: variant.product.brand_id,
-      })),
-    };
+      return {
+        branches,
+        brands,
+        variants: variants.map((variant) => ({
+          id: variant.id,
+          name: variant.name,
+          sku: variant.sku,
+          regular_price: this.toNumber(variant.regular_price),
+          product_id: variant.product.id,
+          product_name: variant.product.name,
+          brand_id: variant.product.brand_id,
+        })),
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to fetch promotion options',
+      );
+    }
   }
 
   async findActive(consumerId: number, branchId?: number) {
-    const now = new Date();
+    try {
+      const now = new Date();
 
-    const where: any = {
-      consumer_id: consumerId,
-      is_active: true,
-      start_date: {
-        lte: now,
-      },
-      OR: [{ end_date: null }, { end_date: { gte: now } }],
-    };
+      const where: any = {
+        consumer_id: consumerId,
+        is_active: true,
+        start_date: {
+          lte: now,
+        },
+        OR: [{ end_date: null }, { end_date: { gte: now } }],
+      };
 
-    if (branchId) {
-      where.AND = [
-        {
-          OR: [
-            { branch_specific: false },
-            {
-              branches: {
-                some: {
-                  branch_id: branchId,
+      if (branchId) {
+        where.AND = [
+          {
+            OR: [
+              { branch_specific: false },
+              {
+                branches: {
+                  some: {
+                    branch_id: branchId,
+                  },
                 },
               },
-            },
-          ],
-        },
-      ];
-    }
+            ],
+          },
+        ];
+      }
 
-    const promotions = await (this.prisma.promotion as any).findMany({
-      where,
-      include: this.promotionInclude,
-      orderBy: [{ auto_apply: 'desc' }, { created_at: 'desc' }],
-    });
-
-    const evaluations = await Promise.all(
-      promotions.map(async (promotion) => {
-        const usageLimit =
-          promotion.usage_limit !== null && promotion.usage_limit !== undefined
-            ? this.toNumber(promotion.usage_limit)
-            : null;
-        const maxDiscountAmount =
-          promotion.max_discount_amount !== null &&
-          promotion.max_discount_amount !== undefined
-            ? this.toNumber(promotion.max_discount_amount)
-            : null;
-
-        if (usageLimit === null && maxDiscountAmount === null) {
-          return { promotion, exhausted: false };
-        }
-
-        const usage = await this.getPromotionUsage(promotion.id, consumerId);
-        const reachedUsageLimit =
-          usageLimit !== null && usage.usedUsageCount >= usageLimit;
-        const reachedDiscountLimit =
-          maxDiscountAmount !== null &&
-          usage.usedDiscountAmount >= maxDiscountAmount;
-
-        return {
-          promotion,
-          exhausted: reachedUsageLimit || reachedDiscountLimit,
-        };
-      }),
-    );
-
-    const exhaustedIds = evaluations
-      .filter((evaluation) => evaluation.exhausted)
-      .map((evaluation) => evaluation.promotion.id);
-
-    if (exhaustedIds.length > 0) {
-      await (this.prisma.promotion as any).updateMany({
-        where: {
-          consumer_id: consumerId,
-          id: { in: exhaustedIds },
-          is_active: true,
-        },
-        data: {
-          is_active: false,
-        },
+      const promotions = await this.prisma.promotion.findMany({
+        where,
+        include: this.promotionInclude,
+        orderBy: [{ auto_apply: 'desc' }, { created_at: 'desc' }],
       });
 
-      await this.invalidatePromotionCaches(consumerId);
+      const evaluations = await Promise.all(
+        promotions.map(async (promotion) => {
+          const usageLimit =
+            promotion.usage_limit !== null &&
+            promotion.usage_limit !== undefined
+              ? this.toNumber(promotion.usage_limit)
+              : null;
+          const maxDiscountAmount =
+            promotion.max_discount_amount !== null &&
+            promotion.max_discount_amount !== undefined
+              ? this.toNumber(promotion.max_discount_amount)
+              : null;
+
+          if (usageLimit === null && maxDiscountAmount === null) {
+            return { promotion, exhausted: false };
+          }
+
+          const usage = await this.getPromotionUsage(
+            promotion.id,
+            consumerId,
+          );
+          const reachedUsageLimit =
+            usageLimit !== null && usage.usedUsageCount >= usageLimit;
+          const reachedDiscountLimit =
+            maxDiscountAmount !== null &&
+            usage.usedDiscountAmount >= maxDiscountAmount;
+
+          return {
+            promotion,
+            exhausted: reachedUsageLimit || reachedDiscountLimit,
+          };
+        }),
+      );
+
+      const exhaustedIds = evaluations
+        .filter((evaluation) => evaluation.exhausted)
+        .map((evaluation) => evaluation.promotion.id);
+
+      if (exhaustedIds.length > 0) {
+        await this.prisma.promotion.updateMany({
+          where: {
+            consumer_id: consumerId,
+            id: { in: exhaustedIds },
+            is_active: true,
+          },
+          data: {
+            is_active: false,
+          },
+        });
+      }
+
+      const activePromotions = evaluations
+        .filter((evaluation) => !evaluation.exhausted)
+        .map((evaluation) => evaluation.promotion);
+
+      const summaryMap = await this.getPromotionSalesSummary(
+        activePromotions.map((promotion) => promotion.id),
+      );
+
+      return activePromotions.map((promotion) =>
+        this.mapPromotion(promotion, summaryMap),
+      );
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to fetch active promotions',
+      );
     }
-
-    const activePromotions = evaluations
-      .filter((evaluation) => !evaluation.exhausted)
-      .map((evaluation) => evaluation.promotion);
-
-    const summaryMap = await this.getPromotionSalesSummary(
-      activePromotions.map((promotion) => promotion.id),
-    );
-
-    return activePromotions.map((promotion) =>
-      this.mapPromotion(promotion, summaryMap),
-    );
   }
 
   private calculateDiscount(
@@ -823,41 +895,51 @@ export class PromotionsService {
   }
 
   async closePromotionIfExhausted(promotionId: number, consumerId: number) {
-    const promotion = await (this.prisma.promotion as any).findFirst({
-      where: {
-        id: promotionId,
-        consumer_id: consumerId,
-      },
-    });
-
-    if (!promotion) {
-      return;
-    }
-
-    const usage = await this.getPromotionUsage(promotion.id, consumerId);
-    const usageLimit =
-      promotion.usage_limit !== null &&
-      promotion.usage_limit !== undefined
-        ? this.toNumber(promotion.usage_limit)
-        : null;
-    const maxDiscountAmount =
-      promotion.max_discount_amount !== null &&
-      promotion.max_discount_amount !== undefined
-        ? this.toNumber(promotion.max_discount_amount)
-        : null;
-
-    const reachedMaxQuantity =
-      usageLimit !== null && usage.usedUsageCount >= usageLimit;
-    const reachedMaxDiscount =
-      maxDiscountAmount !== null &&
-      usage.usedDiscountAmount >= maxDiscountAmount;
-
-    if (promotion.is_active && (reachedMaxQuantity || reachedMaxDiscount)) {
-      await (this.prisma.promotion as any).update({
-        where: { id: promotion.id },
-        data: { is_active: false },
+    try {
+      const promotion = await this.prisma.promotion.findFirst({
+        where: {
+          id: promotionId,
+          consumer_id: consumerId,
+        },
       });
-      await this.invalidatePromotionCaches(consumerId);
+
+      if (!promotion) {
+        return;
+      }
+
+      const usage = await this.getPromotionUsage(promotion.id, consumerId);
+      const usageLimit =
+        promotion.usage_limit !== null && promotion.usage_limit !== undefined
+          ? this.toNumber(promotion.usage_limit)
+          : null;
+      const maxDiscountAmount =
+        promotion.max_discount_amount !== null &&
+        promotion.max_discount_amount !== undefined
+          ? this.toNumber(promotion.max_discount_amount)
+          : null;
+
+      const reachedMaxQuantity =
+        usageLimit !== null && usage.usedUsageCount >= usageLimit;
+      const reachedMaxDiscount =
+        maxDiscountAmount !== null &&
+        usage.usedDiscountAmount >= maxDiscountAmount;
+
+      if (promotion.is_active && (reachedMaxQuantity || reachedMaxDiscount)) {
+        await this.prisma.promotion.update({
+          where: { id: promotion.id },
+          data: { is_active: false },
+        });
+      }
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to close exhausted promotion',
+      );
     }
   }
 
@@ -866,7 +948,7 @@ export class PromotionsService {
     consumerId: number,
     payload: ValidatePromotionDto,
   ) {
-    const promotion = await (this.prisma.promotion as any).findFirst({
+    const promotion = await this.prisma.promotion.findFirst({
       where: {
         id: promotionId,
         consumer_id: consumerId,
@@ -918,8 +1000,7 @@ export class PromotionsService {
 
     const usage = await this.getPromotionUsage(promotion.id, consumerId);
     const usageLimit =
-      promotion.usage_limit !== null &&
-      promotion.usage_limit !== undefined
+      promotion.usage_limit !== null && promotion.usage_limit !== undefined
         ? this.toNumber(promotion.usage_limit)
         : null;
     const capQuantity =
@@ -945,11 +1026,10 @@ export class PromotionsService {
 
     if (reachedMaxQuantity || reachedMaxDiscount) {
       if (promotion.is_active) {
-        await (this.prisma.promotion as any).update({
+        await this.prisma.promotion.update({
           where: { id: promotion.id },
           data: { is_active: false },
         });
-        await this.invalidatePromotionCaches(consumerId);
       }
 
       return {
@@ -1009,7 +1089,8 @@ export class PromotionsService {
 
     for (const item of payload.items) {
       const existing = cartMap.get(item.variant_id);
-      const subtotal = this.toNumber(item.line_total) || item.unit_price * item.quantity;
+      const subtotal =
+        this.toNumber(item.line_total) || item.unit_price * item.quantity;
 
       if (existing) {
         cartMap.set(item.variant_id, {
@@ -1096,8 +1177,13 @@ export class PromotionsService {
       const matchedItems = matchedVariantIds
         .map((variantId) => cartMap.get(variantId))
         .filter(
-          (item): item is { quantity: number; subtotal: number; unit_price: number } =>
-            Boolean(item),
+          (
+            item,
+          ): item is {
+            quantity: number;
+            subtotal: number;
+            unit_price: number;
+          } => Boolean(item),
         );
 
       const discountBase = this.calculateBaseWithQuantityLimit(
@@ -1132,7 +1218,9 @@ export class PromotionsService {
       };
     }
 
-    const requiredVariantIds = promotion.products.map((product) => product.variant_id);
+    const requiredVariantIds = promotion.products.map(
+      (product) => product.variant_id,
+    );
 
     if (!requiredVariantIds.length) {
       return {
@@ -1216,7 +1304,9 @@ export class PromotionsService {
     const matchedItems = requiredVariantIds
       .map((variantId) => cartMap.get(variantId))
       .filter(
-        (item): item is { quantity: number; subtotal: number; unit_price: number } =>
+        (
+          item,
+        ): item is { quantity: number; subtotal: number; unit_price: number } =>
           Boolean(item),
       );
 
@@ -1257,16 +1347,26 @@ export class PromotionsService {
     payload: ValidatePromotionDto,
     consumerId: number,
   ) {
-    const evaluation = await this.evaluatePromotionForCart(
-      promotionId,
-      consumerId,
-      payload,
-    );
+    try {
+      const evaluation = await this.evaluatePromotionForCart(
+        promotionId,
+        consumerId,
+        payload,
+      );
 
-    return {
-      promotion_id: promotionId,
-      ...evaluation,
-    };
+      return {
+        promotion_id: promotionId,
+        ...evaluation,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to validate cart promotion');
+    }
   }
 
   async assertAndCalculateDiscount(
@@ -1281,19 +1381,36 @@ export class PromotionsService {
       line_total: number;
     }>,
   ) {
-    const evaluation = await this.evaluatePromotionForCart(promotionId, consumerId, {
-      branch_id: branchId,
-      customer_id: customerId,
-      items,
-    });
+    try {
+      const evaluation = await this.evaluatePromotionForCart(
+        promotionId,
+        consumerId,
+        {
+          branch_id: branchId,
+          customer_id: customerId,
+          items,
+        },
+      );
 
-    if (!evaluation.is_eligible) {
-      throw new BadRequestException(
-        evaluation.reason || 'Promotion conditions are not matched for this sale',
+      if (!evaluation.is_eligible) {
+        throw new BadRequestException(
+          evaluation.reason ||
+            'Promotion conditions are not matched for this sale',
+        );
+      }
+
+      return evaluation;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to assert and calculate discount',
       );
     }
-
-    return evaluation;
   }
 
   async getPromotionSales(
@@ -1301,80 +1418,90 @@ export class PromotionsService {
     filters: PromotionSalesFiltersDto,
     consumerId: number,
   ) {
-    await this.ensurePromotionOwnedByConsumer(promotionId, consumerId);
+    try {
+      await this.ensurePromotionOwnedByConsumer(promotionId, consumerId);
 
-    const page = filters.page || 1;
-    const limit = filters.limit || 20;
-    const skip = (page - 1) * limit;
+      const page = filters.page || 1;
+      const limit = filters.limit || 20;
+      const skip = (page - 1) * limit;
 
-    const where: any = {
-      consumer_id: consumerId,
-      promotion_id: promotionId,
-      sale_type: 'sale',
-    };
+      const where: any = {
+        consumer_id: consumerId,
+        promotion_id: promotionId,
+        sale_type: 'sale',
+      };
 
-    if (filters.date_from || filters.date_to) {
-      where.sale_date = {};
-      if (filters.date_from) {
-        where.sale_date.gte = new Date(filters.date_from);
+      if (filters.date_from || filters.date_to) {
+        where.sale_date = {};
+        if (filters.date_from) {
+          where.sale_date.gte = new Date(filters.date_from);
+        }
+        if (filters.date_to) {
+          where.sale_date.lte = new Date(filters.date_to);
+        }
       }
-      if (filters.date_to) {
-        where.sale_date.lte = new Date(filters.date_to);
+
+      const [rows, total, summary] = await Promise.all([
+        (this.prisma.sale as any).findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: {
+            sale_date: 'desc',
+          },
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
+            branch: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        }),
+        (this.prisma.sale as any).count({ where }),
+        (this.prisma.sale as any).aggregate({
+          where,
+          _sum: {
+            discount_amount: true,
+            total_amount: true,
+          },
+        }),
+      ]);
+
+      return {
+        data: rows,
+        meta: {
+          total,
+          page,
+          limit,
+          total_pages: Math.ceil(total / limit),
+        },
+        summary: {
+          total_discount_amount: this.toNumber(summary._sum?.discount_amount),
+          total_sales_amount: this.toNumber(summary._sum?.total_amount),
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
       }
+      throw new InternalServerErrorException('Failed to fetch promotion sales');
     }
-
-    const [rows, total, summary] = await Promise.all([
-      (this.prisma.sale as any).findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: {
-          sale_date: 'desc',
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-          branch: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      }),
-      (this.prisma.sale as any).count({ where }),
-      (this.prisma.sale as any).aggregate({
-        where,
-        _sum: {
-          discount_amount: true,
-          total_amount: true,
-        },
-      }),
-    ]);
-
-    return {
-      data: rows,
-      meta: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-      summary: {
-        total_discount_amount: this.toNumber(summary._sum?.discount_amount),
-        total_sales_amount: this.toNumber(summary._sum?.total_amount),
-      },
-    };
   }
 }
