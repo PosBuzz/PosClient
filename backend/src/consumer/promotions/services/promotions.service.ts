@@ -12,7 +12,17 @@ import {
 } from '../dto/create-promotion.dto';
 import { PromotionSalesFiltersDto } from '../dto/promotion-sales-filters.dto';
 import { UpdatePromotionDto } from '../dto/update-promotion.dto';
-import { ValidatePromotionDto } from '../dto/validate-promotion.dto';
+
+type PromotionCartPayload = {
+  branch_id: number;
+  customer_id?: number;
+  items: Array<{
+    variant_id: number;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+  }>;
+};
 
 @Injectable()
 export class PromotionsService {
@@ -776,16 +786,18 @@ export class PromotionsService {
     discountType: string,
     discountValue: number,
     base: number,
+    eligibleQuantity: number,
     capDiscountAmount?: number | null,
   ) {
-    if (base <= 0) return 0;
+    if (base <= 0 || eligibleQuantity <= 0) return 0;
 
     let discount = 0;
 
     if (discountType === PromotionDiscountType.PERCENTAGE) {
       discount = (base * discountValue) / 100;
     } else {
-      discount = discountValue;
+      // Fixed amount promotions are applied per eligible unit.
+      discount = discountValue * eligibleQuantity;
     }
 
     if (
@@ -797,6 +809,19 @@ export class PromotionsService {
     }
 
     return Math.min(base, discount);
+  }
+
+  private calculateEffectiveQuantity(
+    items: Array<{ quantity: number; subtotal: number }>,
+    quantityLimit?: number | null,
+  ) {
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
+    if (!quantityLimit || quantityLimit <= 0) {
+      return totalQuantity;
+    }
+
+    return Math.min(totalQuantity, quantityLimit);
   }
 
   private calculateBaseWithQuantityLimit(
@@ -946,7 +971,7 @@ export class PromotionsService {
   private async evaluatePromotionForCart(
     promotionId: number,
     consumerId: number,
-    payload: ValidatePromotionDto,
+    payload: PromotionCartPayload,
   ) {
     const promotion = await this.prisma.promotion.findFirst({
       where: {
@@ -1190,11 +1215,16 @@ export class PromotionsService {
         matchedItems,
         effectiveQuantityLimit,
       );
+      const effectiveQuantity = this.calculateEffectiveQuantity(
+        matchedItems,
+        effectiveQuantityLimit,
+      );
 
       const computedDiscount = this.calculateDiscount(
         promotion.discount_type,
         this.toNumber(promotion.discount_value),
         discountBase,
+        effectiveQuantity,
         capDiscountAmount,
       );
 
@@ -1251,10 +1281,15 @@ export class PromotionsService {
         [selected],
         effectiveQuantityLimit,
       );
+      const effectiveQuantity = this.calculateEffectiveQuantity(
+        [selected],
+        effectiveQuantityLimit,
+      );
       const computedDiscount = this.calculateDiscount(
         promotion.discount_type,
         this.toNumber(promotion.discount_value),
         discountBase,
+        effectiveQuantity,
         capDiscountAmount,
       );
 
@@ -1314,11 +1349,16 @@ export class PromotionsService {
       matchedItems,
       effectiveQuantityLimit,
     );
+    const effectiveQuantity = this.calculateEffectiveQuantity(
+      matchedItems,
+      effectiveQuantityLimit,
+    );
 
     const computedDiscount = this.calculateDiscount(
       promotion.discount_type,
       this.toNumber(promotion.discount_value),
       discountBase,
+      effectiveQuantity,
       capDiscountAmount,
     );
 
@@ -1340,33 +1380,6 @@ export class PromotionsService {
       discount_base: Number(discountBase.toFixed(2)),
       matched_variant_ids: requiredVariantIds,
     };
-  }
-
-  async validateCart(
-    promotionId: number,
-    payload: ValidatePromotionDto,
-    consumerId: number,
-  ) {
-    try {
-      const evaluation = await this.evaluatePromotionForCart(
-        promotionId,
-        consumerId,
-        payload,
-      );
-
-      return {
-        promotion_id: promotionId,
-        ...evaluation,
-      };
-    } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to validate cart promotion');
-    }
   }
 
   async assertAndCalculateDiscount(

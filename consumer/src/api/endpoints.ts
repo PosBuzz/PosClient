@@ -133,7 +133,6 @@ export const endpoints = {
   deletePromotion: (id: number) => `/consumer/promotions/${id}`,
   promotionOptions: "/consumer/promotions/options",
   activePromotions: "/consumer/promotions/active/list",
-  validatePromotionCart: (id: number) => `/consumer/promotions/${id}/validate-cart`,
   promotionSales: (id: number) => `/consumer/promotions/${id}/sales`,
 
   // Quotation Management

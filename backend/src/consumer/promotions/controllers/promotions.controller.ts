@@ -19,7 +19,6 @@ import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import { CreatePromotionDto } from '../dto/create-promotion.dto';
 import { PromotionSalesFiltersDto } from '../dto/promotion-sales-filters.dto';
 import { UpdatePromotionDto } from '../dto/update-promotion.dto';
-import { ValidatePromotionDto } from '../dto/validate-promotion.dto';
 import { PromotionsService } from '../services/promotions.service';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
@@ -50,15 +49,6 @@ export class PromotionsController {
   @Get()
   async findAll(@Req() req: Request) {
     return this.promotionsService.findAll(req.user.consumer_id!);
-  }
-
-  @Post(':id/validate-cart')
-  async validateCart(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() payload: ValidatePromotionDto,
-    @Req() req: Request,
-  ) {
-    return this.promotionsService.validateCart(id, payload, req.user.consumer_id!);
   }
 
   @Get(':id/sales')

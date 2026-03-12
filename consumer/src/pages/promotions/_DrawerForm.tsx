@@ -27,6 +27,8 @@ const discountTypeOptions = [
   { label: "Fixed Amount", value: "fixed_amount" },
 ];
 
+const formatCurrency = (value: number) => `$${Number(value || 0).toFixed(2)}`;
+
 export default function DrawerForm({
   onClose,
   open,
@@ -76,6 +78,30 @@ export default function DrawerForm({
   const selectedScope = Form.useWatch("scope", form);
   const branchSpecific = Form.useWatch("branch_specific", form);
   const limitPerCustomer = Form.useWatch("limit_per_customer", form);
+  const watchedDescription = Form.useWatch("description", form);
+  const watchedDiscountType = Form.useWatch("discount_type", form);
+  const watchedDiscountValue = Form.useWatch("discount_value", form);
+  const watchedMinPurchase = Form.useWatch("min_purchase", form);
+  const watchedMinQuantity = Form.useWatch("min_quantity", form);
+  const watchedUsageLimit = Form.useWatch("usage_limit", form);
+  const watchedCapQuantity = Form.useWatch("cap_quantity", form);
+  const watchedCapDiscountAmount = Form.useWatch("cap_discount_amount", form);
+  const watchedMaxDiscountAmount = Form.useWatch("max_discount_amount", form);
+  const watchedMemberOnly = Form.useWatch("member_only", form);
+  const watchedAutoApply = Form.useWatch("auto_apply", form);
+  const watchedLimitPerCustomer = Form.useWatch("limit_per_customer", form);
+  const watchedCustomerUsageLimit = Form.useWatch("customer_usage_limit", form);
+  const watchedCustomerUsageDailyReset = Form.useWatch(
+    "customer_usage_daily_reset",
+    form,
+  );
+  const watchedBranchSpecific = Form.useWatch("branch_specific", form);
+  const watchedBranchIds = Form.useWatch("branch_ids", form);
+  const watchedBrandId = Form.useWatch("brand_id", form);
+  const watchedVariantId = Form.useWatch("variant_id", form);
+  const watchedVariantIds = Form.useWatch("variant_ids", form);
+  const watchedStartDate = Form.useWatch("start_date", form);
+  const watchedEndDate = Form.useWatch("end_date", form);
 
   const variantOptions = useMemo(() => {
     return (
@@ -85,6 +111,168 @@ export default function DrawerForm({
       })) || []
     );
   }, [optionsData]);
+
+  const generatedDescription = useMemo(() => {
+    const discountValue = Number(watchedDiscountValue || 0);
+    const minQuantity = Number(watchedMinQuantity || 1);
+    const minPurchase = Number(watchedMinPurchase || 0);
+    const usageLimit =
+      watchedUsageLimit === null || watchedUsageLimit === undefined
+        ? null
+        : Number(watchedUsageLimit);
+    const capQuantity =
+      watchedCapQuantity === null || watchedCapQuantity === undefined
+        ? null
+        : Number(watchedCapQuantity);
+    const capDiscountAmount =
+      watchedCapDiscountAmount === null || watchedCapDiscountAmount === undefined
+        ? null
+        : Number(watchedCapDiscountAmount);
+    const maxDiscountAmount =
+      watchedMaxDiscountAmount === null || watchedMaxDiscountAmount === undefined
+        ? null
+        : Number(watchedMaxDiscountAmount);
+
+    const selectedBrandName = optionsData?.brands?.find(
+      (brand: any) => brand.id === watchedBrandId,
+    )?.name;
+
+    const allVariants = optionsData?.variants || [];
+    const singleVariantName = allVariants.find(
+      (variant: any) => variant.id === watchedVariantId,
+    )?.name;
+
+    const bundleVariantNames = (watchedVariantIds || [])
+      .map((id: number) =>
+        allVariants.find((variant: any) => variant.id === id)?.name,
+      )
+      .filter(Boolean);
+
+    const branchNames = (watchedBranchIds || [])
+      .map(
+        (id: number) =>
+          optionsData?.branches?.find((branch: any) => branch.id === id)?.name,
+      )
+      .filter(Boolean);
+
+    const discountText =
+      watchedDiscountType === "percentage"
+        ? `${discountValue}% off`
+        : `${formatCurrency(discountValue)} off per eligible item`;
+
+    let scopeText = "matching cart items";
+    if (selectedScope === "BRAND") {
+      scopeText = selectedBrandName
+        ? `items from brand ${selectedBrandName}`
+        : "items from the selected brand";
+    } else if (selectedScope === "SINGLE_PRODUCT") {
+      scopeText = singleVariantName
+        ? `variant ${singleVariantName}`
+        : "the selected variant";
+    } else if (selectedScope === "BUNDLE") {
+      scopeText = bundleVariantNames.length
+        ? `bundle items (${bundleVariantNames.join(", ")})`
+        : "the selected bundle variants";
+    }
+
+    const lines: string[] = [];
+    lines.push(`${discountText} on ${scopeText}.`);
+
+    if (minPurchase > 0) {
+      lines.push(`Requires minimum purchase of ${formatCurrency(minPurchase)}.`);
+    }
+
+    lines.push(`Requires at least ${minQuantity} matching item(s).`);
+
+    if (capQuantity && capQuantity > 0) {
+      lines.push(`Applies to up to ${capQuantity} item(s) per sale.`);
+    } else {
+      lines.push("Applies to all matching quantities in the sale.");
+    }
+
+    if (capDiscountAmount && capDiscountAmount > 0) {
+      lines.push(
+        `Per-sale promotion discount is capped at ${formatCurrency(capDiscountAmount)}.`,
+      );
+    }
+
+    if (usageLimit && usageLimit > 0) {
+      lines.push(`Can be used up to ${usageLimit} sale(s) in total.`);
+    }
+
+    if (maxDiscountAmount && maxDiscountAmount > 0) {
+      lines.push(
+        `Promotion closes after total distributed discount reaches ${formatCurrency(maxDiscountAmount)}.`,
+      );
+    }
+
+    if (watchedMemberOnly) {
+      lines.push("Only registered customers are eligible.");
+    }
+
+    if (watchedLimitPerCustomer) {
+      if (watchedCustomerUsageLimit) {
+        lines.push(
+          `Each customer can use this up to ${watchedCustomerUsageLimit} time(s)${watchedCustomerUsageDailyReset ? " per day" : ""}.`,
+        );
+      } else {
+        lines.push("Per-customer usage limit is enabled.");
+      }
+    }
+
+    if (watchedBranchSpecific) {
+      lines.push(
+        branchNames.length
+          ? `Available only in branches: ${branchNames.join(", ")}.`
+          : "Available only in selected branches.",
+      );
+    } else {
+      lines.push("Available in all branches.");
+    }
+
+    if (watchedAutoApply) {
+      lines.push("Automatically applies when cart conditions are met.");
+    }
+
+    if (watchedStartDate) {
+      const startText = dayjs(watchedStartDate).format("YYYY-MM-DD");
+      const endText = watchedEndDate
+        ? dayjs(watchedEndDate).format("YYYY-MM-DD")
+        : "no end date";
+      lines.push(`Valid from ${startText} to ${endText}.`);
+    }
+
+    return lines.join(" ");
+  }, [
+    optionsData,
+    selectedScope,
+    watchedAutoApply,
+    watchedBranchIds,
+    watchedBranchSpecific,
+    watchedCapDiscountAmount,
+    watchedCapQuantity,
+    watchedCustomerUsageDailyReset,
+    watchedCustomerUsageLimit,
+    watchedDiscountType,
+    watchedDiscountValue,
+    watchedBrandId,
+    watchedEndDate,
+    watchedLimitPerCustomer,
+    watchedMaxDiscountAmount,
+    watchedMemberOnly,
+    watchedMinPurchase,
+    watchedMinQuantity,
+    watchedStartDate,
+    watchedUsageLimit,
+    watchedVariantId,
+    watchedVariantIds,
+  ]);
+
+  useEffect(() => {
+    if (generatedDescription && watchedDescription !== generatedDescription) {
+      form.setFieldValue("description", generatedDescription);
+    }
+  }, [form, generatedDescription, watchedDescription]);
 
   const onFinish = (values: any) => {
     const normalizedVariantIds =
@@ -238,8 +426,12 @@ export default function DrawerForm({
           <Input placeholder="e.g. Weekend Combo Offer" />
         </Form.Item>
 
-        <Form.Item label="Description" name="description">
-          <Input.TextArea rows={2} placeholder="Optional details" />
+        <Form.Item label="Description (Auto)" name="description">
+          <Input.TextArea
+            rows={4}
+            disabled
+            placeholder="Description is generated automatically from the selected promotion rules"
+          />
         </Form.Item>
 
         <Space style={{ width: "100%" }} size={12}>
@@ -273,7 +465,7 @@ export default function DrawerForm({
           </Form.Item>
 
           <Form.Item label="Min Purchase" name="min_purchase" style={{ flex: 1 }}>
-            <InputNumber min={0} allowClear style={{ width: "100%" }} />
+            <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
         </Space>
 
@@ -283,11 +475,11 @@ export default function DrawerForm({
             name="usage_limit"
             style={{ flex: 1 }}
           >
-            <InputNumber min={1} allowClear style={{ width: "100%" }} placeholder="Total times promo can be used" />
+            <InputNumber min={1} style={{ width: "100%" }} placeholder="Total times promo can be used" />
           </Form.Item>
 
           <Form.Item label="Cap Quantity" name="cap_quantity" style={{ flex: 1 }}>
-            <InputNumber min={1} allowClear style={{ width: "100%" }} placeholder="Per-sale qty cap" />
+            <InputNumber min={1} style={{ width: "100%" }} placeholder="Per-sale qty cap" />
           </Form.Item>
         </Space>
 
@@ -297,7 +489,7 @@ export default function DrawerForm({
             name="max_discount_amount"
             style={{ flex: 1 }}
           >
-            <InputNumber min={0} allowClear style={{ width: "100%" }} placeholder="Global close amount" />
+            <InputNumber min={0} style={{ width: "100%" }} placeholder="Global close amount" />
           </Form.Item>
 
           <Form.Item
@@ -305,7 +497,7 @@ export default function DrawerForm({
             name="cap_discount_amount"
             style={{ flex: 1 }}
           >
-            <InputNumber min={0} allowClear style={{ width: "100%" }} placeholder="Per-sale cap" />
+            <InputNumber min={0} style={{ width: "100%" }} placeholder="Per-sale cap" />
           </Form.Item>
         </Space>
 
@@ -337,7 +529,7 @@ export default function DrawerForm({
               style={{ flex: 1 }}
               rules={[{ required: true, message: "Usage limit is required" }]}
             >
-              <InputNumber min={1} allowClear style={{ width: "100%" }} />
+              <InputNumber min={1} style={{ width: "100%" }} />
             </Form.Item>
 
             <Form.Item

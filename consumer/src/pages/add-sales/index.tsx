@@ -27,7 +27,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -49,7 +49,8 @@ import {
   SaleItem,
   SalePayment,
 } from "../../types/sale.types";
-import { Promotion } from "../../types/promotion.types";
+import { Promotion, PromotionValidationResponse } from "../../types/promotion.types";
+import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -316,21 +317,13 @@ const NewSale = () => {
       );
 
       for (const promotion of autoApplyPromotions) {
-        try {
-          const validation = await promotionApi.validatePromotionCart(
-            promotion.id,
-            buildPromotionValidationPayload(selectedItems),
-          );
+        const validation = evaluatePromotionForItems(promotion, selectedItems);
 
-          if (validation.is_eligible) {
-            setAppliedPromotion(promotion);
-            setPromotionDiscountAmount(Number(validation.discount_amount || 0));
-            messageApi?.success(`${promotion.name} auto-applied`);
-            break; // Apply only the first eligible promotion
-          }
-        } catch (error) {
-          // Silently fail for auto-apply checks
-          console.log(`Auto-apply check failed for ${promotion.name}:`, error);
+        if (validation.is_eligible) {
+          setAppliedPromotion(promotion);
+          setPromotionDiscountAmount(Number(validation.discount_amount || 0));
+          messageApi?.success(`${promotion.name} auto-applied`);
+          break; // Apply only the first eligible promotion
         }
       }
     };
@@ -435,16 +428,26 @@ const NewSale = () => {
     setSelectedItems((items) => upsertVariantInSaleItems(items, variant, 1));
   };
 
-  const buildPromotionValidationPayload = (items: SaleItem[]) => ({
-    branch_id: selectedBranch!,
-    customer_id: selectedCustomer?.id,
-    items: items.map((item) => ({
-      variant_id: item.variant_id,
-      quantity: Number(item.quantity),
-      unit_price: Number(item.unit_price),
-      line_total: Number(item.line_total),
-    })),
-  });
+  const variantBrandById = useMemo(() => {
+    const map: Record<number, number | undefined> = {};
+    for (const variant of filteredVariants) {
+      map[variant.id] = variant.brand_id ? Number(variant.brand_id) : undefined;
+    }
+    return map;
+  }, [filteredVariants]);
+
+  const evaluatePromotionForItems = (
+    promotion: Promotion,
+    items: SaleItem[],
+  ): PromotionValidationResponse => {
+    return evaluatePromotionLocally({
+      promotion,
+      items,
+      branchId: selectedBranch,
+      customerId: selectedCustomer?.id,
+      variantBrandById,
+    });
+  };
 
   const getVariantPriceForSale = (variant: ProductVariantForSale) => {
     return priceType === PriceType.WHOLESALE
@@ -593,22 +596,8 @@ const NewSale = () => {
 
       const evaluations = await Promise.all(
         activePromotionsQuery.data.map(async (promotion) => {
-          try {
-            const validation = await promotionApi.validatePromotionCart(
-              promotion.id,
-              buildPromotionValidationPayload(selectedItems),
-            );
-
-            return [promotion.id, validation] as const;
-          } catch {
-            return [
-              promotion.id,
-              {
-                is_eligible: false,
-                reason: "Unable to validate promotion",
-              },
-            ] as const;
-          }
+          const validation = evaluatePromotionForItems(promotion, selectedItems);
+          return [promotion.id, validation] as const;
         }),
       );
 
@@ -633,58 +622,37 @@ const NewSale = () => {
   ]);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!appliedPromotion || !selectedBranch) {
+      return;
+    }
 
-    const validateAppliedPromotionAgainstCart = async () => {
-      if (!appliedPromotion || !selectedBranch) {
-        return;
-      }
+    if (selectedItems.length === 0) {
+      setAppliedPromotion(null);
+      setPromotionDiscountAmount(0);
+      messageApi?.warning("Applied promotion removed: cart is empty");
+      return;
+    }
 
-      if (selectedItems.length === 0) {
-        setAppliedPromotion(null);
-        setPromotionDiscountAmount(0);
-        messageApi?.warning("Applied promotion removed: cart is empty");
-        return;
-      }
+    const validation = evaluatePromotionForItems(appliedPromotion, selectedItems);
 
-      try {
-        const validation = await promotionApi.validatePromotionCart(
-          appliedPromotion.id,
-          buildPromotionValidationPayload(selectedItems),
-        );
+    if (!validation.is_eligible) {
+      setAppliedPromotion(null);
+      setPromotionDiscountAmount(0);
+      messageApi?.warning(
+        `Applied promotion removed: ${validation.reason || "conditions no longer match"}`,
+      );
+      return;
+    }
 
-        if (cancelled) {
-          return;
-        }
-
-        if (!validation.is_eligible) {
-          setAppliedPromotion(null);
-          setPromotionDiscountAmount(0);
-          messageApi?.warning(
-            `Applied promotion removed: ${validation.reason || "conditions no longer match"}`,
-          );
-          return;
-        }
-
-        setPromotionDiscountAmount(Number(validation.discount_amount || 0));
-      } catch {
-        // Ignore transient validation failures
-      }
-    };
-
-    validateAppliedPromotionAgainstCart();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [appliedPromotion, selectedItems, selectedBranch, selectedCustomer?.id]);
+    setPromotionDiscountAmount(Number(validation.discount_amount || 0));
+  }, [appliedPromotion, selectedItems, selectedBranch, selectedCustomer?.id, variantBrandById]);
 
   const clearAppliedPromotion = () => {
     setAppliedPromotion(null);
     setPromotionDiscountAmount(0);
   };
 
-  const applyPromotionToCurrentSale = async (promotion: Promotion) => {
+  const applyPromotionToCurrentSale = (promotion: Promotion) => {
     if (!selectedBranch) {
       messageApi?.error("Please select a branch before applying a promotion");
       return;
@@ -693,8 +661,9 @@ const NewSale = () => {
     let workingItems = [...selectedItems];
     let cartUpdated = false;
 
+    setApplyingPromotionId(promotion.id);
+
     try {
-      setApplyingPromotionId(promotion.id);
 
       for (let attempt = 0; attempt < 5; attempt += 1) {
         if (workingItems.length === 0) {
@@ -709,10 +678,7 @@ const NewSale = () => {
           break;
         }
 
-        const validation = await promotionApi.validatePromotionCart(
-          promotion.id,
-          buildPromotionValidationPayload(workingItems),
-        );
+        const validation = evaluatePromotionForItems(promotion, workingItems);
 
         if (validation.is_eligible) {
           if (cartUpdated) {
@@ -751,10 +717,6 @@ const NewSale = () => {
       }
 
       messageApi?.error("Promotion conditions not matched");
-    } catch (error: any) {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to apply promotion",
-      );
     } finally {
       setApplyingPromotionId(null);
     }

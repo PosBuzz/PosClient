@@ -65,19 +65,6 @@ export interface Promotion {
   total_discounted_sales: number;
 }
 
-export interface ValidatePromotionCartItemPayload {
-  variant_id: number;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-}
-
-export interface ValidatePromotionPayload {
-  branch_id: number;
-  customer_id?: number;
-  items: ValidatePromotionCartItemPayload[];
-}
-
 export interface PromotionValidationResponse {
   promotion_id: number;
   is_eligible: boolean;
