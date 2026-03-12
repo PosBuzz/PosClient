@@ -59,6 +59,7 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("0");
   const variantIds = Object.keys(formState.variants);
+  const canManageVariants = formState.has_variants || isEditMode;
 
   // Check if any variant has validation errors
   const getVariantErrors = (variantId: string) => {
@@ -149,8 +150,8 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
   return (
     <div>
       {" "}
-      {/* Header with add variant button - only show for products with variants */}
-      {formState.has_variants && (
+      {/* In edit mode, allow converting simple products by adding a variant. */}
+      {canManageVariants && (
         <div
           style={{
             marginBottom: 16,
@@ -159,7 +160,10 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
             alignItems: "center",
           }}
         >
-          <Text strong>Product Variants ({variantIds.length})</Text>
+          <Text strong>
+            {formState.has_variants ? "Product Variants" : "Product Details"} (
+            {variantIds.length})
+          </Text>
           <Button type="dashed" icon={<PlusOutlined />} onClick={onAddVariant}>
             Add Variant
           </Button>

@@ -45,6 +45,7 @@ export default function ProductForm() {
     validateForm,
     initializeFormData,
     resetForm,
+    toggleProductType,
   } = useProductFormState();
   // Define helper functions for data transformation
   const transformProductToFormData = useCallback(
@@ -371,9 +372,7 @@ export default function ProductForm() {
           formState={formState}
           validationState={validationState}
           onFieldUpdate={updateField}
-          onVariantToggle={(hasVariants) =>
-            updateField("has_variants", hasVariants)
-          }
+          onVariantToggle={toggleProductType}
           generateProductCode={generateProductCode}
           isEditMode={isEditMode}
         />
