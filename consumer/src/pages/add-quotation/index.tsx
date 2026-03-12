@@ -527,6 +527,11 @@ const NewQuotation = () => {
 
   return (
     <div>
+      {setPageTitle(
+        copyFromId && copyFromQuotationQuery.data
+          ? "Copy Quotation"
+          : "New Quotation",
+      )}
       <PageTitle
         title="New Quotation"
         breadcrumbs={[

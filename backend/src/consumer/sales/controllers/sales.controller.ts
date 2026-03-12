@@ -27,6 +27,7 @@ import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { Request } from 'express';
+import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
 import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
@@ -100,6 +101,17 @@ export class SalesController {
   @Get('reports/eod')
   async getEODReport(@Query() eodDto: EODReportDto, @Req() req: Request) {
     return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
+  }
+
+  @Get('reports/daily-target')
+  async getDailyTargetReport(
+    @Query() dailyTargetDto: DailyTargetReportDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.getDailyTargetReport(
+      req.user.consumer_id!,
+      dailyTargetDto,
+    );
   }
 
   @Get('receipt/:id')
@@ -210,7 +222,7 @@ export class SalesController {
   async getUserSalesStats(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
-    @Query('branch_id') branchId: string,
+    @Query('branch_id') branchId: number,
     @Req() req: Request,
   ) {
     if (!startDate || !endDate) {
@@ -220,7 +232,7 @@ export class SalesController {
       req.user.consumer_id!,
       startDate,
       endDate,
-      branchId ? parseInt(branchId) : undefined,
+      branchId ? parseInt(branchId.toString()) : undefined,
     );
   }
 

@@ -164,6 +164,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
+          label: <span title="Daily Sales Target">Daily Sales Target</span>,
+          key: "/daily-target",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="New Sale">New Sale</span>,
           key: "/sales/new",
           permissions: [Permissions.sales],
@@ -204,11 +209,11 @@ const SideBar: React.FC = () => {
           key: "/partial-payments",
           permissions: [Permissions.sales],
         },
-        {
-          label: <span title="End of Day Report">End of Day Report</span>,
-          key: "/eod",
-          permissions: [Permissions.sales],
-        },
+        // {
+        //   label: <span title="End of Day Report">End of Day Report</span>,
+        //   key: "/eod",
+        //   permissions: [Permissions.sales],
+        // },
       ],
     },
     {

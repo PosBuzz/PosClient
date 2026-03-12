@@ -33,6 +33,7 @@ export const queryKeys = {
   vendors: "vendors",
   returns: "returns",
   return: "return",
+  dailyTarget: "daily-target-report",
   eod: "eod-report",
   quotations: "quotations",
   quotation: "quotation",
@@ -95,6 +96,7 @@ export const queryStaleTimeMap = {
   [queryKeys.lowStockItems]: staleTimeConfig.realTime,
   [queryKeys.salesStats]: staleTimeConfig.realTime,
   [queryKeys.eod]: staleTimeConfig.realTime,
+  [queryKeys.dailyTarget]: staleTimeConfig.realTime,
   [queryKeys.userSalesStats]: staleTimeConfig.realTime,
   
   // Background data

@@ -15,7 +15,6 @@ import {
   DollarCircleOutlined,
   ProductOutlined,
   TagsOutlined,
-  AimOutlined,
   SyncOutlined,
 } from "@ant-design/icons";
 import { TaxMethod } from "../../../types/product.types";
@@ -86,7 +85,8 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
                 </Text>
               )}
             </div>
-          </Col>          <Col xs={24} sm={12}>
+          </Col>{" "}
+          <Col xs={24} sm={12}>
             <div style={{ marginBottom: 4 }}>
               <Text strong style={{ fontSize: 11 }}>
                 Product Code
@@ -100,7 +100,8 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
                   status={getValidationStatus("code", validationState).status}
                   maxLength={50}
                   showCount
-                />                {generateProductCode && (
+                />{" "}
+                {generateProductCode && (
                   <Button
                     size="small"
                     icon={<SyncOutlined />}
@@ -214,9 +215,9 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
         </Row>
       </Card>
 
-      {/* Compact Tax & Sales in one row */}
+      {/* Compact Tax Configuration */}
       <Row gutter={[8, 0]}>
-        <Col xs={24} sm={12}>
+        <Col xs={24}>
           <Card
             title={
               <Space size={4}>
@@ -270,49 +271,6 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
                 </div>
               </Col>
             </Row>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Card
-            title={
-              <Space size={4}>
-                <AimOutlined />
-                <span style={{ fontSize: 12 }}>Sales Target</span>
-              </Space>
-            }
-            size="small"
-            styles={{ body: { padding: 12 } }}
-          >
-            <div style={{ marginBottom: 4 }}>
-              <Text strong style={{ fontSize: 11 }}>
-                Daily Objective
-              </Text>
-              <InputNumber
-                type="number"
-                size="small"
-                placeholder="0"
-                min={0}
-                value={formState.daily_sale_objective}
-                onChange={(value) =>
-                  onFieldUpdate("daily_sale_objective", value || 0)
-                }
-                style={{ width: "100%" }}
-                addonAfter="units/day"
-                status={
-                  getValidationStatus("daily_sale_objective", validationState)
-                    .status
-                }
-              />
-              {getValidationStatus("daily_sale_objective", validationState)
-                .help && (
-                <Text type="danger" style={{ fontSize: 10 }}>
-                  {
-                    getValidationStatus("daily_sale_objective", validationState)
-                      .help
-                  }
-                </Text>
-              )}
-            </div>
           </Card>
         </Col>
       </Row>
