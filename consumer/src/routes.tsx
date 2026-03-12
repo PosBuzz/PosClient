@@ -49,8 +49,13 @@ const Sales = lazy(() => import("./pages/sales"));
 const Promotions = lazy(() => import("./pages/promotions"));
 const AddSale = lazy(() => import("./pages/add-sales"));
 const SaleDetail = lazy(() => import("./pages/view-sale"));
+const UserSalesStats = lazy(() => import("./pages/user-sales-stats"));
+const ViewUserSalesStats = lazy(
+  () => import("./pages/user-sales-stats/view-user-sales-stats"),
+);
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
-const EODReport = lazy(() => import("./pages/eod"));
+const DailyTargetReport = lazy(() => import("./pages/daily-target"));
+// const EODReport = lazy(() => import("./pages/eod"));
 const POSPage = lazy(() => import("./pages/pos"));
 const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
 const Returns = lazy(() => import("./pages/returns"));
@@ -63,6 +68,12 @@ const AddQuotation = lazy(() => import("./pages/add-quotation"));
 const ViewQuotation = lazy(() => import("./pages/view-quotation"));
 const PartialPayments = lazy(() => import("./pages/partial-payments"));
 const MakePayment = lazy(() => import("./pages/partial-payments/make-payment"));
+const ProductVariantSalesStats = lazy(
+  () => import("./pages/product-variant-sales-stats"),
+);
+const ViewVariantSalesStats = lazy(
+  () => import("./pages/product-variant-sales-stats/view-variant-sales-stats"),
+);
 
 export const routes = [
   {
@@ -351,6 +362,22 @@ export const routes = [
         ),
       },
       {
+        path: "user-sales-stats",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <UserSalesStats />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "user-sales-stats/:userId",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <ViewUserSalesStats />
+          </RequirePermission>
+        ),
+      },
+      {
         path: "online-orders",
         element: (
           <RequirePermission permission={Permissions.sales}>
@@ -392,14 +419,39 @@ export const routes = [
           </RequirePermission>
         ),
       },
+      // Product Variant Sales Stats Routes
       {
-        path: "eod",
+        path: "product-variant-sales-stats",
         element: (
-          <RequirePermission permission={Permissions.sales}>
-            <EODReport />
+          <RequirePermission permission={Permissions.view_product}>
+            <ProductVariantSalesStats />
           </RequirePermission>
         ),
       },
+      {
+        path: "product-variant-sales-stats/:variantId",
+        element: (
+          <RequirePermission permission={Permissions.view_product}>
+            <ViewVariantSalesStats />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "daily-target",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <DailyTargetReport />
+          </RequirePermission>
+        ),
+      },
+      // {
+      //   path: "eod",
+      //   element: (
+      //     <RequirePermission permission={Permissions.sales}>
+      //       <EODReport />
+      //     </RequirePermission>
+      //   ),
+      // },
       // Returns Routes
       {
         path: "returns",

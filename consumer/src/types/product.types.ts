@@ -8,7 +8,6 @@ export interface ProductFormData {
   has_variants: boolean;
   tax_method: TaxMethod;
   tax: number;
-  daily_sale_objective: number;
   variants: ProductVariant[];
 }
 
@@ -23,7 +22,6 @@ export interface ProductFormStructure {
   has_variants: boolean;
   tax_method: TaxMethod;
   tax: number;
-  daily_sale_objective: number;
   variants: { [key: string]: FormVariant };
 }
 
@@ -40,6 +38,7 @@ export interface FormVariant {
   image?: string | null;
   is_default?: boolean;
   alert_quantity?: number;
+  daily_sale_objective?: number;
   attributes?: FormAttribute[];
   serials?: FormSerial[];
   batches?: any[];
@@ -71,6 +70,7 @@ export interface ProductVariant {
   image?: string | null;
   is_default?: boolean;
   alert_quantity: number;
+  daily_sale_objective?: number;
   attributes: ProductAttribute[];
   serials?: ProductSerial[];
   batches?: any[]; // Will be typed properly when importing BatchData from BatchAddingForm
@@ -123,7 +123,6 @@ export interface Product {
   has_variants: boolean;
   tax_method: string;
   tax: number;
-  daily_sale_objective: number;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -167,8 +166,10 @@ export interface Product {
   };
 }
 
-export interface ProductVariantDetailed
-  extends Omit<ProductVariant, "serials"> {
+export interface ProductVariantDetailed extends Omit<
+  ProductVariant,
+  "serials"
+> {
   // Unit information
   sale_unit?: {
     id: number;
