@@ -726,32 +726,32 @@ model PriceHistory {
 }
 
 model Promotion {
-  id              Int       @id @default(autoincrement())
-  consumer_id     Int
-  created_by_user_id Int?
-  name            String
-  description     String?
-  scope           String    @default("SINGLE_PRODUCT") // SINGLE_PRODUCT, BUNDLE, BRAND
-  discount_type   String // percentage, fixed_amount
-  discount_value  Decimal   @db.Decimal(10, 2)
-  start_date      DateTime
-  end_date        DateTime?
-  is_active       Boolean   @default(true)
-  brand_id        Int?
-  min_quantity    Int?      @default(1)
-  usage_limit     Int?
-  cap_quantity    Int?
-  min_purchase    Decimal?  @db.Decimal(10, 2)
-  max_discount_amount Decimal? @db.Decimal(10, 2)
-  cap_discount_amount Decimal? @db.Decimal(10, 2)
-  member_only     Boolean   @default(false)
-  limit_per_customer Boolean @default(false)
-  customer_usage_limit Int?
-  customer_usage_daily_reset Boolean @default(false)
-  auto_apply      Boolean   @default(false)
-  branch_specific Boolean   @default(false)
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  id                         Int       @id @default(autoincrement())
+  consumer_id                Int
+  created_by_user_id         Int?
+  name                       String
+  description                String?
+  scope                      String    @default("SINGLE_PRODUCT") // SINGLE_PRODUCT, BUNDLE, BRAND
+  discount_type              String // percentage, fixed_amount
+  discount_value             Decimal   @db.Decimal(10, 2)
+  start_date                 DateTime
+  end_date                   DateTime?
+  is_active                  Boolean   @default(true)
+  brand_id                   Int?
+  min_quantity               Int?      @default(1)
+  usage_limit                Int?
+  cap_quantity               Int?
+  min_purchase               Decimal?  @db.Decimal(10, 2)
+  max_discount_amount        Decimal?  @db.Decimal(10, 2)
+  cap_discount_amount        Decimal?  @db.Decimal(10, 2)
+  member_only                Boolean   @default(false)
+  limit_per_customer         Boolean   @default(false)
+  customer_usage_limit       Int?
+  customer_usage_daily_reset Boolean   @default(false)
+  auto_apply                 Boolean   @default(false)
+  branch_specific            Boolean   @default(false)
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
 
   // Relations
   consumer        Consumer           @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
@@ -809,11 +809,11 @@ model Sale {
   sale_date            DateTime  @default(now())
   sale_type            String    @default("sale") // sale, quotation
   price_type           String    @default("regular") // regular, wholesale
-  subtotal                Decimal   @db.Decimal(10, 2)
-  discount_type           String    @default("flat") // flat, percentage
-  discount_amount         Decimal   @default(0) @db.Decimal(10, 2) // Manual discount only
-  promotion_discount      Decimal   @default(0) @db.Decimal(10, 2) // Promotion discount (tracked separately for stats)
-  shipping_cost           Decimal   @default(0) @db.Decimal(10, 2)
+  subtotal             Decimal   @db.Decimal(10, 2)
+  discount_type        String    @default("flat") // flat, percentage
+  discount_amount      Decimal   @default(0) @db.Decimal(10, 2) // Manual discount only
+  promotion_discount   Decimal   @default(0) @db.Decimal(10, 2) // Promotion discount (tracked separately for stats)
+  shipping_cost        Decimal   @default(0) @db.Decimal(10, 2)
   tax_amount           Decimal   @default(0) @db.Decimal(10, 2)
   total_amount         Decimal   @db.Decimal(10, 2)
   payment_status       String    @default("paid") // paid, partial, due, cancelled
