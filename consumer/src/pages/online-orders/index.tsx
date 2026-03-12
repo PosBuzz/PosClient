@@ -23,6 +23,7 @@ import { useMessageStore } from "../../stores/messageStore";
 import { Sale } from "../../types/sale.types";
 import { EyeOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -220,6 +221,7 @@ const OnlineOrders = () => {
 
   return (
     <div>
+      {setPageTitle("Online Orders")}
       <PageTitle
         title="Online Orders"
         breadcrumbs={[

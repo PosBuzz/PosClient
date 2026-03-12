@@ -195,11 +195,6 @@ const NewSale = () => {
     }
   }, [productsForSaleQuery.data]);
 
-  // Set initial page title
-  useEffect(() => {
-    setPageTitle("New Sale");
-  }, []);
-
   // Load quotation data if converting from quotation
   const quotationQuery = useQuery({
     queryKey: [queryKeys.quotation, parseInt(quotationId || "0")],
@@ -1027,7 +1022,7 @@ const NewSale = () => {
       payments: salePayments,
       quotation_id: quotationId ? parseInt(quotationId) : undefined,
       is_online_order: isOnlineOrder,
-      online_order_status: isOnlineOrder ? 'PENDING' : undefined,
+      online_order_status: isOnlineOrder ? "PENDING" : undefined,
     };
 
     try {
@@ -1056,7 +1051,9 @@ const NewSale = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
       paymentStatus === PaymentStatus.PARTIAL &&
-        queryClient.invalidateQueries({ queryKey: [queryKeys.partialPayments] });
+        queryClient.invalidateQueries({
+          queryKey: [queryKeys.partialPayments],
+        });
 
       messageApi?.success("Sale created successfully!");
       navigate(`/sales/view/${createdSale.id}`);
@@ -1183,6 +1180,7 @@ const NewSale = () => {
 
   return (
     <div>
+      {setPageTitle("New Sale")}
       <PageTitle
         title="New Sale"
         breadcrumbs={[
