@@ -1,39 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
 export class PlanService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  private readonly logger = new Logger(PlanService.name);
+
+  constructor(private prisma: PrismaService) {}
+
   async create(data: CreatePlanDto) {
-    const result = await this.prisma.plan.create({
-      data: {
-        name: data.name,
-        price: data.price,
-        permissions: {
-          create: data.permission_ids.map((permission_id) => ({
-            permission: { connect: { id: permission_id } },
-          })),
+    try {
+      const result = await this.prisma.plan.create({
+        data: {
+          name: data.name,
+          price: data.price,
+          permissions: {
+            create: data.permission_ids.map((permission_id) => ({
+              permission: { connect: { id: permission_id } },
+            })),
+          },
         },
-      },
-    });
+      });
 
-    // Invalidate related caches
-    await this.invalidatePlanCaches();
+      return result;
+    } catch (error) {
+      this.logger.error('Plan creation failed', error.stack);
 
-    return result;
+      throw new HttpException(
+        'Failed to create plan',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findAll() {
-    const cacheKey = generateCacheKey.planList();
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       return await this.prisma.plan.findMany({
         include: {
           permissions: {
@@ -44,14 +46,19 @@ export class PlanService {
         },
         orderBy: { id: 'asc' },
       });
-    });
+    } catch (error) {
+      this.logger.error('Fetching plans failed', error.stack);
+
+      throw new HttpException(
+        'Failed to fetch plans',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOne(id: number) {
-    const cacheKey = generateCacheKey.planDetail(id);
-    
-    return this.cacheService.getOrSet(cacheKey, async () => {
-      return await this.prisma.plan.findUnique({
+    try {
+      const plan = await this.prisma.plan.findUnique({
         where: { id },
         include: {
           permissions: {
@@ -61,143 +68,139 @@ export class PlanService {
           },
         },
       });
-    });
+
+      if (!plan) {
+        throw new HttpException('Plan not found', HttpStatus.NOT_FOUND);
+      }
+
+      return plan;
+    } catch (error) {
+      this.logger.error(`Fetching plan ${id} failed`, error.stack);
+
+      throw new HttpException(
+        error.message || 'Failed to fetch plan',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async update(planId: number, data: UpdatePlanDto) {
-    const { permission_ids, ...rest } = data;
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const { permission_ids, ...rest } = data;
 
-    // If permissions are provided, update them along with name/price
-    if (permission_ids?.length) {
-      // Get current permissions for the plan
-      const currentPlanPermissions = await this.prisma.planPermission.findMany({
-        where: { plan_id: planId },
-        select: { permission_id: true },
-      });
-      const currentPermissionIds = currentPlanPermissions.map(
-        (p) => p.permission_id,
-      );
+        if (permission_ids?.length) {
+          // Current permissions
+          const currentPlanPermissions = await tx.planPermission.findMany({
+            where: { plan_id: planId },
+            select: { permission_id: true },
+          });
 
-      // Calculate added and removed permissions
-      const addedPermissions = permission_ids.filter(
-        (id) => !currentPermissionIds.includes(id),
-      );
-      const removedPermissions = currentPermissionIds.filter(
-        (id) => !permission_ids.includes(id),
-      );
+          const currentPermissionIds = currentPlanPermissions.map(
+            (p) => p.permission_id,
+          );
 
-      // Delete the existing plan permissions
-      await this.prisma.planPermission.deleteMany({
-        where: { plan_id: planId },
-      });
+          const addedPermissions = permission_ids.filter(
+            (id) => !currentPermissionIds.includes(id),
+          );
 
-      // Handle removed permissions - find consumers with this plan and remove these permissions from their roles
-      if (removedPermissions.length > 0) {
-        const consumersWithPlan = await this.prisma.consumer.findMany({
-          where: { plan_id: planId },
-          select: { id: true },
-        });
+          const removedPermissions = currentPermissionIds.filter(
+            (id) => !permission_ids.includes(id),
+          );
 
-        const consumerIds = consumersWithPlan.map((consumer) => consumer.id);
+          // Remove existing permissions
+          await tx.planPermission.deleteMany({
+            where: { plan_id: planId },
+          });
 
-        if (consumerIds.length > 0) {
-          // Remove these permissions from roles of affected consumers
-          await this.prisma.rolePermission.deleteMany({
-            where: {
-              permission_id: { in: removedPermissions },
-              role: {
-                consumer_id: { in: consumerIds },
+          // Handle removed permissions
+          if (removedPermissions.length > 0) {
+            const consumersWithPlan = await tx.consumer.findMany({
+              where: { plan_id: planId },
+              select: { id: true },
+            });
+
+            const consumerIds = consumersWithPlan.map((c) => c.id);
+
+            if (consumerIds.length > 0) {
+              await tx.rolePermission.deleteMany({
+                where: {
+                  permission_id: { in: removedPermissions },
+                  role: {
+                    consumer_id: { in: consumerIds },
+                  },
+                },
+              });
+            }
+          }
+
+          // Handle added permissions
+          if (addedPermissions.length > 0) {
+            const consumersWithPlan = await tx.consumer.findMany({
+              where: { plan_id: planId },
+              include: {
+                roles: {
+                  where: {
+                    name: 'Admin',
+                    is_admin: true,
+                  },
+                  select: { id: true },
+                },
+              },
+            });
+
+            for (const consumer of consumersWithPlan) {
+              if (consumer.roles.length > 0) {
+                const adminRoleId = consumer.roles[0].id;
+
+                for (const permissionId of addedPermissions) {
+                  const existingPermission = await tx.rolePermission.findFirst({
+                    where: {
+                      role_id: adminRoleId,
+                      permission_id: permissionId,
+                    },
+                  });
+
+                  if (!existingPermission) {
+                    await tx.rolePermission.create({
+                      data: {
+                        role_id: adminRoleId,
+                        permission_id: permissionId,
+                      },
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // Update plan
+          return await tx.plan.update({
+            where: { id: planId },
+            data: {
+              ...rest,
+              permissions: {
+                create: permission_ids.map((permission_id) => ({
+                  permission: { connect: { id: permission_id } },
+                })),
               },
             },
           });
         }
-      }
 
-      // Handle added permissions - find consumers with this plan and add these permissions to their admin roles
-      if (addedPermissions.length > 0) {
-        const consumersWithPlan = await this.prisma.consumer.findMany({
-          where: { plan_id: planId },
-          include: {
-            roles: {
-              where: {
-                name: 'Admin',
-                is_admin: true,
-              },
-              select: { id: true },
-            },
-          },
+        // Update only basic info
+        return await tx.plan.update({
+          where: { id: planId },
+          data: { ...rest },
         });
-
-        // For each consumer, add the new permissions to their admin role
-        for (const consumer of consumersWithPlan) {
-          // Find the admin role for this consumer
-          if (consumer.roles.length > 0) {
-            const adminRoleId = consumer.roles[0].id;
-
-            for (const permissionId of addedPermissions) {
-              // Check if permission already exists to avoid duplicates
-              const existingPermission =
-                await this.prisma.rolePermission.findFirst({
-                  where: {
-                    role_id: adminRoleId,
-                    permission_id: permissionId,
-                  },
-                });
-
-              if (!existingPermission) {
-                await this.prisma.rolePermission.create({
-                  data: {
-                    role_id: adminRoleId,
-                    permission_id: permissionId,
-                  },
-                });
-              }
-            }
-          }
-        }
-      }      // Update the plan with new permissions
-      const result = await this.prisma.plan.update({
-        where: { id: planId },
-        data: {
-          ...rest,
-          permissions: {
-            create: permission_ids.map((permission_id) => ({
-              permission: { connect: { id: permission_id } },
-            })),
-          },
-        },
       });
+    } catch (error) {
+      this.logger.error(`Updating plan ${planId} failed`, error.stack);
 
-      // Invalidate related caches
-      await this.invalidatePlanCaches(planId);
-
-      return result;
-    }    // If no permissions are provided, only update the plan basic info
-    const result = await this.prisma.plan.update({
-      where: { id: planId },
-      data: { ...rest },
-    });
-
-    // Invalidate related caches
-    await this.invalidatePlanCaches(planId);
-
-    return result;
-  }
-
-  // Cache invalidation helper methods
-  private async invalidatePlanCaches(planId?: number) {
-    const cacheKeysToInvalidate: string[] = [];
-
-    // Invalidate plan list cache
-    cacheKeysToInvalidate.push(generateCacheKey.planList());
-
-    // Invalidate specific plan detail cache if planId is provided
-    if (planId) {
-      cacheKeysToInvalidate.push(generateCacheKey.planDetail(planId));
+      throw new HttpException(
+        'Failed to update plan',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key => this.cacheService.del(key))
-    );
   }
 }

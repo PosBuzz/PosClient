@@ -134,6 +134,11 @@ const SideBar: React.FC = () => {
           key: "/barcode-printing",
           permissions: [Permissions.add_product],
         },
+        {
+          label: <span title="Variant Sales Stats">Sales Stats</span>,
+          key: "/product-variant-sales-stats",
+          permissions: [Permissions.view_product],
+        },
       ],
     },
     {
@@ -164,8 +169,18 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
+          label: <span title="Daily Sales Target">Daily Sales Target</span>,
+          key: "/daily-target",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Discount & Promo">Discount & Promo</span>,
           key: "/promotions",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="New Sale">New Sale</span>,
+          key: "/sales/new",
           permissions: [Permissions.sales],
         },
         {
@@ -173,9 +188,10 @@ const SideBar: React.FC = () => {
           key: "/online-orders",
           permissions: [Permissions.sales],
         },
+
         {
-          label: <span title="New Sale">New Sale</span>,
-          key: "/sales/new",
+          label: <span title="User Sales Stats">User Sales Stats</span>,
+          key: "/user-sales-stats",
           permissions: [Permissions.sales],
         },
         {
@@ -203,11 +219,11 @@ const SideBar: React.FC = () => {
           key: "/partial-payments",
           permissions: [Permissions.sales],
         },
-        {
-          label: <span title="End of Day Report">End of Day Report</span>,
-          key: "/eod",
-          permissions: [Permissions.sales],
-        },
+        // {
+        //   label: <span title="End of Day Report">End of Day Report</span>,
+        //   key: "/eod",
+        //   permissions: [Permissions.sales],
+        // },
       ],
     },
     {

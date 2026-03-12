@@ -2,6 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TaxMethod } from '@prisma/client';
@@ -9,73 +12,82 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
-import { CacheService } from '../../../common/services/cache.service';
-import { generateCacheKey } from '../../../constants/cache-keys';
 
 @Injectable()
-export class ProductService {  constructor(
+export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+  constructor(
     private prisma: PrismaService,
     private variantService: ProductVariantService,
-    private cacheService: CacheService,
   ) {}
 
   async create(consumerId: number, dto: CreateProductDto) {
-    // Validate that at least one variant is provided
-    if (!dto.variants || dto.variants.length === 0) {
-      throw new BadRequestException('At least one variant is required');
-    }
+    try {
+      // Validate that at least one variant is provided
+      if (!dto.variants || dto.variants.length === 0) {
+        throw new BadRequestException('At least one variant is required');
+      }
 
-    // For non-variant products, ensure only one variant is provided
-    if (!dto.has_variants && dto.variants.length > 1) {
-      throw new BadRequestException(
-        'Simple products can only have one variant',
-      );
-    }
+      // For non-variant products, ensure only one variant is provided
+      if (!dto.has_variants && dto.variants.length > 1) {
+        throw new BadRequestException(
+          'Simple products can only have one variant',
+        );
+      }
 
-    // Create the product
-    const product = await this.prisma.product.create({
-      data: {
-        consumer_id: consumerId,
-        name: dto.name,
-        code: dto.code,
-        description: dto.description,
-        category_id: dto.category_id,
-        brand_id: dto.brand_id,
-        has_variants: dto.has_variants,
-        tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
-        tax: dto.tax || 0,
-        daily_sale_objective: dto.daily_sale_objective || 0,
-      },
-    });
+      // Create the product
+      const product = await this.prisma.product.create({
+        data: {
+          consumer_id: consumerId,
+          name: dto.name,
+          code: dto.code,
+          description: dto.description,
+          category_id: dto.category_id,
+          brand_id: dto.brand_id,
+          has_variants: dto.has_variants,
+          tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
+          tax: dto.tax || 0,
+        },
+      });
 
-    // Add tags if provided
-    if (dto.tag_ids && dto.tag_ids.length > 0) {
-      await this.prisma.$transaction(
-        dto.tag_ids.map((tagId) =>
-          this.prisma.tagOnProduct.create({
-            data: {
-              product_id: product.id,
-              tag_id: tagId,
-            },
-          }),
+      // Add tags if provided
+      if (dto.tag_ids && dto.tag_ids.length > 0) {
+        await this.prisma.$transaction(
+          dto.tag_ids.map((tagId) =>
+            this.prisma.tagOnProduct.create({
+              data: {
+                product_id: product.id,
+                tag_id: tagId,
+              },
+            }),
+          ),
+        );
+      }
+
+      // Create variants
+      // For simple products, mark the variant as default
+      if (!dto.has_variants) {
+        dto.variants[0].is_default = true;
+      }
+
+      await Promise.all(
+        dto.variants.map((variantDto) =>
+          this.variantService.create(product.id, variantDto),
         ),
       );
+
+      return this.findOne(product.id, consumerId);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error creating product for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to create product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    // Create variants
-    // For simple products, mark the variant as default
-    if (!dto.has_variants) {
-      dto.variants[0].is_default = true;
-    }
-
-    await Promise.all(
-      dto.variants.map((variantDto) =>
-        this.variantService.create(product.id, variantDto),
-      ),
-    );    // Invalidate relevant caches
-    await this.invalidateProductCaches(consumerId);
-
-    return this.findOne(product.id, consumerId);
   }
 
   async findAll(
@@ -89,20 +101,16 @@ export class ProductService {  constructor(
       tagIds?: number[]; // Updated to support multiple
     } = {},
   ) {
-    const {
-      page = 1,
-      limit = 10,
-      search = '',
-      categoryIds,
-      brandIds,
-      tagIds,
-    } = options;
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+        categoryIds,
+        brandIds,
+        tagIds,
+      } = options;
 
-    // Generate cache key
-    const cacheKey = generateCacheKey.productList(consumerId, page, limit, search);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
       const skip = (page - 1) * limit;
 
       // Build the where clause properly for Prisma
@@ -223,15 +231,21 @@ export class ProductService {  constructor(
           totalPages: Math.ceil(total / limit),
         },
       };
-    });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error fetching products for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to fetch products',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOne(id: number, consumerId: number) {
-    // Generate cache key
-    const cacheKey = generateCacheKey.productDetail(id, consumerId);
-    
-    // Try to get from cache first
-    return this.cacheService.getOrSet(cacheKey, async () => {
+    try {
       const product = await this.prisma.product.findFirst({
         where: {
           id,
@@ -536,120 +550,139 @@ export class ProductService {  constructor(
         ...enrichedProduct,
         metrics: productMetrics,
       };
-    });
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error finding product with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to find product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
   async update(id: number, dto: UpdateProductDto, consumerId: number) {
-    // First check if product exists and belongs to this consumer
-    await this.findOne(id, consumerId);
+    try {
+      // First check if product exists and belongs to this consumer
+      await this.findOne(id, consumerId);
 
-    // Update the product
-    await this.prisma.product.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        code: dto.code,
-        description: dto.description,
-        category_id: dto.category_id,
-        brand_id: dto.brand_id,
-        has_variants: dto.has_variants,
-        tax_method: dto.tax_method,
-        tax: dto.tax,
-        daily_sale_objective: dto.daily_sale_objective,
-      },
-    });
-
-    // Update tags if provided
-    if (dto.tag_ids) {
-      // Remove existing tags
-      await this.prisma.tagOnProduct.deleteMany({
-        where: { product_id: id },
+      // Update the product
+      await this.prisma.product.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          code: dto.code,
+          description: dto.description,
+          category_id: dto.category_id,
+          brand_id: dto.brand_id,
+          has_variants: dto.has_variants,
+          tax_method: dto.tax_method,
+          tax: dto.tax,
+        },
       });
 
-      // Add new tags
-      if (dto.tag_ids.length > 0) {
-        await this.prisma.$transaction(
-          dto.tag_ids.map((tagId) =>
-            this.prisma.tagOnProduct.create({
-              data: {
-                product_id: id,
-                tag_id: tagId,
-              },
-            }),
+      // Update tags if provided
+      if (dto.tag_ids) {
+        // Remove existing tags
+        await this.prisma.tagOnProduct.deleteMany({
+          where: { product_id: id },
+        });
+
+        // Add new tags
+        if (dto.tag_ids.length > 0) {
+          await this.prisma.$transaction(
+            dto.tag_ids.map((tagId) =>
+              this.prisma.tagOnProduct.create({
+                data: {
+                  product_id: id,
+                  tag_id: tagId,
+                },
+              }),
+            ),
+          );
+        }
+      }
+
+      // Update existing variants
+      if (dto.variants && dto.variants.length > 0) {
+        // Process each variant
+        await Promise.all(
+          dto.variants.map(async (variantDto) => {
+            // If variant has ID, update it
+            if ('id' in variantDto && variantDto.id) {
+              // In edit mode, preserve inventory by setting the preserve_inventory flag
+              const updateVariantDto = dto.is_edit_mode
+                ? { ...variantDto, preserve_inventory: true }
+                : variantDto;
+
+              await this.variantService.update(variantDto.id, updateVariantDto);
+            } else {
+              // Create new variant - need to ensure all required fields exist
+              if (
+                !variantDto.name ||
+                !variantDto.regular_price ||
+                !variantDto.sale_unit_id ||
+                !variantDto.purchase_unit_id
+              ) {
+                throw new BadRequestException(
+                  'New variants require all required fields',
+                );
+              }
+
+              // Safe cast to CreateProductVariantDto since we've verified required fields
+              await this.variantService.create(
+                id,
+                variantDto as unknown as CreateProductVariantDto,
+              );
+            }
+          }),
+        );
+      }
+
+      // Delete variants if requested
+      if (dto.variant_ids_to_delete && dto.variant_ids_to_delete.length > 0) {
+        await Promise.all(
+          dto.variant_ids_to_delete.map((variantId) =>
+            this.variantService.remove(variantId),
           ),
         );
       }
-    }
 
-    // Update existing variants
-    if (dto.variants && dto.variants.length > 0) {
-      // Process each variant
-      await Promise.all(
-        dto.variants.map(async (variantDto) => {
-          // If variant has ID, update it
-          if ('id' in variantDto && variantDto.id) {
-            // In edit mode, preserve inventory by setting the preserve_inventory flag
-            const updateVariantDto = dto.is_edit_mode 
-              ? { ...variantDto, preserve_inventory: true }
-              : variantDto;
-            
-            await this.variantService.update(variantDto.id, updateVariantDto);
-          } else {
-            // Create new variant - need to ensure all required fields exist
-            if (
-              !variantDto.name ||
-              !variantDto.regular_price ||
-              !variantDto.sale_unit_id ||
-              !variantDto.purchase_unit_id
-            ) {
-              throw new BadRequestException(
-                'New variants require all required fields',
-              );
-            }
-
-            // Safe cast to CreateProductVariantDto since we've verified required fields
-            await this.variantService.create(
-              id,
-              variantDto as unknown as CreateProductVariantDto,
-            );
-          }
-        }),
+      return this.findOne(id, consumerId);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error updating product with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to update product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
-    // Delete variants if requested
-    if (dto.variant_ids_to_delete && dto.variant_ids_to_delete.length > 0) {
-      await Promise.all(
-        dto.variant_ids_to_delete.map((variantId) =>
-          this.variantService.remove(variantId),
-        ),
-      );
-    }
-
-    // Invalidate relevant caches
-    await this.invalidateProductCaches(consumerId, id);
-
-    return this.findOne(id, consumerId);
   }
 
   async remove(id: number, consumerId: number) {
-    // First check if product exists and belongs to this consumer
-    await this.findOne(id, consumerId);
-
-    await this.prisma.product.delete({
-      where: { id },
-    });
-
-    // Invalidate relevant caches
-    await this.invalidateProductCaches(consumerId, id);
-
-    return { success: true, message: 'Product deleted successfully' };
-  }  // Cache invalidation helper method
-  private async invalidateProductCaches(consumerId: number, productId?: number) {
     try {
-      // Use centralized inventory cache invalidation since products are core to inventory
-      await this.cacheService.invalidateAllInventoryCaches(consumerId);
+      // First check if product exists and belongs to this consumer
+      await this.findOne(id, consumerId);
+
+      await this.prisma.product.delete({
+        where: { id },
+      });
+
+      return { success: true, message: 'Product deleted successfully' };
     } catch (error) {
-      console.error('Product cache invalidation error:', error);
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error deleting product with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to delete product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
