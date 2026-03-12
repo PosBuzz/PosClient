@@ -134,6 +134,11 @@ const SideBar: React.FC = () => {
           key: "/barcode-printing",
           permissions: [Permissions.add_product],
         },
+        {
+          label: <span title="Variant Sales Stats">Sales Stats</span>,
+          key: "/product-variant-sales-stats",
+          permissions: [Permissions.view_product],
+        },
       ],
     },
     {
