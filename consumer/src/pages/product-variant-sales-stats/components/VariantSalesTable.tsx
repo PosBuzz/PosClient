@@ -46,7 +46,7 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
       title: "Product",
       dataIndex: "product_name",
       key: "product_name",
-      render: (_:any,record: any) => (
+      render: (_: any, record: any) => (
         <div>
           <Text strong>{record.product_name}</Text>
           <br />
@@ -59,7 +59,7 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
             </Text>
           )}
         </div>
-      )
+      ),
     },
     {
       title: "Total Sales",
@@ -99,7 +99,6 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
           type="link"
           icon={<EyeOutlined />}
           onClick={() => handleView(record)}
-          disabled={record.total_sales === 0}
         >
           View
         </Button>

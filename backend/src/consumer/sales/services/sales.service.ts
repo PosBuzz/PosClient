@@ -232,15 +232,18 @@ export class SalesService {
             })),
           );
 
-        promotionDiscountAmount = Number(promotionEvaluation.discount_amount) || 0;
+        promotionDiscountAmount =
+          Number(promotionEvaluation.discount_amount) || 0;
         promotionId = createSaleDto.applied_promotion_id;
       }
 
-      const totalDiscountAmount = manualDiscountAmount + promotionDiscountAmount;
+      const totalDiscountAmount =
+        manualDiscountAmount + promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
       // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
-      const totalAmount = subtotal - totalDiscountAmount + totalTax + shippingCost;
+      const totalAmount =
+        subtotal - totalDiscountAmount + totalTax + shippingCost;
 
       // Calculate payment totals and determine payment status
       let totalPaymentAmount = 0;
@@ -1695,6 +1698,35 @@ export class SalesService {
       const start = this.parseLocalDateStart(startDate);
       const end = this.parseLocalDateEnd(endDate);
 
+      const variants = await this.prisma.productVariant.findMany({
+        where: {
+          product: {
+            consumer_id: consumerId,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          product: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      const total = variants.length;
+      if (!total) {
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            total_pages: 0,
+          },
+        };
+      }
+
       const where: any = {
         sale: {
           consumer_id: consumerId,
@@ -1724,55 +1756,51 @@ export class SalesService {
         },
       });
 
-      const total = grouped.length;
-      if (!total) {
-        return {
-          data: [],
-          meta: {
-            total: 0,
-            page,
-            limit,
-            total_pages: 0,
+      const statsMap = new Map(
+        grouped.map((group) => [
+          group.variant_id,
+          {
+            total_qty: Number(group._sum.quantity ?? 0),
+            total_sales: group._count.sale_id,
+            total_amount: Number(group._sum.line_total ?? 0),
           },
-        };
-      }
+        ]),
+      );
 
-      const skip = (page - 1) * limit;
-      const pagedGrouped = grouped.slice(skip, skip + limit);
-
-      const variantIds = pagedGrouped.map((g) => g.variant_id);
-
-      const variants = await this.prisma.productVariant.findMany({
-        where: { id: { in: variantIds } },
-        select: {
-          id: true,
-          name: true,
-          sku: true,
-          product: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-
-      const variantMap = new Map(variants.map((v) => [v.id, v]));
-
-      return {
-        data: pagedGrouped.map((g) => {
-          const variant = variantMap.get(g.variant_id);
-          const totalQty = Number(g._sum.quantity ?? 0);
-          const totalAmount = Number(g._sum.line_total ?? 0);
-          const salesCount = g._count.sale_id;
+      const mergedVariants = variants
+        .map((variant) => {
+          const stats = statsMap.get(variant.id);
 
           return {
-            variant_id: g.variant_id,
-            product_name: variant?.product?.name ?? 'Unknown',
-            variant_name: variant?.name ?? 'Unknown',
-            sku: variant?.sku ?? null,
-            total_qty: totalQty,
-            total_sales: salesCount,
-            total_amount: totalAmount,
+            variant_id: variant.id,
+            product_name: variant.product.name,
+            variant_name: variant.name,
+            sku: variant.sku ?? null,
+            total_qty: stats?.total_qty ?? 0,
+            total_sales: stats?.total_sales ?? 0,
+            total_amount: stats?.total_amount ?? 0,
           };
-        }),
+        })
+        .sort((a, b) => {
+          if (b.total_amount !== a.total_amount) {
+            return b.total_amount - a.total_amount;
+          }
+
+          if (b.total_sales !== a.total_sales) {
+            return b.total_sales - a.total_sales;
+          }
+
+          return (
+            a.product_name.localeCompare(b.product_name) ||
+            a.variant_name.localeCompare(b.variant_name)
+          );
+        });
+
+      const skip = (page - 1) * limit;
+      const pagedVariants = mergedVariants.slice(skip, skip + limit);
+
+      return {
+        data: pagedVariants,
         meta: {
           total,
           page,
