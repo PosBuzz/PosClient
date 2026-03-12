@@ -23,6 +23,7 @@ export const queryKeys = {
   sale: "sale",
   salesStats: "sales-stats",
   userSalesStats: "user-sales-stats",
+  variantSalesStats: "variant-sales-stats",
   productsForSale: "products-for-sale",
   customers: "customers",
   customer: "customer",
@@ -65,7 +66,7 @@ export const queryStaleTimeMap = {
   [queryKeys.roles]: staleTimeConfig.static,
   [queryKeys.vendors]: staleTimeConfig.static,
   [queryKeys.planPermissions]: staleTimeConfig.static,
-  
+
   // Dynamic data
   [queryKeys.products]: staleTimeConfig.dynamic,
   [queryKeys.productVariants]: staleTimeConfig.dynamic,
@@ -88,7 +89,7 @@ export const queryStaleTimeMap = {
   [queryKeys.quotation]: staleTimeConfig.dynamic,
   [queryKeys.partialPayments]: staleTimeConfig.dynamic,
   [queryKeys.saleForPayment]: staleTimeConfig.dynamic,
-  
+
   // Real-time data
   [queryKeys.inventorySummary]: staleTimeConfig.realTime,
   [queryKeys.stockByVariant]: staleTimeConfig.realTime,
@@ -98,7 +99,8 @@ export const queryStaleTimeMap = {
   [queryKeys.eod]: staleTimeConfig.realTime,
   [queryKeys.dailyTarget]: staleTimeConfig.realTime,
   [queryKeys.userSalesStats]: staleTimeConfig.realTime,
-  
+  [queryKeys.variantSalesStats]: staleTimeConfig.realTime,
+
   // Background data
   [queryKeys.movementHistory]: staleTimeConfig.background,
   [queryKeys.expiringBatches]: staleTimeConfig.background,
