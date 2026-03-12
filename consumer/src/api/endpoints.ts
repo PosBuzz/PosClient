@@ -1,5 +1,5 @@
 export const endpoints = {
-  validateSubdomain:"/public/subdomain/validate",
+  validateSubdomain: "/public/subdomain/validate",
   csrfToken: "/auth/csrf-token",
   login: "/auth/login-user",
   getMe: "/auth/client",
@@ -97,9 +97,11 @@ export const endpoints = {
   // New Inventory Views
   inventoryStockByVariant: "/consumer/inventory/stock-by-variant",
   inventoryExpiringBatches: "/consumer/inventory/expiring",
-  inventoryVariantStock: (variantId: number) => `/consumer/inventory/variants/${variantId}/stock`,
+  inventoryVariantStock: (variantId: number) =>
+    `/consumer/inventory/variants/${variantId}/stock`,
   inventoryLowStock: "/consumer/inventory/low-stock",
-  inventoryMovementHistory: (variantId: number) => `/consumer/inventory/movement-history/${variantId}`,
+  inventoryMovementHistory: (variantId: number) =>
+    `/consumer/inventory/movement-history/${variantId}`,
 
   // AI Services
   generateDescription: "/ai/auto-description",
@@ -108,7 +110,8 @@ export const endpoints = {
   // Sales Management
   getSales: "/consumer/sales",
   getSale: (id: number) => `/consumer/sales/${id}`,
-  getSaleBySaleNumber: (saleNumber: string) => `/consumer/sales/search/${saleNumber}`,
+  getSaleBySaleNumber: (saleNumber: string) =>
+    `/consumer/sales/search/${saleNumber}`,
   createSale: "/consumer/sales",
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
@@ -116,13 +119,18 @@ export const endpoints = {
   generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
   getDailyTargetReport: "/consumer/sales/reports/daily-target",
   getUserSalesStats: "/consumer/sales/user-sales-stats",
-  getUserSalesDetail: (userId: number) => `/consumer/sales/user-sales-stats/${userId}`,
+  getUserSalesDetail: (userId: number) =>
+    `/consumer/sales/user-sales-stats/${userId}`,
+  getVariantSalesStats: "/consumer/sales/variant-sales-stats",
+  getVariantSalesDetail: (variantId: number) =>
+    `/consumer/sales/variant-sales-stats/${variantId}`,
 
   // Quotation Management
   getQuotations: "/consumer/sales/quotations/list",
   getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
   createQuotation: "/consumer/sales",
-  downloadQuotationPdf: (id: number) => `/consumer/sales/quotations/${id}/pdf?download=true`,
+  downloadQuotationPdf: (id: number) =>
+    `/consumer/sales/quotations/${id}/pdf?download=true`,
 
   // Returns Management
   getReturns: "/consumer/returns",
@@ -130,8 +138,10 @@ export const endpoints = {
   createReturn: "/consumer/returns",
 
   // Thermal Printer Management
-  prepareReceipt: (saleId: number) => `/consumer/thermal-printer/prepare-receipt/${saleId}`,
-  previewReceipt: (saleId: number) => `/consumer/thermal-printer/preview-receipt/${saleId}`,
+  prepareReceipt: (saleId: number) =>
+    `/consumer/thermal-printer/prepare-receipt/${saleId}`,
+  previewReceipt: (saleId: number) =>
+    `/consumer/thermal-printer/preview-receipt/${saleId}`,
   getTestReceiptData: "/consumer/thermal-printer/test-data",
   getPrinterSettings: "/consumer/thermal-printer/settings",
   updatePrinterSettings: "/consumer/thermal-printer/settings",
@@ -142,19 +152,22 @@ export const endpoints = {
   updateRewardsSettings: "/consumer/rewards/settings",
   getCustomersWithPoints: "/consumer/rewards/customers",
   getCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/points`,
-  redeemCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/redeem`,
-  adjustCustomerPoints: (id: number) => `/consumer/rewards/customers/${id}/adjust`,
-  canRedeemPoints: (id: number, points: number) => `/consumer/rewards/customers/${id}/can-redeem/${points}`,
+  redeemCustomerPoints: (id: number) =>
+    `/consumer/rewards/customers/${id}/redeem`,
+  adjustCustomerPoints: (id: number) =>
+    `/consumer/rewards/customers/${id}/adjust`,
+  canRedeemPoints: (id: number, points: number) =>
+    `/consumer/rewards/customers/${id}/can-redeem/${points}`,
   getRewardsTransactions: "/consumer/rewards/transactions",
-  getCustomerTransactions: (id: number) => `/consumer/rewards/customers/${id}/transactions`,
+  getCustomerTransactions: (id: number) =>
+    `/consumer/rewards/customers/${id}/transactions`,
   expirePoints: "/consumer/rewards/expire-points",
-  getRedemptionValue: (points: number) => `/consumer/rewards/redemption-value/${points}`,
+  getRedemptionValue: (points: number) =>
+    `/consumer/rewards/redemption-value/${points}`,
 
   // Payments Management
   getPartiallyPaidSales: "/consumer/payments/partial-sales",
   getSaleForPayment: (id: number) => `/consumer/payments/sales/${id}`,
   makePayment: "/consumer/payments/make-payment",
   getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
-
-  
 };
