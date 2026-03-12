@@ -34,7 +34,6 @@ export class SubdomainValidationController {
     const subdomain = this.subdomainValidationService.extractSubdomainFromUrl(
         origin,
     );
-    console.log({subdomain, origin});
 
     if (!subdomain) {
       return {

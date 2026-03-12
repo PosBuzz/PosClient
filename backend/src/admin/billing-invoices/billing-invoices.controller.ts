@@ -180,7 +180,7 @@ export class BillingInvoicesController {
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
       res.send(buffer);
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       throw new HttpException(
         {

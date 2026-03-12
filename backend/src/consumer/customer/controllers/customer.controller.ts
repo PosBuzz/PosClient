@@ -45,8 +45,6 @@ export class CustomerController {
       limit: limit ? parseInt(limit) : 20,
     };
     
-    console.log('Customer query received:', { filters, consumerId: Number(req.user.consumer_id) });
-    
     return this.customerService.findAllWithFilters(filters, Number(req.user.consumer_id));
   }
 
