@@ -31,6 +31,7 @@ export class ProductVariantService {
           image: dto.image,
           is_default: dto.is_default || false,
           alert_quantity: dto.alert_quantity || 0,
+          daily_sale_objective: dto.daily_sale_objective || 0,
         },
       });
 
@@ -233,6 +234,7 @@ export class ProductVariantService {
           image: dto.image,
           is_default: dto.is_default,
           alert_quantity: dto.alert_quantity,
+          daily_sale_objective: dto.daily_sale_objective,
         },
       });
 

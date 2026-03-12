@@ -384,12 +384,9 @@ const SalesTable = () => {
     },
   ];
 
-  useEffect(() => {
-    setPageTitle("Sales");
-  }, []);
-
   return (
     <div>
+      {setPageTitle("Sales")}
       <PageTitle
         title="Sales"
         breadcrumbs={[{ title: "Home", href: "/" }, { title: "Sales" }]}
