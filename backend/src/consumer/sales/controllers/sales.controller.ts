@@ -28,6 +28,7 @@ import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { Request } from 'express';
 import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
+import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
 import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
@@ -216,6 +217,45 @@ export class SalesController {
 
     // Send the PDF
     res.send(pdfBuffer);
+  }
+
+  @Get('variant-sales-stats')
+  async getVariantSalesStats(
+    @Query() query: GetVariantSalesStatsDto,
+    @Req() req: Request,
+  ) {
+    const { startDate, endDate, branch_id, page, limit } = query;
+
+    if (!startDate || !endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+
+    return this.salesService.getVariantSalesStats(
+      req.user.consumer_id!,
+      startDate,
+      endDate,
+      branch_id,
+      page,
+      limit,
+    );
+  }
+
+  @Get('variant-sales-stats/:variantId')
+  async getVariantSalesDetail(
+    @Param('variantId', ParseIntPipe) variantId: number,
+    @Query() query: GetVariantSalesStatsDto,
+    @Req() req: Request,
+  ) {
+    const { startDate, endDate, branch_id, page, limit } = query;
+    return this.salesService.getVariantSalesDetail(
+      req.user.consumer_id!,
+      variantId,
+      startDate,
+      endDate,
+      branch_id,
+      page,
+      limit,
+    );
   }
 
   @Get('user-sales-stats')

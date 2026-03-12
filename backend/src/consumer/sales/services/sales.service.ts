@@ -1592,6 +1592,268 @@ export class SalesService {
     }
   }
 
+  // === VARIANT SALES STATS METHODS ===
+
+  async getVariantSalesStats(
+    consumerId: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+    page = 1,
+    limit = 20,
+  ) {
+    try {
+      const start = this.parseLocalDateStart(startDate);
+      const end = this.parseLocalDateEnd(endDate);
+
+      const where: any = {
+        sale: {
+          consumer_id: consumerId,
+          sale_type: SaleType.SALE,
+          sale_date: { gte: start, lte: end },
+        },
+      };
+
+      if (branchId) {
+        where.sale.branch_id = branchId;
+      }
+
+      const grouped = await this.prisma.saleItem.groupBy({
+        by: ['variant_id'],
+        where,
+        _sum: {
+          quantity: true,
+          line_total: true,
+        },
+        _count: {
+          sale_id: true,
+        },
+        orderBy: {
+          _sum: {
+            line_total: 'desc',
+          },
+        },
+      });
+
+      const total = grouped.length;
+      if (!total) {
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            total_pages: 0,
+          },
+        };
+      }
+
+      const skip = (page - 1) * limit;
+      const pagedGrouped = grouped.slice(skip, skip + limit);
+
+      const variantIds = pagedGrouped.map((g) => g.variant_id);
+
+      const variants = await this.prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          product: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      const variantMap = new Map(variants.map((v) => [v.id, v]));
+
+      return {
+        data: pagedGrouped.map((g) => {
+          const variant = variantMap.get(g.variant_id);
+          const totalQty = Number(g._sum.quantity ?? 0);
+          const totalAmount = Number(g._sum.line_total ?? 0);
+          const salesCount = g._count.sale_id;
+
+          return {
+            variant_id: g.variant_id,
+            product_name: variant?.product?.name ?? 'Unknown',
+            variant_name: variant?.name ?? 'Unknown',
+            sku: variant?.sku ?? null,
+            total_qty: totalQty,
+            total_sales: salesCount,
+            total_amount: totalAmount,
+          };
+        }),
+        meta: {
+          total,
+          page,
+          limit,
+          total_pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching variant sales stats for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Error fetching variant sales stats',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getVariantSalesDetail(
+    consumerId: number,
+    variantId: number,
+    startDate: string,
+    endDate: string,
+    branchId?: number,
+    page = 1,
+    limit = 20,
+  ) {
+    try {
+      const start = this.parseLocalDateStart(startDate);
+      const end = this.parseLocalDateEnd(endDate);
+
+      const variant = await this.prisma.productVariant.findFirst({
+        where: { id: variantId },
+        select: {
+          id: true,
+          name: true,
+          product: { select: { id: true, name: true, consumer_id: true } },
+        },
+      });
+
+      if (!variant || variant.product.consumer_id !== consumerId) {
+        throw new NotFoundException('Product variant not found');
+      }
+
+      const where: any = {
+        variant_id: variantId,
+        sale: {
+          consumer_id: consumerId,
+          sale_type: SaleType.SALE,
+          sale_date: { gte: start, lte: end },
+        },
+      };
+
+      if (branchId) {
+        where.sale.branch_id = branchId;
+      }
+
+      const skip = (page - 1) * limit;
+
+      const [items, total, totals] = await Promise.all([
+        this.prisma.saleItem.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { sale: { sale_date: 'desc' } },
+          select: {
+            id: true,
+            quantity: true,
+            line_total: true,
+            sale: {
+              select: {
+                id: true,
+                sale_number: true,
+                sale_date: true,
+                payment_status: true,
+                customer_name: true,
+                customer: { select: { id: true, name: true } },
+                branch: { select: { id: true, name: true } },
+              },
+            },
+          },
+        }),
+        this.prisma.saleItem.count({ where }),
+        this.prisma.saleItem.aggregate({
+          where,
+          _sum: { quantity: true, line_total: true },
+          _count: { sale_id: true },
+        }),
+      ]);
+
+      // Build daily chart data
+      const allItems = await this.prisma.saleItem.findMany({
+        where,
+        select: {
+          quantity: true,
+          line_total: true,
+          sale: { select: { sale_date: true } },
+        },
+        orderBy: { sale: { sale_date: 'asc' } },
+      });
+
+      const dailyMap = new Map<
+        string,
+        { date: string; total_amount: number; qty: number }
+      >();
+      for (const item of allItems) {
+        const dateStr = item.sale.sale_date.toISOString().split('T')[0];
+        const existing = dailyMap.get(dateStr);
+        if (existing) {
+          existing.qty += Number(item.quantity);
+          existing.total_amount += Number(item.line_total);
+        } else {
+          dailyMap.set(dateStr, {
+            date: dateStr,
+            qty: Number(item.quantity),
+            total_amount: Number(item.line_total),
+          });
+        }
+      }
+
+      const totalQty = Number(totals._sum.quantity ?? 0);
+      const totalAmount = Number(totals._sum.line_total ?? 0);
+      const salesCount = totals._count.sale_id;
+
+      return {
+        variant: {
+          id: variant.id,
+          name: variant.name,
+          product_name: variant.product.name,
+        },
+        summary: {
+          total_qty: totalQty,
+          total_sales: salesCount,
+          total_amount: totalAmount,
+          avg_qty: salesCount > 0 ? totalQty / salesCount : 0,
+          avg_amount: salesCount > 0 ? totalAmount / salesCount : 0,
+        },
+        chart_data: Array.from(dailyMap.values()),
+        data: items.map((item) => ({
+          id: item.id,
+          sale_id: item.sale.id,
+          sale_number: item.sale.sale_number,
+          sale_date: item.sale.sale_date,
+          customer_name:
+            item.sale.customer?.name ?? item.sale.customer_name ?? null,
+          branch_name: item.sale.branch?.name ?? null,
+          qty: Number(item.quantity),
+          line_total: Number(item.line_total),
+          payment_status: item.sale.payment_status,
+        })),
+        meta: {
+          total,
+          page,
+          limit,
+          total_pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching variant sales detail for variant ${variantId} and consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Error fetching variant sales detail',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   // === USER SALES STATS METHODS ===
 
   async getUsersSalesStats(
@@ -1604,7 +1866,7 @@ export class SalesService {
     // const end = new Date(endDate);
     // end.setHours(23, 59, 59, 999);
     const start = this.parseLocalDateStart(startDate);
-const end = this.parseLocalDateEnd(endDate);
+    const end = this.parseLocalDateEnd(endDate);
 
     const where: any = {
       consumer_id: consumerId,
@@ -1679,8 +1941,8 @@ const end = this.parseLocalDateEnd(endDate);
     // const start = new Date(startDate);
     // const end = new Date(endDate);
     // end.setHours(23, 59, 59, 999);
-const start = this.parseLocalDateStart(startDate);
-const end = this.parseLocalDateEnd(endDate);
+    const start = this.parseLocalDateStart(startDate);
+    const end = this.parseLocalDateEnd(endDate);
     const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
@@ -1759,26 +2021,26 @@ const end = this.parseLocalDateEnd(endDate);
 
   // date helper
   private parseLocalDateStart(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day, 0, 0, 0, 0);
 
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException(`Invalid date: ${dateStr}`);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(`Invalid date: ${dateStr}`);
+    }
+
+    return date;
   }
 
-  return date;
-}
+  private parseLocalDateEnd(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-private parseLocalDateEnd(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(`Invalid date: ${dateStr}`);
+    }
 
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException(`Invalid date: ${dateStr}`);
+    return date;
   }
-
-  return date;
-}
   // ========== ONLINE ORDER METHODS ==========
 
   async findAllOnlineOrders(filters: any, consumerId: number) {

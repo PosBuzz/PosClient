@@ -58,6 +58,52 @@ export const salesApi = {
   getBranchOptions: async (): Promise<{ id: number; name: string }[]> => {
     return await get(endpoints.getBranchOptions);
   },
+  getVariantSalesStats: async (params: {
+    startDate: string;
+    endDate: string;
+    branch_id?: number | null;
+    page?: number;
+    limit?: number;
+  }): Promise<any> => {
+    const cleanParams: any = {
+      startDate: params.startDate,
+      endDate: params.endDate,
+    };
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
+
+    if (params.page) {
+      cleanParams.page = params.page;
+    }
+
+    if (params.limit) {
+      cleanParams.limit = params.limit;
+    }
+
+    return await get(endpoints.getVariantSalesStats, cleanParams);
+  },
+  getVariantSalesDetail: async (
+    variantId: number,
+    params: {
+      startDate: string;
+      endDate: string;
+      branch_id?: number | null;
+      page: number;
+      limit: number;
+    },
+  ): Promise<any> => {
+    const cleanParams: any = {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      page: params.page,
+      limit: params.limit,
+    };
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
+    return await get(endpoints.getVariantSalesDetail(variantId), cleanParams);
+  },
 
   // Get products available for sale
   getProductsForSale: async (
