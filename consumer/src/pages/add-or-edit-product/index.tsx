@@ -48,7 +48,7 @@ export default function ProductForm() {
   } = useProductFormState();
   // Define helper functions for data transformation
   const transformProductToFormData = useCallback(
-    (product: any): ProductFormData => {
+    (product: any, shouldIncludeInventoryBatches: boolean): ProductFormData => {
       // Transform variants from backend format to frontend format
       const transformedVariants =
         product.variants?.map((variant: any) => ({
@@ -80,17 +80,18 @@ export default function ProductForm() {
               status: serial.status || "available",
               notes: serial.notes,
             })) || [],
-          // Transform batches (for inventory in non-edit mode)
-          batches:
-            variant.inventory_items?.map((item: any) => ({
-              id: item.id,
-              branch_id: item.branch_id,
-              batch_number: item.batch_number || "",
-              quantity: item.quantity,
-              cost_price: item.cost_price || "0.00",
-              vendor_id: item.vendor_id,
-              expiry_date: item.expiry_date,
-            })) || [],
+          // Inventory edits are create-only. Keep batches empty in edit mode.
+          batches: shouldIncludeInventoryBatches
+            ? variant.inventory_items?.map((item: any) => ({
+                id: item.id,
+                branch_id: item.branch_id,
+                batch_number: item.batch_number || "",
+                quantity: item.quantity,
+                cost_price: item.cost_price || "0.00",
+                vendor_id: item.vendor_id,
+                expiry_date: item.expiry_date,
+              })) || []
+            : [],
         })) || [];
       return {
         name: product.name || "",
@@ -138,11 +139,13 @@ export default function ProductForm() {
           status: serial.status || "available",
           notes: serial.notes,
         })) || [],
-      batches:
-        variant.batches?.map((batch) => ({
-          ...batch,
-          cost_price: batch.cost_price?.toString() || "0.00",
-        })) || [],
+      ...(!isEditMode && {
+        batches:
+          variant.batches?.map((batch) => ({
+            ...batch,
+            cost_price: batch.cost_price?.toString() || "0.00",
+          })) || [],
+      }),
     })); // Prepare API data object, adding variant_ids_to_delete if any exist
     const apiData: any = {
       name: formState.name,
@@ -167,7 +170,7 @@ export default function ProductForm() {
     }
 
     return apiData;
-  }, [formState]);
+  }, [formState, isEditMode]);
 
   // Fetch product data if in edit mode
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -180,7 +183,7 @@ export default function ProductForm() {
   // Initialize form with product data in edit mode
   useEffect(() => {
     if (productData && isEditMode) {
-      const formData = transformProductToFormData(productData);
+      const formData = transformProductToFormData(productData, false);
       initializeFormData(formData);
     } else {
       resetForm();
@@ -192,7 +195,7 @@ export default function ProductForm() {
     mutationFn: async () => {
       // Validate form before submitting using the hook's validation
 
-      const isValid = validateForm();
+      const isValid = validateForm({ skipBatchValidation: isEditMode });
       if (!isValid) {
         throw new Error("Please fix validation errors before saving");
       }
