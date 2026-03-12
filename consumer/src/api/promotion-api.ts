@@ -2,10 +2,8 @@ import { deleteApi, get, patch, post } from './crud-api';
 import { endpoints } from './endpoints';
 import {
   Promotion,
-  PromotionValidationResponse,
   PromotionOptionsResponse,
   PromotionPayload,
-  ValidatePromotionPayload,
 } from '../types/promotion.types';
 
 export const promotionApi = {
@@ -39,12 +37,5 @@ export const promotionApi = {
   getActivePromotions: async (branchId?: number): Promise<Promotion[]> => {
     const params = branchId ? { branch_id: branchId } : undefined;
     return await get(endpoints.activePromotions, params);
-  },
-
-  validatePromotionCart: async (
-    promotionId: number,
-    payload: ValidatePromotionPayload,
-  ): Promise<PromotionValidationResponse> => {
-    return await post(endpoints.validatePromotionCart(promotionId), payload);
   },
 };
