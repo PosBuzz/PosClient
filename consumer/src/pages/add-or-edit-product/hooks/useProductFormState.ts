@@ -200,13 +200,11 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     [],
   );
   const addVariant = useCallback(() => {
-    let addedVariantNumber = 0;
+    const variantKeys = Object.keys(formState.variants);
+    const newIndex = variantKeys.length;
+    const addedVariantNumber = newIndex + 1;
 
     setFormState((prev) => {
-      const variantKeys = Object.keys(prev.variants);
-      const newIndex = variantKeys.length;
-      addedVariantNumber = newIndex + 1;
-
       const newVariant: ProductVariant = {
         ...createDefaultVariant(prev.name),
         name: `Variant ${addedVariantNumber}`,
@@ -236,7 +234,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     });
 
     messageApi?.success(`Variant ${addedVariantNumber} added successfully`);
-  }, [messageApi]);
+  }, [messageApi, formState.variants]);
   const deleteVariant = useCallback(
     (variantId: string) => {
       const variants = { ...formState.variants };
