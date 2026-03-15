@@ -27,6 +27,8 @@ export interface ProductFormState {
 
   // Track deleted variant IDs for edit mode
   deletedVariantIds: number[];
+  // true if loaded product was variant-based
+  originalHadVariants: boolean;
 }
 
 // Validation state for each field
@@ -116,6 +118,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
           {} as Record<string, ProductVariant>,
         ) || { "0": createDefaultVariant(initialData.name) },
         deletedVariantIds: [],
+        originalHadVariants: initialData.has_variants || false,
       };
     }
 
@@ -131,6 +134,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax: 0,
       variants: { "0": createDefaultVariant("") },
       deletedVariantIds: [],
+      originalHadVariants: false,
     };
   });
 
@@ -199,12 +203,14 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     },
     [],
   );
+
   const addVariant = useCallback(() => {
-    const variantKeys = Object.keys(formState.variants);
-    const newIndex = variantKeys.length;
-    const addedVariantNumber = newIndex + 1;
+    const addedVariantNumber = Object.keys(formState.variants).length + 1;
 
     setFormState((prev) => {
+      const variantKeys = Object.keys(prev.variants);
+      const newIndex = variantKeys.length;
+
       const newVariant: ProductVariant = {
         ...createDefaultVariant(prev.name),
         name: `Variant ${addedVariantNumber}`,
@@ -215,11 +221,14 @@ export const useProductFormState = (initialData?: ProductFormData) => {
         ...prev.variants,
       };
 
-      // If the product was simple, treat the existing row as Variant 1 before adding a new one.
+      // Converting from simple product → variant product.
+      // Preserve the simple product data as the first variant with its existing name
+      // (which is already synced to the product name via updateField).
       if (!prev.has_variants && updatedVariants["0"]) {
         updatedVariants["0"] = {
           ...updatedVariants["0"],
-          name: "Variant 1",
+          // Keep product name — do NOT overwrite with "Variant 1"
+          name: updatedVariants["0"].name || prev.name || "Default",
           is_default: true,
         };
       }
@@ -234,7 +243,8 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     });
 
     messageApi?.success(`Variant ${addedVariantNumber} added successfully`);
-  }, [messageApi, formState.variants]);
+  }, [formState.variants, messageApi]);
+
   const deleteVariant = useCallback(
     (variantId: string) => {
       const variants = { ...formState.variants };
@@ -251,13 +261,16 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       // Reindex remaining variants
       const reindexedVariants: Record<string, ProductVariant> = {};
       let newIndex = 0;
+      // Keep current product name for first/default variant
+      const defaultName = formState.name?.trim() || "Default";
 
       Object.values(variants).forEach((variant) => {
         reindexedVariants[newIndex.toString()] = {
           ...variant,
-          name: formState.has_variants
-            ? `Variant ${newIndex + 1}`
-            : variant.name,
+          name:
+            formState.has_variants && newIndex > 0
+              ? `Variant ${newIndex + 1}`
+              : defaultName,
           is_default: newIndex === 0,
         };
         newIndex++;
@@ -269,7 +282,12 @@ export const useProductFormState = (initialData?: ProductFormData) => {
         deletedVariantIds,
       }));
     },
-    [formState.variants, formState.has_variants, formState.deletedVariantIds],
+    [
+      formState.variants,
+      formState.has_variants,
+      formState.deletedVariantIds,
+      formState.name,
+    ],
   );
 
   const duplicateVariant = useCallback(
@@ -397,57 +415,104 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     [updateVariant],
   );
   // Product type toggle (simple vs variants)
-  const toggleProductType = useCallback((hasVariants: boolean) => {
-    setFormState((prev) => {
-      const variants = { ...prev.variants };
-      let deletedVariantIds = [...prev.deletedVariantIds];
+  const toggleProductType = useCallback(
+    (hasVariants: boolean) => {
+      let rollbackBlocked = false;
+      setFormState((prev) => {
+        const variants = { ...prev.variants };
+        const deletedVariantIds = [...prev.deletedVariantIds];
 
-      if (!hasVariants && Object.keys(variants).length > 1) {
-        // Keep only first variant for simple product
-        const firstVariant = variants["0"];
+        if (!hasVariants && prev.originalHadVariants) {
+          rollbackBlocked = true;
+          return prev;
+        }
+        // Variants → Simple: collapse to first variant only
+        if (!hasVariants) {
+          const firstVariant = variants["0"];
 
-        // Track IDs of variants being deleted
-        Object.keys(variants).forEach((variantId) => {
-          if (variantId !== "0") {
-            const variant = variants[variantId];
-            if (variant?.id) {
-              deletedVariantIds.push(variant.id);
+          Object.keys(variants).forEach((variantId) => {
+            if (variantId !== "0") {
+              const variant = variants[variantId];
+              if (variant?.id) {
+                deletedVariantIds.push(variant.id);
+              }
             }
-          }
-        });
+          });
 
-        return {
-          ...prev,
-          has_variants: false,
-          variants: {
-            "0": {
-              ...firstVariant,
-              name: prev.name || "Default",
-              is_default: true,
+          const resolvedProductName =
+            prev.name?.trim() || firstVariant?.name?.trim() || "Default";
+          return {
+            ...prev,
+            name: resolvedProductName,
+            has_variants: false,
+            variants: {
+              "0": {
+                ...firstVariant,
+                name: resolvedProductName,
+                is_default: true,
+              },
             },
-          },
-          deletedVariantIds,
-        };
-      } else {
-        // Update variant names for variant mode
-        const updatedVariants: Record<string, ProductVariant> = {};
-        Object.keys(variants).forEach((key, index) => {
-          updatedVariants[key] = {
-            ...variants[key],
-            name: hasVariants ? `Variant ${index + 1}` : variants[key].name,
-            is_default: index === 0,
+            deletedVariantIds,
           };
+        }
+
+        // Simple → Variants: keep first variant's name as the product name.
+        // Do NOT rename it to "Variant 1".
+        if (hasVariants) {
+          const updatedVariants: Record<string, ProductVariant> = {};
+          const resolvedProductName =
+            prev.name?.trim() || variants["0"]?.name?.trim() || "Default";
+
+          Object.keys(variants).forEach((key, index) => {
+            updatedVariants[key] = {
+              ...variants[key],
+              // First variant retains its current name (= product name for simple products).
+              // Any already-named extra variants keep their name too.
+              name: index === 0 ? resolvedProductName : variants[key].name,
+              is_default: index === 0,
+            };
+          });
+
+          return {
+            ...prev,
+            name: resolvedProductName,
+            has_variants: true,
+            variants: updatedVariants,
+            deletedVariantIds,
+          };
+        }
+
+        // Simple stays simple (toggle same value; no-op)
+        return { ...prev, has_variants: false, variants, deletedVariantIds };
+      });
+      // Keep side effects outside setState updater to avoid duplicate toast in StrictMode
+      if (rollbackBlocked) {
+        messageApi?.warning({
+          key: "variant-rollback-blocked",
+          content:
+            "This product already has variants and cannot be converted to a simple product.",
         });
 
-        return {
-          ...prev,
-          has_variants: hasVariants,
-          variants: updatedVariants,
-          deletedVariantIds,
-        };
+        setValidationState((current) => ({
+          ...current,
+          has_variants: {
+            status: "error",
+            help: "Variant products cannot be rolled back to simple products in edit mode.",
+          },
+        }));
+        return;
       }
-    });
-  }, []);
+
+      // Clear has_variants validation when action is valid
+      setValidationState((current) => {
+        if (!current.has_variants) return current;
+        const next = { ...current };
+        delete next.has_variants;
+        return next;
+      });
+    },
+    [messageApi],
+  );
   // Auto-generation utilities
   const generateProductCode = useCallback(() => {
     const baseName = formState.name || "Product";
@@ -547,6 +612,14 @@ export const useProductFormState = (initialData?: ProductFormData) => {
         errors["tax"] = {
           status: "error",
           help: "Tax must be between 0 and 100",
+        };
+        isValid = false;
+      }
+
+      if (formState.originalHadVariants && !formState.has_variants) {
+        errors["has_variants"] = {
+          status: "error",
+          help: "Variant products cannot be converted to simple products.",
         };
         isValid = false;
       }
@@ -714,6 +787,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax_method: productData.tax_method || TaxMethod.EXCLUSIVE,
       tax: productData.tax || 0,
       deletedVariantIds: [],
+      originalHadVariants: productData.has_variants || false,
       variants: productData.variants?.reduce(
         (acc, variant, index) => {
           const { sku: autoSku, barcode: autoBarcode } = generateSkuAndBarcode(
@@ -754,6 +828,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax: 0,
       variants: { "0": createDefaultVariant("") },
       deletedVariantIds: [],
+      originalHadVariants: false,
     });
     setValidationState({});
     setLoadingStates({ saving: false, validating: false, generating: false });
