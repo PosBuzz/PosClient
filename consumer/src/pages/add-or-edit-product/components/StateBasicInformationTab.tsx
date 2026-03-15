@@ -35,7 +35,6 @@ interface StateBasicInformationTabProps {
   onFieldUpdate: (field: string, value: any) => void;
   onVariantToggle: (hasVariants: boolean) => void;
   generateProductCode?: () => void;
-  isEditMode?: boolean;
 }
 
 const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
@@ -44,7 +43,6 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
   onFieldUpdate,
   onVariantToggle,
   generateProductCode,
-  isEditMode = false,
 }) => {
   const handleDescriptionGenerated = (description: string) => {
     onFieldUpdate("description", description);
@@ -276,45 +274,43 @@ const StateBasicInformationTab: React.FC<StateBasicInformationTabProps> = ({
       </Row>
 
       {/* Compact Product Configuration */}
-      {!isEditMode && (
-        <Card
-          title={
-            <Space size={4}>
-              <ProductOutlined />
-              <span style={{ fontSize: 12 }}>Product Type</span>
-            </Space>
-          }
-          size="small"
-          styles={{ body: { padding: 12 } }}
-        >
-          <div style={{ marginBottom: 0 }}>
-            <Text strong style={{ fontSize: 11 }}>
-              Variant Setting
-            </Text>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                marginTop: 4,
-              }}
-            >
-              <Switch
-                size="small"
-                checkedChildren="Has Variants"
-                unCheckedChildren="Simple Product"
-                checked={formState.has_variants}
-                onChange={onVariantToggle}
-              />
-              <span style={{ fontSize: 11, color: "#666" }}>
-                {formState.has_variants
-                  ? "Multiple variants (size, color, etc.)"
-                  : "Single product with no variants"}
-              </span>
-            </div>
+      <Card
+        title={
+          <Space size={4}>
+            <ProductOutlined />
+            <span style={{ fontSize: 12 }}>Product Type</span>
+          </Space>
+        }
+        size="small"
+        styles={{ body: { padding: 12 } }}
+      >
+        <div style={{ marginBottom: 0 }}>
+          <Text strong style={{ fontSize: 11 }}>
+            Variant Setting
+          </Text>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginTop: 4,
+            }}
+          >
+            <Switch
+              size="small"
+              checkedChildren="Has Variants"
+              unCheckedChildren="Simple Product"
+              checked={formState.has_variants}
+              onChange={onVariantToggle}
+            />
+            <span style={{ fontSize: 11, color: "#666" }}>
+              {formState.has_variants
+                ? "Multiple variants (size, color, etc.)"
+                : "Single product with no variants"}
+            </span>
           </div>
-        </Card>
-      )}
+        </div>
+      </Card>
     </div>
   );
 };
