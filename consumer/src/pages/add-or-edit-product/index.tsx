@@ -374,7 +374,6 @@ export default function ProductForm() {
           onFieldUpdate={updateField}
           onVariantToggle={toggleProductType}
           generateProductCode={generateProductCode}
-          isEditMode={isEditMode}
         />
       ),
     },
@@ -426,7 +425,9 @@ export default function ProductForm() {
               disabled={
                 saveProductMutation.isPending ||
                 Object.keys(validationState).some(
-                  (key) => validationState[key].status === "error",
+                  (key) =>
+                    key !== "has_variants" &&
+                    validationState[key].status === "error",
                 )
               }
             >

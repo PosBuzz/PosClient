@@ -23,14 +23,14 @@ interface StateVariantManagerProps {
   onUpdateVariantAttribute: (
     variantId: string,
     attributeIndex: number,
-    updates: any
+    updates: any,
   ) => void;
   onDeleteVariantAttribute: (variantId: string, attributeIndex: number) => void;
   onAddVariantSerial: (variantId: string, serial: FormSerial) => void;
   onUpdateVariantSerial: (
     variantId: string,
     serialIndex: number,
-    updates: any
+    updates: any,
   ) => void;
   onDeleteVariantSerial: (variantId: string, serialIndex: number) => void;
   onBatchesChange: (variantId: string, batches: BatchData[]) => void;
@@ -59,7 +59,7 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("0");
   const variantIds = Object.keys(formState.variants);
-  const canManageVariants = formState.has_variants || isEditMode;
+  const canManageVariants = formState.has_variants;
 
   // Check if any variant has validation errors
   const getVariantErrors = (variantId: string) => {
@@ -67,7 +67,7 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
       return [];
     }
     return Object.keys(validationState).filter((field) =>
-      field.startsWith(`variant_${variantId}_`)
+      field.startsWith(`variant_${variantId}_`),
     );
   };
 
@@ -121,7 +121,8 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
           onGenerateSKU={onGenerateSKU}
           onGenerateBarcode={onGenerateBarcode}
           isEditMode={isEditMode}
-        />        <div style={{ marginTop: 16, textAlign: "right" }}>
+        />{" "}
+        <div style={{ marginTop: 16, textAlign: "right" }}>
           <Space>
             {formState.has_variants && variantIds.length > 1 && (
               <Popconfirm
@@ -150,7 +151,7 @@ const StateVariantManager: React.FC<StateVariantManagerProps> = ({
   return (
     <div>
       {" "}
-      {/* In edit mode, allow converting simple products by adding a variant. */}
+      {/* Show variant actions only when product type is set to variants. */}
       {canManageVariants && (
         <div
           style={{
