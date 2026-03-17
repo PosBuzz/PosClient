@@ -27,6 +27,8 @@ export interface ProductFormState {
 
   // Track deleted variant IDs for edit mode
   deletedVariantIds: number[];
+  // true if loaded product was variant-based
+  originalHadVariants: boolean;
 }
 
 // Validation state for each field
@@ -116,6 +118,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
           {} as Record<string, ProductVariant>,
         ) || { "0": createDefaultVariant(initialData.name) },
         deletedVariantIds: [],
+        originalHadVariants: initialData.has_variants || false,
       };
     }
 
@@ -131,6 +134,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax: 0,
       variants: { "0": createDefaultVariant("") },
       deletedVariantIds: [],
+      originalHadVariants: false,
     };
   });
 
@@ -199,61 +203,71 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     },
     [],
   );
+
   const addVariant = useCallback(() => {
-    const variantKeys = Object.keys(formState.variants);
-    const newIndex = variantKeys.length;
-    const newVariant: ProductVariant = {
-      ...createDefaultVariant(formState.name),
-      name: `Variant ${newIndex + 1}`,
-      is_default: newIndex === 0,
-    };
+    let addedVariantNumber = 0;
+    setFormState((prev) => {
+      const variantKeys = Object.keys(prev.variants);
+      const maxKey =
+        variantKeys.length > 0
+          ? Math.max(...variantKeys.map((key) => parseInt(key)))
+          : -1;
+      const newIndex = maxKey + 1;
+      addedVariantNumber = newIndex + 1;
 
-    setFormState((prev) => ({
-      ...prev,
-      variants: {
+      const newVariant: ProductVariant = {
+        ...createDefaultVariant(prev.name),
+        name: `Variant ${addedVariantNumber}`,
+        is_default: false,
+      };
+
+      const updatedVariants: Record<string, ProductVariant> = {
         ...prev.variants,
-        [newIndex.toString()]: newVariant,
-      },
-    }));
+      };
 
-    messageApi?.success(`Variant ${newIndex + 1} added successfully`);
-  }, [formState.variants, formState.name]);
-  const deleteVariant = useCallback(
-    (variantId: string) => {
-      const variants = { ...formState.variants };
+      // Converting from simple product → variant product.
+      // Preserve the simple product data as the first variant with its existing name
+      // (which is already synced to the product name via updateField).
+      if (!prev.has_variants && updatedVariants["0"]) {
+        updatedVariants["0"] = {
+          ...updatedVariants["0"],
+          // Keep product name — do NOT overwrite with "Variant 1"
+          name: updatedVariants["0"].name || prev.name || "Default",
+          is_default: true,
+        };
+      }
+
+      updatedVariants[newIndex.toString()] = newVariant;
+
+      return {
+        ...prev,
+        has_variants: true,
+        variants: updatedVariants,
+      };
+    });
+
+    messageApi?.success(`Variant ${addedVariantNumber} added successfully`);
+  }, [messageApi]);
+
+  const deleteVariant = useCallback((variantId: string) => {
+    setFormState((prev) => {
+      const variants = { ...prev.variants };
       const variantToDelete = variants[variantId];
+      const deletedVariantIds = [...prev.deletedVariantIds];
 
       // Track deleted variant ID if it has an ID (existing variant)
-      let deletedVariantIds = [...formState.deletedVariantIds];
       if (variantToDelete?.id) {
         deletedVariantIds.push(variantToDelete.id);
       }
 
       delete variants[variantId];
-
-      // Reindex remaining variants
-      const reindexedVariants: Record<string, ProductVariant> = {};
-      let newIndex = 0;
-
-      Object.values(variants).forEach((variant) => {
-        reindexedVariants[newIndex.toString()] = {
-          ...variant,
-          name: formState.has_variants
-            ? `Variant ${newIndex + 1}`
-            : variant.name,
-          is_default: newIndex === 0,
-        };
-        newIndex++;
-      });
-
-      setFormState((prev) => ({
+      return {
         ...prev,
-        variants: reindexedVariants,
+        variants,
         deletedVariantIds,
-      }));
-    },
-    [formState.variants, formState.has_variants, formState.deletedVariantIds],
-  );
+      };
+    });
+  }, []);
 
   const duplicateVariant = useCallback(
     (variantId: string) => {
@@ -380,57 +394,104 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     [updateVariant],
   );
   // Product type toggle (simple vs variants)
-  const toggleProductType = useCallback((hasVariants: boolean) => {
-    setFormState((prev) => {
-      const variants = { ...prev.variants };
-      let deletedVariantIds = [...prev.deletedVariantIds];
+  const toggleProductType = useCallback(
+    (hasVariants: boolean) => {
+      let rollbackBlocked = false;
+      setFormState((prev) => {
+        const variants = { ...prev.variants };
+        const deletedVariantIds = [...prev.deletedVariantIds];
 
-      if (!hasVariants && Object.keys(variants).length > 1) {
-        // Keep only first variant for simple product
-        const firstVariant = variants["0"];
+        if (!hasVariants && prev.originalHadVariants) {
+          rollbackBlocked = true;
+          return prev;
+        }
+        // Variants → Simple: collapse to first variant only
+        if (!hasVariants) {
+          const firstVariant = variants["0"];
 
-        // Track IDs of variants being deleted
-        Object.keys(variants).forEach((variantId) => {
-          if (variantId !== "0") {
-            const variant = variants[variantId];
-            if (variant?.id) {
-              deletedVariantIds.push(variant.id);
+          Object.keys(variants).forEach((variantId) => {
+            if (variantId !== "0") {
+              const variant = variants[variantId];
+              if (variant?.id) {
+                deletedVariantIds.push(variant.id);
+              }
             }
-          }
-        });
+          });
 
-        return {
-          ...prev,
-          has_variants: false,
-          variants: {
-            "0": {
-              ...firstVariant,
-              name: prev.name || "Default",
-              is_default: true,
+          const resolvedProductName =
+            prev.name?.trim() || firstVariant?.name?.trim() || "Default";
+          return {
+            ...prev,
+            name: resolvedProductName,
+            has_variants: false,
+            variants: {
+              "0": {
+                ...firstVariant,
+                name: resolvedProductName,
+                is_default: true,
+              },
             },
-          },
-          deletedVariantIds,
-        };
-      } else {
-        // Update variant names for variant mode
-        const updatedVariants: Record<string, ProductVariant> = {};
-        Object.keys(variants).forEach((key, index) => {
-          updatedVariants[key] = {
-            ...variants[key],
-            name: hasVariants ? `Variant ${index + 1}` : variants[key].name,
-            is_default: index === 0,
+            deletedVariantIds,
           };
+        }
+
+        // Simple → Variants: keep first variant's name as the product name.
+        // Do NOT rename it to "Variant 1".
+        if (hasVariants) {
+          const updatedVariants: Record<string, ProductVariant> = {};
+          const resolvedProductName =
+            prev.name?.trim() || variants["0"]?.name?.trim() || "Default";
+
+          Object.keys(variants).forEach((key, index) => {
+            updatedVariants[key] = {
+              ...variants[key],
+              // First variant retains its current name (= product name for simple products).
+              // Any already-named extra variants keep their name too.
+              name: index === 0 ? resolvedProductName : variants[key].name,
+              is_default: index === 0,
+            };
+          });
+
+          return {
+            ...prev,
+            name: resolvedProductName,
+            has_variants: true,
+            variants: updatedVariants,
+            deletedVariantIds,
+          };
+        }
+
+        // Simple stays simple (toggle same value; no-op)
+        return { ...prev, has_variants: false, variants, deletedVariantIds };
+      });
+      // Keep side effects outside setState updater to avoid duplicate toast in StrictMode
+      if (rollbackBlocked) {
+        messageApi?.warning({
+          key: "variant-rollback-blocked",
+          content:
+            "This product already has variants and cannot be converted to a simple product.",
         });
 
-        return {
-          ...prev,
-          has_variants: hasVariants,
-          variants: updatedVariants,
-          deletedVariantIds,
-        };
+        setValidationState((current) => ({
+          ...current,
+          has_variants: {
+            status: "error",
+            help: "Variant products cannot be rolled back to simple products in edit mode.",
+          },
+        }));
+        return;
       }
-    });
-  }, []);
+
+      // Clear has_variants validation when action is valid
+      setValidationState((current) => {
+        if (!current.has_variants) return current;
+        const next = { ...current };
+        delete next.has_variants;
+        return next;
+      });
+    },
+    [messageApi],
+  );
   // Auto-generation utilities
   const generateProductCode = useCallback(() => {
     const baseName = formState.name || "Product";
@@ -486,200 +547,213 @@ export const useProductFormState = (initialData?: ProductFormData) => {
   );
 
   // Comprehensive validation
-  const validateForm = useCallback((): boolean => {
-    const errors: ValidationState = {};
-    let isValid = true;
+  const validateForm = useCallback(
+    (options?: { skipBatchValidation?: boolean }): boolean => {
+      const errors: ValidationState = {};
+      let isValid = true;
+      const skipBatchValidation = options?.skipBatchValidation ?? false;
 
-    // Validate basic information
-    if (!formState.name.trim()) {
-      errors["name"] = { status: "error", help: "Product name is required" };
-      isValid = false;
-    } else if (formState.name.length < 2) {
-      errors["name"] = {
-        status: "error",
-        help: "Name must be at least 2 characters",
-      };
-      isValid = false;
-    } else if (formState.name.length > 100) {
-      errors["name"] = {
-        status: "error",
-        help: "Name cannot exceed 100 characters",
-      };
-      isValid = false;
-    }
-
-    if (formState.code && formState.code.length > 50) {
-      errors["code"] = {
-        status: "error",
-        help: "Code cannot exceed 50 characters",
-      };
-      isValid = false;
-    }
-
-    if (formState.description && formState.description.length > 500) {
-      errors["description"] = {
-        status: "error",
-        help: "Description cannot exceed 500 characters",
-      };
-      isValid = false;
-    }
-
-    if (formState.tax < 0 || formState.tax > 100) {
-      errors["tax"] = {
-        status: "error",
-        help: "Tax must be between 0 and 100",
-      };
-      isValid = false;
-    }
-
-    // Validate variants
-    const variantKeys = Object.keys(formState.variants);
-    if (variantKeys.length === 0) {
-      errors["variants"] = {
-        status: "error",
-        help: "At least one variant is required",
-      };
-      isValid = false;
-    }
-
-    variantKeys.forEach((key) => {
-      const variant = formState.variants[key];
-      const variantField = `variant_${key}`;
-
-      if (!variant.name?.trim()) {
-        errors[`${variantField}_name`] = {
+      // Validate basic information
+      if (!formState.name.trim()) {
+        errors["name"] = { status: "error", help: "Product name is required" };
+        isValid = false;
+      } else if (formState.name.length < 2) {
+        errors["name"] = {
           status: "error",
-          help: "Variant name is required",
+          help: "Name must be at least 2 characters",
+        };
+        isValid = false;
+      } else if (formState.name.length > 100) {
+        errors["name"] = {
+          status: "error",
+          help: "Name cannot exceed 100 characters",
         };
         isValid = false;
       }
 
-      const regularPrice =
-        typeof variant.regular_price === "string"
-          ? parseFloat(variant.regular_price)
-          : variant.regular_price;
-      if (!regularPrice || regularPrice <= 0) {
-        errors[`${variantField}_regular_price`] = {
+      if (formState.code && formState.code.length > 50) {
+        errors["code"] = {
           status: "error",
-          help: "Regular price is required and must be greater than 0",
+          help: "Code cannot exceed 50 characters",
         };
         isValid = false;
       }
 
-      if (!variant.sale_unit_id) {
-        errors[`${variantField}_sale_unit_id`] = {
+      if (formState.description && formState.description.length > 500) {
+        errors["description"] = {
           status: "error",
-          help: "Sale unit is required",
+          help: "Description cannot exceed 500 characters",
         };
         isValid = false;
       }
 
-      if (!variant.purchase_unit_id) {
-        errors[`${variantField}_purchase_unit_id`] = {
+      if (formState.tax < 0 || formState.tax > 100) {
+        errors["tax"] = {
           status: "error",
-          help: "Purchase unit is required",
+          help: "Tax must be between 0 and 100",
         };
         isValid = false;
       }
 
-      const wholesalePrice =
-        typeof variant.wholesale_price === "string"
-          ? parseFloat(variant.wholesale_price)
-          : variant.wholesale_price;
-      if (wholesalePrice && wholesalePrice < 0) {
-        errors[`${variantField}_wholesale_price`] = {
+      if (formState.originalHadVariants && !formState.has_variants) {
+        errors["has_variants"] = {
           status: "error",
-          help: "Wholesale price must be positive",
+          help: "Variant products cannot be converted to simple products.",
         };
         isValid = false;
       }
 
-      if (variant.alert_quantity && variant.alert_quantity < 0) {
-        errors[`${variantField}_alert_quantity`] = {
+      // Validate variants
+      const variantKeys = Object.keys(formState.variants);
+      if (variantKeys.length === 0) {
+        errors["variants"] = {
           status: "error",
-          help: "Alert quantity must be non-negative",
+          help: "At least one variant is required",
         };
         isValid = false;
       }
 
-      if ((variant.daily_sale_objective || 0) < 0) {
-        errors[`${variantField}_daily_sale_objective`] = {
-          status: "error",
-          help: "Daily objective must be non-negative",
-        };
-        isValid = false;
-      }
+      variantKeys.forEach((key) => {
+        const variant = formState.variants[key];
+        const variantField = `variant_${key}`;
 
-      // Validate attributes
-      variant.attributes.forEach((attr, index) => {
-        if (!attr.name?.trim()) {
-          errors[`${variantField}_attr_${index}_name`] = {
+        if (!variant.name?.trim()) {
+          errors[`${variantField}_name`] = {
             status: "error",
-            help: "Attribute name is required",
+            help: "Variant name is required",
           };
           isValid = false;
         }
-        if (!attr.value?.trim()) {
-          errors[`${variantField}_attr_${index}_value`] = {
+
+        const regularPrice =
+          typeof variant.regular_price === "string"
+            ? parseFloat(variant.regular_price)
+            : variant.regular_price;
+        if (!regularPrice || regularPrice <= 0) {
+          errors[`${variantField}_regular_price`] = {
             status: "error",
-            help: "Attribute value is required",
+            help: "Regular price is required and must be greater than 0",
           };
           isValid = false;
         }
-      }); // Validate serials
-      if (variant.serials) {
-        variant.serials.forEach((serial, index) => {
-          if (!serial.serial_number?.trim()) {
-            errors[`${variantField}_serial_${index}_number`] = {
-              status: "error",
-              help: "Serial number is required",
-            };
-            isValid = false;
-          }
-        });
-      }
 
-      // Validate batches
-      if (variant.batches) {
-        variant.batches.forEach((batch, index) => {
-          if (!batch.branch_id) {
-            errors[`${variantField}_batch_${index}_branch_id`] = {
+        if (!variant.sale_unit_id) {
+          errors[`${variantField}_sale_unit_id`] = {
+            status: "error",
+            help: "Sale unit is required",
+          };
+          isValid = false;
+        }
+
+        if (!variant.purchase_unit_id) {
+          errors[`${variantField}_purchase_unit_id`] = {
+            status: "error",
+            help: "Purchase unit is required",
+          };
+          isValid = false;
+        }
+
+        const wholesalePrice =
+          typeof variant.wholesale_price === "string"
+            ? parseFloat(variant.wholesale_price)
+            : variant.wholesale_price;
+        if (wholesalePrice && wholesalePrice < 0) {
+          errors[`${variantField}_wholesale_price`] = {
+            status: "error",
+            help: "Wholesale price must be positive",
+          };
+          isValid = false;
+        }
+
+        if (variant.alert_quantity && variant.alert_quantity < 0) {
+          errors[`${variantField}_alert_quantity`] = {
+            status: "error",
+            help: "Alert quantity must be non-negative",
+          };
+          isValid = false;
+        }
+
+        if ((variant.daily_sale_objective || 0) < 0) {
+          errors[`${variantField}_daily_sale_objective`] = {
+            status: "error",
+            help: "Daily objective must be non-negative",
+          };
+          isValid = false;
+        }
+
+        // Validate attributes
+        variant.attributes.forEach((attr, index) => {
+          if (!attr.name?.trim()) {
+            errors[`${variantField}_attr_${index}_name`] = {
               status: "error",
-              help: "Branch/Location is required",
+              help: "Attribute name is required",
             };
             isValid = false;
           }
-          if (!batch.batch_number?.trim()) {
-            errors[`${variantField}_batch_${index}_batch_number`] = {
+          if (!attr.value?.trim()) {
+            errors[`${variantField}_attr_${index}_value`] = {
               status: "error",
-              help: "Reference number is required",
+              help: "Attribute value is required",
             };
             isValid = false;
           }
-          if (!batch.quantity || batch.quantity <= 0) {
-            errors[`${variantField}_batch_${index}_quantity`] = {
-              status: "error",
-              help: "Quantity must be greater than 0",
-            };
-            isValid = false;
-          }
-          if (
-            batch.cost_price === undefined ||
-            batch.cost_price === null ||
-            batch.cost_price < 0
-          ) {
-            errors[`${variantField}_batch_${index}_cost_price`] = {
-              status: "error",
-              help: "Cost price is required and must be non-negative",
-            };
-            isValid = false;
-          }
-        });
-      }
-    });
-    setValidationState(errors);
-    return isValid;
-  }, [formState]); // Initialize form with existing product data
+        }); // Validate serials
+        if (variant.serials) {
+          variant.serials.forEach((serial, index) => {
+            if (!serial.serial_number?.trim()) {
+              errors[`${variantField}_serial_${index}_number`] = {
+                status: "error",
+                help: "Serial number is required",
+              };
+              isValid = false;
+            }
+          });
+        }
+
+        // In edit mode, inventory changes are intentionally disabled.
+        // Skip batch-level validation so existing out-of-stock rows do not block updates.
+        if (!skipBatchValidation && variant.batches) {
+          variant.batches.forEach((batch, index) => {
+            if (!batch.branch_id) {
+              errors[`${variantField}_batch_${index}_branch_id`] = {
+                status: "error",
+                help: "Branch/Location is required",
+              };
+              isValid = false;
+            }
+            if (!batch.batch_number?.trim()) {
+              errors[`${variantField}_batch_${index}_batch_number`] = {
+                status: "error",
+                help: "Reference number is required",
+              };
+              isValid = false;
+            }
+            if (!batch.quantity || batch.quantity <= 0) {
+              errors[`${variantField}_batch_${index}_quantity`] = {
+                status: "error",
+                help: "Quantity must be greater than 0",
+              };
+              isValid = false;
+            }
+            if (
+              batch.cost_price === undefined ||
+              batch.cost_price === null ||
+              batch.cost_price < 0
+            ) {
+              errors[`${variantField}_batch_${index}_cost_price`] = {
+                status: "error",
+                help: "Cost price is required and must be non-negative",
+              };
+              isValid = false;
+            }
+          });
+        }
+      });
+      setValidationState(errors);
+      return isValid;
+    },
+    [formState],
+  ); // Initialize form with existing product data
   const initializeFormData = useCallback((productData: ProductFormData) => {
     setFormState({
       name: productData.name || "",
@@ -692,6 +766,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax_method: productData.tax_method || TaxMethod.EXCLUSIVE,
       tax: productData.tax || 0,
       deletedVariantIds: [],
+      originalHadVariants: productData.has_variants || false,
       variants: productData.variants?.reduce(
         (acc, variant, index) => {
           const { sku: autoSku, barcode: autoBarcode } = generateSkuAndBarcode(
@@ -732,6 +807,7 @@ export const useProductFormState = (initialData?: ProductFormData) => {
       tax: 0,
       variants: { "0": createDefaultVariant("") },
       deletedVariantIds: [],
+      originalHadVariants: false,
     });
     setValidationState({});
     setLoadingStates({ saving: false, validating: false, generating: false });

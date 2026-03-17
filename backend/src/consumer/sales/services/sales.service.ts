@@ -7,6 +7,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import {
@@ -232,15 +233,18 @@ export class SalesService {
             })),
           );
 
-        promotionDiscountAmount = Number(promotionEvaluation.discount_amount) || 0;
+        promotionDiscountAmount =
+          Number(promotionEvaluation.discount_amount) || 0;
         promotionId = createSaleDto.applied_promotion_id;
       }
 
-      const totalDiscountAmount = manualDiscountAmount + promotionDiscountAmount;
+      const totalDiscountAmount =
+        manualDiscountAmount + promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
       // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
-      const totalAmount = subtotal - totalDiscountAmount + totalTax + shippingCost;
+      const totalAmount =
+        subtotal - totalDiscountAmount + totalTax + shippingCost;
 
       // Calculate payment totals and determine payment status
       let totalPaymentAmount = 0;
@@ -1694,85 +1698,72 @@ export class SalesService {
     try {
       const start = this.parseLocalDateStart(startDate);
       const end = this.parseLocalDateEnd(endDate);
+      const skip = (page - 1) * limit;
 
-      const where: any = {
-        sale: {
-          consumer_id: consumerId,
-          sale_type: SaleType.SALE,
-          sale_date: { gte: start, lte: end },
-        },
-      };
-
-      if (branchId) {
-        where.sale.branch_id = branchId;
-      }
-
-      const grouped = await this.prisma.saleItem.groupBy({
-        by: ['variant_id'],
-        where,
-        _sum: {
-          quantity: true,
-          line_total: true,
-        },
-        _count: {
-          sale_id: true,
-        },
-        orderBy: {
-          _sum: {
-            line_total: 'desc',
-          },
-        },
+      const total = await this.prisma.productVariant.count({
+        where: { product: { consumer_id: consumerId } },
       });
 
-      const total = grouped.length;
       if (!total) {
         return {
           data: [],
-          meta: {
-            total: 0,
-            page,
-            limit,
-            total_pages: 0,
-          },
+          meta: { total: 0, page, limit, total_pages: 0 },
         };
       }
 
-      const skip = (page - 1) * limit;
-      const pagedGrouped = grouped.slice(skip, skip + limit);
+      type VariantStatsRow = {
+        variant_id: number | bigint;
+        product_name: string;
+        variant_name: string;
+        sku: string | null;
+        total_qty: number | bigint;
+        total_sales: number | bigint;
+        total_amount: string | number;
+      };
 
-      const variantIds = pagedGrouped.map((g) => g.variant_id);
+      const branchFilter = branchId
+        ? Prisma.sql`AND s.branch_id = ${branchId}`
+        : Prisma.empty;
 
-      const variants = await this.prisma.productVariant.findMany({
-        where: { id: { in: variantIds } },
-        select: {
-          id: true,
-          name: true,
-          sku: true,
-          product: {
-            select: { id: true, name: true },
-          },
-        },
-      });
+      const rows = await this.prisma.$queryRaw<VariantStatsRow[]>`
+        SELECT
+          pv.id          AS variant_id,
+          p.name         AS product_name,
+          pv.name        AS variant_name,
+          pv.sku         AS sku,
+          COALESCE(SUM(fsi.quantity), 0)   AS total_qty,
+          COUNT(DISTINCT fsi.sale_id)      AS total_sales,
+          COALESCE(SUM(fsi.line_total), 0) AS total_amount
+        FROM product_variants pv
+        JOIN products p ON pv.product_id = p.id
+        LEFT JOIN (
+          SELECT si.variant_id, si.sale_id, si.quantity, si.line_total
+          FROM sale_items si
+          JOIN sales s ON si.sale_id = s.id
+          WHERE s.consumer_id = ${consumerId}
+            AND s.sale_type = ${SaleType.SALE}
+            AND s.sale_date >= ${start}
+            AND s.sale_date <= ${end}
+            ${branchFilter}
+        ) fsi ON fsi.variant_id = pv.id
+        WHERE p.consumer_id = ${consumerId}
+        GROUP BY pv.id, p.name, pv.name, pv.sku
+        ORDER BY total_amount DESC, total_sales DESC, product_name ASC, variant_name ASC
+        LIMIT ${limit} OFFSET ${skip}
+      `;
 
-      const variantMap = new Map(variants.map((v) => [v.id, v]));
+      const data = rows.map((row) => ({
+        variant_id: Number(row.variant_id),
+        product_name: row.product_name,
+        variant_name: row.variant_name,
+        sku: row.sku ?? null,
+        total_qty: Number(row.total_qty),
+        total_sales: Number(row.total_sales),
+        total_amount: Number(row.total_amount),
+      }));
 
       return {
-        data: pagedGrouped.map((g) => {
-          const variant = variantMap.get(g.variant_id);
-          const totalQty = Number(g._sum.quantity ?? 0);
-          const totalAmount = Number(g._sum.line_total ?? 0);
-          const salesCount = g._count.sale_id;
-
-          return {
-            variant_id: g.variant_id,
-            product_name: variant?.product?.name ?? 'Unknown',
-            variant_name: variant?.name ?? 'Unknown',
-            sku: variant?.sku ?? null,
-            total_qty: totalQty,
-            total_sales: salesCount,
-            total_amount: totalAmount,
-          };
-        }),
+        data,
         meta: {
           total,
           page,
