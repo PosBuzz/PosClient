@@ -205,11 +205,15 @@ export const useProductFormState = (initialData?: ProductFormData) => {
   );
 
   const addVariant = useCallback(() => {
-    const addedVariantNumber = Object.keys(formState.variants).length + 1;
-
+    let addedVariantNumber = 0;
     setFormState((prev) => {
       const variantKeys = Object.keys(prev.variants);
-      const newIndex = variantKeys.length;
+      const maxKey =
+        variantKeys.length > 0
+          ? Math.max(...variantKeys.map((key) => parseInt(key)))
+          : -1;
+      const newIndex = maxKey + 1;
+      addedVariantNumber = newIndex + 1;
 
       const newVariant: ProductVariant = {
         ...createDefaultVariant(prev.name),
@@ -243,52 +247,27 @@ export const useProductFormState = (initialData?: ProductFormData) => {
     });
 
     messageApi?.success(`Variant ${addedVariantNumber} added successfully`);
-  }, [formState.variants, messageApi]);
+  }, [messageApi]);
 
-  const deleteVariant = useCallback(
-    (variantId: string) => {
-      const variants = { ...formState.variants };
+  const deleteVariant = useCallback((variantId: string) => {
+    setFormState((prev) => {
+      const variants = { ...prev.variants };
       const variantToDelete = variants[variantId];
+      const deletedVariantIds = [...prev.deletedVariantIds];
 
       // Track deleted variant ID if it has an ID (existing variant)
-      let deletedVariantIds = [...formState.deletedVariantIds];
       if (variantToDelete?.id) {
         deletedVariantIds.push(variantToDelete.id);
       }
 
       delete variants[variantId];
-
-      // Reindex remaining variants
-      const reindexedVariants: Record<string, ProductVariant> = {};
-      let newIndex = 0;
-      // Keep current product name for first/default variant
-      const defaultName = formState.name?.trim() || "Default";
-
-      Object.values(variants).forEach((variant) => {
-        reindexedVariants[newIndex.toString()] = {
-          ...variant,
-          name:
-            formState.has_variants && newIndex > 0
-              ? `Variant ${newIndex + 1}`
-              : defaultName,
-          is_default: newIndex === 0,
-        };
-        newIndex++;
-      });
-
-      setFormState((prev) => ({
+      return {
         ...prev,
-        variants: reindexedVariants,
+        variants,
         deletedVariantIds,
-      }));
-    },
-    [
-      formState.variants,
-      formState.has_variants,
-      formState.deletedVariantIds,
-      formState.name,
-    ],
-  );
+      };
+    });
+  }, []);
 
   const duplicateVariant = useCallback(
     (variantId: string) => {
