@@ -1014,8 +1014,17 @@ const NewSale = () => {
         total: round2(averageShare + specialShare + promotionShare),
       };
 
+      // Calculate net line_total (after all discounts)
+      const totalDiscount = averageShare + specialShare + promotionShare;
+      const netLineTotal = round2(Number(item.line_total) - totalDiscount);
+      
+      // Calculate new unit_price = net_line_total / quantity
+      const newUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
+
       return {
         ...item,
+        unit_price: newUnitPrice,
+        line_total: netLineTotal,
         average_discount_amount: round2(averageShare),
         special_discount_amount: round2(specialShare),
         promotion_discount_amount: round2(promotionShare),
