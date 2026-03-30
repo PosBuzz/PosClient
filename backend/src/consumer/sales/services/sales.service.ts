@@ -204,9 +204,17 @@ export class SalesService {
       let totalTax = 0;
 
       // For now, use the simpler approach: trust frontend calculations
-      // Subtotal = sum of (line_total - tax_amount) for all items
+      // Subtotal = sum of (line_total_with_discounts + discounts - tax) for all items
+      // Because line_total is now the final price AFTER discounts
       subtotal = createSaleDto.items.reduce((sum, item) => {
-        return sum + (Number(item.line_total) - Number(item.tax_amount || 0));
+        const itemDiscounts =
+          (Number(item.average_discount_amount) || 0) +
+          (Number(item.special_discount_amount) || 0) +
+          (Number(item.promotion_discount_amount) || 0);
+        // Recover original base: line_total (after discounts) + all discounts
+        const originalBase = Number(item.line_total) + itemDiscounts;
+        // Subtract tax to get pre-tax subtotal
+        return sum + (originalBase - Number(item.tax_amount || 0));
       }, 0);
 
       totalTax = createSaleDto.items.reduce(
@@ -744,6 +752,7 @@ export class SalesService {
         include: {
           payments: true,
           exchanges: true,
+          items: true,
         },
       });
 
@@ -760,12 +769,38 @@ export class SalesService {
       const availableAmount =
         parseFloat(sale.total_amount.toString()) - totalAlreadyReturned;
 
+      const saleItemMap = new Map(sale.items.map((item) => [item.id, item]));
+      const totalItemValueAlreadyReturned = returns.reduce((sum, ret) => {
+        const returnItemsValue = ret.items.reduce((itemSum, returnedItem) => {
+          const originalItem = saleItemMap.get(returnedItem.sale_item_id);
+          if (!originalItem) return itemSum;
+
+          const originalQty = Number(originalItem.quantity) || 0;
+          const ratio =
+            originalQty > 0 ? Number(returnedItem.quantity) / originalQty : 0;
+          return itemSum + (Number(originalItem.line_total) || 0) * ratio;
+        }, 0);
+
+        return sum + returnItemsValue;
+      }, 0);
+
+      const shippingRefunded = Math.max(
+        0,
+        totalAlreadyReturned - totalItemValueAlreadyReturned,
+      );
+      const availableShippingRefund = Math.max(
+        0,
+        Number(sale.shipping_cost || 0) - shippingRefunded,
+      );
+
       const returnSummary = {
         total_returned: returns.length,
         total_refunded: totalRefunded,
         total_exchanged: totalExchanged,
         total_already_returned: totalAlreadyReturned,
         available_amount: Math.max(0, availableAmount), // Ensure it's never negative
+        shipping_refunded: shippingRefunded,
+        available_shipping_refund: availableShippingRefund,
         returns: returns.map((ret) => ({
           id: ret.id,
           return_number: ret.return_number,
