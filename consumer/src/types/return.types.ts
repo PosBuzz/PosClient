@@ -153,6 +153,7 @@ export interface CreateReturnForm {
   exchange_sale_id?: number;
   reason?: string;
   notes?: string;
+  shipping_refund_amount?: number;
   items: CreateReturnItemForm[];
   payments?: CreateReturnPaymentForm[];
   exchanges?: CreateReturnExchangeForm[];
@@ -197,6 +198,8 @@ export interface SaleForReturn {
     total_exchanged: number;
     total_already_returned: number;
     available_amount: number;
+    shipping_refunded?: number;
+    available_shipping_refund?: number;
     returns: Array<{
       id: number;
       return_number: string;
