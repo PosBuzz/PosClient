@@ -307,7 +307,7 @@ export class SalesService {
             promotion_id: promotionId,
             branch_id: createSaleDto.branch_id,
             user_id: userId,
-            served_by_id: createSaleDto.served_by_id ?? userId,
+            served_by_id: createSaleDto.served_by_id ?? null,
             sale_type: createSaleDto.sale_type || SaleType.SALE,
             price_type: createSaleDto.price_type || 'regular',
             subtotal,
@@ -1757,15 +1757,31 @@ export class SalesService {
           pv.sku         AS sku,
           COALESCE(SUM(fsi.quantity), 0)   AS total_qty,
           COUNT(DISTINCT fsi.sale_id)      AS total_sales,
-          COALESCE(SUM(fsi.line_total), 0) AS total_amount
+          COALESCE(
+            SUM(
+              fsi.line_total
+              - COALESCE(fsi.average_discount_amount, 0)
+              - COALESCE(fsi.special_discount_amount, 0)
+              - COALESCE(fsi.promotion_discount_amount, 0)
+            ),
+            0
+          ) AS total_amount
         FROM product_variants pv
         JOIN products p ON pv.product_id = p.id
         LEFT JOIN (
-          SELECT si.variant_id, si.sale_id, si.quantity, si.line_total
+          SELECT
+            si.variant_id,
+            si.sale_id,
+            si.quantity,
+            si.line_total,
+            si.average_discount_amount,
+            si.special_discount_amount,
+            si.promotion_discount_amount
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           WHERE s.consumer_id = ${consumerId}
             AND s.sale_type = ${SaleType.SALE}
+            AND s.payment_status <> ${PaymentStatus.CANCELLED}
             AND s.sale_date >= ${start}
             AND s.sale_date <= ${end}
             ${branchFilter}
@@ -1838,6 +1854,7 @@ export class SalesService {
         sale: {
           consumer_id: consumerId,
           sale_type: SaleType.SALE,
+          payment_status: { not: PaymentStatus.CANCELLED },
           sale_date: { gte: start, lte: end },
         },
       };
@@ -1858,6 +1875,9 @@ export class SalesService {
             id: true,
             quantity: true,
             line_total: true,
+            average_discount_amount: true,
+            special_discount_amount: true,
+            promotion_discount_amount: true,
             sale: {
               select: {
                 id: true,
@@ -1874,7 +1894,13 @@ export class SalesService {
         this.prisma.saleItem.count({ where }),
         this.prisma.saleItem.aggregate({
           where,
-          _sum: { quantity: true, line_total: true },
+          _sum: {
+            quantity: true,
+            line_total: true,
+            average_discount_amount: true,
+            special_discount_amount: true,
+            promotion_discount_amount: true,
+          },
           _count: { sale_id: true },
         }),
       ]);
@@ -1885,6 +1911,10 @@ export class SalesService {
         select: {
           quantity: true,
           line_total: true,
+          average_discount_amount: true,
+          special_discount_amount: true,
+          promotion_discount_amount: true,
+          sale_id: true,
           sale: { select: { sale_date: true } },
         },
         orderBy: { sale: { sale_date: 'asc' } },
@@ -1896,22 +1926,31 @@ export class SalesService {
       >();
       for (const item of allItems) {
         const dateStr = item.sale.sale_date.toISOString().split('T')[0];
+        const netLineTotal =
+          Number(item.line_total) -
+          Number(item.average_discount_amount || 0) -
+          Number(item.special_discount_amount || 0) -
+          Number(item.promotion_discount_amount || 0);
         const existing = dailyMap.get(dateStr);
         if (existing) {
           existing.qty += Number(item.quantity);
-          existing.total_amount += Number(item.line_total);
+          existing.total_amount += netLineTotal;
         } else {
           dailyMap.set(dateStr, {
             date: dateStr,
             qty: Number(item.quantity),
-            total_amount: Number(item.line_total),
+            total_amount: netLineTotal,
           });
         }
       }
 
       const totalQty = Number(totals._sum.quantity ?? 0);
-      const totalAmount = Number(totals._sum.line_total ?? 0);
-      const salesCount = totals._count.sale_id;
+      const totalAmount =
+        Number(totals._sum.line_total ?? 0) -
+        Number(totals._sum.average_discount_amount ?? 0) -
+        Number(totals._sum.special_discount_amount ?? 0) -
+        Number(totals._sum.promotion_discount_amount ?? 0);
+      const salesCount = new Set(allItems.map((item) => item.sale_id)).size;
 
       return {
         variant: {
@@ -1936,7 +1975,11 @@ export class SalesService {
             item.sale.customer?.name ?? item.sale.customer_name ?? null,
           branch_name: item.sale.branch?.name ?? null,
           qty: Number(item.quantity),
-          line_total: Number(item.line_total),
+          line_total:
+            Number(item.line_total) -
+            Number(item.average_discount_amount || 0) -
+            Number(item.special_discount_amount || 0) -
+            Number(item.promotion_discount_amount || 0),
           payment_status: item.sale.payment_status,
         })),
         meta: {
@@ -1976,6 +2019,7 @@ export class SalesService {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
       served_by_id: { not: null },
+      payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
         gte: start,
         lte: end,
@@ -2051,6 +2095,7 @@ export class SalesService {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
       served_by_id: servedById,
+      payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
         gte: start,
         lte: end,
