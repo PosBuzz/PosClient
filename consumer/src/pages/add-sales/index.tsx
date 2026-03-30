@@ -348,26 +348,29 @@ const NewSale = () => {
     const baseAmount = quantity * price;
     let taxAmount: number;
     let lineTotal: number;
+    let taxableAmount: number;
 
     // Ensure taxPercentage is a valid number
     const validTaxPercentage = Number(taxPercentage) || 0;
 
     if (taxMethod === "INCLUSIVE") {
-      // Tax is included in the price - the price already includes tax
-      lineTotal = baseAmount; // Price includes tax
-      taxAmount =
-        (baseAmount * validTaxPercentage) / (100 + validTaxPercentage);
+      // For inclusive mode, calculate tax directly from shown price so
+      // X% of displayed amount is shown as tax in UI.
+      lineTotal = baseAmount;
+      taxAmount = (baseAmount * validTaxPercentage) / 100;
+      taxableAmount = baseAmount - taxAmount;
     } else {
       // Tax is exclusive - added on top of price
       taxAmount = (baseAmount * validTaxPercentage) / 100;
-      lineTotal = baseAmount + taxAmount; // Add tax to get total
+      lineTotal = baseAmount + taxAmount;
+      taxableAmount = baseAmount;
     }
 
     // Return precise values without rounding
     return {
       line_total: Number(lineTotal) || 0,
       tax_amount: Number(taxAmount) || 0,
-      taxable_amount: Number(baseAmount) || 0,
+      taxable_amount: Number(taxableAmount) || 0,
     };
   };
 
@@ -428,6 +431,7 @@ const NewSale = () => {
       image: variant.image,
       unit_name: variant.unit_name,
       tax_percentage: Number(variant.tax_percentage) || 0,
+      tax_method: variant.tax_method || "EXCLUSIVE",
     };
 
     return [...sourceItems, newItem];
@@ -1226,8 +1230,16 @@ const NewSale = () => {
     {
       title: "Tax",
       key: "tax",
-      render: (record: SaleItem) =>
-        `$${(Number(record.tax_amount) || 0).toFixed(2)}`,
+      render: (record: SaleItem) => {
+        const variant = productsForSaleQuery.data?.find(
+          (v) => v.id === record.variant_id,
+        );
+        const taxMethod = (record.tax_method || variant?.tax_method || "EXCLUSIVE")
+          .toString()
+          .toUpperCase();
+        const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
+        return `$${(Number(record.tax_amount) || 0).toFixed(2)} (${taxLabel})`;
+      },
     },
     {
       title: "Avg Disc",

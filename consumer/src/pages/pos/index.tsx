@@ -78,7 +78,8 @@ const NewSale = () => {
   const { messageApi } = useMessageStore();
 
   // Watch form values for real-time calculations
-  const discountAmount = Form.useWatch("discount_amount", form) || 0;
+  const averageDiscountAmount =
+    Form.useWatch("average_discount_amount", form) || 0;
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
 
   // State
@@ -100,7 +101,7 @@ const NewSale = () => {
   );
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
-  const [discountType, setDiscountType] = useState<DiscountType>(
+  const [averageDiscountType, setAverageDiscountType] = useState<DiscountType>(
     DiscountType.FLAT,
   );
   const [loading, setLoading] = useState(false);
@@ -185,8 +186,7 @@ const NewSale = () => {
       form.setFieldsValue({
         branch_id: defaultBranch.id,
         price_type: PriceType.REGULAR,
-        discount_type: DiscountType.FLAT,
-        discount_amount: 0,
+        average_discount_amount: 0,
         shipping_cost: 0,
       });
     }
@@ -220,8 +220,8 @@ const NewSale = () => {
     setSelectedItems([]); // Clear items when branch changes
     setAppliedPromotion(null);
     setPromotionDiscountAmount(0);
-    setDiscountType(DiscountType.FLAT);
-    form.setFieldsValue({ branch_id: branchId, discount_amount: 0 });
+    setAverageDiscountType(DiscountType.FLAT);
+    form.setFieldsValue({ branch_id: branchId, average_discount_amount: 0 });
   };
 
   // Auto-apply promotions when cart changes
@@ -272,26 +272,27 @@ const NewSale = () => {
     const baseAmount = quantity * price;
     let taxAmount: number;
     let lineTotal: number;
+    let taxableAmount: number;
 
     // Ensure taxPercentage is a valid number
     const validTaxPercentage = Number(taxPercentage) || 0;
 
     if (taxMethod === "INCLUSIVE") {
-      // Tax is included in the price - the price already includes tax
-      lineTotal = baseAmount; // Price includes tax
-      taxAmount =
-        (baseAmount * validTaxPercentage) / (100 + validTaxPercentage);
+      lineTotal = baseAmount;
+      taxAmount = (baseAmount * validTaxPercentage) / 100;
+      taxableAmount = baseAmount - taxAmount;
     } else {
       // Tax is exclusive - added on top of price
       taxAmount = (baseAmount * validTaxPercentage) / 100;
-      lineTotal = baseAmount + taxAmount; // Add tax to get total
+      lineTotal = baseAmount + taxAmount;
+      taxableAmount = baseAmount;
     }
 
     // Return precise values without rounding
     return {
       line_total: Number(lineTotal) || 0,
       tax_amount: Number(taxAmount) || 0,
-      taxable_amount: Number(baseAmount) || 0,
+      taxable_amount: Number(taxableAmount) || 0,
     };
   };
 
@@ -341,7 +342,9 @@ const NewSale = () => {
       variant_sku: variant.sku,
       quantity: quantityToAdd,
       unit_price: Number(price) || 0,
-      discount_amount: 0,
+      average_discount_amount: 0,
+      special_discount_amount: 0,
+      promotion_discount_amount: 0,
       tax_amount: Number(tax_amount) || 0,
       line_total: Number(line_total) || 0,
       product_name: variant.product_name,
@@ -350,6 +353,7 @@ const NewSale = () => {
       image: variant.image,
       unit_name: variant.unit_name,
       tax_percentage: Number(variant.tax_percentage) || 0,
+      tax_method: variant.tax_method || "EXCLUSIVE",
     };
 
     return [...sourceItems, newItem];
@@ -814,7 +818,22 @@ const NewSale = () => {
     );
   };
 
+  const updateItemSpecialDiscount = (variantId: number, amount: number) => {
+    setSelectedItems((items) =>
+      items.map((item) =>
+        item.variant_id === variantId
+          ? {
+              ...item,
+              special_discount_amount: Math.max(0, Number(amount) || 0),
+            }
+          : item,
+      ),
+    );
+  };
+
   const calculateTotals = () => {
+    const round2 = (value: number) => Number((value || 0).toFixed(2));
+
     // Calculate subtotal (price before tax for both exclusive and inclusive)
     const subtotal = selectedItems.reduce((sum, item) => {
       // For both inclusive and exclusive tax, we need the base amount (price without tax)
@@ -837,17 +856,90 @@ const NewSale = () => {
       0,
     );
 
-    const discountAmountNum = Number(discountAmount) || 0;
+    const averageDiscountAmountNum = Number(averageDiscountAmount) || 0;
     const shippingCostNum = Number(shippingCost) || 0;
 
-    // Calculate manual discount on subtotal (before tax)
-    const manualDiscount =
-      discountType === DiscountType.PERCENTAGE
-        ? (subtotal * discountAmountNum) / 100
-        : discountAmountNum;
+    const averageDiscount =
+      averageDiscountType === DiscountType.PERCENTAGE
+        ? (subtotal * averageDiscountAmountNum) / 100
+        : averageDiscountAmountNum;
 
-    // Total discount = promotion discount + manual discount
-    const finalDiscount = promotionDiscountAmount + manualDiscount;
+    const specialDiscount = selectedItems.reduce(
+      (sum, item) => sum + (Number(item.special_discount_amount) || 0),
+      0,
+    );
+
+    const variantBaseMap = new Map<number, number>();
+    selectedItems.forEach((item) => {
+      const variant = productsForSaleQuery.data?.find(
+        (v) => v.id === item.variant_id,
+      );
+      const taxMethod = variant?.tax_method || "EXCLUSIVE";
+      const baseAmount =
+        taxMethod === "INCLUSIVE"
+          ? Number(item.line_total) - Number(item.tax_amount)
+          : Number(item.unit_price) * Number(item.quantity);
+      variantBaseMap.set(item.variant_id, Number(baseAmount) || 0);
+    });
+
+    const distributeDiscount = (totalDiscount: number) => {
+      const distributed = new Map<number, number>();
+      if (totalDiscount <= 0 || selectedItems.length === 0 || subtotal <= 0) {
+        selectedItems.forEach((item) => distributed.set(item.variant_id, 0));
+        return distributed;
+      }
+
+      let assigned = 0;
+      selectedItems.forEach((item, index) => {
+        const isLast = index === selectedItems.length - 1;
+        if (isLast) {
+          distributed.set(item.variant_id, round2(totalDiscount - assigned));
+          return;
+        }
+
+        const base = variantBaseMap.get(item.variant_id) || 0;
+        const share = round2((totalDiscount * base) / subtotal);
+        distributed.set(item.variant_id, share);
+        assigned += share;
+      });
+
+      return distributed;
+    };
+
+    const averageDiscountMap = distributeDiscount(Number(averageDiscount) || 0);
+    const promotionDiscountMap = distributeDiscount(
+      Number(promotionDiscountAmount) || 0,
+    );
+
+    const discountBreakdownByVariant: Record<
+      number,
+      { average: number; special: number; promotion: number; total: number }
+    > = {};
+
+    const discountedItems = selectedItems.map((item) => {
+      const averageShare = Number(averageDiscountMap.get(item.variant_id) || 0);
+      const specialShare = Number(item.special_discount_amount || 0);
+      const promotionShare = Number(
+        promotionDiscountMap.get(item.variant_id) || 0,
+      );
+
+      discountBreakdownByVariant[item.variant_id] = {
+        average: round2(averageShare),
+        special: round2(specialShare),
+        promotion: round2(promotionShare),
+        total: round2(averageShare + specialShare + promotionShare),
+      };
+
+      return {
+        ...item,
+        average_discount_amount: round2(averageShare),
+        special_discount_amount: round2(specialShare),
+        promotion_discount_amount: round2(promotionShare),
+        applied_promotion_id: appliedPromotion?.id || undefined,
+      };
+    });
+
+    const finalDiscount = promotionDiscountAmount + averageDiscount + specialDiscount;
 
     // Total = subtotal - (promotion_discount + manual_discount) + tax + shipping
     const total = subtotal - finalDiscount + totalTax + shippingCostNum;
@@ -856,8 +948,11 @@ const NewSale = () => {
       subtotal: Number(subtotal),
       totalTax: Number(totalTax),
       promotionDiscount: Number(promotionDiscountAmount),
-      manualDiscount: Number(manualDiscount),
+      averageDiscount: Number(averageDiscount),
+      specialDiscount: Number(specialDiscount),
       finalDiscount: Number(finalDiscount),
+      discountBreakdownByVariant,
+      discountedItems,
       shippingCost: Number(shippingCostNum),
       total: Number(total),
     };
@@ -896,18 +991,20 @@ const NewSale = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: selectedItems.map((item) => ({
+      items: totals.discountedItems.map((item) => ({
         variant_id: item.variant_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        discount_amount: item.discount_amount,
+        average_discount_amount: item.average_discount_amount,
+        special_discount_amount: item.special_discount_amount,
+        promotion_discount_amount: item.promotion_discount_amount,
+        applied_promotion_id: item.applied_promotion_id,
         tax_amount: item.tax_amount,
         line_total: item.line_total,
         // Remove batch_id to let backend use FIFO automatically
       })),
       price_type: priceType,
-      discount_type: discountType,
-      discount_amount: totals.manualDiscount, // Send only manual discount
+      discount_amount: totals.finalDiscount,
       applied_promotion_id: appliedPromotion?.id,
       shipping_cost: totals.shippingCost,
       payment_status: paymentStatus,
@@ -948,7 +1045,7 @@ const NewSale = () => {
       setSelectedCustomer(null);
       setSelectedServedByUser(null);
       setPriceType(PriceType.REGULAR);
-      setDiscountType(DiscountType.FLAT);
+      setAverageDiscountType(DiscountType.FLAT);
       setAppliedPromotion(null);
       setPromotionDiscountAmount(0);
       setSalePayments([
@@ -962,7 +1059,7 @@ const NewSale = () => {
       form.setFieldsValue({
         customer_id: undefined,
         served_by_id: undefined,
-        discount_amount: 0,
+        average_discount_amount: 0,
         shipping_cost: 0,
         notes: "",
         // Keep branch_id as is
@@ -998,7 +1095,13 @@ const NewSale = () => {
         ]);
       }
     }
-  }, [selectedItems, discountAmount, shippingCost, discountType]);
+  }, [
+    selectedItems,
+    averageDiscountAmount,
+    shippingCost,
+    averageDiscountType,
+    promotionDiscountAmount,
+  ]);
 
   const totals = calculateTotals();
 
@@ -1066,14 +1169,52 @@ const NewSale = () => {
     {
       title: "Tax",
       key: "tax",
-      render: (record: SaleItem) =>
-        `$${(Number(record.tax_amount) || 0).toFixed(2)}`,
+      render: (record: SaleItem) => {
+        const variant = productsForSaleQuery.data?.find(
+          (v) => v.id === record.variant_id,
+        );
+        const taxMethod = (record.tax_method || variant?.tax_method || "EXCLUSIVE")
+          .toString()
+          .toUpperCase();
+        const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
+        return `$${(Number(record.tax_amount) || 0).toFixed(2)} (${taxLabel})`;
+      },
+    },
+    {
+      title: "Avg Disc",
+      key: "average_discount",
+      render: (record: SaleItem) => {
+        const avgDiscount =
+          totals.discountBreakdownByVariant?.[record.variant_id]?.average || 0;
+        return `-$${(Number(avgDiscount) || 0).toFixed(2)}`;
+      },
+    },
+    {
+      title: "Special Disc",
+      key: "special_discount",
+      render: (record: SaleItem) => (
+        <InputNumber
+          min={0}
+          precision={2}
+          value={Number(record.special_discount_amount) || 0}
+          onChange={(value) =>
+            updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
+          }
+          style={{ width: 100 }}
+          size="small"
+        />
+      ),
     },
     {
       title: "Total",
       key: "line_total",
-      render: (record: SaleItem) =>
-        `$${(Number(record.line_total) || 0).toFixed(2)}`,
+      render: (record: SaleItem) => {
+        const rowDiscount =
+          totals.discountBreakdownByVariant?.[record.variant_id]?.total || 0;
+        const netLineTotal =
+          (Number(record.line_total) || 0) - (Number(rowDiscount) || 0);
+        return `$${(Number(netLineTotal) || 0).toFixed(2)}`;
+      },
     },
     {
       title: "Action",
@@ -1676,14 +1817,14 @@ const NewSale = () => {
                                 fontSize: 12,
                               }}
                             >
-                              Discount Type
+                              Average Type
                             </span>
                           }
                           style={{ marginBottom: 0 }}
                         >
                           <Radio.Group
-                            value={discountType}
-                            onChange={(e) => setDiscountType(e.target.value)}
+                            value={averageDiscountType}
+                            onChange={(e) => setAverageDiscountType(e.target.value)}
                             buttonStyle="solid"
                             style={{ width: "100%" }}
                             size="middle"
@@ -1718,10 +1859,10 @@ const NewSale = () => {
                                 fontSize: 12,
                               }}
                             >
-                              Discount
+                              Avg Discount
                             </span>
                           }
-                          name="discount_amount"
+                          name="average_discount_amount"
                           style={{ marginBottom: 0 }}
                         >
                           <InputNumber
@@ -1730,7 +1871,7 @@ const NewSale = () => {
                             placeholder="0"
                             size="middle"
                             prefix={
-                              discountType === DiscountType.PERCENTAGE
+                              averageDiscountType === DiscountType.PERCENTAGE
                                 ? "%"
                                 : "$"
                             }
@@ -2282,6 +2423,48 @@ const NewSale = () => {
                         }}
                       >
                         -${(Number(totals.finalDiscount) || 0).toFixed(2)}
+                      </Text>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 12px",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>Promo Discount:</Text>
+                      <Text style={{ fontSize: 15 }}>
+                        -${(Number(totals.promotionDiscount) || 0).toFixed(2)}
+                      </Text>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 12px",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>Average Discount:</Text>
+                      <Text style={{ fontSize: 15 }}>
+                        -${(Number(totals.averageDiscount) || 0).toFixed(2)}
+                      </Text>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 12px",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>Special Discount:</Text>
+                      <Text style={{ fontSize: 15 }}>
+                        -${(Number(totals.specialDiscount) || 0).toFixed(2)}
                       </Text>
                     </div>
                     <div
