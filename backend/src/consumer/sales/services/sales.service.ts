@@ -214,7 +214,19 @@ export class SalesService {
         0,
       );
 
-      let manualDiscountAmount = Number(createSaleDto.discount_amount) || 0;
+      const averageDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.average_discount_amount) || 0),
+        0,
+      );
+      const specialDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.special_discount_amount) || 0),
+        0,
+      );
+      const itemPromotionDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.promotion_discount_amount) || 0),
+        0,
+      );
+
       let promotionDiscountAmount = 0;
       let promotionId: number | null = null;
 
@@ -234,12 +246,20 @@ export class SalesService {
           );
 
         promotionDiscountAmount =
-          Number(promotionEvaluation.discount_amount) || 0;
+          itemPromotionDiscountAmount ||
+          Number(promotionEvaluation.discount_amount) ||
+          0;
         promotionId = createSaleDto.applied_promotion_id;
       }
 
+      if (!createSaleDto.applied_promotion_id) {
+        promotionDiscountAmount = itemPromotionDiscountAmount;
+      }
+
       const totalDiscountAmount =
-        manualDiscountAmount + promotionDiscountAmount;
+        averageDiscountAmount +
+        specialDiscountAmount +
+        promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
       // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
@@ -291,8 +311,7 @@ export class SalesService {
             sale_type: createSaleDto.sale_type || SaleType.SALE,
             price_type: createSaleDto.price_type || 'regular',
             subtotal,
-            discount_type: createSaleDto.discount_type || 'flat',
-            discount_amount: manualDiscountAmount,
+            discount_amount: totalDiscountAmount,
             promotion_discount: promotionDiscountAmount,
             shipping_cost: shippingCost,
             tax_amount: totalTax,
@@ -348,7 +367,10 @@ export class SalesService {
                 batch_id: item.selectedBatch?.id || null,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
-                discount_amount: item.discount_amount || 0,
+                average_discount_amount: item.average_discount_amount || 0,
+                special_discount_amount: item.special_discount_amount || 0,
+                promotion_discount_amount: item.promotion_discount_amount || 0,
+                applied_promotion_id: item.applied_promotion_id || null,
                 tax_amount: item.tax_amount || 0,
                 line_total: item.line_total,
               },
@@ -1608,7 +1630,6 @@ export class SalesService {
             sale_type: SaleType.SALE, // Convert to actual sale
             price_type: quotation.price_type,
             subtotal: quotation.subtotal,
-            discount_type: quotation.discount_type,
             discount_amount: quotation.discount_amount,
             promotion_discount: quotation.promotion_discount || 0,
             shipping_cost: quotation.shipping_cost,
@@ -1632,7 +1653,10 @@ export class SalesService {
                 batch_id: item.selectedBatch.id,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
-                discount_amount: item.discount_amount || 0,
+                average_discount_amount: item.average_discount_amount || 0,
+                special_discount_amount: item.special_discount_amount || 0,
+                promotion_discount_amount: item.promotion_discount_amount || 0,
+                applied_promotion_id: item.applied_promotion_id || null,
                 tax_amount: item.tax_amount || 0,
                 line_total: item.line_total,
               },
