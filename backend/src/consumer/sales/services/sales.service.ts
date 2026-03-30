@@ -204,9 +204,17 @@ export class SalesService {
       let totalTax = 0;
 
       // For now, use the simpler approach: trust frontend calculations
-      // Subtotal = sum of (line_total - tax_amount) for all items
+      // Subtotal = sum of (line_total_with_discounts + discounts - tax) for all items
+      // Because line_total is now the final price AFTER discounts
       subtotal = createSaleDto.items.reduce((sum, item) => {
-        return sum + (Number(item.line_total) - Number(item.tax_amount || 0));
+        const itemDiscounts =
+          (Number(item.average_discount_amount) || 0) +
+          (Number(item.special_discount_amount) || 0) +
+          (Number(item.promotion_discount_amount) || 0);
+        // Recover original base: line_total (after discounts) + all discounts
+        const originalBase = Number(item.line_total) + itemDiscounts;
+        // Subtract tax to get pre-tax subtotal
+        return sum + (originalBase - Number(item.tax_amount || 0));
       }, 0);
 
       totalTax = createSaleDto.items.reduce(
@@ -214,7 +222,19 @@ export class SalesService {
         0,
       );
 
-      let manualDiscountAmount = Number(createSaleDto.discount_amount) || 0;
+      const averageDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.average_discount_amount) || 0),
+        0,
+      );
+      const specialDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.special_discount_amount) || 0),
+        0,
+      );
+      const itemPromotionDiscountAmount = createSaleDto.items.reduce(
+        (sum, item) => sum + (Number(item.promotion_discount_amount) || 0),
+        0,
+      );
+
       let promotionDiscountAmount = 0;
       let promotionId: number | null = null;
 
@@ -234,12 +254,20 @@ export class SalesService {
           );
 
         promotionDiscountAmount =
-          Number(promotionEvaluation.discount_amount) || 0;
+          itemPromotionDiscountAmount ||
+          Number(promotionEvaluation.discount_amount) ||
+          0;
         promotionId = createSaleDto.applied_promotion_id;
       }
 
+      if (!createSaleDto.applied_promotion_id) {
+        promotionDiscountAmount = itemPromotionDiscountAmount;
+      }
+
       const totalDiscountAmount =
-        manualDiscountAmount + promotionDiscountAmount;
+        averageDiscountAmount +
+        specialDiscountAmount +
+        promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
       // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
@@ -287,12 +315,11 @@ export class SalesService {
             promotion_id: promotionId,
             branch_id: createSaleDto.branch_id,
             user_id: userId,
-            served_by_id: createSaleDto.served_by_id ?? userId,
+            served_by_id: createSaleDto.served_by_id ?? null,
             sale_type: createSaleDto.sale_type || SaleType.SALE,
             price_type: createSaleDto.price_type || 'regular',
             subtotal,
-            discount_type: createSaleDto.discount_type || 'flat',
-            discount_amount: manualDiscountAmount,
+            discount_amount: totalDiscountAmount,
             promotion_discount: promotionDiscountAmount,
             shipping_cost: shippingCost,
             tax_amount: totalTax,
@@ -348,7 +375,10 @@ export class SalesService {
                 batch_id: item.selectedBatch?.id || null,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
-                discount_amount: item.discount_amount || 0,
+                average_discount_amount: item.average_discount_amount || 0,
+                special_discount_amount: item.special_discount_amount || 0,
+                promotion_discount_amount: item.promotion_discount_amount || 0,
+                applied_promotion_id: item.applied_promotion_id || null,
                 tax_amount: item.tax_amount || 0,
                 line_total: item.line_total,
               },
@@ -722,6 +752,7 @@ export class SalesService {
         include: {
           payments: true,
           exchanges: true,
+          items: true,
         },
       });
 
@@ -738,12 +769,38 @@ export class SalesService {
       const availableAmount =
         parseFloat(sale.total_amount.toString()) - totalAlreadyReturned;
 
+      const saleItemMap = new Map(sale.items.map((item) => [item.id, item]));
+      const totalItemValueAlreadyReturned = returns.reduce((sum, ret) => {
+        const returnItemsValue = ret.items.reduce((itemSum, returnedItem) => {
+          const originalItem = saleItemMap.get(returnedItem.sale_item_id);
+          if (!originalItem) return itemSum;
+
+          const originalQty = Number(originalItem.quantity) || 0;
+          const ratio =
+            originalQty > 0 ? Number(returnedItem.quantity) / originalQty : 0;
+          return itemSum + (Number(originalItem.line_total) || 0) * ratio;
+        }, 0);
+
+        return sum + returnItemsValue;
+      }, 0);
+
+      const shippingRefunded = Math.max(
+        0,
+        totalAlreadyReturned - totalItemValueAlreadyReturned,
+      );
+      const availableShippingRefund = Math.max(
+        0,
+        Number(sale.shipping_cost || 0) - shippingRefunded,
+      );
+
       const returnSummary = {
         total_returned: returns.length,
         total_refunded: totalRefunded,
         total_exchanged: totalExchanged,
         total_already_returned: totalAlreadyReturned,
         available_amount: Math.max(0, availableAmount), // Ensure it's never negative
+        shipping_refunded: shippingRefunded,
+        available_shipping_refund: availableShippingRefund,
         returns: returns.map((ret) => ({
           id: ret.id,
           return_number: ret.return_number,
@@ -1608,7 +1665,6 @@ export class SalesService {
             sale_type: SaleType.SALE, // Convert to actual sale
             price_type: quotation.price_type,
             subtotal: quotation.subtotal,
-            discount_type: quotation.discount_type,
             discount_amount: quotation.discount_amount,
             promotion_discount: quotation.promotion_discount || 0,
             shipping_cost: quotation.shipping_cost,
@@ -1632,7 +1688,10 @@ export class SalesService {
                 batch_id: item.selectedBatch.id,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
-                discount_amount: item.discount_amount || 0,
+                average_discount_amount: item.average_discount_amount || 0,
+                special_discount_amount: item.special_discount_amount || 0,
+                promotion_discount_amount: item.promotion_discount_amount || 0,
+                applied_promotion_id: item.applied_promotion_id || null,
                 tax_amount: item.tax_amount || 0,
                 line_total: item.line_total,
               },
@@ -1733,15 +1792,31 @@ export class SalesService {
           pv.sku         AS sku,
           COALESCE(SUM(fsi.quantity), 0)   AS total_qty,
           COUNT(DISTINCT fsi.sale_id)      AS total_sales,
-          COALESCE(SUM(fsi.line_total), 0) AS total_amount
+          COALESCE(
+            SUM(
+              fsi.line_total
+              - COALESCE(fsi.average_discount_amount, 0)
+              - COALESCE(fsi.special_discount_amount, 0)
+              - COALESCE(fsi.promotion_discount_amount, 0)
+            ),
+            0
+          ) AS total_amount
         FROM product_variants pv
         JOIN products p ON pv.product_id = p.id
         LEFT JOIN (
-          SELECT si.variant_id, si.sale_id, si.quantity, si.line_total
+          SELECT
+            si.variant_id,
+            si.sale_id,
+            si.quantity,
+            si.line_total,
+            si.average_discount_amount,
+            si.special_discount_amount,
+            si.promotion_discount_amount
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           WHERE s.consumer_id = ${consumerId}
             AND s.sale_type = ${SaleType.SALE}
+            AND s.payment_status <> ${PaymentStatus.CANCELLED}
             AND s.sale_date >= ${start}
             AND s.sale_date <= ${end}
             ${branchFilter}
@@ -1814,6 +1889,7 @@ export class SalesService {
         sale: {
           consumer_id: consumerId,
           sale_type: SaleType.SALE,
+          payment_status: { not: PaymentStatus.CANCELLED },
           sale_date: { gte: start, lte: end },
         },
       };
@@ -1834,6 +1910,9 @@ export class SalesService {
             id: true,
             quantity: true,
             line_total: true,
+            average_discount_amount: true,
+            special_discount_amount: true,
+            promotion_discount_amount: true,
             sale: {
               select: {
                 id: true,
@@ -1850,7 +1929,13 @@ export class SalesService {
         this.prisma.saleItem.count({ where }),
         this.prisma.saleItem.aggregate({
           where,
-          _sum: { quantity: true, line_total: true },
+          _sum: {
+            quantity: true,
+            line_total: true,
+            average_discount_amount: true,
+            special_discount_amount: true,
+            promotion_discount_amount: true,
+          },
           _count: { sale_id: true },
         }),
       ]);
@@ -1861,6 +1946,10 @@ export class SalesService {
         select: {
           quantity: true,
           line_total: true,
+          average_discount_amount: true,
+          special_discount_amount: true,
+          promotion_discount_amount: true,
+          sale_id: true,
           sale: { select: { sale_date: true } },
         },
         orderBy: { sale: { sale_date: 'asc' } },
@@ -1872,22 +1961,31 @@ export class SalesService {
       >();
       for (const item of allItems) {
         const dateStr = item.sale.sale_date.toISOString().split('T')[0];
+        const netLineTotal =
+          Number(item.line_total) -
+          Number(item.average_discount_amount || 0) -
+          Number(item.special_discount_amount || 0) -
+          Number(item.promotion_discount_amount || 0);
         const existing = dailyMap.get(dateStr);
         if (existing) {
           existing.qty += Number(item.quantity);
-          existing.total_amount += Number(item.line_total);
+          existing.total_amount += netLineTotal;
         } else {
           dailyMap.set(dateStr, {
             date: dateStr,
             qty: Number(item.quantity),
-            total_amount: Number(item.line_total),
+            total_amount: netLineTotal,
           });
         }
       }
 
       const totalQty = Number(totals._sum.quantity ?? 0);
-      const totalAmount = Number(totals._sum.line_total ?? 0);
-      const salesCount = totals._count.sale_id;
+      const totalAmount =
+        Number(totals._sum.line_total ?? 0) -
+        Number(totals._sum.average_discount_amount ?? 0) -
+        Number(totals._sum.special_discount_amount ?? 0) -
+        Number(totals._sum.promotion_discount_amount ?? 0);
+      const salesCount = new Set(allItems.map((item) => item.sale_id)).size;
 
       return {
         variant: {
@@ -1912,7 +2010,11 @@ export class SalesService {
             item.sale.customer?.name ?? item.sale.customer_name ?? null,
           branch_name: item.sale.branch?.name ?? null,
           qty: Number(item.quantity),
-          line_total: Number(item.line_total),
+          line_total:
+            Number(item.line_total) -
+            Number(item.average_discount_amount || 0) -
+            Number(item.special_discount_amount || 0) -
+            Number(item.promotion_discount_amount || 0),
           payment_status: item.sale.payment_status,
         })),
         meta: {
@@ -1952,6 +2054,7 @@ export class SalesService {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
       served_by_id: { not: null },
+      payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
         gte: start,
         lte: end,
@@ -2027,6 +2130,7 @@ export class SalesService {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
       served_by_id: servedById,
+      payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
         gte: start,
         lte: end,
