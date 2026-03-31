@@ -238,13 +238,23 @@ export default function VariantBatchSection({
                   style={{ width: "100%" }}
                   min={0}
                   precision={2}
-                  value={Number(batch.cost_price || 0)}
+                  value={
+                    batch.cost_price === null ||
+                    batch.cost_price === undefined ||
+                    batch.cost_price === ""
+                      ? undefined
+                      : Number(batch.cost_price)
+                  }
                   status={
                     getError(validationState, variantId, index, "cost_price")
                       .status
                   }
                   onChange={(value) =>
-                    updateBatch(index, "cost_price", value || 0)
+                    updateBatch(
+                      index,
+                      "cost_price",
+                      value === null ? null : value,
+                    )
                   }
                 />
                 {getError(validationState, variantId, index, "cost_price")

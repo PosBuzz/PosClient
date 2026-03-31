@@ -39,13 +39,20 @@ export const useProductSaveMutations = ({
       queryKey: [queryKeys.productsForInventory],
     });
     queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
-  }, [queryClient]);
+    queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+    queryClient.invalidateQueries({ queryKey: [queryKeys.lowStockItems] });
+    queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
+
+    if (isEditMode && id) {
+      queryClient.invalidateQueries({ queryKey: [queryKeys.product, id] });
+    }
+  }, [id, isEditMode, queryClient]);
 
   const validateOrThrow = useCallback(
     (skipBatchValidation: boolean) => {
       const isValid = validateForm({ skipBatchValidation });
       if (!isValid) {
-        throw new Error("All required field must be filled up");
+        throw new Error("Please fill in all required fields before saving.");
       }
     },
     [validateForm],
