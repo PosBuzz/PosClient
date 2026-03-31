@@ -10,6 +10,18 @@ import {
   mapStateToUpdateProductPayload,
 } from "./payload-mappers";
 
+// helper function
+function toValidNumber(value: unknown): number | undefined {
+  if (typeof value === "number") return value;
+
+  if (typeof value === "string") {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  }
+
+  return undefined;
+}
+
 // Mapping helpers between backend product payloads and local form state shape.
 
 const toVariantState = (
@@ -25,21 +37,16 @@ const toVariantState = (
     : [];
 
   return {
-    id: Number(variant.id),
+    id: variant.id != null ? Number(variant.id) : undefined,
     name: String(variant.name || `Variant ${index + 1}`),
     sku: String(variant.sku || ""),
     barcode: String(variant.barcode || ""),
-    regular_price: (variant.regular_price as string | number | null) || null,
+    regular_price:
+      (variant.regular_price as string | number | null | undefined) ?? null,
     wholesale_price:
-      (variant.wholesale_price as string | number | null | undefined) || null,
-    sale_unit_id:
-      typeof variant.sale_unit_id === "number"
-        ? variant.sale_unit_id
-        : undefined,
-    purchase_unit_id:
-      typeof variant.purchase_unit_id === "number"
-        ? variant.purchase_unit_id
-        : undefined,
+      (variant.wholesale_price as string | number | null | undefined) ?? null,
+    sale_unit_id: toValidNumber(variant.sale_unit_id),
+    purchase_unit_id: toValidNumber(variant.purchase_unit_id),
     warranty_period:
       typeof variant.warranty_period === "number"
         ? variant.warranty_period

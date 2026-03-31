@@ -170,7 +170,11 @@ export default function VariantForm({
               style={{ width: "100%" }}
               min={0}
               precision={2}
-              value={Number(variant.regular_price || 0)}
+              value={
+                variant.regular_price !== null && variant.regular_price !== ""
+                  ? Number(variant.regular_price)
+                  : undefined
+              }
               status={
                 getError(validationState, variantId, "regular_price").status
               }
@@ -303,6 +307,7 @@ export default function VariantForm({
               name={`variant-image-${variantId}`}
               useForm={false}
               maxCount={1}
+              listType="text"
               value={variant.image ? [variant.image] : []}
               onChange={(urls) =>
                 onVariantUpdate(variantId, { image: urls[0] || null })
