@@ -104,20 +104,18 @@ export default function VariantManager({
             children: (
               <Space direction="vertical" style={{ width: "100%" }} size={12}>
                 <Space wrap>
-                  {variantKeys.length > 1 &&
-                    formState.has_variants &&
-                    !formState.variants[variantKey]?.is_default && (
-                      <Popconfirm
-                        title="Delete variant"
-                        description="Are you sure you want to remove this variant?"
-                        okType="danger"
-                        onConfirm={() => onDeleteVariant(variantKey)}
-                      >
-                        <Button danger icon={<DeleteOutlined />}>
-                          Delete
-                        </Button>
-                      </Popconfirm>
-                    )}
+                  {variantKeys.length > 1 && formState.has_variants && (
+                    <Popconfirm
+                      title="Delete variant"
+                      description="Are you sure you want to remove this variant?"
+                      okType="danger"
+                      onConfirm={() => onDeleteVariant(variantKey)}
+                    >
+                      <Button danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  )}
                 </Space>
 
                 <VariantForm

@@ -96,9 +96,6 @@ export const useVariantActions = ({
         }
 
         const variant = prev.variants[variantKey];
-        if (variant?.is_default) {
-          return prev;
-        }
 
         const nextDeleted = [...prev.deletedVariantIds];
         if (variant?.id) {
@@ -107,6 +104,19 @@ export const useVariantActions = ({
 
         const nextVariants = { ...prev.variants };
         delete nextVariants[variantKey];
+
+        const remainingKeys = Object.keys(nextVariants);
+        const hasDefault = remainingKeys.some(
+          (key) => nextVariants[key]?.is_default,
+        );
+
+         if (!hasDefault && remainingKeys.length > 0) {
+        const promoteKey = remainingKeys.sort((a, b) => Number(a) - Number(b))[0];
+        nextVariants[promoteKey] = {
+          ...nextVariants[promoteKey],
+          is_default: true,
+        };
+      }
 
         return {
           ...prev,
