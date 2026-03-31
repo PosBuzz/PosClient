@@ -48,6 +48,16 @@ export class ReturnService {
         throw new NotFoundException('Branch not found');
       }
 
+      const shippingRefundAmount = Number(dto.shipping_refund_amount || 0);
+      if (
+        !Number.isFinite(shippingRefundAmount) ||
+        shippingRefundAmount < 0
+      ) {
+        throw new BadRequestException(
+          'Shipping refund amount must be a valid non-negative number',
+        );
+      }
+
       // Validate return items against original sale items
       const saleItemIds = originalSale.items.map((item) => item.id);
       const invalidItems = dto.items.filter(
@@ -93,6 +103,44 @@ export class ReturnService {
       // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE'
       // - totalExchange = sum of only 'EXCHANGE' payment methods
 
+      if (!dto.payments || dto.payments.length === 0) {
+        throw new BadRequestException(
+          'At least one payment method is required to process a return',
+        );
+      }
+
+      if (
+        dto.payments.some(
+          (payment) =>
+            !Number.isFinite(Number(payment.amount)) ||
+            Number(payment.amount) <= 0,
+        )
+      ) {
+        throw new BadRequestException(
+          'All payment amounts must be greater than 0',
+        );
+      }
+
+      const itemReturnAmount = dto.items.reduce((sum, returnItem) => {
+        const originalItem = originalSale.items.find(
+          (item) => item.id === returnItem.sale_item_id,
+        );
+
+        if (!originalItem) {
+          throw new BadRequestException(
+            `Sale item ${returnItem.sale_item_id} not found`,
+          );
+        }
+
+        const originalQty = Number(originalItem.quantity) || 0;
+        const ratio = originalQty > 0 ? Number(returnItem.quantity) / originalQty : 0;
+        const lineAmount = (Number(originalItem.line_total) || 0) * ratio;
+        // line_total is already the final amount after discounts
+        return sum + lineAmount;
+      }, 0);
+
+      const selectedReturnAmount = itemReturnAmount + shippingRefundAmount;
+
       const totalRefund =
         dto.payments?.reduce((sum, payment) => {
           const method = payment.payment_method.toString().toUpperCase();
@@ -124,6 +172,9 @@ export class ReturnService {
         where: {
           original_sale_id: dto.original_sale_id,
         },
+        include: {
+          items: true,
+        },
       });
 
       const totalAlreadyReturned = existingReturns.reduce(
@@ -134,8 +185,67 @@ export class ReturnService {
         0,
       );
 
+      const saleItemMap = new Map(
+        originalSale.items.map((item) => [item.id, item]),
+      );
+
+      const totalItemValueAlreadyReturned = existingReturns.reduce(
+        (sum, ret) => {
+          const returnItemsValue = ret.items.reduce((itemSum, returnedItem) => {
+            const originalItem = saleItemMap.get(returnedItem.sale_item_id);
+            if (!originalItem) return itemSum;
+            const originalQty = Number(originalItem.quantity) || 0;
+            const ratio =
+              originalQty > 0 ? Number(returnedItem.quantity) / originalQty : 0;
+            return itemSum + (Number(originalItem.line_total) || 0) * ratio;
+          }, 0);
+
+          return sum + returnItemsValue;
+        },
+        0,
+      );
+
+      const shippingAlreadyRefunded = Math.max(
+        0,
+        totalAlreadyReturned - totalItemValueAlreadyReturned,
+      );
+      const availableShippingRefund = Math.max(
+        0,
+        Number(originalSale.shipping_cost || 0) - shippingAlreadyRefunded,
+      );
+
+      if (shippingRefundAmount > availableShippingRefund + 0.01) {
+        throw new BadRequestException(
+          `Shipping refund amount ($${shippingRefundAmount.toFixed(2)}) exceeds remaining refundable shipping ($${availableShippingRefund.toFixed(2)})`,
+        );
+      }
+
       const availableAmount =
         parseFloat(originalSale.total_amount.toString()) - totalAlreadyReturned;
+
+      if (dto.items.length === 0 && shippingRefundAmount <= 0) {
+        throw new BadRequestException(
+          'Select at least one return item or add a shipping refund amount',
+        );
+      }
+
+      if (selectedReturnAmount <= 0) {
+        throw new BadRequestException(
+          'Selected return amount must be greater than 0',
+        );
+      }
+
+      if (selectedReturnAmount > availableAmount + 0.01) {
+        throw new BadRequestException(
+          `Selected return value ($${selectedReturnAmount.toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)})`,
+        );
+      }
+
+      if (Math.abs(totalPayments - selectedReturnAmount) > 0.01) {
+        throw new BadRequestException(
+          `Total payment amount must exactly match selected return value. Expected $${selectedReturnAmount.toFixed(2)}, got $${totalPayments.toFixed(2)}`,
+        );
+      }
 
       // Validate that total refund + exchange doesn't exceed available amount
       if (totalRefund + totalExchange > availableAmount) {
@@ -358,6 +468,10 @@ export class ReturnService {
 
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.error(
         `Error creating return with user ${userId} for consumer ${consumerId}`,
         error.stack,
