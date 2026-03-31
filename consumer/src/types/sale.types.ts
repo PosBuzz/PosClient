@@ -14,7 +14,10 @@ export interface SaleItem {
   batch_id?: number;
   batch_number?: string;
   unit_price: number;
-  discount_amount?: number;
+  average_discount_amount?: number;
+  special_discount_amount?: number;
+  promotion_discount_amount?: number;
+  applied_promotion_id?: number;
   tax_amount?: number;
   line_total: number;
   product_name: string;
@@ -63,8 +66,8 @@ export interface Sale {
   sale_type: SaleType;
   price_type: PriceType;
   subtotal: number;
-  discount_type: DiscountType;
-  discount_amount: number; // Manual discount only
+  discount_type?: DiscountType;
+  discount_amount: number; // Total discount amount for the sale
   promotion_discount: number; // Promotion discount (tracked separately for stats)
   shipping_cost: number;
   tax_amount: number;
@@ -100,7 +103,7 @@ export interface SaleFormData {
   quotation_id?: number; // For converting quotation to sale
   sale_type: SaleType;
   price_type: PriceType;
-  discount_type: DiscountType;
+  discount_type?: DiscountType;
   discount_amount: number;
   shipping_cost: number;
   payment_status: PaymentStatus;

@@ -50,6 +50,25 @@ const QuotationDetail: React.FC = () => {
 
   const quotation = quotationQuery.data;
   const loading = quotationQuery.isLoading;
+  const promotionDiscount =
+    quotation?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.promotion_discount_amount) || 0),
+      0,
+    ) || Number(quotation?.promotion_discount) || 0;
+  const averageDiscount =
+    quotation?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.average_discount_amount) || 0),
+      0,
+    ) || 0;
+  const specialDiscount =
+    quotation?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.special_discount_amount) || 0),
+      0,
+    ) || 0;
+  const totalDiscount = Number(quotation?.discount_amount) || 0;
 
   useEffect(() => {
     if (quotationQuery.isError) {
@@ -137,10 +156,35 @@ const QuotationDetail: React.FC = () => {
       render: (tax: number) => `$${Number(tax || 0).toFixed(2)}`,
     },
     {
+      title: "Avg Disc",
+      key: "average_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.average_discount_amount) || 0).toFixed(2)}`,
+    },
+    {
+      title: "Special Disc",
+      key: "special_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.special_discount_amount) || 0).toFixed(2)}`,
+    },
+    {
+      title: "Promo Disc",
+      key: "promotion_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`,
+    },
+    {
       title: "Line Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number) => `$${Number(total || 0).toFixed(2)}`,
+      render: (total: number, record: any) => {
+        const netTotal =
+          (Number(total) || 0) -
+          (Number(record.average_discount_amount) || 0) -
+          (Number(record.special_discount_amount) || 0) -
+          (Number(record.promotion_discount_amount) || 0);
+        return `$${Number(netTotal || 0).toFixed(2)}`;
+      },
     },
   ];
 
@@ -319,10 +363,36 @@ const QuotationDetail: React.FC = () => {
                 <Text>Tax:</Text>
                 <Text>${Number(quotation.tax_amount || 0).toFixed(2)}</Text>
               </div>
+              {promotionDiscount > 0 && (
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <Text style={{ color: "#52c41a" }}>Promo Discount:</Text>
+                  <Text style={{ color: "#52c41a" }}>
+                    -${promotionDiscount.toFixed(2)}
+                  </Text>
+                </div>
+              )}
+              {averageDiscount > 0 && (
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <Text>Average Discount:</Text>
+                  <Text>-${averageDiscount.toFixed(2)}</Text>
+                </div>
+              )}
+              {specialDiscount > 0 && (
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <Text>Special Discount:</Text>
+                  <Text>-${specialDiscount.toFixed(2)}</Text>
+                </div>
+              )}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <Text>Discount:</Text>
-                <Text>
-                  -${Number(quotation.discount_amount || 0).toFixed(2)}
+                <Text strong>Total Discount:</Text>
+                <Text strong>
+                  {totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : "$0.00"}
                 </Text>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>

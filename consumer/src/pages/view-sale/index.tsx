@@ -45,9 +45,25 @@ const SaleDetail: React.FC = () => {
 
   const sale = saleQuery.data;
   const loading = saleQuery.isLoading;
-  const promotionDiscount = Number(sale?.promotion_discount) || 0;
-  const manualDiscount = Number(sale?.discount_amount) || 0;
-  const totalDiscount = promotionDiscount + manualDiscount;
+  const promotionDiscount =
+    sale?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.promotion_discount_amount) || 0),
+      0,
+    ) || Number(sale?.promotion_discount) || 0;
+  const averageDiscount =
+    sale?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.average_discount_amount) || 0),
+      0,
+    ) || 0;
+  const specialDiscount =
+    sale?.items?.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.special_discount_amount) || 0),
+      0,
+    ) || 0;
+  const totalDiscount = Number(sale?.discount_amount) || 0;
 
   useEffect(() => {
     if (saleQuery.isError) {
@@ -283,11 +299,22 @@ const SaleDetail: React.FC = () => {
       ),
     },
     {
-      title: "Discount",
-      dataIndex: "discount_amount",
-      key: "discount_amount",
-      render: (discount: number) =>
-        discount > 0 ? `-$${(Number(discount) || 0).toFixed(2)}` : "$0.00",
+      title: "Avg Disc",
+      key: "average_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.average_discount_amount) || 0).toFixed(2)}`,
+    },
+    {
+      title: "Special Disc",
+      key: "special_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.special_discount_amount) || 0).toFixed(2)}`,
+    },
+    {
+      title: "Promo Disc",
+      key: "promotion_discount_amount",
+      render: (_: any, record: any) =>
+        `-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`,
     },
     {
       title: "Tax",
@@ -306,9 +333,14 @@ const SaleDetail: React.FC = () => {
       title: "Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number) => (
-        <Text strong>${(Number(total) || 0).toFixed(2)}</Text>
-      ),
+      render: (total: number, record: any) => {
+        const netTotal =
+          (Number(total) || 0) -
+          (Number(record.average_discount_amount) || 0) -
+          (Number(record.special_discount_amount) || 0) -
+          (Number(record.promotion_discount_amount) || 0);
+        return <Text strong>${(Number(netTotal) || 0).toFixed(2)}</Text>;
+      },
     },
   ];
 
@@ -557,7 +589,7 @@ const SaleDetail: React.FC = () => {
                   </Text>
                 </div>
               )}
-              {manualDiscount > 0 && (
+              {averageDiscount > 0 && (
                 <div
                   style={{
                     display: "flex",
@@ -565,8 +597,20 @@ const SaleDetail: React.FC = () => {
                     marginBottom: 8,
                   }}
                 >
-                  <Text>Manual Discount:</Text>
-                  <Text>-${manualDiscount.toFixed(2)}</Text>
+                  <Text>Average Discount:</Text>
+                  <Text>-${averageDiscount.toFixed(2)}</Text>
+                </div>
+              )}
+              {specialDiscount > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text>Special Discount:</Text>
+                  <Text>-${specialDiscount.toFixed(2)}</Text>
                 </div>
               )}
               <div
