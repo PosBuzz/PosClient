@@ -377,6 +377,16 @@ const NewQuotation = () => {
   const calculateTotals = () => {
     const round2 = (value: number) => Number((value || 0).toFixed(2));
 
+    // Helper to get base amount (price * quantity) without tax branching
+    const getItemBaseAmount = (item: SaleItem) =>
+      Number(item.unit_price) * Number(item.quantity || 0);
+
+    // Calculate raw base subtotal (price * quantity without tax considerations)
+    const averageDiscountBaseSubtotal = selectedItems.reduce(
+      (sum, item) => sum + getItemBaseAmount(item),
+      0,
+    );
+
     const subtotal = selectedItems.reduce((sum, item) => {
       const variant = productsForSaleQuery.data?.find(
         (v) => v.id === item.variant_id,
@@ -398,9 +408,10 @@ const NewQuotation = () => {
     const averageDiscountAmountNum = Number(averageDiscountAmount) || 0;
     const shippingCostNum = Number(shippingCost) || 0;
 
+    // Calculate average discount on raw base (not tax-adjusted)
     const averageDiscount =
       averageDiscountType === DiscountType.PERCENTAGE
-        ? (subtotal * averageDiscountAmountNum) / 100
+        ? (averageDiscountBaseSubtotal * averageDiscountAmountNum) / 100
         : averageDiscountAmountNum;
 
     const specialDiscount = selectedItems.reduce(
@@ -408,22 +419,17 @@ const NewQuotation = () => {
       0,
     );
 
+    // Build variant base map using raw base (unit_price * quantity)
     const variantBaseMap = new Map<number, number>();
     selectedItems.forEach((item) => {
-      const variant = productsForSaleQuery.data?.find(
-        (v) => v.id === item.variant_id,
-      );
-      const taxMethod = variant?.tax_method || "EXCLUSIVE";
-      const baseAmount =
-        taxMethod === "INCLUSIVE"
-          ? Number(item.line_total) - Number(item.tax_amount)
-          : Number(item.unit_price) * Number(item.quantity);
-      variantBaseMap.set(item.variant_id, Number(baseAmount) || 0);
+      variantBaseMap.set(item.variant_id, Number(getItemBaseAmount(item)) || 0);
     });
 
     const distributeDiscount = (totalDiscount: number) => {
       const distributed = new Map<number, number>();
-      if (totalDiscount <= 0 || selectedItems.length === 0 || subtotal <= 0) {
+      const totalBase = Array.from(variantBaseMap.values()).reduce((a, b) => a + b, 0);
+
+      if (totalDiscount <= 0 || selectedItems.length === 0 || totalBase <= 0) {
         selectedItems.forEach((item) => distributed.set(item.variant_id, 0));
         return distributed;
       }
@@ -436,7 +442,7 @@ const NewQuotation = () => {
           return;
         }
         const base = variantBaseMap.get(item.variant_id) || 0;
-        const share = round2((totalDiscount * base) / subtotal);
+        const share = round2((totalDiscount * base) / totalBase);
         distributed.set(item.variant_id, share);
         assigned += share;
       });

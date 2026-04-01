@@ -1,27 +1,24 @@
 import {
-  DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SearchOutlined,
-  WarningOutlined,
+  SearchOutlined
 } from "@ant-design/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Button,
   Card,
   Col,
   Input,
-  Popconfirm,
   Row,
   Select,
   Space,
   Table,
   Tag,
   Tooltip,
-  Typography,
+  Typography
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -32,7 +29,6 @@ import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
-import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -41,9 +37,9 @@ const { Option } = Select;
 
 export default function InventoryPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const { modal } = useModalStore();
-  const { messageApi } = useMessageStore();
+  // const { messageApi } = useMessageStore();
 
   // Input state (tracks what the user is typing)
   const [searchText, setSearchText] = useState("");
@@ -108,25 +104,25 @@ export default function InventoryPage() {
   });
 
   // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: inventoryApi.deleteBatch,
-    onSuccess: () => {
-      messageApi?.success("Batch deleted successfully");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
-    },
-    onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to delete batch",
-      );
-    },
-  });
+  // const deleteMutation = useMutation({
+  //   mutationFn: inventoryApi.deleteBatch,
+  //   onSuccess: () => {
+  //     messageApi?.success("Batch deleted successfully");
+  //     queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+  //     queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
+  //     queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
+  //     queryClient.invalidateQueries({ queryKey: [queryKeys.adjustments] });
+  //   },
+  //   onError: (error: any) => {
+  //     messageApi?.error(
+  //       error.response?.data?.message || "Failed to delete batch",
+  //     );
+  //   },
+  // });
 
-  const handleDelete = (batchId: number) => {
-    deleteMutation.mutate(batchId);
-  };
+  // const handleDelete = (batchId: number) => {
+  //   deleteMutation.mutate(batchId);
+  // };
 
   const handleEdit = (batchId: number) => {
     navigate(`/inventory/batches/edit/${batchId}`);
