@@ -55,14 +55,14 @@ export const useVariantActions = ({
       const nextKey = String(
         keys.length > 0 ? Math.max(...keys.map((key) => Number(key))) + 1 : 0,
       );
-      const nextVariantName = `Variant ${keys.length + 1}`;
-      const prefixSource = prev.name.trim() || nextVariantName;
+      // const nextVariantName = `Variant ${keys.length + 1}`;
+      const prefixSource = prev.name.trim() || "VAR" //|| nextVariantName;
 
       const nextVariants = {
         ...prev.variants,
         [nextKey]: {
           ...createDefaultVariant(prev.name),
-          name: nextVariantName,
+          name: "",//nextVariantName,
           is_default: false,
           sku: buildVariantSku(prefixSource),
           barcode: makeBarcode(),
@@ -72,7 +72,7 @@ export const useVariantActions = ({
       if (!prev.has_variants && nextVariants["0"]) {
         nextVariants["0"] = {
           ...nextVariants["0"],
-          name: prev.name.trim() || "Default",
+          name: prev.name.trim() ||"" ,//|| "Default",
           is_default: true,
         };
       }
