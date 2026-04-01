@@ -63,12 +63,6 @@ export default function AddOrEditProductPage() {
     staleTime: queryStaleTimeMap[queryKeys.branches],
   });
 
-  const { data: vendors = [] } = useQuery({
-    queryKey: [queryKeys.vendors],
-    queryFn: inventoryApi.getVendors,
-    staleTime: queryStaleTimeMap[queryKeys.vendors],
-  });
-
   useEffect(() => {
     // Keep hook state synchronized with route mode (add vs edit).
     if (isEditMode && productData) {
@@ -121,7 +115,6 @@ export default function AddOrEditProductPage() {
             validationState={validationState}
             isEditMode={isEditMode}
             branches={branches}
-            vendors={vendors}
             onAddVariant={addVariant}
             onDeleteVariant={deleteVariant}
             onVariantUpdate={updateVariant}
@@ -158,7 +151,6 @@ export default function AddOrEditProductPage() {
       updateVariantBatches,
       updateVariantSerial,
       validationState,
-      vendors,
     ],
   );
 
