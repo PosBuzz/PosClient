@@ -18,7 +18,6 @@ interface VariantManagerProps {
   validationState: ValidationState;
   isEditMode: boolean;
   branches: Option[];
-  vendors: Option[];
   onAddVariant: () => void;
   onDeleteVariant: (variantKey: string) => void;
   onVariantUpdate: (
@@ -49,7 +48,6 @@ export default function VariantManager({
   validationState,
   isEditMode,
   branches,
-  vendors,
   onAddVariant,
   onDeleteVariant,
   onVariantUpdate,
@@ -124,7 +122,6 @@ export default function VariantManager({
                   validationState={validationState}
                   isEditMode={isEditMode}
                   branches={branches}
-                  vendors={vendors}
                   onVariantUpdate={onVariantUpdate}
                   onGenerateSKU={onGenerateSKU}
                   onGenerateBarcode={onGenerateBarcode}

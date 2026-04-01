@@ -67,8 +67,8 @@ export class InventoryBatchController {
     );
   }
 
-  @Delete(':id')
-  remove(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
-    return this.inventoryBatchService.remove(id, Number(req?.user.consumer_id));
-  }
+  // @Delete(':id')
+  // remove(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
+  //   return this.inventoryBatchService.remove(id, Number(req?.user.consumer_id));
+  // }
 }

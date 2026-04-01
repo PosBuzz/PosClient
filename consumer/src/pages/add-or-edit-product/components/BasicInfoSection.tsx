@@ -185,6 +185,7 @@ export default function BasicInfoSection({
           <Col xs={24} sm={12}>
             <Text strong>Tax Rate (%)</Text>
             <InputNumber
+              type="number"
               style={{ width: "100%" }}
               min={0}
               max={100}
