@@ -48,10 +48,10 @@ export default function AddEditInventory() {
 
   const [form] = Form.useForm();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    null
+    null,
   );
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
-    null
+    null,
   );
 
   // Watch form values for real-time summary updates
@@ -98,7 +98,7 @@ export default function AddEditInventory() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to add inventory"
+        error.response?.data?.message || "Failed to add inventory",
       );
     },
   });
@@ -113,6 +113,8 @@ export default function AddEditInventory() {
     }) => inventoryApi.updateBatch(id, data),
     onSuccess: () => {
       messageApi?.success("Inventory updated successfully");
+
+      queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.batch, id] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.expiringBatches] });
@@ -121,7 +123,7 @@ export default function AddEditInventory() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update inventory"
+        error.response?.data?.message || "Failed to update inventory",
       );
     },
   });
@@ -154,8 +156,7 @@ export default function AddEditInventory() {
   const generateBatchNumber = () => {
     const now = new Date();
     const timestamp = now.getTime().toString().slice(-6);
-    const prefix = selectedVariant?.name?.slice(0, 3).toUpperCase() || "INV";
-    return `${prefix}${timestamp}`;
+    return `${timestamp}`;
   };
 
   const handleProductSelect = (productId: number) => {
@@ -183,8 +184,7 @@ export default function AddEditInventory() {
     // Auto-generate batch number
     if (!isEdit) {
       const timestamp = Date.now().toString().slice(-6);
-      const prefix = variant.name?.slice(0, 3).toUpperCase() || "INV";
-      form.setFieldValue("batch_number", `${prefix}${timestamp}`);
+      form.setFieldValue("batch_number", `${timestamp}`);
     }
   };
 
@@ -355,20 +355,20 @@ export default function AddEditInventory() {
               showIcon
             />
           )}{" "}
-          {/* Single Row for Reference, Cost, Quantity, Expiry */}
+          {/* Single Row for Batch No, Cost, Quantity, Expiry */}
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={6}>
               <Form.Item
                 name="batch_number"
-                label="Reference #"
+                label="Batch No #"
                 style={{ marginBottom: 8 }}
                 rules={[
-                  { required: true, message: "Please enter reference number" },
+                  { required: true, message: "Please enter batch number" },
                 ]}
                 extra="Unique identifier for this stock entry"
               >
                 <Input
-                  placeholder="Enter reference number"
+                  placeholder="Enter batch number"
                   disabled={isEdit}
                   className="py-0!"
                   suffix={
@@ -378,10 +378,10 @@ export default function AddEditInventory() {
                       onClick={() =>
                         form.setFieldValue(
                           "batch_number",
-                          generateBatchNumber()
+                          generateBatchNumber(),
                         )
                       }
-                      title="Generate reference number"
+                      title="Generate batch number"
                       disabled={!selectedVariant || isEdit}
                     />
                   }

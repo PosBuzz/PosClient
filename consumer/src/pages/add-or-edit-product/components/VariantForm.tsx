@@ -38,7 +38,7 @@ interface VariantFormProps {
   validationState: ValidationState;
   isEditMode: boolean;
   branches: Option[];
-  vendors: Option[];
+  // vendors: Option[];
   onVariantUpdate: (
     variantKey: string,
     updates: Record<string, unknown>,
@@ -82,7 +82,6 @@ export default function VariantForm({
   validationState,
   isEditMode,
   branches,
-  vendors,
   onVariantUpdate,
   onGenerateSKU,
   onGenerateBarcode,
@@ -168,8 +167,11 @@ export default function VariantForm({
             <Text strong>Regular Price *</Text>
             <InputNumber
               style={{ width: "100%" }}
+              type="number"
+              placeholder="0.00"
               min={0}
               precision={2}
+              prefix="$"
               value={
                 variant.regular_price !== null && variant.regular_price !== ""
                   ? Number(variant.regular_price)
@@ -192,8 +194,11 @@ export default function VariantForm({
             <Text strong>Wholesale Price</Text>
             <InputNumber
               style={{ width: "100%" }}
+              type="number"
+              placeholder="0.00"
               min={0}
               precision={2}
+              prefix="$"
               value={
                 variant.wholesale_price !== null &&
                 variant.wholesale_price !== undefined &&
@@ -262,6 +267,8 @@ export default function VariantForm({
             </Text>
             <InputNumber
               style={{ width: "100%" }}
+              type="number"
+              placeholder="10"
               min={0}
               value={variant.alert_quantity}
               onChange={(value) =>
@@ -280,6 +287,8 @@ export default function VariantForm({
             </Text>
             <InputNumber
               style={{ width: "100%" }}
+              type="number"
+              placeholder="0"
               min={0}
               value={variant.daily_sale_objective}
               onChange={(value) =>
@@ -293,6 +302,8 @@ export default function VariantForm({
             <Text strong>Warranty (months)</Text>
             <InputNumber
               style={{ width: "100%" }}
+              type="number"
+              placeholder="12"
               min={0}
               max={120}
               value={variant.warranty_period}
@@ -320,6 +331,26 @@ export default function VariantForm({
       <Card>
         <Tabs
           items={[
+            ...(!isEditMode
+              ? [
+                  {
+                    key: "batches",
+                    label: `Add Inventory (${variant.batches.length})`,
+                    children: (
+                      <VariantBatchSection
+                        variantId={variantId}
+                        variantName={variant.name}
+                        branches={branches}
+                        batches={variant.batches}
+                        validationState={validationState}
+                        onChange={(batches) =>
+                          onUpdateBatches(variantId, batches)
+                        }
+                      />
+                    ),
+                  },
+                ]
+              : []),
             {
               key: "attributes",
               label: `Attributes (${variant.attributes.length})`,
@@ -356,26 +387,6 @@ export default function VariantForm({
                     onUpdateSerial(variantId, index, updates)
                   }
                   onDelete={(index) => onDeleteSerial(variantId, index)}
-                />
-              ),
-            },
-            {
-              key: "batches",
-              label: `Initial Inventory (${variant.batches.length})`,
-              children: isEditMode ? (
-                <Text type="secondary">
-                  Inventory batches are create-only in this form and are
-                  preserved in edit mode.
-                </Text>
-              ) : (
-                <VariantBatchSection
-                  variantId={variantId}
-                  variantName={variant.name}
-                  branches={branches}
-                  vendors={vendors}
-                  batches={variant.batches}
-                  validationState={validationState}
-                  onChange={(batches) => onUpdateBatches(variantId, batches)}
                 />
               ),
             },
