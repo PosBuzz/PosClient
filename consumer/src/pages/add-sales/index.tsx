@@ -25,7 +25,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { get, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -108,6 +108,7 @@ const NewSale = () => {
   const [promotionEligibilityMap, setPromotionEligibilityMap] = useState<
     Record<number, { is_eligible: boolean; reason?: string }>
   >({});
+  const isHydratingFromQuotationRef = useRef(false);
   const [salePayments, setSalePayments] = useState<SalePayment[]>([
     {
       payment_method: PaymentMethod.CASH,
@@ -222,6 +223,7 @@ const NewSale = () => {
   // Pre-fill form from quotation data
   useEffect(() => {
     if (quotationQuery.data && productsForSaleQuery.data) {
+      isHydratingFromQuotationRef.current = true;
       const quotation = quotationQuery.data;
 
       // Set branch
@@ -334,11 +336,83 @@ const NewSale = () => {
         (quotation.discount_type as DiscountType) || DiscountType.FLAT,
       );
 
+      const appliedPromotionIds = Array.from(
+        new Set(
+          quotation.items
+            ?.map((item: any) => Number(item.applied_promotion_id || 0))
+            .filter((id: number) => id > 0) || [],
+        ),
+      );
+
+      if (appliedPromotionIds.length > 0 && activePromotionsQuery.data) {
+        const restoredPromotions = activePromotionsQuery.data.filter(
+          (promotion) => appliedPromotionIds.includes(promotion.id),
+        );
+
+        const missingPromotionIds = appliedPromotionIds.filter(
+          (id) => !restoredPromotions.some((promotion) => promotion.id === id),
+        );
+
+        const fallbackPromotions = missingPromotionIds
+          .map((id) => {
+            const sourceItem = quotation.items?.find(
+              (item: any) => Number(item.applied_promotion_id) === id,
+            );
+            const sourcePromotion = sourceItem?.applied_promotion as any;
+            if (!sourcePromotion) {
+              return null;
+            }
+
+            return {
+              id: Number(sourcePromotion.id),
+              name: sourcePromotion.name || `Promotion #${id}`,
+              description: sourcePromotion.description || "",
+              scope: sourcePromotion.scope || "SINGLE_PRODUCT",
+              discount_type: sourcePromotion.discount_type || "percentage",
+              discount_value: Number(sourcePromotion.discount_value || 0),
+              start_date: sourcePromotion.start_date || new Date(0).toISOString(),
+              end_date: sourcePromotion.end_date || undefined,
+              is_active: true,
+              min_purchase: Number(sourcePromotion.min_purchase || 0),
+              min_quantity: Number(sourcePromotion.min_quantity || 1),
+              usage_limit: sourcePromotion.usage_limit,
+              cap_quantity: sourcePromotion.cap_quantity,
+              max_discount_amount: sourcePromotion.max_discount_amount,
+              cap_discount_amount: sourcePromotion.cap_discount_amount,
+              member_only: Boolean(sourcePromotion.member_only),
+              limit_per_customer: Boolean(sourcePromotion.limit_per_customer),
+              customer_usage_limit: sourcePromotion.customer_usage_limit,
+              customer_usage_daily_reset: Boolean(
+                sourcePromotion.customer_usage_daily_reset,
+              ),
+              auto_apply: false,
+              branch_specific: false,
+              branch_ids: [],
+              variant_ids: [],
+              brand_id: sourcePromotion.brand_id,
+              products: [],
+              branches: [],
+              sales_count: 0,
+              total_discount_given: 0,
+              total_discounted_sales: 0,
+            };
+          })
+          .filter(Boolean) as Promotion[];
+
+        setAppliedPromotions([...restoredPromotions, ...fallbackPromotions]);
+      } else {
+        setAppliedPromotions([]);
+      }
+
       setSelectedItems(quotationItems);
+      setTimeout(() => {
+        isHydratingFromQuotationRef.current = false;
+      }, 0);
     }
   }, [
     quotationQuery.data,
     productsForSaleQuery.data,
+    activePromotionsQuery.data,
     customers,
     form,
     messageApi,
@@ -359,6 +433,10 @@ const NewSale = () => {
   // Auto-apply promotions when cart changes
   useEffect(() => {
     const tryAutoApplyPromotions = async () => {
+      if (isHydratingFromQuotationRef.current) {
+        return;
+      }
+
       if (
         selectedItems.length === 0 ||
         !selectedBranch ||
@@ -765,6 +843,10 @@ const NewSale = () => {
   ]);
 
   useEffect(() => {
+    if (isHydratingFromQuotationRef.current) {
+      return;
+    }
+
     if (appliedPromotions.length === 0) {
       return;
     }
@@ -2225,7 +2307,7 @@ const NewSale = () => {
                     </Text>
                   </div>
                 )}
-                {totals.promotionDiscount === 0 &&
+                {/* {totals.promotionDiscount === 0 &&
                   totals.averageDiscount === 0 &&
                   totals.specialDiscount === 0 && (
                     <div
@@ -2240,7 +2322,7 @@ const NewSale = () => {
                         -${(Number(totals.finalDiscount) || 0).toFixed(2)}
                       </Text>
                     </div>
-                  )}
+                  )} */}
                 <div
                   style={{
                     display: "flex",

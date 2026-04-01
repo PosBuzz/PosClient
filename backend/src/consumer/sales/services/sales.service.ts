@@ -1541,8 +1541,14 @@ export class SalesService {
       // Calculate summary stats
       const summary = await this.calculateSummaryStats(where);
 
+      const quotationsWithPromotions = await Promise.all(
+        quotations.map((quotation) =>
+          this.attachAppliedPromotions(quotation, consumerId),
+        ),
+      );
+
       return {
-        data: quotations,
+        data: quotationsWithPromotions,
         meta: {
           total,
           page,
@@ -1603,7 +1609,7 @@ export class SalesService {
         throw new NotFoundException('Quotation not found');
       }
 
-      return quotation;
+      return this.attachAppliedPromotions(quotation, consumerId);
     } catch (error) {
       this.logger.error(
         `Error finding quotation ${id} for consumer ${consumerId}`,
