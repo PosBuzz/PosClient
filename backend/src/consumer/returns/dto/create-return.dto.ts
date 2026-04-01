@@ -83,6 +83,11 @@ export class CreateReturnDto {
   @IsString()
   notes?: string;
 
+  @IsOptional()
+  @Transform(({ value }) => (value === undefined || value === null ? 0 : parseFloat(value)))
+  @IsNumber()
+  shipping_refund_amount?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateReturnItemDto)

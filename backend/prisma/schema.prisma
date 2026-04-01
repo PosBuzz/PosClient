@@ -810,8 +810,7 @@ model Sale {
   sale_type            String    @default("sale") // sale, quotation
   price_type           String    @default("regular") // regular, wholesale
   subtotal             Decimal   @db.Decimal(10, 2)
-  discount_type        String    @default("flat") // flat, percentage
-  discount_amount      Decimal   @default(0) @db.Decimal(10, 2) // Manual discount only
+  discount_amount      Decimal   @default(0) @db.Decimal(10, 2) // Total discount amount for the sale
   promotion_discount   Decimal   @default(0) @db.Decimal(10, 2) // Promotion discount (tracked separately for stats)
   shipping_cost        Decimal   @default(0) @db.Decimal(10, 2)
   tax_amount           Decimal   @default(0) @db.Decimal(10, 2)
@@ -863,7 +862,10 @@ model SaleItem {
   batch_id        Int?
   quantity        Int
   unit_price      Decimal @db.Decimal(10, 2)
-  discount_amount Decimal @default(0) @db.Decimal(10, 2)
+  average_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Proportional cart discount portion for this item
+  special_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Special item discount entered for this item
+  promotion_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Promotion discount portion for this item
+  applied_promotion_id Int? // Promotion id applied to this item, if any
   tax_amount      Decimal @default(0) @db.Decimal(10, 2)
   line_total      Decimal @db.Decimal(10, 2)
 
@@ -876,6 +878,7 @@ model SaleItem {
   @@index([sale_id])
   @@index([variant_id])
   @@index([batch_id])
+  @@index([applied_promotion_id])
   @@map("sale_items")
 }
 
