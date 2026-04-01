@@ -58,7 +58,7 @@ export default function InventoryPage() {
   // Debounce function to delay API calls
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   // Effect to trigger debounced search when searchText changes
@@ -119,7 +119,7 @@ export default function InventoryPage() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete batch"
+        error.response?.data?.message || "Failed to delete batch",
       );
     },
   });
@@ -178,7 +178,7 @@ export default function InventoryPage() {
             </Col>
 
             <Col span={8}>
-              <Text strong>Reference:</Text>
+              <Text strong>Batch No:</Text>
             </Col>
             <Col span={16}>
               <Text>{batch.batch_number}</Text>
@@ -238,7 +238,7 @@ export default function InventoryPage() {
                   <Text>
                     {dayjs(batch.expiry_date).format("MMM DD, YYYY")}
                     {dayjs(batch.expiry_date).isBefore(
-                      dayjs().add(30, "days")
+                      dayjs().add(30, "days"),
                     ) && (
                       <Tag color="orange" style={{ marginLeft: 8 }}>
                         Expiring Soon
@@ -296,7 +296,7 @@ export default function InventoryPage() {
       ),
     },
     {
-      title: "Reference",
+      title: "Batch No",
       dataIndex: "batch_number",
       key: "batch_number",
       render: (text) => <Text code>{text}</Text>,
@@ -370,6 +370,7 @@ export default function InventoryPage() {
       title: "Actions",
       key: "actions",
       fixed: "right",
+      align: "right",
       width: 120,
       render: (_, record) => (
         <Space size="small">
@@ -389,7 +390,7 @@ export default function InventoryPage() {
               onClick={() => handleEdit(record.id)}
             />
           </Tooltip>
-          <Popconfirm
+          {/* <Popconfirm
             title="Delete Batch"
             description="Are you sure you want to delete this batch? This action cannot be undone."
             onConfirm={() => handleDelete(record.id)}
@@ -410,7 +411,7 @@ export default function InventoryPage() {
                 }
               />
             </Tooltip>
-          </Popconfirm>
+          </Popconfirm> */}
         </Space>
       ),
     },
@@ -515,7 +516,7 @@ export default function InventoryPage() {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8} lg={6}>
             <Input
-              placeholder="Search by product name, variant, or reference number..."
+              placeholder="Search by product name, variant, or batch number..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={handleSearchChange}
@@ -655,7 +656,8 @@ export default function InventoryPage() {
             </Button>
           }
         />
-      )}      {/* Alerts for low stock items */}
+      )}{" "}
+      {/* Alerts for low stock items */}
       {summary && summary.low_stock_variants > 0 && (
         <Alert
           message="Branch-Based Low Stock Alert"

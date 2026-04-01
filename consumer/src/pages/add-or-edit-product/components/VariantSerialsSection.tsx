@@ -62,6 +62,7 @@ export default function VariantSerialsSection({
             <Input
               placeholder="Serial number"
               value={serial.serial_number}
+              maxLength={50}
               status={getError(validationState, variantId, index).status}
               onChange={(event) =>
                 onUpdate(index, { serial_number: event.target.value })
@@ -89,6 +90,7 @@ export default function VariantSerialsSection({
           <Col xs={24} md={8}>
             <Input
               placeholder="Notes (optional)"
+              maxLength={200}
               value={serial.notes}
               onChange={(event) =>
                 onUpdate(index, { notes: event.target.value })

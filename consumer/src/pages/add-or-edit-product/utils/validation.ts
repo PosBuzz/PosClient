@@ -15,6 +15,19 @@ const asNumber = (value: string | number | null | undefined): number => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
+const normalizeExpiryDate = (value?: string): string => {
+  if (!value) {
+    return "__NO_EXPIRY__";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "__NO_EXPIRY__";
+  }
+
+  return parsed.toISOString().slice(0, 10);
+};
+
 const pushError = (
   map: ValidationState,
   field: string,
@@ -184,6 +197,11 @@ export const validateProductForm = (
 
     // Skip batch validation in edit mode where initial inventory batches are hidden.
     if (!options.skipBatchValidation) {
+      const batchExpiryMap = new Map<
+        string,
+        { expiry: string; firstIndex: number }
+      >();
+
       variant.batches.forEach((batch, batchIndex) => {
         if (!batch.branch_id) {
           pushError(
@@ -192,7 +210,12 @@ export const validateProductForm = (
             "Batch branch is required",
           );
         }
-        if (!batch.batch_number?.trim()) {
+
+        const normalizedBatchNo = (batch.batch_number || "")
+          .trim()
+          .toUpperCase();
+
+        if (!normalizedBatchNo) {
           pushError(
             validation,
             `variant_${variantId}_batch_${batchIndex}_batch_number`,
@@ -212,6 +235,42 @@ export const validateProductForm = (
             `variant_${variantId}_batch_${batchIndex}_cost_price`,
             "Batch cost cannot be negative",
           );
+        }
+
+        if (normalizedBatchNo) {
+          const normalizedExpiry = normalizeExpiryDate(batch.expiry_date);
+
+          const seen = batchExpiryMap.get(normalizedBatchNo);
+          if (!seen) {
+            batchExpiryMap.set(normalizedBatchNo, {
+              expiry: normalizedExpiry,
+              firstIndex: batchIndex,
+            });
+          } else if (seen.expiry !== normalizedExpiry) {
+            const message =
+              "Same batch number must use the same expiry date";
+
+            pushError(
+              validation,
+              `variant_${variantId}_batch_${batchIndex}_batch_number`,
+              message,
+            );
+            pushError(
+              validation,
+              `variant_${variantId}_batch_${seen.firstIndex}_batch_number`,
+              message,
+            );
+            pushError(
+              validation,
+              `variant_${variantId}_batch_${batchIndex}_expiry_date`,
+              message,
+            );
+            pushError(
+              validation,
+              `variant_${variantId}_batch_${seen.firstIndex}_expiry_date`,
+              message,
+            );
+          }
         }
       });
     }
