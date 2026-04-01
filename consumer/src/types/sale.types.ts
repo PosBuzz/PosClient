@@ -18,6 +18,13 @@ export interface SaleItem {
   special_discount_amount?: number;
   promotion_discount_amount?: number;
   applied_promotion_id?: number;
+  applied_promotion?: {
+    id: number;
+    name: string;
+    scope: string;
+    discount_type: string;
+    discount_value: number;
+  } | null;
   tax_amount?: number;
   line_total: number;
   product_name: string;
