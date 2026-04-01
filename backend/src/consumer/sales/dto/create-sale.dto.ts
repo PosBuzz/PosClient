@@ -53,11 +53,6 @@ export enum PriceType {
   WHOLESALE = 'wholesale',
 }
 
-export enum DiscountType {
-  FLAT = 'flat',
-  PERCENTAGE = 'percentage',
-}
-
 export class CreateSaleItemDto {
   @IsInt()
   @Min(1)
@@ -78,7 +73,22 @@ export class CreateSaleItemDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  discount_amount?: number;
+  average_discount_amount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  special_discount_amount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  promotion_discount_amount?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  applied_promotion_id?: number;
 
   @IsOptional()
   @IsNumber()
@@ -131,10 +141,6 @@ export class CreateSaleDto {
   @IsOptional()
   @IsEnum(PriceType)
   price_type?: PriceType;
-
-  @IsOptional()
-  @IsEnum(DiscountType)
-  discount_type?: DiscountType;
 
   @IsOptional()
   @IsNumber()
