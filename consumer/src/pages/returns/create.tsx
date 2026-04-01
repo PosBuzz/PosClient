@@ -53,7 +53,7 @@ const CreateReturn = () => {
 
   const [saleData, setSaleData] = useState<any | null>(null);
   const [selectedItems, setSelectedItems] = useState<CreateReturnItemForm[]>(
-    []
+    [],
   );
   const [payments, setPayments] = useState<CreateReturnPaymentForm[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -67,6 +67,8 @@ const CreateReturn = () => {
 
   // Watch return type changes to reset exchange sale data
   const returnType = Form.useWatch("return_type", form);
+  const shippingRefundAmountWatch =
+    Number(Form.useWatch("shipping_refund_amount", form)) || 0;
 
   // No need for saleQuery since we store complete sale data from search
   // const saleQuery = useQuery(...)
@@ -86,20 +88,20 @@ const CreateReturn = () => {
         // Show user-friendly error message
         if (error.response?.status === 404) {
           messageApi?.error(
-            "Exchange sale not found. Please check the sale number."
+            "Exchange sale not found. Please check the sale number.",
           );
         } else if (
           error.code === "ECONNREFUSED" ||
           error.message?.includes("Network Error")
         ) {
           messageApi?.error(
-            "Cannot connect to server. Please check if the backend is running."
+            "Cannot connect to server. Please check if the backend is running.",
           );
         } else {
           messageApi?.error(
             `Error fetching exchange sale: ${
               error.response?.data?.message || error.message || "Unknown error"
-            }`
+            }`,
           );
         }
         throw error;
@@ -117,10 +119,11 @@ const CreateReturn = () => {
       navigate(`/returns/view/${data.id}`);
     },
     onError: (error: any) => {
-      messageApi?.error(error.response?.data?.message || "Failed to create return");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to create return",
+      );
     },
   });
-
 
   // Set default branch
   useEffect(() => {
@@ -154,7 +157,7 @@ const CreateReturn = () => {
 
       // Call the new API to search by sale number
       const foundSaleData = await salesApi.getSaleBySaleNumber(
-        searchSaleNumber.trim()
+        searchSaleNumber.trim(),
       );
 
       console.log("Sale found:", foundSaleData);
@@ -163,13 +166,16 @@ const CreateReturn = () => {
       setSaleData(foundSaleData);
       setSelectedItems([]);
       setPayments([]);
+      form.setFieldValue("shipping_refund_amount", 0);
 
       // Invalidate related queries for consistency
       queryClient.invalidateQueries({
         queryKey: [queryKeys.sale, foundSaleData.id],
       });
 
-      messageApi?.success(`Sale ${foundSaleData.sale_number} loaded successfully!`);
+      messageApi?.success(
+        `Sale ${foundSaleData.sale_number} loaded successfully!`,
+      );
     } catch (error: any) {
       console.error("Error searching for sale:", error);
 
@@ -180,18 +186,19 @@ const CreateReturn = () => {
         error.message?.includes("Network Error")
       ) {
         messageApi?.error(
-          "Cannot connect to server. Please check if the backend is running."
+          "Cannot connect to server. Please check if the backend is running.",
         );
       } else {
         messageApi?.error(
           `Error searching for sale: ${
             error.response?.data?.message || error.message || "Unknown error"
-          }`
+          }`,
         );
       }
 
       // Reset the sale data if search failed
       setSaleData(null);
+      form.setFieldValue("shipping_refund_amount", 0);
     } finally {
       setSearchLoading(false);
     }
@@ -215,12 +222,12 @@ const CreateReturn = () => {
     try {
       console.log(
         "Searching for exchange sale number:",
-        searchExchangeSaleNumber
+        searchExchangeSaleNumber,
       );
 
       // Call the API to search by exchange sale number
       const exchangeSaleData = await salesApi.getSaleBySaleNumber(
-        searchExchangeSaleNumber.trim()
+        searchExchangeSaleNumber.trim(),
       );
 
       console.log("Exchange sale found:", exchangeSaleData);
@@ -228,7 +235,7 @@ const CreateReturn = () => {
       // Validate that the exchange sale is from the same branch as processing branch
       if (exchangeSaleData.branch_id !== selectedBranch) {
         messageApi?.error(
-          `Exchange sale is from a different branch. Please select an exchange sale from the same processing branch.`
+          `Exchange sale is from a different branch. Please select an exchange sale from the same processing branch.`,
         );
         return;
       }
@@ -237,25 +244,27 @@ const CreateReturn = () => {
       setExchangeSaleId(exchangeSaleData.id!);
 
       messageApi?.success(
-        `Exchange Sale ${exchangeSaleData.sale_number} loaded successfully!`
+        `Exchange Sale ${exchangeSaleData.sale_number} loaded successfully!`,
       );
     } catch (error: any) {
       console.error("Error searching for exchange sale:", error);
 
       if (error.response?.status === 404) {
-        messageApi?.error("Exchange sale not found. Please check the sale number.");
+        messageApi?.error(
+          "Exchange sale not found. Please check the sale number.",
+        );
       } else if (
         error.code === "ECONNREFUSED" ||
         error.message?.includes("Network Error")
       ) {
         messageApi?.error(
-          "Cannot connect to server. Please check if the backend is running."
+          "Cannot connect to server. Please check if the backend is running.",
         );
       } else {
         messageApi?.error(
           `Error searching for exchange sale: ${
             error.response?.data?.message || error.message || "Unknown error"
-          }`
+          }`,
         );
       }
 
@@ -270,7 +279,7 @@ const CreateReturn = () => {
     const unitPrice = Number(saleItem.unit_price) || 0;
 
     const existingItemIndex = selectedItems.findIndex(
-      (item) => item.sale_item_id === saleItem.id
+      (item) => item.sale_item_id === saleItem.id,
     );
 
     if (existingItemIndex >= 0) {
@@ -301,7 +310,7 @@ const CreateReturn = () => {
 
   const handleItemRemove = (saleItemId: number) => {
     setSelectedItems((items) =>
-      items.filter((item) => item.sale_item_id !== saleItemId)
+      items.filter((item) => item.sale_item_id !== saleItemId),
     );
   };
 
@@ -329,8 +338,12 @@ const CreateReturn = () => {
       return;
     }
 
-    if (selectedItems.length === 0) {
-      messageApi?.error("Please select at least one item to return");
+    const shippingRefundAmount = Number(values.shipping_refund_amount) || 0;
+
+    if (selectedItems.length === 0 && shippingRefundAmount <= 0) {
+      messageApi?.error(
+        "Please select at least one item or add a shipping refund amount",
+      );
       return;
     }
 
@@ -342,22 +355,81 @@ const CreateReturn = () => {
     // Validation: Check if payments are required
     if (payments.length === 0) {
       messageApi?.error(
-        "Please add at least one payment method to process the return"
+        "Please add at least one payment method to process the return",
       );
       return;
     }
 
-    // Validation: Check that total payments don't exceed available amount
+    // Validation: Payment must match exact selected return value
     const totalPaymentAmount = getTotalPayments();
     const availableAmount =
       saleData.return_summary?.available_amount ?? saleData.total_amount;
+    const shippingCost = Number(saleData.shipping_cost || 0);
+    const availableShippingRefund = Number(
+      saleData.return_summary?.available_shipping_refund ?? shippingCost,
+    );
+    const selectedReturnValue =
+      Number(selectedReturnTotals.net || 0) + shippingRefundAmount;
 
-    if (totalPaymentAmount > availableAmount) {
+    if (selectedReturnValue <= 0) {
+      messageApi?.error("Selected return amount must be greater than zero");
+      return;
+    }
+
+    if (shippingRefundAmount < 0) {
+      messageApi?.error("Shipping refund amount cannot be negative");
+      return;
+    }
+
+    if (shippingRefundAmount > availableShippingRefund + 0.01) {
+      messageApi?.error(
+        `Shipping refund amount ($${shippingRefundAmount.toFixed(
+          2,
+        )}) cannot exceed remaining refundable shipping ($${availableShippingRefund.toFixed(
+          2,
+        )}).`,
+      );
+      return;
+    }
+
+    if (selectedReturnValue > availableAmount + 0.01) {
+      messageApi?.error(
+        `Selected return value ($${selectedReturnValue.toFixed(
+          2,
+        )}) exceeds available amount ($${availableAmount.toFixed(
+          2,
+        )}). Reduce return quantities.`,
+      );
+      return;
+    }
+
+    if (
+      payments.some(
+        (payment) =>
+          !Number.isFinite(Number(payment.amount)) ||
+          Number(payment.amount) <= 0,
+      )
+    ) {
+      messageApi?.error("All payment amounts must be greater than 0");
+      return;
+    }
+
+    if (totalPaymentAmount > selectedReturnValue + 0.01) {
       messageApi?.error(
         `Total payment amount ($${totalPaymentAmount.toFixed(
-          2
-        )}) exceeds available amount ($${availableAmount.toFixed(2)}). ` +
-          `Please adjust your payment amounts.`
+          2,
+        )}) exceeds selected return value ($${selectedReturnValue.toFixed(
+          2,
+        )}). ` + `Please adjust your payment amounts.`,
+      );
+      return;
+    }
+
+    if (Math.abs(totalPaymentAmount - selectedReturnValue) > 0.01) {
+      messageApi?.error(
+        `Total payment amount must exactly match selected return value. Expected $${selectedReturnValue.toFixed(
+          2,
+        )}, got $${totalPaymentAmount.toFixed(2)}.`,
       );
       return;
     }
@@ -366,13 +438,13 @@ const CreateReturn = () => {
     if (values.return_type === "exchange") {
       if (!values.exchange_sale_number) {
         messageApi?.error(
-          "Please enter an Exchange Sale Number when return type is Exchange"
+          "Please enter an Exchange Sale Number when return type is Exchange",
         );
         return;
       }
       if (!exchangeSaleId || !exchangeSaleQuery.data) {
         messageApi?.error(
-          "Please search and load the Exchange Sale data before submitting"
+          "Please search and load the Exchange Sale data before submitting",
         );
         return;
       }
@@ -381,7 +453,7 @@ const CreateReturn = () => {
     // Validation: Check if exchange sale ID is provided but return type is not exchange
     if (values.return_type !== "exchange" && exchangeSaleId) {
       messageApi?.warning(
-        "Exchange Sale ID will be ignored since return type is not Exchange"
+        "Exchange Sale ID will be ignored since return type is not Exchange",
       );
     }
 
@@ -394,6 +466,7 @@ const CreateReturn = () => {
           : undefined,
       reason: values.return_reason || values.reason,
       notes: values.notes,
+      shipping_refund_amount: shippingRefundAmount,
       items: selectedItems.map((item) => ({
         quantity: Number(item.quantity),
         sale_item_id: Number(item.sale_item_id),
@@ -418,6 +491,94 @@ const CreateReturn = () => {
   const getTotalPayments = () => {
     return payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   };
+
+  const getReturnItemBreakdown = (saleItem: any, selectedQty: number) => {
+    const originalQty = Number(saleItem?.quantity) || 0;
+    const ratio = originalQty > 0 ? selectedQty / originalQty : 0;
+
+    const lineTotal = (Number(saleItem?.line_total) || 0) * ratio;
+    const taxAmount = (Number(saleItem?.tax_amount) || 0) * ratio;
+    const avgDiscount =
+      (Number(saleItem?.average_discount_amount) || 0) * ratio;
+    const specialDiscount =
+      (Number(saleItem?.special_discount_amount) || 0) * ratio;
+    const promoDiscount =
+      (Number(saleItem?.promotion_discount_amount) || 0) * ratio;
+    const totalDiscount = avgDiscount + specialDiscount + promoDiscount;
+    // line_total is already final after all discounts
+    const netReturn = lineTotal;
+
+    return {
+      line_total: Number(lineTotal) || 0,
+      tax_amount: Number(taxAmount) || 0,
+      avg_discount: Number(avgDiscount) || 0,
+      special_discount: Number(specialDiscount) || 0,
+      promo_discount: Number(promoDiscount) || 0,
+      total_discount: Number(totalDiscount) || 0,
+      net_return: Number(netReturn) || 0,
+    };
+  };
+
+  const getSelectedReturnTotals = () => {
+    const totals = {
+      gross: 0,
+      tax: 0,
+      average_discount: 0,
+      special_discount: 0,
+      promotion_discount: 0,
+      total_discount: 0,
+      net: 0,
+    };
+
+    for (const selectedItem of selectedItems) {
+      const saleItem = saleData?.items?.find(
+        (item: any) => item.id === selectedItem.sale_item_id,
+      );
+      if (!saleItem) continue;
+
+      const breakdown = getReturnItemBreakdown(
+        saleItem,
+        Number(selectedItem.quantity) || 0,
+      );
+
+      totals.gross += breakdown.line_total;
+      totals.tax += breakdown.tax_amount;
+      totals.average_discount += breakdown.avg_discount;
+      totals.special_discount += breakdown.special_discount;
+      totals.promotion_discount += breakdown.promo_discount;
+      totals.total_discount += breakdown.total_discount;
+      totals.net += breakdown.net_return;
+    }
+
+    return totals;
+  };
+
+  const selectedReturnTotals = getSelectedReturnTotals();
+  const shippingRefundAmount = Math.max(0, shippingRefundAmountWatch);
+  const selectedReturnValue =
+    Number(selectedReturnTotals.net || 0) + shippingRefundAmount;
+  const totalTendered = Number(
+    saleData?.received_amount ??
+      saleData?.payments?.reduce(
+        (sum: number, p: any) => sum + Number(p?.amount || 0),
+        0,
+      ) ??
+      0,
+  );
+  const changeGiven = Number(saleData?.change_amount || 0);
+  const netPaid = Math.max(0, totalTendered - changeGiven);
+  const saleVat = Number(saleData?.tax_amount || 0);
+  const exchangeTotalTendered = Number(
+    exchangeSaleQuery.data?.received_amount ??
+      exchangeSaleQuery.data?.payments?.reduce(
+        (sum: number, p: any) => sum + Number(p?.amount || 0),
+        0,
+      ) ??
+      0,
+  );
+  const exchangeChangeGiven = Number(exchangeSaleQuery.data?.change_amount || 0);
+  const exchangeNetPaid = Math.max(0, exchangeTotalTendered - exchangeChangeGiven);
+  const exchangeVat = Number(exchangeSaleQuery.data?.tax_amount || 0);
 
   const saleItemColumns = [
     {
@@ -446,7 +607,7 @@ const CreateReturn = () => {
       key: "available",
       render: (record: any) => {
         const selectedItem = selectedItems.find(
-          (item) => item.sale_item_id === record.id
+          (item) => item.sale_item_id === record.id,
         );
         console.log(record);
 
@@ -462,25 +623,57 @@ const CreateReturn = () => {
     },
     {
       title: "Unit Price",
+      dataIndex: "unit_price",
       key: "unit_price",
+      render: (unit_price: any) => {
+        return `$${Number(unit_price).toFixed(2)}`;
+      },
+    },
+    {
+      title: "Tax",
+      key: "tax_amount",
       render: (record: any) => {
-        // Calculate actual unit price from line_total / quantity for accuracy
-        const actualUnitPrice = record.line_total / record.quantity;
-        return `$${Number(actualUnitPrice).toFixed(2)}`;
+        const taxMethod =
+          (record.tax_method || record.variant?.tax_method || "EXCLUSIVE")
+            .toString()
+            .toUpperCase() === "INCLUSIVE"
+            ? "Inc"
+            : "Exc";
+        return `$${Number(record.tax_amount || 0).toFixed(2)} (${taxMethod})`;
+      },
+    },
+    {
+      title: "Discount",
+      key: "discounts",
+      render: (record: any) => {
+        const avg = Number(record.average_discount_amount || 0);
+        const special = Number(record.special_discount_amount || 0);
+        const promo = Number(record.promotion_discount_amount || 0);
+        const total = avg + special + promo;
+        return (
+          <div>
+            <div>-${total.toFixed(2)}</div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              A:{avg.toFixed(2)} S:{special.toFixed(2)} P:{promo.toFixed(2)}
+            </Text>
+          </div>
+        );
       },
     },
     {
       title: "Line Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number) => `$${Number(total).toFixed(2)}`,
+      render: (total: number) => {
+        return `$${Number(total || 0).toFixed(2)}`;
+      },
     },
     {
       title: "Add to Return",
       key: "add_to_return",
       render: (record: any) => {
         const selectedItem = selectedItems.find(
-          (item) => item.sale_item_id === record.id
+          (item) => item.sale_item_id === record.id,
         );
         const currentQty = selectedItem?.quantity || 0;
         const maxAvailable =
@@ -542,7 +735,7 @@ const CreateReturn = () => {
       key: "quantity",
       render: (record: CreateReturnItemForm) => {
         const saleItem = saleData?.items?.find(
-          (item) => item.id === record.sale_item_id
+          (item) => item.id === record.sale_item_id,
         );
         const maxAvailable = record.max_quantity || saleItem?.quantity || 1;
 
@@ -558,13 +751,67 @@ const CreateReturn = () => {
               const updatedItems = selectedItems.map((item) =>
                 item.sale_item_id === record.sale_item_id
                   ? { ...item, quantity: newQty }
-                  : item
+                  : item,
               );
               setSelectedItems(updatedItems);
             }}
             style={{ width: 80 }}
           />
         );
+      },
+    },
+    {
+      title: "Tax",
+      key: "tax",
+      render: (record: CreateReturnItemForm) => {
+        const saleItem = saleData?.items?.find(
+          (item: any) => item.id === record.sale_item_id,
+        );
+        if (!saleItem) return "$0.00";
+        const breakdown = getReturnItemBreakdown(
+          saleItem,
+          Number(record.quantity) || 0,
+        );
+        return `$${breakdown.tax_amount.toFixed(2)}`;
+      },
+    },
+    {
+      title: "Discount",
+      key: "discount",
+      render: (record: CreateReturnItemForm) => {
+        const saleItem = saleData?.items?.find(
+          (item: any) => item.id === record.sale_item_id,
+        );
+        if (!saleItem) return "-$0.00";
+        const breakdown = getReturnItemBreakdown(
+          saleItem,
+          Number(record.quantity) || 0,
+        );
+        return (
+          <div>
+            <div>-${breakdown.total_discount.toFixed(2)}</div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              A:{breakdown.avg_discount.toFixed(2)} S:
+              {breakdown.special_discount.toFixed(2)} P:
+              {breakdown.promo_discount.toFixed(2)}
+            </Text>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Net Return",
+      key: "net_return",
+      render: (record: CreateReturnItemForm) => {
+        const saleItem = saleData?.items?.find(
+          (item: any) => item.id === record.sale_item_id,
+        );
+        if (!saleItem) return "$0.00";
+        const breakdown = getReturnItemBreakdown(
+          saleItem,
+          Number(record.quantity) || 0,
+        );
+        return `$${breakdown.net_return.toFixed(2)}`;
       },
     },
     {
@@ -746,7 +993,6 @@ const CreateReturn = () => {
                         style={{
                           marginTop: 12,
                           padding: 12,
-                          // backgroundColor: '#f0f2f5',
                           borderRadius: 6,
                           border: "2px solid #d9d9d9",
                         }}
@@ -761,6 +1007,7 @@ const CreateReturn = () => {
                         >
                           💰 Financial Summary (For Manual Calculation)
                         </Title>
+
                         <Row gutter={[20, 8]}>
                           <Col span={4}>
                             <Text>Subtotal: </Text>
@@ -774,8 +1021,16 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#ff4d4f", fontSize: "16px" }}
                             >
-                              -$
-                              {Number(saleData.discount_amount || 0).toFixed(2)}
+                              -${Number(saleData.discount_amount || 0).toFixed(2)}
+                            </Text>
+                          </Col>
+                          <Col span={4}>
+                            <Text>VAT: </Text>
+                            <Text
+                              strong
+                              style={{ color: "#fa8c16", fontSize: "16px" }}
+                            >
+                              +${saleVat.toFixed(2)}
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -793,7 +1048,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#52c41a", fontSize: "18px" }}
                             >
-                              ${Number(saleData.total_amount).toFixed(2)}
+                              ${Number(saleData.total_amount || 0).toFixed(2)}
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -801,57 +1056,61 @@ const CreateReturn = () => {
                             <Text
                               strong
                               style={{
-                                color: "#13c2c2",
+                                color: "#000",
                                 fontSize: "18px",
                                 backgroundColor: "#e6fffb",
                                 padding: "2px 8px",
                                 borderRadius: "4px",
                               }}
                             >
-                              $
-                              {Number(
+                              ${Number(
                                 saleData.return_summary?.available_amount ??
-                                  saleData.total_amount
+                                  saleData.total_amount,
                               ).toFixed(2)}
                             </Text>
                           </Col>
-                          <Col span={4}>
-                            <Text>Total Paid: </Text>
+                        </Row>
+
+                        <Row gutter={[20, 8]} style={{ marginTop: 8 }}>
+                          <Col span={8}>
+                            <Text>Received (Tendered): </Text>
                             <Text
                               strong
                               style={{ color: "#722ed1", fontSize: "16px" }}
                             >
-                              {saleData.payments &&
-                              saleData.payments.length > 0 ? (
-                                <div>
-                                  $
-                                  {Number(
-                                    saleData.payments.reduce(
-                                      (sum: number, p: any) => sum + p.amount,
-                                      0
+                              ${totalTendered.toFixed(2)}
+                            </Text>
+                            {saleData.payments && saleData.payments.length > 0 ? (
+                              <div>
+                                <Text type="secondary" style={{ fontSize: "12px" }}>
+                                  {saleData.payments
+                                    .map(
+                                      (p: any) =>
+                                        `${p.payment_method?.replace("_", " ")}: $${Number(
+                                          p.amount,
+                                        ).toFixed(2)}`,
                                     )
-                                  ).toFixed(2)}
-                                  <br />
-                                  <Text
-                                    type="secondary"
-                                    style={{ fontSize: "12px" }}
-                                  >
-                                    {saleData.payments
-                                      .map(
-                                        (p: any) =>
-                                          `${p.payment_method?.replace(
-                                            "_",
-                                            " "
-                                          )}-$${Number(p.amount).toFixed(2)}`
-                                      )
-                                      .join(", ")}
-                                  </Text>
-                                </div>
-                              ) : (
-                                `$${Number(saleData.total_amount || 0).toFixed(
-                                  2
-                                )}`
-                              )}
+                                    .join(", ")}
+                                </Text>
+                              </div>
+                            ) : null}
+                          </Col>
+                          <Col span={8}>
+                            <Text>Change Given: </Text>
+                            <Text
+                              strong
+                              style={{ color: "#cf1322", fontSize: "16px" }}
+                            >
+                              -${changeGiven.toFixed(2)}
+                            </Text>
+                          </Col>
+                          <Col span={8}>
+                            <Text>Net Paid (Used in Sale): </Text>
+                            <Text
+                              strong
+                              style={{ color: "#52c41a", fontSize: "16px" }}
+                            >
+                              ${netPaid.toFixed(2)}
                             </Text>
                           </Col>
                         </Row>
@@ -897,7 +1156,7 @@ const CreateReturn = () => {
                                 >
                                   $
                                   {Number(
-                                    saleData.return_summary.total_refunded || 0
+                                    saleData.return_summary.total_refunded || 0,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
@@ -909,7 +1168,8 @@ const CreateReturn = () => {
                                 >
                                   $
                                   {Number(
-                                    saleData.return_summary.total_exchanged || 0
+                                    saleData.return_summary.total_exchanged ||
+                                      0,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
@@ -924,7 +1184,7 @@ const CreateReturn = () => {
                                     (saleData.return_summary.total_refunded ||
                                       0) +
                                       (saleData.return_summary
-                                        .total_exchanged || 0)
+                                        .total_exchanged || 0),
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
@@ -941,10 +1201,10 @@ const CreateReturn = () => {
                                   .map(
                                     (ret, index) =>
                                       `${ret.return_number} (${new Date(
-                                        ret.return_date
+                                        ret.return_date,
                                       ).toLocaleDateString()}) - $${Number(
-                                        ret.total_refund + ret.total_exchange
-                                      ).toFixed(2)}`
+                                        ret.total_refund + ret.total_exchange,
+                                      ).toFixed(2)}`,
                                   )
                                   .join(" | ")}
                               </Text>
@@ -991,7 +1251,7 @@ const CreateReturn = () => {
                               <Text strong>Date: </Text>
                               <Text>
                                 {new Date(
-                                  exchangeSaleQuery.data.sale_date
+                                  exchangeSaleQuery.data.sale_date,
                                 ).toLocaleDateString()}
                               </Text>
                             </Col>
@@ -1018,16 +1278,16 @@ const CreateReturn = () => {
                               🔄 Exchange Financial Summary
                             </Title>
                             <Row gutter={[20, 8]}>
-                              <Col span={5}>
+                              <Col span={4}>
                                 <Text>Subtotal: </Text>
                                 <Text strong>
                                   $
                                   {Number(
-                                    exchangeSaleQuery.data.subtotal || 0
+                                    exchangeSaleQuery.data.subtotal || 0,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
-                              <Col span={5}>
+                              <Col span={4}>
                                 <Text>Discount: </Text>
                                 <Text
                                   strong
@@ -1035,11 +1295,20 @@ const CreateReturn = () => {
                                 >
                                   -$
                                   {Number(
-                                    exchangeSaleQuery.data.discount_amount || 0
+                                    exchangeSaleQuery.data.discount_amount || 0,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
-                              <Col span={5}>
+                              <Col span={4}>
+                                <Text>VAT: </Text>
+                                <Text
+                                  strong
+                                  style={{ color: "#fa8c16", fontSize: "16px" }}
+                                >
+                                  +${exchangeVat.toFixed(2)}
+                                </Text>
+                              </Col>
+                              <Col span={4}>
                                 <Text>Shipping: </Text>
                                 <Text
                                   strong
@@ -1047,7 +1316,7 @@ const CreateReturn = () => {
                                 >
                                   +$
                                   {Number(
-                                    exchangeSaleQuery.data.shipping_cost || 0
+                                    exchangeSaleQuery.data.shipping_cost || 0,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
@@ -1059,50 +1328,47 @@ const CreateReturn = () => {
                                 >
                                   $
                                   {Number(
-                                    exchangeSaleQuery.data.total_amount
+                                    exchangeSaleQuery.data.total_amount,
                                   ).toFixed(2)}
                                 </Text>
                               </Col>
-                              <Col span={5}>
-                                <Text>Total Paid: </Text>
+                              <Col span={4}>
+                                <Text>Received: </Text>
                                 <Text
                                   strong
                                   style={{ color: "#f59e0b", fontSize: "16px" }}
                                 >
+                                  ${exchangeTotalTendered.toFixed(2)}
+                                </Text>
+                              </Col>
+                            </Row>
+                            <Row gutter={[20, 8]} style={{ marginTop: 8 }}>
+                              <Col span={8}>
+                                <Text>Payment Methods: </Text>
+                                <Text type="secondary" style={{ fontSize: "12px" }}>
                                   {exchangeSaleQuery.data.payments &&
-                                  exchangeSaleQuery.data.payments.length > 0 ? (
-                                    <div>
-                                      $
-                                      {Number(
-                                        exchangeSaleQuery.data.payments.reduce(
-                                          (sum: number, p: any) =>
-                                            sum + +p.amount,
-                                          0
+                                  exchangeSaleQuery.data.payments.length > 0
+                                    ? exchangeSaleQuery.data.payments
+                                        .map(
+                                          (p: any) =>
+                                            `${p.payment_method?.replace("_", " ")}: $${Number(
+                                              p.amount,
+                                            ).toFixed(2)}`,
                                         )
-                                      ).toFixed(2)}
-                                      <br />
-                                      <Text
-                                        type="secondary"
-                                        style={{ fontSize: "12px" }}
-                                      >
-                                        {exchangeSaleQuery.data.payments
-                                          .map(
-                                            (p: any) =>
-                                              `${p.payment_method?.replace(
-                                                "_",
-                                                " "
-                                              )}-$${Number(p.amount).toFixed(
-                                                2
-                                              )}`
-                                          )
-                                          .join(", ")}
-                                      </Text>
-                                    </div>
-                                  ) : (
-                                    `$${Number(
-                                      exchangeSaleQuery.data.total_amount || 0
-                                    ).toFixed(2)}`
-                                  )}
+                                        .join(", ")
+                                    : "N/A"}
+                                </Text>
+                              </Col>
+                              <Col span={8}>
+                                <Text>Change Given: </Text>
+                                <Text strong style={{ color: "#cf1322", fontSize: "16px" }}>
+                                  -${exchangeChangeGiven.toFixed(2)}
+                                </Text>
+                              </Col>
+                              <Col span={8}>
+                                <Text>Net Paid (Used in Sale): </Text>
+                                <Text strong style={{ color: "#52c41a", fontSize: "16px" }}>
+                                  ${exchangeNetPaid.toFixed(2)}
                                 </Text>
                               </Col>
                             </Row>
@@ -1134,17 +1400,100 @@ const CreateReturn = () => {
           )}
 
           {/* Selected Items for Return */}
-          {selectedItems.length > 0 && (
+          {(selectedItems.length > 0 || shippingRefundAmount > 0) && (
             <Col span={24}>
               <Card title="Items to Return" size="small">
-                <Table
-                  columns={selectedItemsColumns}
-                  dataSource={selectedItems}
-                  rowKey="sale_item_id"
-                  pagination={false}
-                  size="small"
-                />
-                {/* Refund summary removed - amounts handled in payments section */}
+                {selectedItems.length > 0 ? (
+                  <Table
+                    columns={selectedItemsColumns}
+                    dataSource={selectedItems}
+                    rowKey="sale_item_id"
+                    pagination={false}
+                    size="small"
+                  />
+                ) : (
+                  <Text type="secondary">
+                    No item selected. This return will refund shipping only.
+                  </Text>
+                )}
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 12,
+                    borderRadius: 6,
+                    border: "1px solid #d9d9d9",
+                  }}
+                >
+                  <Title level={5} style={{ margin: "0 0 8px 0" }}>
+                    Return Calculation Summary
+                  </Title>
+                  <Row gutter={[16, 8]}>
+                    <Col span={4}>
+                      <Text>Gross:</Text>
+                      <div>
+                        <Text strong>
+                          ${selectedReturnTotals.gross.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Tax:</Text>
+                      <div>
+                        <Text strong>
+                          ${selectedReturnTotals.tax.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Avg Disc:</Text>
+                      <div>
+                        <Text strong>
+                          -${selectedReturnTotals.average_discount.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Special Disc:</Text>
+                      <div>
+                        <Text strong>
+                          -${selectedReturnTotals.special_discount.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Promo Disc:</Text>
+                      <div>
+                        <Text strong>
+                          -${selectedReturnTotals.promotion_discount.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Net Return:</Text>
+                      <div>
+                        <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
+                          ${selectedReturnTotals.net.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Shipping Refund:</Text>
+                      <div>
+                        <Text strong>
+                          ${shippingRefundAmount.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col span={4}>
+                      <Text>Total Return Value:</Text>
+                      <div>
+                        <Text strong style={{ color: "#0958d9", fontSize: 16 }}>
+                          ${selectedReturnValue.toFixed(2)}
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
               </Card>
             </Col>
           )}
@@ -1164,6 +1513,23 @@ const CreateReturn = () => {
 
               <Form.Item name="notes" label="Notes">
                 <TextArea rows={3} placeholder="Additional notes..." />
+              </Form.Item>
+
+              <Form.Item
+                name="shipping_refund_amount"
+                label="Shipping Refund Amount (Optional)"
+                extra={`Maximum refundable shipping: $${Number(
+                  saleData?.return_summary?.available_shipping_refund ??
+                    saleData?.shipping_cost ??
+                    0,
+                ).toFixed(2)}`}
+              >
+                <InputNumber
+                  min={0}
+                  precision={2}
+                  style={{ width: "100%" }}
+                  placeholder="0.00"
+                />
               </Form.Item>
             </Card>
           </Col>
@@ -1247,13 +1613,35 @@ const CreateReturn = () => {
                   <Text>Total Payments: ${getTotalPayments().toFixed(2)}</Text>
                   {saleData && (
                     <div style={{ marginTop: 8 }}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Item return value: ${selectedReturnTotals.net.toFixed(2)}
+                        </Text>
+                      </div>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Shipping refund value: ${shippingRefundAmount.toFixed(2)}
+                        </Text>
+                      </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Maximum refundable amount: ${(saleData.return_summary?.available_amount ?? saleData.total_amount).toFixed(2)}
+                        Selected return value: $
+                        {selectedReturnValue.toFixed(2)}
                       </Text>
-                      {getTotalPayments() > (saleData.return_summary?.available_amount ?? saleData.total_amount) && (
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Available sale balance: $
+                          {(
+                            saleData.return_summary?.available_amount ??
+                            saleData.total_amount
+                          ).toFixed(2)}
+                        </Text>
+                      </div>
+                      {Math.abs(getTotalPayments() - selectedReturnValue) >
+                        0.01 && (
                         <div>
                           <Text type="danger" style={{ fontSize: 12 }}>
-                             Payment amount exceeds available refund limit. Please adjust payment amounts.
+                            Payment total must exactly match selected return
+                            value.
                           </Text>
                         </div>
                       )}
@@ -1281,13 +1669,19 @@ const CreateReturn = () => {
                     )}{" "}
                     Sale selected and loaded
                   </Text>
-                  <Text type={selectedItems.length > 0 ? "success" : "danger"}>
-                    {selectedItems.length > 0 ? (
+                  <Text
+                    type={
+                      selectedItems.length > 0 || shippingRefundAmount > 0
+                        ? "success"
+                        : "danger"
+                    }
+                  >
+                    {selectedItems.length > 0 || shippingRefundAmount > 0 ? (
                       <CheckCircleOutlined style={{ color: "#52c41a" }} />
                     ) : (
                       <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
                     )}{" "}
-                    At least one item selected for return
+                    At least one item selected or shipping refund entered
                   </Text>
                   <Text type={selectedBranch ? "success" : "danger"}>
                     {selectedBranch ? (
@@ -1313,7 +1707,12 @@ const CreateReturn = () => {
                         saleData?.return_summary?.available_amount ??
                         saleData?.total_amount ??
                         0;
-                      return totalPaymentAmount <= availableAmount
+                      if (selectedReturnValue <= 0) return "danger";
+                      if (selectedReturnValue > availableAmount + 0.01)
+                        return "danger";
+                      return Math.abs(
+                        totalPaymentAmount - selectedReturnValue,
+                      ) <= 0.01
                         ? "success"
                         : "danger";
                     })()}
@@ -1325,11 +1724,11 @@ const CreateReturn = () => {
                         );
                       }
                       const totalPaymentAmount = getTotalPayments();
-                      const availableAmount =
-                        saleData?.return_summary?.available_amount ??
-                        saleData?.total_amount ??
-                        0;
-                      if (totalPaymentAmount <= availableAmount) {
+                      if (
+                        Math.abs(
+                          totalPaymentAmount - selectedReturnValue,
+                        ) <= 0.01
+                      ) {
                         return (
                           <CheckCircleOutlined style={{ color: "#52c41a" }} />
                         );
@@ -1344,18 +1743,18 @@ const CreateReturn = () => {
                         return "Payment amount validation (sale and payments required)";
                       }
                       const totalPaymentAmount = getTotalPayments();
-                      const availableAmount =
-                        saleData?.return_summary?.available_amount ??
-                        saleData?.total_amount ??
-                        0;
-                      if (totalPaymentAmount <= availableAmount) {
-                        return `Payment amount ($${totalPaymentAmount.toFixed(
-                          2
-                        )}) within available limit`;
+                      if (
+                        Math.abs(
+                          totalPaymentAmount - selectedReturnValue,
+                        ) <= 0.01
+                      ) {
+                        return `Payment amount matches selected return value ($${selectedReturnValue.toFixed(
+                          2,
+                        )})`;
                       } else {
-                        return `Payment amount ($${totalPaymentAmount.toFixed(
-                          2
-                        )}) exceeds available ($${availableAmount.toFixed(2)})`;
+                        return `Payment amount must match selected return value. Entered $${totalPaymentAmount.toFixed(
+                          2,
+                        )}, expected $${selectedReturnValue.toFixed(2)}`;
                       }
                     })()}
                   </Text>
@@ -1390,10 +1789,11 @@ const CreateReturn = () => {
                   htmlType="submit"
                   loading={createReturnMutation.isPending}
                   disabled={
-                    selectedItems.length === 0 ||
+                    (selectedItems.length === 0 && shippingRefundAmount <= 0) ||
                     !saleData ||
                     !selectedBranch ||
                     payments.length === 0 ||
+                    selectedReturnValue <= 0 ||
                     (returnType === "exchange" &&
                       (!exchangeSaleId || !exchangeSaleQuery.data)) ||
                     (() => {
@@ -1402,7 +1802,13 @@ const CreateReturn = () => {
                         saleData?.return_summary?.available_amount ??
                         saleData?.total_amount ??
                         0;
-                      return totalPaymentAmount > availableAmount;
+                      if (selectedReturnValue > availableAmount + 0.01)
+                        return true;
+                      return (
+                        Math.abs(
+                          totalPaymentAmount - selectedReturnValue,
+                        ) > 0.01
+                      );
                     })()
                   }
                 >
@@ -1467,7 +1873,17 @@ const PaymentForm = ({
       <Form.Item
         name="amount"
         label="Amount"
-        rules={[{ required: true, message: "Please enter amount" }]}
+        rules={[
+          { required: true, message: "Please enter amount" },
+          {
+            validator: async (_, value) => {
+              if (value === undefined || value === null) return;
+              if (Number(value) <= 0) {
+                throw new Error("Amount must be greater than 0");
+              }
+            },
+          },
+        ]}
       >
         <InputNumber
           style={{ width: "100%" }}
