@@ -151,6 +151,21 @@ const SaleDetail: React.FC = () => {
     }
   };
 
+  const getItemPromotionLabel = (record: any) => {
+    const itemPromotionName =
+      record.applied_promotion?.name || record.applied_promotion_name;
+
+    if (itemPromotionName) {
+      return itemPromotionName;
+    }
+
+    if (sale?.promotion?.name) {
+      return sale.promotion.name;
+    }
+
+    return null;
+  };
+
   const handlePrint = async () => {
     if (!sale) return;
 
@@ -313,8 +328,16 @@ const SaleDetail: React.FC = () => {
     {
       title: "Promo Disc",
       key: "promotion_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => {
+        const promoLabel = getItemPromotionLabel(record);
+
+        return (
+          <div className="flex items-center gap-2">
+            <span>{`-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`}</span>
+            {promoLabel ? <Tag color="processing">{promoLabel}</Tag> : null}
+          </div>
+        );
+      },
     },
     {
       title: "Tax",
