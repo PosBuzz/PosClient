@@ -9,6 +9,7 @@ import {
   ProductVariantForSale,
   DailyTargetReportResponse,
   EODReportResponse,
+  DashboardAnalyticsResponse,
   OnlineOrderStatus,
 } from "../types/sale.types";
 import axiosInstance from "./axiosInstance";
@@ -184,6 +185,23 @@ export const salesApi = {
     }
 
     return await get(endpoints.getDailyTargetReport, cleanParams);
+  },
+
+  // Get dashboard analytics report
+  getDashboardAnalytics: async (
+    params: {
+      branch_id?: number;
+    } = {},
+  ): Promise<DashboardAnalyticsResponse> => {
+    const cleanParams: {
+      branch_id?: number;
+    } = {};
+
+    if (params.branch_id) {
+      cleanParams.branch_id = params.branch_id;
+    }
+
+    return await get(endpoints.getDashboardAnalytics, cleanParams);
   },
 
   // Get End of Day report

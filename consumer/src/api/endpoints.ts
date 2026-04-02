@@ -125,6 +125,9 @@ export const endpoints = {
   getVariantSalesDetail: (variantId: number) =>
     `/consumer/sales/variant-sales-stats/${variantId}`,
 
+  // Dashboard Analytics
+  getDashboardAnalytics: "/consumer/dashboard/analytics",
+
   // Promotions Management
   getPromotions: "/consumer/promotions",
   getPromotion: (id: number) => `/consumer/promotions/${id}`,

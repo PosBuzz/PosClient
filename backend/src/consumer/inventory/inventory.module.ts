@@ -21,7 +21,8 @@ import { InventoryService } from './services/inventory.service';
     InventoryBatchService,
     InventoryTransferService,
     InventoryAdjustmentService,
-    InventoryHelperService  ,
+    InventoryHelperService,
   ],
+  exports: [InventoryService],
 })
 export class InventoryModule {}
