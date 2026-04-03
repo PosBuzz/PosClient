@@ -7,6 +7,8 @@ import {
   DeleteOutlined,
   DollarOutlined,
   FileTextOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
   MobileOutlined,
   MoneyCollectOutlined,
   PayCircleOutlined,
@@ -63,7 +65,10 @@ import {
   SaleItem,
   SalePayment,
 } from "../../types/sale.types";
-import { Promotion, PromotionValidationResponse } from "../../types/promotion.types";
+import {
+  Promotion,
+  PromotionValidationResponse,
+} from "../../types/promotion.types";
 import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -116,6 +121,7 @@ const NewSale = () => {
   const [promotionEligibilityMap, setPromotionEligibilityMap] = useState<
     Record<number, { is_eligible: boolean; reason?: string }>
   >({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [salePayments, setSalePayments] = useState<SalePayment[]>([
     {
       payment_method: PaymentMethod.CASH,
@@ -138,6 +144,17 @@ const NewSale = () => {
     setLastKeyTime(0);
   }, [selectedBranch]);
 
+  // Listen for fullscreen change events (e.g., when user presses Esc)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   // Get user's branches from auth store
   const userBranches = user?.branches || [];
 
@@ -153,9 +170,9 @@ const NewSale = () => {
 
   // Load served by users using React Query
   const servedByUsersQuery = useQuery({
-    queryKey: [queryKeys.users,selectedBranch],
+    queryKey: [queryKeys.users, selectedBranch],
     queryFn: async () => {
-      const data = await get(endpoints.user,{ branch_id: selectedBranch });
+      const data = await get(endpoints.user, { branch_id: selectedBranch });
       return data.data || data;
     },
     enabled: !!selectedBranch,
@@ -172,7 +189,8 @@ const NewSale = () => {
 
   const activePromotionsQuery = useQuery({
     queryKey: [queryKeys.promotions, "active", selectedBranch],
-    queryFn: () => promotionApi.getActivePromotions(selectedBranch || undefined),
+    queryFn: () =>
+      promotionApi.getActivePromotions(selectedBranch || undefined),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.promotions],
   });
@@ -261,7 +279,12 @@ const NewSale = () => {
 
     tryAutoApplyPromotion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItems, selectedBranch, selectedCustomer?.id, activePromotionsQuery.data]);
+  }, [
+    selectedItems,
+    selectedBranch,
+    selectedCustomer?.id,
+    activePromotionsQuery.data,
+  ]);
 
   const calculateTaxAndTotal = (
     price: number,
@@ -301,7 +324,9 @@ const NewSale = () => {
     variant: ProductVariantForSale,
     quantityToAdd: number,
   ) => {
-    const existingItem = sourceItems.find((item) => item.variant_id === variant.id);
+    const existingItem = sourceItems.find(
+      (item) => item.variant_id === variant.id,
+    );
     const price =
       priceType === PriceType.WHOLESALE
         ? Number(variant.wholesale_price) || Number(variant.regular_price)
@@ -404,7 +429,8 @@ const NewSale = () => {
     if (promotion.scope === "BRAND") {
       return filteredVariants.filter(
         (variant) =>
-          promotion.brand_id && Number(variant.brand_id) === Number(promotion.brand_id),
+          promotion.brand_id &&
+          Number(variant.brand_id) === Number(promotion.brand_id),
       );
     }
 
@@ -455,9 +481,13 @@ const NewSale = () => {
       return { items: nextItems, changed };
     }
 
-    const candidateIds = new Set(candidateVariants.map((variant) => variant.id));
+    const candidateIds = new Set(
+      candidateVariants.map((variant) => variant.id),
+    );
     const currentMatchedQty = nextItems.reduce((sum, item) => {
-      return candidateIds.has(item.variant_id) ? sum + Number(item.quantity || 0) : sum;
+      return candidateIds.has(item.variant_id)
+        ? sum + Number(item.quantity || 0)
+        : sum;
     }, 0);
 
     const minQty = Number(promotion.min_quantity || 1);
@@ -467,10 +497,15 @@ const NewSale = () => {
     );
     const minPurchase = Number(promotion.min_purchase || 0);
 
-    const needsMinQty = currentMatchedQty < minQty || reasonText.includes("minimum quantity");
+    const needsMinQty =
+      currentMatchedQty < minQty || reasonText.includes("minimum quantity");
     if (needsMinQty) {
       const qtyToAdd = Math.max(1, minQty - currentMatchedQty);
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -479,15 +514,23 @@ const NewSale = () => {
       0,
     );
     const needsMinPurchase =
-      recalculatedSubtotal < minPurchase || reasonText.includes("minimum purchase");
+      recalculatedSubtotal < minPurchase ||
+      reasonText.includes("minimum purchase");
 
     if (needsMinPurchase) {
-      const unitPrice = Math.max(0.01, getVariantPriceForSale(highestPriceVariant));
+      const unitPrice = Math.max(
+        0.01,
+        getVariantPriceForSale(highestPriceVariant),
+      );
       const qtyToAdd = Math.max(
         1,
         Math.ceil(Math.max(0, minPurchase - recalculatedSubtotal) / unitPrice),
       );
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -502,12 +545,19 @@ const NewSale = () => {
     }
 
     if (!changed && currentSubtotal < minPurchase) {
-      const unitPrice = Math.max(0.01, getVariantPriceForSale(highestPriceVariant));
+      const unitPrice = Math.max(
+        0.01,
+        getVariantPriceForSale(highestPriceVariant),
+      );
       const qtyToAdd = Math.max(
         1,
         Math.ceil(Math.max(0, minPurchase - currentSubtotal) / unitPrice),
       );
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -531,7 +581,10 @@ const NewSale = () => {
 
       const evaluations = await Promise.all(
         activePromotionsQuery.data.map(async (promotion) => {
-          const validation = evaluatePromotionForItems(promotion, selectedItems);
+          const validation = evaluatePromotionForItems(
+            promotion,
+            selectedItems,
+          );
           return [promotion.id, validation] as const;
         }),
       );
@@ -568,7 +621,10 @@ const NewSale = () => {
       return;
     }
 
-    const validation = evaluatePromotionForItems(appliedPromotion, selectedItems);
+    const validation = evaluatePromotionForItems(
+      appliedPromotion,
+      selectedItems,
+    );
 
     if (!validation.is_eligible) {
       setAppliedPromotion(null);
@@ -580,7 +636,13 @@ const NewSale = () => {
     }
 
     setPromotionDiscountAmount(Number(validation.discount_amount || 0));
-  }, [appliedPromotion, selectedItems, selectedBranch, selectedCustomer?.id, variantBrandById]);
+  }, [
+    appliedPromotion,
+    selectedItems,
+    selectedBranch,
+    selectedCustomer?.id,
+    variantBrandById,
+  ]);
 
   const clearAppliedPromotion = () => {
     setAppliedPromotion(null);
@@ -599,7 +661,6 @@ const NewSale = () => {
     setApplyingPromotionId(promotion.id);
 
     try {
-
       for (let attempt = 0; attempt < 5; attempt += 1) {
         if (workingItems.length === 0) {
           const enriched = enrichCartForPromotion(promotion, workingItems);
@@ -933,7 +994,7 @@ const NewSale = () => {
       // Calculate net line_total (after all discounts)
       const totalDiscount = averageShare + specialShare + promotionShare;
       const netLineTotal = round2(Number(item.line_total) - totalDiscount);
-      
+
       // Calculate new unit_price = net_line_total / quantity
       const newUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
@@ -948,7 +1009,8 @@ const NewSale = () => {
       };
     });
 
-    const finalDiscount = promotionDiscountAmount + averageDiscount + specialDiscount;
+    const finalDiscount =
+      promotionDiscountAmount + averageDiscount + specialDiscount;
 
     // Total = subtotal - (promotion_discount + manual_discount) + tax + shipping
     const total = subtotal - finalDiscount + totalTax + shippingCostNum;
@@ -1182,7 +1244,11 @@ const NewSale = () => {
         const variant = productsForSaleQuery.data?.find(
           (v) => v.id === record.variant_id,
         );
-        const taxMethod = (record.tax_method || variant?.tax_method || "EXCLUSIVE")
+        const taxMethod = (
+          record.tax_method ||
+          variant?.tax_method ||
+          "EXCLUSIVE"
+        )
           .toString()
           .toUpperCase();
         const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
@@ -1293,7 +1359,7 @@ const NewSale = () => {
             renderItem={(promotion) => {
               const eligibility = promotionEligibilityMap[promotion.id];
               const isAvailableNow = Boolean(eligibility?.is_eligible);
-              
+
               return (
                 <List.Item
                   actions={[
@@ -1312,7 +1378,15 @@ const NewSale = () => {
                     title={
                       <Space>
                         <span>{promotion.name}</span>
-                        <Tag color={promotion.scope === "BRAND" ? "blue" : promotion.scope === "BUNDLE" ? "purple" : "green"}>
+                        <Tag
+                          color={
+                            promotion.scope === "BRAND"
+                              ? "blue"
+                              : promotion.scope === "BUNDLE"
+                                ? "purple"
+                                : "green"
+                          }
+                        >
                           {promotion.scope}
                         </Tag>
                         {isAvailableNow ? (
@@ -1332,9 +1406,12 @@ const NewSale = () => {
                             {promotion.description}
                           </Text>
                         ) : null}
-                        {selectedItems.length > 0 && eligibility && !eligibility.is_eligible ? (
+                        {selectedItems.length > 0 &&
+                        eligibility &&
+                        !eligibility.is_eligible ? (
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {eligibility.reason || "Not eligible for current cart"}
+                            {eligibility.reason ||
+                              "Not eligible for current cart"}
                           </Text>
                         ) : null}
                       </Space>
@@ -1397,6 +1474,34 @@ const NewSale = () => {
                 onClick={() => navigate("/")}
               >
                 Back
+              </Button>
+              <Button
+                type="default"
+                icon={
+                  isFullscreen ? (
+                    <FullscreenExitOutlined />
+                  ) : (
+                    <FullscreenOutlined />
+                  )
+                }
+                onClick={() => {
+                  if (!document.fullscreenElement) {
+                    document.documentElement
+                      .requestFullscreen()
+                      .then(() => {
+                        setIsFullscreen(true);
+                      })
+                      .catch(() => {
+                        setIsFullscreen(false);
+                      });
+                  } else {
+                    document.exitFullscreen().then(() => {
+                      setIsFullscreen(false);
+                    });
+                  }
+                }}
+              >
+                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               </Button>
             </div>
           </div>
@@ -1808,8 +1913,14 @@ const NewSale = () => {
                   {appliedPromotion ? (
                     <div style={{ marginBottom: 10, flexShrink: 0 }}>
                       <Space>
-                        <Tag color="green">Applied: {appliedPromotion.name}</Tag>
-                        <Button type="link" size="small" onClick={clearAppliedPromotion}>
+                        <Tag color="green">
+                          Applied: {appliedPromotion.name}
+                        </Tag>
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={clearAppliedPromotion}
+                        >
                           Remove Promotion
                         </Button>
                       </Space>
@@ -1833,7 +1944,9 @@ const NewSale = () => {
                         >
                           <Radio.Group
                             value={averageDiscountType}
-                            onChange={(e) => setAverageDiscountType(e.target.value)}
+                            onChange={(e) =>
+                              setAverageDiscountType(e.target.value)
+                            }
                             buttonStyle="solid"
                             style={{ width: "100%" }}
                             size="middle"
