@@ -28,73 +28,19 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
-// const RADIAN = Math.PI / 180;
-// const PIE_COLORS = [
-//   "#2563EB", // Blue
-//   "#06B6D4", // Cyan
-//   "#22C55E", // Green
-//   "#F59E0B", // Amber
-//   "#EF4444", // Red
-//   "#8B5CF6", // Violet
-//   "#EC4899", // Pink
-//   "#F97316", // Orange
-//   "#14B8A6", // Teal
-// ];
-// const renderInsideLabel = (props: PieLabelRenderProps) => {
-//   const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
-//   // Recharts sometimes passes undefined during initial render
-//   if (
-//     cx == null ||
-//     cy == null ||
-//     innerRadius == null ||
-//     outerRadius == null ||
-//     percent == null
-//   ) {
-//     return null;
-//   }
-
-//   // Calculate radius precisely halfway between inner and outer radius
-//   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-
-//   // Calculate X and Y using trigonometry
-//   const ncx = Number(cx);
-//   const x = ncx + radius * Math.cos(-(midAngle ?? 0) * RADIAN);
-//   const ncy = Number(cy);
-//   const y = ncy + radius * Math.sin(-(midAngle ?? 0) * RADIAN);
-
-//   return (
-//     <text
-//       x={x}
-//       y={y}
-//       fill="white" // White text to contrast with the pie color
-//       textAnchor="middle"
-//       dominantBaseline="central"
-//       fontSize="11px" // Slightly smaller font so it fits inside the slice
-//       fontWeight="600"
-//     >
-//       {`${(percent * 100).toFixed(0)}%`}
-//     </text>
-//   );
-// };
-
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const isDarkMode = useDarkMode();
+  const hasSalesPermission =
+    user?.permissions?.includes(Permissions.sales) ?? false;
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [queryKeys.dashboardAnalytics],
     queryFn: () => salesApi.getDashboardAnalytics(),
     staleTime: queryStaleTimeMap[queryKeys.dashboardAnalytics],
+    enabled: hasSalesPermission,
   });
-
-  // const paymentChartData = useMemo(() => {
-  //   if (!data?.payment_method_breakdown) return [];
-  //   return data.payment_method_breakdown.map((item) => ({
-  //     name: item.payment_method || "Unknown",
-  //     amount: item.total_amount || 0,
-  //   }));
-  // }, [data?.payment_method_breakdown]);
 
   const topProductsData = useMemo(() => {
     if (!data?.top_products) return [];
@@ -238,7 +184,7 @@ function Dashboard() {
         </Row>
       </div>
 
-      {isError && (
+      {hasSalesPermission && isError && (
         <Alert
           type="error"
           showIcon
@@ -251,383 +197,345 @@ function Dashboard() {
         />
       )}
 
-      {/* KPI Summary Cards Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Today's Total Sale"
-              value={data?.summary?.today_total_sale || 0}
-              prefix="$"
-              precision={2}
-              valueStyle={{ color: "#1890ff" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Sales Today"
-              value={data?.summary?.today_transactions || 0}
-              valueStyle={{ color: "#52c41a" }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card style={{ borderBottom: `3px solid #EF4444` }}>
-            <Statistic
-              title={
-                <span
-                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                >
-                  <WarningOutlined
-                    style={{ color: "#EF4444", fontSize: "14px" }}
-                  />
-                  Low Stock
-                </span>
-              }
-              value={data?.low_stock?.total_critical_items || 0}
-              suffix="Items"
-              valueStyle={{ color: "#EF4444" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card style={{ borderBottom: `3px solid #F59E0B` }}>
-            <Statistic
-              title={
-                <span
-                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                >
-                  <ClockCircleOutlined
-                    style={{ color: "#F59E0B", fontSize: "14px" }}
-                  />
-                  Expiring Soon
-                </span>
-              }
-              value={data?.expiring_items?.total_expiring_items || 0}
-              suffix="Items"
-              valueStyle={{ color: "#F59E0B" }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      {hasSalesPermission && (
+        <>
+          {/* KPI Summary Cards Row */}
+          {/* Sales and Return metrics */}
+          <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+            <Col xs={24} sm={12} md={8}>
+              <Card>
+                <Statistic
+                  title="Today's Sale Amount"
+                  value={data?.summary?.today_total_sale || 0}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: "#1890ff" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card>
+                <Statistic
+                  title="Sales Today"
+                  value={data?.summary?.today_transactions || 0}
+                  valueStyle={{ color: "#52c41a" }}
+                  prefix={<CheckCircleOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card style={{ borderBottom: `3px solid #F97316` }}>
+                <Statistic
+                  title="Today's Returns"
+                  value={data?.summary?.today_return_count || 0}
+                  prefix={<WarningOutlined style={{ color: "#F97316" }} />}
+                  valueStyle={{ color: "#F97316" }}
+                />
+              </Card>
+            </Col>
+          </Row>
 
-      {isLoading ? (
-        <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <Spin />
-        </div>
-      ) : (
-        <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-          {/* Weekly Sales Trend */}
-          <Col xs={24} sm={12}>
-            <Card
-              title={
-                <span style={{ fontSize: "13px", fontWeight: 600 }}>
-                  Weekly Sales Trend
-                </span>
-              }
-              styles={{ body: { padding: "12px 8px 4px" } }}
-            >
-              {weeklyTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={weeklyTrendData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={isDarkMode ? "#303030" : "#091413"}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{
-                        fontSize: 10,
-                        fill: isDarkMode ? "#a0a0a0" : "#6b7285",
-                      }}
-                      tickLine={false}
-                      axisLine={{ stroke: isDarkMode ? "#303030" : "#e5e7eb" }}
-                      dy={6}
-                    />
-                    <YAxis
-                      tick={{
-                        fontSize: 10,
-                        fill: isDarkMode ? "#a0a0a0" : "#6b7280",
-                      }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={40}
-                      dx={-4}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        fontSize: "12px",
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                        backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
-                        color: isDarkMode ? "#ffffff" : "#000000",
-                      }}
-                      itemStyle={{
-                        padding: "2px 0",
-                        color: isDarkMode ? "#ffffff" : "#000000",
-                      }}
-                      labelStyle={{
-                        fontWeight: 600,
-                        marginBottom: "2px",
-                        color: isDarkMode ? "#ffffff" : "#000000",
-                      }}
-                      formatter={(value, name) => [
-                        name === "Amount"
-                          ? `$${value?.toLocaleString()}`
-                          : value,
-                        name,
-                      ]}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: "11px", paddingTop: "4px" }}
-                      iconSize={8}
-                      iconType="circle"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="total_amount"
-                      stroke="#2563EB"
-                      name="Amount"
-                      strokeWidth={2}
-                      dot={{ r: 3, strokeWidth: 0, fill: "#2563EB" }}
-                      activeDot={{ r: 4, fill: "#2563EB" }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="sales_count"
-                      stroke="#06B6D4"
-                      name="Sales"
-                      strokeWidth={2}
-                      dot={{ r: 3, strokeWidth: 0, fill: "#06B6D4" }}
-                      activeDot={{ r: 4, fill: "#06B6D4" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
+          {/* Low Stock and Expiring Soon - Side by side */}
+          <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+            <Col xs={24} sm={12}>
+              <Card
+                hoverable
+                style={{ borderBottom: `3px solid #EF4444` }}
+                onClick={() => navigate("/inventory/low-stock")}
+              >
+                <Statistic
+                  title={
                     <span
-                      style={{
-                        fontSize: "12px",
-                        color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                      }}
-                    >
-                      No trend data
-                    </span>
-                  }
-                />
-              )}
-            </Card>
-          </Col>
-
-          {/* Payment Methods Pie lg={8} */}
-          {/* <Col xs={24} sm={12}>
-            <Card
-              size="small"
-              title={
-                <span style={{ fontSize: "13px", fontWeight: 600 }}>
-                  Payment Methods
-                </span>
-              }
-              styles={{ body: { padding: "12px 8px 4px" } }}
-            >
-              {paymentChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={paymentChartData}
-                      dataKey="amount"
-                      nameKey="name"
-                      cx="50%"
-                      cy="45%"
-                      // outerRadius={58}
-                      // innerRadius={28}
-                      // paddingAngle={2}
-                      // label={({ name, percent = 0 }) =>
-                      //   `${name} ${(percent * 100).toFixed(0)}%`
-                      // }
-                      // labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
-                      labelLine={false}
-                      label={renderInsideLabel}
-                    >
-                      {paymentChartData.map((_, idx) => (
-                        <Cell
-                          key={`payment-cell-${idx}`}
-                          fill={PIE_COLORS[idx % PIE_COLORS.length]}
-                          strokeWidth={1}
-                          stroke="#fff"
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        fontSize: "12px",
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                      }}
-                      formatter={(value) => [
-                        `$${value?.toLocaleString()}`,
-                        "Amount",
-                      ]}
-                    />
-                    <Legend
-                      wrapperStyle={{
-                        fontSize: "11px",
-                        paddingTop: "4px",
-                      }}
-                      iconSize={8}
-                      iconType="circle"
-                      layout="horizontal"
-                      verticalAlign="bottom"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <span style={{ fontSize: "12px" }}>No payment data</span>
-                  }
-                />
-              )}
-            </Card>
-          </Col> */}
-
-          {/* Top 5 Products List lg={8} */}
-          <Col xs={24} sm={12}>
-            <Card
-              size="small"
-              title={
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: isDarkMode ? "#f9fafb" : "#111827",
-                  }}
-                >
-                  Top 5 Products
-                </span>
-              }
-              styles={{ body: { padding: "8px 12px 12px" } }}
-            >
-              {topProductsData.length > 0 ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    height: "290px",
-                  }}
-                >
-                  {topProductsData.map((product, index) => (
-                    <div
-                      key={index}
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "4px 0",
+                        gap: "6px",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            fontSize: "11px",
-                            color: isDarkMode ? "#94a3b8" : "#9ca3af",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {index + 1}
-                        </span>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            overflow: "hidden",
-                          }}
-                          title={product.fullName}
-                        >
-                          <span
-                            style={{
-                              fontWeight: 600,
-                              fontSize: "13px",
-                              color: isDarkMode ? "#f3f4f6" : "#111827",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              lineHeight: "1.35",
-                            }}
-                          >
-                            {product.productName}
-                          </span>
-                          {product.variantName && (
-                            <span
-                              style={{
-                                fontWeight: 500,
-                                fontSize: "12px",
-                                color: isDarkMode ? "#cbd5e1" : "#6b7280",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                lineHeight: "1.3",
-                              }}
-                            >
-                              {product.variantName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Tag
-                        color="blue"
-                        style={{
-                          margin: 0,
-                          fontWeight: 700,
-                          fontSize: "12px",
-                          borderRadius: "10px",
-                          padding: "0 8px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {product.quantity} sold
-                      </Tag>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                      }}
-                    >
-                      No product data
+                      <WarningOutlined
+                        style={{ color: "#EF4444", fontSize: "14px" }}
+                      />
+                      Low Stock
                     </span>
                   }
+                  value={data?.low_stock?.total_critical_items || 0}
+                  suffix="Items"
+                  valueStyle={{ color: "#EF4444" }}
                 />
-              )}
-            </Card>
-          </Col>
-        </Row>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Card
+                hoverable
+                style={{ borderBottom: `3px solid #F59E0B` }}
+                onClick={() => navigate("/inventory/expiring")}
+              >
+                <Statistic
+                  title={
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <ClockCircleOutlined
+                        style={{ color: "#F59E0B", fontSize: "14px" }}
+                      />
+                      Expiring Soon
+                    </span>
+                  }
+                  value={data?.expiring_items?.total_expiring_items || 0}
+                  suffix="Items"
+                  valueStyle={{ color: "#F59E0B" }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {isLoading ? (
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <Spin />
+            </div>
+          ) : (
+            <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+              {/* Weekly Sales Trend */}
+              <Col xs={24} sm={12}>
+                <Card
+                  title={
+                    <span style={{ fontSize: "13px", fontWeight: 600 }}>
+                      Weekly Sales Trend
+                    </span>
+                  }
+                  styles={{ body: { padding: "12px 8px 4px" } }}
+                >
+                  {weeklyTrendData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={weeklyTrendData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={isDarkMode ? "#303030" : "#091413"}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="date"
+                          tick={{
+                            fontSize: 10,
+                            fill: isDarkMode ? "#a0a0a0" : "#6b7285",
+                          }}
+                          tickLine={false}
+                          axisLine={{
+                            stroke: isDarkMode ? "#303030" : "#e5e7eb",
+                          }}
+                          dy={6}
+                        />
+                        <YAxis
+                          tick={{
+                            fontSize: 10,
+                            fill: isDarkMode ? "#a0a0a0" : "#6b7280",
+                          }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={40}
+                          dx={-4}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: "12px",
+                            padding: "6px 10px",
+                            borderRadius: "8px",
+                            border: "none",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                            backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
+                            color: isDarkMode ? "#ffffff" : "#000000",
+                          }}
+                          itemStyle={{
+                            padding: "2px 0",
+                            color: isDarkMode ? "#ffffff" : "#000000",
+                          }}
+                          labelStyle={{
+                            fontWeight: 600,
+                            marginBottom: "2px",
+                            color: isDarkMode ? "#ffffff" : "#000000",
+                          }}
+                          formatter={(value, name) => [
+                            name === "Amount"
+                              ? `$${value?.toLocaleString()}`
+                              : value,
+                            name,
+                          ]}
+                        />
+                        <Legend
+                          wrapperStyle={{ fontSize: "11px", paddingTop: "4px" }}
+                          iconSize={8}
+                          iconType="circle"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="total_amount"
+                          stroke="#2563EB"
+                          name="Amount"
+                          strokeWidth={2}
+                          dot={{ r: 3, strokeWidth: 0, fill: "#2563EB" }}
+                          activeDot={{ r: 4, fill: "#2563EB" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="sales_count"
+                          stroke="#06B6D4"
+                          name="Sales"
+                          strokeWidth={2}
+                          dot={{ r: 3, strokeWidth: 0, fill: "#06B6D4" }}
+                          activeDot={{ r: 4, fill: "#06B6D4" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                          }}
+                        >
+                          No trend data
+                        </span>
+                      }
+                    />
+                  )}
+                </Card>
+              </Col>
+
+              {/* Top 5 Products List lg={8} */}
+              <Col xs={24} sm={12}>
+                <Card
+                  size="small"
+                  title={
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: isDarkMode ? "#f9fafb" : "#111827",
+                      }}
+                    >
+                      Top 5 Products
+                    </span>
+                  }
+                  styles={{ body: { padding: "8px 12px 12px" } }}
+                >
+                  {topProductsData.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        height: "290px",
+                      }}
+                    >
+                      {topProductsData.map((product, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "4px 0",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "11px",
+                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                              title={product.fullName}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "13px",
+                                  color: isDarkMode ? "#f3f4f6" : "#111827",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  lineHeight: "1.35",
+                                }}
+                              >
+                                {product.productName}
+                              </span>
+                              {product.variantName && (
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    fontSize: "12px",
+                                    color: isDarkMode ? "#cbd5e1" : "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    lineHeight: "1.3",
+                                  }}
+                                >
+                                  {product.variantName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Tag
+                            color="blue"
+                            style={{
+                              margin: 0,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              borderRadius: "10px",
+                              padding: "0 8px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {product.quantity} sold
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                          }}
+                        >
+                          No product data
+                        </span>
+                      }
+                    />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+          )}
+        </>
       )}
     </>
   );

@@ -1,11 +1,16 @@
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional } from 'class-validator';
+import { IsInt, IsOptional, Min } from 'class-validator';
 
 export class DashboardAnalyticsDto {
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    const parsed = Number(value);
+    return isNaN(parsed) ? undefined : parsed;
+  })
   @Type(() => Number)
   @IsInt()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Min(1)
   branch_id?: number;
 }
 
@@ -14,6 +19,7 @@ export interface DashboardSummary {
   weekly_transactions: number;
   today_total_sale: number;
   today_transactions: number;
+  today_return_count: number;
 }
 
 export interface SalesTrendPoint {
@@ -52,7 +58,7 @@ export interface ExpiringItemPoint {
   batch_id: number;
   product_name: string;
   variant_name: string;
-  batch_number: string;
+  batch_number: string | null;
   quantity: number;
   expiry_date: string;
   branch_name?: string;
