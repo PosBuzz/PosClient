@@ -223,7 +223,7 @@ export default function AddInventoryTransfer() {
       ),
     },
     {
-      title: "Reference",
+      title: "Batch No",
       dataIndex: "batch_number",
       render: (text: string) => <Text code>{text}</Text>,
     },
