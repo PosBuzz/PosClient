@@ -98,7 +98,7 @@ function Dashboard() {
                     Point of Sale
                   </h3>
                   <p style={{ color: "rgba(255,255,255,0.8)", margin: 0 }}>
-                    Start selling with our modern POS interface
+                   Sale with our POS interface
                   </p>
                 </Card>
               </Col>
@@ -216,7 +216,7 @@ function Dashboard() {
             <Col xs={24} sm={12} md={8}>
               <Card>
                 <Statistic
-                  title="Sales Today"
+                  title="Today's Sale Count"
                   value={data?.summary?.today_transactions || 0}
                   valueStyle={{ color: "#52c41a" }}
                   prefix={<CheckCircleOutlined />}
