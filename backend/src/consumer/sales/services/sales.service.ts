@@ -265,9 +265,7 @@ export class SalesService {
       }
 
       const totalDiscountAmount =
-        averageDiscountAmount +
-        specialDiscountAmount +
-        promotionDiscountAmount;
+        averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
       // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
@@ -355,9 +353,9 @@ export class SalesService {
                 data: {
                   sale_id: sale.id,
                   payment_method: payment.payment_method,
+                  payment_type: payment.payment_type,
                   amount: payment.amount,
                   reference: payment.reference,
-                  notes: payment.notes,
                 },
               });
             }),

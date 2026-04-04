@@ -46,7 +46,7 @@ const MakePayment = () => {
       payment_method: PaymentMethod.CASH,
       amount: 0,
       reference: "",
-      notes: "",
+      // notes: "",
     },
   ]);
 
@@ -83,7 +83,7 @@ const MakePayment = () => {
           payment_method: PaymentMethod.CASH,
           amount: sale.remaining_amount,
           reference: "",
-          notes: "",
+          // notes: "",
         },
       ]);
     }
@@ -316,7 +316,6 @@ const MakePayment = () => {
                       payment_method: PaymentMethod.CASH,
                       amount: remainingAmount > 0 ? remainingAmount : 0,
                       reference: "",
-                      notes: "",
                     };
                     setPayments([...payments, newPayment]);
                   }}
@@ -357,7 +356,6 @@ const MakePayment = () => {
                             Mobile Money
                           </Option>
                           <Option value={PaymentMethod.MFS}>MFS</Option>
-                          <Option value={PaymentMethod.DEPOSIT}>Deposit</Option>
                           <Option value={PaymentMethod.CREDIT}>Credit</Option>
                           <Option value={PaymentMethod.EXCHANGE}>Exchange</Option>
                         </Select>
@@ -389,7 +387,7 @@ const MakePayment = () => {
                           placeholder="Reference"
                         />
                       </Col>
-                      <Col span={4}>
+                      {/* <Col span={4}>
                         <Input
                           size="small"
                           value={payment.notes}
@@ -400,7 +398,7 @@ const MakePayment = () => {
                           }}
                           placeholder="Notes"
                         />
-                      </Col>
+                      </Col> */}
                       <Col span={2}>
                         <Button
                           size="small"

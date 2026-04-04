@@ -12,7 +12,6 @@ import {
   PayCircleOutlined,
   PercentageOutlined,
   PlusOutlined,
-  SaveOutlined,
   SearchOutlined,
   ShoppingCartOutlined,
   SwapOutlined,
@@ -121,7 +120,7 @@ const NewSale = () => {
       payment_method: PaymentMethod.CASH,
       amount: 0,
       reference: "",
-      notes: "",
+      // notes: "",
     },
   ]);
 
@@ -1062,7 +1061,7 @@ const NewSale = () => {
           payment_method: PaymentMethod.CASH,
           amount: 0,
           reference: "",
-          notes: "",
+          // notes: "",
         },
       ]);
       form.setFieldsValue({
@@ -1957,7 +1956,7 @@ const NewSale = () => {
                                 ? remainingAmount
                                 : totals.total,
                             reference: "",
-                            notes: "",
+                            // notes: "",
                           };
                           setSalePayments([...salePayments, newPayment]);
                         }}
@@ -2025,9 +2024,6 @@ const NewSale = () => {
                                 <Option value={PaymentMethod.MFS}>
                                   <PayCircleOutlined className="mr-2" /> MFS
                                 </Option>
-                                <Option value={PaymentMethod.DEPOSIT}>
-                                  <SaveOutlined className="mr-2" /> Deposit
-                                </Option>
                                 <Option value={PaymentMethod.CREDIT}>
                                   <WalletOutlined className="mr-2" /> Credit
                                 </Option>
@@ -2071,7 +2067,7 @@ const NewSale = () => {
                                 placeholder="Ref#"
                               />
                             </Col>
-                            <Col span={5}>
+                            {/* <Col span={5}>
                               <Input
                                 size="small"
                                 value={payment.notes}
@@ -2085,7 +2081,7 @@ const NewSale = () => {
                                 }
                                 placeholder="Notes"
                               />
-                            </Col>
+                            </Col> */}
                             <Col span={2}>
                               <Tooltip title="Remove">
                                 <Button

@@ -4,9 +4,7 @@ import {
   PlusOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
-import {
-  TagOutlined,
-} from "@ant-design/icons";
+import { TagOutlined } from "@ant-design/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -49,9 +47,14 @@ import {
   SaleItem,
   SalePayment,
 } from "../../types/sale.types";
-import { Promotion, PromotionValidationResponse } from "../../types/promotion.types";
+import {
+  Promotion,
+  PromotionValidationResponse,
+} from "../../types/promotion.types";
 import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { mfsProviderOptions } from "../../types/mfs.types";
+import { bankOptions } from "../../types/banks.types";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -75,7 +78,9 @@ const NewSale = () => {
   // State
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [servedByUsers, setServedByUsers] = useState<{ id: number; name: string }[]>([]);
+  const [servedByUsers, setServedByUsers] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
   >([]);
@@ -83,7 +88,10 @@ const NewSale = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
-    const [selectedServedByUser, setSelectedServedByUser] = useState<{ id: number; name: string } | null>(null);
+  const [selectedServedByUser, setSelectedServedByUser] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
   const [averageDiscountType, setAverageDiscountType] = useState<DiscountType>(
@@ -107,7 +115,8 @@ const NewSale = () => {
       payment_method: PaymentMethod.CASH,
       amount: 0,
       reference: "",
-      notes: "",
+      // notes: "",
+      // payment_type: "",
     },
   ]);
 
@@ -139,9 +148,9 @@ const NewSale = () => {
 
   // Load served_by users for dropdown (optional)
   const servedByUsersQuery = useQuery({
-    queryKey: [queryKeys.users,selectedBranch],
+    queryKey: [queryKeys.users, selectedBranch],
     queryFn: async () => {
-      const data = await get(endpoints.user,{ branch_id: selectedBranch });
+      const data = await get(endpoints.user, { branch_id: selectedBranch });
       return data.data || data;
     },
     enabled: !!selectedBranch, // Only load when branch is selected
@@ -158,7 +167,8 @@ const NewSale = () => {
 
   const activePromotionsQuery = useQuery({
     queryKey: [queryKeys.promotions, "active", selectedBranch],
-    queryFn: () => promotionApi.getActivePromotions(selectedBranch || undefined),
+    queryFn: () =>
+      promotionApi.getActivePromotions(selectedBranch || undefined),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.promotions],
   });
@@ -264,7 +274,8 @@ const NewSale = () => {
           unit_price: Number(item.unit_price),
           average_discount_amount: Number(item.average_discount_amount) || 0,
           special_discount_amount: Number(item.special_discount_amount) || 0,
-          promotion_discount_amount: Number(item.promotion_discount_amount) || 0,
+          promotion_discount_amount:
+            Number(item.promotion_discount_amount) || 0,
           applied_promotion_id: item.applied_promotion_id || undefined,
           tax_amount: Number(item.tax_amount) || 0,
           line_total: Number(item.line_total),
@@ -337,7 +348,12 @@ const NewSale = () => {
 
     tryAutoApplyPromotion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItems, selectedBranch, selectedCustomer?.id, activePromotionsQuery.data]);
+  }, [
+    selectedItems,
+    selectedBranch,
+    selectedCustomer?.id,
+    activePromotionsQuery.data,
+  ]);
 
   const calculateTaxAndTotal = (
     price: number,
@@ -379,7 +395,9 @@ const NewSale = () => {
     variant: ProductVariantForSale,
     quantityToAdd: number,
   ) => {
-    const existingItem = sourceItems.find((item) => item.variant_id === variant.id);
+    const existingItem = sourceItems.find(
+      (item) => item.variant_id === variant.id,
+    );
     const price =
       priceType === PriceType.WHOLESALE
         ? Number(variant.wholesale_price) || Number(variant.regular_price)
@@ -482,7 +500,8 @@ const NewSale = () => {
     if (promotion.scope === "BRAND") {
       return filteredVariants.filter(
         (variant) =>
-          promotion.brand_id && Number(variant.brand_id) === Number(promotion.brand_id),
+          promotion.brand_id &&
+          Number(variant.brand_id) === Number(promotion.brand_id),
       );
     }
 
@@ -533,9 +552,13 @@ const NewSale = () => {
       return { items: nextItems, changed };
     }
 
-    const candidateIds = new Set(candidateVariants.map((variant) => variant.id));
+    const candidateIds = new Set(
+      candidateVariants.map((variant) => variant.id),
+    );
     const currentMatchedQty = nextItems.reduce((sum, item) => {
-      return candidateIds.has(item.variant_id) ? sum + Number(item.quantity || 0) : sum;
+      return candidateIds.has(item.variant_id)
+        ? sum + Number(item.quantity || 0)
+        : sum;
     }, 0);
 
     const minQty = Number(promotion.min_quantity || 1);
@@ -545,10 +568,15 @@ const NewSale = () => {
     );
     const minPurchase = Number(promotion.min_purchase || 0);
 
-    const needsMinQty = currentMatchedQty < minQty || reasonText.includes("minimum quantity");
+    const needsMinQty =
+      currentMatchedQty < minQty || reasonText.includes("minimum quantity");
     if (needsMinQty) {
       const qtyToAdd = Math.max(1, minQty - currentMatchedQty);
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -557,15 +585,23 @@ const NewSale = () => {
       0,
     );
     const needsMinPurchase =
-      recalculatedSubtotal < minPurchase || reasonText.includes("minimum purchase");
+      recalculatedSubtotal < minPurchase ||
+      reasonText.includes("minimum purchase");
 
     if (needsMinPurchase) {
-      const unitPrice = Math.max(0.01, getVariantPriceForSale(highestPriceVariant));
+      const unitPrice = Math.max(
+        0.01,
+        getVariantPriceForSale(highestPriceVariant),
+      );
       const qtyToAdd = Math.max(
         1,
         Math.ceil(Math.max(0, minPurchase - recalculatedSubtotal) / unitPrice),
       );
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -580,12 +616,19 @@ const NewSale = () => {
     }
 
     if (!changed && currentSubtotal < minPurchase) {
-      const unitPrice = Math.max(0.01, getVariantPriceForSale(highestPriceVariant));
+      const unitPrice = Math.max(
+        0.01,
+        getVariantPriceForSale(highestPriceVariant),
+      );
       const qtyToAdd = Math.max(
         1,
         Math.ceil(Math.max(0, minPurchase - currentSubtotal) / unitPrice),
       );
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, qtyToAdd);
+      nextItems = upsertVariantInSaleItems(
+        nextItems,
+        highestPriceVariant,
+        qtyToAdd,
+      );
       changed = true;
     }
 
@@ -609,7 +652,10 @@ const NewSale = () => {
 
       const evaluations = await Promise.all(
         activePromotionsQuery.data.map(async (promotion) => {
-          const validation = evaluatePromotionForItems(promotion, selectedItems);
+          const validation = evaluatePromotionForItems(
+            promotion,
+            selectedItems,
+          );
           return [promotion.id, validation] as const;
         }),
       );
@@ -646,7 +692,10 @@ const NewSale = () => {
       return;
     }
 
-    const validation = evaluatePromotionForItems(appliedPromotion, selectedItems);
+    const validation = evaluatePromotionForItems(
+      appliedPromotion,
+      selectedItems,
+    );
 
     if (!validation.is_eligible) {
       setAppliedPromotion(null);
@@ -658,7 +707,13 @@ const NewSale = () => {
     }
 
     setPromotionDiscountAmount(Number(validation.discount_amount || 0));
-  }, [appliedPromotion, selectedItems, selectedBranch, selectedCustomer?.id, variantBrandById]);
+  }, [
+    appliedPromotion,
+    selectedItems,
+    selectedBranch,
+    selectedCustomer?.id,
+    variantBrandById,
+  ]);
 
   const clearAppliedPromotion = () => {
     setAppliedPromotion(null);
@@ -677,7 +732,6 @@ const NewSale = () => {
     setApplyingPromotionId(promotion.id);
 
     try {
-
       for (let attempt = 0; attempt < 5; attempt += 1) {
         if (workingItems.length === 0) {
           const enriched = enrichCartForPromotion(promotion, workingItems);
@@ -1017,7 +1071,7 @@ const NewSale = () => {
       // Calculate net line_total (after all discounts)
       const totalDiscount = averageShare + specialShare + promotionShare;
       const netLineTotal = round2(Number(item.line_total) - totalDiscount);
-      
+
       // Calculate new unit_price = net_line_total / quantity
       const newUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
@@ -1057,7 +1111,23 @@ const NewSale = () => {
       messageApi?.error("Please add at least one payment method");
       return;
     }
+const methodsRequiringType = [
+  PaymentMethod.CARD,
+  PaymentMethod.BANK_TRANSFER,
+  PaymentMethod.MFS,
+];
 
+for (const payment of salePayments) {
+  if (
+    methodsRequiringType.includes(payment.payment_method) &&
+    !payment.payment_type
+  ) {
+    messageApi?.error(
+      `${payment.payment_method} payment must have a payment type selected`,
+    );
+    return;
+  }
+}
     const totals = calculateTotals();
     const totalPaymentAmount = salePayments.reduce(
       (sum, payment) => sum + payment.amount,
@@ -1243,7 +1313,11 @@ const NewSale = () => {
         const variant = productsForSaleQuery.data?.find(
           (v) => v.id === record.variant_id,
         );
-        const taxMethod = (record.tax_method || variant?.tax_method || "EXCLUSIVE")
+        const taxMethod = (
+          record.tax_method ||
+          variant?.tax_method ||
+          "EXCLUSIVE"
+        )
           .toString()
           .toUpperCase();
         const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
@@ -1348,7 +1422,7 @@ const NewSale = () => {
           renderItem={(promotion) => {
             const eligibility = promotionEligibilityMap[promotion.id];
             const isAvailableNow = Boolean(eligibility?.is_eligible);
-            
+
             return (
               <List.Item
                 actions={[
@@ -1367,7 +1441,15 @@ const NewSale = () => {
                   title={
                     <Space>
                       <span>{promotion.name}</span>
-                      <Tag color={promotion.scope === "BRAND" ? "blue" : promotion.scope === "BUNDLE" ? "purple" : "lime"}>
+                      <Tag
+                        color={
+                          promotion.scope === "BRAND"
+                            ? "blue"
+                            : promotion.scope === "BUNDLE"
+                              ? "purple"
+                              : "lime"
+                        }
+                      >
                         {promotion.scope}
                       </Tag>
                       {isAvailableNow ? (
@@ -1387,9 +1469,12 @@ const NewSale = () => {
                           {promotion.description}
                         </Text>
                       ) : null}
-                      {selectedItems.length > 0 && eligibility && !eligibility.is_eligible ? (
+                      {selectedItems.length > 0 &&
+                      eligibility &&
+                      !eligibility.is_eligible ? (
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {eligibility.reason || "Not eligible for current cart"}
+                          {eligibility.reason ||
+                            "Not eligible for current cart"}
                         </Text>
                       ) : null}
                     </Space>
@@ -1463,7 +1548,9 @@ const NewSale = () => {
                     optionFilterProp="children"
                     value={selectedServedByUser?.id}
                     onChange={(value) => {
-                      const servedByUser = servedByUsers.find((u) => u.id === value);
+                      const servedByUser = servedByUsers.find(
+                        (u) => u.id === value,
+                      );
                       setSelectedServedByUser(servedByUser || null);
                       form.setFieldsValue({ served_by_id: value });
                     }}
@@ -1591,7 +1678,11 @@ const NewSale = () => {
             <div style={{ marginBottom: 12 }}>
               <Space>
                 <Tag color="green">Applied: {appliedPromotion.name}</Tag>
-                <Button type="link" size="small" onClick={clearAppliedPromotion}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={clearAppliedPromotion}
+                >
                   Remove Promotion
                 </Button>
               </Space>
@@ -1613,7 +1704,10 @@ const NewSale = () => {
                   </Form.Item>
                 </Col>
                 <Col span={7}>
-                  <Form.Item label="Average Discount" name="average_discount_amount">
+                  <Form.Item
+                    label="Avg Discount"
+                    name="average_discount_amount"
+                  >
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
@@ -1663,7 +1757,7 @@ const NewSale = () => {
                         amount:
                           remainingAmount > 0 ? remainingAmount : totals.total,
                         reference: "",
-                        notes: "",
+                        // notes: "",
                       };
                       setSalePayments([...salePayments, newPayment]);
                     }}
@@ -1674,116 +1768,153 @@ const NewSale = () => {
                 </div>
 
                 <div style={{ minHeight: "auto" }}>
-                  {salePayments.map((payment, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        marginBottom: 8,
-                        // padding: 8,
-                        // border: '1px solid #d9d9d9',
-                        // borderRadius: 4,
-                        // backgroundColor: '#fafafa'
-                      }}
-                    >
-                      <Row gutter={4}>
-                        <Col span={6}>
-                          <Select
-                            size="small"
-                            value={payment.payment_method}
-                            onChange={(value) => {
-                              const updatedPayments = [...salePayments];
-                              updatedPayments[index].payment_method = value;
-                              setSalePayments(updatedPayments);
-                            }}
-                            style={{ width: "100%" }}
-                            placeholder="Method"
-                          >
-                            <Option value={PaymentMethod.CASH}>Cash</Option>
-                            <Option value={PaymentMethod.CARD}>Card</Option>
-                            <Option value={PaymentMethod.CHEQUE}>Cheque</Option>
-                            <Option value={PaymentMethod.BANK_TRANSFER}>
-                              Bank Transfer
-                            </Option>
-                            <Option value={PaymentMethod.MOBILE_MONEY}>
-                              Mobile Money
-                            </Option>
-                            <Option value={PaymentMethod.MFS}>MFS</Option>
-                            <Option value={PaymentMethod.DEPOSIT}>
-                              Deposit
-                            </Option>
-                            <Option value={PaymentMethod.CREDIT}>Credit</Option>
-                            <Option value={PaymentMethod.EXCHANGE}>
-                              Exchange
-                            </Option>
-                          </Select>
-                        </Col>
-                        <Col span={6}>
-                          <InputNumber
-                            size="small"
-                            value={payment.amount}
-                            onChange={(value) => {
-                              const updatedPayments = [...salePayments];
-                              updatedPayments[index].amount = value || 0;
-                              setSalePayments(updatedPayments);
-                            }}
-                            onPressEnter={(e) => {
-                              // Just blur the input, the global handler will handle form submission
-                              (e.target as HTMLInputElement).blur();
-                            }}
-                            min={0}
-                            precision={2}
-                            style={{ width: "100%" }}
-                            placeholder="0.00"
-                          />
-                        </Col>
-                        <Col span={6}>
-                          <Input
-                            size="small"
-                            value={payment.reference}
-                            onChange={(e) => {
-                              const updatedPayments = [...salePayments];
-                              updatedPayments[index].reference = e.target.value;
-                              setSalePayments(updatedPayments);
-                            }}
-                            onPressEnter={(e) => {
-                              // Just blur the input, the global handler will handle form submission
-                              (e.target as HTMLInputElement).blur();
-                            }}
-                            placeholder="Reference"
-                          />
-                        </Col>
-                        <Col span={4}>
-                          <Input
-                            size="small"
-                            value={payment.notes}
-                            onChange={(e) => {
-                              const updatedPayments = [...salePayments];
-                              updatedPayments[index].notes = e.target.value;
-                              setSalePayments(updatedPayments);
-                            }}
-                            onPressEnter={(e) => {
-                              // Just blur the input, the global handler will handle form submission
-                              (e.target as HTMLInputElement).blur();
-                            }}
-                            placeholder="Notes"
-                          />
-                        </Col>
-                        <Col span={2}>
-                          <Button
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => {
-                              const updatedPayments = salePayments.filter(
-                                (_, i) => i !== index,
-                              );
-                              setSalePayments(updatedPayments);
-                            }}
-                          />
-                        </Col>
-                      </Row>
-                    </div>
-                  ))}
+                  {salePayments.map((payment, index) => {
+                    const needsBank =
+                      payment.payment_method === PaymentMethod.CARD ||
+                      payment.payment_method === PaymentMethod.BANK_TRANSFER;
+                    const needsMfs =
+                      payment.payment_method === PaymentMethod.MFS;
+
+                    return (
+                      <div key={index} style={{ marginBottom: 8 }}>
+                        <Row gutter={4}>
+                          {/* Payment Method */}
+                          <Col span={6}>
+                            <Select
+                              size="small"
+                              value={payment.payment_method}
+                              onChange={(value) => {
+                                const updatedPayments = [...salePayments];
+                                updatedPayments[index] = {
+                                  ...updatedPayments[index],
+                                  payment_method: value,
+                                  payment_type: undefined, // reset subtype on method change
+                                };
+                                setSalePayments(updatedPayments);
+                              }}
+                              style={{ width: "100%" }}
+                              placeholder="Method"
+                            >
+                              <Option value={PaymentMethod.CASH}>Cash</Option>
+                              <Option value={PaymentMethod.CARD}>Card</Option>
+                              <Option value={PaymentMethod.CHEQUE}>
+                                Cheque
+                              </Option>
+                              <Option value={PaymentMethod.BANK_TRANSFER}>
+                                Bank Transfer
+                              </Option>
+                              <Option value={PaymentMethod.MOBILE_MONEY}>
+                                Mobile Money
+                              </Option>
+                              <Option value={PaymentMethod.MFS}>MFS</Option>
+                              <Option value={PaymentMethod.CREDIT}>
+                                Credit
+                              </Option>
+                              <Option value={PaymentMethod.EXCHANGE}>
+                                Exchange
+                              </Option>
+                            </Select>
+                          </Col>
+
+                          {/* Bank or MFS sub-selector */}
+                          <Col span={needsBank || needsMfs ? 7 : 0}>
+                            {needsBank && (
+                              <Select
+                                size="small"
+                                showSearch
+                                allowClear
+                                placeholder="Select bank"
+                                value={payment.payment_type || undefined}
+                                onChange={(value) => {
+                                  const updatedPayments = [...salePayments];
+                                  updatedPayments[index] = {
+                                    ...updatedPayments[index],
+                                    payment_type: value,
+                                  };
+                                  setSalePayments(updatedPayments);
+                                }}
+                                style={{ width: "100%" }}
+                                optionFilterProp="label"
+                                options={bankOptions}
+                              />
+                            )}
+                            {needsMfs && (
+                              <Select
+                                size="small"
+                                showSearch
+                                allowClear
+                                placeholder="Select MFS"
+                                value={payment.payment_type || undefined}
+                                onChange={(value) => {
+                                  const updatedPayments = [...salePayments];
+                                  updatedPayments[index] = {
+                                    ...updatedPayments[index],
+                                    payment_type: value,
+                                  };
+                                  setSalePayments(updatedPayments);
+                                }}
+                                style={{ width: "100%" }}
+                                optionFilterProp="label"
+                                options={mfsProviderOptions}
+                              />
+                            )}
+                          </Col>
+
+                          {/* Amount */}
+                          <Col span={needsBank || needsMfs ? 4 : 6}>
+                            <InputNumber
+                              size="small"
+                              value={payment.amount}
+                              onChange={(value) => {
+                                const updatedPayments = [...salePayments];
+                                updatedPayments[index].amount = value || 0;
+                                setSalePayments(updatedPayments);
+                              }}
+                              onPressEnter={(e) =>
+                                (e.target as HTMLInputElement).blur()
+                              }
+                              min={0}
+                              precision={2}
+                              style={{ width: "100%" }}
+                              placeholder="0.00"
+                            />
+                          </Col>
+
+                          {/* Reference */}
+                          <Col span={needsBank || needsMfs ? 5 : 6}>
+                            <Input
+                              size="small"
+                              value={payment.reference}
+                              onChange={(e) => {
+                                const updatedPayments = [...salePayments];
+                                updatedPayments[index].reference =
+                                  e.target.value;
+                                setSalePayments(updatedPayments);
+                              }}
+                              onPressEnter={(e) =>
+                                (e.target as HTMLInputElement).blur()
+                              }
+                              placeholder="Reference"
+                            />
+                          </Col>
+
+                          {/* Delete */}
+                          <Col span={2}>
+                            <Button
+                              size="small"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => {
+                                setSalePayments(
+                                  salePayments.filter((_, i) => i !== index),
+                                );
+                              }}
+                            />
+                          </Col>
+                        </Row>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </Col>
@@ -1826,7 +1957,9 @@ const NewSale = () => {
                       marginBottom: 4,
                     }}
                   >
-                    <Text style={{ fontSize: 12, color: "#52c41a" }}>Promo Discount:</Text>
+                    <Text style={{ fontSize: 12, color: "#52c41a" }}>
+                      Promo Discount:
+                    </Text>
                     <Text style={{ fontSize: 12, color: "#52c41a" }}>
                       -${(Number(totals.promotionDiscount) || 0).toFixed(2)}
                     </Text>
@@ -1863,19 +1996,19 @@ const NewSale = () => {
                 {promotionDiscountAmount === 0 &&
                   totals.averageDiscount === 0 &&
                   totals.specialDiscount === 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 12 }}>Discount:</Text>
-                    <Text style={{ fontSize: 12 }}>
-                      -${(Number(totals.finalDiscount) || 0).toFixed(2)}
-                    </Text>
-                  </div>
-                )}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12 }}>Discount:</Text>
+                      <Text style={{ fontSize: 12 }}>
+                        -${(Number(totals.finalDiscount) || 0).toFixed(2)}
+                      </Text>
+                    </div>
+                  )}
                 <div
                   style={{
                     display: "flex",
