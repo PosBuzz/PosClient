@@ -55,7 +55,9 @@ const QuotationDetail: React.FC = () => {
       (sum: number, item: any) =>
         sum + (Number(item.promotion_discount_amount) || 0),
       0,
-    ) || Number(quotation?.promotion_discount) || 0;
+    ) ||
+    Number(quotation?.promotion_discount) ||
+    0;
   const averageDiscount =
     quotation?.items?.reduce(
       (sum: number, item: any) =>
@@ -107,6 +109,21 @@ const QuotationDetail: React.FC = () => {
         content: "Failed to download PDF",
       });
     }
+  };
+
+  const getItemPromotionLabel = (record: any) => {
+    const itemPromotionName =
+      record.applied_promotion?.name || record.applied_promotion_name;
+
+    if (itemPromotionName) {
+      return itemPromotionName;
+    }
+
+    if (quotation?.promotion?.name) {
+      return quotation.promotion.name;
+    }
+
+    return null;
   };
 
   const itemColumns = [
@@ -170,8 +187,16 @@ const QuotationDetail: React.FC = () => {
     {
       title: "Promo Disc",
       key: "promotion_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => {
+        const promoLabel = getItemPromotionLabel(record);
+
+        return (
+          <div className="flex items-center gap-2">
+            <span>{`-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`}</span>
+            {promoLabel ? <Tag color="processing">{promoLabel}</Tag> : null}
+          </div>
+        );
+      },
     },
     {
       title: "Line Total",
@@ -392,7 +417,9 @@ const QuotationDetail: React.FC = () => {
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text strong>Total Discount:</Text>
                 <Text strong>
-                  {totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : "$0.00"}
+                  {totalDiscount > 0
+                    ? `-$${totalDiscount.toFixed(2)}`
+                    : "$0.00"}
                 </Text>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -415,19 +442,21 @@ const QuotationDetail: React.FC = () => {
             </Space>
           </Card>
 
-          <Card title="Actions" style={{ marginTop: 16 }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Button
-                type="primary"
-                icon={<SwapOutlined />}
-                onClick={handleConvertToSale}
-                block
-                size="large"
-              >
-                Convert to Sale
-              </Button>
-            </Space>
-          </Card>
+          {quotation.converted_to_sale_id ? null : (
+            <Card title="Actions" style={{ marginTop: 16 }}>
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Button
+                  type="primary"
+                  icon={<SwapOutlined />}
+                  onClick={handleConvertToSale}
+                  block
+                  size="large"
+                >
+                  Convert to Sale
+                </Button>
+              </Space>
+            </Card>
+          )}
         </Col>
       </Row>
     </div>

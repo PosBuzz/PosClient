@@ -35,6 +35,57 @@ export class SalesService {
     private quotationPdfService: QuotationPdfService,
     private promotionsService: PromotionsService,
   ) {}
+  private async attachAppliedPromotions<T extends { items?: any[] }>(
+    sale: T,
+    consumerId: number,
+  ): Promise<T> {
+    if (!sale.items?.length) {
+      return sale;
+    }
+
+    const appliedPromotionIds = Array.from(
+      new Set(
+        sale.items
+          .map((item) => item.applied_promotion_id)
+          .filter(
+            (promotionId) => promotionId !== null && promotionId !== undefined,
+          )
+          .map((promotionId) => Number(promotionId)),
+      ),
+    );
+
+    if (appliedPromotionIds.length === 0) {
+      return sale;
+    }
+
+    const promotions = await this.prisma.promotion.findMany({
+      where: {
+        id: { in: appliedPromotionIds },
+        consumer_id: consumerId,
+      },
+      select: {
+        id: true,
+        name: true,
+        scope: true,
+        discount_type: true,
+        discount_value: true,
+      },
+    });
+
+    const promotionMap = new Map(
+      promotions.map((promotion) => [promotion.id, promotion]),
+    );
+
+    return {
+      ...sale,
+      items: sale.items.map((item) => ({
+        ...item,
+        applied_promotion: item.applied_promotion_id
+          ? promotionMap.get(Number(item.applied_promotion_id)) || null
+          : null,
+      })),
+    };
+  }
 
   async create(
     createSaleDto: CreateSaleDto,
@@ -601,7 +652,14 @@ export class SalesService {
         summary,
       };
 
-      return result;
+      const salesWithPromotions = await Promise.all(
+        sales.map((sale) => this.attachAppliedPromotions(sale, consumerId)),
+      );
+
+      return {
+        ...result,
+        data: salesWithPromotions,
+      };
     } catch (error) {
       this.logger.error(
         `Error fetching sales for consumer ${consumerId} with filters`,
@@ -664,7 +722,7 @@ export class SalesService {
         throw new NotFoundException('Sale not found');
       }
 
-      return sale;
+      return this.attachAppliedPromotions(sale, consumerId);
     } catch (error) {
       this.logger.error(
         `Error fetching sale ${id} for consumer ${consumerId}`,
@@ -816,7 +874,7 @@ export class SalesService {
         return_summary: returnSummary,
       };
 
-      return saleWithReturnSummary;
+      return this.attachAppliedPromotions(saleWithReturnSummary, consumerId);
     } catch (error) {
       this.logger.error(
         `Error fetching sale by sale number ${saleNumber} for consumer ${consumerId}`,
@@ -1483,8 +1541,14 @@ export class SalesService {
       // Calculate summary stats
       const summary = await this.calculateSummaryStats(where);
 
+      const quotationsWithPromotions = await Promise.all(
+        quotations.map((quotation) =>
+          this.attachAppliedPromotions(quotation, consumerId),
+        ),
+      );
+
       return {
-        data: quotations,
+        data: quotationsWithPromotions,
         meta: {
           total,
           page,
@@ -1545,7 +1609,7 @@ export class SalesService {
         throw new NotFoundException('Quotation not found');
       }
 
-      return quotation;
+      return this.attachAppliedPromotions(quotation, consumerId);
     } catch (error) {
       this.logger.error(
         `Error finding quotation ${id} for consumer ${consumerId}`,
