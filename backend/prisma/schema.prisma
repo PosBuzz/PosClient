@@ -19,9 +19,81 @@ enum PaymentMethodEnum {
   BANK_TRANSFER
   MOBILE_MONEY
   MFS
-  DEPOSIT
   CREDIT
   EXCHANGE
+}
+
+enum PaymentTypeEnum {
+  BANGLADESH_BANK
+  SONALI_BANK_LIMITED
+  JANATA_BANK_LIMITED
+  AGRANI_BANK_LIMITED
+  RUPALI_BANK_LIMITED
+  BANGLADESH_KRISHI_BANK
+  RAJSHAHI_KRISHI_UNNAYAN_BANK
+  BANGLADESH_DEVELOPMENT_BANK_LIMITED
+  BASIC_BANK_LIMITED
+  ANSAR_VDP_UNNAYAN_BANK
+  KARMASANGSTHAN_BANK
+  AB_BANK_LIMITED
+  AL_ARAFAH_ISLAMI_BANK_LIMITED
+  BANGLADESH_COMMERCE_BANK_LIMITED
+  BANK_ASIA_LIMITED
+  BRAC_BANK_LIMITED
+  DHAKA_BANK_LIMITED
+  DUTCH_BANGLA_BANK_LIMITED
+  EASTERN_BANK_LIMITED
+  EXIM_BANK_LIMITED
+  FIRST_SECURITY_ISLAMI_BANK_LIMITED
+  ICB_ISLAMIC_BANK_LIMITED
+  IFIC_BANK_LIMITED
+  ISLAMI_BANK_BANGLADESH_LIMITED
+  JAMUNA_BANK_LIMITED
+  MEGHNA_BANK_LIMITED
+  MERCANTILE_BANK_LIMITED
+  MIDLAND_BANK_LIMITED
+  MUTUAL_TRUST_BANK_LIMITED
+  NATIONAL_BANK_LIMITED
+  NRB_BANK_LIMITED
+  NATIONAL_CREDIT_AND_COMMERCE_BANK_LIMITED
+  NRB_COMMERCIAL_BANK_LIMITED
+  ONE_BANK_LIMITED
+  PREMIER_BANK_LIMITED
+  PUBALI_BANK_LIMITED
+  SHAHJALAL_ISLAMI_BANK_LIMITED
+  SOCIAL_ISLAMI_BANK_LIMITED
+  SOUTH_BANGLA_AGRICULTURE_AND_COMMERCE_BANK_LIMITED
+  SOUTHEAST_BANK_LIMITED
+  STANDARD_BANK_LIMITED
+  THE_CITY_BANK_LIMITED
+  THE_FARMERS_BANK_LIMITED
+  TRUST_BANK_LIMITED
+  UNION_BANK_LIMITED
+  UNITED_COMMERCIAL_BANK_LIMITED
+  UTTARA_BANK_LIMITED
+  BANK_AL_FALAH_LIMITED
+  CITIBANK_N_A
+  COMMERCIAL_BANK_OF_CEYLON_LIMITED
+  HABIB_BANK_LIMITED
+  NATIONAL_BANK_OF_PAKISTAN
+  STANDARD_CHARTERED_BANK
+  STATE_BANK_OF_INDIA
+  THE_HONGKONG_AND_SHANGHAI_BANKING_CORPORATION_LTD
+  WOORI_BANK
+
+  ROCKET
+  BKASH
+  MYCASH
+  ISLAMI_BANK_MCASH
+  TRUST_AXIATA_PAY_TAP
+  FIRSTCASH
+  UPAY
+  OK_WALLET
+  RUPALI_BANK
+  TELECASH
+  ISLAMIC_WALLET
+  MEGHNA_PAY
+  NAGAD
 }
 
 enum OnlineOrderStatus {
@@ -856,18 +928,18 @@ model Sale {
 }
 
 model SaleItem {
-  id              Int     @id @default(autoincrement())
-  sale_id         Int
-  variant_id      Int
-  batch_id        Int?
-  quantity        Int
-  unit_price      Decimal @db.Decimal(10, 2)
-  average_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Proportional cart discount portion for this item
-  special_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Special item discount entered for this item
+  id                        Int     @id @default(autoincrement())
+  sale_id                   Int
+  variant_id                Int
+  batch_id                  Int?
+  quantity                  Int
+  unit_price                Decimal @db.Decimal(10, 2)
+  average_discount_amount   Decimal @default(0) @db.Decimal(10, 2) // Proportional cart discount portion for this item
+  special_discount_amount   Decimal @default(0) @db.Decimal(10, 2) // Special item discount entered for this item
   promotion_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Promotion discount portion for this item
-  applied_promotion_id Int? // Promotion id applied to this item, if any
-  tax_amount      Decimal @default(0) @db.Decimal(10, 2)
-  line_total      Decimal @db.Decimal(10, 2)
+  applied_promotion_id      Int? // Promotion id applied to this item, if any
+  tax_amount                Decimal @default(0) @db.Decimal(10, 2)
+  line_total                Decimal @db.Decimal(10, 2)
 
   // Relations
   sale         Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
@@ -885,10 +957,10 @@ model SaleItem {
 model SalePayment {
   id             Int               @id @default(autoincrement())
   sale_id        Int
-  payment_method PaymentMethodEnum // cash, card, cheque, bank_transfer, mobile_money, mfs, deposit, credit
+  payment_method PaymentMethodEnum // cash, card, cheque, bank_transfer, mobile_money, mfs, credit
+  payment_type   PaymentTypeEnum?
   amount         Decimal           @db.Decimal(10, 2)
   reference      String? // Transaction reference for digital payments
-  notes          String?
   created_at     DateTime          @default(now())
   updated_at     DateTime          @updatedAt
 
