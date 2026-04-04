@@ -202,8 +202,9 @@ export const evaluatePromotionLocally = ({
     }
 
     const existing = cartMap.get(item.variant_id);
+    // Promotions are calculated on product base price regardless of tax method.
     const subtotal =
-      toNumber(item.line_total) || toNumber(item.unit_price) * quantity;
+      toNumber(item.unit_price) * quantity || toNumber(item.line_total);
 
     if (existing) {
       cartMap.set(item.variant_id, {
