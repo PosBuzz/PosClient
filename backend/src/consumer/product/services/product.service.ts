@@ -21,6 +21,50 @@ export class ProductService {
     private variantService: ProductVariantService,
   ) {}
 
+  private normalizeExpiryDate(expiryDate?: string): string {
+    if (!expiryDate) {
+      return '__NO_EXPIRY__';
+    }
+
+    const parsed = new Date(expiryDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return '__NO_EXPIRY__';
+    }
+
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  private validateBatchExpiryConsistency(dto: CreateProductDto): void {
+    dto.variants.forEach((variant, variantIndex) => {
+      const batchExpiryMap = new Map<string, { expiry: string; row: number }>();
+
+      (variant.batches || []).forEach((batch, batchIndex) => {
+        const batchNumber = (batch.batch_number || '').trim().toUpperCase();
+
+        if (!batchNumber) {
+          return;
+        }
+
+        const normalizedExpiry = this.normalizeExpiryDate(batch.expiry_date);
+        const seen = batchExpiryMap.get(batchNumber);
+
+        if (!seen) {
+          batchExpiryMap.set(batchNumber, {
+            expiry: normalizedExpiry,
+            row: batchIndex + 1,
+          });
+          return;
+        }
+
+        if (seen.expiry !== normalizedExpiry) {
+          throw new BadRequestException(
+            `Variant ${variantIndex + 1}: batch number "${batch.batch_number}" has different expiry dates in row ${seen.row} and row ${batchIndex + 1}. Same batch number must use the same expiry date.`,
+          );
+        }
+      });
+    });
+  }
+
   async create(consumerId: number, dto: CreateProductDto) {
     try {
       // Validate that at least one variant is provided
@@ -34,6 +78,9 @@ export class ProductService {
           'Simple products can only have one variant',
         );
       }
+
+      // Ensure same batch number always uses the same expiry date per variant.
+      this.validateBatchExpiryConsistency(dto);
 
       // Create the product
       const product = await this.prisma.product.create({
