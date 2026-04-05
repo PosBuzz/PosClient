@@ -1357,30 +1357,31 @@ const NewSale = () => {
       title: "Product",
       key: "product",
       render: (record: SaleItem) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 120 }}>
           {record.image && (
             <img
               src={record.image}
               alt={record.variant_name}
               style={{
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 objectFit: "cover",
-                borderRadius: 4,
+                borderRadius: 6,
+                border: "1px solid var(--ant-color-border)",
               }}
             />
           )}
           <div>
-            <div style={{ fontWeight: 500 }}>{record.product_name}</div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, lineHeight: "1.2", marginBottom: 2 }}>
+              {record.product_name}
+            </div>
+            <Text type="secondary" style={{ fontSize: 12, display: "block", lineHeight: "1.2" }}>
               {record.variant_name}
             </Text>
             {record.variant_sku && (
-              <div>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  SKU: {record.variant_sku}
-                </Text>
-              </div>
+              <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
+                SKU: {record.variant_sku}
+              </Text>
             )}
           </div>
         </div>
@@ -1393,7 +1394,7 @@ const NewSale = () => {
       render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
     },
     {
-      title: "Quantity",
+      title: "Qty",
       key: "quantity",
       render: (record: SaleItem) => (
         <div>
@@ -1407,7 +1408,7 @@ const NewSale = () => {
               // Just blur the input, the global handler will handle form submission
               (e.target as HTMLInputElement).blur();
             }}
-            style={{ width: 80, marginBottom: 4 }}
+            style={{ width: 70, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: "#666" }}>{record.unit_name}</div>
         </div>
@@ -1503,6 +1504,7 @@ const NewSale = () => {
     {
       title: "Action",
       key: "action",
+      align: "center" as const,
       render: (record: SaleItem) => (
         <Button
           type="text"
@@ -1510,9 +1512,7 @@ const NewSale = () => {
           icon={<DeleteOutlined />}
           size="small"
           onClick={() => removeItem(record.variant_id)}
-        >
-          Remove
-        </Button>
+        />
       ),
     },
   ];
