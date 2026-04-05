@@ -57,6 +57,14 @@ function Dashboard() {
     });
   }, [data?.top_products]);
 
+  const PaymentMethodsData = useMemo(() => {
+    if (!data?.payment_method_breakdown) return [];
+    return data.payment_method_breakdown.map((item) => ({
+      name: item.payment_method || "Unknown",
+      amount: item.total_amount || 0,
+    }));
+  }, [data?.payment_method_breakdown]);
+
   const weeklyTrendData = data?.weekly_sales_trend || [];
 
   return (
@@ -284,9 +292,9 @@ function Dashboard() {
             <Col xs={24} sm={12} md={12} lg={6}>
               <Card style={{ borderBottom: `3px solid #F97316` }}>
                 <Statistic
-                  title="Today's Returns"
-                  value={data?.summary?.today_return_count || 0}
-                  prefix={<WarningOutlined style={{ color: "#F97316" }} />}
+                  title="Today's Return Amount"
+                  value={data?.summary?.today_return_amount || 0}
+                  prefix="$"
                   valueStyle={{ color: "#F97316" }}
                 />
               </Card>
@@ -434,6 +442,132 @@ function Dashboard() {
                 </Card>
               </Col>
 
+              {/* Payments Breakdown */}
+              <Col xs={24} sm={12}>
+                <Card
+                  title={
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: isDarkMode ? "#f9fafb" : "#111827",
+                      }}
+                    >
+                      Weekly Payment Methods Breakdown
+                    </span>
+                  }
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", height: "300px" },
+                  }}
+                >
+                  {PaymentMethodsData.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        height: "100%",
+                      }}
+                    >
+                      {PaymentMethodsData.map((method, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "4px 0",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "11px",
+                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                              title={method.name}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "13px",
+                                  color: isDarkMode ? "#f3f4f6" : "#111827",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  lineHeight: "1.35",
+                                }}
+                              >
+                                {method.name}
+                              </span>
+                            </div>
+                          </div>
+                          <Tag
+                            color="blue"
+                            style={{
+                              margin: 0,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              borderRadius: "10px",
+                              padding: "0 8px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            $ {method.amount.toFixed(2)}
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No payment method data
+                          </span>
+                        }
+                      />
+                    </div>
+                  )}
+                </Card>
+              </Col>
               {/* Top 5 Products List */}
               <Col xs={24} sm={12}>
                 <Card
