@@ -343,6 +343,7 @@ export interface DashboardAnalyticsSummary {
   today_total_sale: number;
   today_transactions: number;
   today_return_count: number;
+  today_return_amount: number;
 }
 
 export interface DashboardSalesTrendPoint {
