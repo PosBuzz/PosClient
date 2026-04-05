@@ -98,7 +98,7 @@ function Dashboard() {
                     Point of Sale
                   </h3>
                   <p style={{ color: "rgba(255,255,255,0.8)", margin: 0 }}>
-                   Sale with our POS interface
+                    Sale with our POS interface
                   </p>
                 </Card>
               </Col>
@@ -202,7 +202,7 @@ function Dashboard() {
           {/* KPI Summary Cards Row */}
           {/* Sales and Return metrics */}
           <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-            <Col xs={24} sm={12} md={8}>
+            <Col xs={24} sm={12} md={12} lg={6}>
               <Card>
                 <Statistic
                   title="Today's Sale Amount"
@@ -213,7 +213,8 @@ function Dashboard() {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12} md={8}>
+
+            <Col xs={24} sm={12} md={12} lg={6}>
               <Card>
                 <Statistic
                   title="Today's Sale Count"
@@ -223,21 +224,8 @@ function Dashboard() {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Card style={{ borderBottom: `3px solid #F97316` }}>
-                <Statistic
-                  title="Today's Returns"
-                  value={data?.summary?.today_return_count || 0}
-                  prefix={<WarningOutlined style={{ color: "#F97316" }} />}
-                  valueStyle={{ color: "#F97316" }}
-                />
-              </Card>
-            </Col>
-          </Row>
 
-          {/* Low Stock and Expiring Soon - Side by side */}
-          <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={12} md={12} lg={6}>
               <Card
                 hoverable
                 style={{ borderBottom: `3px solid #EF4444` }}
@@ -264,7 +252,8 @@ function Dashboard() {
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={12}>
+
+            <Col xs={24} sm={12} md={12} lg={6}>
               <Card
                 hoverable
                 style={{ borderBottom: `3px solid #F59E0B` }}
@@ -291,6 +280,17 @@ function Dashboard() {
                 />
               </Card>
             </Col>
+
+            <Col xs={24} sm={12} md={12} lg={6}>
+              <Card style={{ borderBottom: `3px solid #F97316` }}>
+                <Statistic
+                  title="Today's Returns"
+                  value={data?.summary?.today_return_count || 0}
+                  prefix={<WarningOutlined style={{ color: "#F97316" }} />}
+                  valueStyle={{ color: "#F97316" }}
+                />
+              </Card>
+            </Col>
           </Row>
 
           {isLoading ? (
@@ -298,19 +298,36 @@ function Dashboard() {
               <Spin />
             </div>
           ) : (
-            <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+            <Row
+              gutter={[16, 16]}
+              style={{ marginBottom: "24px", display: "flex" }}
+            >
               {/* Weekly Sales Trend */}
               <Col xs={24} sm={12}>
                 <Card
                   title={
-                    <span style={{ fontSize: "13px", fontWeight: 600 }}>
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: isDarkMode ? "#f9fafb" : "#111827",
+                      }}
+                    >
                       Weekly Sales Trend
                     </span>
                   }
-                  styles={{ body: { padding: "12px 8px 4px" } }}
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", height: "300px" },
+                  }}
                 >
                   {weeklyTrendData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
+                    <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={weeklyTrendData}>
                         <CartesianGrid
                           strokeDasharray="3 3"
@@ -391,39 +408,55 @@ function Dashboard() {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                          }}
-                        >
-                          No trend data
-                        </span>
-                      }
-                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No trend data
+                          </span>
+                        }
+                      />
+                    </div>
                   )}
                 </Card>
               </Col>
 
-              {/* Top 5 Products List lg={8} */}
+              {/* Top 5 Products List */}
               <Col xs={24} sm={12}>
                 <Card
-                  size="small"
                   title={
                     <span
                       style={{
                         fontSize: "14px",
-                        fontWeight: 700,
+                        fontWeight: 600,
                         color: isDarkMode ? "#f9fafb" : "#111827",
                       }}
                     >
                       Top 5 Products
                     </span>
                   }
-                  styles={{ body: { padding: "8px 12px 12px" } }}
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", height: "300px" },
+                  }}
                 >
                   {topProductsData.length > 0 ? (
                     <div
@@ -431,7 +464,7 @@ function Dashboard() {
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between",
-                        height: "290px",
+                        height: "100%",
                       }}
                     >
                       {topProductsData.map((product, index) => (
@@ -517,19 +550,28 @@ function Dashboard() {
                       ))}
                     </div>
                   ) : (
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                          }}
-                        >
-                          No product data
-                        </span>
-                      }
-                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No product data
+                          </span>
+                        }
+                      />
+                    </div>
                   )}
                 </Card>
               </Col>
