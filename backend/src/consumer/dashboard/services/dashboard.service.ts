@@ -140,6 +140,7 @@ export class DashboardService {
         this.prisma.return.aggregate({
           where: todayReturnWhere,
           _count: { id: true },
+          _sum: { total_refund: true },
         }),
 
         // DB-side groupBy on date string avoids pulling every row
@@ -161,6 +162,7 @@ export class DashboardService {
           where: { sale: weeklyWhere },
           _sum: { amount: true },
           _count: { _all: true },
+          orderBy: { _sum: { amount: 'desc' } },
         }),
 
         this.prisma.saleItem.groupBy({
@@ -272,6 +274,7 @@ export class DashboardService {
           today_total_sale: Number(todayAgg._sum.total_amount ?? 0),
           today_transactions: todayAgg._count.id ?? 0,
           today_return_count: todayReturnAgg._count.id ?? 0,
+          today_return_amount: Number(todayReturnAgg._sum.total_refund ?? 0),
         },
         weekly_sales_trend: weeklySalesTrend,
         payment_method_breakdown: paymentMethodBreakdown,
