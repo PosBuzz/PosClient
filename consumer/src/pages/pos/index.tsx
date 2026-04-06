@@ -18,7 +18,7 @@ import {
   TagOutlined,
   WalletOutlined,
 } from "@ant-design/icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Badge,
   Button,
@@ -39,18 +39,16 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { BsCash } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../api/crud-api";
+import { post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
-import { promotionApi } from "../../api/promotion-api";
 import { salesApi } from "../../api/sales-api";
 import CustomerModal from "../../components/CustomerModal";
-import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { queryKeys } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
-import { Customer } from "../../types/customer.types";
 import {
   DiscountType,
   PaymentMethod,
@@ -67,6 +65,21 @@ import {
 } from "../../types/promotion.types";
 import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
+import {
+  getVariantPriceForSale as getVariantPriceForSaleByType,
+  removeSaleItem,
+  updateSaleItemQuantity,
+  updateSaleItemSpecialDiscount,
+  upsertVariantInSaleItems as upsertSaleItemVariant,
+} from "../../utils/sale-item.utils";
+import {
+  getPaymentProviderOptions,
+  getPaymentProviderPlaceholder,
+  PAYMENT_METHODS_REQUIRING_PROVIDER,
+  paymentMethodRequiresProvider,
+} from "../../utils/payment-provider.utils";
+import { useSaleManager } from "../../hooks/useSaleManager";
+import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -83,148 +96,48 @@ const NewSale = () => {
     Form.useWatch("average_discount_amount", form) || 0;
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
 
-  // State
-  const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [servedByUsers, setServedByUsers] = useState<
-    { id: number; name: string }[]
-  >([]);
-  const [filteredVariants, setFilteredVariants] = useState<
-    ProductVariantForSale[]
-  >([]);
-  const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
-  const [selectedServedByUser, setSelectedServedByUser] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null,
-  );
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
-  const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
-  const [averageDiscountType, setAverageDiscountType] = useState<DiscountType>(
-    DiscountType.FLAT,
-  );
-  const [loading, setLoading] = useState(false);
-  const [promotionDrawerOpen, setPromotionDrawerOpen] = useState(false);
-  const [appliedPromotions, setAppliedPromotions] = useState<Promotion[]>([]);
-  const [dismissedAutoPromotionIds, setDismissedAutoPromotionIds] = useState<
-    number[]
-  >([]);
-  const [applyingPromotionId, setApplyingPromotionId] = useState<number | null>(
-    null,
-  );
-  const [promotionEligibilityMap, setPromotionEligibilityMap] = useState<
-    Record<number, { is_eligible: boolean; reason?: string }>
-  >({});
-  const [salePayments, setSalePayments] = useState<SalePayment[]>([
-    {
-      payment_method: PaymentMethod.CASH,
-      amount: 0,
-      reference: "",
-      // notes: "",
-    },
-  ]);
-
-  // Barcode scanning state - POS SYSTEM BEHAVIOR:
-  // - Barcode scanner works regardless of what input is focused
-  // - Enter key outside inputs completes the sale
-  // - Fast sequential keystrokes are treated as barcode input
-  const [barcodeBuffer, setBarcodeBuffer] = useState("");
-  const [lastKeyTime, setLastKeyTime] = useState(0);
-
-  // Reset barcode buffer when component unmounts or branch changes
-  useEffect(() => {
-    setBarcodeBuffer("");
-    setLastKeyTime(0);
-  }, [selectedBranch]);
-
-  // Get user's branches from auth store
-  const userBranches = user?.branches || [];
-
-  // Load customers using React Query
-  const customersQuery = useQuery({
-    queryKey: [queryKeys.customers],
-    queryFn: async () => {
-      const data = await get(endpoints.getCustomers);
-      return data.data || data;
-    },
-    staleTime: queryStaleTimeMap[queryKeys.customers],
-  });
-
-  // Load served by users using React Query
-  const servedByUsersQuery = useQuery({
-    queryKey: [queryKeys.users, selectedBranch],
-    queryFn: async () => {
-      const data = await get(endpoints.user, { branch_id: selectedBranch });
-      return data.data || data;
-    },
-    enabled: !!selectedBranch,
-    staleTime: queryStaleTimeMap[queryKeys.users],
-  });
-
-  // Load products for sale when branch is selected
-  const productsForSaleQuery = useQuery({
-    queryKey: [queryKeys.productsForSale, selectedBranch],
-    queryFn: () => salesApi.getProductsForSale(selectedBranch!),
-    enabled: !!selectedBranch,
-    staleTime: queryStaleTimeMap[queryKeys.productsForSale],
-  });
-
-  const activePromotionsQuery = useQuery({
-    queryKey: [queryKeys.promotions, "active", selectedBranch],
-    queryFn: () =>
-      promotionApi.getActivePromotions(selectedBranch || undefined),
-    enabled: !!selectedBranch,
-    staleTime: queryStaleTimeMap[queryKeys.promotions],
-  });
-
-  // Set default branch from user's branches
-  useEffect(() => {
-    if (userBranches.length > 0 && !selectedBranch) {
-      // Just select the first branch from user's assigned branches
-      const defaultBranch = userBranches[0];
-      setSelectedBranch(defaultBranch.id);
-      form.setFieldsValue({
-        branch_id: defaultBranch.id,
-        price_type: PriceType.REGULAR,
-        average_discount_amount: 0,
-        shipping_cost: 0,
-      });
-    }
-  }, [userBranches, selectedBranch, form]);
-
-  useEffect(() => {
-    if (customersQuery.data) {
-      setCustomers(customersQuery.data);
-    }
-  }, [customersQuery.data]);
-
-  useEffect(() => {
-    if (servedByUsersQuery.data) {
-      setServedByUsers(servedByUsersQuery.data);
-    }
-  }, [servedByUsersQuery.data]);
-
-  useEffect(() => {
-    if (productsForSaleQuery.data) {
-      setFilteredVariants(productsForSaleQuery.data);
-    }
-  }, [productsForSaleQuery.data]);
+  const {
+    selectedItems,
+    setSelectedItems,
+    customers,
+    setCustomers,
+    servedByUsers,
+    filteredVariants,
+    selectedBranch,
+    selectedServedByUser,
+    setSelectedServedByUser,
+    selectedCustomer,
+    setSelectedCustomer,
+    customerModalOpen,
+    setCustomerModalOpen,
+    priceType,
+    setPriceType,
+    averageDiscountType,
+    setAverageDiscountType,
+    loading,
+    setLoading,
+    promotionDrawerOpen,
+    setPromotionDrawerOpen,
+    appliedPromotions,
+    setAppliedPromotions,
+    dismissedAutoPromotionIds,
+    setDismissedAutoPromotionIds,
+    applyingPromotionId,
+    setApplyingPromotionId,
+    promotionEligibilityMap,
+    setPromotionEligibilityMap,
+    salePayments,
+    setSalePayments,
+    userBranches,
+    productsForSaleQuery,
+    activePromotionsQuery,
+    handleBranchChange,
+  } = useSaleManager({ form, user });
 
   // Set initial page title
   useEffect(() => {
     setPageTitle("New Sale");
   }, []);
-
-  const handleBranchChange = (branchId: number) => {
-    setSelectedBranch(branchId);
-    setSelectedItems([]); // Clear items when branch changes
-    setAppliedPromotions([]);
-    setDismissedAutoPromotionIds([]);
-    setAverageDiscountType(DiscountType.FLAT);
-    form.setFieldsValue({ branch_id: branchId, average_discount_amount: 0 });
-  };
 
   // Auto-apply promotions when cart changes
   useEffect(() => {
@@ -307,102 +220,17 @@ const NewSale = () => {
     activePromotionsQuery.data,
   ]);
 
-  const calculateTaxAndTotal = (
-    price: number,
-    quantity: number,
-    taxPercentage: number,
-    taxMethod: string,
-  ) => {
-    const baseAmount = quantity * price;
-    let taxAmount: number;
-    let lineTotal: number;
-    let taxableAmount: number;
-
-    // Ensure taxPercentage is a valid number
-    const validTaxPercentage = Number(taxPercentage) || 0;
-
-    if (taxMethod === "INCLUSIVE") {
-      lineTotal = baseAmount;
-      taxAmount = (baseAmount * validTaxPercentage) / 100;
-      taxableAmount = baseAmount - taxAmount;
-    } else {
-      // Tax is exclusive - added on top of price
-      taxAmount = (baseAmount * validTaxPercentage) / 100;
-      lineTotal = baseAmount + taxAmount;
-      taxableAmount = baseAmount;
-    }
-
-    // Return precise values without rounding
-    return {
-      line_total: Number(lineTotal) || 0,
-      tax_amount: Number(taxAmount) || 0,
-      taxable_amount: Number(taxableAmount) || 0,
-    };
-  };
-
   const upsertVariantInSaleItems = (
     sourceItems: SaleItem[],
     variant: ProductVariantForSale,
     quantityToAdd: number,
   ) => {
-    const existingItem = sourceItems.find(
-      (item) => item.variant_id === variant.id,
-    );
-    const price =
-      priceType === PriceType.WHOLESALE
-        ? Number(variant.wholesale_price) || Number(variant.regular_price)
-        : Number(variant.regular_price);
-
-    if (existingItem) {
-      const newQuantity = existingItem.quantity + quantityToAdd;
-      const { line_total, tax_amount } = calculateTaxAndTotal(
-        price,
-        newQuantity,
-        Number(variant.tax_percentage) || 0,
-        variant.tax_method || "EXCLUSIVE",
-      );
-
-      return sourceItems.map((item) =>
-        item.variant_id === variant.id
-          ? {
-              ...item,
-              quantity: newQuantity,
-              unit_price: Number(price) || 0,
-              tax_amount: Number(tax_amount) || 0,
-              line_total: Number(line_total) || 0,
-            }
-          : item,
-      );
-    }
-
-    const { line_total, tax_amount } = calculateTaxAndTotal(
-      price,
+    return upsertSaleItemVariant({
+      sourceItems,
+      variant,
       quantityToAdd,
-      Number(variant.tax_percentage) || 0,
-      variant.tax_method || "EXCLUSIVE",
-    );
-
-    const newItem: SaleItem = {
-      variant_id: variant.id,
-      variant_name: variant.name,
-      variant_sku: variant.sku,
-      quantity: quantityToAdd,
-      unit_price: Number(price) || 0,
-      average_discount_amount: 0,
-      special_discount_amount: 0,
-      promotion_discount_amount: 0,
-      tax_amount: Number(tax_amount) || 0,
-      line_total: Number(line_total) || 0,
-      product_name: variant.product_name,
-      regular_price: Number(variant.regular_price) || 0,
-      wholesale_price: Number(variant.wholesale_price) || undefined,
-      image: variant.image,
-      unit_name: variant.unit_name,
-      tax_percentage: Number(variant.tax_percentage) || 0,
-      tax_method: variant.tax_method || "EXCLUSIVE",
-    };
-
-    return [...sourceItems, newItem];
+      priceType,
+    });
   };
 
   const addToSale = (variant: ProductVariantForSale) => {
@@ -431,9 +259,7 @@ const NewSale = () => {
   };
 
   const getVariantPriceForSale = (variant: ProductVariantForSale) => {
-    return priceType === PriceType.WHOLESALE
-      ? Number(variant.wholesale_price) || Number(variant.regular_price)
-      : Number(variant.regular_price);
+    return getVariantPriceForSaleByType(variant, priceType);
   };
 
   const getPromotionRequiredVariantIds = (promotion: Promotion) => {
@@ -761,127 +587,38 @@ const NewSale = () => {
   };
 
   // Handle barcode scanning
-  const handleBarcodeScann = async (barcode: string) => {
-    if (!selectedBranch || !barcode.trim()) {
-      return;
-    }
+  const handleBarcodeScann = useCallback(
+    async (barcode: string) => {
+      if (!selectedBranch || !barcode.trim()) {
+        return;
+      }
 
-    try {
-      const product = await salesApi.getProductByBarcode(
-        selectedBranch,
-        barcode.trim(),
-      );
-      if (product) {
-        addToSale(product);
-        messageApi?.success(
-          `Added ${product.product_name} - ${product.name} to sale`,
+      try {
+        const product = await salesApi.getProductByBarcode(
+          selectedBranch,
+          barcode.trim(),
         );
-      } else {
-        messageApi?.error(`Product not found for barcode: ${barcode}`);
-      }
-    } catch (error: any) {
-      console.error("Error scanning barcode:", error);
-      messageApi?.error("Failed to scan barcode");
-    }
-  };
-
-  // Global barcode scanner listener - POS style: works everywhere
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastKeyTime;
-      const activeElement = document.activeElement as HTMLElement;
-
-      // If more than 100ms have passed since last key, reset buffer (new scan)
-      if (timeDiff > 100) {
-        setBarcodeBuffer("");
-      }
-
-      setLastKeyTime(currentTime);
-
-      // Check if user is actively typing in an input field - MORE COMPREHENSIVE CHECK
-      const isTypingInInput =
-        activeElement &&
-        (activeElement.tagName === "INPUT" ||
-          activeElement.tagName === "TEXTAREA" ||
-          activeElement.role === "textbox" ||
-          activeElement.classList.contains(
-            "ant-select-selection-search-input",
-          ) ||
-          activeElement.classList.contains("ant-input") ||
-          activeElement.classList.contains("ant-input-number-input") ||
-          activeElement.closest(".ant-select-dropdown") ||
-          activeElement.closest(".ant-input") ||
-          activeElement.closest(".ant-input-number") ||
-          activeElement.getAttribute("contenteditable") === "true");
-
-      // DEBUG: Log what's happening
-      console.log(
-        "Key pressed:",
-        event.key,
-        "isTypingInInput:",
-        isTypingInInput,
-        "activeElement:",
-        activeElement?.tagName,
-        activeElement?.className,
-      );
-
-      // If user is typing in input, do NOTHING with barcode logic
-      if (isTypingInInput) {
-        console.log("User is typing in input - ignoring for barcode");
-        return; // Exit early, don't interfere with input
-      }
-
-      // POS RULE: Barcode scanner ONLY works when NOT in input fields
-      // Handle Enter key (end of barcode scan)
-      if (event.key === "Enter") {
-        if (barcodeBuffer.length > 0) {
-          // BARCODE SCAN COMPLETE - always priority
-          event.preventDefault();
-          event.stopPropagation();
-          handleBarcodeScann(barcodeBuffer);
-          setBarcodeBuffer("");
-          return;
+        if (product) {
+          addToSale(product);
+          messageApi?.success(
+            `Added ${product.product_name} - ${product.name} to sale`,
+          );
         } else {
-          // NO BARCODE BUFFER - submit form (since we're not in input)
-          event.preventDefault();
-          event.stopPropagation();
-          form.submit();
-          return;
+          messageApi?.error(`Product not found for barcode: ${barcode}`);
         }
+      } catch (error: any) {
+        console.error("Error scanning barcode:", error);
+        messageApi?.error("Failed to scan barcode");
       }
-      // Handle regular character input (part of barcode) - ONLY when not in input
-      else if (event.key.length === 1 && /[a-zA-Z0-9\-_]/.test(event.key)) {
-        // Barcode scanner detection logic:
-        const isVeryFastTyping = timeDiff < 30;
-        const hasExistingBuffer = barcodeBuffer.length > 0;
-        const isLikelyBarcodeScanner = isVeryFastTyping || hasExistingBuffer;
+    },
+    [addToSale, messageApi, selectedBranch],
+  );
 
-        if (isLikelyBarcodeScanner) {
-          // POS RULE: Barcode scanning overrides everything
-          event.preventDefault();
-          event.stopPropagation();
-          setBarcodeBuffer((prev) => prev + event.key);
-
-          // Blur any focused input to prevent interference
-          if (activeElement && activeElement.blur) {
-            activeElement.blur();
-          }
-        } else {
-          // Regular typing outside inputs - still capture for potential barcode
-          setBarcodeBuffer((prev) => prev + event.key);
-        }
-      }
-    };
-
-    // Add global keydown listener with highest priority (capture phase)
-    document.addEventListener("keydown", handleKeyPress, true);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener("keydown", handleKeyPress, true);
-    };
-  }, [lastKeyTime, barcodeBuffer, selectedBranch, form]);
+  useBarcodeScanner({
+    selectedBranch,
+    onBarcodeScanned: handleBarcodeScann,
+    onSubmit: () => form.submit(),
+  });
 
   const updateItemQuantity = (variantId: number, quantity: number) => {
     if (quantity <= 0) {
@@ -890,47 +627,22 @@ const NewSale = () => {
     }
 
     setSelectedItems((items) =>
-      items.map((item) => {
-        if (item.variant_id === variantId) {
-          // Find the variant to get tax_method
-          const variant = productsForSaleQuery.data?.find(
-            (v) => v.id === variantId,
-          );
-          const { line_total, tax_amount } = calculateTaxAndTotal(
-            Number(item.unit_price),
-            quantity,
-            Number(item.tax_percentage) || 0,
-            variant?.tax_method || "EXCLUSIVE",
-          );
-
-          return {
-            ...item,
-            quantity,
-            tax_amount: Number(tax_amount) || 0,
-            line_total: Number(line_total) || 0,
-          };
-        }
-        return item;
+      updateSaleItemQuantity({
+        sourceItems: items,
+        variantId,
+        quantity,
+        variants: productsForSaleQuery.data || [],
       }),
     );
   };
 
   const removeItem = (variantId: number) => {
-    setSelectedItems((items) =>
-      items.filter((item) => item.variant_id !== variantId),
-    );
+    setSelectedItems((items) => removeSaleItem(items, variantId));
   };
 
   const updateItemSpecialDiscount = (variantId: number, amount: number) => {
     setSelectedItems((items) =>
-      items.map((item) =>
-        item.variant_id === variantId
-          ? {
-              ...item,
-              special_discount_amount: Math.max(0, Number(amount) || 0),
-            }
-          : item,
-      ),
+      updateSaleItemSpecialDiscount(items, variantId, amount),
     );
   };
 
@@ -1205,6 +917,18 @@ const NewSale = () => {
       return;
     }
 
+    for (const payment of salePayments) {
+      if (
+        PAYMENT_METHODS_REQUIRING_PROVIDER.includes(payment.payment_method) &&
+        !payment.payment_type
+      ) {
+        messageApi?.error(
+          `${payment.payment_method} payment must have a payment type selected`,
+        );
+        return;
+      }
+    }
+
     const totals = calculateTotals();
     const totalPaymentAmount = salePayments.reduce(
       (sum, payment) => sum + payment.amount,
@@ -1459,7 +1183,7 @@ const NewSale = () => {
             <span>{`-$${(Number(promoDiscount) || 0).toFixed(2)}`}</span>
             {promoName ? (
               <Tag
-              className="w-max"
+                className="w-max"
                 color="processing"
                 closable
                 onClose={(e) => {
@@ -2305,89 +2029,138 @@ const NewSale = () => {
                           }}
                           bodyStyle={{ padding: 8 }}
                         >
-                          <Row gutter={6} align="middle">
-                            <Col span={6}>
-                              <Select
-                                size="small"
-                                value={payment.payment_method}
-                                onChange={(value) => {
-                                  const updatedPayments = [...salePayments];
-                                  updatedPayments[index].payment_method = value;
-                                  setSalePayments(updatedPayments);
-                                  // Remove focus after selection
-                                  setTimeout(() => {
-                                    const activeElement =
-                                      document.activeElement as HTMLElement;
-                                    if (activeElement && activeElement.blur) {
-                                      activeElement.blur();
+                          {/** Keep payment method/provider behavior aligned with Add Sale page. */}
+                          {(() => {
+                            const requiresProvider =
+                              paymentMethodRequiresProvider(
+                                payment.payment_method,
+                              );
+                            const providerOptions = getPaymentProviderOptions(
+                              payment.payment_method,
+                            );
+
+                            return (
+                              <Row gutter={6} align="middle">
+                                <Col span={6}>
+                                  <Select
+                                    size="small"
+                                    value={payment.payment_method}
+                                    onChange={(value) => {
+                                      const updatedPayments = [...salePayments];
+                                      updatedPayments[index] = {
+                                        ...updatedPayments[index],
+                                        payment_method: value,
+                                        payment_type: undefined,
+                                      };
+                                      setSalePayments(updatedPayments);
+                                      // Remove focus after selection
+                                      setTimeout(() => {
+                                        const activeElement =
+                                          document.activeElement as HTMLElement;
+                                        if (
+                                          activeElement &&
+                                          activeElement.blur
+                                        ) {
+                                          activeElement.blur();
+                                        }
+                                      }, 0);
+                                    }}
+                                    style={{ width: "100%" }}
+                                    placeholder="Method"
+                                  >
+                                    <Option value={PaymentMethod.CASH}>
+                                      <BsCash className="mr-2 inline" /> Cash
+                                    </Option>
+                                    <Option value={PaymentMethod.CARD}>
+                                      <CreditCardOutlined className="mr-2" />{" "}
+                                      Card
+                                    </Option>
+                                    <Option value={PaymentMethod.CHEQUE}>
+                                      <FileTextOutlined className="mr-2" />{" "}
+                                      Cheque
+                                    </Option>
+                                    <Option value={PaymentMethod.BANK_TRANSFER}>
+                                      <BankOutlined className="mr-2" /> Transfer
+                                    </Option>
+                                    <Option value={PaymentMethod.MOBILE_MONEY}>
+                                      <MobileOutlined className="mr-2" /> Mobile
+                                    </Option>
+                                    <Option value={PaymentMethod.MFS}>
+                                      <PayCircleOutlined className="mr-2" /> MFS
+                                    </Option>
+                                    <Option value={PaymentMethod.CREDIT}>
+                                      <WalletOutlined className="mr-2" /> Credit
+                                    </Option>
+                                    <Option value={PaymentMethod.EXCHANGE}>
+                                      <SwapOutlined className="mr-2" /> Exchange
+                                    </Option>
+                                  </Select>
+                                </Col>
+
+                                <Col span={requiresProvider ? 7 : 0}>
+                                  {requiresProvider ? (
+                                    <Select
+                                      size="small"
+                                      showSearch
+                                      allowClear
+                                      placeholder={getPaymentProviderPlaceholder(
+                                        payment.payment_method,
+                                      )}
+                                      value={payment.payment_type || undefined}
+                                      onChange={(value) => {
+                                        const updatedPayments = [
+                                          ...salePayments,
+                                        ];
+                                        updatedPayments[index] = {
+                                          ...updatedPayments[index],
+                                          payment_type: value,
+                                        };
+                                        setSalePayments(updatedPayments);
+                                      }}
+                                      style={{ width: "100%" }}
+                                      optionFilterProp="label"
+                                      options={providerOptions}
+                                    />
+                                  ) : null}
+                                </Col>
+
+                                <Col span={requiresProvider ? 4 : 6}>
+                                  <InputNumber
+                                    size="small"
+                                    value={payment.amount}
+                                    onChange={(value) => {
+                                      const updatedPayments = [...salePayments];
+                                      updatedPayments[index].amount =
+                                        value || 0;
+                                      setSalePayments(updatedPayments);
+                                    }}
+                                    onPressEnter={(e) =>
+                                      (e.target as HTMLInputElement).blur()
                                     }
-                                  }, 0);
-                                }}
-                                style={{ width: "100%" }}
-                                placeholder="Method"
-                              >
-                                <Option value={PaymentMethod.CASH}>
-                                  <BsCash className="mr-2 inline" /> Cash
-                                </Option>
-                                <Option value={PaymentMethod.CARD}>
-                                  <CreditCardOutlined className="mr-2" /> Card
-                                </Option>
-                                <Option value={PaymentMethod.CHEQUE}>
-                                  <FileTextOutlined className="mr-2" /> Cheque
-                                </Option>
-                                <Option value={PaymentMethod.BANK_TRANSFER}>
-                                  <BankOutlined className="mr-2" /> Transfer
-                                </Option>
-                                <Option value={PaymentMethod.MOBILE_MONEY}>
-                                  <MobileOutlined className="mr-2" /> Mobile
-                                </Option>
-                                <Option value={PaymentMethod.MFS}>
-                                  <PayCircleOutlined className="mr-2" /> MFS
-                                </Option>
-                                <Option value={PaymentMethod.CREDIT}>
-                                  <WalletOutlined className="mr-2" /> Credit
-                                </Option>
-                                <Option value={PaymentMethod.EXCHANGE}>
-                                  <SwapOutlined className="mr-2" /> Exchange
-                                </Option>
-                              </Select>
-                            </Col>
-                            <Col span={6}>
-                              <InputNumber
-                                size="small"
-                                value={payment.amount}
-                                onChange={(value) => {
-                                  const updatedPayments = [...salePayments];
-                                  updatedPayments[index].amount = value || 0;
-                                  setSalePayments(updatedPayments);
-                                }}
-                                onPressEnter={(e) =>
-                                  (e.target as HTMLInputElement).blur()
-                                }
-                                min={0}
-                                precision={2}
-                                style={{ width: "100%" }}
-                                placeholder="Amount"
-                                prefix="$"
-                              />
-                            </Col>
-                            <Col span={5}>
-                              <Input
-                                size="small"
-                                value={payment.reference}
-                                onChange={(e) => {
-                                  const updatedPayments = [...salePayments];
-                                  updatedPayments[index].reference =
-                                    e.target.value;
-                                  setSalePayments(updatedPayments);
-                                }}
-                                onPressEnter={(e) =>
-                                  (e.target as HTMLInputElement).blur()
-                                }
-                                placeholder="Ref#"
-                              />
-                            </Col>
-                            {/* <Col span={5}>
+                                    min={0}
+                                    precision={2}
+                                    style={{ width: "100%" }}
+                                    placeholder="Amount"
+                                    prefix="$"
+                                  />
+                                </Col>
+                                <Col span={requiresProvider ? 5 : 5}>
+                                  <Input
+                                    size="small"
+                                    value={payment.reference}
+                                    onChange={(e) => {
+                                      const updatedPayments = [...salePayments];
+                                      updatedPayments[index].reference =
+                                        e.target.value;
+                                      setSalePayments(updatedPayments);
+                                    }}
+                                    onPressEnter={(e) =>
+                                      (e.target as HTMLInputElement).blur()
+                                    }
+                                    placeholder="Ref#"
+                                  />
+                                </Col>
+                                {/* <Col span={5}>
                               <Input
                                 size="small"
                                 value={payment.notes}
@@ -2402,23 +2175,26 @@ const NewSale = () => {
                                 placeholder="Notes"
                               />
                             </Col> */}
-                            <Col span={2}>
-                              <Tooltip title="Remove">
-                                <Button
-                                  size="small"
-                                  danger
-                                  type="text"
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => {
-                                    const updatedPayments = salePayments.filter(
-                                      (_, i) => i !== index,
-                                    );
-                                    setSalePayments(updatedPayments);
-                                  }}
-                                />
-                              </Tooltip>
-                            </Col>
-                          </Row>
+                                <Col span={2}>
+                                  <Tooltip title="Remove">
+                                    <Button
+                                      size="small"
+                                      danger
+                                      type="text"
+                                      icon={<DeleteOutlined />}
+                                      onClick={() => {
+                                        const updatedPayments =
+                                          salePayments.filter(
+                                            (_, i) => i !== index,
+                                          );
+                                        setSalePayments(updatedPayments);
+                                      }}
+                                    />
+                                  </Tooltip>
+                                </Col>
+                              </Row>
+                            );
+                          })()}
                         </Card>
                       ))}
                     </Space>
