@@ -2,11 +2,11 @@ import {
   ArrowLeftOutlined,
   BankOutlined,
   CalculatorOutlined,
-  CarOutlined,
   CreditCardOutlined,
   DeleteOutlined,
-  DollarOutlined,
   FileTextOutlined,
+  FullscreenExitOutlined,
+  FullscreenOutlined,
   MobileOutlined,
   MoneyCollectOutlined,
   PayCircleOutlined,
@@ -30,6 +30,7 @@ import {
   Input,
   InputNumber,
   List,
+  Modal,
   Radio,
   Row,
   Select,
@@ -39,7 +40,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BsCash } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import { post } from "../../api/crud-api";
@@ -57,7 +58,6 @@ import {
   ProductVariantForSale,
   SaleFormData,
   SaleItem,
-  SalePayment,
 } from "../../types/sale.types";
 import {
   Promotion,
@@ -66,7 +66,6 @@ import {
 import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
-  getVariantPriceForSale as getVariantPriceForSaleByType,
   removeSaleItem,
   updateSaleItemQuantity,
   updateSaleItemSpecialDiscount,
@@ -95,6 +94,8 @@ const NewSale = () => {
   const averageDiscountAmount =
     Form.useWatch("average_discount_amount", form) || 0;
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
+  // State to track if we're in fullscreen mode
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const {
     selectedItems,
@@ -131,13 +132,96 @@ const NewSale = () => {
     userBranches,
     productsForSaleQuery,
     activePromotionsQuery,
-    handleBranchChange,
+    handleBranchChange: handleBranchChangeFromManager,
   } = useSaleManager({ form, user });
+
+  // Listen for fullscreen change events (e.g., when user presses Esc)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   // Set initial page title
   useEffect(() => {
     setPageTitle("New Sale");
   }, []);
+
+  const handleBranchChange = useCallback(
+    (branchId: number) => {
+      handleBranchChangeFromManager(branchId);
+    },
+    [handleBranchChangeFromManager],
+  );
+
+  // --- Helper function to reset sale data ---
+  const resetSaleData = useCallback(() => {
+    // Preserve values
+    const currentBranchId = form.getFieldValue("branch_id");
+    const currentServedById = form.getFieldValue("served_by_id");
+
+    // Reset states
+    setSelectedItems([]);
+    setSelectedCustomer(null);
+    // Note: We do NOT reset selectedBranch or selectedServedByUser state variables
+    setPriceType(PriceType.REGULAR);
+    setAverageDiscountType(DiscountType.FLAT);
+    setAppliedPromotions([]);
+    setDismissedAutoPromotionIds([]);
+    setSalePayments([
+      {
+        payment_method: PaymentMethod.CASH,
+        amount: 0,
+        reference: "",
+      },
+    ]);
+
+    // Reset form fields, but preserve branch and served_by
+    form.setFieldsValue({
+      branch_id: currentBranchId,
+      served_by_id: currentServedById,
+      customer_id: undefined,
+      average_discount_amount: 0,
+      shipping_cost: 0,
+      notes: "",
+    });
+
+    messageApi?.info("Sale cancelled and form cleared.");
+  }, [
+    form,
+    messageApi,
+    setAppliedPromotions,
+    setAverageDiscountType,
+    setDismissedAutoPromotionIds,
+    setPriceType,
+    setSalePayments,
+    setSelectedCustomer,
+    setSelectedItems,
+  ]);
+
+  // --- Handle Cancel Button Click ---
+  const handleCancel = useCallback(() => {
+    if (selectedItems.length > 0) {
+      Modal.confirm({
+        title: "Cancel Sale?",
+        content:
+          "Are you sure you want to cancel? All items, discounts, and customer details will be removed.",
+        okText: "Yes, Cancel",
+        okType: "danger",
+        cancelText: "No",
+        onOk: () => {
+          resetSaleData();
+        },
+      });
+    } else {
+      // If cart is empty, just clear silently or notify
+      resetSaleData();
+    }
+  }, [resetSaleData, selectedItems.length]);
 
   // Auto-apply promotions when cart changes
   useEffect(() => {
@@ -259,7 +343,9 @@ const NewSale = () => {
   };
 
   const getVariantPriceForSale = (variant: ProductVariantForSale) => {
-    return getVariantPriceForSaleByType(variant, priceType);
+    return priceType === PriceType.WHOLESALE
+      ? Number(variant.wholesale_price) || Number(variant.regular_price)
+      : Number(variant.regular_price);
   };
 
   const getPromotionRequiredVariantIds = (promotion: Promotion) => {
@@ -586,7 +672,6 @@ const NewSale = () => {
     }
   };
 
-  // Handle barcode scanning
   const handleBarcodeScann = useCallback(
     async (barcode: string) => {
       if (!selectedBranch || !barcode.trim()) {
@@ -598,6 +683,7 @@ const NewSale = () => {
           selectedBranch,
           barcode.trim(),
         );
+
         if (product) {
           addToSale(product);
           messageApi?.success(
@@ -607,7 +693,6 @@ const NewSale = () => {
           messageApi?.error(`Product not found for barcode: ${barcode}`);
         }
       } catch (error: any) {
-        console.error("Error scanning barcode:", error);
         messageApi?.error("Failed to scan barcode");
       }
     },
@@ -625,7 +710,6 @@ const NewSale = () => {
       removeItem(variantId);
       return;
     }
-
     setSelectedItems((items) =>
       updateSaleItemQuantity({
         sourceItems: items,
@@ -1011,7 +1095,6 @@ const NewSale = () => {
           payment_method: PaymentMethod.CASH,
           amount: 0,
           reference: "",
-          // notes: "",
         },
       ]);
       form.setFieldsValue({
@@ -1068,30 +1151,51 @@ const NewSale = () => {
       title: "Product",
       key: "product",
       render: (record: SaleItem) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            minWidth: 120,
+          }}
+        >
           {record.image && (
             <img
               src={record.image}
               alt={record.variant_name}
               style={{
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 objectFit: "cover",
-                borderRadius: 4,
+                borderRadius: 6,
+                border: "1px solid var(--ant-color-border)",
               }}
             />
           )}
           <div>
-            <div style={{ fontWeight: 500 }}>{record.product_name}</div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 13,
+                lineHeight: "1.2",
+                marginBottom: 2,
+              }}
+            >
+              {record.product_name}
+            </div>
+            <Text
+              type="secondary"
+              style={{ fontSize: 12, display: "block", lineHeight: "1.2" }}
+            >
               {record.variant_name}
             </Text>
             {record.variant_sku && (
-              <div>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  SKU: {record.variant_sku}
-                </Text>
-              </div>
+              <Text
+                type="secondary"
+                style={{ fontSize: 11, display: "block", marginTop: 2 }}
+              >
+                SKU: {record.variant_sku}
+              </Text>
             )}
           </div>
         </div>
@@ -1104,7 +1208,7 @@ const NewSale = () => {
       render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
     },
     {
-      title: "Quantity",
+      title: "Qty",
       key: "quantity",
       render: (record: SaleItem) => (
         <div>
@@ -1118,7 +1222,7 @@ const NewSale = () => {
               // Just blur the input, the global handler will handle form submission
               (e.target as HTMLInputElement).blur();
             }}
-            style={{ width: 80, marginBottom: 4 }}
+            style={{ width: 70, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: "#666" }}>{record.unit_name}</div>
         </div>
@@ -1214,6 +1318,7 @@ const NewSale = () => {
     {
       title: "Action",
       key: "action",
+      align: "center" as const,
       render: (record: SaleItem) => (
         <Button
           type="text"
@@ -1221,9 +1326,7 @@ const NewSale = () => {
           icon={<DeleteOutlined />}
           size="small"
           onClick={() => removeItem(record.variant_id)}
-        >
-          Remove
-        </Button>
+        />
       ),
     },
   ];
@@ -1233,1051 +1336,914 @@ const NewSale = () => {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      <Card
-        className="rounded-none! border-none!"
-        bodyStyle={{
-          padding: "12px 12px 16px 12px",
+      <CustomerModal
+        open={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        onCreateCustomer={async (customer) => {
+          try {
+            const newCustomer = await post(endpoints.createCustomer, customer);
+            setSelectedCustomer(newCustomer);
+            setCustomers([...customers, newCustomer]);
+            form.setFieldsValue({ customer_id: newCustomer.id });
+            queryClient.invalidateQueries({
+              queryKey: [queryKeys.customers],
+            });
+            messageApi?.success("Customer created successfully");
+          } catch (error) {
+            console.error("Error creating customer:", error);
+            messageApi?.error("Failed to create customer");
+          }
+        }}
+      />
+
+      <Drawer
+        title="Available Promotions"
+        open={promotionDrawerOpen}
+        onClose={() => setPromotionDrawerOpen(false)}
+        width={460}
+      >
+        <List
+          loading={activePromotionsQuery.isLoading}
+          locale={{ emptyText: "No active promotions found" }}
+          dataSource={activePromotionsQuery.data || []}
+          renderItem={(promotion) => {
+            const eligibility = promotionEligibilityMap[promotion.id];
+            const isAvailableNow = Boolean(eligibility?.is_eligible);
+            const isApplied = appliedPromotions.some(
+              (item) => item.id === promotion.id,
+            );
+
+            return (
+              <List.Item
+                actions={[
+                  <Button
+                    key={`apply-${promotion.id}`}
+                    type={isApplied ? "default" : "primary"}
+                    size="small"
+                    loading={applyingPromotionId === promotion.id}
+                    onClick={() => {
+                      if (isApplied) {
+                        removeAppliedPromotion(promotion.id);
+                        return;
+                      }
+                      applyPromotionToCurrentSale(promotion);
+                    }}
+                  >
+                    {isApplied ? "Remove" : "Apply"}
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <span>{promotion.name}</span>
+                      <Tag
+                        color={
+                          promotion.scope === "BRAND"
+                            ? "blue"
+                            : promotion.scope === "BUNDLE"
+                              ? "purple"
+                              : "green"
+                        }
+                      >
+                        {promotion.scope}
+                      </Tag>
+                      {isApplied ? <Tag color="green">Applied</Tag> : null}
+                      {isAvailableNow ? (
+                        <Tag color="success">Available</Tag>
+                      ) : null}
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical" size={2}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {promotion.discount_type === "percentage"
+                          ? `${promotion.discount_value}% discount`
+                          : `$${Number(promotion.discount_value).toFixed(2)} discount`}
+                      </Text>
+                      {promotion.description ? (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {promotion.description}
+                        </Text>
+                      ) : null}
+                      {selectedItems.length > 0 &&
+                      eligibility &&
+                      !eligibility.is_eligible ? (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {eligibility.reason ||
+                            "Not eligible for current cart"}
+                        </Text>
+                      ) : null}
+                    </Space>
+                  }
+                />
+              </List.Item>
+            );
+          }}
+        />
+      </Drawer>
+
+      {/* POS Header Bar */}
+      <div
+        style={{
+          padding: "6px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Typography.Title
+            level={5}
+            style={{ margin: 0, whiteSpace: "nowrap" }}
+          >
+            Point of Sale
+          </Typography.Title>
+          {selectedItems.length > 0 && (
+            <Badge
+              count={`${selectedItems.length} items`}
+              style={{
+                fontSize: 12,
+                height: 22,
+                lineHeight: "22px",
+                borderRadius: 11,
+                padding: "0 8px",
+              }}
+            />
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Button
+            icon={<TagOutlined />}
+            onClick={() => setPromotionDrawerOpen(true)}
+            disabled={!selectedBranch}
+            size="small"
+            style={{
+              backgroundColor: "#722ed1",
+              borderColor: "#722ed1",
+              color: "#fff",
+            }}
+          >
+            Promos ({(activePromotionsQuery.data || []).length})
+          </Button>
+          <Button
+            size="small"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/")}
+            type="primary"
+            ghost
+          >
+            Back
+          </Button>
+          <Button
+            size="small"
+            icon={
+              isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />
+            }
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement
+                  .requestFullscreen()
+                  .then(() => {
+                    setIsFullscreen(true);
+                  })
+                  .catch(() => {
+                    setIsFullscreen(false);
+                  });
+              } else {
+                document.exitFullscreen().then(() => {
+                  setIsFullscreen(false);
+                });
+              }
+            }}
+            type="primary"
+            ghost
+          >
+            {isFullscreen ? "Exit" : "Fullscreen"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Main POS Body */}
+      <Form
+        form={form}
+        onFinish={onFinish}
+        layout="vertical"
+        style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
-          height: "100vh",
+          overflow: "hidden",
         }}
       >
-        <CustomerModal
-          open={customerModalOpen}
-          onClose={() => setCustomerModalOpen(false)}
-          onCreateCustomer={async (customer) => {
-            try {
-              const newCustomer = await post(
-                endpoints.createCustomer,
-                customer,
-              );
-              setSelectedCustomer(newCustomer);
-              setCustomers([...customers, newCustomer]);
-              form.setFieldsValue({ customer_id: newCustomer.id });
-              queryClient.invalidateQueries({
-                queryKey: [queryKeys.customers],
-              });
-              messageApi?.success("Customer created successfully");
-            } catch (error) {
-              console.error("Error creating customer:", error);
-              messageApi?.error("Failed to create customer");
-            }
-          }}
-        />
-
-        <Drawer
-          title="Available Promotions"
-          open={promotionDrawerOpen}
-          onClose={() => setPromotionDrawerOpen(false)}
-          width={460}
-        >
-          <List
-            loading={activePromotionsQuery.isLoading}
-            locale={{ emptyText: "No active promotions found" }}
-            dataSource={activePromotionsQuery.data || []}
-            renderItem={(promotion) => {
-              const eligibility = promotionEligibilityMap[promotion.id];
-              const isAvailableNow = Boolean(eligibility?.is_eligible);
-              const isApplied = appliedPromotions.some(
-                (item) => item.id === promotion.id,
-              );
-
-              return (
-                <List.Item
-                  actions={[
-                    <Button
-                      key={`apply-${promotion.id}`}
-                      type={isApplied ? "default" : "primary"}
-                      size="small"
-                      loading={applyingPromotionId === promotion.id}
-                      onClick={() => {
-                        if (isApplied) {
-                          removeAppliedPromotion(promotion.id);
-                          return;
-                        }
-                        applyPromotionToCurrentSale(promotion);
-                      }}
-                    >
-                      {isApplied ? "Remove" : "Apply"}
-                    </Button>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    title={
-                      <Space>
-                        <span>{promotion.name}</span>
-                        <Tag
-                          color={
-                            promotion.scope === "BRAND"
-                              ? "blue"
-                              : promotion.scope === "BUNDLE"
-                                ? "purple"
-                                : "green"
-                          }
-                        >
-                          {promotion.scope}
-                        </Tag>
-                        {isApplied ? <Tag color="green">Applied</Tag> : null}
-                        {isAvailableNow ? (
-                          <Tag color="success">Available</Tag>
-                        ) : null}
-                      </Space>
-                    }
-                    description={
-                      <Space direction="vertical" size={2}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {promotion.discount_type === "percentage"
-                            ? `${promotion.discount_value}% discount`
-                            : `$${Number(promotion.discount_value).toFixed(2)} discount`}
-                        </Text>
-                        {promotion.description ? (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {promotion.description}
-                          </Text>
-                        ) : null}
-                        {selectedItems.length > 0 &&
-                        eligibility &&
-                        !eligibility.is_eligible ? (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {eligibility.reason ||
-                              "Not eligible for current cart"}
-                          </Text>
-                        ) : null}
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              );
-            }}
-          />
-        </Drawer>
-
         <div
           style={{
             flex: 1,
             display: "flex",
-            flexDirection: "column",
+            gap: 8,
+            padding: 8,
             minHeight: 0,
-            maxHeight: "100%",
+            overflow: "hidden",
           }}
         >
-          {/* Compact Header */}
           <div
-            style={{
-              padding: "6px 10px",
-              marginBottom: 12,
-              borderRadius: 12,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography.Title
-              level={4}
-              style={{
-                margin: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              Point of Sale
-            </Typography.Title>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {selectedItems.length > 0 && (
-                <Badge
-                  count={`${selectedItems.length} items`}
-                  style={{
-                    fontSize: 14,
-                    height: 28,
-                    lineHeight: "28px",
-                    borderRadius: 14,
-                    padding: "0 12px",
-                  }}
-                />
-              )}
-              <Button
-                type="primary"
-                icon={<ArrowLeftOutlined />}
-                onClick={() => navigate("/")}
-              >
-                Back
-              </Button>
-            </div>
-          </div>
-
-          <Form
-            form={form}
-            onFinish={onFinish}
-            layout="vertical"
             style={{
               flex: 1,
               display: "flex",
               flexDirection: "column",
               minHeight: 0,
-              maxHeight: "100%",
-              height: "100%",
+              gap: 8,
+              overflow: "hidden",
             }}
           >
-            <Row
-              gutter={12}
-              style={{ flex: 1, minHeight: 0, maxHeight: "100%" }}
+            <div
+              style={{
+                width: "100%",
+                flexShrink: 0,
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: "nowrap",
+                alignItems: "stretch",
+                gap: 8,
+                overflowX: "auto",
+                overflowY: "hidden",
+              }}
             >
-              {/* Left Column - Controls & Product Selection */}
-              <Col
-                xs={24}
-                lg={10}
+              {/* Card for selecting Branch, Customer, Served By, and Pricing Type */}
+              <Card
+                size="small"
                 style={{
+                  flex: "1 1 240px",
+                  minWidth: 240,
+                  borderRadius: 10,
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                  height: 240,
+                  overflow: "hidden",
+                }}
+                bodyStyle={{
+                  padding: 8,
                   display: "flex",
                   flexDirection: "column",
+                  flex: 1,
                   minHeight: 0,
-                  maxHeight: "100%",
+                  overflow: "hidden",
                 }}
               >
-                {/* Top Controls - Branch, Customer, Price Type */}
-                <Card
-                  style={{
-                    marginBottom: 12,
-                    borderRadius: 12,
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                  }}
-                  bodyStyle={{ padding: 12 }}
-                >
-                  <Row gutter={[24, 12]}>
-                    <Col span={6}>
-                      <Form.Item
-                        label={
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>
-                            Branch
-                          </span>
-                        }
-                        name="branch_id"
-                        rules={[{ required: true, message: "Select branch" }]}
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Select
-                          placeholder="Select branch"
-                          onChange={(value) => {
-                            handleBranchChange(value);
-                            // Remove focus after selection
-                            setTimeout(() => {
-                              const activeElement =
-                                document.activeElement as HTMLElement;
-                              if (activeElement && activeElement.blur) {
-                                activeElement.blur();
-                              }
-                            }, 0);
-                          }}
-                          loading={loading}
-                          // size="large"
-                        >
-                          {userBranches.map((branch) => (
-                            <Option key={branch.id} value={branch.id}>
-                              {branch.name}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item
-                        label={
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>
-                            Customer
-                          </span>
-                        }
-                        name="customer_id"
-                        style={{ marginBottom: 0 }}
-                      >
-                        <div style={{ display: "flex", gap: 2 }}>
-                          <Select
-                            placeholder="Walk-in customer"
-                            showSearch
-                            allowClear
-                            optionFilterProp="children"
-                            value={selectedCustomer?.id}
-                            onChange={(value) => {
-                              const customer = customers.find(
-                                (c) => c.id === value,
-                              );
-                              setSelectedCustomer(customer || null);
-                              form.setFieldsValue({
-                                customer_id: value,
-                              });
-                              // Remove focus after selection
-                              setTimeout(() => {
-                                const activeElement =
-                                  document.activeElement as HTMLElement;
-                                if (activeElement && activeElement.blur) {
-                                  activeElement.blur();
-                                }
-                              }, 0);
-                            }}
-                            style={{ flex: 1 }}
-                            //   size="large"
-                          >
-                            {customers.map((customer) => (
-                              <Option key={customer.id} value={customer.id}>
-                                {customer.name} • {customer.phone}
-                              </Option>
-                            ))}
-                          </Select>
-                          <Tooltip title="Add customer">
-                            <Button
-                              icon={<PlusOutlined />}
-                              onClick={() => setCustomerModalOpen(true)}
-                              // size="large"
-                              style={{
-                                borderColor: "#52c41a",
-                                color: "#52c41a",
-                              }}
-                            />
-                          </Tooltip>
-                        </div>
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item
-                        label={
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>
-                            Served By
-                          </span>
-                        }
-                        name="served_by_id"
-                        style={{ marginBottom: 0 }}
-                      >
-                        <div style={{ display: "flex", gap: 2 }}>
-                          <Select
-                            placeholder="Select staff"
-                            showSearch
-                            allowClear
-                            optionFilterProp="children"
-                            value={selectedServedByUser?.id}
-                            onChange={(value) => {
-                              const user = servedByUsers.find(
-                                (u) => u.id === value,
-                              );
-                              setSelectedServedByUser(user || null);
-                              form.setFieldsValue({
-                                served_by_id: value,
-                              });
-                              // Remove focus after selection
-                              setTimeout(() => {
-                                const activeElement =
-                                  document.activeElement as HTMLElement;
-                                if (activeElement && activeElement.blur) {
-                                  activeElement.blur();
-                                }
-                              }, 0);
-                            }}
-                            style={{ flex: 1 }}
-                            //   size="large"
-                          >
-                            {servedByUsers.map((user) => (
-                              <Option key={user.id} value={user.id}>
-                                {user.name}
-                              </Option>
-                            ))}
-                          </Select>
-                          {/* <Tooltip title="Add Staff">
-                            <Button
-                              icon={<PlusOutlined />}
-                              onClick={() => setCustomerModalOpen(true)}
-                              // size="large"
-                              style={{
-                                borderColor: "#52c41a",
-                                color: "#52c41a",
-                              }}
-                            />
-                          </Tooltip> */}
-                        </div>
-                      </Form.Item>
-                    </Col>
-                    <Col span={6}>
-                      <Form.Item
-                        label={
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>
-                            Pricing
-                          </span>
-                        }
-                        style={{ marginBottom: 0 }}
-                      >
-                        <Button
-                          icon={<SwapOutlined />}
-                          onClick={() =>
-                            setPriceType(
-                              priceType === PriceType.REGULAR
-                                ? PriceType.WHOLESALE
-                                : PriceType.REGULAR,
-                            )
-                          }
-                          type={
-                            priceType === PriceType.WHOLESALE
-                              ? "primary"
-                              : "default"
-                          }
-                          // size="large"
-                          style={{ width: "100%" }}
-                        >
-                          {priceType === PriceType.WHOLESALE
-                            ? "Wholesale"
-                            : "Retail"}
-                        </Button>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "flex",
-                      justifyContent: "flex-start",
-                    }}
-                  >
-                    <Button
-                      icon={<TagOutlined />}
-                      onClick={() => setPromotionDrawerOpen(true)}
-                      disabled={!selectedBranch}
-                    >
-                      Promotions ({(activePromotionsQuery.data || []).length})
-                    </Button>
-                  </div>
-                </Card>
-
-                {/* Product Search - Prominent */}
-                <Card
-                  style={{
-                    marginBottom: 12,
-                    borderRadius: 12,
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                  }}
-                  bodyStyle={{ padding: 12 }}
-                >
-                  <div
-                    style={{
-                      marginBottom: 8,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <ShoppingCartOutlined style={{ fontSize: 16 }} />
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: 15 }}>
-                      Add Products
+                <Form.Item
+                  label={
+                    <span style={{ fontWeight: 600, fontSize: 12 }}>
+                      Branch
                     </span>
-                  </div>
+                  }
+                  name="branch_id"
+                  rules={[{ required: true, message: "Select branch" }]}
+                  style={{ marginBottom: 6 }}
+                >
                   <Select
-                    placeholder={
-                      <>
-                        <SearchOutlined /> Search product name, SKU or scan
-                        barcode...
-                      </>
-                    }
-                    showSearch
-                    allowClear
-                    style={{ width: "100%" }}
-                    optionFilterProp="children"
-                    value={null}
-                    //   size="large"
+                    placeholder="Select branch"
+                    size="small"
                     onChange={(value) => {
-                      if (value) {
-                        const selectedVariant = filteredVariants.find(
-                          (v) => v.id === value,
-                        );
-                        if (selectedVariant) {
-                          addToSale(selectedVariant);
-                        }
-                      }
-                      // Remove focus after selection
+                      handleBranchChange(value);
                       setTimeout(() => {
                         const activeElement =
                           document.activeElement as HTMLElement;
-                        if (activeElement && activeElement.blur) {
+                        if (activeElement && activeElement.blur)
                           activeElement.blur();
-                        }
                       }, 0);
                     }}
-                    filterOption={(input, option) =>
-                      (option?.label?.toString().toLowerCase() || "").includes(
-                        input.toLowerCase(),
-                      )
-                    }
-                    loading={productsForSaleQuery.isLoading}
-                    disabled={!selectedBranch}
+                    loading={loading}
                   >
-                    {filteredVariants.map((variant) => (
-                      <Option
-                        key={variant.id}
-                        value={variant.id}
-                        label={`${variant.product_name} - ${variant.name}`}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            padding: "6px 0",
-                          }}
-                        >
-                          {variant.image ? (
-                            <img
-                              src={variant.image}
-                              alt={variant.name}
-                              style={{
-                                width: 48,
-                                height: 48,
-                                objectFit: "cover",
-                                borderRadius: 8,
-                              }}
-                            />
-                          ) : (
-                            <div
-                              style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 8,
-
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <ShoppingCartOutlined />
-                            </div>
-                          )}
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                marginBottom: 3,
-                                fontSize: 14,
-                              }}
-                            >
-                              {variant.product_name}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                marginBottom: 2,
-                              }}
-                            >
-                              {variant.name}
-                              {variant.sku && ` • SKU: ${variant.sku}`}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 15,
-                                fontWeight: 700,
-                              }}
-                            >
-                              $
-                              {priceType === PriceType.WHOLESALE
-                                ? variant.wholesale_price ||
-                                  variant.regular_price
-                                : variant.regular_price}
-                            </div>
-                          </div>
-                        </div>
+                    {userBranches.map((branch) => (
+                      <Option key={branch.id} value={branch.id}>
+                        {branch.name}
                       </Option>
                     ))}
                   </Select>
-                </Card>
-
-                {/* Discounts & Payments */}
-                <Card
-                  style={{
-                    borderRadius: 12,
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                    marginBottom: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    flex: "1 1 auto",
-                    minHeight: 0,
-                  }}
-                  bodyStyle={{
-                    padding: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    flex: 1,
-                    minHeight: 0,
-                  }}
+                </Form.Item>
+                <Form.Item
+                  label={
+                    <span style={{ fontWeight: 600, fontSize: 12 }}>
+                      Customer
+                    </span>
+                  }
+                  name="customer_id"
+                  style={{ marginBottom: 6 }}
                 >
-                  <Typography.Title
-                    level={5}
-                    style={{
-                      marginBottom: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <TagOutlined />
-                    Additional Charges
-                  </Typography.Title>
-                  {appliedPromotions.length > 0 ? (
-                    <div style={{ marginBottom: 10, flexShrink: 0 }}>
-                      <Space wrap>
-                        {appliedPromotions.map((promotion) => (
-                          <Tag
-                            key={promotion.id}
-                            color="green"
-                            closable
-                            onClose={(e) => {
-                              e.preventDefault();
-                              removeAppliedPromotion(promotion.id);
-                            }}
-                          >
-                            Applied: {promotion.name}
-                          </Tag>
-                        ))}
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={clearAppliedPromotion}
-                        >
-                          Remove All Promotions
-                        </Button>
-                      </Space>
-                    </div>
-                  ) : null}
-                  <div style={{ flexShrink: 0 }}>
-                    <Row gutter={[8, 10]}>
-                      <Col span={12}>
-                        <Form.Item
-                          label={
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 12,
-                              }}
-                            >
-                              Average Type
-                            </span>
-                          }
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Radio.Group
-                            value={averageDiscountType}
-                            onChange={(e) =>
-                              setAverageDiscountType(e.target.value)
-                            }
-                            buttonStyle="solid"
-                            style={{ width: "100%" }}
-                            size="middle"
-                          >
-                            <Radio.Button
-                              value={DiscountType.FLAT}
-                              style={{
-                                width: "50%",
-                                textAlign: "center",
-                              }}
-                            >
-                              <MoneyCollectOutlined className="" /> Fixed
-                            </Radio.Button>
-                            <Radio.Button
-                              value={DiscountType.PERCENTAGE}
-                              style={{
-                                width: "50%",
-                                textAlign: "center",
-                              }}
-                            >
-                              <PercentageOutlined className="mr-2" /> Percent
-                            </Radio.Button>
-                          </Radio.Group>
-                        </Form.Item>
-                      </Col>
-                      <Col span={6}>
-                        <Form.Item
-                          label={
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 12,
-                              }}
-                            >
-                              Avg Discount
-                            </span>
-                          }
-                          name="average_discount_amount"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <InputNumber
-                            min={0}
-                            style={{ width: "100%" }}
-                            placeholder="0"
-                            size="middle"
-                            prefix={
-                              averageDiscountType === DiscountType.PERCENTAGE
-                                ? "%"
-                                : "$"
-                            }
-                            onPressEnter={(e) =>
-                              (e.target as HTMLInputElement).blur()
-                            }
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col span={6}>
-                        <Form.Item
-                          label={
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 12,
-                              }}
-                            >
-                              Shipping
-                            </span>
-                          }
-                          name="shipping_cost"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <InputNumber
-                            min={0}
-                            style={{ width: "100%" }}
-                            placeholder="0"
-                            size="middle"
-                            prefix="$"
-                            onPressEnter={(e) =>
-                              (e.target as HTMLInputElement).blur()
-                            }
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  <Divider style={{ margin: "10px 0", flexShrink: 0 }} />
-
                   <div
                     style={{
-                      flex: 1,
+                      display: "flex",
+                      gap: 6,
+                      alignItems: "center",
+                      width: "100%",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 8,
+                    <Select
+                      placeholder="Walk-in customer"
+                      showSearch
+                      allowClear
+                      size="small"
+                      optionFilterProp="children"
+                      value={selectedCustomer?.id}
+                      onChange={(value) => {
+                        const customer = customers.find((c) => c.id === value);
+                        setSelectedCustomer(customer || null);
+                        form.setFieldsValue({ customer_id: value });
+                        setTimeout(() => {
+                          const activeElement =
+                            document.activeElement as HTMLElement;
+                          if (activeElement && activeElement.blur)
+                            activeElement.blur();
+                        }, 0);
                       }}
+                      style={{ flex: 1, minWidth: 0 }}
                     >
-                      <Typography.Title level={5} style={{ margin: 0 }}>
-                        <CreditCardOutlined className="mr-2" /> Payments
-                      </Typography.Title>
+                      {customers.map((customer) => (
+                        <Option key={customer.id} value={customer.id}>
+                          {customer.name} • {customer.phone}
+                        </Option>
+                      ))}
+                    </Select>
+                    <Tooltip title="Add customer">
                       <Button
-                        size="small"
                         icon={<PlusOutlined />}
-                        onClick={() => {
-                          const remainingAmount = Math.max(
-                            0,
-                            totals.total -
-                              salePayments.reduce(
-                                (sum, p) => sum + p.amount,
-                                0,
-                              ),
+                        size="small"
+                        onClick={() => setCustomerModalOpen(true)}
+                        style={{
+                          flex: "0 0 auto",
+                          borderColor: "#52c41a",
+                          color: "#52c41a",
+                        }}
+                      />
+                    </Tooltip>
+                  </div>
+                </Form.Item>
+                <Row gutter={6}>
+                  <Col span={14}>
+                    <Form.Item
+                      label={
+                        <span style={{ fontWeight: 600, fontSize: 12 }}>
+                          Served By
+                        </span>
+                      }
+                      name="served_by_id"
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Select
+                        placeholder="Select staff"
+                        showSearch
+                        allowClear
+                        size="small"
+                        optionFilterProp="children"
+                        value={selectedServedByUser?.id}
+                        onChange={(value) => {
+                          const user = servedByUsers.find(
+                            (u) => u.id === value,
                           );
-                          const newPayment: SalePayment = {
-                            payment_method: PaymentMethod.CASH,
-                            amount:
-                              remainingAmount > 0
-                                ? remainingAmount
-                                : totals.total,
-                            reference: "",
-                            // notes: "",
-                          };
-                          setSalePayments([...salePayments, newPayment]);
+                          setSelectedServedByUser(user || null);
+                          form.setFieldsValue({ served_by_id: value });
+                          setTimeout(() => {
+                            const activeElement =
+                              document.activeElement as HTMLElement;
+                            if (activeElement && activeElement.blur)
+                              activeElement.blur();
+                          }, 0);
                         }}
                       >
-                        Add
-                      </Button>
-                    </div>
-
-                    <Space
-                      direction="vertical"
-                      size={6}
-                      style={{
-                        flex: 1,
-                        minHeight: 0,
-                        maxHeight: "250px",
-                        overflowY: "auto",
-                        overflowX: "hidden",
-                      }}
+                        {servedByUsers.map((user) => (
+                          <Option key={user.id} value={user.id}>
+                            {user.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={10}>
+                    <Form.Item
+                      label={
+                        <span style={{ fontWeight: 600, fontSize: 12 }}>
+                          Pricing
+                        </span>
+                      }
+                      style={{ marginBottom: 0 }}
                     >
-                      {salePayments.map((payment, index) => (
-                        <Card
-                          key={index}
-                          size="small"
-                          style={{
-                            borderRadius: 8,
+                      <Button
+                        icon={<SwapOutlined />}
+                        size="small"
+                        onClick={() =>
+                          setPriceType(
+                            priceType === PriceType.REGULAR
+                              ? PriceType.WHOLESALE
+                              : PriceType.REGULAR,
+                          )
+                        }
+                        type={
+                          priceType === PriceType.WHOLESALE
+                            ? "primary"
+                            : "default"
+                        }
+                        style={{ width: "100%" }}
+                      >
+                        {priceType === PriceType.WHOLESALE
+                          ? "Wholesale"
+                          : "Retail"}
+                      </Button>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Card for Adding Products and applying Discounts & Charges */}
+              <Card
+                size="small"
+                style={{
+                  flex: "1 1 300px",
+                  minWidth: 280,
+                  borderRadius: 10,
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                  height: 240,
+                  overflow: "hidden",
+                }}
+                bodyStyle={{
+                  padding: 8,
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12 }}>
+                  <ShoppingCartOutlined style={{ marginRight: 4 }} /> Add
+                  Products
+                </div>
+                <Select
+                  placeholder={
+                    <>
+                      <SearchOutlined /> Search or scan barcode...
+                    </>
+                  }
+                  showSearch
+                  allowClear
+                  style={{ width: "100%", marginBottom: 10 }}
+                  size="small"
+                  optionFilterProp="children"
+                  value={null}
+                  onChange={(value) => {
+                    if (value) {
+                      const selectedVariant = filteredVariants.find(
+                        (v) => v.id === value,
+                      );
+                      if (selectedVariant) addToSale(selectedVariant);
+                    }
+                    setTimeout(() => {
+                      const activeElement =
+                        document.activeElement as HTMLElement;
+                      if (activeElement && activeElement.blur)
+                        activeElement.blur();
+                    }, 0);
+                  }}
+                  filterOption={(input, option) =>
+                    (option?.label?.toString().toLowerCase() || "").includes(
+                      input.toLowerCase(),
+                    )
+                  }
+                  loading={productsForSaleQuery.isLoading}
+                  disabled={!selectedBranch}
+                >
+                  {filteredVariants.map((variant) => (
+                    <Option
+                      key={variant.id}
+                      value={variant.id}
+                      label={`${variant.product_name} - ${variant.name}`}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "4px 0",
+                        }}
+                      >
+                        {variant.image ? (
+                          <img
+                            src={variant.image}
+                            alt={variant.name}
+                            style={{
+                              width: 36,
+                              height: 36,
+                              objectFit: "cover",
+                              borderRadius: 6,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 6,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <ShoppingCartOutlined />
+                          </div>
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>
+                            {variant.product_name}
+                          </div>
+                          <div style={{ fontSize: 11 }}>
+                            {variant.name}
+                            {variant.sku && ` • ${variant.sku}`}
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700 }}>
+                            ${" "}
+                            {priceType === PriceType.WHOLESALE
+                              ? variant.wholesale_price || variant.regular_price
+                              : variant.regular_price}
+                          </div>
+                        </div>
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
+
+                <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 6 }}>
+                  <TagOutlined style={{ marginRight: 4 }} /> Discounts & Charges
+                </div>
+                {appliedPromotions.length > 0 && (
+                  <div style={{ marginBottom: 6 }}>
+                    <Space wrap size={4}>
+                      {appliedPromotions.map((promotion) => (
+                        <Tag
+                          key={promotion.id}
+                          color="green"
+                          closable
+                          style={{ fontSize: 11 }}
+                          onClose={(e) => {
+                            e.preventDefault();
+                            removeAppliedPromotion(promotion.id);
                           }}
-                          bodyStyle={{ padding: 8 }}
                         >
-                          {/** Keep payment method/provider behavior aligned with Add Sale page. */}
-                          {(() => {
-                            const requiresProvider =
-                              paymentMethodRequiresProvider(
-                                payment.payment_method,
-                              );
-                            const providerOptions = getPaymentProviderOptions(
+                          {promotion.name}
+                        </Tag>
+                      ))}
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={clearAppliedPromotion}
+                        style={{ fontSize: 11, padding: 0 }}
+                      >
+                        Clear All
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+                <Row gutter={6}>
+                  <Col span={12}>
+                    <Radio.Group
+                      value={averageDiscountType}
+                      onChange={(e) => setAverageDiscountType(e.target.value)}
+                      buttonStyle="solid"
+                      size="small"
+                      style={{ width: "100%", marginBottom: 6 }}
+                    >
+                      <Radio.Button
+                        value={DiscountType.FLAT}
+                        style={{
+                          width: "50%",
+                          textAlign: "center",
+                          fontSize: 11,
+                        }}
+                      >
+                        <MoneyCollectOutlined /> Fixed
+                      </Radio.Button>
+                      <Radio.Button
+                        value={DiscountType.PERCENTAGE}
+                        style={{
+                          width: "50%",
+                          textAlign: "center",
+                          fontSize: 11,
+                        }}
+                      >
+                        <PercentageOutlined /> %
+                      </Radio.Button>
+                    </Radio.Group>
+                  </Col>
+                  <Col span={12} />
+                  <Col span={12}>
+                    <Form.Item
+                      name="average_discount_amount"
+                      label={
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>
+                          Avg Discount
+                        </span>
+                      }
+                      style={{ marginBottom: 0 }}
+                    >
+                      <InputNumber
+                        min={0}
+                        size="small"
+                        style={{ width: "100%" }}
+                        prefix={
+                          averageDiscountType === DiscountType.PERCENTAGE
+                            ? "%"
+                            : "$"
+                        }
+                        onPressEnter={(e) =>
+                          (e.target as HTMLInputElement).blur()
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="shipping_cost"
+                      label={
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>
+                          Shipping Cost
+                        </span>
+                      }
+                      style={{ marginBottom: 0 }}
+                    >
+                      <InputNumber
+                        min={0}
+                        size="small"
+                        style={{ width: "100%" }}
+                        prefix="$"
+                        onPressEnter={(e) =>
+                          (e.target as HTMLInputElement).blur()
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Card for managing Payments and Payment Methods */}
+              <Card
+                size="small"
+                style={{
+                  flex: "1 1 480px",
+                  minWidth: 340,
+                  borderRadius: 10,
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                  display: "flex",
+                  flexDirection: "column",
+                  height: 240,
+                  overflow: "hidden",
+                }}
+                bodyStyle={{
+                  padding: 8,
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: 12 }}>
+                    <CreditCardOutlined style={{ marginRight: 4 }} /> Payments
+                  </span>
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: 4,
+                      height: "auto",
+                    }}
+                    onClick={() => {
+                      const remainingAmount = Math.max(
+                        0,
+                        totals.total -
+                          salePayments.reduce((sum, p) => sum + p.amount, 0),
+                      );
+                      setSalePayments([
+                        ...salePayments,
+                        {
+                          payment_method: PaymentMethod.CASH,
+                          amount:
+                            remainingAmount > 0
+                              ? remainingAmount
+                              : totals.total,
+                          reference: "",
+                        },
+                      ]);
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    paddingRight: 2,
+                  }}
+                >
+                  <Space
+                    direction="vertical"
+                    size={4}
+                    style={{ width: "100%" }}
+                  >
+                    {salePayments.map((payment, index) => (
+                      <Card
+                        key={index}
+                        size="small"
+                        style={{ borderRadius: 6 }}
+                        bodyStyle={{ padding: 4 }}
+                      >
+                        {/* Keep payment method/provider behavior aligned with Add Sale page. */}
+                        {(() => {
+                          const requiresProvider =
+                            paymentMethodRequiresProvider(
                               payment.payment_method,
                             );
+                          const providerOptions = getPaymentProviderOptions(
+                            payment.payment_method,
+                          );
 
-                            return (
-                              <Row gutter={6} align="middle">
-                                <Col span={6}>
+                          return (
+                            <Row gutter={6} align="middle">
+                              <Col span={requiresProvider ? 6 : 8}>
+                                <Select
+                                  size="small"
+                                  value={payment.payment_method}
+                                  onChange={(value) => {
+                                    const updatedPayments = [...salePayments];
+                                    updatedPayments[index] = {
+                                      ...updatedPayments[index],
+                                      payment_method: value,
+                                      payment_type: undefined,
+                                    };
+                                    setSalePayments(updatedPayments);
+                                    // Remove focus after selection
+                                    setTimeout(() => {
+                                      const activeElement =
+                                        document.activeElement as HTMLElement;
+                                      if (activeElement && activeElement.blur) {
+                                        activeElement.blur();
+                                      }
+                                    }, 0);
+                                  }}
+                                  style={{ width: "100%" }}
+                                  placeholder="Method"
+                                >
+                                  <Option value={PaymentMethod.CASH}>
+                                    <BsCash className="mr-2 inline" /> Cash
+                                  </Option>
+                                  <Option value={PaymentMethod.CARD}>
+                                    <CreditCardOutlined className="mr-2" /> Card
+                                  </Option>
+                                  <Option value={PaymentMethod.CHEQUE}>
+                                    <FileTextOutlined className="mr-2" /> Cheque
+                                  </Option>
+                                  <Option value={PaymentMethod.BANK_TRANSFER}>
+                                    <BankOutlined className="mr-2" /> Transfer
+                                  </Option>
+                                  <Option value={PaymentMethod.MOBILE_MONEY}>
+                                    <MobileOutlined className="mr-2" /> Mobile
+                                  </Option>
+                                  <Option value={PaymentMethod.MFS}>
+                                    <PayCircleOutlined className="mr-2" /> MFS
+                                  </Option>
+                                  <Option value={PaymentMethod.CREDIT}>
+                                    <WalletOutlined className="mr-2" /> Credit
+                                  </Option>
+                                  <Option value={PaymentMethod.EXCHANGE}>
+                                    <SwapOutlined className="mr-2" /> Exchange
+                                  </Option>
+                                </Select>
+                              </Col>
+
+                              <Col span={requiresProvider ? 6 : 0}>
+                                {requiresProvider ? (
                                   <Select
                                     size="small"
-                                    value={payment.payment_method}
+                                    showSearch
+                                    allowClear
+                                    placeholder={getPaymentProviderPlaceholder(
+                                      payment.payment_method,
+                                    )}
+                                    value={payment.payment_type || undefined}
                                     onChange={(value) => {
                                       const updatedPayments = [...salePayments];
                                       updatedPayments[index] = {
                                         ...updatedPayments[index],
-                                        payment_method: value,
-                                        payment_type: undefined,
+                                        payment_type: value,
                                       };
                                       setSalePayments(updatedPayments);
-                                      // Remove focus after selection
-                                      setTimeout(() => {
-                                        const activeElement =
-                                          document.activeElement as HTMLElement;
-                                        if (
-                                          activeElement &&
-                                          activeElement.blur
-                                        ) {
-                                          activeElement.blur();
-                                        }
-                                      }, 0);
                                     }}
                                     style={{ width: "100%" }}
-                                    placeholder="Method"
-                                  >
-                                    <Option value={PaymentMethod.CASH}>
-                                      <BsCash className="mr-2 inline" /> Cash
-                                    </Option>
-                                    <Option value={PaymentMethod.CARD}>
-                                      <CreditCardOutlined className="mr-2" />{" "}
-                                      Card
-                                    </Option>
-                                    <Option value={PaymentMethod.CHEQUE}>
-                                      <FileTextOutlined className="mr-2" />{" "}
-                                      Cheque
-                                    </Option>
-                                    <Option value={PaymentMethod.BANK_TRANSFER}>
-                                      <BankOutlined className="mr-2" /> Transfer
-                                    </Option>
-                                    <Option value={PaymentMethod.MOBILE_MONEY}>
-                                      <MobileOutlined className="mr-2" /> Mobile
-                                    </Option>
-                                    <Option value={PaymentMethod.MFS}>
-                                      <PayCircleOutlined className="mr-2" /> MFS
-                                    </Option>
-                                    <Option value={PaymentMethod.CREDIT}>
-                                      <WalletOutlined className="mr-2" /> Credit
-                                    </Option>
-                                    <Option value={PaymentMethod.EXCHANGE}>
-                                      <SwapOutlined className="mr-2" /> Exchange
-                                    </Option>
-                                  </Select>
-                                </Col>
+                                    optionFilterProp="label"
+                                    options={providerOptions}
+                                  />
+                                ) : null}
+                              </Col>
 
-                                <Col span={requiresProvider ? 7 : 0}>
-                                  {requiresProvider ? (
-                                    <Select
-                                      size="small"
-                                      showSearch
-                                      allowClear
-                                      placeholder={getPaymentProviderPlaceholder(
-                                        payment.payment_method,
-                                      )}
-                                      value={payment.payment_type || undefined}
-                                      onChange={(value) => {
-                                        const updatedPayments = [
-                                          ...salePayments,
-                                        ];
-                                        updatedPayments[index] = {
-                                          ...updatedPayments[index],
-                                          payment_type: value,
-                                        };
-                                        setSalePayments(updatedPayments);
-                                      }}
-                                      style={{ width: "100%" }}
-                                      optionFilterProp="label"
-                                      options={providerOptions}
-                                    />
-                                  ) : null}
-                                </Col>
-
-                                <Col span={requiresProvider ? 4 : 6}>
-                                  <InputNumber
+                              <Col span={requiresProvider ? 5 : 7}>
+                                <InputNumber
+                                  size="small"
+                                  value={payment.amount}
+                                  onChange={(value) => {
+                                    const updatedPayments = [...salePayments];
+                                    updatedPayments[index].amount = value || 0;
+                                    setSalePayments(updatedPayments);
+                                  }}
+                                  onPressEnter={(e) =>
+                                    (e.target as HTMLInputElement).blur()
+                                  }
+                                  min={0}
+                                  precision={2}
+                                  style={{ width: "100%" }}
+                                  placeholder="Amount"
+                                  prefix="$"
+                                />
+                              </Col>
+                              <Col span={requiresProvider ? 5 : 7}>
+                                <Input
+                                  size="small"
+                                  value={payment.reference}
+                                  onChange={(e) => {
+                                    const updatedPayments = [...salePayments];
+                                    updatedPayments[index].reference =
+                                      e.target.value;
+                                    setSalePayments(updatedPayments);
+                                  }}
+                                  onPressEnter={(e) =>
+                                    (e.target as HTMLInputElement).blur()
+                                  }
+                                  placeholder="Ref#"
+                                />
+                              </Col>
+                              <Col span={2}>
+                                <Tooltip title="Remove">
+                                  <Button
                                     size="small"
-                                    value={payment.amount}
-                                    onChange={(value) => {
-                                      const updatedPayments = [...salePayments];
-                                      updatedPayments[index].amount =
-                                        value || 0;
+                                    danger
+                                    type="text"
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => {
+                                      const updatedPayments =
+                                        salePayments.filter(
+                                          (_, i) => i !== index,
+                                        );
                                       setSalePayments(updatedPayments);
                                     }}
-                                    onPressEnter={(e) =>
-                                      (e.target as HTMLInputElement).blur()
-                                    }
-                                    min={0}
-                                    precision={2}
-                                    style={{ width: "100%" }}
-                                    placeholder="Amount"
-                                    prefix="$"
                                   />
-                                </Col>
-                                <Col span={requiresProvider ? 5 : 5}>
-                                  <Input
-                                    size="small"
-                                    value={payment.reference}
-                                    onChange={(e) => {
-                                      const updatedPayments = [...salePayments];
-                                      updatedPayments[index].reference =
-                                        e.target.value;
-                                      setSalePayments(updatedPayments);
-                                    }}
-                                    onPressEnter={(e) =>
-                                      (e.target as HTMLInputElement).blur()
-                                    }
-                                    placeholder="Ref#"
-                                  />
-                                </Col>
-                                {/* <Col span={5}>
-                              <Input
-                                size="small"
-                                value={payment.notes}
-                                onChange={(e) => {
-                                  const updatedPayments = [...salePayments];
-                                  updatedPayments[index].notes = e.target.value;
-                                  setSalePayments(updatedPayments);
-                                }}
-                                onPressEnter={(e) =>
-                                  (e.target as HTMLInputElement).blur()
-                                }
-                                placeholder="Notes"
-                              />
-                            </Col> */}
-                                <Col span={2}>
-                                  <Tooltip title="Remove">
-                                    <Button
-                                      size="small"
-                                      danger
-                                      type="text"
-                                      icon={<DeleteOutlined />}
-                                      onClick={() => {
-                                        const updatedPayments =
-                                          salePayments.filter(
-                                            (_, i) => i !== index,
-                                          );
-                                        setSalePayments(updatedPayments);
-                                      }}
-                                    />
-                                  </Tooltip>
-                                </Col>
-                              </Row>
-                            );
-                          })()}
-                        </Card>
-                      ))}
-                    </Space>
-                  </div>
-                </Card>
-                {/* Action Buttons */}
-                <Card
-                  style={{
-                    borderRadius: 12,
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                    marginTop: "auto",
-                    flexShrink: 0,
-                  }}
-                  bodyStyle={{ padding: 12 }}
-                >
-                  <Form.Item
-                    label={
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>
-                        <FileTextOutlined className="mr-2" /> Sale Notes
-                      </span>
-                    }
-                    name="notes"
-                    style={{ marginBottom: 10 }}
-                  >
-                    <Input.TextArea
-                      rows={3}
-                      placeholder="Add any notes about this sale..."
-                      style={{ borderRadius: 8 }}
-                      autoSize={{ minRows: 3, maxRows: 3 }}
-                    />
-                  </Form.Item>
+                                </Tooltip>
+                              </Col>
+                            </Row>
+                          );
+                        })()}
+                      </Card>
+                    ))}
+                  </Space>
+                </div>
+              </Card>
+            </div>
 
-                  <Row gutter={8}>
-                    <Col span={8}>
-                      <Button
-                        //   onClick={() => navigate("/sales")}
-                        size="large"
-                        block
-                        //   style={{ height: 48, fontWeight: 600 }}
-                      >
-                        Cancel
-                      </Button>
-                    </Col>
-                    <Col span={16}>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<CalculatorOutlined />}
-                        size="large"
-                        disabled={selectedItems.length === 0 || loading}
-                        loading={loading}
-                        block
-                        //   style={{
-                        //     height: 48,
-                        //     fontSize: 16,
-                        //     fontWeight: 700,
-                        //     border: "none",
-                        //   }}
-                      >
-                        Complete Sale
-                      </Button>
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-
-              {/* Right Column - HIGHLIGHTED Sale Items & Total */}
-              <Col
-                xs={24}
-                lg={14}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
+              <div
                 style={{
+                  flex: 1,
                   display: "flex",
                   flexDirection: "column",
                   minHeight: 0,
-                  maxHeight: "100%",
+                  minWidth: 0,
                 }}
               >
-                {/* Sale Items - FOCUSED */}
+                {/* Card for displaying the Total Amount */}
                 <Card
                   style={{
-                    marginBottom: 12,
-                    borderRadius: 12,
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                    borderRadius: 10,
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
                     flex: 1,
                     minHeight: 0,
                     display: "flex",
@@ -2291,14 +2257,14 @@ const NewSale = () => {
                     minHeight: 0,
                   }}
                 >
-                  {/* Header with gradient */}
                   <div
                     style={{
-                      padding: "10px 16px",
+                      padding: "8px 12px",
                       borderRadius: "10px 10px 0 0",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
+                      flexShrink: 0,
                     }}
                   >
                     <Typography.Title
@@ -2307,21 +2273,20 @@ const NewSale = () => {
                         margin: 0,
                         display: "flex",
                         alignItems: "center",
-                        gap: 8,
+                        gap: 6,
+                        fontSize: 14,
                       }}
                     >
-                      <ShoppingCartOutlined style={{ fontSize: 18 }} />
-                      Cart Items
+                      <ShoppingCartOutlined /> Cart Items
                     </Typography.Title>
                     {selectedItems.length > 0 && (
                       <Badge
                         count={selectedItems.length}
                         style={{
                           backgroundColor: "#52c41a",
-                          fontSize: 14,
-                          height: 24,
-                          lineHeight: "24px",
-                          boxShadow: "0 2px 8px rgba(82, 196, 26, 0.3)",
+                          fontSize: 12,
+                          height: 20,
+                          lineHeight: "20px",
                         }}
                       />
                     )}
@@ -2329,335 +2294,261 @@ const NewSale = () => {
 
                   <div
                     style={{
-                      padding: 12,
                       flex: 1,
                       minHeight: 0,
-                      maxHeight: "300px",
-                      display: "flex",
-                      flexDirection: "column",
                       overflowY: "auto",
-                      overflowX: "hidden",
+                      overflowX: "auto",
+                      padding: "0 8px 8px 8px",
                     }}
                   >
                     {selectedItems.length === 0 ? (
                       <div
                         style={{
                           textAlign: "center",
-                          padding: "60px 20px",
+                          padding: "40px 20px",
                           color: "#bfbfbf",
-                          flex: 1,
                           display: "flex",
                           flexDirection: "column",
                           justifyContent: "center",
                           alignItems: "center",
+                          height: "100%",
                         }}
                       >
                         <ShoppingCartOutlined
                           style={{
-                            fontSize: 64,
-                            marginBottom: 16,
+                            fontSize: 48,
+                            marginBottom: 12,
                             opacity: 0.3,
                           }}
                         />
-                        <div style={{ fontSize: 16, fontWeight: 500 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>
                           No items in cart
                         </div>
-                        <div style={{ fontSize: 13, marginTop: 8 }}>
+                        <div style={{ fontSize: 12, marginTop: 4 }}>
                           Search and add products to start
                         </div>
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          flex: 1,
-                          minHeight: 0,
-                          maxHeight: "100%",
-                          overflowY: "auto",
-                          overflowX: "hidden",
-                        }}
-                      >
-                        <Table
-                          columns={saleItemColumns}
-                          dataSource={selectedItems}
-                          rowKey={(record) => record.variant_id}
-                          size="small"
-                          pagination={false}
-                          showHeader={true}
-                          bordered={false}
-                          style={{
-                            background: "transparent",
-                          }}
-                        />
-                      </div>
+                      <Table
+                        columns={saleItemColumns}
+                        dataSource={selectedItems}
+                        rowKey={(record) => record.variant_id}
+                        size="small"
+                        pagination={false}
+                        showHeader={true}
+                        sticky
+                        bordered={false}
+                        style={{ background: "transparent" }}
+                      />
                     )}
                   </div>
                 </Card>
+              </div>
+            </div>
+          </div>
 
-                {/* Total Section - HIGHLY FOCUSED */}
-                <Card
+          <div
+            style={{
+              width: 280,
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              gap: 8,
+            }}
+          >
+            {/* Card for displaying Sale Breakdown, Notes, Change, and Action Buttons */}
+            <Card
+              style={{
+                borderRadius: 10,
+                boxShadow: "0 3px 16px rgba(0,0,0,0.12)",
+                border: "none",
+                flexShrink: 0,
+              }}
+              bodyStyle={{ padding: "10px 12px" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: 600 }}>TOTAL</Text>
+                <Text
                   style={{
-                    borderRadius: 12,
-                    boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
-                    border: "none",
-                    marginBottom: 0,
-                    flexShrink: 0,
+                    fontSize: 32,
+                    fontWeight: 800,
+                    letterSpacing: "-1px",
                   }}
-                  bodyStyle={{ padding: "12px 16px 16px 16px" }}
                 >
-                  {/* Main Total Display */}
-                  <div
-                    style={{
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      marginBottom: 8,
-                      backdropFilter: "blur(10px)",
-                    }}
+                  ${Math.ceil(Number(totals.total) || 0).toFixed(0)}
+                </Text>
+              </div>
+            </Card>
+
+            {/* Card for listing Cart Items */}
+            <Card
+              style={{
+                borderRadius: 10,
+                boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              }}
+              bodyStyle={{
+                padding: 8,
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+              }}
+            >
+              {[
+                {
+                  label: "Subtotal",
+                  value: `$${(Number(totals.subtotal) || 0).toFixed(2)}`,
+                },
+                {
+                  label: "Tax",
+                  value: `$${(Number(totals.totalTax) || 0).toFixed(2)}`,
+                },
+                {
+                  label: "Discount",
+                  value: `-$${(Number(totals.finalDiscount) || 0).toFixed(2)}`,
+                  highlight: totals.finalDiscount > 0,
+                },
+                {
+                  label: "Promo Disc",
+                  value: `-$${(Number(totals.promotionDiscount) || 0).toFixed(2)}`,
+                },
+                {
+                  label: "Avg Disc",
+                  value: `-$${(Number(totals.averageDiscount) || 0).toFixed(2)}`,
+                },
+                {
+                  label: "Special Disc",
+                  value: `-$${(Number(totals.specialDiscount) || 0).toFixed(2)}`,
+                },
+                {
+                  label: "Shipping",
+                  value: `$${(Number(totals.shippingCost) || 0).toFixed(2)}`,
+                },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 6px",
+                    borderRadius: 4,
+                    fontSize: 12,
+                    background: row.highlight
+                      ? "rgba(255, 214, 102, 0.15)"
+                      : "transparent",
+                  }}
+                >
+                  <Text style={{ fontSize: 14 }}>{row.label}</Text>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {row.value}
+                  </Text>
+                </div>
+              ))}
+
+              <Divider style={{ margin: "6px 0" }} />
+
+              <Form.Item name="notes" style={{ marginBottom: 6 }}>
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Sale notes..."
+                  style={{ borderRadius: 6, fontSize: 12 }}
+                  autoSize={{ minRows: 2, maxRows: 2 }}
+                />
+              </Form.Item>
+
+              <div
+                style={{
+                  padding: "6px 8px",
+                  background:
+                    salePayments.reduce((sum, p) => sum + p.amount, 0) >=
+                    totals.total
+                      ? "rgba(149, 222, 100, 0.2)"
+                      : "rgba(255, 120, 117, 0.2)",
+                  borderRadius: 8,
+                  border:
+                    salePayments.reduce((sum, p) => sum + p.amount, 0) >=
+                    totals.total
+                      ? "1px solid rgba(149, 222, 100, 0.4)"
+                      : "1px solid rgba(255, 120, 117, 0.4)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text strong style={{ fontSize: 13 }}>
+                    <MoneyCollectOutlined style={{ marginRight: 4 }} /> Change
+                  </Text>
+                  <Text strong style={{ fontSize: 18, fontWeight: 700 }}>
+                    ${" "}
+                    {Math.floor(
+                      Math.max(
+                        0,
+                        salePayments.reduce((sum, p) => sum + p.amount, 0) -
+                          totals.total,
+                      ),
+                    ).toFixed(0)}
+                  </Text>
+                </div>
+              </div>
+            </Card>
+
+            {/* Card for Action Buttons (Cancel/Complete) */}
+            <Card
+              style={{
+                borderRadius: 10,
+                boxShadow: "0 3px 16px rgba(0,0,0,0.12)",
+                flexShrink: 0,
+                border: "none",
+              }}
+              bodyStyle={{ padding: 10 }}
+            >
+              <Row gutter={8}>
+                <Col span={8}>
+                  <Button
+                    size="large"
+                    block
+                    onClick={handleCancel}
+                    disabled={selectedItems.length === 0}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 18,
-                          fontWeight: 600,
-                        }}
-                      >
-                        TOTAL AMOUNT
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 42,
-                          fontWeight: 800,
-                          letterSpacing: "-1px",
-                          textShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                        }}
-                      >
-                        ${Math.ceil(Number(totals.total) || 0).toFixed(0)}
-                      </Text>
-                    </div>
-                  </div>
-
-                  {/* Breakdown */}
-                  <Space
-                    direction="vertical"
-                    style={{ width: "100%" }}
-                    size={4}
+                    Cancel
+                  </Button>
+                </Col>
+                <Col span={16}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<CalculatorOutlined />}
+                    size="large"
+                    disabled={selectedItems.length === 0 || loading}
+                    loading={loading}
+                    block
+                    style={{ fontWeight: 700 }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                        }}
-                      >
-                        Subtotal:
-                      </Text>
-                      <Text strong style={{ fontSize: 16 }}>
-                        ${(Number(totals.subtotal) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                        }}
-                      >
-                        Tax:
-                      </Text>
-                      <Text style={{ fontSize: 15 }}>
-                        ${(Number(totals.totalTax) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background:
-                          totals.finalDiscount > 0
-                            ? "rgba(255, 214, 102, 0.2)"
-                            : "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                        border:
-                          totals.finalDiscount > 0
-                            ? "1px solid rgba(255, 214, 102, 0.3)"
-                            : "none",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: totals.finalDiscount > 0 ? 600 : 400,
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        {totals.finalDiscount > 0 ? (
-                          <DollarOutlined className="mr-2" />
-                        ) : (
-                          ""
-                        )}
-                        Discount:
-                      </Text>
-                      <Text
-                        strong
-                        style={{
-                          fontSize: 15,
-                        }}
-                      >
-                        -${(Number(totals.finalDiscount) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14 }}>Promo Discount:</Text>
-                      <Text style={{ fontSize: 15 }}>
-                        -${(Number(totals.promotionDiscount) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14 }}>Average Discount:</Text>
-                      <Text style={{ fontSize: 15 }}>
-                        -${(Number(totals.averageDiscount) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14 }}>Special Discount:</Text>
-                      <Text style={{ fontSize: 15 }}>
-                        -${(Number(totals.specialDiscount) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "8px 12px",
-                        background: "rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                        }}
-                      >
-                        {totals.shippingCost > 0 ? (
-                          <CarOutlined className="mr-2" />
-                        ) : null}
-                        Shipping:
-                      </Text>
-                      <Text style={{ fontSize: 15 }}>
-                        ${(Number(totals.shippingCost) || 0).toFixed(2)}
-                      </Text>
-                    </div>
-
-                    <Divider
-                      style={{
-                        margin: "4px 0",
-                      }}
-                    />
-
-                    {/* Change Display */}
-                    <div
-                      style={{
-                        padding: "8px 12px",
-                        background:
-                          Math.max(
-                            0,
-                            salePayments.reduce((sum, p) => sum + p.amount, 0) -
-                              totals.total,
-                          ) >= 0
-                            ? "rgba(149, 222, 100, 0.25)"
-                            : "rgba(255, 120, 117, 0.25)",
-                        borderRadius: 10,
-                        border:
-                          Math.max(
-                            0,
-                            salePayments.reduce((sum, p) => sum + p.amount, 0) -
-                              totals.total,
-                          ) >= 0
-                            ? "2px solid rgba(149, 222, 100, 0.5)"
-                            : "2px solid rgba(255, 120, 117, 0.5)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Text strong style={{ fontSize: 16 }}>
-                          <MoneyCollectOutlined className="mr-2" /> Change:
-                        </Text>
-                        <Text
-                          strong
-                          style={{
-                            fontSize: 20,
-                            fontWeight: 700,
-                          }}
-                        >
-                          $
-                          {Math.floor(
-                            Math.max(
-                              0,
-                              salePayments.reduce(
-                                (sum, p) => sum + p.amount,
-                                0,
-                              ) - totals.total,
-                            ),
-                          ).toFixed(0)}
-                        </Text>
-                      </div>
-                    </div>
-                  </Space>
-                </Card>
-              </Col>
-            </Row>
-          </Form>
+                    Complete Sale
+                  </Button>
+                </Col>
+              </Row>
+            </Card>
+          </div>
         </div>
-      </Card>
+      </Form>
     </div>
   );
 };
