@@ -30,7 +30,6 @@ import {
   Input,
   InputNumber,
   List,
-  Modal,
   Radio,
   Row,
   Select,
@@ -80,6 +79,7 @@ import {
 import { useSaleManager } from "../../hooks/useSaleManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
+import { useModalStore } from "../../stores/modalStore";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -90,6 +90,7 @@ const NewSale = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { messageApi } = useMessageStore();
+  const { modal } = useModalStore();
   const isDarkMode = useDarkMode();
 
   // Watch form values for real-time calculations
@@ -208,7 +209,7 @@ const NewSale = () => {
   // --- Handle Cancel Button Click ---
   const handleCancel = useCallback(() => {
     if (selectedItems.length > 0) {
-      Modal.confirm({
+      modal?.confirm({
         title: "Cancel Sale?",
         content:
           "Are you sure you want to cancel? All items, discounts, and customer details will be removed.",
