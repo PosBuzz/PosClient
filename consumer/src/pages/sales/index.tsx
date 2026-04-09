@@ -123,7 +123,6 @@ const SalesTable = () => {
                   CHEQUE: "Cheque",
                   MOBILE_MONEY: "Mobile Money",
                   MFS: "MFS",
-                  DEPOSIT: "Deposit",
                   CREDIT: "Credit",
                 };
                 return (
@@ -246,7 +245,6 @@ const SalesTable = () => {
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
       MFS: "MFS",
-      DEPOSIT: "Deposit",
       CREDIT: "Credit",
     };
     return displays[method] || method;
@@ -565,7 +563,6 @@ const SalesTable = () => {
               <Option value="CHEQUE">Cheque</Option>
               <Option value="MOBILE_MONEY">Mobile Money</Option>
               <Option value="MFS">MFS</Option>
-              <Option value="DEPOSIT">Deposit</Option>
               <Option value="CREDIT">Credit</Option>
             </Select>
           </Col>
