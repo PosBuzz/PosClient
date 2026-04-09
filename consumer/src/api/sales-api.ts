@@ -191,14 +191,24 @@ export const salesApi = {
   getDashboardAnalytics: async (
     params: {
       branch_id?: number;
+      payment_period?: "daily" | "weekly" | "monthly";
+      return_payment_period?: "daily" | "weekly" | "monthly";
     } = {},
   ): Promise<DashboardAnalyticsResponse> => {
     const cleanParams: {
       branch_id?: number;
+      payment_period?: string;
+      return_payment_period?: string;
     } = {};
 
     if (params.branch_id) {
       cleanParams.branch_id = params.branch_id;
+    }
+    if (params.payment_period) {
+      cleanParams.payment_period = params.payment_period;
+    }
+    if (params.return_payment_period) {
+      cleanParams.return_payment_period = params.return_payment_period;
     }
 
     return await get(endpoints.getDashboardAnalytics, cleanParams);

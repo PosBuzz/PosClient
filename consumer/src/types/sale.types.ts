@@ -413,8 +413,6 @@ export interface DashboardAnalyticsSummary {
   weekly_transactions: number;
   today_total_sale: number;
   today_transactions: number;
-  today_return_count: number;
-  today_return_amount: number;
 }
 
 export interface DashboardSalesTrendPoint {
@@ -424,6 +422,12 @@ export interface DashboardSalesTrendPoint {
 }
 
 export interface DashboardPaymentBreakdownPoint {
+  payment_method: string;
+  total_amount: number;
+  transaction_count: number;
+}
+
+export interface DashboardReturnPaymentBreakdownPoint {
   payment_method: string;
   total_amount: number;
   transaction_count: number;
@@ -453,6 +457,7 @@ export interface DashboardAnalyticsResponse {
   summary: DashboardAnalyticsSummary;
   weekly_sales_trend: DashboardSalesTrendPoint[];
   payment_method_breakdown: DashboardPaymentBreakdownPoint[];
+  return_payment_breakdown: DashboardReturnPaymentBreakdownPoint[];
   top_products: DashboardTopProductPoint[];
   low_stock: {
     total_critical_items: number;

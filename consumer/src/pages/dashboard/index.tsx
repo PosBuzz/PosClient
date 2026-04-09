@@ -8,8 +8,18 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tag } from "antd";
-import { useMemo } from "react";
+import {
+  Alert,
+  Card,
+  Col,
+  Empty,
+  Row,
+  Select,
+  Spin,
+  Statistic,
+  Tag,
+} from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CartesianGrid,
@@ -35,12 +45,63 @@ function Dashboard() {
   const hasSalesPermission =
     user?.permissions?.includes(Permissions.sales) ?? false;
 
+  const [paymentPeriod, setPaymentPeriod] = useState<
+    "daily" | "weekly" | "monthly"
+  >("daily");
+  const [returnPaymentPeriod, setReturnPaymentPeriod] = useState<
+    "daily" | "weekly" | "monthly"
+  >("daily");
+
+  // Track which card is loading (for showing loading spinner inside the card)
+  const [loadingCard, setLoadingCard] = useState<"payment" | "return" | null>(
+    null,
+  );
+
+  // Refs to store scroll position to prevent scroll-to-top
+  const scrollPositionRef = useRef<number>(0);
+
+  const handlePaymentPeriodChange = (value: "daily" | "weekly" | "monthly") => {
+    // Save current scroll position before state change
+    scrollPositionRef.current = window.scrollY;
+    setLoadingCard("payment");
+    setPaymentPeriod(value);
+  };
+
+  const handleReturnPaymentPeriodChange = (
+    value: "daily" | "weekly" | "monthly",
+  ) => {
+    // Save current scroll position before state change
+    scrollPositionRef.current = window.scrollY;
+    setLoadingCard("return");
+    setReturnPaymentPeriod(value);
+  };
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: [queryKeys.dashboardAnalytics],
-    queryFn: () => salesApi.getDashboardAnalytics(),
+    queryKey: [
+      queryKeys.dashboardAnalytics,
+      paymentPeriod,
+      returnPaymentPeriod,
+    ],
+    queryFn: () =>
+      salesApi.getDashboardAnalytics({
+        payment_period: paymentPeriod,
+        return_payment_period: returnPaymentPeriod,
+      }),
     staleTime: queryStaleTimeMap[queryKeys.dashboardAnalytics],
     enabled: hasSalesPermission,
   });
+
+  // Clear loading state when data loads and restore scroll position
+  useEffect(() => {
+    if (!isLoading && loadingCard) {
+      setLoadingCard(null);
+      // Restore scroll position after data loads
+      if (scrollPositionRef.current > 0) {
+        window.scrollTo(0, scrollPositionRef.current);
+        scrollPositionRef.current = 0;
+      }
+    }
+  }, [isLoading, loadingCard]);
 
   const topProductsData = useMemo(() => {
     if (!data?.top_products) return [];
@@ -64,6 +125,14 @@ function Dashboard() {
       amount: item.total_amount || 0,
     }));
   }, [data?.payment_method_breakdown]);
+
+  const ReturnPaymentMethodsData = useMemo(() => {
+    if (!data?.return_payment_breakdown) return [];
+    return data.return_payment_breakdown.map((item) => ({
+      name: item.payment_method || "Unknown",
+      amount: item.total_amount || 0,
+    }));
+  }, [data?.return_payment_breakdown]);
 
   const weeklyTrendData = data?.weekly_sales_trend || [];
 
@@ -288,17 +357,6 @@ function Dashboard() {
                 />
               </Card>
             </Col>
-
-            <Col xs={24} sm={12} md={12} lg={6}>
-              <Card style={{ borderBottom: `3px solid #F97316` }}>
-                <Statistic
-                  title="Today's Return Amount"
-                  value={data?.summary?.today_return_amount || 0}
-                  prefix="$"
-                  valueStyle={{ color: "#F97316" }}
-                />
-              </Card>
-            </Col>
           </Row>
 
           {isLoading ? (
@@ -310,6 +368,333 @@ function Dashboard() {
               gutter={[16, 16]}
               style={{ marginBottom: "24px", display: "flex" }}
             >
+              {/* Payments Breakdown */}
+
+              <Col xs={24} sm={12}>
+                <Card
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: isDarkMode ? "#f9fafb" : "#111827",
+                        }}
+                      >
+                        Payment Breakdown
+                      </span>
+                      <Select
+                        value={paymentPeriod}
+                        onChange={handlePaymentPeriodChange}
+                        size="small"
+                        style={{ width: 100 }}
+                        popupMatchSelectWidth={false}
+                        autoFocus={false}
+                        options={[
+                          { value: "daily", label: "Daily" },
+                          { value: "weekly", label: "Weekly" },
+                          { value: "monthly", label: "Monthly" },
+                        ]}
+                      />
+                    </div>
+                  }
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", minHeight: "300px" },
+                  }}
+                >
+                  {loadingCard === "payment" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Spin size="small" />
+                    </div>
+                  ) : PaymentMethodsData.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                        height: "100%",
+                      }}
+                    >
+                      {PaymentMethodsData.map((method, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 0",
+                            borderBottom:
+                              index < PaymentMethodsData.length - 1
+                                ? `1px solid ${isDarkMode ? "#303030" : "#e5e7eb"}`
+                                : "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "11px",
+                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                              title={method.name}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "13px",
+                                  color: isDarkMode ? "#f3f4f6" : "#111827",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  lineHeight: "1.35",
+                                }}
+                              >
+                                {method.name}
+                              </span>
+                            </div>
+                          </div>
+                          <Tag
+                            color="blue"
+                            style={{
+                              margin: 0,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              borderRadius: "10px",
+                              padding: "0 8px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            $ {method.amount.toFixed(2)}
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No payment method data
+                          </span>
+                        }
+                      />
+                    </div>
+                  )}
+                </Card>
+              </Col>
+
+              {/* Return Payments Breakdown */}
+              <Col xs={24} sm={12}>
+                <Card
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: isDarkMode ? "#f9fafb" : "#111827",
+                        }}
+                      >
+                        Return Payment Breakdown
+                      </span>
+                      <Select
+                        value={returnPaymentPeriod}
+                        onChange={handleReturnPaymentPeriodChange}
+                        size="small"
+                        style={{ width: 100 }}
+                        popupMatchSelectWidth={false}
+                        autoFocus={false}
+                        options={[
+                          { value: "daily", label: "Daily" },
+                          { value: "weekly", label: "Weekly" },
+                          { value: "monthly", label: "Monthly" },
+                        ]}
+                      />
+                    </div>
+                  }
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", minHeight: "300px" },
+                  }}
+                >
+                  {loadingCard === "return" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Spin size="small" />
+                    </div>
+                  ) : ReturnPaymentMethodsData.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                        height: "100%",
+                      }}
+                    >
+                      {ReturnPaymentMethodsData.map((method, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 0",
+                            borderBottom:
+                              index < ReturnPaymentMethodsData.length - 1
+                                ? `1px solid ${isDarkMode ? "#303030" : "#e5e7eb"}`
+                                : "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "11px",
+                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                              title={method.name}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "13px",
+                                  color: isDarkMode ? "#f3f4f6" : "#111827",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  lineHeight: "1.35",
+                                }}
+                              >
+                                {method.name}
+                              </span>
+                            </div>
+                          </div>
+                          <Tag
+                            color="orange"
+                            style={{
+                              margin: 0,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              borderRadius: "10px",
+                              padding: "0 8px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            $ {method.amount.toFixed(2)}
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No return payment data
+                          </span>
+                        }
+                      />
+                    </div>
+                  )}
+                </Card>
+              </Col>
+
               {/* Weekly Sales Trend */}
               <Col xs={24} sm={12}>
                 <Card
@@ -434,133 +819,6 @@ function Dashboard() {
                             }}
                           >
                             No trend data
-                          </span>
-                        }
-                      />
-                    </div>
-                  )}
-                </Card>
-              </Col>
-
-              {/* Payments Breakdown */}
-              <Col xs={24} sm={12}>
-                <Card
-                  title={
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: isDarkMode ? "#f9fafb" : "#111827",
-                      }}
-                    >
-                      Weekly Payment Methods Breakdown
-                    </span>
-                  }
-                  style={{
-                    height: "100%",
-                    border: isDarkMode
-                      ? "1px solid #303030"
-                      : "1px solid #e5e7eb",
-                  }}
-                  styles={{
-                    body: { padding: "16px", height: "300px" },
-                  }}
-                >
-                  {PaymentMethodsData.length > 0 ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "100%",
-                      }}
-                    >
-                      {PaymentMethodsData.map((method, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "4px 0",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: "11px",
-                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {index + 1}
-                            </span>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                overflow: "hidden",
-                              }}
-                              title={method.name}
-                            >
-                              <span
-                                style={{
-                                  fontWeight: 600,
-                                  fontSize: "13px",
-                                  color: isDarkMode ? "#f3f4f6" : "#111827",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  lineHeight: "1.35",
-                                }}
-                              >
-                                {method.name}
-                              </span>
-                            </div>
-                          </div>
-                          <Tag
-                            color="blue"
-                            style={{
-                              margin: 0,
-                              fontWeight: 700,
-                              fontSize: "12px",
-                              borderRadius: "10px",
-                              padding: "0 8px",
-                              flexShrink: 0,
-                            }}
-                          >
-                            $ {method.amount.toFixed(2)}
-                          </Tag>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        height: "100%",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                            }}
-                          >
-                            No payment method data
                           </span>
                         }
                       />

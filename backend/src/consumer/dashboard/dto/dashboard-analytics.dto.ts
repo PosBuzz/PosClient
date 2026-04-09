@@ -1,5 +1,7 @@
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+
+export type PeriodType = 'daily' | 'weekly' | 'monthly';
 
 export class DashboardAnalyticsDto {
   @IsOptional()
@@ -12,6 +14,14 @@ export class DashboardAnalyticsDto {
   @IsInt()
   @Min(1)
   branch_id?: number;
+
+  @IsOptional()
+  @IsEnum(['daily', 'weekly', 'monthly'])
+  payment_period?: PeriodType;
+
+  @IsOptional()
+  @IsEnum(['daily', 'weekly', 'monthly'])
+  return_payment_period?: PeriodType;
 }
 
 export interface DashboardSummary {
@@ -19,8 +29,6 @@ export interface DashboardSummary {
   weekly_transactions: number;
   today_total_sale: number;
   today_transactions: number;
-  today_return_count: number;
-  today_return_amount: number;
 }
 
 export interface SalesTrendPoint {
@@ -30,6 +38,12 @@ export interface SalesTrendPoint {
 }
 
 export interface PaymentBreakdownPoint {
+  payment_method: string;
+  total_amount: number;
+  transaction_count: number;
+}
+
+export interface ReturnPaymentBreakdownPoint {
   payment_method: string;
   total_amount: number;
   transaction_count: number;
@@ -69,6 +83,7 @@ export interface DashboardAnalyticsResponse {
   summary: DashboardSummary;
   weekly_sales_trend: SalesTrendPoint[];
   payment_method_breakdown: PaymentBreakdownPoint[];
+  return_payment_breakdown: ReturnPaymentBreakdownPoint[];
   top_products: TopProductPoint[];
   low_stock: {
     total_critical_items: number;
