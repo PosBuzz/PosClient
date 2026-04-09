@@ -1855,7 +1855,7 @@ const NewSale = () => {
                       <div key={index} style={{ marginBottom: 8 }}>
                         <Row gutter={4}>
                           {/* Payment Method */}
-                          <Col span={6}>
+                          <Col span={requiresProvider ? 6 : 10}>
                             <Select
                               size="small"
                               value={payment.payment_method}
@@ -1870,6 +1870,7 @@ const NewSale = () => {
                               }}
                               style={{ width: "100%" }}
                               placeholder="Method"
+                              popupMatchSelectWidth={false}
                             >
                               <Option value={PaymentMethod.CASH}>Cash</Option>
                               <Option value={PaymentMethod.CARD}>Card</Option>
@@ -1914,6 +1915,8 @@ const NewSale = () => {
                                 style={{ width: "100%" }}
                                 optionFilterProp="label"
                                 options={providerOptions}
+                                popupMatchSelectWidth={false}
+                                listHeight={200}
                               />
                             ) : null}
                           </Col>
