@@ -119,8 +119,6 @@ const SaleDetail: React.FC = () => {
         return "cyan";
       case PaymentMethod.MFS:
         return "magenta";
-      case PaymentMethod.DEPOSIT:
-        return "gold";
       case PaymentMethod.CREDIT:
         return "red";
       default:
@@ -142,8 +140,6 @@ const SaleDetail: React.FC = () => {
         return "Mobile Money";
       case PaymentMethod.MFS:
         return "MFS";
-      case PaymentMethod.DEPOSIT:
-        return "Deposit";
       case PaymentMethod.CREDIT:
         return "Credit";
       default:

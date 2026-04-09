@@ -81,7 +81,6 @@ const EODReport = () => {
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
       MFS: "MFS",
-      DEPOSIT: "Deposit",
       CREDIT: "Credit",
     };
     return displays[method] || method;
@@ -95,7 +94,6 @@ const EODReport = () => {
       CHEQUE: "orange",
       MOBILE_MONEY: "cyan",
       MFS: "magenta",
-      DEPOSIT: "gold",
       CREDIT: "red",
     };
     return colors[method] || "default";

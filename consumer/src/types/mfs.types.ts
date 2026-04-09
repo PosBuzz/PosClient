@@ -1,0 +1,31 @@
+export enum MfsProvider {
+  ROCKET = "ROCKET",
+  BKASH = "BKASH",
+  MYCASH = "MYCASH",
+  ISLAMI_BANK_MCASH = "ISLAMI_BANK_MCASH",
+  TRUST_AXIATA_PAY_TAP = "TRUST_AXIATA_PAY_TAP",
+  FIRSTCASH = "FIRSTCASH",
+  UPAY = "UPAY",
+  OK_WALLET = "OK_WALLET",
+  RUPALI_BANK = "RUPALI_BANK",
+  TELECASH = "TELECASH",
+  ISLAMIC_WALLET = "ISLAMIC_WALLET",
+  MEGHNA_PAY = "MEGHNA_PAY",
+  NAGAD = "NAGAD",
+}
+
+export const mfsProviderOptions = [
+  { label: "bKash", value: MfsProvider.BKASH },
+  { label: "Nagad", value: MfsProvider.NAGAD },
+  { label: "Rocket", value: MfsProvider.ROCKET },
+  { label: "MyCash", value: MfsProvider.MYCASH },
+  { label: "Islami Bank mCash", value: MfsProvider.ISLAMI_BANK_MCASH },
+  { label: "Trust Axiata Pay (TAP)", value: MfsProvider.TRUST_AXIATA_PAY_TAP },
+  { label: "FirstCash", value: MfsProvider.FIRSTCASH },
+  { label: "Upay", value: MfsProvider.UPAY },
+  { label: "OK Wallet", value: MfsProvider.OK_WALLET },
+  { label: "Rupali Bank", value: MfsProvider.RUPALI_BANK },
+  { label: "Telecash", value: MfsProvider.TELECASH },
+  { label: "Islamic Wallet", value: MfsProvider.ISLAMIC_WALLET },
+  { label: "Meghna Pay", value: MfsProvider.MEGHNA_PAY },
+].sort((a, b) => a.label.localeCompare(b.label));
