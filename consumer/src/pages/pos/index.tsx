@@ -79,6 +79,7 @@ import {
 } from "../../utils/payment-provider.utils";
 import { useSaleManager } from "../../hooks/useSaleManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
+import useDarkMode from "../../hooks/useDarkMode";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -89,6 +90,7 @@ const NewSale = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { messageApi } = useMessageStore();
+  const isDarkMode = useDarkMode();
 
   // Watch form values for real-time calculations
   const averageDiscountAmount =
@@ -2306,7 +2308,7 @@ const NewSale = () => {
                         style={{
                           textAlign: "center",
                           padding: "40px 20px",
-                          color: "#bfbfbf",
+                          color: isDarkMode ? "#ffffffb3" : "#00000080",
                           display: "flex",
                           flexDirection: "column",
                           justifyContent: "center",
@@ -2318,7 +2320,7 @@ const NewSale = () => {
                           style={{
                             fontSize: 48,
                             marginBottom: 12,
-                            opacity: 0.3,
+                            opacity: isDarkMode ? 0.3 : 0.7,
                           }}
                         />
                         <div style={{ fontSize: 14, fontWeight: 500 }}>
@@ -2447,7 +2449,9 @@ const NewSale = () => {
                     borderRadius: 4,
                     fontSize: 12,
                     background: row.highlight
-                      ? "rgba(255, 214, 102, 0.15)"
+                      ? isDarkMode
+                        ? "rgba(255, 214, 102, 0.15)"
+                        : "rgba(255, 214, 102, 0.55)"
                       : "transparent",
                   }}
                 >
@@ -2475,8 +2479,12 @@ const NewSale = () => {
                   background:
                     salePayments.reduce((sum, p) => sum + p.amount, 0) >=
                     totals.total
-                      ? "rgba(149, 222, 100, 0.2)"
-                      : "rgba(255, 120, 117, 0.2)",
+                      ? isDarkMode
+                        ? "rgba(149, 222, 100, 0.2)"
+                        : "rgba(149, 222, 100, 0.5)"
+                      : isDarkMode
+                        ? "rgba(255, 120, 117, 0.2)"
+                        : "rgba(255, 120, 117, 0.5)",
                   borderRadius: 8,
                   border:
                     salePayments.reduce((sum, p) => sum + p.amount, 0) >=
