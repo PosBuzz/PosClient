@@ -2030,7 +2030,7 @@ const NewSale = () => {
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      padding: 4,
+                      padding: 2,
                       height: "auto",
                     }}
                     onClick={() => {
@@ -2159,6 +2159,8 @@ const NewSale = () => {
                                     style={{ width: "100%" }}
                                     optionFilterProp="label"
                                     options={providerOptions}
+                                    popupMatchSelectWidth={false}
+                                    listHeight={200}
                                   />
                                 ) : null}
                               </Col>
