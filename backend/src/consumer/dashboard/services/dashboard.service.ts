@@ -66,6 +66,40 @@ export class DashboardService {
       weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
       weekEnd.setUTCHours(23, 59, 59, 999);
 
+      // Monthly date range (1st of current month to end of current month)
+      const monthStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+      );
+      const monthEnd = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        ),
+      );
+
+      // Helper function to get date range based on period
+      const getDateRange = (period: 'daily' | 'weekly' | 'monthly') => {
+        switch (period) {
+          case 'daily':
+            return { start: todayStart, end: todayEnd };
+          case 'monthly':
+            return { start: monthStart, end: monthEnd };
+          case 'weekly':
+          default:
+            return { start: weekStart, end: weekEnd };
+        }
+      };
+
+      const paymentPeriod = query.payment_period || 'daily';
+      const returnPaymentPeriod = query.return_payment_period || 'daily';
+      const paymentDateRange = getDateRange(paymentPeriod);
+      const returnPaymentDateRange = getDateRange(returnPaymentPeriod);
+
       const expiringUntil = new Date(todayEnd);
       expiringUntil.setUTCDate(expiringUntil.getUTCDate() + 30);
 
@@ -90,16 +124,24 @@ export class DashboardService {
         sale_date: { gte: todayStart, lte: todayEnd },
       };
 
-      const todayReturnWhere = {
-        consumer_id: consumerId,
-        return_date: { gte: todayStart, lte: todayEnd },
-        ...branchFilter,
-      };
-
       const expiringBatchWhere = {
         variant: { product: { consumer_id: consumerId } },
         expiry_date: { gte: todayStart, lte: expiringUntil },
         quantity: { gt: 0 },
+        ...branchFilter,
+      };
+
+      const paymentWhere = {
+        ...baseWhere,
+        sale_date: { gte: paymentDateRange.start, lte: paymentDateRange.end },
+      };
+
+      const returnPaymentWhere = {
+        consumer_id: consumerId,
+        return_date: {
+          gte: returnPaymentDateRange.start,
+          lte: returnPaymentDateRange.end,
+        },
         ...branchFilter,
       };
 
@@ -117,9 +159,9 @@ export class DashboardService {
       const [
         weeklyAgg,
         todayAgg,
-        todayReturnAgg,
         weeklySalesByDay,
         paymentBreakdown,
+        returnPaymentBreakdown,
         topProductsGrouped,
         lowStockItems,
         expiringBatches,
@@ -135,12 +177,6 @@ export class DashboardService {
           where: todayWhere,
           _count: { id: true },
           _sum: { total_amount: true },
-        }),
-
-        this.prisma.return.aggregate({
-          where: todayReturnWhere,
-          _count: { id: true },
-          _sum: { total_refund: true },
         }),
 
         // DB-side groupBy on date string avoids pulling every row
@@ -159,7 +195,15 @@ export class DashboardService {
 
         this.prisma.salePayment.groupBy({
           by: ['payment_method'],
-          where: { sale: weeklyWhere },
+          where: { sale: paymentWhere },
+          _sum: { amount: true },
+          _count: { _all: true },
+          orderBy: { _sum: { amount: 'desc' } },
+        }),
+
+        this.prisma.returnPayment.groupBy({
+          by: ['payment_method'],
+          where: { return_record: returnPaymentWhere },
           _sum: { amount: true },
           _count: { _all: true },
           orderBy: { _sum: { amount: 'desc' } },
@@ -240,6 +284,14 @@ export class DashboardService {
         transaction_count: item._count._all,
       }));
 
+      const returnPaymentMethodBreakdown = returnPaymentBreakdown.map(
+        (item) => ({
+          payment_method: item.payment_method,
+          total_amount: Number(item._sum.amount ?? 0),
+          transaction_count: item._count._all,
+        }),
+      );
+
       const lowStock = {
         total_critical_items: lowStockItems.length,
         items: lowStockItems.slice(0, 5).map((item: any) => ({
@@ -273,11 +325,10 @@ export class DashboardService {
           weekly_transactions: weeklyAgg._count.id ?? 0,
           today_total_sale: Number(todayAgg._sum.total_amount ?? 0),
           today_transactions: todayAgg._count.id ?? 0,
-          today_return_count: todayReturnAgg._count.id ?? 0,
-          today_return_amount: Number(todayReturnAgg._sum.total_refund ?? 0),
         },
         weekly_sales_trend: weeklySalesTrend,
         payment_method_breakdown: paymentMethodBreakdown,
+        return_payment_breakdown: returnPaymentMethodBreakdown,
         top_products: topProducts,
         low_stock: lowStock,
         expiring_items: expiringItems,
