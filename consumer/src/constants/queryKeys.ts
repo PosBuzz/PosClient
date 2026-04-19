@@ -37,6 +37,7 @@ export const queryKeys = {
   return: "return",
   dailyTarget: "daily-target-report",
   eod: "eod-report",
+  dashboardAnalytics: "dashboard-analytics",
   quotations: "quotations",
   quotation: "quotation",
   partialPayments: "partial-payments",
@@ -100,6 +101,7 @@ export const queryStaleTimeMap = {
   [queryKeys.salesStats]: staleTimeConfig.realTime,
   [queryKeys.eod]: staleTimeConfig.realTime,
   [queryKeys.dailyTarget]: staleTimeConfig.realTime,
+  [queryKeys.dashboardAnalytics]: staleTimeConfig.realTime,
   [queryKeys.userSalesStats]: staleTimeConfig.realTime,
   [queryKeys.variantSalesStats]: staleTimeConfig.realTime,
 
