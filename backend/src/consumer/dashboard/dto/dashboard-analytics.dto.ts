@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Min } from 'class-validator';
 
 export type PeriodType = 'daily' | 'weekly' | 'monthly';
 
@@ -16,11 +16,11 @@ export class DashboardAnalyticsDto {
   branch_id?: number;
 
   @IsOptional()
-  @IsEnum(['daily', 'weekly', 'monthly'])
+  @IsIn(['daily', 'weekly', 'monthly'])
   payment_period?: PeriodType;
 
   @IsOptional()
-  @IsEnum(['daily', 'weekly', 'monthly'])
+  @IsIn(['daily', 'weekly', 'monthly'])
   return_payment_period?: PeriodType;
 }
 
