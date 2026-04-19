@@ -41,7 +41,7 @@ export const getVariantPriceForSale = (
   priceType: PriceType,
 ) => {
   return priceType === PriceType.WHOLESALE
-    ? Number(variant.wholesale_price) || Number(variant.regular_price)
+    ? (Number(variant.wholesale_price) ?? Number(variant.regular_price))
     : Number(variant.regular_price);
 };
 
