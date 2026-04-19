@@ -163,7 +163,6 @@ export enum PaymentMethod {
   BANK_TRANSFER = "BANK_TRANSFER",
   MOBILE_MONEY = "MOBILE_MONEY",
   MFS = "MFS", // Mobile Financial Service
-  DEPOSIT = "DEPOSIT",
   CREDIT = "CREDIT",
   EXCHANGE = "EXCHANGE",
 }
@@ -282,12 +281,84 @@ export interface SalesStats {
   }>;
 }
 
+export type PaymentType =
+  | "BANGLADESH_BANK"
+  | "SONALI_BANK_LIMITED"
+  | "JANATA_BANK_LIMITED"
+  | "AGRANI_BANK_LIMITED"
+  | "RUPALI_BANK_LIMITED"
+  | "BANGLADESH_KRISHI_BANK"
+  | "RAJSHAHI_KRISHI_UNNAYAN_BANK"
+  | "BANGLADESH_DEVELOPMENT_BANK_LIMITED"
+  | "BASIC_BANK_LIMITED"
+  | "ANSAR_VDP_UNNAYAN_BANK"
+  | "KARMASANGSTHAN_BANK"
+  | "AB_BANK_LIMITED"
+  | "AL_ARAFAH_ISLAMI_BANK_LIMITED"
+  | "BANGLADESH_COMMERCE_BANK_LIMITED"
+  | "BANK_ASIA_LIMITED"
+  | "BRAC_BANK_LIMITED"
+  | "DHAKA_BANK_LIMITED"
+  | "DUTCH_BANGLA_BANK_LIMITED"
+  | "EASTERN_BANK_LIMITED"
+  | "EXIM_BANK_LIMITED"
+  | "FIRST_SECURITY_ISLAMI_BANK_LIMITED"
+  | "ICB_ISLAMIC_BANK_LIMITED"
+  | "IFIC_BANK_LIMITED"
+  | "ISLAMI_BANK_BANGLADESH_LIMITED"
+  | "JAMUNA_BANK_LIMITED"
+  | "MEGHNA_BANK_LIMITED"
+  | "MERCANTILE_BANK_LIMITED"
+  | "MIDLAND_BANK_LIMITED"
+  | "MUTUAL_TRUST_BANK_LIMITED"
+  | "NATIONAL_BANK_LIMITED"
+  | "NRB_BANK_LIMITED"
+  | "NATIONAL_CREDIT_AND_COMMERCE_BANK_LIMITED"
+  | "NRB_COMMERCIAL_BANK_LIMITED"
+  | "ONE_BANK_LIMITED"
+  | "PREMIER_BANK_LIMITED"
+  | "PUBALI_BANK_LIMITED"
+  | "SHAHJALAL_ISLAMI_BANK_LIMITED"
+  | "SOCIAL_ISLAMI_BANK_LIMITED"
+  | "SOUTH_BANGLA_AGRICULTURE_AND_COMMERCE_BANK_LIMITED"
+  | "SOUTHEAST_BANK_LIMITED"
+  | "STANDARD_BANK_LIMITED"
+  | "THE_CITY_BANK_LIMITED"
+  | "THE_FARMERS_BANK_LIMITED"
+  | "TRUST_BANK_LIMITED"
+  | "UNION_BANK_LIMITED"
+  | "UNITED_COMMERCIAL_BANK_LIMITED"
+  | "UTTARA_BANK_LIMITED"
+  | "BANK_AL_FALAH_LIMITED"
+  | "CITIBANK_N_A"
+  | "COMMERCIAL_BANK_OF_CEYLON_LIMITED"
+  | "HABIB_BANK_LIMITED"
+  | "NATIONAL_BANK_OF_PAKISTAN"
+  | "STANDARD_CHARTERED_BANK"
+  | "STATE_BANK_OF_INDIA"
+  | "THE_HONGKONG_AND_SHANGHAI_BANKING_CORPORATION_LTD"
+  | "WOORI_BANK"
+  | "ROCKET"
+  | "BKASH"
+  | "MYCASH"
+  | "ISLAMI_BANK_MCASH"
+  | "TRUST_AXIATA_PAY_TAP"
+  | "FIRSTCASH"
+  | "UPAY"
+  | "OK_WALLET"
+  | "RUPALI_BANK"
+  | "TELECASH"
+  | "ISLAMIC_WALLET"
+  | "MEGHNA_PAY"
+  | "NAGAD";
+
 export interface SalePayment {
   id?: number;
   payment_method: PaymentMethod;
   amount: number;
   reference?: string;
-  notes?: string;
+  // notes?: string;
+  payment_type?: PaymentType;
   created_at?: string;
   updated_at?: string;
 }
@@ -335,4 +406,73 @@ export interface EODReportResponse {
     count: number;
     total_amount: number;
   }[];
+}
+
+export interface DashboardAnalyticsSummary {
+  weekly_total_sale: number;
+  weekly_transactions: number;
+  today_total_sale: number;
+  today_transactions: number;
+}
+
+export interface DashboardSalesTrendPoint {
+  date: string;
+  sales_count: number;
+  total_amount: number;
+}
+
+export interface DashboardPaymentBreakdownPoint {
+  payment_method: string;
+  total_amount: number;
+  transaction_count: number;
+}
+
+export interface DashboardReturnPaymentBreakdownPoint {
+  payment_method: string;
+  total_amount: number;
+  transaction_count: number;
+}
+
+export interface DashboardTopProductPoint {
+  variant_id: number;
+  variant_name: string;
+  product_name: string;
+  sku?: string;
+  total_quantity: number;
+  total_amount: number;
+}
+
+export interface DashboardLowStockPoint {
+  variant_id: number;
+  product_name: string;
+  variant_name: string;
+  sku?: string;
+  alert_quantity: number;
+  total_stock: number;
+  shortage: number;
+  affected_branch_name?: string;
+}
+
+export interface DashboardAnalyticsResponse {
+  summary: DashboardAnalyticsSummary;
+  weekly_sales_trend: DashboardSalesTrendPoint[];
+  payment_method_breakdown: DashboardPaymentBreakdownPoint[];
+  return_payment_breakdown: DashboardReturnPaymentBreakdownPoint[];
+  top_products: DashboardTopProductPoint[];
+  low_stock: {
+    total_critical_items: number;
+    items: DashboardLowStockPoint[];
+  };
+  expiring_items: {
+    total_expiring_items: number;
+    items: Array<{
+      batch_id: number;
+      product_name: string;
+      variant_name: string;
+      batch_number: string;
+      quantity: number;
+      expiry_date: string;
+      branch_name?: string;
+    }>;
+  };
 }
