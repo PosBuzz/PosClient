@@ -17,7 +17,7 @@ html[data-theme="dark"] body {
 html[data-theme="light"] {
   scrollbar-color: #bbb #f1f1f1;
   scrollbar-width: thin;
-   background-color: #f5f5f5;
+  background-color: #f5f5f5;
   color-scheme: light;
 }
 
