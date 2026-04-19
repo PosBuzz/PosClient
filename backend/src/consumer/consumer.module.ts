@@ -16,6 +16,7 @@ import { ReturnsModule } from './returns/returns.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     RewardsModule,
     PaymentsModule,
     PromotionsModule,
+    DashboardModule,
   ],
 })
 export class ConsumerModule {}
