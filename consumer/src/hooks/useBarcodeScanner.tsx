@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface UseBarcodeScannerArgs {
   selectedBranch: number | null;
@@ -14,12 +14,22 @@ export const useBarcodeScanner = ({
   onSubmit,
   enabled = true,
 }: UseBarcodeScannerArgs) => {
-  const [barcodeBuffer, setBarcodeBuffer] = useState("");
-  const [lastKeyTime, setLastKeyTime] = useState(0);
+  const barcodeBufferRef = useRef("");
+  const lastKeyTimeRef = useRef(0);
+  const onBarcodeScannedRef = useRef(onBarcodeScanned);
+  const onSubmitRef = useRef(onSubmit);
 
   useEffect(() => {
-    setBarcodeBuffer("");
-    setLastKeyTime(0);
+    onBarcodeScannedRef.current = onBarcodeScanned;
+  }, [onBarcodeScanned]);
+
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
+
+  useEffect(() => {
+    barcodeBufferRef.current = "";
+    lastKeyTimeRef.current = 0;
   }, [selectedBranch]);
 
   useEffect(() => {
@@ -29,14 +39,14 @@ export const useBarcodeScanner = ({
 
     const handleKeyPress = (event: KeyboardEvent) => {
       const currentTime = Date.now();
-      const timeDiff = currentTime - lastKeyTime;
+      const timeDiff = currentTime - lastKeyTimeRef.current;
       const activeElement = document.activeElement as HTMLElement;
 
       if (timeDiff > 100) {
-        setBarcodeBuffer("");
+        barcodeBufferRef.current = "";
       }
 
-      setLastKeyTime(currentTime);
+      lastKeyTimeRef.current = currentTime;
 
       const isTypingInInput =
         activeElement &&
@@ -58,29 +68,29 @@ export const useBarcodeScanner = ({
       }
 
       if (event.key === "Enter") {
-        if (barcodeBuffer.length > 0) {
+        if (barcodeBufferRef.current.length > 0) {
           event.preventDefault();
           event.stopPropagation();
-          void onBarcodeScanned(barcodeBuffer);
-          setBarcodeBuffer("");
+          void onBarcodeScannedRef.current(barcodeBufferRef.current);
+          barcodeBufferRef.current = "";
           return;
         }
 
         event.preventDefault();
         event.stopPropagation();
-        onSubmit();
+        onSubmitRef.current();
         return;
       }
 
       if (event.key.length === 1 && /[a-zA-Z0-9\-_]/.test(event.key)) {
         const isVeryFastTyping = timeDiff < 30;
-        const hasExistingBuffer = barcodeBuffer.length > 0;
+        const hasExistingBuffer = barcodeBufferRef.current.length > 0;
         const isLikelyBarcodeScanner = isVeryFastTyping || hasExistingBuffer;
 
         if (isLikelyBarcodeScanner) {
           event.preventDefault();
           event.stopPropagation();
-          setBarcodeBuffer((prev) => prev + event.key);
+          barcodeBufferRef.current += event.key;
 
           if (activeElement && activeElement.blur) {
             activeElement.blur();
@@ -88,7 +98,7 @@ export const useBarcodeScanner = ({
           return;
         }
 
-        setBarcodeBuffer((prev) => prev + event.key);
+        barcodeBufferRef.current += event.key;
       }
     };
 
@@ -97,12 +107,5 @@ export const useBarcodeScanner = ({
     return () => {
       document.removeEventListener("keydown", handleKeyPress, true);
     };
-  }, [
-    enabled,
-    lastKeyTime,
-    barcodeBuffer,
-    selectedBranch,
-    onBarcodeScanned,
-    onSubmit,
-  ]);
+  }, [enabled]);
 };
