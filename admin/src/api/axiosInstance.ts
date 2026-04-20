@@ -36,12 +36,33 @@ refreshInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor (your existing code)
+// Response interceptor
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
   reject: (reason?: any) => void;
 }> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+// Clears auth state and redirects to login when the refresh token is
+// invalid or has already been rotated (token rotation invalidates old tokens).
+const handleAuthFailure = () => {
+  useAuthStore.getState().setAuthenticated(false);
+  useAuthStore.getState().setUser(null);
+  if (!window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
+  }
+};
 
 axiosInstance.interceptors.response.use(
   (res) => res,
@@ -49,12 +70,15 @@ axiosInstance.interceptors.response.use(
     const originalRequest = err.config;
 
     if (err.response?.status === 401 && !originalRequest._retry) {
+      // Another refresh is already in-flight — queue this request.
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          .then(() => {
+            // Mark as retried so a 401 on this retry doesn't trigger another refresh.
+            originalRequest._retry = true;
+            // Cookie is already updated by the refresh call; just retry.
             return axiosInstance(originalRequest);
           })
           .catch((error) => {
@@ -66,9 +90,15 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Token rotation: server invalidates the old refresh token and
+        // issues a new one, so a replay of the old token will be rejected.
         await refreshInstance.post(endpoints.refreshToken);
+        processQueue(); // resume all queued requests
         return axiosInstance(originalRequest);
       } catch (refreshErr) {
+        // Refresh token is expired or already rotated — force logout.
+        processQueue(refreshErr);
+        handleAuthFailure();
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
