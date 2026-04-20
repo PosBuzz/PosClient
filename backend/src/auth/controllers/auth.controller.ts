@@ -143,17 +143,8 @@ export class AuthController {
     }
 
     try {
-      const { access_token } =
+      const { access_token, refresh_token: newRefreshToken } =
         await this.authService.adminRefreshToken(refreshToken);
-
-      // If refresh token is expired or invalid
-      if (!access_token) {
-        res.clearCookie('admin_access_token', { httpOnly: true });
-        res.clearCookie('admin_refresh_token', { httpOnly: true });
-        return res
-          .status(401)
-          .send({ message: 'Refresh token expired. Please log in again.' });
-      }
 
       res.cookie('admin_access_token', access_token, {
         httpOnly: true,
@@ -161,6 +152,13 @@ export class AuthController {
         secure: true,
         maxAge: 15 * 60 * 1000,
       }); // 15 minutes
+      // Rotate: replace the old refresh token cookie with the newly issued one.
+      res.cookie('admin_refresh_token', newRefreshToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      }); // 7 days
       return res.send({ message: 'Token refreshed' });
     } catch (error) {
       res.clearCookie('admin_access_token', {
@@ -201,17 +199,8 @@ export class AuthController {
     }
 
     try {
-      const { access_token } =
+      const { access_token, refresh_token: newRefreshToken } =
         await this.authService.clientRefreshToken(refreshToken);
-
-      // If refresh token is expired or invalid
-      if (!access_token) {
-        res.clearCookie('client_access_token', { httpOnly: true });
-        res.clearCookie('client_refresh_token', { httpOnly: true });
-        return res
-          .status(401)
-          .send({ message: 'Refresh token expired. Please log in again.' });
-      }
 
       res.cookie('client_access_token', access_token, {
         httpOnly: true,
@@ -219,10 +208,25 @@ export class AuthController {
         secure: true,
         maxAge: 15 * 60 * 1000,
       }); // 15 minutes
-      return res.send({ access_token, message: 'Token refreshed' });
+      // Rotate: replace the old refresh token cookie with the newly issued one.
+      res.cookie('client_refresh_token', newRefreshToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      }); // 7 days
+      return res.send({ message: 'Token refreshed' });
     } catch (error) {
-      res.clearCookie('client_access_token', { httpOnly: true });
-      res.clearCookie('client_refresh_token', { httpOnly: true });
+      res.clearCookie('client_access_token', {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+      res.clearCookie('client_refresh_token', {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
       return res
         .status(401)
         .send({ message: 'Invalid refresh token or expired session.' });
