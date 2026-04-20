@@ -425,7 +425,7 @@ function Dashboard() {
                       : "1px solid #e5e7eb",
                   }}
                   styles={{
-                    body: { padding: "16px", minHeight: "300px" },
+                    body: { padding: "16px", height: "300px" },
                   }}
                 >
                   {loadingCard === "payment" ? (
@@ -588,7 +588,7 @@ function Dashboard() {
                       : "1px solid #e5e7eb",
                   }}
                   styles={{
-                    body: { padding: "16px", minHeight: "300px" },
+                    body: { padding: "16px", height: "300px" },
                   }}
                 >
                   {loadingCard === "return" ? (
