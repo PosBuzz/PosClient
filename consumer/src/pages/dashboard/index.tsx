@@ -51,11 +51,14 @@ function Dashboard() {
   const [returnPaymentPeriod, setReturnPaymentPeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
+  const [topProductsPeriod, setTopProductsPeriod] = useState<
+    "daily" | "weekly" | "monthly"
+  >("daily");
 
   // Track which card is loading (for showing loading spinner inside the card)
-  const [loadingCard, setLoadingCard] = useState<"payment" | "return" | null>(
-    null,
-  );
+  const [loadingCard, setLoadingCard] = useState<
+    "payment" | "return" | "top-products" | null
+  >(null);
 
   // Refs to store scroll position to prevent scroll-to-top
   const scrollPositionRef = useRef<number>(0);
@@ -76,16 +79,27 @@ function Dashboard() {
     setReturnPaymentPeriod(value);
   };
 
+  const handleTopProductsPeriodChange = (
+    value: "daily" | "weekly" | "monthly",
+  ) => {
+    // Save current scroll position before state change
+    scrollPositionRef.current = window.scrollY;
+    setLoadingCard("top-products");
+    setTopProductsPeriod(value);
+  };
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [
       queryKeys.dashboardAnalytics,
       paymentPeriod,
       returnPaymentPeriod,
+      topProductsPeriod,
     ],
     queryFn: () =>
       salesApi.getDashboardAnalytics({
         payment_period: paymentPeriod,
         return_payment_period: returnPaymentPeriod,
+        top_products_period: topProductsPeriod,
       }),
     staleTime: queryStaleTimeMap[queryKeys.dashboardAnalytics],
     enabled: hasSalesPermission,
@@ -695,6 +709,180 @@ function Dashboard() {
                 </Card>
               </Col>
 
+              {/* Top 5 Products List */}
+              <Col xs={24} sm={12}>
+                <Card
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: isDarkMode ? "#f9fafb" : "#111827",
+                        }}
+                      >
+                        Top 5 Products
+                      </span>
+                      <Select
+                        value={topProductsPeriod}
+                        onChange={handleTopProductsPeriodChange}
+                        size="small"
+                        style={{ width: 100 }}
+                        popupMatchSelectWidth={false}
+                        autoFocus={false}
+                        options={[
+                          { value: "daily", label: "Daily" },
+                          { value: "weekly", label: "Weekly" },
+                          { value: "monthly", label: "Monthly" },
+                        ]}
+                      />
+                    </div>
+                  }
+                  style={{
+                    height: "100%",
+                    border: isDarkMode
+                      ? "1px solid #303030"
+                      : "1px solid #e5e7eb",
+                  }}
+                  styles={{
+                    body: { padding: "16px", height: "300px" },
+                  }}
+                >
+                  {loadingCard === "top-products" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Spin size="small" />
+                    </div>
+                  ) : topProductsData.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        height: "100%",
+                      }}
+                    >
+                      {topProductsData.map((product, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "4px 0",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "11px",
+                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {index + 1}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                              }}
+                              title={product.fullName}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: "13px",
+                                  color: isDarkMode ? "#f3f4f6" : "#111827",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  lineHeight: "1.35",
+                                }}
+                              >
+                                {product.productName}
+                              </span>
+                              {product.variantName && (
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    fontSize: "12px",
+                                    color: isDarkMode ? "#cbd5e1" : "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    lineHeight: "1.3",
+                                  }}
+                                >
+                                  {product.variantName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <Tag
+                            color="blue"
+                            style={{
+                              margin: 0,
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              borderRadius: "10px",
+                              padding: "0 8px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {product.quantity} sold
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        height: "100%",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
+                            }}
+                          >
+                            No product data
+                          </span>
+                        }
+                      />
+                    </div>
+                  )}
+                </Card>
+              </Col>
+
               {/* Weekly Sales Trend */}
               <Col xs={24} sm={12}>
                 <Card
@@ -819,147 +1007,6 @@ function Dashboard() {
                             }}
                           >
                             No trend data
-                          </span>
-                        }
-                      />
-                    </div>
-                  )}
-                </Card>
-              </Col>
-              {/* Top 5 Products List */}
-              <Col xs={24} sm={12}>
-                <Card
-                  title={
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: isDarkMode ? "#f9fafb" : "#111827",
-                      }}
-                    >
-                      Top 5 Products
-                    </span>
-                  }
-                  style={{
-                    height: "100%",
-                    border: isDarkMode
-                      ? "1px solid #303030"
-                      : "1px solid #e5e7eb",
-                  }}
-                  styles={{
-                    body: { padding: "16px", height: "300px" },
-                  }}
-                >
-                  {topProductsData.length > 0 ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "100%",
-                      }}
-                    >
-                      {topProductsData.map((product, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "4px 0",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: "11px",
-                                color: isDarkMode ? "#94a3b8" : "#9ca3af",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {index + 1}
-                            </span>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                overflow: "hidden",
-                              }}
-                              title={product.fullName}
-                            >
-                              <span
-                                style={{
-                                  fontWeight: 600,
-                                  fontSize: "13px",
-                                  color: isDarkMode ? "#f3f4f6" : "#111827",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  lineHeight: "1.35",
-                                }}
-                              >
-                                {product.productName}
-                              </span>
-                              {product.variantName && (
-                                <span
-                                  style={{
-                                    fontWeight: 500,
-                                    fontSize: "12px",
-                                    color: isDarkMode ? "#cbd5e1" : "#6b7280",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    lineHeight: "1.3",
-                                  }}
-                                >
-                                  {product.variantName}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <Tag
-                            color="blue"
-                            style={{
-                              margin: 0,
-                              fontWeight: 700,
-                              fontSize: "12px",
-                              borderRadius: "10px",
-                              padding: "0 8px",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {product.quantity} sold
-                          </Tag>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        height: "100%",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              color: isDarkMode ? "#a0a0a0" : "#6b7280",
-                            }}
-                          >
-                            No product data
                           </span>
                         }
                       />
