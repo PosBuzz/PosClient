@@ -82,23 +82,27 @@ a {
 /* Show scrollbar ONLY on hover */
 .sidebar-scroll-container:hover {
   scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 .sidebar-scroll-container:hover::-webkit-scrollbar {
   display: block; /* Chrome, Safari, Opera */
 }
 
-/* Optional: Make the appearing scrollbar look sleek and modern */
+/* Dark theme sidebar scrollbar */
 .sidebar-scroll-container:hover::-webkit-scrollbar-track {
   background: transparent;
   animation: scrollbarFadeIn 0.3s ease-in;
 }
 .sidebar-scroll-container:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.2
-  ); /* Light grey for dark mode. Change to rgba(0,0,0,0.2) if using light mode */
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   animation: scrollbarFadeIn 0.3s ease-in;
+}
+
+/* Light theme sidebar scrollbar */
+html[data-theme="light"] .sidebar-scroll-container:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+html[data-theme="light"] .sidebar-scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.12);
 }
