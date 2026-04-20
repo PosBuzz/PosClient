@@ -185,24 +185,49 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new Error('Invalid refresh token');
+        throw new HttpException(
+          'Invalid refresh token',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
-      const newAccessToken = this.jwtService.sign(
-        {
-          email: payload.email,
-          sub: payload.sub,
-          consumer_id: payload.consumer_id,
-          consumer_subdomain: user.consumer.subdomain,
-        },
-        { expiresIn: this.configService.jwtExpiration },
-      );
+      const tokenPayload = {
+        email: payload.email,
+        sub: payload.sub,
+        consumer_id: payload.consumer_id,
+        consumer_subdomain: user.consumer.subdomain,
+      };
 
-      return { access_token: newAccessToken };
+      // Token rotation: issue a new refresh token and invalidate the old one.
+      const newRefreshToken = this.jwtService.sign(tokenPayload, {
+        expiresIn: this.configService.jwtRefreshExpiration,
+      });
+
+      // Atomic compare-and-swap: only the request that still holds the current
+      // refresh token can rotate it. Concurrent losers will get count=0.
+      const rotateResult = await this.prisma.user.updateMany({
+        where: { id: user.id, refresh_token: refreshToken },
+        data: { refresh_token: newRefreshToken },
+      });
+
+      if (rotateResult.count !== 1) {
+        throw new HttpException(
+          'Refresh token already rotated',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const newAccessToken = this.jwtService.sign(tokenPayload, {
+        expiresIn: this.configService.jwtExpiration,
+      });
+
+      return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
+      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
-        `Error occurred while refreshing client token for refresh token ${refreshToken}`,
-        error.stack,
+        'Error occurred while refreshing client token',
+        errorStack,
       );
       throw new HttpException(
         'Failed to refresh client token',
@@ -221,22 +246,43 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new Error('Invalid refresh token');
+        throw new HttpException(
+          'Invalid refresh token',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
-      const newAccessToken = this.jwtService.sign(
-        {
-          email: payload.email,
-          sub: payload.sub,
-        },
-        { expiresIn: this.configService.jwtExpiration },
-      );
+      const tokenPayload = { email: payload.email, sub: payload.sub };
 
-      return { access_token: newAccessToken };
+      // Token rotation: issue a new refresh token and invalidate the old one.
+      const newRefreshToken = this.jwtService.sign(tokenPayload, {
+        expiresIn: this.configService.jwtRefreshExpiration,
+      });
+
+      // Atomic compare-and-swap: only one concurrent refresh can succeed.
+      const rotateResult = await this.prisma.superAdmin.updateMany({
+        where: { id: user.id, refresh_token: refreshToken },
+        data: { refresh_token: newRefreshToken },
+      });
+
+      if (rotateResult.count !== 1) {
+        throw new HttpException(
+          'Refresh token already rotated',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const newAccessToken = this.jwtService.sign(tokenPayload, {
+        expiresIn: this.configService.jwtExpiration,
+      });
+
+      return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
+      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
-        `Error occurred while refreshing admin token for refresh token ${refreshToken}`,
-        error.stack,
+        'Error occurred while refreshing admin token',
+        errorStack,
       );
       throw new HttpException(
         'Failed to refresh admin token',
