@@ -8,6 +8,7 @@ export const AuthLoader = () => {
     getCsrfToken, 
     checkAuth, 
     isAuthenticated,
+    csrfToken,
     validateSubdomain,
     subdomainValidation 
   } = useAuthStore();
@@ -28,20 +29,15 @@ export const AuthLoader = () => {
     // Subdomain validation complete - check results
     if (!subdomainValidation.exists) {
       // Subdomain doesn't exist in database - 404
-      console.error('Subdomain not found:', subdomainValidation.message);
       navigate('/404', { replace: true });
       return;
     }
 
     if (subdomainValidation.exists && !subdomainValidation.active) {
       // Subdomain exists but subscription inactive
-      console.warn('Subdomain inactive:', subdomainValidation.message);
       navigate('/inactive', { replace: true });
       return;
     }
-
-    // Subdomain is valid and active - proceed with CSRF and auth
-    console.log(`Subdomain ${subdomainValidation.subdomain} validated successfully`);
   }, [subdomainValidation, navigate]);
 
   // Third: Get CSRF token after subdomain is validated
@@ -51,12 +47,12 @@ export const AuthLoader = () => {
     }
   }, [subdomainValidation, getCsrfToken]);
 
-  // Fourth: Check authentication
+  // Fourth: Check authentication only after CSRF token is ready
   useEffect(() => {
-    if (subdomainValidation.checked && subdomainValidation.active) {
+    if (subdomainValidation.checked && subdomainValidation.active && csrfToken) {
       checkAuth();
     }
-  }, [isAuthenticated, subdomainValidation]);
+  }, [isAuthenticated, subdomainValidation, csrfToken, checkAuth]);
 
   return null;
 };
