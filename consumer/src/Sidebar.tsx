@@ -38,76 +38,24 @@ const SideBar: React.FC = () => {
       label: <span title="Dashboard">Dashboard</span>,
     },
     {
-      label: <span title="Inventory">Inventory</span>,
-      key: "/inventory",
-      icon: <MdOutlineInventory />,
-      children: [
-        {
-          label: <span title="View Inventory">View Inventory</span>,
-          key: "/inventory/batches",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Add Inventory">Add Inventory</span>,
-          key: "/inventory/batches/add",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Inventory Transfer">Inventory Transfer</span>,
-          key: "/inventory/transfers",
-          permissions: [Permissions.inventory_transfer],
-        },
-        {
-          label: <span title="Add Transfer">Add Transfer</span>,
-          key: "/inventory/transfers/add",
-          permissions: [Permissions.inventory_transfer],
-        },
-        {
-          label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
-          key: "/inventory/adjustments",
-          permissions: [Permissions.inventory_adjustment],
-        },
-        {
-          label: <span title="Add Adjustment">Add Adjustment</span>,
-          key: "/inventory/adjustments/add",
-          permissions: [Permissions.inventory_adjustment],
-        },
-        {
-          label: <span title="Stock by Variant">Stock by Variant</span>,
-          key: "/inventory/stock-by-variant",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Expiring Items">Expiring Items</span>,
-          key: "/inventory/expiring",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Low Stock">Low Stock</span>,
-          key: "/inventory/low-stock",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Vendors">Vendors</span>,
-          key: "/vendors",
-          permissions: [Permissions.vendors, Permissions.inventory_batches],
-        },
-      ],
-    },
-    {
       label: <span title="Products">Products</span>,
       key: "/products-menu",
       icon: <ProductOutlined />,
       children: [
+        {
+          label: <span title="Add Product">Add Product</span>,
+          key: "/products/add",
+          permissions: [Permissions.add_product],
+        },
         {
           label: <span title="All Products">View Products</span>,
           key: "/products",
           permissions: [Permissions.view_product],
         },
         {
-          label: <span title="Add Product">Add Product</span>,
-          key: "/products/add",
-          permissions: [Permissions.add_product],
+          label: <span title="Variant Sales Stats">Sales Stats</span>,
+          key: "/product-variant-sales-stats",
+          permissions: [Permissions.view_product],
         },
         {
           label: <span title="Categories">Categories</span>,
@@ -134,10 +82,130 @@ const SideBar: React.FC = () => {
           key: "/barcode-printing",
           permissions: [Permissions.add_product],
         },
+      ],
+    },
+    {
+      label: <span title="Sales">Sales</span>,
+      key: "/sales-menu",
+      icon: <ShoppingCartOutlined />,
+      children: [
         {
-          label: <span title="Variant Sales Stats">Sales Stats</span>,
-          key: "/product-variant-sales-stats",
-          permissions: [Permissions.view_product],
+          label: <span title="New Sale">New Sale</span>,
+          key: "/sales/new",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="View Sales">View Sales</span>,
+          key: "/sales",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="New Quotation">New Quotation</span>,
+          key: "/add-quotation",
+          permissions: [Permissions.quotations],
+        },
+        {
+          label: <span title="View Quotations">View Quotations</span>,
+          key: "/quotations",
+          permissions: [Permissions.quotations],
+        },
+        {
+          label: <span title="Create Return">Create Return</span>,
+          key: "/returns/new",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="View Returns">View Returns</span>,
+          key: "/returns",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="Discount & Promotions">Disc. & Promo</span>,
+          key: "/promotions",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="Partial Payments">Partial Payments</span>,
+          key: "/partial-payments",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="Online Orders">Online Orders</span>,
+          key: "/online-orders",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: <span title="Daily Sales Target">Sales Target</span>,
+          key: "/daily-target",
+          permissions: [Permissions.sales],
+        },
+
+        {
+          label: <span title="User Sales Stats">User Sales Stats</span>,
+          key: "/user-sales-stats",
+          permissions: [Permissions.sales],
+        },
+        // {
+        //   label: <span title="End of Day Report">End of Day Report</span>,
+        //   key: "/eod",
+        //   permissions: [Permissions.sales],
+        // },
+      ],
+    },
+    {
+      label: <span title="Inventory">Inventory</span>,
+      key: "/inventory",
+      icon: <MdOutlineInventory />,
+      children: [
+        {
+          label: <span title="Add Inventory">Add Inventory</span>,
+          key: "/inventory/batches/add",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="View Inventory">View Inventory</span>,
+          key: "/inventory/batches",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Add Transfer">Add Transfer</span>,
+          key: "/inventory/transfers/add",
+          permissions: [Permissions.inventory_transfer],
+        },
+        {
+          label: <span title="Inventory Transfer">Inventory Transfer</span>,
+          key: "/inventory/transfers",
+          permissions: [Permissions.inventory_transfer],
+        },
+        {
+          label: <span title="Add Adjustment">Add Adjustment</span>,
+          key: "/inventory/adjustments/add",
+          permissions: [Permissions.inventory_adjustment],
+        },
+        {
+          label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
+          key: "/inventory/adjustments",
+          permissions: [Permissions.inventory_adjustment],
+        },
+        {
+          label: <span title="Stock by Variant">Stock by Variant</span>,
+          key: "/inventory/stock-by-variant",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Expiring Items">Expiring Items</span>,
+          key: "/inventory/expiring",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Low Stock">Low Stock</span>,
+          key: "/inventory/low-stock",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Vendors">Vendors</span>,
+          key: "/vendors",
+          permissions: [Permissions.vendors, Permissions.inventory_batches],
         },
       ],
     },
@@ -159,74 +227,6 @@ const SideBar: React.FC = () => {
       ],
     },
     {
-      label: <span title="Sales">Sales</span>,
-      key: "/sales-menu",
-      icon: <ShoppingCartOutlined />,
-      children: [
-        {
-          label: <span title="All Sales">View Sales</span>,
-          key: "/sales",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Daily Sales Target">Daily Sales Target</span>,
-          key: "/daily-target",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Discount & Promo">Discount & Promo</span>,
-          key: "/promotions",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="New Sale">New Sale</span>,
-          key: "/sales/new",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Online Orders">Online Orders</span>,
-          key: "/online-orders",
-          permissions: [Permissions.sales],
-        },
-
-        {
-          label: <span title="User Sales Stats">User Sales Stats</span>,
-          key: "/user-sales-stats",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Quotations">Quotations</span>,
-          key: "/quotations",
-          permissions: [Permissions.quotations],
-        },
-        {
-          label: <span title="New Quotation">New Quotation</span>,
-          key: "/add-quotation",
-          permissions: [Permissions.quotations],
-        },
-        {
-          label: <span title="Returns">Returns</span>,
-          key: "/returns",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Create Return">Create Return</span>,
-          key: "/returns/new",
-          permissions: [Permissions.sales],
-        },
-        {
-          label: <span title="Partial Payments">Partial Payments</span>,
-          key: "/partial-payments",
-          permissions: [Permissions.sales],
-        },
-        // {
-        //   label: <span title="End of Day Report">End of Day Report</span>,
-        //   key: "/eod",
-        //   permissions: [Permissions.sales],
-        // },
-      ],
-    },
-    {
       label: <span title="Settings">Settings</span>,
       key: "/settings",
       icon: <SettingOutlined />,
@@ -242,6 +242,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.branches],
         },
         {
+          label: <span title="Rewards">Rewards</span>,
+          key: "/rewards-settings",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Roles">Roles</span>,
           key: "/roles",
           permissions: [Permissions.users],
@@ -250,11 +255,6 @@ const SideBar: React.FC = () => {
           label: <span title="Users">Users</span>,
           key: "/users",
           permissions: [Permissions.users],
-        },
-        {
-          label: <span title="Rewards">Rewards</span>,
-          key: "/rewards-settings",
-          permissions: [Permissions.sales],
         },
       ],
       permissions: [Permissions.users],
