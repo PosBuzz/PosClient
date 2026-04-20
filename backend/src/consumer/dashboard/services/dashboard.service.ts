@@ -97,8 +97,10 @@ export class DashboardService {
 
       const paymentPeriod = query.payment_period || 'daily';
       const returnPaymentPeriod = query.return_payment_period || 'daily';
+      const topProductsPeriod = query.top_products_period || 'daily';
       const paymentDateRange = getDateRange(paymentPeriod);
       const returnPaymentDateRange = getDateRange(returnPaymentPeriod);
+      const topProductsDateRange = getDateRange(topProductsPeriod);
 
       const expiringUntil = new Date(todayEnd);
       expiringUntil.setUTCDate(expiringUntil.getUTCDate() + 30);
@@ -143,6 +145,14 @@ export class DashboardService {
           lte: returnPaymentDateRange.end,
         },
         ...branchFilter,
+      };
+
+      const topProductsWhere = {
+        ...baseWhere,
+        sale_date: {
+          gte: topProductsDateRange.start,
+          lte: topProductsDateRange.end,
+        },
       };
 
       const rawSqlConditions = [
@@ -211,7 +221,7 @@ export class DashboardService {
 
         this.prisma.saleItem.groupBy({
           by: ['variant_id'],
-          where: { sale: weeklyWhere },
+          where: { sale: topProductsWhere },
           _sum: { quantity: true, line_total: true },
           orderBy: { _sum: { quantity: 'desc' } },
           take: 5,
