@@ -55,8 +55,6 @@ a {
   color: inherit;
 }
 
-/* Add this to your global index.css / globals.css */
-
 .sidebar-scroll-container {
   /* Fill the remaining height of the sidebar under the logo */
   height: calc(100vh - 65px);
