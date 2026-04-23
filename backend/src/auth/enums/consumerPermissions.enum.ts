@@ -15,4 +15,5 @@ export enum ConsumerPermission {
   quotations = 'quotations',
   returns = 'returns',
   companyProfile = 'companyProfile',
+  product_audit = 'product_audit',
 }

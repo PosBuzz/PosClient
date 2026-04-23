@@ -74,6 +74,7 @@ const ProductVariantSalesStats = lazy(
 const ViewVariantSalesStats = lazy(
   () => import("./pages/product-variant-sales-stats/view-variant-sales-stats"),
 );
+const ProductAudit = lazy(() => import("./pages/product-audit"));
 
 export const routes = [
   {
@@ -507,6 +508,15 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.customers}>
             <RewardPoints />
+          </RequirePermission>
+        ),
+      },
+      // Product Audit Route
+      {
+        path: "product-audit",
+        element: (
+          <RequirePermission permission={Permissions.product_audit}>
+            <ProductAudit />
           </RequirePermission>
         ),
       },
