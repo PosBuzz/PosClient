@@ -17,6 +17,7 @@ import { RewardsModule } from './rewards/rewards.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ProductAuditModule } from './product-audit/product-audit.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     PaymentsModule,
     PromotionsModule,
     DashboardModule,
+    ProductAuditModule,
   ],
 })
 export class ConsumerModule {}

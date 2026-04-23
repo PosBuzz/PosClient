@@ -352,23 +352,24 @@ export class InventoryTransferService {
             });
 
           if (existingDestinationBatch) {
-            // Update existing batch
+            // Update existing batch — increment both quantity and original_quantity
+            // so consumed_quantity (original - current) stays accurate at destination
             await prisma.inventoryBatch.update({
               where: { id: existingDestinationBatch.id },
               data: {
-                quantity: {
-                  increment: item.quantity,
-                },
+                quantity: { increment: item.quantity },
+                original_quantity: { increment: item.quantity },
               },
             });
           } else {
-            // Create new batch in destination
+            // Create new batch in destination — original_quantity = units received via transfer
             await prisma.inventoryBatch.create({
               data: {
                 variant_id: item.batch.variant_id,
                 branch_id: transfer.destination_branch_id,
                 batch_number: item.batch.batch_number,
                 quantity: item.quantity,
+                original_quantity: item.quantity,
                 cost_price: item.batch.cost_price,
                 vendor_id: item.batch.vendor_id,
                 expiry_date: item.batch.expiry_date,

@@ -183,4 +183,8 @@ export const endpoints = {
   getSaleForPayment: (id: number) => `/consumer/payments/sales/${id}`,
   makePayment: "/consumer/payments/make-payment",
   getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
+
+  // Product Audit
+  getProductAudit: "/consumer/product-audit",
+  downloadProductAuditPdf: "/consumer/product-audit/pdf",
 };
