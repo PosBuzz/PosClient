@@ -934,8 +934,9 @@ model SaleItem {
   variant_id                Int
   batch_id                  Int?
   quantity                  Int
-  unit_price                Decimal @db.Decimal(10, 2)
-  average_discount_amount   Decimal @default(0) @db.Decimal(10, 2) // Proportional cart discount portion for this item
+  unit_price                Decimal  @db.Decimal(10, 2)
+  sold_unit_price           Decimal? @db.Decimal(10, 2)
+  average_discount_amount   Decimal  @default(0) @db.Decimal(10, 2) // Proportional cart discount portion for this item
   special_discount_amount   Decimal @default(0) @db.Decimal(10, 2) // Special item discount entered for this item
   promotion_discount_amount Decimal @default(0) @db.Decimal(10, 2) // Promotion discount portion for this item
   applied_promotion_id      Int? // Promotion id applied to this item, if any

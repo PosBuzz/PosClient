@@ -1092,12 +1092,13 @@ const NewSale = () => {
       const totalDiscount = averageShare + specialShare + promotionShare;
       const netLineTotal = round2(Number(item.line_total) - totalDiscount);
 
-      // Calculate new unit_price = net_line_total / quantity
-      const newUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
+      // sold_unit_price = net per-unit price paid; unit_price keeps the original product price
+      const soldUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
       return {
         ...item,
-        unit_price: newUnitPrice,
+        unit_price: item.unit_price,
+        sold_unit_price: soldUnitPrice,
         line_total: netLineTotal,
         average_discount_amount: round2(averageShare),
         special_discount_amount: round2(specialShare),
@@ -1168,6 +1169,7 @@ const NewSale = () => {
         variant_id: item.variant_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
+        sold_unit_price: item.sold_unit_price,
         average_discount_amount: item.average_discount_amount,
         special_discount_amount: item.special_discount_amount,
         promotion_discount_amount: item.promotion_discount_amount,

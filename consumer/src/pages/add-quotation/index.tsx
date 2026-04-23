@@ -806,8 +806,12 @@ const NewQuotation = () => {
     let taxableAmount: number;
 
     const validTaxPercentage = Number(taxPercentage) || 0;
+    const normalizedTaxMethod = String(taxMethod || "EXCLUSIVE")
+      .trim()
+      .toUpperCase();
+    const isInclusiveTax = normalizedTaxMethod.startsWith("INC");
 
-    if (taxMethod === "INCLUSIVE") {
+    if (isInclusiveTax) {
       lineTotal = baseAmount;
       taxAmount = (baseAmount * validTaxPercentage) / 100;
       taxableAmount = baseAmount - taxAmount;
@@ -1252,11 +1256,12 @@ const NewQuotation = () => {
 
       const totalDiscount = averageShare + specialShare + promotionShare;
       const netLineTotal = round2(Number(item.line_total) - totalDiscount);
-      const newUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
+      const soldUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
       return {
         ...item,
-        unit_price: newUnitPrice,
+        unit_price: item.unit_price,
+        sold_unit_price: soldUnitPrice,
         line_total: netLineTotal,
         average_discount_amount: round2(averageShare),
         special_discount_amount: round2(specialShare),
@@ -1299,6 +1304,7 @@ const NewQuotation = () => {
         variant_id: item.variant_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
+        sold_unit_price: item.sold_unit_price,
         average_discount_amount: item.average_discount_amount,
         special_discount_amount: item.special_discount_amount,
         promotion_discount_amount: item.promotion_discount_amount,

@@ -250,21 +250,72 @@ namespace Printer
             return new Models.ReceiptData
             {
                 SaleNumber = "TEST-001",
+                OrderId = "TEST-001",
+                BarcodeValue = "TEST-001",
                 OrderDate = DateTime.Now,
-                Branch = new Models.BranchInfo { Name = "Test Branch", Address = config.Address, Phone = config.Phone },
+                Branch = new Models.BranchInfo
+                {
+                    Name = !string.IsNullOrEmpty(config.StoreName) ? config.StoreName : "Test Branch",
+                    Address = config.Address,
+                    Phone = config.Phone
+                },
                 Cashier = new Models.UserInfo { Name = "System Test" },
-                Customer = new Models.CustomerInfo { Name = "Test Customer" },
+                Customer = new Models.CustomerInfo
+                {
+                    Name = "Test Customer",
+                    Phone = "01700-000000",
+                    RewardPoints = 120,
+                    PointsEarned = 15,
+                    PointsRedeemed = 5
+                },
                 Items = new System.Collections.Generic.List<Models.ReceiptItem>
                 {
-                    new Models.ReceiptItem { Name = "Test Item 1", Quantity = 2, Price = 10.00m, Total = 20.00m },
-                    new Models.ReceiptItem { Name = "Test Item 2", Quantity = 1, Price = 15.99m, Total = 15.99m }
+                    new Models.ReceiptItem
+                    {
+                        Name = "Test Item 1",
+                        Quantity = 2,
+                        Price = 10.00m,
+                        UnitPrice = 10.00m,
+                        GrossLineTotal = 20.00m,
+                        AverageDiscountAmount = 1.00m,
+                        SpecialDiscountAmount = 0.50m,
+                        PromotionDiscountAmount = 0.50m,
+                        DiscountAmount = 2.00m,
+                        TaxAmount = 0.90m,
+                        TaxPercentage = 5.00m,
+                        TaxMethod = "inclusive",
+                        LineTotal = 18.00m,
+                        Total = 18.00m
+                    },
+                    new Models.ReceiptItem
+                    {
+                        Name = "Test Item 2",
+                        Quantity = 1,
+                        Price = 15.99m,
+                        UnitPrice = 15.99m,
+                        GrossLineTotal = 15.99m,
+                        AverageDiscountAmount = 0.50m,
+                        SpecialDiscountAmount = 0.30m,
+                        PromotionDiscountAmount = 0.20m,
+                        DiscountAmount = 1.00m,
+                        TaxAmount = 0.75m,
+                        TaxPercentage = 5.00m,
+                        TaxMethod = "exclusive",
+                        LineTotal = 14.99m,
+                        Total = 14.99m
+                    }
                 },
                 Subtotal = 35.99m,
-                Tax = 3.60m,
-                Total = 39.59m,
+                Discount = 3.00m,
+                DiscountAmount = 3.00m,
+                Tax = 1.65m,
+                TaxAmount = 1.65m,
+                Total = 32.99m,
+                TotalAmount = 32.99m,
                 ReceivedAmount = 40.00m,
-                ChangeAmount = 0.41m,
-                Payment = new Models.PaymentInfo { PaymentMethod = "Cash", AmountPaid = 40.00m, Change = 0.41m }
+                ChangeAmount = 7.01m,
+                Notes = "Tray test receipt with discount/tax split, barcode, and points",
+                Payment = new Models.PaymentInfo { PaymentMethod = "Cash", AmountPaid = 40.00m, Change = 7.01m }
             };
         }
 

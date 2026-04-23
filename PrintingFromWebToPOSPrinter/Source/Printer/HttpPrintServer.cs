@@ -305,7 +305,7 @@ namespace Printer
             try
             {
                 StoreConfig config = ConfigManager.GetConfig();
-                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"contactInfo\":\"{4}\",\"logoPath\":\"{5}\",\"printerName\":\"{6}\",\"barcodePrinterName\":\"{7}\",\"currency\":\"{8}\",\"port\":{9},\"headerText\":\"{10}\",\"vatRegistrationNumber\":\"{11}\",\"footerTerms\":\"{12}\"}}",
+                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"contactInfo\":\"{4}\",\"logoPath\":\"{5}\",\"printerName\":\"{6}\",\"barcodePrinterName\":\"{7}\",\"currency\":\"{8}\",\"port\":{9},\"headerText\":\"{10}\",\"vatRegistrationNumber\":\"{11}\",\"footerTerms\":\"{12}\",\"showPoweredByPosbuzz\":{13},\"poweredByText\":\"{14}\",\"showCustomerRewardPoints\":{15}}}",
                     EscapeJson(config.StoreName),
                     EscapeJson(config.Address),
                     EscapeJson(config.Phone),
@@ -318,7 +318,10 @@ namespace Printer
                     config.Port,
                     EscapeJson(config.HeaderText),
                     EscapeJson(config.VatRegistrationNumber),
-                    EscapeJson(config.FooterTerms));
+                    EscapeJson(config.FooterTerms),
+                    config.ShowPoweredByPosbuzz.ToString().ToLower(),
+                    EscapeJson(config.PoweredByText),
+                    config.ShowCustomerRewardPoints.ToString().ToLower());
             }
             catch (Exception ex)
             {
@@ -345,8 +348,13 @@ namespace Printer
 
                 Console.WriteLine("Received config update: " + body);
 
-                // Create a config object with only the fields to update
-                StoreConfig updatedFields = new StoreConfig();
+                // Seed with current booleans because partial updates do not indicate field presence.
+                StoreConfig currentConfig = ConfigManager.GetConfig();
+                StoreConfig updatedFields = new StoreConfig
+                {
+                    ShowPoweredByPosbuzz = currentConfig.ShowPoweredByPosbuzz,
+                    ShowCustomerRewardPoints = currentConfig.ShowCustomerRewardPoints
+                };
                 
                 string storeName = GetFirstNonNull(
                     ExtractJsonString(body, "storeName"),
@@ -444,6 +452,14 @@ namespace Printer
                     updatedFields.FooterTerms = footerTerms;
                     Console.WriteLine("HTTP: Setting FooterTerms = " + footerTerms);
                 }
+
+                string poweredByText = GetFirstNonNull(
+                    ExtractJsonString(body, "poweredByText"),
+                    ExtractJsonString(body, "PoweredByText"));
+                if (poweredByText != null) {
+                    updatedFields.PoweredByText = poweredByText;
+                    Console.WriteLine("HTTP: Setting PoweredByText = " + poweredByText);
+                }
                 
                 // Handle integer fields  
                 string portStr = GetFirstNonNull(
@@ -454,6 +470,28 @@ namespace Printer
                     if (int.TryParse(portStr, out port)) {
                         updatedFields.Port = port;
                         Console.WriteLine("HTTP: Setting Port = " + port);
+                    }
+                }
+
+                string showPoweredByStr = GetFirstNonNull(
+                    ExtractJsonValue(body, "showPoweredByPosbuzz"),
+                    ExtractJsonValue(body, "ShowPoweredByPosbuzz"));
+                if (showPoweredByStr != null) {
+                    bool showPoweredBy;
+                    if (bool.TryParse(showPoweredByStr, out showPoweredBy)) {
+                        updatedFields.ShowPoweredByPosbuzz = showPoweredBy;
+                        Console.WriteLine("HTTP: Setting ShowPoweredByPosbuzz = " + showPoweredBy);
+                    }
+                }
+
+                string showCustomerRewardPointsStr = GetFirstNonNull(
+                    ExtractJsonValue(body, "showCustomerRewardPoints"),
+                    ExtractJsonValue(body, "ShowCustomerRewardPoints"));
+                if (showCustomerRewardPointsStr != null) {
+                    bool showCustomerRewardPoints;
+                    if (bool.TryParse(showCustomerRewardPointsStr, out showCustomerRewardPoints)) {
+                        updatedFields.ShowCustomerRewardPoints = showCustomerRewardPoints;
+                        Console.WriteLine("HTTP: Setting ShowCustomerRewardPoints = " + showCustomerRewardPoints);
                     }
                 }
                 
@@ -563,30 +601,15 @@ namespace Printer
                 Console.WriteLine("=== TEST RECEIPT PRINT ===");
                 Console.WriteLine("Printing comprehensive test receipt with all properties...");
                 
-                // Temporarily set test config values to demonstrate new features
-                StoreConfig originalConfig = ConfigManager.GetConfig();
-                StoreConfig testConfig = new StoreConfig
-                {
-                    StoreName = originalConfig.StoreName,
-                    ContactInfo = "123 Test Street, Business District\nTest City, State 12345\nPhone: (555) 123-4567\nEmail: test@store.com",
-                    LogoPath = originalConfig.LogoPath,
-                    PrinterName = originalConfig.PrinterName,
-                    BarcodePrinterName = originalConfig.BarcodePrinterName,
-                    Currency = originalConfig.Currency,
-                    Port = originalConfig.Port,
-                    Password = originalConfig.Password,
-                    HeaderText = "Government of the People's Republic of Bangladesh:\nNational Board of Revenue, \"Tax Invoice\": Musahk-6.3;\n[See clauses (c) and (f) of Rule 40]",
-                    VatRegistrationNumber = "123456789-VAT",
-                    FooterTerms = "Terms & Conditions:\n1. All sales are final\n2. Goods once sold cannot be returned\n3. Please retain this receipt for warranty claims"
-                };
-                
-                ConfigManager.SetConfig(testConfig);
-                
+                // Use real config from settings for all store display (header, footer, contact, etc.)
+                StoreConfig config = ConfigManager.GetConfig();
+
                 // Create a comprehensive test receipt with all properties
                 ReceiptData testReceipt = new ReceiptData
                 {
                     SaleNumber = "TEST-001",
                     OrderId = "TEST-001",
+                    BarcodeValue = "TEST-001",
                     Subtotal = 180.00m,        // Items subtotal before discount/shipping
                     Discount = 20.00m,         // Discount amount
                     DiscountAmount = 20.00m,   // Alternative discount field
@@ -606,9 +629,9 @@ namespace Printer
                 // Add store info
                 testReceipt.Branch = new BranchInfo
                 {
-                    Name = "Test Branch Location",
-                    Address = "123 Main Street, Business District, Test City 12345",
-                    Phone = "(555) 123-4567"
+                    Name = !string.IsNullOrEmpty(config.StoreName) ? config.StoreName : "Test Branch Location",
+                    Address = !string.IsNullOrEmpty(config.Address) ? config.Address : "123 Main Street, Business District, Test City 12345",
+                    Phone = !string.IsNullOrEmpty(config.Phone) ? config.Phone : "(555) 123-4567"
                 };
                 
                 // Add cashier info
@@ -617,13 +640,23 @@ namespace Printer
                     Name = "John Test Cashier",
                     Id = "CASHIER-001"
                 };
+
+                // Add served by info
+                testReceipt.ServedBy = new UserInfo
+                {
+                    Name = "Alice Test Server",
+                    Id = "SERVER-001"
+                };
                 
                 // Add customer info
                 testReceipt.Customer = new CustomerInfo
                 {
                     Name = "Jane Test Customer",
                     Phone = "(555) 987-6543",
-                    Address = "456 Customer Ave, Test Town"
+                    Address = "456 Customer Ave, Test Town",
+                    RewardPoints = 127,
+                    PointsEarned = 15,
+                    PointsRedeemed = 3
                 };
                 
                 // Add payment info with multiple payment methods
@@ -660,9 +693,17 @@ namespace Printer
                     Description = "High-quality item with warranty",
                     Quantity = 3,
                     Price = 35.00m,
-                    Total = 105.00m,
                     UnitPrice = 35.00m,
-                    LineTotal = 105.00m
+                    GrossLineTotal = 105.00m,
+                    AverageDiscountAmount = 3.00m,
+                    SpecialDiscountAmount = 2.00m,
+                    PromotionDiscountAmount = 1.00m,
+                    DiscountAmount = 6.00m,
+                    TaxAmount = 4.50m,
+                    TaxPercentage = 5.00m,
+                    TaxMethod = "inclusive",
+                    Total = 99.00m,
+                    LineTotal = 99.00m
                 });
                 
                 testReceipt.Items.Add(new ReceiptItem
@@ -671,9 +712,17 @@ namespace Printer
                     Description = "Regular everyday item",
                     Quantity = 2,
                     Price = 25.00m,
-                    Total = 50.00m,
                     UnitPrice = 25.00m,
-                    LineTotal = 50.00m
+                    GrossLineTotal = 50.00m,
+                    AverageDiscountAmount = 1.00m,
+                    SpecialDiscountAmount = 0.00m,
+                    PromotionDiscountAmount = 1.00m,
+                    DiscountAmount = 2.00m,
+                    TaxAmount = 2.40m,
+                    TaxPercentage = 5.00m,
+                    TaxMethod = "exclusive",
+                    Total = 48.00m,
+                    LineTotal = 48.00m
                 });
                 
                 testReceipt.Items.Add(new ReceiptItem
@@ -682,38 +731,31 @@ namespace Printer
                     Description = "Special offer item",
                     Quantity = 1,
                     Price = 25.00m,
-                    Total = 25.00m,
                     UnitPrice = 25.00m,
-                    LineTotal = 25.00m
+                    GrossLineTotal = 25.00m,
+                    AverageDiscountAmount = 1.00m,
+                    SpecialDiscountAmount = 0.00m,
+                    PromotionDiscountAmount = 0.00m,
+                    DiscountAmount = 1.00m,
+                    TaxAmount = 1.25m,
+                    TaxPercentage = 5.00m,
+                    TaxMethod = "exclusive",
+                    Total = 24.00m,
+                    LineTotal = 24.00m
                 });
                 
-                // Print the comprehensive test receipt
+                // Print the comprehensive test receipt using real configured printer
                 SimpleReceiptPrint printer = new SimpleReceiptPrint();
-                bool success = printer.Print("", testReceipt);
-                
-                // Restore original config
-                ConfigManager.SetConfig(originalConfig);
-                
+                bool success = printer.Print(config.PrinterName, testReceipt);
+
                 if (success)
                 {
-                    Console.WriteLine("✓ Comprehensive test receipt printed successfully!");
-                    Console.WriteLine("✓ Receipt includes:");
-                    Console.WriteLine("   - Custom header text (tax invoice info)");
-                    Console.WriteLine("   - Contact info with wrapping");
-                    Console.WriteLine("   - VAT registration number");
-                    Console.WriteLine("   - Subtotal: $180.00 (3 items)");
-                    Console.WriteLine("   - Discount: -$20.00");
-                    Console.WriteLine("   - Shipping: $15.00");
-                    Console.WriteLine("   - Tax: $25.00");
-                    Console.WriteLine("   - TOTAL: $200.00");
-                    Console.WriteLine("   - Paid: $250.00 (Cash: $150 + Card: $100)");
-                    Console.WriteLine("   - Change: $50.00");
-                    Console.WriteLine("   - Footer terms and conditions");
-                    return "{\"success\":true,\"message\":\"Comprehensive test receipt printed with all new features\"}";
+                    Console.WriteLine("\u2713 Comprehensive test receipt printed successfully!");
+                    return "{\"success\":true,\"message\":\"Test receipt printed successfully\"}";
                 }
                 else
                 {
-                    Console.WriteLine("✗ Failed to print comprehensive test receipt");
+                    Console.WriteLine("\u2717 Failed to print comprehensive test receipt");
                     return "{\"error\":\"Failed to print comprehensive test receipt\"}";
                 }
             }
@@ -732,6 +774,24 @@ namespace Printer
                 if (!string.IsNullOrEmpty(value))
                     return value;
             }
+            return null;
+        }
+
+        private int? ParseNullableIntField(string json, params string[] fieldNames)
+        {
+            foreach (string fieldName in fieldNames)
+            {
+                string valueStr = ExtractJsonValue(json, fieldName);
+                if (!string.IsNullOrEmpty(valueStr))
+                {
+                    int value;
+                    if (int.TryParse(valueStr, out value))
+                    {
+                        return value;
+                    }
+                }
+            }
+
             return null;
         }
 
@@ -756,6 +816,11 @@ namespace Printer
                     ExtractJsonString(json, "saleNumber"),
                     ExtractJsonString(json, "sale_number"), 
                     ExtractJsonString(json, "receiptNumber"),
+                    receipt.OrderId);
+                receipt.BarcodeValue = GetFirstNonNull(
+                    ExtractJsonString(json, "barcodeValue"),
+                    ExtractJsonString(json, "BarcodeValue"),
+                    receipt.SaleNumber,
                     receipt.OrderId);
                     
                 receipt.Notes = ExtractJsonString(json, "notes");
@@ -798,6 +863,31 @@ namespace Printer
                     {
                         receipt.Customer.Phone = customerPhone;
                     }
+
+                    string customerAddress = GetFirstNonNull(
+                        ExtractJsonString(json, "customer_address"),
+                        ExtractJsonString(json, "customerAddress"));
+                    if (!string.IsNullOrEmpty(customerAddress))
+                    {
+                        receipt.Customer.Address = customerAddress;
+                    }
+
+                    receipt.Customer.RewardPoints = ParseNullableIntField(
+                        json,
+                        "rewardPoints",
+                        "customerRewardPoints",
+                        "pointsBalance",
+                        "totalPoints");
+                    receipt.Customer.PointsEarned = ParseNullableIntField(
+                        json,
+                        "pointsEarned",
+                        "rewardPointsEarned",
+                        "lifetimeEarned");
+                    receipt.Customer.PointsRedeemed = ParseNullableIntField(
+                        json,
+                        "pointsRedeemed",
+                        "rewardPointsRedeemed",
+                        "lifetimeRedeemed");
                     
                     Console.WriteLine("ParseReceiptJson: Customer = " + customerName + ", Phone = " + customerPhone);
                 }
@@ -811,6 +901,16 @@ namespace Printer
                 {
                     receipt.Cashier = new UserInfo { Name = cashierName };
                     Console.WriteLine("ParseReceiptJson: Cashier = " + cashierName);
+                }
+
+                // Extract served by info
+                string servedByName = GetFirstNonNull(
+                    ExtractJsonString(json, "servedBy"),
+                    ExtractJsonString(json, "served_by"),
+                    ExtractJsonString(json, "servedByName"));
+                if (!string.IsNullOrEmpty(servedByName))
+                {
+                    receipt.ServedBy = new UserInfo { Name = servedByName };
                 }
                 
                 // Parse date and time
@@ -1272,9 +1372,10 @@ namespace Printer
                 
                 // Parse price (try multiple field names)
                 string priceStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "unitPrice"),
                     ExtractJsonValue(fullItemJson, "price"),
                     ExtractJsonValue(fullItemJson, "unit_price"),
-                    ExtractJsonValue(fullItemJson, "unitPrice"));
+                    ExtractJsonValue(fullItemJson, "regular_price"));
                 if (!string.IsNullOrEmpty(priceStr))
                 {
                     decimal price;
@@ -1288,9 +1389,10 @@ namespace Printer
                 
                 // Parse total (try multiple field names)
                 string totalStr = GetFirstNonNull(
-                    ExtractJsonValue(fullItemJson, "total"),
+                    ExtractJsonValue(fullItemJson, "lineTotal"),
                     ExtractJsonValue(fullItemJson, "line_total"),
-                    ExtractJsonValue(fullItemJson, "lineTotal"));
+                    ExtractJsonValue(fullItemJson, "total"),
+                    ExtractJsonValue(fullItemJson, "netTotal"));
                 if (!string.IsNullOrEmpty(totalStr))
                 {
                     decimal total;
@@ -1308,11 +1410,41 @@ namespace Printer
                     item.LineTotal = item.Total;
                     Console.WriteLine("ParseReceiptItem: calculated total = " + item.Total);
                 }
+
+                string grossTotalStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "grossLineTotal"),
+                    ExtractJsonValue(fullItemJson, "gross_line_total"));
+                if (!string.IsNullOrEmpty(grossTotalStr))
+                {
+                    decimal grossTotal;
+                    if (decimal.TryParse(grossTotalStr, out grossTotal))
+                    {
+                        item.GrossLineTotal = grossTotal;
+                    }
+                }
+
+                if (item.GrossLineTotal <= 0)
+                {
+                    item.GrossLineTotal = item.Quantity * item.Price;
+                }
+
+                string averageDiscountStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "averageDiscountAmount"),
+                    ExtractJsonValue(fullItemJson, "average_discount_amount"));
+                if (!string.IsNullOrEmpty(averageDiscountStr))
+                {
+                    decimal averageDiscount;
+                    if (decimal.TryParse(averageDiscountStr, out averageDiscount))
+                    {
+                        item.AverageDiscountAmount = averageDiscount;
+                    }
+                }
                 
                 // Parse discount amount
                 string discountStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "discountAmount"),
                     ExtractJsonValue(fullItemJson, "discount_amount"),
-                    ExtractJsonValue(fullItemJson, "discountAmount"));
+                    ExtractJsonValue(fullItemJson, "totalDiscount"));
                 if (!string.IsNullOrEmpty(discountStr))
                 {
                     decimal discount;
@@ -1322,6 +1454,64 @@ namespace Printer
                         Console.WriteLine("ParseReceiptItem: discount = " + discount);
                     }
                 }
+
+                string specialDiscountStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "specialDiscountAmount"),
+                    ExtractJsonValue(fullItemJson, "special_discount_amount"));
+                if (!string.IsNullOrEmpty(specialDiscountStr))
+                {
+                    decimal specialDiscount;
+                    if (decimal.TryParse(specialDiscountStr, out specialDiscount))
+                    {
+                        item.SpecialDiscountAmount = specialDiscount;
+                    }
+                }
+
+                string promotionDiscountStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "promotionDiscountAmount"),
+                    ExtractJsonValue(fullItemJson, "promotion_discount_amount"));
+                if (!string.IsNullOrEmpty(promotionDiscountStr))
+                {
+                    decimal promotionDiscount;
+                    if (decimal.TryParse(promotionDiscountStr, out promotionDiscount))
+                    {
+                        item.PromotionDiscountAmount = promotionDiscount;
+                    }
+                }
+
+                if (item.DiscountAmount <= 0)
+                {
+                    item.DiscountAmount = item.AverageDiscountAmount + item.SpecialDiscountAmount + item.PromotionDiscountAmount;
+                }
+
+                string taxAmountStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "taxAmount"),
+                    ExtractJsonValue(fullItemJson, "tax_amount"));
+                if (!string.IsNullOrEmpty(taxAmountStr))
+                {
+                    decimal taxAmount;
+                    if (decimal.TryParse(taxAmountStr, out taxAmount))
+                    {
+                        item.TaxAmount = taxAmount;
+                    }
+                }
+
+                string taxPercentageStr = GetFirstNonNull(
+                    ExtractJsonValue(fullItemJson, "taxPercentage"),
+                    ExtractJsonValue(fullItemJson, "tax_percentage"));
+                if (!string.IsNullOrEmpty(taxPercentageStr))
+                {
+                    decimal taxPercentage;
+                    if (decimal.TryParse(taxPercentageStr, out taxPercentage))
+                    {
+                        item.TaxPercentage = taxPercentage;
+                    }
+                }
+
+                item.TaxMethod = GetFirstNonNull(
+                    ExtractJsonString(fullItemJson, "taxMethod"),
+                    ExtractJsonString(fullItemJson, "tax_method"),
+                    item.TaxMethod);
                 
                 return item;
             }
