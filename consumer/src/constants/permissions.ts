@@ -14,4 +14,5 @@ export const Permissions = {
   quotations: "quotations",
   customers: "customers",
   companyProfile: 'companyProfile',
+  product_audit: "product_audit",
 };

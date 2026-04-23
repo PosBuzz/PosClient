@@ -93,6 +93,7 @@ async function main() {
   const consumerPermissions = [
     'profile',
     'users',
+    'product_audit',
     'add_product',
     'edit_product',
     'view_product',

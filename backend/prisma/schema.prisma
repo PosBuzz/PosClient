@@ -644,16 +644,17 @@ model UserBranch {
 }
 
 model InventoryBatch {
-  id           Int       @id @default(autoincrement())
-  variant_id   Int
-  branch_id    Int
-  batch_number String
-  quantity     Int
-  cost_price   Decimal   @db.Decimal(10, 2)
-  vendor_id    Int?
-  expiry_date  DateTime?
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
+  id                Int       @id @default(autoincrement())
+  variant_id        Int
+  branch_id         Int
+  batch_number      String
+  quantity          Int
+  original_quantity Int       @default(0) // Units received at purchase time — never modified after creation
+  cost_price        Decimal   @db.Decimal(10, 2)
+  vendor_id         Int?
+  expiry_date       DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
 
   // Relations
   variant             ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
