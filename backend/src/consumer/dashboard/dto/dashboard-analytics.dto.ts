@@ -22,6 +22,10 @@ export class DashboardAnalyticsDto {
   @IsOptional()
   @IsIn(['daily', 'weekly', 'monthly'])
   return_payment_period?: PeriodType;
+
+  @IsOptional()
+  @IsIn(['daily', 'weekly', 'monthly'])
+  top_products_period?: PeriodType;
 }
 
 export interface DashboardSummary {
