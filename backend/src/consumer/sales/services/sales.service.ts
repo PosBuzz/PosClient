@@ -424,6 +424,7 @@ export class SalesService {
                 batch_id: item.selectedBatch?.id || null,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
+                sold_unit_price: item.sold_unit_price ?? null,
                 average_discount_amount: item.average_discount_amount || 0,
                 special_discount_amount: item.special_discount_amount || 0,
                 promotion_discount_amount: item.promotion_discount_amount || 0,
@@ -679,7 +680,11 @@ export class SalesService {
           sale_type: SaleType.SALE, // Only return actual sales, not quotations
         },
         include: {
-          customer: true,
+          customer: {
+            include: {
+              rewards_points: true,
+            },
+          },
           consumer: true, // Include consumer data directly
           branch: true,
           user: { select: { id: true, name: true } },
@@ -742,7 +747,11 @@ export class SalesService {
           sale_type: SaleType.SALE, // Only return actual sales, not quotations
         },
         include: {
-          customer: true,
+          customer: {
+            include: {
+              rewards_points: true,
+            },
+          },
           branch: true,
           user: { select: { id: true, name: true } },
           served_by: { select: { id: true, name: true } },
@@ -1750,6 +1759,7 @@ export class SalesService {
                 batch_id: item.selectedBatch.id,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
+                sold_unit_price: item.sold_unit_price ?? null,
                 average_discount_amount: item.average_discount_amount || 0,
                 special_discount_amount: item.special_discount_amount || 0,
                 promotion_discount_amount: item.promotion_discount_amount || 0,

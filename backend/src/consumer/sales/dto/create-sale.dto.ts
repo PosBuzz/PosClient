@@ -146,6 +146,11 @@ export class CreateSaleItemDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  sold_unit_price?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   average_discount_amount?: number;
 
   @IsOptional()

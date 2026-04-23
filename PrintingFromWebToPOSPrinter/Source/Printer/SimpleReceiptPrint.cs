@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Printer.Models;
 using Printer.Services;
+using ZXing;
 
 namespace Printer
 {
@@ -208,12 +209,13 @@ namespace Printer
             }
 
             // Order information
-            if (!string.IsNullOrEmpty(receiptData.OrderId))
+            string saleNumberText = GetSaleNumberText();
+            if (!string.IsNullOrEmpty(saleNumberText))
             {
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Order ID:", 0.6f, StringAlignment.Near, 7f),
-                    new TextColumn(receiptData.OrderId, 0.4f, StringAlignment.Far, 7f)
+                    new TextColumn("Sale No:", 0.35f, StringAlignment.Near, 7f),
+                    new TextColumn(saleNumberText, 0.65f, StringAlignment.Far, 7f, FontStyle.Bold)
                 );
             }
 
@@ -236,6 +238,15 @@ namespace Printer
                 );
             }
 
+            if (receiptData.ServedBy != null && !string.IsNullOrEmpty(receiptData.ServedBy.Name))
+            {
+                y += this.DrawTextColumns(
+                    g, y,
+                    new TextColumn("Served By:", 0.6f, StringAlignment.Near, 7f),
+                    new TextColumn(receiptData.ServedBy.Name, 0.4f, StringAlignment.Far, 7f)
+                );
+            }
+
             // Customer information (only if exists)
             if (receiptData.Customer != null && !string.IsNullOrEmpty(receiptData.Customer.Name))
             {
@@ -245,6 +256,28 @@ namespace Printer
                     new TextColumn("Customer:", 0.3f, StringAlignment.Near, 7f),
                     new TextColumn(receiptData.Customer.Name, 0.7f, StringAlignment.Near, 7f)
                 );
+
+                if (!string.IsNullOrEmpty(receiptData.Customer.Phone))
+                {
+                    y += this.DrawTextColumns(
+                        g, y,
+                        new TextColumn("Phone:", 0.3f, StringAlignment.Near, 7f),
+                        new TextColumn(receiptData.Customer.Phone, 0.7f, StringAlignment.Near, 7f)
+                    );
+                }
+
+                if (config.ShowCustomerRewardPoints)
+                {
+                    string rewardSummary = BuildCustomerRewardSummary();
+                    if (!string.IsNullOrEmpty(rewardSummary))
+                    {
+                        y += this.DrawTextColumns(
+                            g, y,
+                            new TextColumn("Points:", 0.3f, StringAlignment.Near, 7f),
+                            new TextColumn(rewardSummary, 0.7f, StringAlignment.Near, 7f)
+                        );
+                    }
+                }
             }
 
             // Items section
@@ -252,36 +285,36 @@ namespace Printer
             {
                 y += 4;
                 y += this.DrawDashedLine(g, y);
-                y += 4; // More gap after header line
+                y += 2;
 
-                // Items header
+                // Items header — 6 columns; item name wraps within its column
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Item", 0.5f, StringAlignment.Near, 7f, FontStyle.Bold),
-                    new TextColumn("Qty", 0.15f, StringAlignment.Center, 7f, FontStyle.Bold),
-                    new TextColumn("Price", 0.175f, StringAlignment.Far, 7f, FontStyle.Bold),
-                    new TextColumn("Total", 0.175f, StringAlignment.Far, 7f, FontStyle.Bold)
+                    new TextColumn("Item", 0.35f, StringAlignment.Near, 6.5f, FontStyle.Bold),
+                    new TextColumn("Qty", 0.08f, StringAlignment.Near, 6.5f, FontStyle.Bold),
+                    new TextColumn("Price", 0.15f, StringAlignment.Far, 6.5f, FontStyle.Bold),
+                    new TextColumn("Disc", 0.12f, StringAlignment.Far, 6.5f, FontStyle.Bold),
+                    new TextColumn("Tax", 0.14f, StringAlignment.Far, 6.5f, FontStyle.Bold),
+                    new TextColumn("Total", 0.16f, StringAlignment.Far, 6.5f, FontStyle.Bold)
                 );
-                
+
                 y += 2;
                 y += this.DrawDashedLine(g, y);
                 y += 2;
 
                 foreach (var item in receiptData.Items)
                 {
-                    string itemText = item.Name;
-                    if (!string.IsNullOrEmpty(item.Description))
-                    {
-                        itemText += " - " + item.Description;
-                    }
-
                     y += this.DrawTextColumns(
                         g, y,
-                        new TextColumn(itemText, 0.5f, StringAlignment.Near, 7f),
-                        new TextColumn(item.Quantity.ToString(), 0.15f, StringAlignment.Center, 7f),
-                        new TextColumn(item.Price.ToString("0.00"), 0.175f, StringAlignment.Far, 7f),
-                        new TextColumn(item.Total.ToString("0.00"), 0.175f, StringAlignment.Far, 7f)
+                        new TextColumn(item.Name, 0.35f, StringAlignment.Near, 6.5f),
+                        new TextColumn(item.Quantity.ToString(), 0.08f, StringAlignment.Near, 6.5f),
+                        new TextColumn(item.Price.ToString("0.00"), 0.15f, StringAlignment.Far, 6.5f),
+                        new TextColumn(item.DiscountAmount > 0 ? item.DiscountAmount.ToString("0.00") : "-", 0.12f, StringAlignment.Far, 6.5f),
+                        new TextColumn(FormatTaxCell(item), 0.14f, StringAlignment.Far, 6.5f),
+                        new TextColumn(GetItemTotal(item).ToString("0.00"), 0.16f, StringAlignment.Far, 6.5f)
                     );
+
+                    y += 1;
                 }
 
                 y += 3;
@@ -304,7 +337,7 @@ namespace Printer
                 decimal discountToShow = receiptData.Discount > 0 ? receiptData.Discount : receiptData.DiscountAmount;
                 y += this.DrawTextColumns(
                     g, y,
-                    new TextColumn("Discount:", 0.7f, StringAlignment.Near, 7f),
+                    new TextColumn("Total Discount:", 0.7f, StringAlignment.Near, 7f),
                     new TextColumn("-" + FormatCurrency(discountToShow), 0.3f, StringAlignment.Far, 7f)
                 );
             }
@@ -391,16 +424,146 @@ namespace Printer
                 y += 2;
             }
 
+            // Sale barcode at bottom
+            string barcodeValue = !string.IsNullOrEmpty(receiptData.BarcodeValue)
+                ? receiptData.BarcodeValue
+                : receiptData.SaleNumber;
+            if (!string.IsNullOrEmpty(barcodeValue))
+            {
+                y += 4;
+                y += this.DrawDashedLine(g, y);
+                y += 2;
+                y += this.DrawReceiptBarcode(g, y, barcodeValue);
+            }
+
             // Footer
             y += 6; // Reduced gap before thanks
             y += this.DrawCenteredText(g, y, "Thank you for your business!", 8f, FontStyle.Bold);
             y += 2;
             y += this.DrawCenteredText(g, y, DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"), 6f);
+
+            if (config.ShowPoweredByPosbuzz)
+            {
+                string poweredByText = !string.IsNullOrEmpty(config.PoweredByText) ? config.PoweredByText : "Powered by Posbuzz";
+                y += 2;
+                y += this.DrawCenteredText(g, y, poweredByText, 6f, FontStyle.Italic);
+            }
         }
 
         private string FormatCurrency(decimal amount)
         {
             return config.Currency + amount.ToString("0.00");
+        }
+
+        private string GetSaleNumberText()
+        {
+            if (!string.IsNullOrEmpty(receiptData.SaleNumber))
+            {
+                return receiptData.SaleNumber;
+            }
+
+            if (!string.IsNullOrEmpty(receiptData.OrderId))
+            {
+                return receiptData.OrderId;
+            }
+
+            return "";
+        }
+
+        private string BuildCustomerRewardSummary()
+        {
+            if (receiptData.Customer == null)
+            {
+                return "";
+            }
+
+            if (receiptData.Customer.RewardPoints.HasValue)
+            {
+                return receiptData.Customer.RewardPoints.Value + " pts";
+            }
+
+            return "";
+        }
+
+        private decimal GetItemTotal(ReceiptItem item)
+        {
+            if (item.LineTotal > 0)
+            {
+                return item.LineTotal;
+            }
+
+            if (item.Total > 0)
+            {
+                return item.Total;
+            }
+
+            decimal gross = item.GrossLineTotal > 0
+                ? item.GrossLineTotal
+                : item.Quantity * item.Price;
+            decimal net = gross - item.DiscountAmount;
+
+            bool isInclusiveTax = !string.IsNullOrEmpty(item.TaxMethod) &&
+                item.TaxMethod.StartsWith("inc", StringComparison.OrdinalIgnoreCase);
+
+            if (!isInclusiveTax && item.TaxAmount > 0)
+            {
+                net += item.TaxAmount;
+            }
+
+            return net;
+        }
+
+        private string FormatTaxCell(ReceiptItem item)
+        {
+            string taxMode = string.IsNullOrEmpty(item.TaxMethod)
+                ? ""
+                : item.TaxMethod.StartsWith("inc", StringComparison.OrdinalIgnoreCase) || item.TaxMethod.StartsWith("INCLUSIVE", StringComparison.OrdinalIgnoreCase)
+                    ? "inc"
+                    : "exc";
+
+            if (item.TaxAmount > 0)
+            {
+                return string.Format("{0:0.00} {1}", item.TaxAmount, taxMode).Trim();
+            }
+
+            if (item.TaxPercentage > 0)
+            {
+                return string.Format("{0:0.##}% {1}", item.TaxPercentage, taxMode).Trim();
+            }
+
+            return taxMode;
+        }
+
+        private float DrawReceiptBarcode(Graphics g, float y, string barcodeText)
+        {
+            try
+            {
+                BarcodeWriter writer = new BarcodeWriter
+                {
+                    Format = BarcodeFormat.CODE_128,
+                    Options = new ZXing.Common.EncodingOptions
+                    {
+                        Width = 420,
+                        Height = 120,
+                        Margin = 0,
+                        PureBarcode = false
+                    }
+                };
+
+                using (Bitmap barcodeBitmap = writer.Write(barcodeText))
+                {
+                    float barcodeWidth = 52f;
+                    float barcodeHeight = 14f;
+                    float x = (this.width - barcodeWidth) / 2;
+                    g.DrawImage(barcodeBitmap, x, y, barcodeWidth, barcodeHeight);
+                    return barcodeHeight;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Could not render receipt barcode: " + ex.Message);
+                return this.DrawCenteredText(g, y, barcodeText, 6f);
+            }
         }
 
         private float DrawCenteredText(Graphics g, float y, string text, float fontSize, FontStyle style = FontStyle.Regular)

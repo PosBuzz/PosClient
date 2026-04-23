@@ -3,6 +3,11 @@ export interface Customer {
   name: string;
   phone?: string;
   email?: string;
+  rewards_points?: {
+    total_points: number;
+    lifetime_earned?: number;
+    lifetime_redeemed?: number;
+  } | null;
 }
 
 export interface SaleItem {
@@ -14,6 +19,7 @@ export interface SaleItem {
   batch_id?: number;
   batch_number?: string;
   unit_price: number;
+  sold_unit_price?: number;
   average_discount_amount?: number;
   special_discount_amount?: number;
   promotion_discount_amount?: number;

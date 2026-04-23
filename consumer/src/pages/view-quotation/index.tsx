@@ -152,7 +152,13 @@ const QuotationDetail: React.FC = () => {
       title: "Unit Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${Number(price || 0).toFixed(2)}`,
+      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
+    },
+    {
+      title: "Unit Price (Sold)",
+      key: "sold_unit_price",
+      render: (_: any, record: any) =>
+        `$${(Number(record.sold_unit_price ?? record.unit_price) || 0).toFixed(2)}`,
     },
     {
       title: "Quantity",
@@ -165,12 +171,6 @@ const QuotationDetail: React.FC = () => {
           </Text>
         </div>
       ),
-    },
-    {
-      title: "Tax",
-      dataIndex: "tax_amount",
-      key: "tax_amount",
-      render: (tax: number) => `$${Number(tax || 0).toFixed(2)}`,
     },
     {
       title: "Avg Disc",
@@ -199,17 +199,34 @@ const QuotationDetail: React.FC = () => {
       },
     },
     {
+      title: "Tax",
+      dataIndex: "tax_amount",
+      key: "tax_amount",
+      render: (tax: number, record: any) => {
+        const isInc = String(record.variant?.product?.tax_method || "")
+          .toLowerCase()
+          .startsWith("inc");
+        return (
+          <div>
+            <span>${(Number(tax) || 0).toFixed(2)}</span>
+            <span
+              style={{
+                marginLeft: 4,
+                fontSize: 11,
+                color: isInc ? "#389e0d" : "#cf1322",
+              }}
+            >
+              ({isInc ? "inc" : "exc"})
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       title: "Line Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number, record: any) => {
-        const netTotal =
-          (Number(total) || 0) -
-          (Number(record.average_discount_amount) || 0) -
-          (Number(record.special_discount_amount) || 0) -
-          (Number(record.promotion_discount_amount) || 0);
-        return `$${Number(netTotal || 0).toFixed(2)}`;
-      },
+      render: (total: number) => `$${Number(total || 0).toFixed(2)}`,
     },
   ];
 

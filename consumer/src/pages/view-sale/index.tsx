@@ -168,6 +168,10 @@ const SaleDetail: React.FC = () => {
     try {
       message.info("Preparing receipt for printing...");
 
+      const customerRewards = sale.customer?.rewards_points;
+      const amountPaid = Number(sale?.received_amount) || 0;
+      const correctTotal = getCorrectTotal(sale);
+
       // Format payment methods
       const paymentMethods =
         sale.payments && sale.payments.length > 0
@@ -180,29 +184,93 @@ const SaleDetail: React.FC = () => {
 
       // Format receipt data according to the required structure
       const receiptData = {
+        orderId: sale.sale_number,
         receiptNumber: sale.sale_number,
+        saleNumber: sale.sale_number,
+        sale_number: sale.sale_number,
+        barcodeValue: sale.sale_number,
         date: dayjs(sale.sale_date).format("YYYY-MM-DD"),
         time: dayjs(sale.sale_date).format("HH:mm:ss"),
+        sale_date: sale.sale_date,
         cashier: sale.user?.name || sale.user_name || "Staff",
+        servedBy: sale.served_by?.name || undefined,
         customer: sale.customer_name || "Walk-in Customer",
+        customerName: sale.customer_name || sale.customer?.name || "Walk-in Customer",
+        customerPhone: sale.customer_phone || sale.customer?.phone || "",
+        customerEmail: sale.customer_email || sale.customer?.email || "",
+        rewardPoints: customerRewards?.total_points,
+        pointsEarned: customerRewards?.lifetime_earned,
+        pointsRedeemed: customerRewards?.lifetime_redeemed,
+        branch: sale.branch
+          ? {
+              name: sale.branch.name,
+              address: sale.branch.address,
+              phone: sale.branch.phone,
+              email: sale.branch.email,
+            }
+          : undefined,
+        user: sale.user
+          ? {
+              name: sale.user.name,
+              id: String(sale.user.id),
+            }
+          : undefined,
         items:
-          sale.items?.map((item: any) => ({
-            name: `${item.variant?.product?.name || "Product"} - ${item.variant?.name || ""}`.trim(),
-            quantity: Number(item.quantity) || 0,
-            price: Number(item.unit_price) || 0,
-            total: Number(item.line_total) || 0,
-          })) || [],
+          sale.items?.map((item: any) => {
+            const quantity = Number(item.quantity) || 0;
+            const unitPrice = Number(item.unit_price) || 0;
+            const grossLineTotal = unitPrice * quantity;
+            const averageDiscountAmount = Number(item.average_discount_amount) || 0;
+            const specialDiscountAmount = Number(item.special_discount_amount) || 0;
+            const promotionDiscountAmount = Number(item.promotion_discount_amount) || 0;
+            const discountAmount =
+              averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
+            const taxAmount = Number(item.tax_amount) || 0;
+            const taxMethod = item.variant?.product?.tax_method || "exclusive";
+            const isInclusiveTax = String(taxMethod).toLowerCase().startsWith("inc");
+            const computedLineTotal = Math.max(
+              0,
+              grossLineTotal - discountAmount + (isInclusiveTax ? 0 : taxAmount),
+            );
+
+            return {
+              name: `${item.variant?.product?.name || "Product"} - ${item.variant?.name || ""}`.trim(),
+              quantity,
+              unitPrice,
+              price: unitPrice,
+              grossLineTotal,
+              averageDiscountAmount,
+              specialDiscountAmount,
+              promotionDiscountAmount,
+              discountAmount,
+              taxAmount,
+              taxPercentage: Number(item.variant?.product?.tax) || 0,
+              taxMethod,
+              lineTotal: computedLineTotal,
+              total: computedLineTotal,
+            };
+          }) || [],
         subtotal: Number(sale?.subtotal) || 0,
         discount: totalDiscount,
+        discountAmount: totalDiscount,
         shipping: Number(sale?.shipping_cost) || 0,
+        shippingCost: Number(sale?.shipping_cost) || 0,
         tax: Number(sale?.tax_amount) || 0,
-        total: getCorrectTotal(sale),
-        amountPaid: Number(sale?.received_amount) || 0,
-        change: Math.max(
-          0,
-          (Number(sale?.received_amount) || 0) - getCorrectTotal(sale),
-        ),
+        taxAmount: Number(sale?.tax_amount) || 0,
+        total: correctTotal,
+        totalAmount: correctTotal,
+        amountPaid,
+        receivedAmount: amountPaid,
+        change: Math.max(0, amountPaid - correctTotal),
+        changeAmount: Math.max(0, amountPaid - correctTotal),
         paymentMethod: paymentMethods,
+        payments:
+          sale.payments?.map((payment: any) => ({
+            payment_method: getPaymentMethodLabel(payment.payment_method),
+            amount: Number(payment.amount) || 0,
+          })) || [],
+        paymentStatus: sale.payment_status,
+        notes: sale.notes || undefined,
       };
 
       message.info("Sending to printer...");
@@ -295,6 +363,12 @@ const SaleDetail: React.FC = () => {
       render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
     },
     {
+      title: "Unit Price (Sold)",
+      key: "sold_unit_price",
+      render: (_: any, record: any) =>
+        `$${(Number(record.sold_unit_price ?? record.unit_price) || 0).toFixed(2)}`,
+    },
+    {
       title: "Quantity",
       dataIndex: "quantity",
       key: "quantity",
@@ -339,27 +413,25 @@ const SaleDetail: React.FC = () => {
       title: "Tax",
       dataIndex: "tax_amount",
       key: "tax_amount",
-      render: (tax: number, record: any) => (
-        <div>
-          <span>${(Number(tax) || 0).toFixed(2)}</span>
-          {record.tax_method === "inclusive" && (
-            <div style={{ fontSize: 11, color: "#666" }}>(included)</div>
-          )}
-        </div>
-      ),
+      render: (tax: number, record: any) => {
+        const isInc = String(record.tax_method || "").toLowerCase().startsWith("inc");
+        return (
+          <div>
+            <span>${(Number(tax) || 0).toFixed(2)}</span>
+            <span style={{ marginLeft: 4, fontSize: 11, color: isInc ? "#389e0d" : "#cf1322" }}>
+              ({isInc ? "inc" : "exc"})
+            </span>
+          </div>
+        );
+      },
     },
     {
       title: "Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number, record: any) => {
-        const netTotal =
-          (Number(total) || 0) -
-          (Number(record.average_discount_amount) || 0) -
-          (Number(record.special_discount_amount) || 0) -
-          (Number(record.promotion_discount_amount) || 0);
-        return <Text strong>${(Number(netTotal) || 0).toFixed(2)}</Text>;
-      },
+      render: (total: number) => (
+        <Text strong>${(Number(total) || 0).toFixed(2)}</Text>
+      ),
     },
   ];
 
