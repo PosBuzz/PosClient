@@ -1,3 +1,4 @@
+// AppLayout.tsx
 import {
   LogoutOutlined,
   MenuFoldOutlined,
@@ -23,7 +24,6 @@ const AppLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const isDarkMode = useDarkMode();
 
-  // Check if the screen is mobile size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -46,22 +46,23 @@ const AppLayout = () => {
 
   return (
     <Layout className="max-h-screen">
-      {/* Sidebar - Fixed position */}
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
         breakpoint="md"
         theme={isDarkMode ? "dark" : "light"}
-        className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
+        className={`h-screen fixed left-0 top-0 bottom-0 ${
           isMobile && !collapsed ? "z-50 shadow-lg!" : ""
         }`}
         style={{
           zIndex: 999,
           display: isMobile && collapsed ? "none" : "block",
+          // Removed overflow-auto from here
         }}
       >
-        <div className="text-center py-4">
+        {/* Logo Area - Fixed at top, won't scroll away */}
+        <div className="text-center py-4 flex-shrink-0">
           <h1
             className={`transition-all duration-300 ${
               collapsed ? "text-lg" : "text-xl"
@@ -72,12 +73,14 @@ const AppLayout = () => {
           </h1>
         </div>
 
-        <SideBar />
+        {/* Scrollable Menu Wrapper - Add this custom class */}
+        <div className="sidebar-scroll-container">
+          <SideBar />
+        </div>
       </Sider>
 
-      {/* Main Content Area - Adjusted for sidebar */}
+      {/* ... rest of your layout remains exactly the same ... */}
       <Layout className={`transition-all duration-300`}>
-        {/* Header - Fixed at the top of content area */}
         <Header
           style={{
             position: "sticky",
@@ -112,7 +115,6 @@ const AppLayout = () => {
           </div>
         </Header>
 
-        {/* Overlay for mobile when sidebar is open */}
         {isMobile && !collapsed && (
           <div
             className={`fixed inset-0 ${
@@ -122,7 +124,6 @@ const AppLayout = () => {
           />
         )}
 
-        {/* Page Content - Scrollable */}
         <Content
           className="p-4 md:p-6 overflow-auto"
           style={{
