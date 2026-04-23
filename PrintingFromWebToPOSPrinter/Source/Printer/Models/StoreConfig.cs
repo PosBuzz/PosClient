@@ -19,6 +19,9 @@ namespace Printer.Models
         public string HeaderText { get; set; }
         public string VatRegistrationNumber { get; set; }
         public string FooterTerms { get; set; }
+        public bool ShowPoweredByPosbuzz { get; set; }
+        public string PoweredByText { get; set; }
+        public bool ShowCustomerRewardPoints { get; set; }
 
         public StoreConfig()
         {
@@ -36,6 +39,9 @@ namespace Printer.Models
             HeaderText = "Government of the People's Republic of Bangladesh;\nNational Board of Revenue, \"Tax Invoice\": Musahk-6.3; [See clauses (c) and (f) of Rule 40]";
             VatRegistrationNumber = "";
             FooterTerms = "";
+            ShowPoweredByPosbuzz = true;
+            PoweredByText = "Powered by Posbuzz";
+            ShowCustomerRewardPoints = true;
         }
     }
 }

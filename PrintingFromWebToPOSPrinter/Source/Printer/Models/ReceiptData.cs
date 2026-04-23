@@ -7,11 +7,13 @@ namespace Printer.Models
     {
         public string OrderId { get; set; }
         public string SaleNumber { get; set; }
+        public string BarcodeValue { get; set; }
         public DateTime? OrderDate { get; set; }
         public DateTime? SaleDate { get; set; }
         public CustomerInfo Customer { get; set; }
         public BranchInfo Branch { get; set; }
         public UserInfo Cashier { get; set; }
+        public UserInfo ServedBy { get; set; }
         public List<ReceiptItem> Items { get; set; }
         public decimal Subtotal { get; set; }
         public decimal Tax { get; set; }
@@ -33,6 +35,7 @@ namespace Printer.Models
         {
             OrderId = "";
             SaleNumber = "";
+            BarcodeValue = "";
             Items = new List<ReceiptItem>();
             Payments = new List<PaymentInfo>();
             Notes = "";
@@ -45,12 +48,18 @@ namespace Printer.Models
         public string Name { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        public int? RewardPoints { get; set; }
+        public int? PointsEarned { get; set; }
+        public int? PointsRedeemed { get; set; }
 
         public CustomerInfo()
         {
             Name = "";
             Phone = "";
             Address = "";
+            RewardPoints = null;
+            PointsEarned = null;
+            PointsRedeemed = null;
         }
     }
 
@@ -92,7 +101,14 @@ namespace Printer.Models
         public decimal UnitPrice { get; set; }
         public decimal Total { get; set; }
         public decimal LineTotal { get; set; }
+        public decimal GrossLineTotal { get; set; }
+        public decimal AverageDiscountAmount { get; set; }
         public decimal DiscountAmount { get; set; }
+        public decimal SpecialDiscountAmount { get; set; }
+        public decimal PromotionDiscountAmount { get; set; }
+        public decimal TaxAmount { get; set; }
+        public decimal TaxPercentage { get; set; }
+        public string TaxMethod { get; set; }
 
         public ReceiptItem()
         {
@@ -100,6 +116,7 @@ namespace Printer.Models
             ProductName = "";
             Description = "";
             Quantity = 1;
+            TaxMethod = "";
         }
     }
 

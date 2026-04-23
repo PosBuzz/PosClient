@@ -17,8 +17,12 @@ export const calculateTaxAndTotal = (
   let taxableAmount: number;
 
   const validTaxPercentage = Number(taxPercentage) || 0;
+  const normalizedTaxMethod = String(taxMethod || "EXCLUSIVE")
+    .trim()
+    .toUpperCase();
+  const isInclusiveTax = normalizedTaxMethod.startsWith("INC");
 
-  if (taxMethod === "INCLUSIVE") {
+  if (isInclusiveTax) {
     lineTotal = baseAmount;
     taxAmount = (baseAmount * validTaxPercentage) / 100;
     taxableAmount = baseAmount - taxAmount;

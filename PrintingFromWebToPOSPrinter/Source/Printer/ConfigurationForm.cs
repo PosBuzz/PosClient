@@ -15,10 +15,13 @@ namespace Printer
         private TextBox txtHeaderText;
         private TextBox txtVatRegNumber;
         private TextBox txtFooterTerms;
+        private TextBox txtPoweredByText;
         private TextBox txtPrinterName;
         private TextBox txtBarcodePrinterName;
         private TextBox txtCurrency;
         private NumericUpDown numPort;
+        private CheckBox chkShowPoweredByPosbuzz;
+        private CheckBox chkShowCustomerRewardPoints;
         private CheckBox chkStartupWithWindows;
         private Button btnSelectLogo;
         private Button btnOK;
@@ -34,7 +37,7 @@ namespace Printer
         private void InitializeComponent()
         {
             this.Text = "Configuration - PosBuzz Print Server";
-            this.Size = new Size(650, 650);
+            this.Size = new Size(650, 760);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -124,6 +127,26 @@ namespace Printer
             };
             yPos += 70;
 
+            chkShowPoweredByPosbuzz = new CheckBox
+            {
+                Text = "Show Powered by footer",
+                Location = new Point(20, yPos),
+                Size = new Size(220, 20)
+            };
+            yPos += 30;
+
+            var lblPoweredByText = new Label { Text = "Powered By Text:", Location = new Point(20, yPos), Size = new Size(120, 20) };
+            txtPoweredByText = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
+            yPos += 30;
+
+            chkShowCustomerRewardPoints = new CheckBox
+            {
+                Text = "Show customer reward points",
+                Location = new Point(20, yPos),
+                Size = new Size(220, 20)
+            };
+            yPos += 35;
+
             chkStartupWithWindows = new CheckBox 
             { 
                 Text = "Start with Windows (system tray)", 
@@ -162,6 +185,9 @@ namespace Printer
                 lblPort, numPort,
                 lblLogo, btnSelectLogo,
                 lblFooterTerms, txtFooterTerms,
+                chkShowPoweredByPosbuzz,
+                lblPoweredByText, txtPoweredByText,
+                chkShowCustomerRewardPoints,
                 chkStartupWithWindows,
                 btnOK, btnCancel
             });
@@ -181,6 +207,9 @@ namespace Printer
             txtCurrency.Text = config.Currency ?? "$";
             numPort.Value = config.Port > 0 ? config.Port : 8080;
             txtFooterTerms.Text = config.FooterTerms ?? "";
+            chkShowPoweredByPosbuzz.Checked = config.ShowPoweredByPosbuzz;
+            txtPoweredByText.Text = config.PoweredByText ?? "Powered by Posbuzz";
+            chkShowCustomerRewardPoints.Checked = config.ShowCustomerRewardPoints;
             chkStartupWithWindows.Checked = StartupManager.IsStartupEnabled();
             
             // Update logo button if logo exists
@@ -203,6 +232,9 @@ namespace Printer
                 Currency = txtCurrency.Text,
                 Port = (int)numPort.Value,
                 FooterTerms = txtFooterTerms.Text,
+                ShowPoweredByPosbuzz = chkShowPoweredByPosbuzz.Checked,
+                PoweredByText = txtPoweredByText.Text,
+                ShowCustomerRewardPoints = chkShowCustomerRewardPoints.Checked,
                 LogoPath = config.LogoPath // Preserve logo path from current config
             };
 

@@ -57,9 +57,17 @@ namespace Printer.Services
                                     case "HeaderText": _config.HeaderText = value; break;
                                     case "VatRegistrationNumber": _config.VatRegistrationNumber = value; break;
                                     case "FooterTerms": _config.FooterTerms = value; break;
+                                    case "ShowPoweredByPosbuzz": _config.ShowPoweredByPosbuzz = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase); break;
+                                    case "PoweredByText": _config.PoweredByText = value; break;
+                                    case "ShowCustomerRewardPoints": _config.ShowCustomerRewardPoints = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase); break;
                                 }
                             }
                         }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(_config.BarcodePrinterName))
+                    {
+                        _config.BarcodePrinterName = "Gprinter GP-3120TUC";
                     }
                 }
                 else
@@ -93,7 +101,10 @@ namespace Printer.Services
                     "Port=" + _config.Port,
                     "HeaderText=" + _config.HeaderText,
                     "VatRegistrationNumber=" + _config.VatRegistrationNumber,
-                    "FooterTerms=" + _config.FooterTerms
+                    "FooterTerms=" + _config.FooterTerms,
+                    "ShowPoweredByPosbuzz=" + _config.ShowPoweredByPosbuzz,
+                    "PoweredByText=" + _config.PoweredByText,
+                    "ShowCustomerRewardPoints=" + _config.ShowCustomerRewardPoints
                 };
                 
                 File.WriteAllLines(ConfigPath, lines);
@@ -146,6 +157,10 @@ namespace Printer.Services
                 _config.VatRegistrationNumber = fieldsToUpdate.VatRegistrationNumber;
             if (fieldsToUpdate.FooterTerms != null)
                 _config.FooterTerms = fieldsToUpdate.FooterTerms;
+            _config.ShowPoweredByPosbuzz = fieldsToUpdate.ShowPoweredByPosbuzz;
+            if (fieldsToUpdate.PoweredByText != null)
+                _config.PoweredByText = fieldsToUpdate.PoweredByText;
+            _config.ShowCustomerRewardPoints = fieldsToUpdate.ShowCustomerRewardPoints;
             
             SaveConfig();
             Console.WriteLine("ConfigManager: Individual fields updated and saved");
@@ -158,15 +173,22 @@ namespace Printer.Services
         private static StoreConfig CreateDefaultConfig()
         {
             var config = new StoreConfig();
-            config.StoreName = "Your Store Name";
-            config.Address = "123 Main St, City, State 12345";
-            config.Phone = "(555) 123-4567";
-            config.Email = "info@yourstore.com";
+            config.StoreName = "PosBuzz Store";
+            config.Address = "123 Demo Street, Motijheel C/A, Dhaka-1000";
+            config.Phone = "01700-000000";
+            config.Email = "demo@posbuzz.com";
+            config.ContactInfo = "123 Demo Street, Motijheel C/A, Dhaka-1000\nBIN: 000123456-0202\nPhone: 01700-000000\nEmail: demo@posbuzz.com";
+            config.HeaderText = "Government of the People's Republic of Bangladesh\nNational Board of Revenue, \"Tax Invoice\": Musahk-6.3\n[See clauses (c) and (f) of Rule 40]";
+            config.VatRegistrationNumber = "VAT-000123456-0202";
+            config.FooterTerms = "Terms & Conditions:\n1. All sales are final\n2. No returns after 7 days\n3. Warranty claims require original receipt\n4. Customer is responsible for verifying items";
             config.LogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
             config.PrinterName = "RONGTA 80mm Series Printer";
-            config.BarcodePrinterName = "Default Barcode Printer";
-            config.Currency = "$";
+            config.BarcodePrinterName = "Gprinter GP-3120TUC";
+            config.Currency = "\u09F3";
             config.Port = 8080;
+            config.ShowPoweredByPosbuzz = true;
+            config.PoweredByText = "Powered by Posbuzz";
+            config.ShowCustomerRewardPoints = true;
             return config;
         }
     }
