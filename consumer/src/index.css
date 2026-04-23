@@ -54,3 +54,43 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+.sidebar-scroll-container {
+  /* Fill the remaining height of the sidebar under the logo */
+  height: calc(100vh - 65px);
+  overflow-y: auto;
+
+  /* Hide scrollbar by default */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.sidebar-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Show scrollbar ONLY on hover */
+.sidebar-scroll-container:hover {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.sidebar-scroll-container:hover::-webkit-scrollbar {
+  display: block; /* Chrome, Safari, Opera */
+}
+
+/* Dark theme sidebar scrollbar */
+.sidebar-scroll-container:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+
+/* Light theme sidebar scrollbar */
+html[data-theme="light"] .sidebar-scroll-container:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+html[data-theme="light"]
+  .sidebar-scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.12);
+}
