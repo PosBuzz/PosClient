@@ -267,6 +267,8 @@ export interface Branch {
   id: number;
   name: string;
   address?: string;
+  phone?: string;
+  email?: string;
   is_main: boolean;
   is_warehouse: boolean;
 }
