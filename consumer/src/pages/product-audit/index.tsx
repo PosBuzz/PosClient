@@ -1,9 +1,8 @@
 import {
-  AuditOutlined,
   DownloadOutlined,
   ReloadOutlined,
   SearchOutlined,
-  WarningOutlined,
+  WarningOutlined
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -62,7 +61,12 @@ const ExpiryTag = ({ date }: { date: string | null | undefined }) => {
   if (!date) return <Text type="secondary">No Expiry</Text>;
   const days = dayjs(date).diff(dayjs(), "day");
   if (days < 0) return <Tag color="red">Expired ({fmtDate(date)})</Tag>;
-  if (days <= 30) return <Tag color="orange">{fmtDate(date)} ({days}d left)</Tag>;
+  if (days <= 30)
+    return (
+      <Tag color="orange">
+        {fmtDate(date)} ({days}d left)
+      </Tag>
+    );
   return <Tag color="green">{fmtDate(date)}</Tag>;
 };
 
@@ -77,12 +81,15 @@ const ProductVariantSelector: React.FC<SelectorProps> = ({
   selectedVariantId,
   onVariantSelect,
 }) => {
-  const [selectedProductId, setSelectedProductId] = useState<number | undefined>();
+  const [selectedProductId, setSelectedProductId] = useState<
+    number | undefined
+  >();
   const [productSearch, setProductSearch] = useState("");
 
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: [queryKeys.products, "audit-search", productSearch],
-    queryFn: () => productApi.getProducts({ search: productSearch || undefined, limit: 60 }),
+    queryFn: () =>
+      productApi.getProducts({ search: productSearch || undefined, limit: 60 }),
     staleTime: 60_000,
   });
 
@@ -159,12 +166,19 @@ const SummaryCards = ({ data }: { data: any }) => {
     <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
       <Col xs={12} sm={6}>
         <Card size="small">
-          <Statistic title="Current Stock" value={stock.total_current_stock} suffix="units" />
+          <Statistic
+            title="Current Stock"
+            value={stock.total_current_stock}
+            suffix="units"
+          />
         </Card>
       </Col>
       <Col xs={12} sm={6}>
         <Card size="small">
-          <Statistic title="Active Batches" value={stock.total_active_batches} />
+          <Statistic
+            title="Active Batches"
+            value={stock.total_active_batches}
+          />
         </Card>
       </Col>
       <Col xs={12} sm={6}>
@@ -172,7 +186,11 @@ const SummaryCards = ({ data }: { data: any }) => {
           <Statistic
             title="Expiring ≤ 30 Days"
             value={stock.batches_expiring_within_30_days}
-            valueStyle={stock.batches_expiring_within_30_days > 0 ? { color: "#d46b08" } : undefined}
+            valueStyle={
+              stock.batches_expiring_within_30_days > 0
+                ? { color: "#d46b08" }
+                : undefined
+            }
           />
         </Card>
       </Col>
@@ -199,18 +217,28 @@ const SummaryCards = ({ data }: { data: any }) => {
           <Statistic
             title="Total Discount Given"
             value={fmtNum(ss.total_discount)}
-            valueStyle={ss.total_discount > 0 ? { color: "#cf1322" } : undefined}
+            valueStyle={
+              ss.total_discount > 0 ? { color: "#cf1322" } : undefined
+            }
           />
         </Card>
       </Col>
       <Col xs={12} sm={6}>
         <Card size="small">
-          <Statistic title="Purchased (Period)" value={ps.total_units_purchased} suffix="units" />
+          <Statistic
+            title="Purchased (Period)"
+            value={ps.total_units_purchased}
+            suffix="units"
+          />
         </Card>
       </Col>
       <Col xs={12} sm={6}>
         <Card size="small">
-          <Statistic title="Units Returned" value={rs.total_units_returned} suffix="units" />
+          <Statistic
+            title="Units Returned"
+            value={rs.total_units_returned}
+            suffix="units"
+          />
         </Card>
       </Col>
     </Row>
@@ -224,14 +252,24 @@ const ProductInfoTab = ({ data }: { data: any }) => {
   return (
     <Descriptions bordered size="small" column={{ xs: 1, sm: 2 }}>
       <Descriptions.Item label="Product">{v.product.name}</Descriptions.Item>
-      <Descriptions.Item label="Product Code">{v.product.code ?? "—"}</Descriptions.Item>
+      <Descriptions.Item label="Product Code">
+        {v.product.code ?? "—"}
+      </Descriptions.Item>
       <Descriptions.Item label="Variant">{v.name}</Descriptions.Item>
       <Descriptions.Item label="SKU">{v.sku ?? "—"}</Descriptions.Item>
       <Descriptions.Item label="Barcode">{v.barcode ?? "—"}</Descriptions.Item>
-      <Descriptions.Item label="Category">{v.product.category?.name ?? "—"}</Descriptions.Item>
-      <Descriptions.Item label="Brand">{v.product.brand?.name ?? "—"}</Descriptions.Item>
-      <Descriptions.Item label="Sale Unit">{v.sale_unit?.name ?? "—"}</Descriptions.Item>
-      <Descriptions.Item label="Regular Price">{fmtNum(v.regular_price)}</Descriptions.Item>
+      <Descriptions.Item label="Category">
+        {v.product.category?.name ?? "—"}
+      </Descriptions.Item>
+      <Descriptions.Item label="Brand">
+        {v.product.brand?.name ?? "—"}
+      </Descriptions.Item>
+      <Descriptions.Item label="Sale Unit">
+        {v.sale_unit?.name ?? "—"}
+      </Descriptions.Item>
+      <Descriptions.Item label="Regular Price">
+        {fmtNum(v.regular_price)}
+      </Descriptions.Item>
       <Descriptions.Item label="Wholesale Price">
         {v.wholesale_price ? fmtNum(v.wholesale_price) : "—"}
       </Descriptions.Item>
@@ -244,7 +282,9 @@ const ProductInfoTab = ({ data }: { data: any }) => {
       {v.attributes?.length > 0 && (
         <Descriptions.Item label="Attributes" span={2}>
           {v.attributes.map((a: any) => (
-            <Tag key={a.id}>{a.name}: {a.value}</Tag>
+            <Tag key={a.id}>
+              {a.name}: {a.value}
+            </Tag>
           ))}
         </Descriptions.Item>
       )}
@@ -257,15 +297,31 @@ const ProductInfoTab = ({ data }: { data: any }) => {
 const StockSnapshotTab = ({ data }: { data: any }) => {
   const batches: any[] = data.stock_snapshot.batches;
   const columns: ColumnsType<any> = [
-    { title: "Batch No.", dataIndex: "batch_number", key: "batch_number", width: 120 },
-    { title: "Branch", dataIndex: ["branch", "name"], key: "branch", width: 120 },
+    {
+      title: "Batch No.",
+      dataIndex: "batch_number",
+      key: "batch_number",
+      width: 120,
+    },
+    {
+      title: "Branch",
+      dataIndex: ["branch", "name"],
+      key: "branch",
+      width: 120,
+    },
     {
       title: "Vendor",
       key: "vendor",
       width: 120,
       render: (_, r) => r.vendor?.name ?? "—",
     },
-    { title: "Qty", dataIndex: "quantity", key: "quantity", align: "right", width: 70 },
+    {
+      title: "Qty",
+      dataIndex: "quantity",
+      key: "quantity",
+      align: "right",
+      width: 70,
+    },
     {
       title: "Cost Price",
       dataIndex: "cost_price",
@@ -319,11 +375,38 @@ const PurchasesTab = ({ data }: { data: any }) => {
       width: 110,
       render: (_, r) => fmtDate(r.date),
     },
-    { title: "Batch No.", dataIndex: "batch_number", key: "batch_number", width: 120 },
-    { title: "Vendor", key: "vendor", width: 130, render: (_, r) => r.vendor?.name ?? "—" },
-    { title: "Branch", key: "branch", width: 110, render: (_, r) => r.branch?.name ?? "—" },
-    { title: "Qty Rcvd", dataIndex: "original_quantity", key: "original_quantity", align: "right", width: 80 },
-    { title: "Remaining", dataIndex: "remaining_quantity", key: "remaining_quantity", align: "right", width: 85 },
+    {
+      title: "Batch No.",
+      dataIndex: "batch_number",
+      key: "batch_number",
+      width: 120,
+    },
+    {
+      title: "Vendor",
+      key: "vendor",
+      width: 130,
+      render: (_, r) => r.vendor?.name ?? "—",
+    },
+    {
+      title: "Branch",
+      key: "branch",
+      width: 110,
+      render: (_, r) => r.branch?.name ?? "—",
+    },
+    {
+      title: "Qty Rcvd",
+      dataIndex: "original_quantity",
+      key: "original_quantity",
+      align: "right",
+      width: 80,
+    },
+    {
+      title: "Remaining",
+      dataIndex: "remaining_quantity",
+      key: "remaining_quantity",
+      align: "right",
+      width: 85,
+    },
     {
       title: "Unit Cost",
       dataIndex: "cost_price",
@@ -387,7 +470,12 @@ const AdjustmentsTab = ({ data }: { data: any }) => {
   const adjustments: any[] = data.adjustments;
 
   const columns: ColumnsType<any> = [
-    { title: "Date", key: "date", width: 110, render: (_, r) => fmtDateTime(r.date) },
+    {
+      title: "Date",
+      key: "date",
+      width: 110,
+      render: (_, r) => fmtDateTime(r.date),
+    },
     {
       title: "Type",
       key: "type",
@@ -411,10 +499,26 @@ const AdjustmentsTab = ({ data }: { data: any }) => {
         </Text>
       ),
     },
-    { title: "Batch", key: "batch", width: 110, render: (_, r) => r.batch?.batch_number ?? "—" },
-    { title: "Branch", key: "branch", width: 110, render: (_, r) => r.branch?.name ?? "—" },
+    {
+      title: "Batch",
+      key: "batch",
+      width: 110,
+      render: (_, r) => r.batch?.batch_number ?? "—",
+    },
+    {
+      title: "Branch",
+      key: "branch",
+      width: 110,
+      render: (_, r) => r.branch?.name ?? "—",
+    },
     { title: "Reason", dataIndex: "reason", key: "reason", width: 150 },
-    { title: "Notes", dataIndex: "notes", key: "notes", width: 150, render: (v) => v ?? "—" },
+    {
+      title: "Notes",
+      dataIndex: "notes",
+      key: "notes",
+      width: 150,
+      render: (v) => v ?? "—",
+    },
     {
       title: "Done By",
       key: "done_by",
@@ -428,12 +532,20 @@ const AdjustmentsTab = ({ data }: { data: any }) => {
       <Row gutter={16} style={{ marginBottom: 12 }}>
         <Col>
           <Card size="small">
-            <Statistic title="Total Additions" value={as_.total_additions} valueStyle={{ color: "#389e0d" }} />
+            <Statistic
+              title="Total Additions"
+              value={as_.total_additions}
+              valueStyle={{ color: "#389e0d" }}
+            />
           </Card>
         </Col>
         <Col>
           <Card size="small">
-            <Statistic title="Total Reductions" value={as_.total_reductions} valueStyle={{ color: "#cf1322" }} />
+            <Statistic
+              title="Total Reductions"
+              value={as_.total_reductions}
+              valueStyle={{ color: "#cf1322" }}
+            />
           </Card>
         </Col>
         <Col>
@@ -441,7 +553,12 @@ const AdjustmentsTab = ({ data }: { data: any }) => {
             <Statistic
               title="Net Change"
               value={as_.total_additions - as_.total_reductions}
-              valueStyle={{ color: as_.total_additions - as_.total_reductions >= 0 ? "#389e0d" : "#cf1322" }}
+              valueStyle={{
+                color:
+                  as_.total_additions - as_.total_reductions >= 0
+                    ? "#389e0d"
+                    : "#cf1322",
+              }}
             />
           </Card>
         </Col>
@@ -483,7 +600,8 @@ const TransfersTab = ({ data }: { data: any }) => {
       width: 90,
       render: (_, r) => {
         const s = String(r.status).toLowerCase();
-        const color = s === "completed" ? "green" : s === "cancelled" ? "red" : "orange";
+        const color =
+          s === "completed" ? "green" : s === "cancelled" ? "red" : "orange";
         return <Tag color={color}>{String(r.status).toUpperCase()}</Tag>;
       },
     },
@@ -523,7 +641,13 @@ const TransfersTab = ({ data }: { data: any }) => {
       width: 110,
       render: (_, r) => r.created_by?.name ?? "—",
     },
-    { title: "Notes", dataIndex: "notes", key: "notes", width: 120, render: (v) => v ?? "—" },
+    {
+      title: "Notes",
+      dataIndex: "notes",
+      key: "notes",
+      width: 120,
+      render: (v) => v ?? "—",
+    },
   ];
 
   return (
@@ -546,8 +670,18 @@ const SalesTab = ({ data }: { data: any }) => {
   const sales: any[] = data.sales;
 
   const columns: ColumnsType<any> = [
-    { title: "Date", key: "date", width: 100, render: (_, r) => fmtDate(r.date) },
-    { title: "Sale No.", dataIndex: "sale_number", key: "sale_number", width: 120 },
+    {
+      title: "Date",
+      key: "date",
+      width: 100,
+      render: (_, r) => fmtDate(r.date),
+    },
+    {
+      title: "Sale No.",
+      dataIndex: "sale_number",
+      key: "sale_number",
+      width: 120,
+    },
     {
       title: "Price Type",
       key: "price_type",
@@ -558,7 +692,13 @@ const SalesTab = ({ data }: { data: any }) => {
         </Tag>
       ),
     },
-    { title: "Qty", dataIndex: "quantity", key: "quantity", align: "right", width: 60 },
+    {
+      title: "Qty",
+      dataIndex: "quantity",
+      key: "quantity",
+      align: "right",
+      width: 60,
+    },
     {
       title: "Unit Price",
       key: "unit_price",
@@ -578,14 +718,24 @@ const SalesTab = ({ data }: { data: any }) => {
       key: "sp_disc",
       align: "right",
       width: 90,
-      render: (_, r) => r.special_discount > 0 ? <Text type="danger">{fmtNum(r.special_discount)}</Text> : "—",
+      render: (_, r) =>
+        r.special_discount > 0 ? (
+          <Text type="danger">{fmtNum(r.special_discount)}</Text>
+        ) : (
+          "—"
+        ),
     },
     {
       title: "Cart Discount",
       key: "cart_disc",
       align: "right",
       width: 90,
-      render: (_, r) => r.average_discount > 0 ? <Text type="danger">{fmtNum(r.average_discount)}</Text> : "—",
+      render: (_, r) =>
+        r.average_discount > 0 ? (
+          <Text type="danger">{fmtNum(r.average_discount)}</Text>
+        ) : (
+          "—"
+        ),
     },
     {
       title: "Promo Discount",
@@ -596,9 +746,15 @@ const SalesTab = ({ data }: { data: any }) => {
         r.promotion_discount > 0 ? (
           <Space>
             <Text type="danger">{fmtNum(r.promotion_discount)}</Text>
-            {r.promotion && <Tag color="purple" style={{ fontSize: 10 }}>{r.promotion.name}</Tag>}
+            {r.promotion && (
+              <Tag color="purple" style={{ fontSize: 10 }}>
+                {r.promotion.name}
+              </Tag>
+            )}
           </Space>
-        ) : "—",
+        ) : (
+          "—"
+        ),
     },
     {
       title: "Line Total",
@@ -607,7 +763,12 @@ const SalesTab = ({ data }: { data: any }) => {
       width: 100,
       render: (_, r) => <Text strong>{fmtNum(r.line_total)}</Text>,
     },
-    { title: "Branch", key: "branch", width: 100, render: (_, r) => r.branch?.name ?? "—" },
+    {
+      title: "Branch",
+      key: "branch",
+      width: 100,
+      render: (_, r) => r.branch?.name ?? "—",
+    },
     {
       title: "Cashier",
       key: "cashier",
@@ -629,8 +790,16 @@ const SalesTab = ({ data }: { data: any }) => {
           { title: "Units Sold", value: ss.total_units_sold },
           { title: "Net Revenue", value: fmtNum(ss.total_revenue) },
           { title: "Gross Revenue", value: fmtNum(ss.gross_revenue) },
-          { title: "Total Discount", value: fmtNum(ss.total_discount), color: "#cf1322" },
-          { title: "Promo Discount", value: fmtNum(ss.total_promotion_discount), color: "#cf1322" },
+          {
+            title: "Total Discount",
+            value: fmtNum(ss.total_discount),
+            color: "#cf1322",
+          },
+          {
+            title: "Promo Discount",
+            value: fmtNum(ss.total_promotion_discount),
+            color: "#cf1322",
+          },
           { title: "Regular Sales", value: ss.regular_price_sales_count },
           { title: "Wholesale Sales", value: ss.wholesale_price_sales_count },
         ].map((s) => (
@@ -665,15 +834,30 @@ const ReturnsTab = ({ data }: { data: any }) => {
   const returns: any[] = data.returns;
 
   const columns: ColumnsType<any> = [
-    { title: "Date", key: "date", width: 110, render: (_, r) => fmtDate(r.date) },
-    { title: "Return No.", key: "return_no", width: 130, render: (_, r) => r.return_number },
+    {
+      title: "Date",
+      key: "date",
+      width: 110,
+      render: (_, r) => fmtDate(r.date),
+    },
+    {
+      title: "Return No.",
+      key: "return_no",
+      width: 130,
+      render: (_, r) => r.return_number,
+    },
     {
       title: "Batch",
       key: "batch",
       width: 120,
       render: (_, r) => r.batch?.batch_number ?? "—",
     },
-    { title: "Branch", key: "branch", width: 110, render: (_, r) => r.branch?.name ?? "—" },
+    {
+      title: "Branch",
+      key: "branch",
+      width: 110,
+      render: (_, r) => r.branch?.name ?? "—",
+    },
     {
       title: "Qty Returned",
       key: "qty",
@@ -699,7 +883,10 @@ const ReturnsTab = ({ data }: { data: any }) => {
         </Col>
         <Col>
           <Card size="small">
-            <Statistic title="Return Transactions" value={rs.total_return_transactions} />
+            <Statistic
+              title="Return Transactions"
+              value={rs.total_return_transactions}
+            />
           </Card>
         </Col>
       </Row>
@@ -721,7 +908,9 @@ const ReturnsTab = ({ data }: { data: any }) => {
 const ProductAuditPage: React.FC = () => {
   setPageTitle("Product Audit");
 
-  const [selectedVariantId, setSelectedVariantId] = useState<number | undefined>();
+  const [selectedVariantId, setSelectedVariantId] = useState<
+    number | undefined
+  >();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().subtract(30, "day"),
     dayjs(),
@@ -814,7 +1003,18 @@ const ProductAuditPage: React.FC = () => {
 
   return (
     <div>
-      <PageTitle title="Product Audit" icon={<AuditOutlined />} />
+      <PageTitle
+        title="Product Audit"
+        breadcrumbs={[
+          {
+            title: "Dashboard",
+            href: "/",
+          },
+          {
+            title: "Product Audit",
+          },
+        ]}
+      />
 
       {/* Filter Card */}
       <Card style={{ marginBottom: 16 }}>
@@ -830,7 +1030,9 @@ const ProductAuditPage: React.FC = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>
+            <label
+              style={{ display: "block", marginBottom: 4, fontWeight: 500 }}
+            >
               Date Range
             </label>
             <RangePicker
@@ -845,7 +1047,9 @@ const ProductAuditPage: React.FC = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={4}>
-            <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>
+            <label
+              style={{ display: "block", marginBottom: 4, fontWeight: 500 }}
+            >
               Branch (optional)
             </label>
             <Select
