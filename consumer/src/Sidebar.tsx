@@ -57,11 +57,11 @@ const SideBar: React.FC = () => {
           key: "/product-variant-sales-stats",
           permissions: [Permissions.view_product],
         },
-        {
-          label: <span title="Product Audit">Product Audit</span>,
-          key: "/product-audit",
-          permissions: [Permissions.product_audit],
-        },
+        // {
+        //   label: <span title="Product Audit">Product Audit</span>,
+        //   key: "/product-audit",
+        //   permissions: [Permissions.product_audit],
+        // },
         {
           label: <span title="Categories">Categories</span>,
           key: "/categories",
