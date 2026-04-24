@@ -118,7 +118,10 @@ export class InventoryTransferService {
       return transfer;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error creating inventory transfer for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error creating inventory transfer for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to create inventory transfer',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -209,7 +212,10 @@ export class InventoryTransferService {
       };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error finding all inventory transfers for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error finding all inventory transfers for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to find all inventory transfers',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -265,7 +271,10 @@ export class InventoryTransferService {
       return transfer;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error finding inventory transfer ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error finding inventory transfer ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to find inventory transfer',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -351,19 +360,23 @@ export class InventoryTransferService {
               },
             });
 
+          let destBatchId: number;
+
           if (existingDestinationBatch) {
             // Update existing batch — increment both quantity and original_quantity
             // so consumed_quantity (original - current) stays accurate at destination
-            await prisma.inventoryBatch.update({
+            const updated = await prisma.inventoryBatch.update({
               where: { id: existingDestinationBatch.id },
               data: {
                 quantity: { increment: item.quantity },
                 original_quantity: { increment: item.quantity },
+                source: 'transfer_in',
               },
             });
+            destBatchId = updated.id;
           } else {
             // Create new batch in destination — original_quantity = units received via transfer
-            await prisma.inventoryBatch.create({
+            const created = await prisma.inventoryBatch.create({
               data: {
                 variant_id: item.batch.variant_id,
                 branch_id: transfer.destination_branch_id,
@@ -373,9 +386,17 @@ export class InventoryTransferService {
                 cost_price: item.batch.cost_price,
                 vendor_id: item.batch.vendor_id,
                 expiry_date: item.batch.expiry_date,
+                source: 'transfer_in',
               },
             });
+            destBatchId = created.id;
           }
+
+          // Record the destination batch on the transfer item for audit traceability
+          await prisma.inventoryTransferItem.update({
+            where: { id: item.id },
+            data: { dest_batch_id: destBatchId },
+          });
         }
 
         // Update transfer status
@@ -413,7 +434,10 @@ export class InventoryTransferService {
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error completing transfer with ID ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error completing transfer with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to complete transfer',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -438,7 +462,10 @@ export class InventoryTransferService {
       return updatedTransfer;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error cancelling transfer with ID ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error cancelling transfer with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to cancel transfer',
         HttpStatus.INTERNAL_SERVER_ERROR,

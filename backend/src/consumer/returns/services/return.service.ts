@@ -49,10 +49,7 @@ export class ReturnService {
       }
 
       const shippingRefundAmount = Number(dto.shipping_refund_amount || 0);
-      if (
-        !Number.isFinite(shippingRefundAmount) ||
-        shippingRefundAmount < 0
-      ) {
+      if (!Number.isFinite(shippingRefundAmount) || shippingRefundAmount < 0) {
         throw new BadRequestException(
           'Shipping refund amount must be a valid non-negative number',
         );
@@ -133,7 +130,8 @@ export class ReturnService {
         }
 
         const originalQty = Number(originalItem.quantity) || 0;
-        const ratio = originalQty > 0 ? Number(returnItem.quantity) / originalQty : 0;
+        const ratio =
+          originalQty > 0 ? Number(returnItem.quantity) / originalQty : 0;
         const lineAmount = (Number(originalItem.line_total) || 0) * ratio;
         // line_total is already the final amount after discounts
         return sum + lineAmount;
@@ -328,6 +326,7 @@ export class ReturnService {
                 reason: `Return from sale ${originalSale.sale_number}`,
                 notes: `Return ID: ${returnNumber}`,
                 created_by_user_id: userId,
+                adjustment_type: 'return_in',
               },
             });
 
@@ -442,6 +441,7 @@ export class ReturnService {
                   reason: `Exchange from return ${returnNumber}`,
                   notes: `Return ID: ${returnNumber}`,
                   created_by_user_id: userId,
+                  adjustment_type: 'exchange_out',
                 },
               });
 
@@ -653,7 +653,10 @@ export class ReturnService {
 
       return returnRecord;
     } catch (error) {
-      this.logger.error(`Error fetching return with ID ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error fetching return with ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to fetch return',
         HttpStatus.INTERNAL_SERVER_ERROR,

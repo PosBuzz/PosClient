@@ -34,10 +34,13 @@ export class ProductAuditPdfService {
       this.addProductInfo(doc, data);
       this.addStockSnapshot(doc, data);
       this.addPurchasesSection(doc, data);
+      this.addTransferReceivedSection(doc, data);
       this.addAdjustmentsSection(doc, data);
       this.addTransfersSection(doc, data);
       this.addSalesSection(doc, data);
       this.addReturnsSection(doc, data);
+      this.addExchangeOutsSection(doc, data);
+      this.addReturnRestocksSection(doc, data);
       this.addBatchDetailSection(doc, data);
       this.addFooter(doc, data);
 
@@ -116,7 +119,13 @@ export class ProductAuditPdfService {
   }
 
   // ─── Two-column key-value pair ───────────────────────────────────────────────
-  private kv(doc: PDFKit.PDFDocument, label: string, value: string, x = this.L, colW = 247) {
+  private kv(
+    doc: PDFKit.PDFDocument,
+    label: string,
+    value: string,
+    x = this.L,
+    colW = 247,
+  ) {
     const valueX = x + colW * 0.45;
     const startY = doc.y;
     doc
@@ -124,9 +133,7 @@ export class ProductAuditPdfService {
       .fontSize(this.BODY_FONT)
       .font('Helvetica-Bold')
       .text(label + ':', x, startY, { width: colW * 0.43, lineBreak: false });
-    doc
-      .font('Helvetica')
-      .text(value, valueX, startY, { width: colW * 0.55 });
+    doc.font('Helvetica').text(value, valueX, startY, { width: colW * 0.55 });
   }
 
   private kvRow(doc: PDFKit.PDFDocument, pairs: [string, string][]) {
@@ -144,15 +151,25 @@ export class ProductAuditPdfService {
   // ─── Table rendering ─────────────────────────────────────────────────────────
 
   /** Measure the height a cell's text will occupy given its column width. */
-  private cellHeight(doc: PDFKit.PDFDocument, text: string, colWidth: number): number {
+  private cellHeight(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    colWidth: number,
+  ): number {
     return doc.heightOfString(text, { width: colWidth - 6 });
   }
 
   /** Calculate dynamic row height: tallest cell + vertical padding. */
-  private calcRowHeight(doc: PDFKit.PDFDocument, row: string[], headers: { width: number }[]): number {
+  private calcRowHeight(
+    doc: PDFKit.PDFDocument,
+    row: string[],
+    headers: { width: number }[],
+  ): number {
     doc.font('Helvetica').fontSize(this.BODY_FONT);
     const maxText = Math.max(
-      ...row.map((cell, i) => this.cellHeight(doc, cell ?? '—', headers[i]?.width ?? 50)),
+      ...row.map((cell, i) =>
+        this.cellHeight(doc, cell ?? '—', headers[i]?.width ?? 50),
+      ),
     );
     return Math.max(this.ROW_H, maxText + 8); // 4px top + 4px bottom padding
   }
@@ -170,7 +187,10 @@ export class ProductAuditPdfService {
     const renderHeader = () => {
       const hY = doc.y;
       doc.rect(this.L, hY, totalW, headerH).fillColor('#000000').fill();
-      doc.fillColor('#ffffff').fontSize(this.HEADER_FONT).font('Helvetica-Bold');
+      doc
+        .fillColor('#ffffff')
+        .fontSize(this.HEADER_FONT)
+        .font('Helvetica-Bold');
       let hx = this.L;
       headers.forEach((h) => {
         doc.text(h.label, hx + 3, hY + 4, {
@@ -232,7 +252,11 @@ export class ProductAuditPdfService {
         .fillColor('#000000')
         .fontSize(this.BODY_FONT)
         .font('Helvetica')
-        .text('No records found in the selected period.', this.L + 3, doc.y + 4);
+        .text(
+          'No records found in the selected period.',
+          this.L + 3,
+          doc.y + 4,
+        );
       doc.y += headerH;
     }
 
@@ -240,7 +264,10 @@ export class ProductAuditPdfService {
   }
 
   // ─── Summary box ─────────────────────────────────────────────────────────────
-  private summaryBox(doc: PDFKit.PDFDocument, items: { label: string; value: string }[]) {
+  private summaryBox(
+    doc: PDFKit.PDFDocument,
+    items: { label: string; value: string }[],
+  ) {
     this.ensureSpace(doc, 30 + Math.ceil(items.length / 3) * 20);
     const boxY = doc.y;
     const cols = 3;
@@ -262,10 +289,14 @@ export class ProductAuditPdfService {
         .fillColor('#000000')
         .font('Helvetica-Bold')
         .fontSize(this.BODY_FONT)
-        .text(item.label + ':', x, y, { width: colW * 0.5 - 8, lineBreak: false });
-      doc
-        .font('Helvetica')
-        .text(item.value, x + colW * 0.5 - 4, y, { width: colW * 0.5 - 4, lineBreak: false });
+        .text(item.label + ':', x, y, {
+          width: colW * 0.5 - 8,
+          lineBreak: false,
+        });
+      doc.font('Helvetica').text(item.value, x + colW * 0.5 - 4, y, {
+        width: colW * 0.5 - 4,
+        lineBreak: false,
+      });
     });
 
     doc.y = boxY + Math.ceil(items.length / cols) * 20 + 14;
@@ -317,15 +348,27 @@ export class ProductAuditPdfService {
 
     // Report period and generation info
     this.kvRow(doc, [
-      ['Report Period', `${this.fmtDate(period.start_date)} – ${this.fmtDate(period.end_date)}`],
+      [
+        'Report Period',
+        `${this.fmtDate(period.start_date)} – ${this.fmtDate(period.end_date)}`,
+      ],
       ['Generated On', this.fmtDateTime(generated_at)],
     ]);
     this.kvRow(doc, [
-      ['Product', variant.product.name + (variant.product.code ? ` (${variant.product.code})` : '')],
+      [
+        'Product',
+        variant.product.name +
+          (variant.product.code ? ` (${variant.product.code})` : ''),
+      ],
       ['Variant', variant.name],
     ]);
     this.kvRow(doc, [
-      ['Branch Filter', data.meta.branch_id ? `Branch ID: ${data.meta.branch_id}` : 'All Branches'],
+      [
+        'Branch Filter',
+        data.meta.branch_id
+          ? `Branch ID: ${data.meta.branch_id}`
+          : 'All Branches',
+      ],
       ['Report Type', 'Full Inventory Audit'],
     ]);
 
@@ -356,16 +399,24 @@ export class ProductAuditPdfService {
     ]);
     this.kvRow(doc, [
       ['Regular Price', this.fmt(v.regular_price)],
-      ['Wholesale Price', v.wholesale_price ? this.fmt(v.wholesale_price) : '—'],
+      [
+        'Wholesale Price',
+        v.wholesale_price ? this.fmt(v.wholesale_price) : '—',
+      ],
     ]);
     this.kvRow(doc, [
       ['Tax', `${v.product.tax}% (${v.product.tax_method})`],
-      ['Low Stock Alert', v.alert_quantity != null ? String(v.alert_quantity) : '—'],
+      [
+        'Low Stock Alert',
+        v.alert_quantity != null ? String(v.alert_quantity) : '—',
+      ],
     ]);
 
     if (v.attributes?.length > 0) {
       doc.moveDown(0.3);
-      const attrText = v.attributes.map((a: any) => `${a.name}: ${a.value}`).join('  |  ');
+      const attrText = v.attributes
+        .map((a: any) => `${a.name}: ${a.value}`)
+        .join('  |  ');
       this.kvRow(doc, [['Attributes', attrText]]);
     }
 
@@ -374,21 +425,42 @@ export class ProductAuditPdfService {
 
   private addStockSnapshot(doc: PDFKit.PDFDocument, data: any) {
     const s = data.stock_snapshot;
-    this.sectionTitle(doc, '2. Current Stock Snapshot');
+    const sf = data.stock_flow_summary;
+    this.sectionTitle(doc, '2. Stock Snapshot & Period Flow');
 
     this.summaryBox(doc, [
-      { label: 'Total Stock (Units)', value: String(s.total_current_stock) },
+      { label: 'Est. Opening Stock', value: String(s.estimated_opening_stock) },
+      { label: 'Current Stock (Live)', value: String(s.total_current_stock) },
       { label: 'Active Batches', value: String(s.total_active_batches) },
-      { label: 'Expiring <= 30 Days', value: String(s.batches_expiring_within_30_days) },
-      { label: 'Expired (w/ Stock)', value: String(s.expired_batches_with_stock) },
+      {
+        label: 'Expiring <= 30 Days',
+        value: String(s.batches_expiring_within_30_days),
+      },
+      {
+        label: 'Expired (w/ Stock)',
+        value: String(s.expired_batches_with_stock),
+      },
+      { label: 'Purchased In', value: String(sf?.purchased_in ?? 0) },
+      { label: 'Transferred In', value: String(sf?.transferred_in ?? 0) },
+      { label: 'Returned In', value: String(sf?.returned_in ?? 0) },
+      { label: 'Manually Added', value: String(sf?.manually_added ?? 0) },
+      { label: 'Sold Out', value: String(sf?.sold_out ?? 0) },
+      { label: 'Transferred Out', value: String(sf?.transferred_out ?? 0) },
+      { label: 'Exchanged Out', value: String(sf?.exchanged_out ?? 0) },
+      { label: 'Manually Reduced', value: String(sf?.manually_reduced ?? 0) },
     ]);
 
+    doc
+      .fillColor('#555555')
+      .font('Helvetica-Oblique')
+      .fontSize(7)
+      .text(`Note: ${s.note}`, this.L, doc.y, { width: this.W });
     doc.moveDown(0.5);
   }
 
   private addPurchasesSection(doc: PDFKit.PDFDocument, data: any) {
     const { purchases, purchases_summary: ps } = data;
-    this.sectionTitle(doc, '3. Purchases / Stock Additions in Period');
+    this.sectionTitle(doc, '3. Vendor Purchases in Period');
 
     this.summaryBox(doc, [
       { label: 'Batches Received', value: String(ps.total_batches) },
@@ -398,17 +470,32 @@ export class ProductAuditPdfService {
 
     doc.moveDown(0.3);
 
+    if (!purchases || purchases.length === 0) {
+      doc
+        .fillColor('#000000')
+        .font('Helvetica')
+        .fontSize(this.BODY_FONT)
+        .text(
+          'No vendor purchases recorded in the selected period.',
+          this.L,
+          doc.y,
+        );
+      doc.moveDown(0.5);
+      return;
+    }
+
     this.drawTable(
       doc,
       [
-        { label: 'Date', width: 65 },
+        { label: 'Date', width: 62 },
         { label: 'Batch No.', width: 75 },
-        { label: 'Vendor', width: 90 },
-        { label: 'Branch', width: 75 },
-        { label: 'Qty Rcvd', width: 42, align: 'right' },
-        { label: 'Remaining', width: 42, align: 'right' },
-        { label: 'Unit Cost', width: 52, align: 'right' },
-        { label: 'Total Cost', width: 54, align: 'right' },
+        { label: 'Vendor', width: 85 },
+        { label: 'Branch', width: 70 },
+        { label: 'Rcvd', width: 38, align: 'right' },
+        { label: 'Remaining', width: 45, align: 'right' },
+        { label: 'Sold', width: 38, align: 'right' },
+        { label: 'Transf.Out', width: 43, align: 'right' },
+        { label: 'Unit Cost', width: 39, align: 'right' },
       ],
       purchases.map((p: any) => [
         this.fmtDate(p.date),
@@ -417,20 +504,24 @@ export class ProductAuditPdfService {
         p.branch?.name ?? '—',
         String(p.original_quantity),
         String(p.remaining_quantity),
+        String(p.sold_from_batch ?? 0),
+        String(p.transferred_out_from_batch ?? 0),
         this.fmt(p.cost_price),
-        this.fmt(p.total_cost),
       ]),
     );
   }
 
   private addAdjustmentsSection(doc: PDFKit.PDFDocument, data: any) {
     const { adjustments, adjustments_summary: as_ } = data;
-    this.sectionTitle(doc, '4. Inventory Adjustments in Period');
+    this.sectionTitle(doc, '5. Manual Adjustments in Period');
 
     this.summaryBox(doc, [
       { label: 'Total Additions', value: String(as_.total_additions) },
       { label: 'Total Reductions', value: String(as_.total_reductions) },
-      { label: 'Net Change', value: String(as_.total_additions - as_.total_reductions) },
+      {
+        label: 'Net Change',
+        value: String(as_.total_additions - as_.total_reductions),
+      },
     ]);
 
     doc.moveDown(0.3);
@@ -458,16 +549,31 @@ export class ProductAuditPdfService {
     );
   }
 
-  private addTransfersSection(doc: PDFKit.PDFDocument, data: any) {
-    const { transfers } = data;
-    this.sectionTitle(doc, '5. Inventory Transfers in Period');
+  private addTransferReceivedSection(doc: PDFKit.PDFDocument, data: any) {
+    const trb: any[] = data.transfer_received_batches ?? [];
+    const trs = data.transfer_received_summary;
+    this.sectionTitle(doc, '4. Transfer-Received Stock in Period');
 
-    if (transfers.length === 0) {
+    this.summaryBox(doc, [
+      { label: 'Batches Received', value: String(trs?.total_batches ?? 0) },
+      {
+        label: 'Total Units Received',
+        value: String(trs?.total_units_received ?? 0),
+      },
+    ]);
+
+    doc.moveDown(0.3);
+
+    if (trb.length === 0) {
       doc
         .fillColor('#000000')
         .font('Helvetica')
         .fontSize(this.BODY_FONT)
-        .text('No transfers recorded in the selected period.', this.L, doc.y);
+        .text(
+          'No stock received via transfer in the selected period.',
+          this.L,
+          doc.y,
+        );
       doc.moveDown(0.5);
       return;
     }
@@ -475,31 +581,108 @@ export class ProductAuditPdfService {
     this.drawTable(
       doc,
       [
-        { label: 'Initiated', width: 72 },
-        { label: 'Completed', width: 72 },
-        { label: 'Status', width: 55 },
-        { label: 'From Branch', width: 80 },
-        { label: 'To Branch', width: 80 },
-        { label: 'Units', width: 36, align: 'right' },
-        { label: 'Batches', width: 50 },
-        { label: 'Initiated By', width: 50 },
+        { label: 'Date', width: 65 },
+        { label: 'Batch No.', width: 90 },
+        { label: 'Branch', width: 90 },
+        { label: 'Rcvd', width: 50, align: 'right' },
+        { label: 'Remaining', width: 55, align: 'right' },
+        { label: 'Sold', width: 50, align: 'right' },
+        { label: 'Transf.Out', width: 55, align: 'right' },
+        { label: 'Expiry', width: 40 },
       ],
-      transfers.map((t: any) => [
-        this.fmtDate(t.initiated_at),
-        this.fmtDate(t.completed_at),
-        String(t.status).toUpperCase(),
-        t.source_branch?.name ?? '—',
-        t.destination_branch?.name ?? '—',
-        String(t.total_quantity),
-        t.items.map((i: any) => i.batch_number).join(', '),
-        t.created_by?.name ?? '—',
+      trb.map((b: any) => [
+        this.fmtDate(b.date),
+        b.batch_number,
+        b.branch?.name ?? '—',
+        String(b.original_quantity),
+        String(b.remaining_quantity),
+        String(b.sold_from_batch ?? 0),
+        String(b.transferred_out_from_batch ?? 0),
+        b.expiry_date ? this.fmtDate(b.expiry_date) : '—',
       ]),
     );
   }
 
+  private addTransfersSection(doc: PDFKit.PDFDocument, data: any) {
+    const completed: any[] = data.transfers?.completed ?? [];
+    const pending: any[] = data.transfers?.pending ?? [];
+    const ts = data.transfers_summary;
+    this.sectionTitle(doc, '6. Inventory Transfers in Period');
+
+    this.summaryBox(doc, [
+      { label: 'Outbound Units', value: String(ts?.total_outbound_units ?? 0) },
+      { label: 'Inbound Units', value: String(ts?.total_inbound_units ?? 0) },
+      { label: 'Pending Units', value: String(ts?.total_pending_units ?? 0) },
+    ]);
+
+    doc.moveDown(0.3);
+
+    const transferCols = [
+      { label: 'Date', width: 65 },
+      { label: 'Direction', width: 55 },
+      { label: 'From Branch', width: 90 },
+      { label: 'To Branch', width: 90 },
+      { label: 'Units', width: 38, align: 'right' },
+      { label: 'Batches', width: 82 },
+      { label: 'By', width: 75 },
+    ];
+
+    if (completed.length === 0) {
+      doc
+        .fillColor('#000000')
+        .font('Helvetica')
+        .fontSize(this.BODY_FONT)
+        .text('No completed transfers in the selected period.', this.L, doc.y);
+      doc.moveDown(0.3);
+    } else {
+      doc
+        .fillColor('#333333')
+        .font('Helvetica-Bold')
+        .fontSize(this.BODY_FONT)
+        .text('Completed (stock has moved):', this.L, doc.y);
+      doc.moveDown(0.2);
+      this.drawTable(
+        doc,
+        transferCols,
+        completed.map((t: any) => [
+          this.fmtDate(t.completed_at),
+          String(t.direction ?? '').toUpperCase(),
+          t.source_branch?.name ?? '—',
+          t.destination_branch?.name ?? '—',
+          String(t.total_quantity),
+          t.items.map((i: any) => i.batch_number).join(', '),
+          t.created_by?.name ?? '—',
+        ]),
+      );
+    }
+
+    if (pending.length > 0) {
+      doc.moveDown(0.4);
+      doc
+        .fillColor('#cc6600')
+        .font('Helvetica-Bold')
+        .fontSize(this.BODY_FONT)
+        .text('Pending (stock has NOT moved yet):', this.L, doc.y);
+      doc.moveDown(0.2);
+      this.drawTable(
+        doc,
+        transferCols,
+        pending.map((t: any) => [
+          this.fmtDate(t.initiated_at),
+          String(t.direction ?? '').toUpperCase(),
+          t.source_branch?.name ?? '—',
+          t.destination_branch?.name ?? '—',
+          String(t.total_quantity),
+          t.items.map((i: any) => i.batch_number).join(', '),
+          t.created_by?.name ?? '—',
+        ]),
+      );
+    }
+  }
+
   private addSalesSection(doc: PDFKit.PDFDocument, data: any) {
     const { sales, sales_summary: ss } = data;
-    this.sectionTitle(doc, '6. Sales in Period');
+    this.sectionTitle(doc, '7. Sales in Period');
 
     this.summaryBox(doc, [
       { label: 'Units Sold', value: String(ss.total_units_sold) },
@@ -509,8 +692,14 @@ export class ProductAuditPdfService {
       { label: 'Cart Discount', value: this.fmt(ss.total_average_discount) },
       { label: 'Promo Discount', value: this.fmt(ss.total_promotion_discount) },
       { label: 'Total Discount', value: this.fmt(ss.total_discount) },
-      { label: 'Regular Price Sales', value: String(ss.regular_price_sales_count) },
-      { label: 'Wholesale Sales', value: String(ss.wholesale_price_sales_count) },
+      {
+        label: 'Regular Price Sales',
+        value: String(ss.regular_price_sales_count),
+      },
+      {
+        label: 'Wholesale Sales',
+        value: String(ss.wholesale_price_sales_count),
+      },
     ]);
 
     doc.moveDown(0.3);
@@ -546,28 +735,43 @@ export class ProductAuditPdfService {
 
   private addReturnsSection(doc: PDFKit.PDFDocument, data: any) {
     const { returns, returns_summary: rs } = data;
-    this.sectionTitle(doc, '7. Returns in Period');
+    this.sectionTitle(doc, '8. Returns in Period');
 
     this.summaryBox(doc, [
       { label: 'Units Returned', value: String(rs.total_units_returned) },
-      { label: 'Return Transactions', value: String(rs.total_return_transactions) },
+      {
+        label: 'Return Transactions',
+        value: String(rs.total_return_transactions),
+      },
     ]);
 
     doc.moveDown(0.3);
 
+    if (!returns || returns.length === 0) {
+      doc
+        .fillColor('#000000')
+        .font('Helvetica')
+        .fontSize(this.BODY_FONT)
+        .text('No returns recorded in the selected period.', this.L, doc.y);
+      doc.moveDown(0.5);
+      return;
+    }
+
     this.drawTable(
       doc,
       [
-        { label: 'Date', width: 80 },
-        { label: 'Return No.', width: 100 },
-        { label: 'Batch', width: 80 },
-        { label: 'Branch', width: 80 },
-        { label: 'Qty Returned', width: 80, align: 'right' },
-        { label: 'Processed By', width: 75 },
+        { label: 'Date', width: 65 },
+        { label: 'Return No.', width: 90 },
+        { label: 'Orig. Sale', width: 80 },
+        { label: 'Batch', width: 70 },
+        { label: 'Branch', width: 65 },
+        { label: 'Qty', width: 40, align: 'right' },
+        { label: 'Processed By', width: 85 },
       ],
       returns.map((r: any) => [
         this.fmtDate(r.date),
         r.return_number,
+        r.original_sale_number ?? '—',
         r.batch?.batch_number ?? '—',
         r.branch?.name ?? '—',
         String(r.quantity),
@@ -576,9 +780,115 @@ export class ProductAuditPdfService {
     );
   }
 
+  private addExchangeOutsSection(doc: PDFKit.PDFDocument, data: any) {
+    const exchange_outs: any[] = data.exchange_outs ?? [];
+    const eos = data.exchange_outs_summary;
+    this.sectionTitle(doc, '9. Exchange-Outs from Returns');
+
+    this.summaryBox(doc, [
+      {
+        label: 'Units Exchanged Out',
+        value: String(eos?.total_units_exchanged_out ?? 0),
+      },
+      {
+        label: 'Exchange Transactions',
+        value: String(eos?.total_exchange_transactions ?? 0),
+      },
+    ]);
+
+    doc.moveDown(0.3);
+
+    if (exchange_outs.length === 0) {
+      doc
+        .fillColor('#000000')
+        .font('Helvetica')
+        .fontSize(this.BODY_FONT)
+        .text(
+          'No exchange-out events recorded in the selected period.',
+          this.L,
+          doc.y,
+        );
+      doc.moveDown(0.5);
+      return;
+    }
+
+    this.drawTable(
+      doc,
+      [
+        { label: 'Date', width: 80 },
+        { label: 'Batch', width: 100 },
+        { label: 'Branch', width: 95 },
+        { label: 'Qty Out', width: 60, align: 'right' },
+        { label: 'Reason', width: 100 },
+        { label: 'Processed By', width: 60 },
+      ],
+      exchange_outs.map((e: any) => [
+        this.fmtDate(e.date),
+        e.batch?.batch_number ?? '—',
+        e.branch?.name ?? '—',
+        String(e.quantity_deducted),
+        e.reason ?? '—',
+        e.processed_by?.name ?? '—',
+      ]),
+    );
+  }
+
+  private addReturnRestocksSection(doc: PDFKit.PDFDocument, data: any) {
+    const return_restocks: any[] = data.return_restocks ?? [];
+    const rrs = data.return_restocks_summary;
+    this.sectionTitle(doc, '10. Return Restocks (Stock Added Back)');
+
+    this.summaryBox(doc, [
+      {
+        label: 'Units Restocked',
+        value: String(rrs?.total_units_restocked ?? 0),
+      },
+      {
+        label: 'Restock Transactions',
+        value: String(rrs?.total_restock_transactions ?? 0),
+      },
+    ]);
+
+    doc.moveDown(0.3);
+
+    if (return_restocks.length === 0) {
+      doc
+        .fillColor('#000000')
+        .font('Helvetica')
+        .fontSize(this.BODY_FONT)
+        .text(
+          'No return restocks recorded in the selected period.',
+          this.L,
+          doc.y,
+        );
+      doc.moveDown(0.5);
+      return;
+    }
+
+    this.drawTable(
+      doc,
+      [
+        { label: 'Date', width: 80 },
+        { label: 'Batch', width: 100 },
+        { label: 'Branch', width: 95 },
+        { label: 'Qty Restocked', width: 70, align: 'right' },
+        { label: 'Reason', width: 95 },
+        { label: 'Processed By', width: 55 },
+      ],
+      return_restocks.map((r: any) => [
+        this.fmtDate(r.date),
+        r.batch?.batch_number ?? '—',
+        r.branch?.name ?? '—',
+        String(r.quantity_restocked),
+        r.reason ?? '—',
+        r.processed_by?.name ?? '—',
+      ]),
+    );
+  }
+
   private addBatchDetailSection(doc: PDFKit.PDFDocument, data: any) {
     const { batches } = data.stock_snapshot;
-    this.sectionTitle(doc, '8. Active Batch Details (Current Stock)');
+    this.sectionTitle(doc, '11. Active Batch Details (Current Stock)');
 
     this.drawTable(
       doc,
