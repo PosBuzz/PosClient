@@ -5,6 +5,7 @@ import { routes } from "./routes";
 
 function App() {
   const routing = useRoutes(routes);
+  console.log("API BASE:", import.meta.env.VITE_API_BASE_URL);
   return (
     <Suspense
       fallback={
