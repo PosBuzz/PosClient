@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using ZXing;
@@ -9,464 +10,471 @@ namespace Printer
 {
     public class BarcodeLabelPrint
     {
-        private const int DPI = 203;
-        private static int CmToPixels(double cm) => (int)(cm * DPI / 2.54);
-        private static int InchesToPixels(double inches) => (int)(inches * DPI);
+        // Label physical dimensions at 600 DPI: 1.50" x 1.00"
+        private static readonly int LabelWidth        = (int)(1.50 * 600); // 900 px
+        private static readonly int LabelHeight       = (int)(1.00 * 600); // 600 px
+        private static readonly int ExposedLinerWidth  = (int)(0.04 * 600); // 24 px each side
+        private static readonly int PrintableWidth    = (int)(1.50 * 600) - 2 * (int)(0.04 * 600);
+        private static readonly int PrintableHeight   = (int)(1.00 * 600);
 
-        // Using exact measurements from printer configuration: 1.50" x 1.00"
-        // Use 600 DPI for maximum size and quality
-        private static readonly int LabelWidth = (int)(1.50 * 600); // 900 pixels
-        private static readonly int LabelHeight = (int)(1.00 * 600); // 600 pixels
-        private static readonly int ExposedLinerWidth = (int)(0.04 * 600); // 24 pixels
+        // Barcode image horizontal margins
+        private const int BARCODE_SIDE_MARGIN = 40;
 
-        // Actual printable area (excluding exposed liner)
-        private static readonly int PrintableWidth = LabelWidth - (2 * ExposedLinerWidth);
-        private static readonly int PrintableHeight = LabelHeight;
-        const int BARCODE_SIDE_MARGIN = 60;
+        // Font size bounds — MIN is deliberately small so wrapping wins over clipping
+        private const float FONT_LARGE_MAX  = 36f;
+        private const float FONT_LARGE_MIN  = 10f;
+        private const float FONT_MEDIUM_MAX = 26f;
+        private const float FONT_MEDIUM_MIN = 9f;
 
-        /// <summary>
-        /// Detects the best barcode format based on the input data
-        /// Falls back to CODE_128 as it's the most versatile
-        /// </summary>
-        // Helper method to try different barcode formats and fix checksums if needed
+        // ── Barcode generation ────────────────────────────────────────────────────
+
         private static Bitmap GenerateRobustBarcode(string barcodeValue, BarcodeFormat preferredFormat, int width, int height)
         {
-            BarcodeWriter writer = null;
+            var writer = new BarcodeWriter
+            {
+                Format  = preferredFormat,
+                Options = new ZXing.Common.EncodingOptions { Width = width, Height = height, Margin = 0, PureBarcode = false }
+            };
+
+            try { return writer.Write(barcodeValue); }
+            catch (Exception ex) { Console.WriteLine("Failed " + preferredFormat + ": " + ex.Message); }
+
+            if (preferredFormat == BarcodeFormat.EAN_13 && barcodeValue.Length >= 12)
+                try { return writer.Write(FixEan13Checksum(barcodeValue)); } catch { }
+
+            if (barcodeValue.Length == 12 && barcodeValue.All(char.IsDigit))
+                try { writer.Format = BarcodeFormat.UPC_A; return writer.Write(FixUpcChecksum(barcodeValue)); } catch { }
+
+            try { writer.Format = BarcodeFormat.CODE_128; return writer.Write(barcodeValue); } catch { }
 
             try
             {
-                // First try the preferred format
-                writer = new BarcodeWriter
-                {
-                    Format = preferredFormat,
-                    Options = new ZXing.Common.EncodingOptions
-                    {
-                        Width = width,
-                        Height = height,
-                        Margin = 0,
-                        PureBarcode = false
-                    }
-                };
-
-                return writer.Write(barcodeValue);
+                writer.Format = BarcodeFormat.CODE_39;
+                string v = barcodeValue;
+                if (!v.StartsWith("*")) v = "*" + v;
+                if (!v.EndsWith("*"))   v = v + "*";
+                return writer.Write(v);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed with " + preferredFormat + ": " + ex.Message);
+            catch { }
 
-                // Try to fix EAN-13 checksum if it's EAN-13
-                if (preferredFormat == BarcodeFormat.EAN_13 && barcodeValue.Length >= 12)
-                {
-                    try
-                    {
-                        string fixedEan13 = FixEan13Checksum(barcodeValue);
-                        Console.WriteLine("Trying fixed EAN-13: " + fixedEan13);
-                        return writer.Write(fixedEan13);
-                    }
-                    catch (Exception ex2)
-                    {
-                        Console.WriteLine("Fixed EAN-13 failed: " + ex2.Message);
-                    }
-                }
-
-                // Try UPC-A if it's 12 digits
-                if (barcodeValue.Length == 12 && barcodeValue.All(char.IsDigit))
-                {
-                    try
-                    {
-                        writer.Format = BarcodeFormat.UPC_A;
-                        string fixedUpc = FixUpcChecksum(barcodeValue);
-                        Console.WriteLine("Trying fixed UPC-A: " + fixedUpc);
-                        return writer.Write(fixedUpc);
-                    }
-                    catch (Exception ex3)
-                    {
-                        Console.WriteLine("UPC-A failed: " + ex3.Message);
-                    }
-                }
-
-                // Fallback to CODE_128 which is very flexible
-                try
-                {
-                    writer.Format = BarcodeFormat.CODE_128;
-                    Console.WriteLine("Falling back to CODE_128");
-                    return writer.Write(barcodeValue);
-                }
-                catch (Exception ex4)
-                {
-                    Console.WriteLine("CODE_128 failed: " + ex4.Message);
-                }
-
-                // Last resort - CODE_39 (but needs to be wrapped in *)
-                try
-                {
-                    writer.Format = BarcodeFormat.CODE_39;
-                    string code39Value = barcodeValue;
-                    if (!code39Value.StartsWith("*"))
-                        code39Value = "*" + code39Value;
-                    if (!code39Value.EndsWith("*"))
-                        code39Value = code39Value + "*";
-
-                    Console.WriteLine("Last resort CODE_39: " + code39Value);
-                    return writer.Write(code39Value);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("All formats failed. Creating text-based barcode.");
-                    // Create a simple text-based "barcode" as absolute last resort
-                    return CreateTextBarcode(barcodeValue, width, height);
-                }
-            }
+            return CreateTextBarcode(barcodeValue, width, height);
         }
 
-        // Fix EAN-13 checksum
-        private static string FixEan13Checksum(string ean13)
+        private static string FixEan13Checksum(string s)
         {
-            if (ean13.Length < 12) return ean13;
-
-            string base12 = ean13.Substring(0, 12);
-            int checksum = CalculateEan13Checksum(base12);
-            return base12 + checksum.ToString();
-        }
-
-        // Fix UPC-A checksum  
-        private static string FixUpcChecksum(string upc)
-        {
-            if (upc.Length < 11) return upc;
-
-            string base11 = upc.Substring(0, 11);
-            int checksum = CalculateUpcChecksum(base11);
-            return base11 + checksum.ToString();
-        }
-
-        // Calculate EAN-13 checksum
-        private static int CalculateEan13Checksum(string base12)
-        {
+            string b = s.Substring(0, 12);
             int sum = 0;
-            for (int i = 0; i < 12; i++)
-            {
-                int digit = int.Parse(base12[i].ToString());
-                sum += (i % 2 == 0) ? digit : digit * 3;
-            }
-            return (10 - (sum % 10)) % 10;
+            for (int i = 0; i < 12; i++) sum += int.Parse(b[i].ToString()) * (i % 2 == 0 ? 1 : 3);
+            return b + ((10 - sum % 10) % 10).ToString();
         }
 
-        // Calculate UPC-A checksum
-        private static int CalculateUpcChecksum(string base11)
+        private static string FixUpcChecksum(string s)
         {
+            string b = s.Substring(0, 11);
             int sum = 0;
-            for (int i = 0; i < 11; i++)
-            {
-                int digit = int.Parse(base11[i].ToString());
-                sum += (i % 2 == 0) ? digit * 3 : digit;
-            }
-            return (10 - (sum % 10)) % 10;
+            for (int i = 0; i < 11; i++) sum += int.Parse(b[i].ToString()) * (i % 2 == 0 ? 3 : 1);
+            return b + ((10 - sum % 10) % 10).ToString();
         }
 
-        // Create a text-based barcode as last resort
         private static Bitmap CreateTextBarcode(string value, int width, int height)
         {
-            var bitmap = new Bitmap(width, height);
-            using (Graphics g = Graphics.FromImage(bitmap))
+            var bmp = new Bitmap(width, height);
+            using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.Clear(Color.White);
                 g.DrawRectangle(Pens.Black, 0, 0, width - 1, height - 1);
-
-                using (Font font = new Font("Arial", 16, FontStyle.Bold))
+                using (Font f = new Font("Arial", 16, FontStyle.Bold))
                 {
-                    var textSize = g.MeasureString(value, font);
-                    float x = (width - textSize.Width) / 2;
-                    float y = (height - textSize.Height) / 2;
-                    g.DrawString(value, font, Brushes.Black, x, y);
+                    SizeF sz = g.MeasureString(value, f);
+                    g.DrawString(value, f, Brushes.Black, (width - sz.Width) / 2f, (height - sz.Height) / 2f);
                 }
             }
-            return bitmap;
+            return bmp;
         }
 
-        private static BarcodeFormat DetectBarcodeFormat(string barcodeValue)
+        private static BarcodeFormat DetectBarcodeFormat(string v)
         {
-            if (string.IsNullOrWhiteSpace(barcodeValue))
-                return BarcodeFormat.CODE_128;
-
-            // Remove any spaces or special characters for analysis
-            string cleanValue = barcodeValue.Trim();
-
-            // UPC-A: exactly 12 digits
-            if (cleanValue.Length == 12 && cleanValue.All(char.IsDigit))
-                return BarcodeFormat.UPC_A;
-
-            // EAN-13: exactly 13 digits
-            if (cleanValue.Length == 13 && cleanValue.All(char.IsDigit))
-                return BarcodeFormat.EAN_13;
-
-            // EAN-8: exactly 8 digits
-            if (cleanValue.Length == 8 && cleanValue.All(char.IsDigit))
-                return BarcodeFormat.EAN_8;
-
-            // CODE_39: typically alphanumeric, often starts/ends with *
-            if (cleanValue.StartsWith("*") && cleanValue.EndsWith("*"))
-                return BarcodeFormat.CODE_39;
-
-            // For everything else, use CODE_128 as it's the most versatile
-            // CODE_128 can handle: numbers, letters, symbols, and special characters
+            if (string.IsNullOrWhiteSpace(v)) return BarcodeFormat.CODE_128;
+            v = v.Trim();
+            if (v.Length == 12 && v.All(char.IsDigit)) return BarcodeFormat.UPC_A;
+            if (v.Length == 13 && v.All(char.IsDigit)) return BarcodeFormat.EAN_13;
+            if (v.Length == 8  && v.All(char.IsDigit)) return BarcodeFormat.EAN_8;
+            if (v.StartsWith("*") && v.EndsWith("*"))  return BarcodeFormat.CODE_39;
             return BarcodeFormat.CODE_128;
         }
 
-        public static void PrintLabel(string barcodeValue, string productName = null, string price = null, bool printBarcodeOnly = false, bool vatIncluded = false, decimal vatPercentage = 0, int quantity = 1, string shopName = null, string branchName = null, string location = null)
+        // ── Text helpers ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the largest font in [minSize, maxSize] where the whole text fits
+        /// in one line within maxWidth.  Falls back to minSize — WrapText handles the rest.
+        /// </summary>
+        private static Font FitFontToWidth(Graphics g, string text, string family, FontStyle style,
+            float maxSize, float minSize, float maxWidth, StringFormat sf)
+        {
+            for (float sz = maxSize; sz > minSize; sz -= 1f)
+            {
+                var f = new Font(family, sz, style);
+                if (g.MeasureString(text, f, new PointF(0, 0), sf).Width <= maxWidth)
+                    return f;
+                f.Dispose();
+            }
+            return new Font(family, minSize, style);
+        }
+
+        /// <summary>
+        /// Word-wraps text so every line fits within maxWidth.
+        /// Falls back to character-level splitting for words wider than maxWidth.
+        /// Never returns an empty list for non-empty input.
+        /// </summary>
+        private static List<string> WrapText(Graphics g, string text, Font font,
+            float maxWidth, StringFormat sf)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrWhiteSpace(text)) return result;
+
+            string[] words   = text.Split(' ');
+            string   current = "";
+
+            foreach (string word in words)
+            {
+                string candidate = string.IsNullOrEmpty(current) ? word : current + " " + word;
+                if (g.MeasureString(candidate, font, new PointF(0, 0), sf).Width <= maxWidth)
+                {
+                    current = candidate;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(current))
+                    {
+                        result.Add(current);
+                        current = word;
+                    }
+                    else
+                    {
+                        // Single word wider than maxWidth — split at character level
+                        string rem = word;
+                        while (!string.IsNullOrEmpty(rem))
+                        {
+                            int fit = 0;
+                            for (int c = 1; c <= rem.Length; c++)
+                            {
+                                if (g.MeasureString(rem.Substring(0, c), font, new PointF(0, 0), sf).Width <= maxWidth)
+                                    fit = c;
+                                else
+                                    break;
+                            }
+                            if (fit == 0) fit = 1; // absolute safety: take at least 1 char
+                            result.Add(rem.Substring(0, fit));
+                            rem = rem.Substring(fit);
+                        }
+                        current = "";
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(current)) result.Add(current);
+            return result;
+        }
+
+        /// <summary>
+        /// Draws wrapped lines centered within LabelWidth, starting at startY.
+        /// Returns Y after the last line.
+        /// </summary>
+        private static float DrawLines(Graphics g, List<string> lines, Font font,
+            float startY, float lineH, StringFormat sf)
+        {
+            float y = startY;
+            foreach (string line in lines)
+            {
+                // RectangleF spans the full label width — GDI+ centers within it
+                // Height is generous (2× lineH) so GDI+ never clips descenders
+                g.DrawString(line, font, Brushes.Black,
+                    new RectangleF(0, y, LabelWidth, lineH * 2f), sf);
+                y += lineH;
+            }
+            return y;
+        }
+
+        // ── TextField: one field's complete layout data ───────────────────────────
+
+        private class TextField
+        {
+            public Font         Font     { get; private set; }
+            public List<string> Lines    { get; private set; }
+            public float        LineH    { get; private set; }
+            public float        TotalH   { get; private set; }
+            public bool         HasContent => Lines != null && Lines.Count > 0;
+
+            /// <summary>
+            /// Fit → wrap → measure in one call.
+            /// A null/whitespace text produces a no-op field (HasContent == false).
+            /// </summary>
+            public static TextField Prepare(Graphics g, string text, FontStyle style,
+                float maxSize, float minSize, float maxWidth, StringFormat sf)
+            {
+                var tf = new TextField { Lines = new List<string>() };
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    tf.Font   = null;
+                    tf.LineH  = 0;
+                    tf.TotalH = 0;
+                    return tf;
+                }
+
+                tf.Font  = FitFontToWidth(g, text, "Arial", style, maxSize, minSize, maxWidth, sf);
+                tf.Lines = WrapText(g, text, tf.Font, maxWidth, sf);
+
+                // Safety: if WrapText returned nothing, force at least the original text
+                if (tf.Lines.Count == 0) tf.Lines.Add(text);
+
+                tf.LineH  = g.MeasureString("Wy", tf.Font, new PointF(0, 0), sf).Height;
+                tf.TotalH = tf.LineH * tf.Lines.Count;
+                return tf;
+            }
+
+            public void Dispose() { if (Font != null) { Font.Dispose(); Font = null; } }
+        }
+
+        // ── Public API ────────────────────────────────────────────────────────────
+
+        public static void PrintLabel(
+            string  barcodeValue,
+            string  productName      = null,
+            string  price            = null,
+            bool    printBarcodeOnly = false,
+            bool    vatIncluded      = false,
+            decimal vatPercentage    = 0,
+            int     quantity         = 1,
+            string  shopName         = null,
+            string  branchName       = null,
+            string  location         = null)
         {
             try
             {
-                Console.WriteLine("=== BARCODE LABEL PRINTING ===");
-                Console.WriteLine("Label Size: " + LabelWidth + "x" + LabelHeight + " pixels (1.50x1.00 inches at 600 DPI)");
-                Console.WriteLine("Printable Area: " + PrintableWidth + "x" + PrintableHeight + " pixels");
-                Console.WriteLine("Exposed Liner: " + ExposedLinerWidth + " pixels each side");
-                Console.WriteLine("Barcode Value: " + barcodeValue);
-                Console.WriteLine("Shop Name: " + shopName);
-                Console.WriteLine("Branch Name: " + branchName);
-                Console.WriteLine("Location: " + location);
-                Console.WriteLine("Product Name: " + productName);
-                Console.WriteLine("Price: " + price);
-                Console.WriteLine("VAT Included: " + vatIncluded);
-                Console.WriteLine("VAT Percentage: " + vatPercentage + "%");
-                Console.WriteLine("Quantity: " + quantity);
-                Console.WriteLine("Barcode Only: " + printBarcodeOnly);
+                Console.WriteLine("=== BARCODE LABEL PRINT ===");
+                Console.WriteLine("Barcode: "     + barcodeValue);
+                Console.WriteLine("Shop: "        + shopName);
+                Console.WriteLine("Branch: "      + branchName);
+                Console.WriteLine("Location: "    + location);
+                Console.WriteLine("Product: "     + productName);
+                Console.WriteLine("Price: "       + price);
+                Console.WriteLine("VAT: "         + vatPercentage + "% included=" + vatIncluded);
+                Console.WriteLine("Qty: "         + quantity);
+                Console.WriteLine("BarcodeOnly: " + printBarcodeOnly);
 
-                // Detect the best barcode format for the input
-                var detectedFormat = DetectBarcodeFormat(barcodeValue);
-                Console.WriteLine("Detected barcode format: " + detectedFormat);
+                var fmt = DetectBarcodeFormat(barcodeValue);
+                Console.WriteLine("Format: " + fmt);
 
                 var labelBitmap = new Bitmap(LabelWidth, LabelHeight);
                 using (Graphics g = Graphics.FromImage(labelBitmap))
                 {
                     g.Clear(Color.White);
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                    g.SmoothingMode     = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
                     if (printBarcodeOnly)
                     {
-                        var barcodeBitmap = GenerateRobustBarcode(barcodeValue, detectedFormat, PrintableWidth, PrintableHeight - 10);
-                        Console.WriteLine("Generated large barcode: " + barcodeBitmap.Width + "x" + barcodeBitmap.Height);
-
-                        // Position at the start of printable area (no left gap)
-                        int x = ExposedLinerWidth;
-                        int y = (LabelHeight - barcodeBitmap.Height) / 2;
-                        g.DrawImage(barcodeBitmap, x, y);
-                        barcodeBitmap.Dispose();
+                        var bmp = GenerateRobustBarcode(barcodeValue, fmt, PrintableWidth, PrintableHeight - 10);
+                        g.DrawImage(bmp, ExposedLinerWidth, (LabelHeight - bmp.Height) / 2);
+                        bmp.Dispose();
                     }
                     else
                     {
-                        // ---- Fonts & helpers ----
-                        const float FONT_LARGE = 36f;  // shop/branch, product, price
-                        const float FONT_MEDIUM = 30f;  // location, barcode number
-                        const int LINE_GAP = 6;    // vertical gap between rows
-                        const int BARCODE_H = 170;  // barcode image height
-
-                        // GenericTypographic removes the ~1/6 em horizontal padding that the default
-                        // StringFormat injects, which was causing the right-shift.
-                        // Using the SAME format for both MeasureString and DrawString guarantees
-                        // that measured heights exactly match rendered heights (no vertical drift).
-                        StringFormat sfC = new StringFormat(StringFormat.GenericTypographic);
-                        sfC.Alignment = StringAlignment.Center;
-                        sfC.LineAlignment = StringAlignment.Near;
-                        sfC.Trimming = StringTrimming.EllipsisCharacter;
-
-                        string currency = ConfigManager.GetConfig().Currency;
-                        if (string.IsNullOrEmpty(currency)) currency = "$";
-
-                        // Prepare all text strings up front
-                        string shopText = null;
-                        if (!string.IsNullOrWhiteSpace(shopName) || !string.IsNullOrWhiteSpace(branchName))
-                        {
-                            shopText = (!string.IsNullOrWhiteSpace(shopName) && !string.IsNullOrWhiteSpace(branchName))
-                                ? shopName + " \u2014 " + branchName
-                                : (!string.IsNullOrWhiteSpace(shopName) ? shopName : branchName);
-                        }
-                        string locText = !string.IsNullOrWhiteSpace(location) ? location : null;
-                        string barcodeNumText = barcodeValue;
-                        string productText = !string.IsNullOrWhiteSpace(productName) ? productName : null;
-                        string priceText = null;
-                        if (!string.IsNullOrWhiteSpace(price))
-                        {
-                            priceText = price.StartsWith(currency) ? price : currency + price;
-                            if (vatPercentage > 0)
-                                priceText += vatIncluded
-                                    ? " (inc. VAT " + vatPercentage + "%)"
-                                    : " (exc. VAT " + vatPercentage + "%)";
-                        }
-
-                        using (Font fL = new Font("Arial", FONT_LARGE, FontStyle.Bold))
-                        using (Font fM = new Font("Arial", FONT_MEDIUM, FontStyle.Regular))
-                        {
-                            // Measure line heights using the same format as drawing — guarantees no drift
-                            float fLH = g.MeasureString("Wy", fL, new PointF(0, 0), sfC).Height;
-                            float fMH = g.MeasureString("Wy", fM, new PointF(0, 0), sfC).Height;
-
-                            // ---- PASS 1: measure total content height ----
-                            float totalH = 0;
-                            if (shopText != null) totalH += fLH + LINE_GAP;
-                            if (locText != null) totalH += fMH + LINE_GAP;
-                            totalH += BARCODE_H + LINE_GAP;
-                            totalH += fMH;   // barcode number (last item has no trailing gap)
-                            if (productText != null) totalH += LINE_GAP + fLH;
-                            if (priceText != null) totalH += LINE_GAP + fLH;
-
-                            // ---- PASS 2: draw from vertically-centred startY ----
-                            float startY = Math.Max(2, (LabelHeight - totalH) / 2f);
-                            float y2 = startY;
-
-                            if (shopText != null)
-                            {
-                                g.DrawString(shopText, fL, Brushes.Black, new RectangleF(0, y2, LabelWidth, fLH), sfC);
-                                y2 += fLH + LINE_GAP;
-                            }
-                            if (locText != null)
-                            {
-                                g.DrawString(locText, fM, Brushes.Black, new RectangleF(0, y2, LabelWidth, fMH), sfC);
-                                y2 += fMH + LINE_GAP;
-                            }
-
-                            // Barcode image — centred horizontally
-                            // var barcodeBitmap = GenerateRobustBarcode(barcodeValue, detectedFormat, LabelWidth, BARCODE_H);
-                            // int barcodeX = (LabelWidth - barcodeBitmap.Width) / 2;
-                            int barcodeWidth = LabelWidth - (BARCODE_SIDE_MARGIN * 2);
-
-                            var barcodeBitmap = GenerateRobustBarcode(
-                                barcodeValue,
-                                detectedFormat,
-                                barcodeWidth,
-                                BARCODE_H
-                            );
-
-                            // Force exact positioning using margin
-                            int barcodeX = BARCODE_SIDE_MARGIN;
-                            g.DrawImage(barcodeBitmap, barcodeX, (int)y2);
-                            y2 += BARCODE_H + LINE_GAP;
-                            barcodeBitmap.Dispose();
-
-                            // Barcode number
-                            g.DrawString(barcodeNumText, fM, Brushes.Black, new RectangleF(0, y2, LabelWidth, fMH), sfC);
-                            y2 += fMH;
-
-                            if (productText != null)
-                            {
-                                y2 += LINE_GAP;
-                                g.DrawString(productText, fL, Brushes.Black, new RectangleF(0, y2, LabelWidth, fLH), sfC);
-                                y2 += fLH;
-                            }
-                            if (priceText != null)
-                            {
-                                y2 += LINE_GAP;
-                                g.DrawString(priceText, fL, Brushes.Black, new RectangleF(0, y2, LabelWidth, fLH), sfC);
-                            }
-                        }
+                        RenderFullLabel(g, barcodeValue, fmt,
+                            shopName, branchName, location,
+                            productName, price, vatIncluded, vatPercentage);
                     }
                 }
 
-                Console.WriteLine("Label bitmap created successfully");
+                // ── Send to printer ───────────────────────────────────────────────
+                var    cfg      = ConfigManager.GetConfig();
+                string printer  = !string.IsNullOrWhiteSpace(cfg.BarcodePrinterName)
+                                  ? cfg.BarcodePrinterName : "Gprinter GP-3120TUC";
 
-                var config = ConfigManager.GetConfig();
-                string barcodePrinterName = !string.IsNullOrWhiteSpace(config.BarcodePrinterName) ? config.BarcodePrinterName : "Gprinter GP-3120TUC";
+                var pd = new PrintDocument();
+                pd.PrinterSettings.PrinterName = printer;
 
-                PrintDocument pd = new PrintDocument();
-                pd.PrinterSettings.PrinterName = barcodePrinterName;
-                Console.WriteLine("Using barcode printer: " + barcodePrinterName);
+                bool found = false;
+                foreach (string p in PrinterSettings.InstalledPrinters)
+                    if (p.Equals(printer, StringComparison.OrdinalIgnoreCase)) { found = true; break; }
 
-                bool printerExists = false;
-                foreach (string printerName in PrinterSettings.InstalledPrinters)
+                if (!found)
                 {
-                    if (printerName.Equals(barcodePrinterName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        printerExists = true;
-                        break;
-                    }
+                    Console.WriteLine("WARNING: '" + printer + "' not found, fallback to " + cfg.PrinterName);
+                    pd.PrinterSettings.PrinterName = cfg.PrinterName;
                 }
 
-                if (!printerExists)
-                {
-                    Console.WriteLine("WARNING: Barcode printer '" + barcodePrinterName + "' not found!");
-                    Console.WriteLine("Available printers:");
-                    foreach (string printerName in PrinterSettings.InstalledPrinters)
-                    {
-                        Console.WriteLine("  - " + printerName);
-                    }
-
-                    pd.PrinterSettings.PrinterName = config.PrinterName;
-                    Console.WriteLine("Using configured printer as fallback: " + config.PrinterName);
-                }
-
-                // Always force the exact label paper size (1.50" x 1.00") to avoid
-                // unreliable auto-detection picking a wrong paper and stretching the output
-                PaperSize customPaper = new PaperSize("Custom150x100", 150, 100); // units: 1/100 inch
-                pd.DefaultPageSettings.PaperSize = customPaper;
-                Console.WriteLine("Paper set to 1.50\" x 1.00\" (custom)");
-
-                pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Custom150x100", 150, 100);
+                pd.DefaultPageSettings.Margins   = new Margins(0, 0, 0, 0);
                 pd.DefaultPageSettings.Landscape = false;
-                pd.PrintController = new StandardPrintController();
+                pd.PrintController               = new StandardPrintController();
 
-                pd.PrintPage += (sender, args) =>
+                pd.PrintPage += (s, a) =>
                 {
-                    try
-                    {
-                        Console.WriteLine("=== PRINTING PAGE ===");
-                        Console.WriteLine("Page bounds: " + args.PageBounds);
-                        Console.WriteLine("Graphics DPI: " + args.Graphics.DpiX + " x " + args.Graphics.DpiY);
-                        Console.WriteLine("Label size: " + LabelWidth + "x" + LabelHeight + " pixels");
-
-                        // For label printers, we want 1:1 printing without scaling if possible
-                        // The printer should handle the exact positioning based on its stock configuration
-
-                        // Always draw to fill the entire page bounds (PrintDocument units = 1/100 inch)
-                        // This ensures the label scales correctly regardless of DPI
-                        args.Graphics.DrawImage(labelBitmap, 0, 0, args.PageBounds.Width, args.PageBounds.Height);
-                        Console.WriteLine("Label printed to fill page bounds: " + args.PageBounds.Width + "x" + args.PageBounds.Height);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Error in PrintPage event: " + ex.Message);
-                    }
+                    try { a.Graphics.DrawImage(labelBitmap, 0, 0, a.PageBounds.Width, a.PageBounds.Height); }
+                    catch (Exception ex) { Console.WriteLine("PrintPage err: " + ex.Message); }
                 };
 
-                Console.WriteLine("Starting print job...");
-
-                // Print the specified quantity
                 for (int i = 0; i < quantity; i++)
                 {
                     pd.Print();
-                    Console.WriteLine("? Barcode label " + (i + 1) + " of " + quantity + " sent to printer successfully!");
-
-                    // Small delay between prints to avoid overwhelming the printer
-                    if (i < quantity - 1)
-                    {
-                        System.Threading.Thread.Sleep(100);
-                    }
+                    Console.WriteLine("Printed " + (i + 1) + "/" + quantity);
+                    if (i < quantity - 1) System.Threading.Thread.Sleep(100);
                 }
 
-                Console.WriteLine("? All " + quantity + " barcode labels printed successfully!");
-
+                Console.WriteLine("Done — " + quantity + " label(s).");
                 labelBitmap.Dispose();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("? Error printing barcode label: " + ex.Message);
-                Console.WriteLine("Stack trace: " + ex.StackTrace);
+                Console.WriteLine("PrintLabel error: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 throw;
             }
         }
 
-        private static string TruncateText(Graphics g, string text, Font font, float maxWidth)
-        {
-            if (g.MeasureString(text, font).Width <= maxWidth)
-                return text;
+        // ── Layout ────────────────────────────────────────────────────────────────
 
-            for (long i = text.Length - 1; i > 0; i--)
+        private static void RenderFullLabel(
+            Graphics      g,
+            string        barcodeValue,
+            BarcodeFormat fmt,
+            string        shopName,
+            string        branchName,
+            string        location,
+            string        productName,
+            string        price,
+            bool          vatIncluded,
+            decimal       vatPercentage)
+        {
+            const int LINE_GAP      = 4;
+            const int BARCODE_H_MAX = 160;
+            const int BARCODE_H_MIN = 55;
+            const int TEXT_PAD      = 8;  // px of breathing room each side of text
+
+            float textW = LabelWidth - TEXT_PAD * 2;
+
+            // Shared StringFormat — centered, no trimming, wrapping allowed
+            var sf = new StringFormat(StringFormat.GenericTypographic)
             {
-                string truncated = text.Substring(0, (int)i) + "...";
-                if (g.MeasureString(truncated, font).Width <= maxWidth)
-                    return truncated;
+                Alignment     = StringAlignment.Center,
+                LineAlignment = StringAlignment.Near,
+                Trimming      = StringTrimming.None
+            };
+            sf.FormatFlags &= ~StringFormatFlags.NoWrap;
+
+            string currency = ConfigManager.GetConfig().Currency;
+            if (string.IsNullOrEmpty(currency)) currency = "$";
+
+            // ── Build text strings ────────────────────────────────────────────────
+            // Shop + branch on one line separated by em-dash
+            string shopText = null;
+            if (!string.IsNullOrWhiteSpace(shopName) || !string.IsNullOrWhiteSpace(branchName))
+                shopText = (!string.IsNullOrWhiteSpace(shopName) && !string.IsNullOrWhiteSpace(branchName))
+                    ? shopName.Trim() + " \u2014 " + branchName.Trim()
+                    : (!string.IsNullOrWhiteSpace(shopName) ? shopName.Trim() : branchName.Trim());
+
+            string locText     = !string.IsNullOrWhiteSpace(location)    ? location.Trim()    : null;
+            string productText = !string.IsNullOrWhiteSpace(productName) ? productName.Trim() : null;
+
+            // Price line — always built when price is provided, VAT appended when non-zero
+            string priceText = null;
+            if (!string.IsNullOrWhiteSpace(price))
+            {
+                // Strip any accidental currency prefix duplication
+                string clean = price.Trim();
+                if (clean.StartsWith(currency)) clean = clean.Substring(currency.Length).Trim();
+                priceText = currency + clean;
+                if (vatPercentage > 0)
+                    priceText += vatIncluded
+                        ? " (inc. VAT " + vatPercentage + "%)"
+                        : " (exc. VAT " + vatPercentage + "%)";
             }
 
-            return "...";
+            Console.WriteLine("[Layout] shop='"    + shopText    + "'");
+            Console.WriteLine("[Layout] loc='"     + locText     + "'");
+            Console.WriteLine("[Layout] product='" + productText + "'");
+            Console.WriteLine("[Layout] price='"   + priceText   + "'");
+
+            // ── Prepare every field identically ───────────────────────────────────
+            var tfShop    = TextField.Prepare(g, shopText,       FontStyle.Bold,    FONT_LARGE_MAX,  FONT_LARGE_MIN,  textW, sf);
+            var tfLoc     = TextField.Prepare(g, locText,        FontStyle.Regular, FONT_MEDIUM_MAX, FONT_MEDIUM_MIN, textW, sf);
+            var tfBarcNum = TextField.Prepare(g, barcodeValue,   FontStyle.Regular, FONT_MEDIUM_MAX, FONT_MEDIUM_MIN, textW, sf);
+            var tfProduct = TextField.Prepare(g, productText,    FontStyle.Bold,    FONT_LARGE_MAX,  FONT_LARGE_MIN,  textW, sf);
+            var tfPrice   = TextField.Prepare(g, priceText,      FontStyle.Bold,    FONT_LARGE_MAX,  FONT_LARGE_MIN,  textW, sf);
+
+            // tfBarcNum must always have content (barcodeValue is never null/empty here)
+            if (!tfBarcNum.HasContent)
+            {
+                tfBarcNum.Dispose();
+                tfBarcNum = TextField.Prepare(g, barcodeValue, FontStyle.Regular, FONT_MEDIUM_MIN, FONT_MEDIUM_MIN, textW, sf);
+            }
+
+            // ── Measure text-only height ──────────────────────────────────────────
+            float textOnlyH = 0;
+            if (tfShop.HasContent)    textOnlyH += tfShop.TotalH    + LINE_GAP;
+            if (tfLoc.HasContent)     textOnlyH += tfLoc.TotalH     + LINE_GAP;
+            textOnlyH += LINE_GAP;                    // gap: barcode image → barcode number
+            textOnlyH += tfBarcNum.TotalH;
+            if (tfProduct.HasContent) textOnlyH += LINE_GAP + tfProduct.TotalH;
+            if (tfPrice.HasContent)   textOnlyH += LINE_GAP + tfPrice.TotalH;
+
+            // ── Dynamically shrink barcode image height to make everything fit ─────
+            int barcodeH = BARCODE_H_MAX;
+            while (barcodeH > BARCODE_H_MIN && (textOnlyH + barcodeH) > (LabelHeight - 4))
+                barcodeH -= 4;
+
+            Console.WriteLine("[Layout] textOnlyH=" + textOnlyH + " barcodeH=" + barcodeH + " total=" + (textOnlyH + barcodeH));
+
+            // ── Draw — vertically centred on the label ────────────────────────────
+            float y = Math.Max(2f, (LabelHeight - textOnlyH - barcodeH) / 2f);
+
+            if (tfShop.HasContent)
+            {
+                y = DrawLines(g, tfShop.Lines, tfShop.Font, y, tfShop.LineH, sf);
+                y += LINE_GAP;
+            }
+
+            if (tfLoc.HasContent)
+            {
+                y = DrawLines(g, tfLoc.Lines, tfLoc.Font, y, tfLoc.LineH, sf);
+                y += LINE_GAP;
+            }
+
+            // Barcode image — truly centred on the label (ignoring BARCODE_SIDE_MARGIN asymmetry)
+            int barcodeImgW = LabelWidth - BARCODE_SIDE_MARGIN * 2;
+            var barcodeBmp  = GenerateRobustBarcode(barcodeValue, fmt, barcodeImgW, barcodeH);
+            int barcodeX    = (LabelWidth - barcodeBmp.Width) / 2;   // actual pixel-perfect centre
+            g.DrawImage(barcodeBmp, barcodeX, (int)y);
+            barcodeBmp.Dispose();
+            y += barcodeH + LINE_GAP;
+
+            // Barcode number — always
+            y = DrawLines(g, tfBarcNum.Lines, tfBarcNum.Font, y, tfBarcNum.LineH, sf);
+
+            // Product name
+            if (tfProduct.HasContent)
+            {
+                y += LINE_GAP;
+                y = DrawLines(g, tfProduct.Lines, tfProduct.Font, y, tfProduct.LineH, sf);
+            }
+
+            // Price + VAT — always when priceText was set
+            if (tfPrice.HasContent)
+            {
+                y += LINE_GAP;
+                DrawLines(g, tfPrice.Lines, tfPrice.Font, y, tfPrice.LineH, sf);
+            }
+
+            // ── Dispose ───────────────────────────────────────────────────────────
+            tfShop.Dispose();
+            tfLoc.Dispose();
+            tfBarcNum.Dispose();
+            tfProduct.Dispose();
+            tfPrice.Dispose();
+            sf.Dispose();
         }
     }
 }
