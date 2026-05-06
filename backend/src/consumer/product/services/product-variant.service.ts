@@ -14,7 +14,7 @@ export class ProductVariantService {
   private readonly logger = new Logger(ProductVariantService.name);
   constructor(private prisma: PrismaService) {}
 
-  async create(productId: number, dto: CreateProductVariantDto) {
+  async create(productId: number, userId: number | undefined, dto: CreateProductVariantDto) {
     try {
       // Create the variant
       const variant = await this.prisma.productVariant.create({
@@ -51,7 +51,6 @@ export class ProductVariantService {
 
       // Create variant attributes if provided
       if (dto.attributes && dto.attributes.length > 0) {
-        // Use createMany with skipDuplicates to handle concurrent requests
         await this.prisma.variantAttribute.createMany({
           data: dto.attributes.map((attr) => ({
             variant_id: variant.id,
@@ -59,13 +58,12 @@ export class ProductVariantService {
             name: attr.name,
             value: attr.value,
           })),
-          skipDuplicates: true, // Skip if the same variant_id + name combination already exists
+          skipDuplicates: true,
         });
       }
 
       // Create serial numbers if provided
       if (dto.serials && dto.serials.length > 0) {
-        // Use createMany with skipDuplicates to handle concurrent requests
         await this.prisma.productSerial.createMany({
           data: dto.serials.map((serialDto) => ({
             variant_id: variant.id,
@@ -73,17 +71,16 @@ export class ProductVariantService {
             status: serialDto.status || 'available',
             notes: serialDto.notes,
           })),
-          skipDuplicates: true, // Skip if the same variant_id + serial_number already exists
+          skipDuplicates: true,
         });
       }
 
-      // Create inventory batches if provided
+      // Create inventory batches if provided + AUDIT LOGS
       if (dto.batches && dto.batches.length > 0) {
-        // Use individual creates for batches since we want to capture any errors
-        // and batches don't have a unique constraint to skip
         for (const batchDto of dto.batches) {
           try {
-            await this.prisma.inventoryBatch.create({
+            // 1. Create the batch and capture the result
+            const newBatch = await this.prisma.inventoryBatch.create({
               data: {
                 variant_id: variant.id,
                 branch_id: batchDto.branch_id,
@@ -96,6 +93,26 @@ export class ProductVariantService {
                   : null,
               },
             });
+
+            // 2. Create Audit Log for the initial stock
+            if (batchDto.quantity > 0) {
+              await this.prisma.inventoryAuditLog.create({
+                data: {
+                  consumer_id: variant.product.consumer_id,
+                  branch_id: batchDto.branch_id,
+                  variant_id: variant.id,
+                  batch_id: newBatch.id,
+                  inventoryBatchId: newBatch.id,
+                  event_type: 'PURCHASE_IN',
+                  quantity_delta: batchDto.quantity,
+                  quantity_after: newBatch.quantity,
+                  reference_id: newBatch.id,
+                  reference_type: 'inventory_batches',
+                  notes: `Initial stock added via variant creation`,
+                  created_by_user_id: userId, // Will be null if not provided by controller
+                },
+              });
+            }
           } catch (error) {
             // Log the error but continue with other batches
             console.error(
@@ -104,11 +121,7 @@ export class ProductVariantService {
             );
           }
         }
-      } // Invalidate caches for this consumer
-      const product = await this.prisma.product.findUnique({
-        where: { id: productId },
-        select: { consumer_id: true },
-      });
+      }
 
       return this.findOne(variant.id);
     } catch (error) {
@@ -123,9 +136,9 @@ export class ProductVariantService {
       );
     }
   }
+
   async findOne(id: number, consumerId?: number) {
     try {
-      // Get consumer ID if not provided
       if (!consumerId) {
         const variant = await this.prisma.productVariant.findUnique({
           where: { id },
@@ -176,7 +189,6 @@ export class ProductVariantService {
         throw new NotFoundException(`Product variant with ID ${id} not found`);
       }
 
-      // Calculate total stock and add alert status
       const totalStock = variant.inventory_items.reduce(
         (sum, item) => sum + item.quantity,
         0,
@@ -209,10 +221,8 @@ export class ProductVariantService {
 
   async update(id: number, dto: UpdateProductVariantDto) {
     try {
-      // First check if variant exists
       await this.findOne(id);
 
-      // Get current prices to check if they've changed
       const currentVariant = await this.prisma.productVariant.findUnique({
         where: { id },
         select: {
@@ -225,7 +235,6 @@ export class ProductVariantService {
         throw new NotFoundException(`Product variant with ID ${id} not found`);
       }
 
-      // Update the variant
       const updatedVariant = await this.prisma.productVariant.update({
         where: { id },
         data: {
@@ -244,7 +253,6 @@ export class ProductVariantService {
         },
       });
 
-      // Create new price history if prices changed
       const priceChanged =
         (dto.regular_price &&
           dto.regular_price !== currentVariant.regular_price.toString()) ||
@@ -266,17 +274,12 @@ export class ProductVariantService {
         });
       }
 
-      // Update attributes if provided
-      // Update attributes if provided
       if (dto.attributes !== undefined) {
-        // Delete existing attributes
         await this.prisma.variantAttribute.deleteMany({
           where: { variant_id: id },
         });
 
-        // Create new attributes if any provided
         if (dto.attributes.length > 0) {
-          // Get consumer_id from the variant first
           const variant = await this.prisma.productVariant.findUnique({
             where: { id },
             select: {
@@ -295,26 +298,24 @@ export class ProductVariantService {
           await this.prisma.variantAttribute.createMany({
             data: dto.attributes.map((attr) => ({
               variant_id: id,
-              consumer_id: variant.product.consumer_id, // Add this line
+              consumer_id: variant.product.consumer_id,
               name: attr.name,
               value: attr.value,
             })),
             skipDuplicates: true,
           });
         }
-      } // Handle serial number updates properly for edit mode
+      }
+
       if (dto.serials !== undefined) {
         if (dto.preserve_inventory) {
-          // In edit mode, handle serials intelligently
           const existingSerials = await this.prisma.productSerial.findMany({
             where: { variant_id: id },
           });
 
-          // Separate new and existing serials
           const serialsWithId = dto.serials.filter((s) => s.id);
           const serialsWithoutId = dto.serials.filter((s) => !s.id);
 
-          // Update existing serials
           if (serialsWithId.length > 0) {
             await Promise.all(
               serialsWithId.map((serialDto) =>
@@ -330,7 +331,6 @@ export class ProductVariantService {
             );
           }
 
-          // Create new serials
           if (serialsWithoutId.length > 0) {
             await this.prisma.productSerial.createMany({
               data: serialsWithoutId.map((serialDto) => ({
@@ -343,7 +343,6 @@ export class ProductVariantService {
             });
           }
 
-          // Delete serials that are no longer present
           const incomingSerialIds = serialsWithId
             .map((s) => s.id)
             .filter(Boolean);
@@ -359,7 +358,6 @@ export class ProductVariantService {
             });
           }
         } else {
-          // Non-edit mode: delete all and recreate (original behavior)
           await this.prisma.productSerial.deleteMany({
             where: { variant_id: id },
           });
@@ -376,7 +374,8 @@ export class ProductVariantService {
             });
           }
         }
-      } // Get consumer ID for cache invalidation
+      }
+
       const variant = await this.prisma.productVariant.findUnique({
         where: { id },
         select: {
@@ -398,9 +397,9 @@ export class ProductVariantService {
       );
     }
   }
+
   async remove(id: number) {
     try {
-      // First check if variant exists and get consumer ID
       const variant = await this.prisma.productVariant.findUnique({
         where: { id },
         select: {
@@ -413,7 +412,6 @@ export class ProductVariantService {
         throw new NotFoundException(`Product variant with ID ${id} not found`);
       }
 
-      // Delete the variant (cascades to attributes and price history)
       await this.prisma.productVariant.delete({
         where: { id },
       });
