@@ -96,10 +96,7 @@ export class ReturnService {
         }
       }
 
-      // Calculate totals based on business logic:
-      // - totalRefund = sum of all payment methods EXCEPT 'EXCHANGE'
-      // - totalExchange = sum of only 'EXCHANGE' payment methods
-
+      // Calculate totals based on business logic
       if (!dto.payments || dto.payments.length === 0) {
         throw new BadRequestException(
           'At least one payment method is required to process a return',
@@ -133,7 +130,6 @@ export class ReturnService {
         const ratio =
           originalQty > 0 ? Number(returnItem.quantity) / originalQty : 0;
         const lineAmount = (Number(originalItem.line_total) || 0) * ratio;
-        // line_total is already the final amount after discounts
         return sum + lineAmount;
       }, 0);
 
@@ -251,6 +247,7 @@ export class ReturnService {
           `Total refund and exchange amount ($${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)}). Already returned: $${totalAlreadyReturned.toFixed(2)}`,
         );
       }
+
       // Start transaction
       const result = await this.prisma.$transaction(async (prisma) => {
         // Generate return number
@@ -317,7 +314,7 @@ export class ReturnService {
 
           // Create inventory adjustment to add returned items back to stock
           if (itemDto.batch_id) {
-            await prisma.inventoryAdjustment.create({
+            const adjustment = await prisma.inventoryAdjustment.create({
               data: {
                 variant_id: itemDto.variant_id,
                 branch_id: dto.branch_id,
@@ -331,12 +328,30 @@ export class ReturnService {
             });
 
             // Update batch quantity
-            await prisma.inventoryBatch.update({
+            const updatedBatch = await prisma.inventoryBatch.update({
               where: { id: itemDto.batch_id },
               data: {
                 quantity: {
                   increment: itemDto.quantity,
                 },
+              },
+            });
+
+            // Create RETURN_IN audit log
+            await prisma.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: dto.branch_id,
+                variant_id: itemDto.variant_id,
+                batch_id: itemDto.batch_id,
+                inventoryBatchId: itemDto.batch_id,
+                event_type: 'RETURN_IN',
+                quantity_delta: itemDto.quantity,
+                quantity_after: updatedBatch.quantity,
+                reference_id: returnItem.id,
+                reference_type: 'return_items',
+                notes: `Return #${returnNumber} from sale ${originalSale.sale_number}`,
+                created_by_user_id: userId,
               },
             });
           }
@@ -362,8 +377,6 @@ export class ReturnService {
                 );
               } catch (error) {
                 console.error('Failed to process CREDIT refund:', error);
-                // Continue with the return but log the error
-                // You might want different error handling based on business requirements
               }
             }
 
@@ -432,7 +445,7 @@ export class ReturnService {
                 );
               }
 
-              await prisma.inventoryAdjustment.create({
+              const adjustment = await prisma.inventoryAdjustment.create({
                 data: {
                   variant_id: exchangeDto.variant_id,
                   branch_id: dto.branch_id,
@@ -446,12 +459,30 @@ export class ReturnService {
               });
 
               // Update batch quantity
-              await prisma.inventoryBatch.update({
+              const updatedBatch = await prisma.inventoryBatch.update({
                 where: { id: exchangeDto.batch_id },
                 data: {
                   quantity: {
                     decrement: exchangeDto.quantity,
                   },
+                },
+              });
+
+              // Create EXCHANGE_OUT audit log
+              await prisma.inventoryAuditLog.create({
+                data: {
+                  consumer_id: consumerId,
+                  branch_id: dto.branch_id,
+                  variant_id: exchangeDto.variant_id,
+                  batch_id: exchangeDto.batch_id,
+                  inventoryBatchId: exchangeDto.batch_id,
+                  event_type: 'EXCHANGE_OUT',
+                  quantity_delta: -exchangeDto.quantity,
+                  quantity_after: updatedBatch.quantity,
+                  reference_id: returnExchange.id,
+                  reference_type: 'return_exchanges',
+                  notes: `Exchange #${returnNumber} for return from sale ${originalSale.sale_number}`,
+                  created_by_user_id: userId,
                 },
               });
             }
