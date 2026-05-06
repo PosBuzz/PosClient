@@ -3,21 +3,20 @@ import { BranchModule } from './branch/branch.module';
 import { BrandModule } from './brand/brand.module';
 import { CategoryModule } from './category/category.module';
 import { ChangePasswordModule } from './change-password/change-password.module';
+import { CustomerModule } from './customer/customer.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { PaymentsModule } from './payments/payments.module';
+import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { ReturnsModule } from './returns/returns.module';
+import { RewardsModule } from './rewards/rewards.module';
+import { SalesModule } from './sales/sales.module';
 import { TagModule } from './tag/tag.module';
 import { UnitModule } from './unit/unit.module';
 import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
-import { ProductModule } from './product/product.module';
-import { InventoryModule } from './inventory/inventory.module';
-import { CustomerModule } from './customer/customer.module';
-import { SalesModule } from './sales/sales.module';
-import { ReturnsModule } from './returns/returns.module';
-import { RewardsModule } from './rewards/rewards.module';
-import { PaymentsModule } from './payments/payments.module';
-import { PromotionsModule } from './promotions/promotions.module';
-import { DashboardModule } from './dashboard/dashboard.module';
-import { ProductAuditModule } from './product-audit/product-audit.module';
 
 @Module({
   imports: [
@@ -39,7 +38,6 @@ import { ProductAuditModule } from './product-audit/product-audit.module';
     PaymentsModule,
     PromotionsModule,
     DashboardModule,
-    ProductAuditModule,
   ],
 })
 export class ConsumerModule {}

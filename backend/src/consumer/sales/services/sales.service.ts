@@ -348,8 +348,6 @@ export class SalesService {
         paymentStatus = PaymentStatus.DUE;
       }
 
-      const changeAmount = Math.max(0, totalPaymentAmount - totalAmount);
-
       // Create sale with items in transaction
       const result = await this.prisma.$transaction(async (tx) => {
         // Create sale
@@ -375,7 +373,6 @@ export class SalesService {
             total_amount: totalAmount,
             payment_status: paymentStatus,
             received_amount: totalPaymentAmount,
-            change_amount: changeAmount,
             notes: createSaleDto.notes,
             is_online_order: createSaleDto.is_online_order || false,
             online_order_status: createSaleDto.is_online_order
@@ -1743,7 +1740,6 @@ export class SalesService {
             total_amount: quotation.total_amount,
             payment_status: PaymentStatus.DUE, // Default to DUE, user will process payment
             received_amount: 0,
-            change_amount: 0,
             notes: quotation.notes,
           },
         });
