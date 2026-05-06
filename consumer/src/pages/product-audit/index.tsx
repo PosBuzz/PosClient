@@ -2,7 +2,6 @@ import {
   DownloadOutlined,
   ReloadOutlined,
   SearchOutlined,
-  WarningOutlined
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -38,37 +37,20 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 const fmtNum = (n: number | string | null | undefined, dec = 2) => {
-  if (n == null) return "—";
+  if (n == null) return "0";
   return Number(n).toLocaleString("en-US", {
     minimumFractionDigits: dec,
     maximumFractionDigits: dec,
   });
 };
 
-const fmtDate = (d: string | null | undefined) => {
-  if (!d) return "—";
-  return dayjs(d).format("DD MMM YYYY");
-};
+const fmtDate = (d: string | null | undefined) =>
+  d ? dayjs(d).format("DD MMM YYYY") : "—";
 
-const fmtDateTime = (d: string | null | undefined) => {
-  if (!d) return "—";
-  return dayjs(d).format("DD MMM YYYY HH:mm");
-};
-
-const ExpiryTag = ({ date }: { date: string | null | undefined }) => {
-  if (!date) return <Text type="secondary">No Expiry</Text>;
-  const days = dayjs(date).diff(dayjs(), "day");
-  if (days < 0) return <Tag color="red">Expired ({fmtDate(date)})</Tag>;
-  if (days <= 30)
-    return (
-      <Tag color="orange">
-        {fmtDate(date)} ({days}d left)
-      </Tag>
-    );
-  return <Tag color="green">{fmtDate(date)}</Tag>;
-};
+const fmtDateTime = (d: string | null | undefined) =>
+  d ? dayjs(d).format("DD MMM YYYY HH:mm") : "—";
 
 // ── Product & Variant selectors ───────────────────────────────────────────────
 
@@ -124,8 +106,7 @@ const ProductVariantSelector: React.FC<SelectorProps> = ({
         >
           {products.map((p: any) => (
             <Option key={p.id} value={p.id}>
-              {p.name}
-              {p.code ? ` (${p.code})` : ""}
+              {p.name} {p.code ? `(${p.code})` : ""}
             </Option>
           ))}
         </Select>
@@ -144,8 +125,7 @@ const ProductVariantSelector: React.FC<SelectorProps> = ({
         >
           {variants.map((v: any) => (
             <Option key={v.id} value={v.id}>
-              {v.name}
-              {v.sku ? ` — ${v.sku}` : ""}
+              {v.name} {v.sku ? `— ${v.sku}` : ""}
             </Option>
           ))}
         </Select>
@@ -154,98 +134,109 @@ const ProductVariantSelector: React.FC<SelectorProps> = ({
   );
 };
 
-// ── Summary card row ──────────────────────────────────────────────────────────
+// ── Summary card row (Updated for branch breakdown) ────────────────────────────
 
 const SummaryCards = ({ data }: { data: any }) => {
-  const ss = data.sales_summary;
-  const ps = data.purchases_summary;
-  const rs = data.returns_summary;
-  const stock = data.stock_snapshot;
+  const s = data.summary;
+  const branches = s.by_branch || [];
 
   return (
-    <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Current Stock"
-            value={stock.total_current_stock}
-            suffix="units"
-          />
+    <>
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic title="Est. Opening Stock" value={s.opening_stock} />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Current Stock"
+              value={s.current_stock}
+              valueStyle={{ color: "#1890ff" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="Net Change"
+              value={s.net_change}
+              prefix={s.net_change > 0 ? "+" : ""}
+              valueStyle={{
+                color: s.net_change >= 0 ? "#3f8600" : "#cf1322",
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic title="Total Movements" value={s.total_events} />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Branch Breakdown Table (Only show if more than 1 branch is involved) */}
+      {branches.length > 1 && (
+        <Card
+          size="small"
+          title="Branch Breakdown"
+          style={{ marginBottom: 16 }}
+        >
+          <Table
+            dataSource={branches}
+            rowKey="branch_id"
+            pagination={false}
+            size="small"
+            scroll={{ x: 500 }}
+          >
+            <Table.Column
+              title="Branch"
+              dataIndex="branch_name"
+              key="branch_name"
+            />
+            <Table.Column
+              title="Opening"
+              dataIndex="opening_stock"
+              key="opening_stock"
+              align="right"
+            />
+            <Table.Column
+              title="Current"
+              dataIndex="current_stock"
+              key="current_stock"
+              align="right"
+              render={(val) => (
+                <Text strong style={{ color: "#1890ff" }}>
+                  {val}
+                </Text>
+              )}
+            />
+            <Table.Column
+              title="Net Change"
+              dataIndex="net_change"
+              key="net_change"
+              align="right"
+              render={(val) => (
+                <Text style={{ color: val >= 0 ? "#3f8600" : "#cf1322" }}>
+                  {val > 0 ? "+" : ""}
+                  {val}
+                </Text>
+              )}
+            />
+            <Table.Column
+              title="Events"
+              dataIndex="total_events"
+              key="total_events"
+              align="right"
+            />
+          </Table>
         </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Active Batches"
-            value={stock.total_active_batches}
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Expiring ≤ 30 Days"
-            value={stock.batches_expiring_within_30_days}
-            valueStyle={
-              stock.batches_expiring_within_30_days > 0
-                ? { color: "#d46b08" }
-                : undefined
-            }
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Units Sold (Period)"
-            value={ss.total_units_sold}
-            suffix="units"
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Net Revenue"
-            value={fmtNum(ss.total_revenue)}
-            prefix=""
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Total Discount Given"
-            value={fmtNum(ss.total_discount)}
-            valueStyle={
-              ss.total_discount > 0 ? { color: "#cf1322" } : undefined
-            }
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Purchased (Period)"
-            value={ps.total_units_purchased}
-            suffix="units"
-          />
-        </Card>
-      </Col>
-      <Col xs={12} sm={6}>
-        <Card size="small">
-          <Statistic
-            title="Units Returned"
-            value={rs.total_units_returned}
-            suffix="units"
-          />
-        </Card>
-      </Col>
-    </Row>
+      )}
+    </>
   );
 };
-
-// ── Section: Product Info ─────────────────────────────────────────────────────
+// ── Section: Product Info (Fixed attributes relation name) ────────────────────
 
 const ProductInfoTab = ({ data }: { data: any }) => {
   const v = data.meta.variant;
@@ -273,641 +264,159 @@ const ProductInfoTab = ({ data }: { data: any }) => {
       <Descriptions.Item label="Wholesale Price">
         {v.wholesale_price ? fmtNum(v.wholesale_price) : "—"}
       </Descriptions.Item>
-      <Descriptions.Item label="Tax">
-        {v.product.tax}% ({v.product.tax_method})
-      </Descriptions.Item>
-      <Descriptions.Item label="Low Stock Alert">
-        {v.alert_quantity ?? "—"}
-      </Descriptions.Item>
-      {v.attributes?.length > 0 && (
+      {/* Using VariantAttribute instead of attributes to match Prisma relation */}
+      {v.VariantAttribute?.length > 0 && (
         <Descriptions.Item label="Attributes" span={2}>
-          {v.attributes.map((a: any) => (
-            <Tag key={a.id}>
-              {a.name}: {a.value}
-            </Tag>
-          ))}
+          <Space size={[0, 8]} wrap>
+            {v.VariantAttribute.map((a: any) => (
+              <Tag key={a.id}>
+                {a.name}: {a.value}
+              </Tag>
+            ))}
+          </Space>
         </Descriptions.Item>
       )}
     </Descriptions>
   );
 };
 
-// ── Section: Stock Snapshot ───────────────────────────────────────────────────
+// ── Section: Batch Timeline (New Unified View) ───────────────────────────────
 
-const StockSnapshotTab = ({ data }: { data: any }) => {
-  const batches: any[] = data.stock_snapshot.batches;
-  const columns: ColumnsType<any> = [
-    {
-      title: "Batch No.",
-      dataIndex: "batch_number",
-      key: "batch_number",
-      width: 120,
-    },
-    {
-      title: "Branch",
-      dataIndex: ["branch", "name"],
-      key: "branch",
-      width: 120,
-    },
-    {
-      title: "Vendor",
-      key: "vendor",
-      width: 120,
-      render: (_, r) => r.vendor?.name ?? "—",
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "quantity",
-      align: "right",
-      width: 70,
-    },
-    {
-      title: "Cost Price",
-      dataIndex: "cost_price",
-      key: "cost_price",
-      align: "right",
-      width: 100,
-      render: (v) => fmtNum(v),
-    },
-    {
-      title: "Stock Value",
-      key: "stock_value",
-      align: "right",
-      width: 110,
-      render: (_, r) => fmtNum(Number(r.cost_price) * r.quantity),
-    },
-    {
-      title: "Expiry",
-      key: "expiry",
-      width: 150,
-      render: (_, r) => <ExpiryTag date={r.expiry_date} />,
-    },
-    {
-      title: "Received On",
-      key: "received",
-      width: 120,
-      render: (_, r) => fmtDate(r.created_at),
-    },
-  ];
-  return (
-    <Table
-      dataSource={batches}
-      columns={columns}
-      rowKey="id"
-      size="small"
-      pagination={false}
-      scroll={{ x: 900 }}
-    />
-  );
+const BATCH_EVENT_LABELS: Record<string, { color: string; text: string }> = {
+  PURCHASE_IN: { color: "green", text: "Purchase In" },
+  SALE_OUT: { color: "red", text: "Sale Out" },
+  RETURN_IN: { color: "cyan", text: "Return Restock" },
+  TRANSFER_OUT: { color: "orange", text: "Transfer Out" },
+  TRANSFER_IN: { color: "blue", text: "Transfer In" },
+  ADJUSTMENT: { color: "purple", text: "Manual Adjust" },
+  EXCHANGE_OUT: { color: "magenta", text: "Exchange Out" },
 };
 
-// ── Section: Purchases ────────────────────────────────────────────────────────
+const BatchTimelineTab = ({ data }: { data: any }) => {
+  const batches: any[] = data.batches;
 
-const PurchasesTab = ({ data }: { data: any }) => {
-  const ps = data.purchases_summary;
-  const purchases: any[] = data.purchases;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: "Date",
-      key: "date",
-      width: 110,
-      render: (_, r) => fmtDate(r.date),
-    },
-    {
-      title: "Batch No.",
-      dataIndex: "batch_number",
-      key: "batch_number",
-      width: 120,
-    },
-    {
-      title: "Vendor",
-      key: "vendor",
-      width: 130,
-      render: (_, r) => r.vendor?.name ?? "—",
-    },
-    {
-      title: "Branch",
-      key: "branch",
-      width: 110,
-      render: (_, r) => r.branch?.name ?? "—",
-    },
-    {
-      title: "Qty Rcvd",
-      dataIndex: "original_quantity",
-      key: "original_quantity",
-      align: "right",
-      width: 80,
-    },
-    {
-      title: "Remaining",
-      dataIndex: "remaining_quantity",
-      key: "remaining_quantity",
-      align: "right",
-      width: 85,
-    },
-    {
-      title: "Unit Cost",
-      dataIndex: "cost_price",
-      key: "cost_price",
-      align: "right",
-      width: 100,
-      render: (v) => fmtNum(v),
-    },
-    {
-      title: "Total Cost",
-      dataIndex: "total_cost",
-      key: "total_cost",
-      align: "right",
-      width: 110,
-      render: (v) => fmtNum(v),
-    },
-    {
-      title: "Expiry",
-      key: "expiry",
-      width: 130,
-      render: (_, r) => <ExpiryTag date={r.expiry_date} />,
-    },
-  ];
+  if (batches.length === 0) {
+    return (
+      <Empty description="No batches or movements found in this period." />
+    );
+  }
 
   return (
-    <>
-      <Row gutter={16} style={{ marginBottom: 12 }}>
-        <Col>
-          <Card size="small">
-            <Statistic title="Batches Received" value={ps.total_batches} />
-          </Card>
-        </Col>
-        <Col>
-          <Card size="small">
-            <Statistic title="Total Units" value={ps.total_units_purchased} />
-          </Card>
-        </Col>
-        <Col>
-          <Card size="small">
-            <Statistic title="Total Cost" value={fmtNum(ps.total_cost)} />
-          </Card>
-        </Col>
-      </Row>
-      <Table
-        dataSource={purchases}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={false}
-        scroll={{ x: 800 }}
-        locale={{ emptyText: "No purchases in the selected period" }}
-      />
-    </>
-  );
-};
+    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      {batches.map((batchGroup) => {
+        const batch = batchGroup.batchInfo;
+        const events = batchGroup.events;
 
-// ── Section: Adjustments ─────────────────────────────────────────────────────
-
-const AdjustmentsTab = ({ data }: { data: any }) => {
-  const as_ = data.adjustments_summary;
-  const adjustments: any[] = data.adjustments;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: "Date",
-      key: "date",
-      width: 110,
-      render: (_, r) => fmtDateTime(r.date),
-    },
-    {
-      title: "Type",
-      key: "type",
-      width: 90,
-      render: (_, r) =>
-        r.type === "addition" ? (
-          <Tag color="green">Addition</Tag>
-        ) : (
-          <Tag color="red">Reduction</Tag>
-        ),
-    },
-    {
-      title: "Qty Change",
-      key: "qty_change",
-      align: "right",
-      width: 100,
-      render: (_, r) => (
-        <Text type={r.quantity_change > 0 ? "success" : "danger"}>
-          {r.quantity_change > 0 ? "+" : ""}
-          {r.quantity_change}
-        </Text>
-      ),
-    },
-    {
-      title: "Batch",
-      key: "batch",
-      width: 110,
-      render: (_, r) => r.batch?.batch_number ?? "—",
-    },
-    {
-      title: "Branch",
-      key: "branch",
-      width: 110,
-      render: (_, r) => r.branch?.name ?? "—",
-    },
-    { title: "Reason", dataIndex: "reason", key: "reason", width: 150 },
-    {
-      title: "Notes",
-      dataIndex: "notes",
-      key: "notes",
-      width: 150,
-      render: (v) => v ?? "—",
-    },
-    {
-      title: "Done By",
-      key: "done_by",
-      width: 120,
-      render: (_, r) => r.created_by?.name ?? "—",
-    },
-  ];
-
-  return (
-    <>
-      <Row gutter={16} style={{ marginBottom: 12 }}>
-        <Col>
-          <Card size="small">
-            <Statistic
-              title="Total Additions"
-              value={as_.total_additions}
-              valueStyle={{ color: "#389e0d" }}
-            />
-          </Card>
-        </Col>
-        <Col>
-          <Card size="small">
-            <Statistic
-              title="Total Reductions"
-              value={as_.total_reductions}
-              valueStyle={{ color: "#cf1322" }}
-            />
-          </Card>
-        </Col>
-        <Col>
-          <Card size="small">
-            <Statistic
-              title="Net Change"
-              value={as_.total_additions - as_.total_reductions}
-              valueStyle={{
-                color:
-                  as_.total_additions - as_.total_reductions >= 0
-                    ? "#389e0d"
-                    : "#cf1322",
-              }}
-            />
-          </Card>
-        </Col>
-      </Row>
-      <Table
-        dataSource={adjustments}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 900 }}
-        locale={{ emptyText: "No adjustments in the selected period" }}
-      />
-    </>
-  );
-};
-
-// ── Section: Transfers ────────────────────────────────────────────────────────
-
-const TransfersTab = ({ data }: { data: any }) => {
-  const transfers: any[] = data.transfers;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: "Initiated",
-      key: "initiated",
-      width: 110,
-      render: (_, r) => fmtDate(r.initiated_at),
-    },
-    {
-      title: "Completed",
-      key: "completed",
-      width: 110,
-      render: (_, r) => fmtDate(r.completed_at),
-    },
-    {
-      title: "Status",
-      key: "status",
-      width: 90,
-      render: (_, r) => {
-        const s = String(r.status).toLowerCase();
-        const color =
-          s === "completed" ? "green" : s === "cancelled" ? "red" : "orange";
-        return <Tag color={color}>{String(r.status).toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: "From Branch",
-      key: "from",
-      width: 120,
-      render: (_, r) => r.source_branch?.name ?? "—",
-    },
-    {
-      title: "To Branch",
-      key: "to",
-      width: 120,
-      render: (_, r) => r.destination_branch?.name ?? "—",
-    },
-    {
-      title: "Units",
-      key: "units",
-      align: "right",
-      width: 70,
-      render: (_, r) => r.total_quantity,
-    },
-    {
-      title: "Batches",
-      key: "batches",
-      width: 150,
-      render: (_, r) =>
-        r.items.map((i: any) => (
-          <Tag key={i.batch_number} style={{ marginBottom: 2 }}>
-            {i.batch_number} ({i.quantity})
-          </Tag>
-        )),
-    },
-    {
-      title: "Initiated By",
-      key: "by",
-      width: 110,
-      render: (_, r) => r.created_by?.name ?? "—",
-    },
-    {
-      title: "Notes",
-      dataIndex: "notes",
-      key: "notes",
-      width: 120,
-      render: (v) => v ?? "—",
-    },
-  ];
-
-  return (
-    <Table
-      dataSource={transfers}
-      columns={columns}
-      rowKey="id"
-      size="small"
-      pagination={{ pageSize: 20 }}
-      scroll={{ x: 1000 }}
-      locale={{ emptyText: "No transfers in the selected period" }}
-    />
-  );
-};
-
-// ── Section: Sales ────────────────────────────────────────────────────────────
-
-const SalesTab = ({ data }: { data: any }) => {
-  const ss = data.sales_summary;
-  const sales: any[] = data.sales;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: "Date",
-      key: "date",
-      width: 100,
-      render: (_, r) => fmtDate(r.date),
-    },
-    {
-      title: "Sale No.",
-      dataIndex: "sale_number",
-      key: "sale_number",
-      width: 120,
-    },
-    {
-      title: "Price Type",
-      key: "price_type",
-      width: 90,
-      render: (_, r) => (
-        <Tag color={r.price_type === "wholesale" ? "purple" : "blue"}>
-          {r.price_type === "wholesale" ? "Wholesale" : "Regular"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      key: "quantity",
-      align: "right",
-      width: 60,
-    },
-    {
-      title: "Unit Price",
-      key: "unit_price",
-      align: "right",
-      width: 90,
-      render: (_, r) => fmtNum(r.unit_price),
-    },
-    {
-      title: "Sold Price",
-      key: "sold_price",
-      align: "right",
-      width: 90,
-      render: (_, r) => fmtNum(r.sold_unit_price ?? r.unit_price),
-    },
-    {
-      title: "Sp. Discount",
-      key: "sp_disc",
-      align: "right",
-      width: 90,
-      render: (_, r) =>
-        r.special_discount > 0 ? (
-          <Text type="danger">{fmtNum(r.special_discount)}</Text>
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Cart Discount",
-      key: "cart_disc",
-      align: "right",
-      width: 90,
-      render: (_, r) =>
-        r.average_discount > 0 ? (
-          <Text type="danger">{fmtNum(r.average_discount)}</Text>
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Promo Discount",
-      key: "promo_disc",
-      align: "right",
-      width: 100,
-      render: (_, r) =>
-        r.promotion_discount > 0 ? (
-          <Space>
-            <Text type="danger">{fmtNum(r.promotion_discount)}</Text>
-            {r.promotion && (
-              <Tag color="purple" style={{ fontSize: 10 }}>
-                {r.promotion.name}
-              </Tag>
-            )}
-          </Space>
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Line Total",
-      key: "line_total",
-      align: "right",
-      width: 100,
-      render: (_, r) => <Text strong>{fmtNum(r.line_total)}</Text>,
-    },
-    {
-      title: "Branch",
-      key: "branch",
-      width: 100,
-      render: (_, r) => r.branch?.name ?? "—",
-    },
-    {
-      title: "Cashier",
-      key: "cashier",
-      width: 110,
-      render: (_, r) => r.cashier?.name ?? "—",
-    },
-    {
-      title: "Customer",
-      key: "customer",
-      width: 120,
-      render: (_, r) => r.customer?.name ?? r.customer?.phone ?? "Walk-in",
-    },
-  ];
-
-  return (
-    <>
-      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
-        {[
-          { title: "Units Sold", value: ss.total_units_sold },
-          { title: "Net Revenue", value: fmtNum(ss.total_revenue) },
-          { title: "Gross Revenue", value: fmtNum(ss.gross_revenue) },
+        const eventColumns: ColumnsType<any> = [
           {
-            title: "Total Discount",
-            value: fmtNum(ss.total_discount),
-            color: "#cf1322",
+            title: "Date/Time",
+            key: "date",
+            width: 150,
+            render: (_, r) => fmtDateTime(r.created_at),
           },
           {
-            title: "Promo Discount",
-            value: fmtNum(ss.total_promotion_discount),
-            color: "#cf1322",
+            title: "Event",
+            key: "event",
+            width: 130,
+            render: (_, r) => {
+              const config = BATCH_EVENT_LABELS[r.event_type] || {
+                color: "default",
+                text: r.event_type,
+              };
+              return <Tag color={config.color}>{config.text}</Tag>;
+            },
           },
-          { title: "Regular Sales", value: ss.regular_price_sales_count },
-          { title: "Wholesale Sales", value: ss.wholesale_price_sales_count },
-        ].map((s) => (
-          <Col key={s.title}>
-            <Card size="small">
-              <Statistic
-                title={s.title}
-                value={s.value}
-                valueStyle={s.color ? { color: s.color } : undefined}
+          {
+            title: "Qty Change",
+            key: "delta",
+            width: 100,
+            align: "right",
+            render: (_, r) => (
+              <Text
+                strong
+                style={{ color: r.quantity_delta > 0 ? "#3f8600" : "#cf1322" }}
+              >
+                {r.quantity_delta > 0 ? "+" : ""}
+                {r.quantity_delta}
+              </Text>
+            ),
+          },
+          {
+            title: "Stock After",
+            key: "after",
+            width: 100,
+            align: "right",
+            render: (_, r) => <Text strong>{r.quantity_after}</Text>,
+          },
+          {
+            title: "Details / Reference",
+            key: "notes",
+            render: (_, r) => (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {r.notes || "—"}
+              </Text>
+            ),
+          },
+          {
+            title: "User",
+            key: "user",
+            width: 120,
+            render: (_, r) => r.created_by?.name || "System",
+          },
+        ];
+
+        return (
+          <Card
+            key={batch.id}
+            size="small"
+            title={
+              <Space>
+                <span style={{ fontWeight: 600 }}>{batch.batch_number}</span>
+                <Tag>{batch.branch?.name || "Unknown Branch"}</Tag>
+                {batch.vendor?.name && (
+                  <Tag color="volcano">{batch.vendor.name}</Tag>
+                )}
+              </Space>
+            }
+            extra={
+              <Space size="large">
+                <Text type="secondary">
+                  Period Start: <Text strong>{batchGroup.periodStartQty}</Text>
+                </Text>
+                <Text>
+                  Current:{" "}
+                  <Text strong style={{ color: "#1890ff" }}>
+                    {batch.quantity}
+                  </Text>
+                </Text>
+              </Space>
+            }
+          >
+            {events.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="No movements in this period"
               />
-            </Card>
-          </Col>
-        ))}
-      </Row>
-      <Table
-        dataSource={sales}
-        columns={columns}
-        rowKey="sale_id"
-        size="small"
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 1200 }}
-        locale={{ emptyText: "No sales in the selected period" }}
-      />
-    </>
-  );
-};
-
-// ── Section: Returns ──────────────────────────────────────────────────────────
-
-const ReturnsTab = ({ data }: { data: any }) => {
-  const rs = data.returns_summary;
-  const returns: any[] = data.returns;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: "Date",
-      key: "date",
-      width: 110,
-      render: (_, r) => fmtDate(r.date),
-    },
-    {
-      title: "Return No.",
-      key: "return_no",
-      width: 130,
-      render: (_, r) => r.return_number,
-    },
-    {
-      title: "Batch",
-      key: "batch",
-      width: 120,
-      render: (_, r) => r.batch?.batch_number ?? "—",
-    },
-    {
-      title: "Branch",
-      key: "branch",
-      width: 110,
-      render: (_, r) => r.branch?.name ?? "—",
-    },
-    {
-      title: "Qty Returned",
-      key: "qty",
-      align: "right",
-      width: 100,
-      render: (_, r) => r.quantity,
-    },
-    {
-      title: "Processed By",
-      key: "by",
-      width: 120,
-      render: (_, r) => r.processed_by?.name ?? "—",
-    },
-  ];
-
-  return (
-    <>
-      <Row gutter={16} style={{ marginBottom: 12 }}>
-        <Col>
-          <Card size="small">
-            <Statistic title="Units Returned" value={rs.total_units_returned} />
+            ) : (
+              <Table
+                dataSource={events}
+                columns={eventColumns}
+                rowKey="id"
+                size="small"
+                pagination={false}
+                scroll={{ x: 800 }}
+              />
+            )}
           </Card>
-        </Col>
-        <Col>
-          <Card size="small">
-            <Statistic
-              title="Return Transactions"
-              value={rs.total_return_transactions}
-            />
-          </Card>
-        </Col>
-      </Row>
-      <Table
-        dataSource={returns}
-        columns={columns}
-        rowKey="return_id"
-        size="small"
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 700 }}
-        locale={{ emptyText: "No returns in the selected period" }}
-      />
-    </>
+        );
+      })}
+    </Space>
   );
 };
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const ProductAuditPage: React.FC = () => {
-  setPageTitle("Product Audit");
-
   const [selectedVariantId, setSelectedVariantId] = useState<
     number | undefined
   >();
@@ -969,50 +478,21 @@ const ProductAuditPage: React.FC = () => {
           children: <ProductInfoTab data={auditData} />,
         },
         {
-          key: "stock",
-          label: "Stock Snapshot",
-          children: <StockSnapshotTab data={auditData} />,
-        },
-        {
-          key: "purchases",
-          label: `Purchases (${auditData.purchases_summary.total_batches})`,
-          children: <PurchasesTab data={auditData} />,
-        },
-        {
-          key: "adjustments",
-          label: `Adjustments (${auditData.adjustments.length})`,
-          children: <AdjustmentsTab data={auditData} />,
-        },
-        {
-          key: "transfers",
-          label: `Transfers (${auditData.transfers.length})`,
-          children: <TransfersTab data={auditData} />,
-        },
-        {
-          key: "sales",
-          label: `Sales (${auditData.sales_summary.total_units_sold} units)`,
-          children: <SalesTab data={auditData} />,
-        },
-        {
-          key: "returns",
-          label: `Returns (${auditData.returns_summary.total_units_returned} units)`,
-          children: <ReturnsTab data={auditData} />,
+          key: "timeline",
+          label: `Batch Timeline (${auditData.batches.length} Batches)`,
+          children: <BatchTimelineTab data={auditData} />,
         },
       ]
     : [];
 
   return (
     <div>
+      {setPageTitle("Product Audit")}
       <PageTitle
         title="Product Audit"
         breadcrumbs={[
-          {
-            title: "Dashboard",
-            href: "/",
-          },
-          {
-            title: "Product Audit",
-          },
+          { title: "Dashboard", href: "/" },
+          { title: "Product Audit" },
         ]}
       />
 
@@ -1134,32 +614,15 @@ const ProductAuditPage: React.FC = () => {
                   {fmtDate(auditData.meta.period.end_date)}
                 </Text>
               </Col>
-              <Col>
-                <Text>
-                  <strong>Generated:</strong>{" "}
-                  {fmtDateTime(auditData.meta.generated_at)}
-                </Text>
-              </Col>
             </Row>
           </Card>
 
-          {/* Expiry warning */}
-          {auditData.stock_snapshot.batches_expiring_within_30_days > 0 && (
-            <Alert
-              type="warning"
-              icon={<WarningOutlined />}
-              showIcon
-              message={`${auditData.stock_snapshot.batches_expiring_within_30_days} batch(es) expiring within 30 days`}
-              style={{ marginBottom: 12 }}
-            />
-          )}
-
-          {/* Summary stats */}
+          {/* Summary stats matching new backend response */}
           <SummaryCards data={auditData} />
 
-          {/* Detailed Tabs */}
+          {/* Simplified Tabs */}
           <Card>
-            <Tabs items={tabItems} defaultActiveKey="info" size="small" />
+            <Tabs items={tabItems} defaultActiveKey="timeline" size="small" />
           </Card>
         </>
       )}
