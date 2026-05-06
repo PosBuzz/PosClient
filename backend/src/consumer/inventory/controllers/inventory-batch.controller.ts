@@ -34,6 +34,7 @@ export class InventoryBatchController {
   ) {
     return this.inventoryBatchService.create(
       Number(req?.user.consumer_id),
+      Number(req?.user.id),
       createInventoryBatchDto,
     );
   }

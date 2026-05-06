@@ -246,25 +246,15 @@ export class SalesService {
           : await this.generateSaleNumber(consumerId);
 
       // Calculate totals using frontend-calculated values
-      // The frontend has already calculated correct subtotal, tax, and totals considering INCLUSIVE/EXCLUSIVE tax
-      // We should trust the frontend calculations instead of recalculating here
-
-      // Use the frontend's calculated subtotal directly (it's passed in the DTO if available)
-      // If not available, calculate it properly by checking each item's tax method
       let subtotal = 0;
       let totalTax = 0;
 
-      // For now, use the simpler approach: trust frontend calculations
-      // Subtotal = sum of (line_total_with_discounts + discounts - tax) for all items
-      // Because line_total is now the final price AFTER discounts
       subtotal = createSaleDto.items.reduce((sum, item) => {
         const itemDiscounts =
           (Number(item.average_discount_amount) || 0) +
           (Number(item.special_discount_amount) || 0) +
           (Number(item.promotion_discount_amount) || 0);
-        // Recover original base: line_total (after discounts) + all discounts
         const originalBase = Number(item.line_total) + itemDiscounts;
-        // Subtract tax to get pre-tax subtotal
         return sum + (originalBase - Number(item.tax_amount || 0));
       }, 0);
 
@@ -319,7 +309,6 @@ export class SalesService {
         averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
-      // Total = subtotal - (manual_discount + promotion_discount) + tax + shipping
       const totalAmount =
         subtotal - totalDiscountAmount + totalTax + shippingCost;
 
@@ -328,14 +317,12 @@ export class SalesService {
       let paymentMethods: string[] = [];
 
       if (createSaleDto.payments && createSaleDto.payments.length > 0) {
-        // Using new partial payment system
         totalPaymentAmount = createSaleDto.payments.reduce(
           (sum, payment) => sum + payment.amount,
           0,
         );
         paymentMethods = createSaleDto.payments.map((p) => p.payment_method);
       } else {
-        // No payments provided - set as due
         totalPaymentAmount = 0;
         paymentMethods = [];
       }
@@ -396,7 +383,6 @@ export class SalesService {
         if (createSaleDto.payments && createSaleDto.payments.length > 0) {
           await Promise.all(
             createSaleDto.payments.map(async (payment) => {
-              // Skip CREDIT payment processing inside transaction - will handle after
               return tx.salePayment.create({
                 data: {
                   sale_id: sale.id,
@@ -410,11 +396,11 @@ export class SalesService {
           );
         }
 
-        // Create sale items and update inventory
+        // Create sale items and update inventory with audit logs
         await Promise.all(
           validationResults.map(async (item) => {
             // Create sale item
-            await tx.saleItem.create({
+            const saleItem = await tx.saleItem.create({
               data: {
                 sale_id: sale.id,
                 variant_id: item.variant_id,
@@ -433,10 +419,28 @@ export class SalesService {
 
             // Only update inventory for actual sales, not quotations
             if (!isQuotation && item.selectedBatch) {
-              await tx.inventoryBatch.update({
+              const updatedBatch = await tx.inventoryBatch.update({
                 where: { id: item.selectedBatch.id },
                 data: {
                   quantity: { decrement: item.quantity },
+                },
+              });
+
+              // Create SALE_OUT audit log
+              await tx.inventoryAuditLog.create({
+                data: {
+                  consumer_id: consumerId,
+                  branch_id: createSaleDto.branch_id,
+                  variant_id: item.variant_id,
+                  batch_id: item.selectedBatch.id,
+                  inventoryBatchId: item.selectedBatch.id,
+                  event_type: 'SALE_OUT',
+                  quantity_delta: -item.quantity,
+                  quantity_after: updatedBatch.quantity,
+                  reference_id: saleItem.id,
+                  reference_type: 'sale_items',
+                  notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
+                  created_by_user_id: userId,
                 },
               });
             }
@@ -471,22 +475,17 @@ export class SalesService {
             );
           } catch (error) {
             console.error('Failed to process CREDIT payment:', error);
-            // Note: At this point the sale is already committed,
-            // so we log the error but don't fail the sale
-            // You might want to implement compensation logic here
           }
         }
       }
 
       // Award rewards points if sale is completed and customer is provided
-      // Exclude CREDIT payment amounts from rewards calculation
       if (
         result.customer_id &&
         result.payment_status === 'paid' &&
         result.sale_type === 'sale'
       ) {
         try {
-          // Calculate amount eligible for rewards (exclude CREDIT payments)
           const creditPaymentAmount =
             createSaleDto.payments
               ?.filter((payment) => payment.payment_method === 'CREDIT')
@@ -495,7 +494,6 @@ export class SalesService {
           const rewardEligibleAmount =
             Number(result.total_amount) - creditPaymentAmount;
 
-          // Only award points if there's a positive eligible amount
           if (rewardEligibleAmount > 0) {
             await this.rewardsService.earnPoints(
               consumerId,
@@ -505,7 +503,6 @@ export class SalesService {
             );
           }
         } catch (error) {
-          // Don't fail the sale if rewards points fail
           console.error('Failed to award rewards points:', error);
         }
       }
@@ -1650,7 +1647,6 @@ export class SalesService {
     consumerId: number,
     userId: number,
   ) {
-    // Get the quotation
     try {
       const quotation: any = await this.findOneQuotation(
         quotationId,
@@ -1661,14 +1657,12 @@ export class SalesService {
         throw new NotFoundException('Quotation not found');
       }
 
-      // Check if quotation was already converted
       if (quotation.converted_to_sale_id) {
         throw new BadRequestException(
           `Quotation has already been converted to sale #${quotation.converted_to_sale_id}`,
         );
       }
 
-      // Generate new sale number
       const saleNumber = await this.generateSaleNumber(consumerId);
 
       // Validate stock availability for all items
@@ -1692,7 +1686,6 @@ export class SalesService {
             );
           }
 
-          // Use FIFO for batch selection
           const selectedBatch = variant.inventory_items
             .filter((batch) => batch.quantity > 0)
             .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())[0];
@@ -1717,7 +1710,6 @@ export class SalesService {
 
       // Create the sale in a transaction
       const result = await this.prisma.$transaction(async (tx) => {
-        // Create sale
         const sale = await tx.sale.create({
           data: {
             sale_number: saleNumber,
@@ -1730,7 +1722,7 @@ export class SalesService {
             branch_id: quotation.branch_id,
             user_id: userId,
             served_by_id: quotation.served_by_id,
-            sale_type: SaleType.SALE, // Convert to actual sale
+            sale_type: SaleType.SALE,
             price_type: quotation.price_type,
             subtotal: quotation.subtotal,
             discount_amount: quotation.discount_amount,
@@ -1738,17 +1730,16 @@ export class SalesService {
             shipping_cost: quotation.shipping_cost,
             tax_amount: quotation.tax_amount,
             total_amount: quotation.total_amount,
-            payment_status: PaymentStatus.DUE, // Default to DUE, user will process payment
+            payment_status: PaymentStatus.DUE,
             received_amount: 0,
             notes: quotation.notes,
           },
         });
 
-        // Create sale items and update inventory
+        // Create sale items and update inventory with audit logs
         await Promise.all(
           validationResults.map(async (item) => {
-            // Create sale item
-            await tx.saleItem.create({
+            const saleItem = await tx.saleItem.create({
               data: {
                 sale_id: sale.id,
                 variant_id: item.variant_id,
@@ -1766,12 +1757,30 @@ export class SalesService {
             });
 
             // Update batch quantity
-            await tx.inventoryBatch.update({
+            const updatedBatch = await tx.inventoryBatch.update({
               where: { id: item.selectedBatch.id },
               data: {
                 quantity: {
                   decrement: item.quantity,
                 },
+              },
+            });
+
+            // Create SALE_OUT audit log
+            await tx.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: quotation.branch_id,
+                variant_id: item.variant_id,
+                batch_id: item.selectedBatch.id,
+                inventoryBatchId: item.selectedBatch.id,
+                event_type: 'SALE_OUT',
+                quantity_delta: -item.quantity,
+                quantity_after: updatedBatch.quantity,
+                reference_id: saleItem.id,
+                reference_type: 'sale_items',
+                notes: `Sale #${saleNumber} (converted from quotation #${quotation.sale_number})`,
+                created_by_user_id: userId,
               },
             });
           }),
@@ -1811,7 +1820,6 @@ export class SalesService {
       );
     }
   }
-
   // === VARIANT SALES STATS METHODS ===
 
   async getVariantSalesStats(

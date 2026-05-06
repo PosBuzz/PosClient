@@ -77,7 +77,9 @@ export class InventoryTransferService {
             `Insufficient quantity in batch ${item.batch_id}. Available: ${batch.quantity}, Requested: ${item.quantity}`,
           );
         }
-      } // Create transfer with items
+      }
+
+      // Create transfer with items
       const transfer = await this.prisma.inventoryTransfer.create({
         data: {
           source_branch_id: dto.source_branch_id,
@@ -128,6 +130,7 @@ export class InventoryTransferService {
       );
     }
   }
+
   async findAll(
     consumerId: number,
     options: {
@@ -222,6 +225,7 @@ export class InventoryTransferService {
       );
     }
   }
+
   async findOne(id: number, consumerId: number) {
     try {
       const transfer = await this.prisma.inventoryTransfer.findFirst({
@@ -338,12 +342,30 @@ export class InventoryTransferService {
         // Update each batch
         for (const item of transfer.items) {
           // Reduce quantity from source batch
-          await prisma.inventoryBatch.update({
+          const updatedSourceBatch = await prisma.inventoryBatch.update({
             where: { id: item.batch_id },
             data: {
               quantity: {
                 decrement: item.quantity,
               },
+            },
+          });
+
+          // Create TRANSFER_OUT audit log for source batch
+          await prisma.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: transfer.source_branch_id,
+              variant_id: item.batch.variant_id,
+              batch_id: item.batch_id,
+              inventoryBatchId: item.batch_id,
+              event_type: 'TRANSFER_OUT',
+              quantity_delta: -item.quantity,
+              quantity_after: updatedSourceBatch.quantity,
+              reference_id: item.id,
+              reference_type: 'inventory_transfer_items',
+              notes: `Transfer #${id} to ${this.inventoryHelper.getLocationName(transfer.destination_branch)}`,
+              created_by_user_id: transfer.created_by_user_id,
             },
           });
 
@@ -363,16 +385,34 @@ export class InventoryTransferService {
           let destBatchId: number;
 
           if (existingDestinationBatch) {
-            const updated = await prisma.inventoryBatch.update({
+            const updatedDestBatch = await prisma.inventoryBatch.update({
               where: { id: existingDestinationBatch.id },
               data: {
                 quantity: { increment: item.quantity },
               },
             });
-            destBatchId = updated.id;
+            destBatchId = updatedDestBatch.id;
+
+            // Create TRANSFER_IN audit log for destination batch (existing)
+            await prisma.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: transfer.destination_branch_id,
+                variant_id: item.batch.variant_id,
+                batch_id: destBatchId,
+                inventoryBatchId: destBatchId,
+                event_type: 'TRANSFER_IN',
+                quantity_delta: item.quantity,
+                quantity_after: updatedDestBatch.quantity,
+                reference_id: item.id,
+                reference_type: 'inventory_transfer_items',
+                notes: `Transfer #${id} from ${this.inventoryHelper.getLocationName(transfer.source_branch)}`,
+                created_by_user_id: transfer.created_by_user_id,
+              },
+            });
           } else {
-            // Create new batch in destination — original_quantity = units received via transfer
-            const created = await prisma.inventoryBatch.create({
+            // Create new batch in destination
+            const createdDestBatch = await prisma.inventoryBatch.create({
               data: {
                 variant_id: item.batch.variant_id,
                 branch_id: transfer.destination_branch_id,
@@ -383,7 +423,25 @@ export class InventoryTransferService {
                 expiry_date: item.batch.expiry_date,
               },
             });
-            destBatchId = created.id;
+            destBatchId = createdDestBatch.id;
+
+            // Create TRANSFER_IN audit log for destination batch (new)
+            await prisma.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: transfer.destination_branch_id,
+                variant_id: item.batch.variant_id,
+                batch_id: destBatchId,
+                inventoryBatchId: destBatchId,
+                event_type: 'TRANSFER_IN',
+                quantity_delta: item.quantity,
+                quantity_after: createdDestBatch.quantity,
+                reference_id: item.id,
+                reference_type: 'inventory_transfer_items',
+                notes: `Transfer #${id} from ${this.inventoryHelper.getLocationName(transfer.source_branch)} - New batch created`,
+                created_by_user_id: transfer.created_by_user_id,
+              },
+            });
           }
 
           // Record the destination batch on the transfer item for audit traceability
@@ -446,6 +504,7 @@ export class InventoryTransferService {
       if (transfer.status !== 'pending') {
         throw new BadRequestException('Transfer is not in pending status');
       }
+
       const updatedTransfer = await this.prisma.inventoryTransfer.update({
         where: { id },
         data: {

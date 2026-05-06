@@ -14,7 +14,8 @@ import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 export class InventoryBatchService {
   private readonly logger = new Logger(InventoryBatchService.name);
   constructor(private prisma: PrismaService) {}
-  async create(consumerId: number, dto: CreateInventoryBatchDto) {
+
+  async create(consumerId: number, userId: number, dto: CreateInventoryBatchDto) {
     try {
       // Verify variant belongs to consumer
       const variant = await this.prisma.productVariant.findFirst({
@@ -56,43 +57,72 @@ export class InventoryBatchService {
         );
       }
 
-      const batch = await this.prisma.inventoryBatch.create({
-        data: {
-          variant_id: dto.variant_id,
-          branch_id: dto.branch_id,
-          batch_number: dto.batch_number,
-          quantity: dto.quantity,
-          cost_price: dto.cost_price,
-          vendor_id: dto.vendor_id,
-          expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
-        },
-        include: {
-          variant: {
-            include: {
-              product: {
-                select: { id: true, name: true },
+      // Create batch and audit log in transaction
+      const batch = await this.prisma.$transaction(async (prisma) => {
+        const newBatch = await prisma.inventoryBatch.create({
+          data: {
+            variant_id: dto.variant_id,
+            branch_id: dto.branch_id,
+            batch_number: dto.batch_number,
+            quantity: dto.quantity,
+            cost_price: dto.cost_price,
+            vendor_id: dto.vendor_id,
+            expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
+          },
+          include: {
+            variant: {
+              include: {
+                product: {
+                  select: { id: true, name: true },
+                },
               },
             },
+            branch: {
+              select: { id: true, name: true },
+            },
+            vendor: {
+              select: { id: true, name: true },
+            },
           },
-          branch: {
-            select: { id: true, name: true },
-          },
-          vendor: {
-            select: { id: true, name: true },
-          },
-        },
+        });
+
+        // Create audit log for purchase in
+        if (dto.quantity > 0) {
+          await prisma.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: dto.branch_id,
+              variant_id: dto.variant_id,
+              batch_id: newBatch.id,
+              inventoryBatchId: newBatch.id,
+              event_type: 'PURCHASE_IN',
+              quantity_delta: dto.quantity,
+              quantity_after: newBatch.quantity,
+              reference_id: newBatch.id,
+              reference_type: 'inventory_batches',
+              notes: `Purchase batch ${dto.batch_number} - Qty: ${dto.quantity}`,
+              created_by_user_id: userId,
+            },
+          });
+        }
+
+        return newBatch;
       });
 
       return batch;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error creating inventory batch for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error creating inventory batch for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to create inventory batch',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
+
   async findAll(
     consumerId: number,
     options: {
@@ -136,6 +166,7 @@ export class InventoryBatchService {
       if (variant_id) {
         whereClause.variant_id = variant_id;
       }
+
       const [batches, total] = await Promise.all([
         this.prisma.inventoryBatch.findMany({
           where: whereClause,
@@ -155,7 +186,7 @@ export class InventoryBatchService {
             },
           },
           skip,
-          take: limit, // Will be undefined if no limit specified
+          take: limit,
           orderBy: { created_at: 'desc' },
         }),
         this.prisma.inventoryBatch.count({ where: whereClause }),
@@ -166,7 +197,7 @@ export class InventoryBatchService {
         meta: {
           total,
           page,
-          limit: limit || total, // Use total count if no limit specified
+          limit: limit || total,
           totalPages: limit ? Math.ceil(total / limit) : 1,
         },
       };
@@ -182,6 +213,7 @@ export class InventoryBatchService {
       );
     }
   }
+
   async findOne(id: number, consumerId: number) {
     try {
       const batch = await this.prisma.inventoryBatch.findFirst({
@@ -217,13 +249,17 @@ export class InventoryBatchService {
       return batch;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error finding inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error finding inventory batch ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to find inventory batch',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
+
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
     try {
       const batch = await this.findOne(id, consumerId);
@@ -241,7 +277,10 @@ export class InventoryBatchService {
       return updatedBatch;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error updating inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error updating inventory batch ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to update inventory batch',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -253,6 +292,12 @@ export class InventoryBatchService {
     try {
       const batch = await this.findOne(id, consumerId);
 
+      if (batch.quantity > 0) {
+        throw new BadRequestException(
+          'Cannot delete batch with remaining quantity. Use inventory adjustment to reduce quantity to 0 first.',
+        );
+      }
+
       await this.prisma.inventoryBatch.delete({
         where: { id },
       });
@@ -260,7 +305,10 @@ export class InventoryBatchService {
       return { success: true, message: 'Inventory batch deleted successfully' };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error deleting inventory batch ${id} for consumer ${consumerId}`, error.stack);
+      this.logger.error(
+        `Error deleting inventory batch ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
       throw new HttpException(
         'Failed to delete inventory batch',
         HttpStatus.INTERNAL_SERVER_ERROR,

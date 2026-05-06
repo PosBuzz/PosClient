@@ -44,7 +44,9 @@ export class InventoryAdjustmentService {
         if (!branch) {
           throw new NotFoundException('Branch not found');
         }
-      } // Start transaction
+      }
+
+      // Start transaction
       const result = await this.prisma.$transaction(async (prisma) => {
         // If batch_id is provided, verify it exists and belongs to the correct branch/variant
         const batch = await prisma.inventoryBatch.findFirst({
@@ -98,7 +100,7 @@ export class InventoryAdjustmentService {
         });
 
         // Update batch quantity
-        await prisma.inventoryBatch.update({
+        const updatedBatch = await prisma.inventoryBatch.update({
           where: { id: dto.batch_id },
           data: {
             quantity: {
@@ -106,6 +108,25 @@ export class InventoryAdjustmentService {
             },
           },
         });
+
+        // Create audit log entry
+        await prisma.inventoryAuditLog.create({
+          data: {
+            consumer_id: consumerId,
+            branch_id: dto.branch_id,
+            variant_id: dto.variant_id,
+            batch_id: dto.batch_id,
+            inventoryBatchId: dto.batch_id,
+            event_type: 'ADJUSTMENT',
+            quantity_delta: dto.quantity_change,
+            quantity_after: updatedBatch.quantity,
+            reference_id: adjustment.id,
+            reference_type: 'inventory_adjustments',
+            notes: dto.notes || dto.reason,
+            created_by_user_id: userId,
+          },
+        });
+
         return adjustment;
       });
 
@@ -121,6 +142,7 @@ export class InventoryAdjustmentService {
       );
     }
   }
+
   async findAll(
     consumerId: number,
     options: {
@@ -195,6 +217,7 @@ export class InventoryAdjustmentService {
       );
     }
   }
+
   async findOne(id: number, consumerId: number) {
     try {
       const adjustment = await this.prisma.inventoryAdjustment.findFirst({
