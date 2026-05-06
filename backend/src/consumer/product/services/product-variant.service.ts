@@ -33,6 +33,11 @@ export class ProductVariantService {
           alert_quantity: dto.alert_quantity || 0,
           daily_sale_objective: dto.daily_sale_objective || 0,
         },
+        include: {
+          product: {
+            select: { consumer_id: true },
+          },
+        },
       });
 
       // Create initial price history record
@@ -50,6 +55,7 @@ export class ProductVariantService {
         await this.prisma.variantAttribute.createMany({
           data: dto.attributes.map((attr) => ({
             variant_id: variant.id,
+            consumer_id: variant.product.consumer_id,
             name: attr.name,
             value: attr.value,
           })),
@@ -261,6 +267,7 @@ export class ProductVariantService {
       }
 
       // Update attributes if provided
+      // Update attributes if provided
       if (dto.attributes !== undefined) {
         // Delete existing attributes
         await this.prisma.variantAttribute.deleteMany({
@@ -269,9 +276,26 @@ export class ProductVariantService {
 
         // Create new attributes if any provided
         if (dto.attributes.length > 0) {
+          // Get consumer_id from the variant first
+          const variant = await this.prisma.productVariant.findUnique({
+            where: { id },
+            select: {
+              product: {
+                select: { consumer_id: true },
+              },
+            },
+          });
+
+          if (!variant) {
+            throw new NotFoundException(
+              `Product variant with ID ${id} not found`,
+            );
+          }
+
           await this.prisma.variantAttribute.createMany({
             data: dto.attributes.map((attr) => ({
               variant_id: id,
+              consumer_id: variant.product.consumer_id, // Add this line
               name: attr.name,
               value: attr.value,
             })),
