@@ -363,14 +363,10 @@ export class InventoryTransferService {
           let destBatchId: number;
 
           if (existingDestinationBatch) {
-            // Update existing batch — increment both quantity and original_quantity
-            // so consumed_quantity (original - current) stays accurate at destination
             const updated = await prisma.inventoryBatch.update({
               where: { id: existingDestinationBatch.id },
               data: {
                 quantity: { increment: item.quantity },
-                original_quantity: { increment: item.quantity },
-                source: 'transfer_in',
               },
             });
             destBatchId = updated.id;
@@ -382,11 +378,9 @@ export class InventoryTransferService {
                 branch_id: transfer.destination_branch_id,
                 batch_number: item.batch.batch_number,
                 quantity: item.quantity,
-                original_quantity: item.quantity,
                 cost_price: item.batch.cost_price,
                 vendor_id: item.batch.vendor_id,
                 expiry_date: item.batch.expiry_date,
-                source: 'transfer_in',
               },
             });
             destBatchId = created.id;
