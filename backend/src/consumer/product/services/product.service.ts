@@ -65,7 +65,11 @@ export class ProductService {
     });
   }
 
-  async create(consumerId: number, dto: CreateProductDto) {
+  async create(
+    consumerId: number,
+    userId: number | undefined,
+    dto: CreateProductDto,
+  ) {
     try {
       // Validate that at least one variant is provided
       if (!dto.variants || dto.variants.length === 0) {
@@ -119,7 +123,7 @@ export class ProductService {
 
       await Promise.all(
         dto.variants.map((variantDto) =>
-          this.variantService.create(product.id, variantDto),
+          this.variantService.create(product.id, userId, variantDto),
         ),
       );
 
@@ -609,7 +613,13 @@ export class ProductService {
       );
     }
   }
-  async update(id: number, dto: UpdateProductDto, consumerId: number) {
+
+  async update(
+    id: number,
+    dto: UpdateProductDto,
+    consumerId: number,
+    userId: number | undefined,
+  ) {
     try {
       // First check if product exists and belongs to this consumer
       await this.findOne(id, consumerId);
@@ -680,6 +690,7 @@ export class ProductService {
               // Safe cast to CreateProductVariantDto since we've verified required fields
               await this.variantService.create(
                 id,
+                userId,
                 variantDto as unknown as CreateProductVariantDto,
               );
             }

@@ -30,6 +30,7 @@ export class ProductController {
   create(@Req() req: Request, @Body() createProductDto: CreateProductDto) {
     return this.productService.create(
       Number(req?.user.consumer_id),
+      Number(req.user.id),
       createProductDto,
     );
   }
@@ -92,6 +93,7 @@ export class ProductController {
       id,
       updateProductDto,
       Number(req?.user.consumer_id),
+      Number(req.user.id),
     );
   }
 
