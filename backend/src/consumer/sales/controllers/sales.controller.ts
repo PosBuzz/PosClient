@@ -30,6 +30,7 @@ import { Request } from 'express';
 import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
 import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
 import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
+import { ReceiptPdfSettings } from '../services/receipt-pdf-settings';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
@@ -116,38 +117,24 @@ export class SalesController {
   }
 
   @Get('receipt/:id')
-  async generateReceiptPdf(
+  async generateReceiptPdfGet(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
     @Res() res: Response,
     @Query('download') download?: string,
   ) {
-    // Get the sale data
-    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
+    return this.buildAndSendReceipt(id, req, res, undefined, download);
+  }
 
-    if (!sale) {
-      return res.status(404).json({ message: 'Sale not found' });
-    }
-
-    // Generate PDF
-    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(sale);
-
-    // Set response headers
-    const filename = `receipt-${(sale as any).sale_number || 'unknown'}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Length', pdfBuffer.length);
-
-    if (download === 'true') {
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"`,
-      );
-    } else {
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    }
-
-    // Send the PDF
-    res.send(pdfBuffer);
+  @Post('receipt/:id')
+  async generateReceiptPdfPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body?: { settings?: Partial<ReceiptPdfSettings> },
+    @Query('download') download?: string,
+  ) {
+    return this.buildAndSendReceipt(id, req, res, body?.settings, download);
   }
 
   @Get('search/:saleNumber')
@@ -331,5 +318,41 @@ export class SalesController {
       updateStatusDto.status,
       req.user.consumer_id!,
     );
+  }
+
+  private async buildAndSendReceipt(
+    id: number,
+    req: Request,
+    res: Response,
+    settingsOverride?: Partial<ReceiptPdfSettings>,
+    download?: string,
+  ) {
+    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
+
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(
+      sale,
+      settingsOverride,
+    );
+
+    const saleNumber = (sale as any).sale_number || 'unknown';
+    const filename = `receipt-${saleNumber}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    if (download === 'true') {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+    } else {
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    }
+
+    res.send(pdfBuffer);
   }
 }

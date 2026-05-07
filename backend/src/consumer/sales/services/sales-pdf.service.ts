@@ -1,627 +1,1448 @@
-import { Injectable } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
+// sales-pdf.service.ts
 
-interface SalesPdfOptions {
-  includeBarcodes?: boolean;
-  showItemDetails?: boolean;
-  paperSize?: 'A4' | 'Letter';
-  margin?: number;
+import { Injectable, Logger } from '@nestjs/common';
+import * as PDFDocument from 'pdfkit';
+import * as fs from 'fs';
+import * as bwipjs from 'bwip-js';
+import {
+  ReceiptPdfSettings,
+  DEFAULT_RECEIPT_PDF_SETTINGS,
+} from './receipt-pdf-settings';
+import {
+  ReceiptPdfData,
+  ReceiptPdfItem,
+} from '../interfaces/receipt-pdf-data.interface';
+
+/* ------------------------------------------------------------------ */
+/*  Internal helpers for table column layout                          */
+/* ------------------------------------------------------------------ */
+
+interface ColumnDef {
+  key: string;
+  header: string;
+  weight: number;
+  align: 'left' | 'center' | 'right';
+  x: number;
+  width: number;
 }
 
 @Injectable()
 export class SalesPdfService {
-  async generateSaleReceiptPdf(sale: any, options: SalesPdfOptions = {}): Promise<Buffer> {
-    const {
-      includeBarcodes = true,
-      showItemDetails = true,
-      paperSize = 'A4',
-      margin = 30
-    } = options;
+  private readonly logger = new Logger(SalesPdfService.name);
+
+  /* ================================================================== */
+  /*  PUBLIC API                                                        */
+  /* ================================================================== */
+
+  async generateSaleReceiptPdf(
+    sale: any,
+    settingsOverride?: Partial<ReceiptPdfSettings>,
+  ): Promise<Buffer> {
+    const settings = this.mergeSettings(settingsOverride);
+    const data = this.mapSaleToPdfData(sale, settings);
+    return this.generatePdf(data, settings);
+  }
+
+  /* ================================================================== */
+  /*  SETTINGS MERGE                                                    */
+  /* ================================================================== */
+
+  private mergeSettings(
+    overrides?: Partial<ReceiptPdfSettings>,
+  ): ReceiptPdfSettings {
+    if (!overrides) return { ...DEFAULT_RECEIPT_PDF_SETTINGS };
+    return this.deepMerge(
+      { ...DEFAULT_RECEIPT_PDF_SETTINGS },
+      overrides,
+    ) as ReceiptPdfSettings;
+  }
+
+  private deepMerge(target: any, source: any): any {
+    const out = { ...target };
+    for (const key of Object.keys(source)) {
+      if (
+        source[key] !== null &&
+        source[key] !== undefined &&
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key])
+      ) {
+        out[key] = this.deepMerge(target[key] ?? {}, source[key]);
+      } else if (source[key] !== undefined) {
+        out[key] = source[key];
+      }
+    }
+    return out;
+  }
+
+  /* ================================================================== */
+  /*  TEXT NORMALIZATION                                                */
+  /* ================================================================== */
+
+  private normalizeLineBreaks(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .join('\n')
+      .trim();
+  }
+
+  /* ================================================================== */
+  /*  DATA MAPPING                                                      */
+  /* ================================================================== */
+
+  private mapSaleToPdfData(
+    sale: any,
+    settings: ReceiptPdfSettings,
+  ): ReceiptPdfData {
+    const b = settings.branding;
+
+    return {
+      storeName: b.storeName || sale.consumer?.company_name || '',
+      branchName: sale.branch?.name || '',
+      branchAddress: sale.branch?.address || '',
+      branchPhone: sale.branch?.phone || '',
+      branchEmail: sale.branch?.email || '',
+      logoPath: b.logoPath || sale.consumer?.logo || '',
+
+      headerText: settings.header.text,
+
+      saleNumber: sale.sale_number || '',
+      saleDate: sale.sale_date ? new Date(sale.sale_date) : new Date(),
+      saleType: sale.sale_type || 'sale',
+      priceType: sale.price_type || 'regular',
+      paymentStatus: sale.payment_status || 'paid',
+      cashierName: sale.user?.name || '',
+      servedByName: sale.served_by?.name || '',
+
+      customerName: sale.customer?.name || sale.customer_name || '',
+      customerPhone: sale.customer?.phone || sale.customer_phone || '',
+      customerEmail: sale.customer?.email || sale.customer_email || '',
+      customerRewardPoints: sale.customer?.rewards_points?.total_points ?? null,
+
+      items: (sale.items || []).map((it: any) => {
+        const avg = Number(it.average_discount_amount) || 0;
+        const spc = Number(it.special_discount_amount) || 0;
+        const pro = Number(it.promotion_discount_amount) || 0;
+        return {
+          productName: it.variant?.product?.name || '',
+          variantName: it.variant?.name || '',
+          sku: it.variant?.sku || '',
+          barcode: it.variant?.barcode || '',
+          quantity: it.quantity || 0,
+          unitPrice: Number(it.unit_price) || 0,
+          soldUnitPrice: Number(it.sold_unit_price) || 0,
+          averageDiscount: avg,
+          specialDiscount: spc,
+          promotionDiscount: pro,
+          totalDiscount: avg + spc + pro,
+          taxAmount: Number(it.tax_amount) || 0,
+          taxPercentage: it.variant?.product?.tax || 0,
+          taxMethod: it.variant?.product?.tax_method || 'EXCLUSIVE',
+          lineTotal: Number(it.line_total) || 0,
+        };
+      }),
+
+      subtotal: Number(sale.subtotal) || 0,
+      discountAmount: Number(sale.discount_amount) || 0,
+      promotionDiscount: Number(sale.promotion_discount) || 0,
+      shippingCost: Number(sale.shipping_cost) || 0,
+      taxAmount: Number(sale.tax_amount) || 0,
+      totalAmount: Number(sale.total_amount) || 0,
+
+      payments: (sale.payments || []).map((p: any) => ({
+        method: this.humanPaymentMethod(p.payment_method),
+        type: p.payment_type ? this.humanPaymentType(p.payment_type) : '',
+        amount: Number(p.amount) || 0,
+        reference: p.reference || '',
+      })),
+
+      receivedAmount: Number(sale.received_amount) || 0,
+      changeAmount: Math.max(
+        0,
+        (Number(sale.received_amount) || 0) - (Number(sale.total_amount) || 0),
+      ),
+
+      notes: sale.notes || '',
+
+      vatRegistrationNumber: b.vatRegistrationNumber,
+      footerTerms: this.normalizeLineBreaks(b.footerTerms),
+
+      isOnlineOrder: sale.is_online_order || false,
+      onlineOrderStatus: sale.online_order_status || null,
+    };
+  }
+
+  /* ================================================================== */
+  /*  ENUM FORMATTERS                                                   */
+  /* ================================================================== */
+
+  private humanPaymentMethod(m: string): string {
+    const map: Record<string, string> = {
+      CASH: 'Cash',
+      CARD: 'Card',
+      CHEQUE: 'Cheque',
+      BANK_TRANSFER: 'Bank Transfer',
+      MOBILE_MONEY: 'Mobile Money',
+      MFS: 'MFS',
+      CREDIT: 'Credit',
+      EXCHANGE: 'Exchange',
+    };
+    return map[m] ?? m;
+  }
+
+  private humanPaymentType(t: string): string {
+    const special: Record<string, string> = {
+      BKASH: 'bKash',
+      NAGAD: 'Nagad',
+      ROCKET: 'Rocket',
+      MYCASH: 'MyCash',
+      UPAY: 'Upay',
+      OK_WALLET: 'OK Wallet',
+      TELECASH: 'TeleCash',
+      ISLAMIC_WALLET: 'Islamic Wallet',
+      MEGHNA_PAY: 'Meghna Pay',
+      FIRSTCASH: 'FirstCash',
+      ISLAMI_BANK_MCASH: 'Islami Bank mCash',
+      TRUST_AXIATA_PAY_TAP: 'Trust Axiata Pay Tap',
+      RUPALI_BANK: 'Rupali Bank',
+    };
+    if (special[t]) return special[t];
+    return t
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  /* ================================================================== */
+  /*  CURRENCY                                                          */
+  /* ================================================================== */
+
+  private fmt(amount: number, s: ReceiptPdfSettings): string {
+    const v = amount.toFixed(2);
+    return s.branding.currencyPosition === 'before'
+      ? `${s.branding.currencySymbol}${v}`
+      : `${v}${s.branding.currencySymbol}`;
+  }
+
+  /* ================================================================== */
+  /*  BARCODE GENERATION                                                */
+  /* ================================================================== */
+
+  private async generateBarcodeBuffer(text: string): Promise<Buffer> {
+    const png = await bwipjs.toBuffer({
+      bcid: 'code128',
+      text: text,
+      scale: 3,
+      height: 10,
+      includetext: true,
+      textxalign: 'center',
+    });
+
+    return Buffer.from(png);
+  }
+
+  /* ================================================================== */
+  /*  PDF GENERATION                                                    */
+  /* ================================================================== */
+
+  private async generatePdf(
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+  ): Promise<Buffer> {
+    const [logoBuffer, barcodeBuffer] = await Promise.all([
+      this.loadImage(data.logoPath),
+      s.footer.showBarcode && data.saleNumber
+        ? this.generateBarcodeBuffer(data.saleNumber)
+        : Promise.resolve(null),
+    ]);
 
     return new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const doc = new PDFDocument({ 
-        size: paperSize, 
-        margin,
+      const doc = new PDFDocument({
+        size: s.page.size,
+        margins: s.page.margins,
+        bufferPages: true,
         info: {
-          Title: `Sale Receipt - ${sale.sale_number}`,
-          Author: 'POS System',
-          Subject: `Receipt for Sale ${sale.sale_number}`,
-          Keywords: 'receipt, sale, invoice'
-        }
+          Title: `${data.headerText} - ${data.saleNumber}`,
+          Author: data.storeName,
+        },
       });
 
-      doc.on('data', (chunk) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      const buffers: Buffer[] = [];
+      doc.on('data', (b: Buffer) => buffers.push(b));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
 
-      // Start generating PDF content
-      this.addReceiptHeader(doc, sale);
-      this.addCompanyInfo(doc, sale);
-      this.addSaleInfo(doc, sale);
-      this.addCustomerInfo(doc, sale);
-      
-      if (showItemDetails) {
-        this.addItemsTable(doc, sale);
-      }
-      
-      this.addPaymentInfo(doc, sale);
-      this.addFooter(doc, sale, includeBarcodes);
+      const usableWidth =
+        doc.page.width - s.page.margins.left - s.page.margins.right;
+      const lm = s.page.margins.left;
+
+      let y = s.page.margins.top;
+
+      y = this.drawStoreHeader(doc, data, s, y, usableWidth, lm, logoBuffer);
+      y = this.drawHeaderLabel(doc, data, s, y, usableWidth, lm);
+      y = this.drawOrderInfo(doc, data, s, y, usableWidth, lm);
+      y = this.drawCustomerInfo(doc, data, s, y, usableWidth, lm);
+      y = this.drawItemsTable(doc, data, s, y, usableWidth, lm);
+
+      y = this.ensureSpace(doc, y, 100, s);
+      y = this.drawTotals(doc, data, s, y, usableWidth, lm);
+
+      y = this.ensureSpace(doc, y, 80, s);
+      y = this.drawPaymentInfo(doc, data, s, y, usableWidth, lm);
+
+      y = this.ensureSpace(doc, y, 50, s);
+      y = this.drawNotes(doc, data, s, y, usableWidth, lm);
+
+      y = this.drawFooter(doc, data, s, y, usableWidth, lm, barcodeBuffer);
 
       doc.end();
     });
   }
 
-  private addReceiptHeader(doc: PDFKit.PDFDocument, sale: any): void {
-    const pageWidth = doc.page.width;
-    
-    // Add a compact background header
-    doc.rect(0, 0, pageWidth, 60).fill('#F8F9FA');
-    
-    // Receipt title - smaller and more compact
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(20)
-      .fillColor('#2C3E50')
-      .text('SALES RECEIPT', 0, 15, { align: 'center', width: pageWidth });
+  /* ================================================================== */
+  /*  DRAWING HELPERS                                                   */
+  /* ================================================================== */
 
-    // Single decorative line
-    doc
-      .moveTo(pageWidth * 0.3, 45)
-      .lineTo(pageWidth * 0.7, 45)
-      .strokeColor('#3498DB')
-      .lineWidth(2)
-      .stroke();
+  private async loadImage(pathOrUrl: string): Promise<Buffer | null> {
+    if (!pathOrUrl) return null;
 
-    doc.y = 70;
-  }
-
-  private addCompanyInfo(doc: PDFKit.PDFDocument, sale: any): void {
-    const pageWidth = doc.page.width;
-    
-    // Compact company info with proper company name - branch name format
-    if (sale.consumer) {
-      // Get company name directly from consumer or fallback to branch.consumer
-      const companyName = sale.consumer?.company_name || 'Company Name';
-      const branchName = sale.branch?.name || 'Main Store';
-      
-      const headerY = doc.y;
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(14)
-        .fillColor('#2C3E50')
-        .text(`${companyName} - ${branchName}`, 0, headerY, { align: 'center', width: pageWidth });
-
-      let detailsY = headerY + 18;
-
-      if (sale.branch?.address) {
-        doc
-          .font('Helvetica')
-          .fontSize(10)
-          .fillColor('#7F8C8D')
-          .text(sale.branch.address, 0, detailsY, { align: 'center', width: pageWidth });
-        detailsY += 12;
+    if (!pathOrUrl.startsWith('http://') && !pathOrUrl.startsWith('https://')) {
+      try {
+        if (fs.existsSync(pathOrUrl)) {
+          return fs.readFileSync(pathOrUrl);
+        }
+      } catch {
+        // ignore
       }
-
-      const contacts: string[] = [];
-      if (sale.branch?.phone) contacts.push(`Phone: ${sale.branch.phone}`);
-      if (sale.branch?.email) contacts.push(`Email: ${sale.branch.email}`);
-
-      if (contacts.length) {
-        doc
-          .font('Helvetica')
-          .fontSize(10)
-          .fillColor('#7F8C8D')
-          .text(contacts.join(' | '), 0, detailsY, { align: 'center', width: pageWidth });
-        detailsY += 12;
-      }
-
-      doc.y = detailsY;
+      return null;
     }
 
-    doc.y += 35;
-  }
-
-  private addSaleInfo(doc: PDFKit.PDFDocument, sale: any): void {
-    const leftColumn = 40;
-    const rightColumn = 320;
-    const currentY = doc.y;
-    const rowHeight = 18;
-
-    // Compact info box
-    doc.rect(30, currentY - 5, doc.page.width - 60, 60)
-       .fill('#ECF0F1')
-       .strokeColor('#BDC3C7')
-       .lineWidth(1)
-       .stroke();
-
-    // Sale information - smaller fonts and spacing
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#2C3E50');
-
-    // Left column labels
-    doc.text('Receipt #:', leftColumn, currentY);
-    doc.text('Date:', leftColumn, currentY + rowHeight);
-    doc.text('Cashier:', leftColumn, currentY + rowHeight * 2);
-
-    // Right column values
-    doc.font('Helvetica').fontSize(10).fillColor('#34495E');
-    doc.text(sale.sale_number, rightColumn, currentY);
-    
-    const saleDate = new Date(sale.sale_date);
-    const formattedDate = saleDate.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    const formattedTime = saleDate.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    doc.text(`${formattedDate} ${formattedTime}`, rightColumn, currentY + rowHeight);
-    doc.text(sale.user?.name || 'Consumer Admin', rightColumn, currentY + rowHeight * 2);
-
-    doc.y = currentY + 65;
-  }
-
-  private addCustomerInfo(doc: PDFKit.PDFDocument, sale: any): void {
-    if (sale.customer_name || sale.customer_phone || sale.customer_email) {
-      const boxTop = doc.y;
-      const boxHeight = 45;
-
-      // Compact customer info box
-      doc.rect(30, boxTop, doc.page.width - 60, boxHeight)
-         .fill('#E8F5E8')
-         .strokeColor('#27AE60')
-         .lineWidth(1)
-         .stroke();
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(10)
-        .fillColor('#27AE60')
-        .text('Customer Information:', 40, boxTop + 5);
-
-      let infoY = boxTop + 20;
-
-      if (sale.customer_name) {
-        doc
-          .font('Helvetica-Bold')
-          .fontSize(9)
-          .fillColor('#2C3E50')
-          .text(`Name: `, 40, infoY, { continued: true })
-          .font('Helvetica')
-          .fillColor('#34495E')
-          .text(`${sale.customer_name}`);
-      }
-
-      if (sale.customer_phone) {
-        doc
-          .font('Helvetica-Bold')
-          .fontSize(9)
-          .fillColor('#2C3E50')
-          .text(`Phone: `, 280, boxTop + 20, { continued: true })
-          .font('Helvetica')
-          .fillColor('#34495E')
-          .text(`${sale.customer_phone}`);
-      }
-
-      if (sale.customer_email) {
-        doc
-          .font('Helvetica-Bold')
-          .fontSize(9)
-          .fillColor('#2C3E50')
-          .text(`Email: `, 40, boxTop + 32, { continued: true })
-          .font('Helvetica')
-          .fillColor('#34495E')
-          .text(`${sale.customer_email}`);
-      }
-
-      doc.y = boxTop + boxHeight + 10;
+    try {
+      const response = await fetch(pathOrUrl);
+      if (!response.ok) return null;
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch {
+      return null;
     }
   }
 
-  private addItemsTable(doc: PDFKit.PDFDocument, sale: any): void {
-    const tableTop = doc.y;
-    const tableLeft = 30;
-    const tableWidth = doc.page.width - 60;
+  private getImageDimensions(
+    buf: Buffer,
+  ): { width: number; height: number } | null {
+    try {
+      if (buf.length > 24 && buf[0] === 0x89 && buf[1] === 0x50) {
+        return {
+          width: buf.readUInt32BE(16),
+          height: buf.readUInt32BE(20),
+        };
+      }
+      if (buf.length > 10 && buf[0] === 0xff && buf[1] === 0xd8) {
+        let off = 2;
+        while (off < buf.length - 9) {
+          if (buf[off] !== 0xff) break;
+          const marker = buf[off + 1];
+          if (marker === 0xc0 || marker === 0xc2) {
+            return {
+              height: buf.readUInt16BE(off + 5),
+              width: buf.readUInt16BE(off + 7),
+            };
+          }
+          const segLen = buf.readUInt16BE(off + 2);
+          off += 2 + segLen;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
 
-    // Column widths (as percentages of table width)
-    const colWidths = {
-      item: 0.4,
-      qty: 0.15,
-      price: 0.2,
-      total: 0.25
-    };
+  private static HEADER_ABBREVS: Record<string, string> = {
+    'Unit Price': 'Unit Pr.',
+    Discount: 'Disc.',
+    Item: 'Item',
+    SKU: 'SKU',
+    Qty: 'Qty',
+    Tax: 'Tax',
+    Total: 'Total',
+  };
 
-    // Calculate actual column widths
-    const actualWidths = {
-      item: tableWidth * colWidths.item,
-      qty: tableWidth * colWidths.qty,
-      price: tableWidth * colWidths.price,
-      total: tableWidth * colWidths.total
-    };
+  private truncateText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    maxWidth: number,
+    abbrevMap?: Record<string, string>,
+  ): string {
+    if (maxWidth <= 0) return '';
+    if (doc.widthOfString(text) <= maxWidth) return text;
 
-    // Table header - compact
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('#2C3E50')
-      .text('Items:', tableLeft, tableTop);
+    if (abbrevMap && abbrevMap[text]) {
+      const abbr = abbrevMap[text];
+      if (doc.widthOfString(abbr) <= maxWidth) return abbr;
+    }
 
-    const headerY = doc.y + 5;
-    const rowHeight = 20;
-
-    // Draw header background
-    doc.rect(tableLeft, headerY, tableWidth, rowHeight)
-       .fill('#34495E')
-       .strokeColor('#2C3E50')
-       .lineWidth(1)
-       .stroke();
-
-    // Header text - smaller font
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('#FFFFFF');
-
-    let currentX = tableLeft + 8;
-    doc.text('Item', currentX, headerY + 6, { width: actualWidths.item - 16 });
-    currentX += actualWidths.item;
-    doc.text('Qty', currentX, headerY + 6, { width: actualWidths.qty - 10, align: 'center' });
-    currentX += actualWidths.qty;
-    doc.text('Unit Price', currentX, headerY + 6, { width: actualWidths.price - 10, align: 'right' });
-    currentX += actualWidths.price;
-    doc.text('Total', currentX, headerY + 6, { width: actualWidths.total - 10, align: 'right' });
-
-    // Items - compact rows
-    let currentY = headerY + rowHeight;
-    doc.font('Helvetica').fontSize(9).fillColor('#2C3E50');
-
-    sale.items?.forEach((item: any, index: number) => {
-      // Compact rows
-      if (index % 2 === 0) {
-        doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-           .fill('#F8F9FA')
-           .strokeColor('#E9ECEF')
-           .lineWidth(0.5)
-           .stroke();
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const candidate = text.substring(0, mid) + '…';
+      if (doc.widthOfString(candidate) <= maxWidth) {
+        lo = mid;
       } else {
-        doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-           .fill('#FFFFFF')
-           .strokeColor('#E9ECEF')
-           .lineWidth(0.5)
-           .stroke();
+        hi = mid - 1;
       }
-
-      currentX = tableLeft + 8;
-      
-      // Item name - show product name - variant name (only if different)
-      let itemName = 'Unknown Item';
-      if (item.variant?.product?.name && item.variant?.name) {
-        // If product name and variant name are the same, show only product name
-        if (item.variant.product.name === item.variant.name) {
-          itemName = item.variant.product.name;
-        } else {
-          itemName = `${item.variant.product.name} - ${item.variant.name}`;
-        }
-      } else if (item.variant?.product?.name) {
-        itemName = item.variant.product.name;
-      } else if (item.variant?.name) {
-        itemName = item.variant.name;
-      } else if (item.product_name && item.variant_name) {
-        // If product name and variant name are the same, show only product name
-        if (item.product_name === item.variant_name) {
-          itemName = item.product_name;
-        } else {
-          itemName = `${item.product_name} - ${item.variant_name}`;
-        }
-      } else if (item.product_name) {
-        itemName = item.product_name;
-      } else if (item.variant_name) {
-        itemName = item.variant_name;
-      }
-      
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#2C3E50')
-        .text(itemName, currentX, currentY + 6, { width: actualWidths.item - 16 });
-      
-      // Quantity
-      currentX += actualWidths.item;
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#3498DB')
-        .text(item.quantity.toString(), currentX, currentY + 6, { 
-          width: actualWidths.qty - 10, 
-          align: 'center' 
-        });
-      
-      // Unit price
-      currentX += actualWidths.qty;
-      doc
-        .font('Helvetica')
-        .fontSize(9)
-        .fillColor('#34495E')
-        .text(`$${Number(item.unit_price).toFixed(2)}`, currentX, currentY + 6, { 
-          width: actualWidths.price - 10, 
-          align: 'right' 
-        });
-      
-      // Total
-      currentX += actualWidths.price;
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#27AE60')
-        .text(`$${Number(item.line_total).toFixed(2)}`, currentX, currentY + 6, { 
-          width: actualWidths.total - 10, 
-          align: 'right' 
-        });
-
-      currentY += rowHeight;
-    });
-
-    // Add totals section as table rows
-    currentY = this.addTotalsAsTableRows(doc, sale, tableLeft, tableWidth, actualWidths, currentY, rowHeight);
-    
-    // Update document y position
-    doc.y = currentY + 5;
+    }
+    return lo > 0 ? text.substring(0, lo) + '…' : '…';
   }
 
-  private addTotalsAsTableRows(doc: PDFKit.PDFDocument, sale: any, tableLeft: number, tableWidth: number, actualWidths: any, startY: number, rowHeight: number): number {
-    let currentY = startY;
-    
-    // Add separator line
-    doc.rect(tableLeft, currentY, tableWidth, 2)
-       .fill('#BDC3C7')
-       .stroke();
-    currentY += 8;
-
-    // Subtotal row
-    doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-       .fill('#F8F9FA')
-       .strokeColor('#E9ECEF')
-       .lineWidth(0.5)
-       .stroke();
-
+  private hr(
+    doc: PDFKit.PDFDocument,
+    y: number,
+    left: number,
+    width: number,
+  ): number {
     doc
-      .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('#2C3E50')
-      .text('Subtotal:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
-        width: actualWidths.price - 10, 
-        align: 'right' 
-      });
-
-    doc.text(`$${Number(sale.subtotal || 0).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
-      width: actualWidths.total - 10, 
-      align: 'right' 
-    });
-    currentY += rowHeight;
-
-    // Tax row (if applicable)
-    if (sale.tax_amount && Number(sale.tax_amount) > 0) {
-      doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-         .fill('#FFFFFF')
-         .strokeColor('#E9ECEF')
-         .lineWidth(0.5)
-         .stroke();
-
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .fillColor('#2C3E50')
-        .text('Tax:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
-          width: actualWidths.price - 10, 
-          align: 'right' 
-        });
-
-      doc.text(`$${Number(sale.tax_amount).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
-        width: actualWidths.total - 10, 
-        align: 'right' 
-      });
-      currentY += rowHeight;
-    }
-
-    // Shipping row (if applicable)
-    if (sale.shipping_cost && Number(sale.shipping_cost) > 0) {
-      doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-         .fill('#F8F9FA')
-         .strokeColor('#E9ECEF')
-         .lineWidth(0.5)
-         .stroke();
-
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .fillColor('#2C3E50')
-        .text('Shipping:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
-          width: actualWidths.price - 10, 
-          align: 'right' 
-        });
-
-      doc.text(`$${Number(sale.shipping_cost).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
-        width: actualWidths.total - 10, 
-        align: 'right' 
-      });
-      currentY += rowHeight;
-    }
-
-    // Discount row (if applicable)
-    if (sale.discount_amount && Number(sale.discount_amount) > 0) {
-      doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-         .fill('#F8F9FA')
-         .strokeColor('#E9ECEF')
-         .lineWidth(0.5)
-         .stroke();
-
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .fillColor('#E74C3C')
-        .text('Discount:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
-          width: actualWidths.price - 10, 
-          align: 'right' 
-        });
-
-      doc.text(`-$${Number(sale.discount_amount).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
-        width: actualWidths.total - 10, 
-        align: 'right' 
-      });
-      currentY += rowHeight;
-    }
-
-    // Total row with emphasis
-    doc.rect(tableLeft, currentY, tableWidth, rowHeight)
-       .fill('#E74C3C')
-       .strokeColor('#C0392B')
-       .lineWidth(1)
-       .stroke();
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(12)
-      .fillColor('#FFFFFF')
-      .text('TOTAL:', tableLeft + actualWidths.item + actualWidths.qty + 8, currentY + 6, { 
-        width: actualWidths.price - 10, 
-        align: 'right' 
-      });
-
-    doc.text(`$${Number(sale.total_amount).toFixed(2)}`, tableLeft + actualWidths.item + actualWidths.qty + actualWidths.price + 8, currentY + 6, { 
-      width: actualWidths.total - 10, 
-      align: 'right' 
-    });
-    currentY += rowHeight;
-
-    return currentY;
+      .save()
+      .moveTo(left, y)
+      .lineTo(left + width, y)
+      .lineWidth(0.5)
+      .strokeColor('#000000')
+      .stroke()
+      .restore();
+    return y + 4;
   }
 
-  private addPaymentInfo(doc: PDFKit.PDFDocument, sale: any): void {
-    const boxTop = doc.y;
-    let boxHeight = 80;
+  private doubleHr(
+    doc: PDFKit.PDFDocument,
+    y: number,
+    left: number,
+    width: number,
+  ): number {
+    const safeWidth = Math.max(0, width);
+    doc
+      .save()
+      .moveTo(left, y)
+      .lineTo(left + safeWidth, y)
+      .moveTo(left, y + 2)
+      .lineTo(left + safeWidth, y + 2)
+      .lineWidth(0.75)
+      .strokeColor('#000000')
+      .stroke()
+      .restore();
+    return y + 6;
+  }
 
-    // Calculate total paid amount
-    const totalPaid = sale.payments?.reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0) || 0;
+  private ensureSpace(
+    doc: PDFKit.PDFDocument,
+    y: number,
+    needed: number,
+    s: ReceiptPdfSettings,
+  ): number {
+    if (y + needed > doc.page.height - s.page.margins.bottom) {
+      doc.addPage();
+      return s.page.margins.top;
+    }
+    return y;
+  }
 
-    // Compact payment info box
-    doc.rect(30, boxTop, doc.page.width - 60, boxHeight)
-       .fill('#E8F4FD')
-       .strokeColor('#3498DB')
-       .lineWidth(1)
-       .stroke();
+  private drawKeyValueRight(
+    doc: PDFKit.PDFDocument,
+    key: string,
+    value: string,
+    y: number,
+    rightEdge: number,
+    fontSize: number,
+    bold = false,
+  ): number {
+    doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(fontSize);
+
+    const vw = doc.widthOfString(value);
+    const valueX = rightEdge - vw;
+    const gap = 8;
+
+    const keyStartX = doc.page.margins.left;
+    const keyMaxWidth = valueX - gap - keyStartX;
+
+    doc.text(value, valueX, y, {
+      width: vw + 2,
+      lineBreak: false,
+      align: 'right',
+    });
+
+    doc.font('Helvetica').fontSize(fontSize);
+
+    if (keyMaxWidth > 0) {
+      const keyHeight = doc.heightOfString(key, { width: keyMaxWidth });
+      doc.text(key, keyStartX, y, {
+        width: keyMaxWidth,
+        lineBreak: true,
+      });
+      return y + keyHeight + 5;
+    }
+
+    return y + fontSize + 5;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Store Header                                             */
+  /* ================================================================== */
+
+  private drawStoreHeader(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+    logoBuffer: Buffer | null,
+  ): number {
+    if (!s.storeInfo.show && !s.header.showLogo) return y;
+
+    const cx = lm + uw / 2;
+    let logoDrawn = false;
+
+    if (s.header.showLogo && logoBuffer && logoBuffer.length > 0) {
+      try {
+        const dims = this.getImageDimensions(logoBuffer);
+        let renderedH = s.header.logoMaxHeight;
+        if (dims) {
+          const scale = Math.min(
+            s.header.logoMaxWidth / dims.width,
+            s.header.logoMaxHeight / dims.height,
+          );
+          renderedH = Math.ceil(dims.height * scale);
+        }
+
+        if (s.header.layout === 'logo-left') {
+          doc.image(logoBuffer, lm, y, {
+            fit: [s.header.logoMaxWidth, s.header.logoMaxHeight],
+          });
+          const logoBottom = y + renderedH + 8;
+          const infoW = Math.max(0, uw - s.header.logoMaxWidth - 15);
+
+          if (infoW > 50) {
+            y = this.drawStoreInfoBlock(
+              doc,
+              data,
+              s,
+              y + 4,
+              lm + s.header.logoMaxWidth + 15,
+              infoW,
+            );
+          } else {
+            y += renderedH + 8;
+            y = this.drawStoreInfoBlock(doc, data, s, y, lm, uw);
+          }
+          y = Math.max(y, logoBottom);
+        } else {
+          doc.image(logoBuffer, cx - s.header.logoMaxWidth / 2, y, {
+            fit: [s.header.logoMaxWidth, s.header.logoMaxHeight],
+          });
+          y += renderedH + 6;
+          y = this.drawStoreInfoBlock(doc, data, s, y, lm, uw);
+        }
+
+        logoDrawn = true;
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!logoDrawn) {
+      y = this.drawStoreInfoBlock(doc, data, s, y, lm, uw);
+    }
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  private drawStoreInfoBlock(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    x: number,
+    maxW: number,
+  ): number {
+    if (!s.storeInfo.show) return y;
+
+    if (s.storeInfo.showStoreName && data.storeName) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.subtitle)
+        .text(data.storeName, x, y, {
+          width: maxW,
+          align: 'center',
+        });
+      y += s.fontSizes.subtitle + 3;
+    }
+
+    if (s.storeInfo.showBranchName && data.branchName) {
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.body)
+        .text(data.branchName, x, y, {
+          width: maxW,
+          align: 'center',
+        });
+      y += s.fontSizes.body + 2;
+    }
+
+    const contactLines: string[] = [];
+    if (s.storeInfo.showAddress && data.branchAddress)
+      contactLines.push(data.branchAddress);
+    if (s.storeInfo.showPhone && data.branchPhone)
+      contactLines.push('Tel: ' + data.branchPhone);
+    if (s.storeInfo.showEmail && data.branchEmail)
+      contactLines.push(data.branchEmail);
+
+    if (contactLines.length) {
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .text(contactLines.join('  |  '), x, y, {
+          width: maxW,
+          align: 'center',
+        });
+      y += s.fontSizes.small + 2;
+    }
+
+    if (s.storeInfo.showVatRegistration && data.vatRegistrationNumber) {
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .text('VAT Reg: ' + data.vatRegistrationNumber, x, y, {
+          width: maxW,
+          align: 'center',
+        });
+      y += s.fontSizes.small + 2;
+    }
+
+    return y + 2;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Header Label                                             */
+  /* ================================================================== */
+
+  private drawHeaderLabel(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.header.show) return y;
+
+    let label = data.headerText;
+    if (data.saleType === 'quotation') label = 'QUOTATION';
+    else if (data.saleType === 'return') label = 'RETURN RECEIPT';
 
     doc
       .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor('#3498DB')
-      .text('Payment Information:', 40, boxTop + 5);
+      .fontSize(s.fontSizes.title)
+      .text(label, lm, y, { width: uw, align: 'center' });
 
-    let currentY = boxTop + 20;
+    y += s.fontSizes.title + 4;
+    y = this.doubleHr(doc, y, lm, uw);
+    return y;
+  }
 
-    // Payment status with color coding
-    const statusColors = {
-      'paid': '#27AE60',
-      'partial': '#F39C12',
-      'due': '#E74C3C',
-      'cancelled': '#95A5A6'
+  /* ================================================================== */
+  /*  SECTION: Order Information                                        */
+  /* ================================================================== */
+
+  private drawOrderInfo(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.orderInfo.show) return y;
+
+    const halfW = uw / 2 - 10;
+    const leftX = lm;
+    const rightX = lm + halfW + 20;
+    const lh = s.fontSizes.body + 3;
+
+    const startY = y;
+
+    if (s.orderInfo.showSaleNumber && data.saleNumber) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Sale No:', leftX, y, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + data.saleNumber);
+      y += lh;
+    }
+
+    if (s.orderInfo.showDate) {
+      const dateStr = this.formatDate(data.saleDate);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Date:', leftX, y, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + dateStr);
+      y += lh;
+    }
+
+    if (s.orderInfo.showSaleType && data.saleType) {
+      const typeLabel =
+        data.saleType.charAt(0).toUpperCase() + data.saleType.slice(1);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Type:', leftX, y, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + typeLabel);
+      y += lh;
+    }
+
+    if (s.orderInfo.showPriceType && data.priceType) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Price Type:', leftX, y, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(
+          ' ' +
+            data.priceType.charAt(0).toUpperCase() +
+            data.priceType.slice(1),
+        );
+      y += lh;
+    }
+
+    let ry = Math.max(startY, y - lh * this.countOrderRightFields(data, s));
+
+    if (s.orderInfo.showCashier && data.cashierName) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Cashier:', rightX, ry, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + data.cashierName);
+      ry += lh;
+    }
+
+    if (s.orderInfo.showServedBy && data.servedByName) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Served By:', rightX, ry, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + data.servedByName);
+      ry += lh;
+    }
+
+    if (data.isOnlineOrder && data.onlineOrderStatus) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Status:', rightX, ry, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + data.onlineOrderStatus);
+      ry += lh;
+    }
+
+    y = Math.max(y, ry);
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  private countOrderRightFields(
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+  ): number {
+    let n = 0;
+    if (s.orderInfo.showCashier && data.cashierName) n++;
+    if (s.orderInfo.showServedBy && data.servedByName) n++;
+    if (data.isOnlineOrder && data.onlineOrderStatus) n++;
+    return n;
+  }
+
+  private formatDate(d: Date): string {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Customer Information                                     */
+  /* ================================================================== */
+
+  private drawCustomerInfo(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.customerInfo.show) return y;
+    if (!data.customerName && !data.customerPhone && !data.customerEmail)
+      return y;
+
+    const lh = s.fontSizes.body + 3;
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(s.fontSizes.heading)
+      .text('Customer', lm, y, { width: uw });
+    y += s.fontSizes.heading + 4;
+
+    if (s.customerInfo.showName && data.customerName) {
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.body)
+        .text(data.customerName, lm + 8, y, { width: uw });
+      y += lh;
+    }
+
+    if (s.customerInfo.showPhone && data.customerPhone) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.small)
+        .text('Phone: ', lm + 8, y, { continued: true, width: uw })
+        .font('Helvetica')
+        .text(data.customerPhone);
+      y += s.fontSizes.small + 3;
+    }
+
+    if (s.customerInfo.showEmail && data.customerEmail) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.small)
+        .text('Email: ', lm + 8, y, { continued: true, width: uw })
+        .font('Helvetica')
+        .text(data.customerEmail);
+      y += s.fontSizes.small + 3;
+    }
+
+    if (s.customerInfo.showRewardPoints && data.customerRewardPoints !== null) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.small)
+        .text('Reward Points: ', lm + 8, y, { continued: true, width: uw })
+        .font('Helvetica')
+        .text(String(data.customerRewardPoints));
+      y += s.fontSizes.small + 3;
+    }
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Items Table                                              */
+  /* ================================================================== */
+
+  private drawItemsTable(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.items.show || !data.items.length) return y;
+
+    const cols = this.buildItemColumns(s, uw, lm);
+
+    y = this.ensureSpace(doc, y, 30, s);
+    y = this.drawItemTableHeader(doc, cols, y, s);
+    y = this.hr(doc, y, lm, uw);
+
+    for (const item of data.items) {
+      y = this.ensureSpace(doc, y, s.fontSizes.body + 12, s);
+      y = this.drawItemRow(doc, item, cols, y, s, uw, lm);
+    }
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  private buildItemColumns(
+    s: ReceiptPdfSettings,
+    uw: number,
+    lm: number,
+  ): ColumnDef[] {
+    interface ColSpec {
+      key: string;
+      header: string;
+      weight: number;
+      align: 'left' | 'center' | 'right';
+    }
+
+    const specs: ColSpec[] = [];
+
+    specs.push({ key: 'item', header: 'Item', weight: 5, align: 'left' });
+
+    if (s.items.showSku)
+      specs.push({ key: 'sku', header: 'SKU', weight: 1.8, align: 'left' });
+
+    if (s.items.showQuantity)
+      specs.push({ key: 'qty', header: 'Qty', weight: 1, align: 'center' });
+
+    if (s.items.showUnitPrice)
+      specs.push({
+        key: 'unitPrice',
+        header: 'Unit Price',
+        weight: 1.6,
+        align: 'right',
+      });
+
+    if (s.items.showDiscount)
+      specs.push({
+        key: 'discount',
+        header: 'Discount',
+        weight: 1.6,
+        align: 'right',
+      });
+
+    if (s.items.showTax)
+      specs.push({ key: 'tax', header: 'Tax', weight: 1.4, align: 'right' });
+
+    if (s.items.showLineTotal)
+      specs.push({
+        key: 'total',
+        header: 'Total',
+        weight: 1.6,
+        align: 'right',
+      });
+
+    const totalWeight = specs.reduce((a, c) => a + c.weight, 0);
+
+    let x = lm;
+    return specs.map((sp) => {
+      const w = (sp.weight / totalWeight) * uw;
+      const col: ColumnDef = { ...sp, x, width: w };
+      x += w;
+      return col;
+    });
+  }
+
+  private drawItemTableHeader(
+    doc: PDFKit.PDFDocument,
+    cols: ColumnDef[],
+    y: number,
+    s: ReceiptPdfSettings,
+  ): number {
+    doc.font('Helvetica-Bold').fontSize(s.fontSizes.heading);
+
+    for (const c of cols) {
+      const pad = 4;
+      const maxW = c.width - pad;
+
+      const displayHeader = this.truncateText(
+        doc,
+        c.header,
+        maxW,
+        SalesPdfService.HEADER_ABBREVS,
+      );
+
+      doc.text(displayHeader, c.x + pad / 2, y, {
+        width: maxW,
+        align: c.align,
+        lineBreak: false,
+      });
+    }
+
+    return y + s.fontSizes.heading + 5;
+  }
+
+  private drawItemRow(
+    doc: PDFKit.PDFDocument,
+    item: ReceiptPdfItem,
+    cols: ColumnDef[],
+    y: number,
+    s: ReceiptPdfSettings,
+    uw: number,
+    lm: number,
+  ): number {
+    let displayName = item.productName;
+    if (s.items.showVariantName && item.variantName) {
+      const isDefault =
+        item.variantName.toLowerCase() === 'default' ||
+        item.variantName.toLowerCase() === item.productName.toLowerCase();
+      if (!isDefault) {
+        displayName += ` - ${item.variantName}`;
+      }
+    }
+
+    const values: Record<string, string> = {
+      item: displayName,
+      sku: item.sku || '—',
+      qty: String(item.quantity),
+      unitPrice: this.fmt(item.unitPrice, s),
+      discount:
+        item.totalDiscount > 0 ? '-' + this.fmt(item.totalDiscount, s) : '—',
+      tax:
+        item.taxAmount > 0
+          ? `${this.fmt(item.taxAmount, s)} ${item.taxMethod === 'INCLUSIVE' ? 'Inc.' : 'Exc.'}`
+          : '—',
+      total: this.fmt(item.lineTotal, s),
     };
 
-    const statusColor = statusColors[sale.payment_status as keyof typeof statusColors] || '#34495E';
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor('#2C3E50')
-      .text('Status: ', 40, currentY, { continued: true })
-      .fillColor(statusColor)
-      .text(sale.payment_status?.toUpperCase() || 'N/A');
-
-    // Total paid amount
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor('#2C3E50')
-      .text('Total Paid: ', 250, currentY, { continued: true })
-      .font('Helvetica-Bold')
-      .fillColor('#27AE60')
-      .text(`$${totalPaid.toFixed(2)}`);
-
-    currentY += 15;
-
-    // Payment methods - inline
-    if (sale.payments && sale.payments.length > 0) {
-      let paymentText = 'Payment Methods: ';
-      sale.payments.forEach((payment: any, index: number) => {
-        if (index > 0) paymentText += ', ';
-        paymentText += `${payment.payment_method}: $${Number(payment.amount).toFixed(2)}`;
-        if (payment.reference) {
-          paymentText += ` (Ref: ${payment.reference})`;
-        }
-      });
-      
-      doc
-        .font('Helvetica')
-        .fontSize(9)
-        .fillColor('#34495E')
-        .text(paymentText, 40, currentY, { width: doc.page.width - 80 });
-      currentY += 15;
+    doc.font('Helvetica').fontSize(s.fontSizes.body);
+    let rowH = s.fontSizes.body + 4;
+    for (const c of cols) {
+      if (c.key === 'item' && values.item) {
+        const h = doc.heightOfString(values.item, {
+          width: c.width - 4,
+        });
+        rowH = Math.max(rowH, h + 4);
+      }
     }
 
-    // Change amount if applicable
-    if (sale.change_amount && Number(sale.change_amount) > 0) {
+    const padding = 2;
+    for (const c of cols) {
+      const val = values[c.key] || '';
+      const maxW = c.width - padding * 2;
+
+      let displayVal = val;
+      if (c.key !== 'item') {
+        displayVal = this.truncateText(doc, val, maxW);
+      }
+
       doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#2C3E50')
-        .text('Change Given: ', 40, currentY, { continued: true })
         .font('Helvetica')
-        .fillColor('#F39C12')
-        .text(`$${Number(sale.change_amount).toFixed(2)}`);
+        .fontSize(s.fontSizes.body)
+        .text(displayVal, c.x + padding, y + 2, {
+          width: maxW,
+          align: c.align,
+          lineBreak: c.key === 'item',
+        });
     }
 
-    doc.y = boxTop + boxHeight + 10;
+    y += rowH;
+
+    if (
+      s.items.showDiscount &&
+      s.items.discountDisplay === 'breakdown' &&
+      (item.specialDiscount > 0 || item.promotionDiscount > 0)
+    ) {
+      y = this.ensureSpace(doc, y, 14, s);
+      const indent = lm + 12;
+      const parts: string[] = [];
+
+      if (item.specialDiscount > 0) {
+        parts.push(`Special Discount: ${this.fmt(item.specialDiscount, s)}`);
+      }
+      if (item.promotionDiscount > 0) {
+        parts.push(
+          `Promotion Discount: ${this.fmt(item.promotionDiscount, s)}`,
+        );
+      }
+      if (item.averageDiscount > 0) {
+        parts.push(`Average Discount: ${this.fmt(item.averageDiscount, s)}`);
+      }
+
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .fillColor('#333333')
+        .text(parts.join('   |   '), indent, y, {
+          width: uw - 12,
+        })
+        .fillColor('#000000');
+      y += s.fontSizes.small + 3;
+    }
+
+    if (
+      s.items.showTax &&
+      s.items.taxDisplay === 'breakdown' &&
+      item.taxAmount > 0
+    ) {
+      y = this.ensureSpace(doc, y, 14, s);
+      const indent = lm + 12;
+      const methodLabel = item.taxMethod === 'INCLUSIVE' ? 'Incl.' : 'Excl.';
+      const taxLine =
+        item.taxPercentage > 0
+          ? `Tax (${item.taxPercentage}% ${methodLabel}): ${this.fmt(item.taxAmount, s)}`
+          : `Tax (${methodLabel}): ${this.fmt(item.taxAmount, s)}`;
+
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .fillColor('#333333')
+        .text(taxLine, indent, y, { width: uw - 12 })
+        .fillColor('#000000');
+      y += s.fontSizes.small + 3;
+    }
+
+    return y;
   }
 
-  private addFooter(doc: PDFKit.PDFDocument, sale: any, includeBarcodes: boolean): void {
-    // Compact notes section
-    if (sale.notes) {
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(9)
-        .fillColor('#F39C12')
-        .text('Notes: ', 30, doc.y, { continued: true })
-        .font('Helvetica')
-        .fontSize(9)
-        .fillColor('#8B7500')
-        .text(sale.notes);
-      
-      doc.y += 15;
+  /* ================================================================== */
+  /*  SECTION: Totals                                                   */
+  /* ================================================================== */
+
+  private drawTotals(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.totals.show) return y;
+
+    const rightEdge = lm + uw;
+    const fs = s.fontSizes.body;
+
+    if (s.totals.showSubtotal) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Subtotal:',
+        this.fmt(data.subtotal, s),
+        y,
+        rightEdge,
+        fs,
+      );
     }
 
-    // Centered barcode divider
-    if (includeBarcodes && sale.sale_number) {
-      doc
-        .font('Courier-Bold')
-        .fontSize(12)
-        .fillColor('#2C3E50')
-        .text(`||||| || |||| ||||| | |||| |||||`, 0, doc.y, { align: 'center', width: doc.page.width });
-      
-      doc.y += 20;
+    if (s.totals.showDiscount && data.discountAmount > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Discount:',
+        '-' + this.fmt(data.discountAmount, s),
+        y,
+        rightEdge,
+        fs,
+      );
     }
 
-    // Compact footer
+    if (
+      s.totals.showDiscount &&
+      data.promotionDiscount > 0 &&
+      data.discountAmount !== data.promotionDiscount
+    ) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Promo Discount:',
+        '-' + this.fmt(data.promotionDiscount, s),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    if (s.totals.showShipping && data.shippingCost > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Shipping:',
+        this.fmt(data.shippingCost, s),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    if (s.totals.showTax && data.taxAmount > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Tax:',
+        this.fmt(data.taxAmount, s),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    y += 2;
+    const hrWidth = Math.min(Math.max(uw * 0.6, 100), uw);
+    y = this.doubleHr(doc, y, rightEdge - hrWidth, hrWidth);
+    y = this.drawKeyValueRight(
+      doc,
+      'TOTAL:',
+      this.fmt(data.totalAmount, s),
+      y,
+      rightEdge,
+      s.fontSizes.subtitle,
+      true,
+    );
+    y += 4;
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Payment Information                                      */
+  /* ================================================================== */
+
+  private drawPaymentInfo(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.payment.show) return y;
+    if (!data.payments.length && data.paymentStatus === 'paid') return y;
+
+    const rightEdge = lm + uw;
+    const fs = s.fontSizes.body;
+
     doc
       .font('Helvetica-Bold')
-      .fontSize(12)
-      .fillColor('#27AE60')
-      .text('Thank you for your business!', 0, doc.y, { align: 'center', width: doc.page.width });
+      .fontSize(s.fontSizes.heading)
+      .text('Payment', lm, y, { width: uw });
+    y += s.fontSizes.heading + 6;
+
+    if (s.payment.showBreakdown && data.payments.length > 0) {
+      for (const p of data.payments) {
+        let label = p.method;
+        if (p.type) label += ' (' + p.type + ')';
+        if (p.reference) label += ' — Ref: ' + p.reference;
+
+        y = this.drawKeyValueRight(
+          doc,
+          label + ':',
+          this.fmt(p.amount, s),
+          y,
+          rightEdge,
+          fs,
+        );
+      }
+    } else if (data.payments.length === 1) {
+      const p = data.payments[0];
+      let label = 'Method:';
+      y = this.drawKeyValueRight(
+        doc,
+        label,
+        p.method + (p.type ? ' (' + p.type + ')' : ''),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    if (s.payment.showReceivedAmount && data.receivedAmount > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Received:',
+        this.fmt(data.receivedAmount, s),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    if (s.payment.showChangeAmount && data.changeAmount > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Change:',
+        this.fmt(data.changeAmount, s),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
+    if (data.paymentStatus && data.paymentStatus !== 'paid') {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(fs)
+        .text(
+          'Status: ' +
+            data.paymentStatus.charAt(0).toUpperCase() +
+            data.paymentStatus.slice(1),
+          lm,
+          y,
+        );
+      y += fs + 5;
+    }
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Notes                                                    */
+  /* ================================================================== */
+
+  private drawNotes(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    if (!s.notes.show || !data.notes) return y;
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(s.fontSizes.heading)
+      .text('Notes', lm, y, { width: uw });
+    y += s.fontSizes.heading + 4;
+
+    const normalizedNotes = this.normalizeLineBreaks(data.notes);
+    doc
+      .font('Helvetica-Oblique')
+      .fontSize(s.fontSizes.small)
+      .text(normalizedNotes, lm, y, { width: uw });
+    y +=
+      doc.fontSize(s.fontSizes.small).heightOfString(normalizedNotes, {
+        width: uw,
+      }) + 6;
+
+    y = this.hr(doc, y, lm, uw);
+    return y;
+  }
+
+  /* ================================================================== */
+  /*  SECTION: Footer                                                   */
+  /* ================================================================== */
+
+  private drawFooter(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+    barcodeBuffer: Buffer | null,
+  ): number {
+    const cx = lm + uw / 2;
+
+    // --- Machine-readable Barcode ---
+    if (s.footer.showBarcode && data.saleNumber) {
+      y = this.ensureSpace(doc, y, 70, s);
+      y = this.drawBarcode(doc, y, lm, uw, barcodeBuffer);
+    }
+
+    // --- Preformatted Terms & Conditions ---
+    if (s.footer.showTerms && data.footerTerms) {
+      doc.font('Helvetica').fontSize(s.fontSizes.small);
+      const termsHeight = doc.heightOfString(data.footerTerms, {
+        width: uw,
+      });
+      y = this.ensureSpace(doc, y, termsHeight + 30, s);
+
+      y = this.hr(doc, y, lm, uw);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.small)
+        .text('Terms & Conditions', lm, y, { width: uw });
+      y += s.fontSizes.small + 4;
+
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .text(data.footerTerms, lm, y, {
+          width: uw,
+          lineGap: 2,
+        });
+
+      y +=
+        doc.fontSize(s.fontSizes.small).heightOfString(data.footerTerms, {
+          width: uw,
+          lineGap: 2,
+        }) + 8;
+    }
+
+    // --- Thank you ---
+    if (s.footer.showThankYou) {
+      y = this.ensureSpace(doc, y, 30, s);
+      y += 10;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.subtitle)
+        .text('Thank you for your business!', lm, y, {
+          width: uw,
+          align: 'center',
+        });
+      y += s.fontSizes.subtitle + 4;
+    }
+
+    // --- Print date ---
+    if (s.footer.showPrintDate) {
+      y = this.ensureSpace(doc, y, 16, s);
+      const now = new Date();
+      doc
+        .font('Helvetica')
+        .fontSize(s.fontSizes.small)
+        .text('Printed: ' + this.formatDate(now), lm, y, {
+          width: uw,
+          align: 'center',
+        });
+      y += s.fontSizes.small + 3;
+    }
+
+    // --- Powered by ---
+    doc
+      .font('Helvetica-Oblique')
+      .fontSize(s.fontSizes.small)
+      .text('Powered by Posbuzz', lm, y, {
+        width: uw,
+        align: 'center',
+      });
+    y += s.fontSizes.small + 3;
+
+    return y;
+  }
+
+  /* ================================================================== */
+  /*  BARCODE DRAWING                                                   */
+  /* ================================================================== */
+
+  private drawBarcode(
+    doc: PDFKit.PDFDocument,
+    y: number,
+    lm: number,
+    uw: number,
+    barcodeBuffer: Buffer | null,
+  ): number {
+    if (barcodeBuffer && barcodeBuffer.length > 0) {
+      const barcodeW = Math.min(250, uw * 0.7);
+      const barcodeH = 55;
+      const bx = lm + (uw - barcodeW) / 2;
+
+      doc.image(barcodeBuffer, bx, y, {
+        width: barcodeW,
+        height: barcodeH,
+      });
+
+      return y + barcodeH + 8;
+    }
+
+    // Fallback (shouldn't happen if bwip-js is installed)
+    const boxW = Math.min(220, uw * 0.65);
+    const boxH = 40;
+    const bx = lm + (uw - boxW) / 2;
+
+    doc
+      .save()
+      .roundedRect(bx, y, boxW, boxH, 3)
+      .lineWidth(1)
+      .strokeColor('#000000')
+      .stroke()
+      .restore();
 
     doc
       .font('Helvetica')
-      .fontSize(8)
-      .fillColor('#95A5A6')
-      .text(`Generated on: ${new Date().toLocaleDateString('en-US')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 0, doc.y + 15, { align: 'center', width: doc.page.width });
+      .fontSize(11)
+      .text('BARCODE', bx + 10, y + 12, {
+        width: boxW - 20,
+        align: 'center',
+      });
+
+    return y + boxH + 8;
   }
 }
