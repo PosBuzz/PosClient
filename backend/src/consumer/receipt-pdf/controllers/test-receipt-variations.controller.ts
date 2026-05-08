@@ -12,7 +12,7 @@ import {
 import { Response } from 'express';
 import { SalesService } from '../../sales/services/sales.service';
 import { SalesPdfService } from '../services/sales-pdf.service';
-import { ReceiptPdfSettings } from '../services/receipt-pdf-settings';
+import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 
 @Controller('test-receipts')

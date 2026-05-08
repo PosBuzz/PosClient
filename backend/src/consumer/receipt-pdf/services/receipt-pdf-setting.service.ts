@@ -5,7 +5,7 @@ import {
   ReceiptPdfSettings,
   ReceiptPresetType,
   PRESET_DEFAULTS,
-} from './receipt-pdf-settings';
+} from '../preset/receipt-pdf-settings';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -166,17 +166,15 @@ export class ReceiptPdfSettingService {
   /*  CRUD OPERATIONS                                                   */
   /* ================================================================== */
 
-  async createSetting(
-    data: {
-      consumerId: number;
-      branchId?: number | null;
-      name: string;
-      type: ReceiptPresetType;
-      settings: ReceiptPdfSettings;
-      isActive?: boolean;
-      createdById?: number;
-    },
-  ) {
+  async createSetting(data: {
+    consumerId: number;
+    branchId?: number | null;
+    name: string;
+    type: ReceiptPresetType;
+    settings: ReceiptPdfSettings;
+    isActive?: boolean;
+    createdById?: number;
+  }) {
     // If setting as active, deactivate others in the same scope
     if (data.isActive) {
       await this.prisma.receiptPdfSetting.updateMany({
@@ -230,6 +228,26 @@ export class ReceiptPdfSettingService {
     });
   }
 
+  async getSettingById(settingId: number, consumerId: number) {
+    const setting = await this.prisma.receiptPdfSetting.findFirst({
+      where: { id: settingId, consumer_id: consumerId },
+      include: {
+        createdBy: {
+          select: { id: true, name: true, email: true },
+        },
+        branch: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!setting) {
+      throw new NotFoundException('Setting not found');
+    }
+
+    return setting;
+  }
+
   async listSettings(
     consumerId: number,
     type?: ReceiptPresetType,
@@ -241,10 +259,7 @@ export class ReceiptPdfSettingService {
         ...(type && { type }),
         branch_id: branchId ?? null,
       },
-      orderBy: [
-        { is_active: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ is_active: 'desc' }, { name: 'asc' }],
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -256,10 +271,7 @@ export class ReceiptPdfSettingService {
     });
   }
 
-  async listAllByType(
-    consumerId: number,
-    type: ReceiptPresetType,
-  ) {
+  async listAllByType(consumerId: number, type: ReceiptPresetType) {
     return this.prisma.receiptPdfSetting.findMany({
       where: {
         consumer_id: consumerId,
@@ -393,5 +405,36 @@ export class ReceiptPdfSettingService {
       }
     }
     return out;
+  }
+
+  async getConsumerOnlyBrandingData(consumerId: number): Promise<{
+    storeName: string;
+    logoPath: string;
+    currencySymbol: string;
+    currencyPosition: 'before' | 'after';
+    footerTerms: string;
+  }> {
+    const consumer = await this.prisma.consumer.findUnique({
+      where: { id: consumerId },
+      select: {
+        company_name: true,
+        logo: true,
+        currency_symbol: true,
+        currency_position: true,
+        receipt_terms: true,
+      },
+    });
+
+    if (!consumer) {
+      throw new NotFoundException(`Consumer ${consumerId} not found`);
+    }
+
+    return {
+      storeName: consumer.company_name,
+      logoPath: consumer.logo || '',
+      currencySymbol: consumer.currency_symbol,
+      currencyPosition: consumer.currency_position as 'before' | 'after',
+      footerTerms: consumer.receipt_terms || '',
+    };
   }
 }
