@@ -1,5 +1,3 @@
-// receipt-pdf-data.interface.ts
-
 export interface ReceiptPdfItem {
   productName: string;
   variantName: string;
@@ -32,6 +30,10 @@ export interface ReceiptPdfData {
   branchPhone: string;
   branchEmail: string;
   logoPath: string;
+
+  /** Currency formatting – sourced from Consumer table */
+  currencySymbol: string;
+  currencyPosition: 'before' | 'after';
 
   headerText: string;
 
