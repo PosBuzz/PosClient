@@ -75,6 +75,10 @@ const ViewVariantSalesStats = lazy(
   () => import("./pages/product-variant-sales-stats/view-variant-sales-stats"),
 );
 const ProductAudit = lazy(() => import("./pages/product-audit"));
+const ReceiptSettings = lazy(() => import("./pages/receipt-settings"));
+const AddOrEditReceiptSettings = lazy(
+  () => import("./pages/add-or-edit-receipt-settings"),
+);
 
 export const routes = [
   {
@@ -516,6 +520,30 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.product_audit}>
             <ProductAudit />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "receipt-settings",
+        element: (
+          <RequirePermission permission={Permissions.receipt_settings}>
+            <ReceiptSettings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "receipt-settings/add",
+        element: (
+          <RequirePermission permission={Permissions.receipt_settings}>
+            <AddOrEditReceiptSettings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "receipt-settings/edit/:id",
+        element: (
+          <RequirePermission permission={Permissions.receipt_settings}>
+            <AddOrEditReceiptSettings />
           </RequirePermission>
         ),
       },

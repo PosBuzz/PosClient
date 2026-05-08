@@ -4,14 +4,14 @@ import { endpoints } from "./endpoints";
 import { useAuthStore } from "../stores/authStore";
 
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
 // Dynamic CSRF Token injection before every request
 axiosInstance.interceptors.request.use((config) => {
-  const csrfToken = useAuthStore.getState().csrfToken; 
-  
+  const csrfToken = useAuthStore.getState().csrfToken;
+
   if (csrfToken) {
     config.headers["X-CSRF-TOKEN"] = csrfToken;
   }
@@ -21,7 +21,7 @@ axiosInstance.interceptors.request.use((config) => {
 
 // Separate instance for refresh token call
 const refreshInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
@@ -44,14 +44,14 @@ let failedQueue: Array<{
 }> = [];
 
 const processQueue = (error: any = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve();
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -107,17 +107,16 @@ axiosInstance.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config;
-    
+
     // Handle CSRF token errors
     if (isInvalidCsrfError(err)) {
-      
       try {
         // Get a fresh CSRF token
         const newCsrfToken = await refreshCsrfToken();
         if (!newCsrfToken) {
           return Promise.reject(err);
         }
-        
+
         // Retry the original request with new token
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers["X-CSRF-TOKEN"] = newCsrfToken;
@@ -156,10 +155,10 @@ axiosInstance.interceptors.response.use(
         // Token rotation: server invalidates old refresh token and issues new one.
         // If CSRF token is stale/missing, recover CSRF and retry refresh once.
         await refreshAccessTokenWithCsrfRecovery();
-        
+
         // Resume all queued requests
         processQueue();
-        
+
         return axiosInstance(originalRequest);
       } catch (refreshErr) {
         // Refresh token is expired or already rotated — force logout.
@@ -172,7 +171,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(err);
-  }
+  },
 );
 
 export default axiosInstance;

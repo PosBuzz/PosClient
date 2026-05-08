@@ -216,7 +216,7 @@ const SideBar: React.FC = () => {
     },
     {
       label: <span title="Customers">Customers</span>,
-      key: "/customers",
+      key: "/customers-menu",
       icon: <UserOutlined />,
       children: [
         {
@@ -245,6 +245,11 @@ const SideBar: React.FC = () => {
           label: <span title="Branches">Branches</span>,
           key: "/branches",
           permissions: [Permissions.branches],
+        },
+        {
+          label: <span title="Receipt Settings">Receipt Settings</span>,
+          key: "/receipt-settings",
+          permissions: [Permissions.receipt_settings],
         },
         {
           label: <span title="Rewards">Rewards</span>,

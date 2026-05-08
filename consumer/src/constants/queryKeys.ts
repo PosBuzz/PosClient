@@ -17,6 +17,8 @@ export const queryKeys = {
   products: "products",
   productsForInventory: "products-for-inventory",
   productVariants: "product-variants",
+  receiptSettings: "receipt-settings",
+  receiptSettingDefaults: "receipt-setting-defaults",
   roles: "roles",
   rules: "rules",
   sales: "sales",
@@ -68,6 +70,7 @@ export const queryStaleTimeMap = {
   [queryKeys.roles]: staleTimeConfig.static,
   [queryKeys.vendors]: staleTimeConfig.static,
   [queryKeys.planPermissions]: staleTimeConfig.static,
+  [queryKeys.receiptSettingDefaults]: staleTimeConfig.static,
 
   // Dynamic data
   [queryKeys.products]: staleTimeConfig.dynamic,
@@ -92,6 +95,7 @@ export const queryStaleTimeMap = {
   [queryKeys.quotation]: staleTimeConfig.dynamic,
   [queryKeys.partialPayments]: staleTimeConfig.dynamic,
   [queryKeys.saleForPayment]: staleTimeConfig.dynamic,
+  [queryKeys.receiptSettings]: staleTimeConfig.dynamic,
 
   // Real-time data
   [queryKeys.inventorySummary]: staleTimeConfig.realTime,

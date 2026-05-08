@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
-import { ReceiptPdfSettings, ReceiptPresetType } from './receipt-pdf-settings';
+import { ReceiptPdfSettings, ReceiptPresetType } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 
 @Injectable()
