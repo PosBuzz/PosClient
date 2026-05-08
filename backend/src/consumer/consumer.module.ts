@@ -18,6 +18,7 @@ import { UnitModule } from './unit/unit.module';
 import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ProductAuditModule } from 'src/product-audit/product-audit.module';
+import { ReceiptModule } from './receipt-pdf/receipt.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ProductAuditModule } from 'src/product-audit/product-audit.module';
     PromotionsModule,
     DashboardModule,
     ProductAuditModule,
+    ReceiptModule,
   ],
 })
 export class ConsumerModule {}

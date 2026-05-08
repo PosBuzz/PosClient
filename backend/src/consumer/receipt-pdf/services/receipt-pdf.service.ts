@@ -1,17 +1,9 @@
-// sales-pdf.service.ts
-
 import { Injectable, Logger } from '@nestjs/common';
 import * as PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as bwipjs from 'bwip-js';
-import {
-  ReceiptPdfSettings,
-  DEFAULT_RECEIPT_PDF_SETTINGS,
-} from './receipt-pdf-settings';
-import {
-  ReceiptPdfData,
-  ReceiptPdfItem,
-} from '../interfaces/receipt-pdf-data.interface';
+import { ReceiptPdfSettings } from './receipt-pdf-settings';
+import { ReceiptPdfData, ReceiptPdfItem } from '../interfaces/receipt-pdf-data.interface';
 
 /* ------------------------------------------------------------------ */
 /*  Internal helpers for table column layout                          */
@@ -27,229 +19,14 @@ interface ColumnDef {
 }
 
 @Injectable()
-export class SalesPdfService {
-  private readonly logger = new Logger(SalesPdfService.name);
+export class ReceiptPdfService {
+  private readonly logger = new Logger(ReceiptPdfService.name);
 
   /* ================================================================== */
   /*  PUBLIC API                                                        */
   /* ================================================================== */
 
-  async generateSaleReceiptPdf(
-    sale: any,
-    settingsOverride?: Partial<ReceiptPdfSettings>,
-  ): Promise<Buffer> {
-    const settings = this.mergeSettings(settingsOverride);
-    const data = this.mapSaleToPdfData(sale, settings);
-    return this.generatePdf(data, settings);
-  }
-
-  /* ================================================================== */
-  /*  SETTINGS MERGE                                                    */
-  /* ================================================================== */
-
-  private mergeSettings(
-    overrides?: Partial<ReceiptPdfSettings>,
-  ): ReceiptPdfSettings {
-    if (!overrides) return { ...DEFAULT_RECEIPT_PDF_SETTINGS };
-    return this.deepMerge(
-      { ...DEFAULT_RECEIPT_PDF_SETTINGS },
-      overrides,
-    ) as ReceiptPdfSettings;
-  }
-
-  private deepMerge(target: any, source: any): any {
-    const out = { ...target };
-    for (const key of Object.keys(source)) {
-      if (
-        source[key] !== null &&
-        source[key] !== undefined &&
-        typeof source[key] === 'object' &&
-        !Array.isArray(source[key])
-      ) {
-        out[key] = this.deepMerge(target[key] ?? {}, source[key]);
-      } else if (source[key] !== undefined) {
-        out[key] = source[key];
-      }
-    }
-    return out;
-  }
-
-  /* ================================================================== */
-  /*  TEXT NORMALIZATION                                                */
-  /* ================================================================== */
-
-  private normalizeLineBreaks(text: string): string {
-    if (!text) return '';
-    return text
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .split('\n')
-      .map((line) => line.trimEnd())
-      .join('\n')
-      .trim();
-  }
-
-  /* ================================================================== */
-  /*  DATA MAPPING                                                      */
-  /* ================================================================== */
-
-  private mapSaleToPdfData(
-    sale: any,
-    settings: ReceiptPdfSettings,
-  ): ReceiptPdfData {
-    const b = settings.branding;
-
-    return {
-      storeName: b.storeName || sale.consumer?.company_name || '',
-      branchName: sale.branch?.name || '',
-      branchAddress: sale.branch?.address || '',
-      branchPhone: sale.branch?.phone || '',
-      branchEmail: sale.branch?.email || '',
-      logoPath: b.logoPath || sale.consumer?.logo || '',
-
-      headerText: settings.header.text,
-
-      saleNumber: sale.sale_number || '',
-      saleDate: sale.sale_date ? new Date(sale.sale_date) : new Date(),
-      saleType: sale.sale_type || 'sale',
-      priceType: sale.price_type || 'regular',
-      paymentStatus: sale.payment_status || 'paid',
-      cashierName: sale.user?.name || '',
-      servedByName: sale.served_by?.name || '',
-
-      customerName: sale.customer?.name || sale.customer_name || '',
-      customerPhone: sale.customer?.phone || sale.customer_phone || '',
-      customerEmail: sale.customer?.email || sale.customer_email || '',
-      customerRewardPoints: sale.customer?.rewards_points?.total_points ?? null,
-
-      items: (sale.items || []).map((it: any) => {
-        const avg = Number(it.average_discount_amount) || 0;
-        const spc = Number(it.special_discount_amount) || 0;
-        const pro = Number(it.promotion_discount_amount) || 0;
-        return {
-          productName: it.variant?.product?.name || '',
-          variantName: it.variant?.name || '',
-          sku: it.variant?.sku || '',
-          barcode: it.variant?.barcode || '',
-          quantity: it.quantity || 0,
-          unitPrice: Number(it.unit_price) || 0,
-          soldUnitPrice: Number(it.sold_unit_price) || 0,
-          averageDiscount: avg,
-          specialDiscount: spc,
-          promotionDiscount: pro,
-          totalDiscount: avg + spc + pro,
-          taxAmount: Number(it.tax_amount) || 0,
-          taxPercentage: it.variant?.product?.tax || 0,
-          taxMethod: it.variant?.product?.tax_method || 'EXCLUSIVE',
-          lineTotal: Number(it.line_total) || 0,
-        };
-      }),
-
-      subtotal: Number(sale.subtotal) || 0,
-      discountAmount: Number(sale.discount_amount) || 0,
-      promotionDiscount: Number(sale.promotion_discount) || 0,
-      shippingCost: Number(sale.shipping_cost) || 0,
-      taxAmount: Number(sale.tax_amount) || 0,
-      totalAmount: Number(sale.total_amount) || 0,
-
-      payments: (sale.payments || []).map((p: any) => ({
-        method: this.humanPaymentMethod(p.payment_method),
-        type: p.payment_type ? this.humanPaymentType(p.payment_type) : '',
-        amount: Number(p.amount) || 0,
-        reference: p.reference || '',
-      })),
-
-      receivedAmount: Number(sale.received_amount) || 0,
-      changeAmount: Math.max(
-        0,
-        (Number(sale.received_amount) || 0) - (Number(sale.total_amount) || 0),
-      ),
-
-      notes: sale.notes || '',
-
-      vatRegistrationNumber: b.vatRegistrationNumber,
-      footerTerms: this.normalizeLineBreaks(b.footerTerms),
-
-      isOnlineOrder: sale.is_online_order || false,
-      onlineOrderStatus: sale.online_order_status || null,
-    };
-  }
-
-  /* ================================================================== */
-  /*  ENUM FORMATTERS                                                   */
-  /* ================================================================== */
-
-  private humanPaymentMethod(m: string): string {
-    const map: Record<string, string> = {
-      CASH: 'Cash',
-      CARD: 'Card',
-      CHEQUE: 'Cheque',
-      BANK_TRANSFER: 'Bank Transfer',
-      MOBILE_MONEY: 'Mobile Money',
-      MFS: 'MFS',
-      CREDIT: 'Credit',
-      EXCHANGE: 'Exchange',
-    };
-    return map[m] ?? m;
-  }
-
-  private humanPaymentType(t: string): string {
-    const special: Record<string, string> = {
-      BKASH: 'bKash',
-      NAGAD: 'Nagad',
-      ROCKET: 'Rocket',
-      MYCASH: 'MyCash',
-      UPAY: 'Upay',
-      OK_WALLET: 'OK Wallet',
-      TELECASH: 'TeleCash',
-      ISLAMIC_WALLET: 'Islamic Wallet',
-      MEGHNA_PAY: 'Meghna Pay',
-      FIRSTCASH: 'FirstCash',
-      ISLAMI_BANK_MCASH: 'Islami Bank mCash',
-      TRUST_AXIATA_PAY_TAP: 'Trust Axiata Pay Tap',
-      RUPALI_BANK: 'Rupali Bank',
-    };
-    if (special[t]) return special[t];
-    return t
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-
-  /* ================================================================== */
-  /*  CURRENCY                                                          */
-  /* ================================================================== */
-
-  private fmt(amount: number, s: ReceiptPdfSettings): string {
-    const v = amount.toFixed(2);
-    return s.branding.currencyPosition === 'before'
-      ? `${s.branding.currencySymbol}${v}`
-      : `${v}${s.branding.currencySymbol}`;
-  }
-
-  /* ================================================================== */
-  /*  BARCODE GENERATION                                                */
-  /* ================================================================== */
-
-  private async generateBarcodeBuffer(text: string): Promise<Buffer> {
-    const png = await bwipjs.toBuffer({
-      bcid: 'code128',
-      text: text,
-      scale: 3,
-      height: 10,
-      includetext: true,
-      textxalign: 'center',
-    });
-
-    return Buffer.from(png);
-  }
-
-  /* ================================================================== */
-  /*  PDF GENERATION                                                    */
-  /* ================================================================== */
-
-  private async generatePdf(
+  async generatePdf(
     data: ReceiptPdfData,
     s: ReceiptPdfSettings,
   ): Promise<Buffer> {
@@ -304,17 +81,61 @@ export class SalesPdfService {
   }
 
   /* ================================================================== */
-  /*  DRAWING HELPERS                                                   */
+  /*  CURRENCY                                                          */
+  /* ================================================================== */
+
+  private fmt(amount: number, data: ReceiptPdfData): string {
+    const v = amount.toFixed(2);
+    return data.currencyPosition === 'before'
+      ? `${data.currencySymbol}${v}`
+      : `${v}${data.currencySymbol}`;
+  }
+
+  /* ================================================================== */
+  /*  TEXT NORMALIZATION                                                */
+  /* ================================================================== */
+
+  private normalizeLineBreaks(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .join('\n')
+      .trim();
+  }
+
+  /* ================================================================== */
+  /*  BARCODE GENERATION                                                */
+  /* ================================================================== */
+
+  private async generateBarcodeBuffer(text: string): Promise<Buffer> {
+    const png = await bwipjs.toBuffer({
+      bcid: 'code128',
+      text,
+      scale: 3,
+      height: 10,
+      includetext: true,
+      textxalign: 'center',
+    });
+    return Buffer.from(png);
+  }
+
+  /* ================================================================== */
+  /*  IMAGE HELPERS                                                     */
   /* ================================================================== */
 
   private async loadImage(pathOrUrl: string): Promise<Buffer | null> {
     if (!pathOrUrl) return null;
 
-    if (!pathOrUrl.startsWith('http://') && !pathOrUrl.startsWith('https://')) {
+    if (
+      !pathOrUrl.startsWith('http://') &&
+      !pathOrUrl.startsWith('https://')
+    ) {
       try {
-        if (fs.existsSync(pathOrUrl)) {
-          return fs.readFileSync(pathOrUrl);
-        }
+        if (fs.existsSync(pathOrUrl)) return fs.readFileSync(pathOrUrl);
       } catch {
         // ignore
       }
@@ -335,12 +156,14 @@ export class SalesPdfService {
     buf: Buffer,
   ): { width: number; height: number } | null {
     try {
+      // PNG
       if (buf.length > 24 && buf[0] === 0x89 && buf[1] === 0x50) {
         return {
           width: buf.readUInt32BE(16),
           height: buf.readUInt32BE(20),
         };
       }
+      // JPEG
       if (buf.length > 10 && buf[0] === 0xff && buf[1] === 0xd8) {
         let off = 2;
         while (off < buf.length - 9) {
@@ -361,6 +184,10 @@ export class SalesPdfService {
     }
     return null;
   }
+
+  /* ================================================================== */
+  /*  DRAWING PRIMITIVES                                                */
+  /* ================================================================== */
 
   private static HEADER_ABBREVS: Record<string, string> = {
     'Unit Price': 'Unit Pr.',
@@ -478,14 +305,20 @@ export class SalesPdfService {
 
     if (keyMaxWidth > 0) {
       const keyHeight = doc.heightOfString(key, { width: keyMaxWidth });
-      doc.text(key, keyStartX, y, {
-        width: keyMaxWidth,
-        lineBreak: true,
-      });
+      doc.text(key, keyStartX, y, { width: keyMaxWidth, lineBreak: true });
       return y + keyHeight + 5;
     }
 
     return y + fontSize + 5;
+  }
+
+  private formatDate(d: Date): string {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   }
 
   /* ================================================================== */
@@ -575,10 +408,7 @@ export class SalesPdfService {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.subtitle)
-        .text(data.storeName, x, y, {
-          width: maxW,
-          align: 'center',
-        });
+        .text(data.storeName, x, y, { width: maxW, align: 'center' });
       y += s.fontSizes.subtitle + 3;
     }
 
@@ -586,10 +416,7 @@ export class SalesPdfService {
       doc
         .font('Helvetica')
         .fontSize(s.fontSizes.body)
-        .text(data.branchName, x, y, {
-          width: maxW,
-          align: 'center',
-        });
+        .text(data.branchName, x, y, { width: maxW, align: 'center' });
       y += s.fontSizes.body + 2;
     }
 
@@ -722,7 +549,10 @@ export class SalesPdfService {
       y += lh;
     }
 
-    let ry = Math.max(startY, y - lh * this.countOrderRightFields(data, s));
+    let ry = Math.max(
+      startY,
+      y - lh * this.countOrderRightFields(data, s),
+    );
 
     if (s.orderInfo.showCashier && data.cashierName) {
       doc
@@ -768,15 +598,6 @@ export class SalesPdfService {
     if (s.orderInfo.showServedBy && data.servedByName) n++;
     if (data.isOnlineOrder && data.onlineOrderStatus) n++;
     return n;
-  }
-
-  private formatDate(d: Date): string {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   }
 
   /* ================================================================== */
@@ -831,7 +652,10 @@ export class SalesPdfService {
       y += s.fontSizes.small + 3;
     }
 
-    if (s.customerInfo.showRewardPoints && data.customerRewardPoints !== null) {
+    if (
+      s.customerInfo.showRewardPoints &&
+      data.customerRewardPoints !== null
+    ) {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.small)
@@ -867,7 +691,7 @@ export class SalesPdfService {
 
     for (const item of data.items) {
       y = this.ensureSpace(doc, y, s.fontSizes.body + 12, s);
-      y = this.drawItemRow(doc, item, cols, y, s, uw, lm);
+      y = this.drawItemRow(doc, data, item, cols, y, s, uw, lm);
     }
 
     y = this.hr(doc, y, lm, uw);
@@ -913,7 +737,12 @@ export class SalesPdfService {
       });
 
     if (s.items.showTax)
-      specs.push({ key: 'tax', header: 'Tax', weight: 1.4, align: 'right' });
+      specs.push({
+        key: 'tax',
+        header: 'Tax',
+        weight: 1.4,
+        align: 'right',
+      });
 
     if (s.items.showLineTotal)
       specs.push({
@@ -950,7 +779,7 @@ export class SalesPdfService {
         doc,
         c.header,
         maxW,
-        SalesPdfService.HEADER_ABBREVS,
+        ReceiptPdfService.HEADER_ABBREVS,
       );
 
       doc.text(displayHeader, c.x + pad / 2, y, {
@@ -965,6 +794,7 @@ export class SalesPdfService {
 
   private drawItemRow(
     doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
     item: ReceiptPdfItem,
     cols: ColumnDef[],
     y: number,
@@ -986,23 +816,23 @@ export class SalesPdfService {
       item: displayName,
       sku: item.sku || '—',
       qty: String(item.quantity),
-      unitPrice: this.fmt(item.unitPrice, s),
+      unitPrice: this.fmt(item.unitPrice, data),
       discount:
-        item.totalDiscount > 0 ? '-' + this.fmt(item.totalDiscount, s) : '—',
+        item.totalDiscount > 0
+          ? '-' + this.fmt(item.totalDiscount, data)
+          : '—',
       tax:
         item.taxAmount > 0
-          ? `${this.fmt(item.taxAmount, s)} ${item.taxMethod === 'INCLUSIVE' ? 'Inc.' : 'Exc.'}`
+          ? `${this.fmt(item.taxAmount, data)} ${item.taxMethod === 'INCLUSIVE' ? 'Inc.' : 'Exc.'}`
           : '—',
-      total: this.fmt(item.lineTotal, s),
+      total: this.fmt(item.lineTotal, data),
     };
 
     doc.font('Helvetica').fontSize(s.fontSizes.body);
     let rowH = s.fontSizes.body + 4;
     for (const c of cols) {
       if (c.key === 'item' && values.item) {
-        const h = doc.heightOfString(values.item, {
-          width: c.width - 4,
-        });
+        const h = doc.heightOfString(values.item, { width: c.width - 4 });
         rowH = Math.max(rowH, h + 4);
       }
     }
@@ -1038,25 +868,24 @@ export class SalesPdfService {
       const indent = lm + 12;
       const parts: string[] = [];
 
-      if (item.specialDiscount > 0) {
-        parts.push(`Special Discount: ${this.fmt(item.specialDiscount, s)}`);
-      }
-      if (item.promotionDiscount > 0) {
+      if (item.specialDiscount > 0)
         parts.push(
-          `Promotion Discount: ${this.fmt(item.promotionDiscount, s)}`,
+          `Special Discount: ${this.fmt(item.specialDiscount, data)}`,
         );
-      }
-      if (item.averageDiscount > 0) {
-        parts.push(`Average Discount: ${this.fmt(item.averageDiscount, s)}`);
-      }
+      if (item.promotionDiscount > 0)
+        parts.push(
+          `Promotion Discount: ${this.fmt(item.promotionDiscount, data)}`,
+        );
+      if (item.averageDiscount > 0)
+        parts.push(
+          `Average Discount: ${this.fmt(item.averageDiscount, data)}`,
+        );
 
       doc
         .font('Helvetica')
         .fontSize(s.fontSizes.small)
         .fillColor('#333333')
-        .text(parts.join('   |   '), indent, y, {
-          width: uw - 12,
-        })
+        .text(parts.join('   |   '), indent, y, { width: uw - 12 })
         .fillColor('#000000');
       y += s.fontSizes.small + 3;
     }
@@ -1068,11 +897,12 @@ export class SalesPdfService {
     ) {
       y = this.ensureSpace(doc, y, 14, s);
       const indent = lm + 12;
-      const methodLabel = item.taxMethod === 'INCLUSIVE' ? 'Incl.' : 'Excl.';
+      const methodLabel =
+        item.taxMethod === 'INCLUSIVE' ? 'Incl.' : 'Excl.';
       const taxLine =
         item.taxPercentage > 0
-          ? `Tax (${item.taxPercentage}% ${methodLabel}): ${this.fmt(item.taxAmount, s)}`
-          : `Tax (${methodLabel}): ${this.fmt(item.taxAmount, s)}`;
+          ? `Tax (${item.taxPercentage}% ${methodLabel}): ${this.fmt(item.taxAmount, data)}`
+          : `Tax (${methodLabel}): ${this.fmt(item.taxAmount, data)}`;
 
       doc
         .font('Helvetica')
@@ -1107,7 +937,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Subtotal:',
-        this.fmt(data.subtotal, s),
+        this.fmt(data.subtotal, data),
         y,
         rightEdge,
         fs,
@@ -1118,7 +948,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Discount:',
-        '-' + this.fmt(data.discountAmount, s),
+        '-' + this.fmt(data.discountAmount, data),
         y,
         rightEdge,
         fs,
@@ -1133,7 +963,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Promo Discount:',
-        '-' + this.fmt(data.promotionDiscount, s),
+        '-' + this.fmt(data.promotionDiscount, data),
         y,
         rightEdge,
         fs,
@@ -1144,7 +974,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Shipping:',
-        this.fmt(data.shippingCost, s),
+        this.fmt(data.shippingCost, data),
         y,
         rightEdge,
         fs,
@@ -1155,7 +985,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Tax:',
-        this.fmt(data.taxAmount, s),
+        this.fmt(data.taxAmount, data),
         y,
         rightEdge,
         fs,
@@ -1168,7 +998,7 @@ export class SalesPdfService {
     y = this.drawKeyValueRight(
       doc,
       'TOTAL:',
-      this.fmt(data.totalAmount, s),
+      this.fmt(data.totalAmount, data),
       y,
       rightEdge,
       s.fontSizes.subtitle,
@@ -1213,7 +1043,7 @@ export class SalesPdfService {
         y = this.drawKeyValueRight(
           doc,
           label + ':',
-          this.fmt(p.amount, s),
+          this.fmt(p.amount, data),
           y,
           rightEdge,
           fs,
@@ -1221,7 +1051,7 @@ export class SalesPdfService {
       }
     } else if (data.payments.length === 1) {
       const p = data.payments[0];
-      let label = 'Method:';
+      const label = 'Method:';
       y = this.drawKeyValueRight(
         doc,
         label,
@@ -1236,7 +1066,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Received:',
-        this.fmt(data.receivedAmount, s),
+        this.fmt(data.receivedAmount, data),
         y,
         rightEdge,
         fs,
@@ -1247,7 +1077,7 @@ export class SalesPdfService {
       y = this.drawKeyValueRight(
         doc,
         'Change:',
-        this.fmt(data.changeAmount, s),
+        this.fmt(data.changeAmount, data),
         y,
         rightEdge,
         fs,
@@ -1319,8 +1149,6 @@ export class SalesPdfService {
     lm: number,
     barcodeBuffer: Buffer | null,
   ): number {
-    const cx = lm + uw / 2;
-
     // --- Machine-readable Barcode ---
     if (s.footer.showBarcode && data.saleNumber) {
       y = this.ensureSpace(doc, y, 70, s);
@@ -1345,10 +1173,7 @@ export class SalesPdfService {
       doc
         .font('Helvetica')
         .fontSize(s.fontSizes.small)
-        .text(data.footerTerms, lm, y, {
-          width: uw,
-          lineGap: 2,
-        });
+        .text(data.footerTerms, lm, y, { width: uw, lineGap: 2 });
 
       y +=
         doc.fontSize(s.fontSizes.small).heightOfString(data.footerTerms, {
@@ -1389,10 +1214,7 @@ export class SalesPdfService {
     doc
       .font('Helvetica-Oblique')
       .fontSize(s.fontSizes.small)
-      .text('Powered by Posbuzz', lm, y, {
-        width: uw,
-        align: 'center',
-      });
+      .text('Powered by Posbuzz', lm, y, { width: uw, align: 'center' });
     y += s.fontSizes.small + 3;
 
     return y;
@@ -1422,7 +1244,7 @@ export class SalesPdfService {
       return y + barcodeH + 8;
     }
 
-    // Fallback (shouldn't happen if bwip-js is installed)
+    // Fallback
     const boxW = Math.min(220, uw * 0.65);
     const boxH = 40;
     const bx = lm + (uw - boxW) / 2;

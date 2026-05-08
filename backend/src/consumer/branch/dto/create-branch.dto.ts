@@ -1,14 +1,7 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsEmail,
-  IsBoolean,
-} from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateBranchDto {
   @IsString()
-  @IsNotEmpty()
   name: string;
 
   @IsOptional()
@@ -20,9 +13,14 @@ export class CreateBranchDto {
   phone?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsString()
   email?: string;
 
+  @IsOptional()
   @IsBoolean()
-  is_main: boolean;
+  is_main?: boolean;
+
+  @IsOptional()
+  @IsString()
+  vat_registration_number?: string; // NEW
 }

@@ -1,36 +1,34 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Req,
-  ParseIntPipe,
-  Res,
-  BadRequestException,
   NotFoundException,
+  Param,
+  ParseIntPipe,
   Patch,
-  DefaultValuePipe,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards
 } from '@nestjs/common';
-import { Response } from 'express';
-import { SalesService } from '../services/sales.service';
-import { SalesPdfService } from '../services/sales-pdf.service';
-import { QuotationPdfService } from '../services/quotation-pdf.service';
-import { CreateSaleDto } from '../dto/create-sale.dto';
-import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
-import { EODReportDto } from '../dto/eod-report.dto';
-import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
+import { Request, Response } from 'express';
+import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
-import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
-import { Request } from 'express';
+import { ReceiptPdfSettings } from '../../receipt-pdf/services/receipt-pdf-settings';
+import { SalesPdfService } from '../../receipt-pdf/services/sales-pdf.service';
+import { CreateSaleDto } from '../dto/create-sale.dto';
 import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
-import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
+import { EODReportDto } from '../dto/eod-report.dto';
 import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
-import { ReceiptPdfSettings } from '../services/receipt-pdf-settings';
+import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
+import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
+import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
+import { QuotationPdfService } from '../services/quotation-pdf.service';
+import { SalesService } from '../services/sales.service';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
