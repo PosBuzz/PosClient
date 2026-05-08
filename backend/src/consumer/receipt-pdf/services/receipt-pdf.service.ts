@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as bwipjs from 'bwip-js';
-import { ReceiptPdfSettings } from './receipt-pdf-settings';
+import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData, ReceiptPdfItem } from '../interfaces/receipt-pdf-data.interface';
 
 /* ------------------------------------------------------------------ */
@@ -467,9 +467,7 @@ export class ReceiptPdfService {
   ): number {
     if (!s.header.show) return y;
 
-    let label = data.headerText;
-    if (data.saleType === 'quotation') label = 'QUOTATION';
-    else if (data.saleType === 'return') label = 'RETURN RECEIPT';
+    const label = data.headerText || 'RECEIPT';
 
     doc
       .font('Helvetica-Bold')

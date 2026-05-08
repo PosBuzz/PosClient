@@ -18,7 +18,7 @@ import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
-import { ReceiptPdfSettings } from '../../receipt-pdf/services/receipt-pdf-settings';
+import { ReceiptPdfSettings } from '../../receipt-pdf/preset/receipt-pdf-settings';
 import { SalesPdfService } from '../../receipt-pdf/services/sales-pdf.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { DailyTargetReportDto } from '../dto/daily-target-report.dto';

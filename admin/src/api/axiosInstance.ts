@@ -4,14 +4,14 @@ import { endpoints } from "./endpoints";
 import { useAuthStore } from "../stores/authStore";
 
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
 // Dynamic CSRF Token injection before every request
 axiosInstance.interceptors.request.use((config) => {
   const csrfToken = useAuthStore.getState().csrfToken; // <-- Access store without hook
-  
+
   if (csrfToken) {
     config.headers["X-CSRF-TOKEN"] = csrfToken;
   }
@@ -21,7 +21,7 @@ axiosInstance.interceptors.request.use((config) => {
 
 // Separate instance for refresh token call
 const refreshInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
 });
 
@@ -106,7 +106,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(err);
-  }
+  },
 );
 
 export default axiosInstance;

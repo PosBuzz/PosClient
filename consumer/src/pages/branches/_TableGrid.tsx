@@ -89,6 +89,13 @@ export default function _TableGrid({ onClickEdit }) {
         address || <span style={{ color: "#999" }}>No address</span>,
     },
     {
+      title: "VAT Registration Number",
+      dataIndex: "vat_registration_number",
+      key: "vat_registration_number",
+      render: (vat_registration_number: string) =>
+        vat_registration_number || <span style={{ color: "#999" }}>No VAT Registration Number</span>,
+    },
+    {
       title: "Created Date",
       dataIndex: "created_at",
       key: "created_at",

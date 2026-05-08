@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
-import { PRESET_DEFAULTS } from 'src/consumer/receipt-pdf/services/receipt-pdf-settings';
+import { PRESET_DEFAULTS } from 'src/consumer/receipt-pdf/preset/receipt-pdf-settings';
 
 const prisma = new PrismaClient();
 
@@ -108,6 +108,7 @@ async function main() {
     'sales',
     'quotations',
     'companyProfile',
+    'receipt_settings',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
@@ -185,6 +186,7 @@ async function main() {
       address: 'Central Warehouse Location',
       email: 'warehouse@example.com',
       phone: '+1-555-0100',
+      vat_registration_number: 'BIN-1234567890',
       is_main: false,
       is_warehouse: true,
     },
@@ -194,6 +196,7 @@ async function main() {
       address: 'Central Warehouse Location',
       email: 'warehouse@example.com',
       phone: '+1-555-0100',
+      vat_registration_number: 'BIN-1234567890',
       is_main: false,
       is_warehouse: true,
     },
@@ -211,6 +214,7 @@ async function main() {
       address: '123 Main Street, Downtown',
       email: 'mainstore@example.com',
       phone: '+1-555-0200',
+      vat_registration_number: 'BIN-1234567890',
       is_main: true,
       is_warehouse: false,
     },
@@ -220,6 +224,7 @@ async function main() {
       address: '123 Main Street, Downtown',
       email: 'mainstore@example.com',
       phone: '+1-555-0200',
+      vat_registration_number: 'BIN-1234567890',
       is_main: true,
       is_warehouse: false,
     },
@@ -325,7 +330,6 @@ async function main() {
       },
       create: {
         consumer_id: consumer1.id,
-        branch_id: mainBranch.id,
         name: preset.name,
         type: preset.type,
         is_active: true,

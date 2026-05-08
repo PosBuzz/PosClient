@@ -187,4 +187,16 @@ export const endpoints = {
   // Product Audit
   getProductAudit: "/consumer/inventory/audit",
   downloadProductAuditPdf: "/consumer/inventory/audit/pdf",
+
+  receiptSettings: "/receipt-settings",
+  receiptSettingsByType: (type: string) => `/receipt-settings/by-type/${type}`,
+  receiptSettingDefaults: (type: string) =>
+    `/receipt-settings/defaults/${type}`,
+  receiptSettingPreview: "/receipt-settings/preview",
+  receiptSettingAction: (id: number) => `/receipt-settings/${id}`,
+  receiptSettingActivate: (id: number) => `/receipt-settings/${id}/activate`,
+  receiptSettingCopyToBranch: (id: number, branchId: number) =>
+    `/receipt-settings/${id}/copy-to-branch/${branchId}`,
+  receiptSettingResetBranch: (branchId: number, type: string) =>
+    `/receipt-settings/reset-branch/${branchId}/${type}`,
 };

@@ -16,4 +16,5 @@ export enum ConsumerPermission {
   returns = 'returns',
   companyProfile = 'companyProfile',
   product_audit = 'product_audit',
+  receipt_settings = 'receipt_settings',
 }
