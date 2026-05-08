@@ -1,5 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
+import { PRESET_DEFAULTS } from 'src/consumer/receipt-pdf/services/receipt-pdf-settings';
 
 const prisma = new PrismaClient();
 
@@ -106,7 +107,7 @@ async function main() {
     'customers',
     'sales',
     'quotations',
-    'companyProfile'
+    'companyProfile',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
@@ -149,12 +150,26 @@ async function main() {
       company_name: 'Possbuzz',
       email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
+      currency_symbol: '$',
+      currency_position: 'before',
+      receipt_terms: `• No return or exchange after purchase
+• Check products before leaving the counter
+• Keep this receipt for warranty claims
+• Warranty void if seal is broken
+• For complaints, call our helpline`,
     },
     create: {
       company_name: 'Possbuzz',
       subdomain: 'consumer1',
       email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
+      currency_symbol: '$',
+      currency_position: 'before',
+      receipt_terms: `• No return or exchange after purchase
+• Check products before leaving the counter
+• Keep this receipt for warranty claims
+• Warranty void if seal is broken
+• For complaints, call our helpline`,
     },
   });
 
@@ -248,7 +263,12 @@ async function main() {
 
   // Create Admin User
   const adminUser = await prisma.user.upsert({
-    where: { consumer_id_email: { consumer_id: consumer1.id, email: 'consumer@example.com' } },
+    where: {
+      consumer_id_email: {
+        consumer_id: consumer1.id,
+        email: 'consumer@example.com',
+      },
+    },
     update: {
       consumer_id: consumer1.id,
       name: 'Consumer Admin',
@@ -280,46 +300,62 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // Initialize default receipt PDF settings for main branch
+  const receiptPresets = [
+    { name: 'Default Receipt', type: 'receipt' as const },
+    { name: 'Default Quotation', type: 'quotation' as const },
+    { name: 'Default Return Receipt', type: 'return' as const },
+  ];
+
+  for (const preset of receiptPresets) {
+    await prisma.receiptPdfSetting.upsert({
+      where: {
+        consumer_id_branch_id_name_type: {
+          consumer_id: consumer1.id,
+          branch_id: mainBranch.id,
+          name: preset.name,
+          type: preset.type,
+        },
+      },
+      update: {
+        settings: PRESET_DEFAULTS[
+          preset.type
+        ] as unknown as Prisma.InputJsonValue,
+        is_active: true,
+      },
+      create: {
+        consumer_id: consumer1.id,
+        branch_id: mainBranch.id,
+        name: preset.name,
+        type: preset.type,
+        is_active: true,
+        settings: PRESET_DEFAULTS[
+          preset.type
+        ] as unknown as Prisma.InputJsonValue,
+        created_by: adminUser.id,
+      },
+    });
+  }
+
   // Create billing history
   await prisma.billingHistory.upsert({
     where: {
       consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_date: new Date('2025-06-01T00:00:00Z'),
+        billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
       },
     },
     update: {
       amount: 100.0,
       plan_id: enterprisePlan.id,
-      billing_date: new Date('2025-06-01T00:00:00Z'),
+      billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
     },
     create: {
       consumer_id: consumer1.id,
       plan_id: enterprisePlan.id,
       amount: 100.0,
       reference: 'Invoice #12345',
-      billing_date: new Date('2025-06-01T00:00:00Z'),
-    },
-  });
-
-  await prisma.billingHistory.upsert({
-    where: {
-      consumer_id_billing_date: {
-        consumer_id: consumer1.id,
-        billing_date: new Date('2025-05-01T00:00:00Z'),
-      },
-    },
-    update: {
-      plan_id: enterprisePlan.id,
-      amount: 250.0,
-      billing_date: new Date('2025-05-01T00:00:00Z'),
-    },
-    create: {
-      consumer_id: consumer1.id,
-      plan_id: enterprisePlan.id,
-      amount: 250.0,
-      reference: 'Invoice #67890',
-      billing_date: new Date('2025-05-01T00:00:00Z'),
+      billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
     },
   });
 

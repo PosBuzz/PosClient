@@ -1,17 +1,16 @@
-import { Module } from '@nestjs/common';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { forwardRef, Module } from '@nestjs/common';
+import { PromotionsModule } from '../promotions/promotions.module';
+import { TestReceiptVariationsController } from '../receipt-pdf/controllers/test-receipt-variations.controller';
+import { ReceiptModule } from '../receipt-pdf/receipt.module';
+import { RewardsModule } from '../rewards/rewards.module';
 import { SalesController } from './controllers/sales.controller';
-import { SalesPdfService } from './services/sales-pdf.service';
 import { QuotationPdfService } from './services/quotation-pdf.service';
 import { SalesService } from './services/sales.service';
-import { RewardsModule } from '../rewards/rewards.module';
-import { PromotionsModule } from '../promotions/promotions.module';
-import { TestReceiptVariationsController } from './controllers/test-receipt-variations.controller';
 
 @Module({
-  imports: [RewardsModule, PromotionsModule],
+  imports: [RewardsModule, PromotionsModule, forwardRef(() => ReceiptModule)],
   controllers: [SalesController, TestReceiptVariationsController],
-  providers: [SalesService, SalesPdfService, QuotationPdfService],
-  exports: [SalesService, SalesPdfService, QuotationPdfService],
+  providers: [SalesService, QuotationPdfService],
+  exports: [SalesService, QuotationPdfService],
 })
 export class SalesModule {}

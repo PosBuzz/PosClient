@@ -10,9 +10,10 @@ import {
   Req,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { SalesService } from '../services/sales.service';
+import { SalesService } from '../../sales/services/sales.service';
 import { SalesPdfService } from '../services/sales-pdf.service';
 import { ReceiptPdfSettings } from '../services/receipt-pdf-settings';
+import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 
 @Controller('test-receipts')
 export class TestReceiptVariationsController {
@@ -284,6 +285,7 @@ export class TestReceiptVariationsController {
       const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(
         sale,
         variation.settings,
+        variation.dataOverrides, // Pass the dynamic branding data overrides here
       );
 
       const safeName = variation.name
@@ -362,34 +364,34 @@ const TERMS_LEGAL = `TERMS AND CONDITIONS OF SALE
 By accepting this receipt, you agree to the following terms:
 
 1. GENERAL TERMS
-   - All sales are final unless otherwise stated.
-   - Products must be inspected at the time of delivery.
-   - Claims for damaged goods must be made within 24 hours.
+  - All sales are final unless otherwise stated.
+  - Products must be inspected at the time of delivery.
+  - Claims for damaged goods must be made within 24 hours.
 
 2. WARRANTY TERMS
-   - Warranty period starts from the date of purchase.
-   - Warranty covers manufacturing defects only.
-   - Warranty does not cover physical damage or misuse.
-   - Original receipt is required for warranty claims.
+  - Warranty period starts from the date of purchase.
+  - Warranty covers manufacturing defects only.
+  - Warranty does not cover physical damage or misuse.
+  - Original receipt is required for warranty claims.
 
 3. RETURN POLICY
-   - Returns are accepted within 7 days with original packaging.
-   - Returned items must be unused and in resalable condition.
-   - Refunds will be processed within 5-7 business days.
+  - Returns are accepted within 7 days with original packaging.
+  - Returned items must be unused and in resalable condition.
+  - Refunds will be processed within 5-7 business days.
 
 4. PAYMENT TERMS
-   - Full payment must be made at the time of purchase.
-   - Credit terms are available for approved customers only.
-   - Late payments may incur interest charges.
+  - Full payment must be made at the time of purchase.
+  - Credit terms are available for approved customers only.
+  - Late payments may incur interest charges.
 
 5. LIMITATION OF LIABILITY
-   - Maximum liability is limited to the purchase price.
-   - We are not liable for consequential damages.
-   - We are not liable for delays caused by third parties.
+  - Maximum liability is limited to the purchase price.
+  - We are not liable for consequential damages.
+  - We are not liable for delays caused by third parties.
 
 6. GOVERNING LAW
-   - These terms are governed by the laws of Bangladesh.
-   - All disputes shall be resolved in Dhaka jurisdiction.`;
+  - These terms are governed by the laws of Bangladesh.
+  - All disputes shall be resolved in Dhaka jurisdiction.`;
 
 const TERMS_RETAIL_SHOP = `• No return or exchange after purchase
 • Check products before leaving the counter
@@ -478,7 +480,8 @@ For any questions or concerns, please contact our customer service at support@st
 const ALL_VARIATIONS: {
   category: string;
   name: string;
-  settings: Partial<ReceiptPdfSettings>;
+  settings?: Partial<ReceiptPdfSettings>;
+  dataOverrides?: Partial<ReceiptPdfData>; // Replaces settings.branding
 }[] = [
   // ── PAGE ──────────────────────────────────────────────────
   {
@@ -1294,63 +1297,42 @@ const ALL_VARIATIONS: {
   {
     category: 'Branding',
     name: 'Currency After (USD $)',
-    settings: {
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'after',
-        vatRegistrationNumber: '',
-        footerTerms: '',
-        storeName: '',
-        logoPath: '',
-      },
+    dataOverrides: {
+      currencySymbol: '$',
+      currencyPosition: 'after',
     },
   },
   {
     category: 'Branding',
     name: 'Currency Before (EUR €)',
-    settings: {
-      branding: {
-        currencySymbol: '€',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: '',
-        storeName: '',
-        logoPath: '',
-      },
+    dataOverrides: {
+      currencySymbol: '€',
+      currencyPosition: 'before',
     },
   },
   {
     category: 'Branding',
     name: 'Currency After (GBP £)',
-    settings: {
-      branding: {
-        currencySymbol: '£',
-        currencyPosition: 'after',
-        vatRegistrationNumber: '',
-        footerTerms: '',
-        storeName: '',
-        logoPath: '',
-      },
+    dataOverrides: {
+      currencySymbol: '£',
+      currencyPosition: 'after',
     },
   },
   {
     category: 'Branding',
     name: 'With Single Line Terms',
     settings: {
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_SINGLE_LINE,
-        storeName: '',
-        logoPath: '',
-      },
       footer: {
         showTerms: true,
         showBarcode: true,
         showThankYou: true,
         showPrintDate: true,
       },
+    },
+    dataOverrides: {
+      currencySymbol: '$',
+      currencyPosition: 'before',
+      footerTerms: TERMS_SINGLE_LINE,
     },
   },
 
@@ -1505,15 +1487,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_SHORT,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_SHORT },
   },
   {
     category: 'Terms & Conditions',
@@ -1525,15 +1500,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_SINGLE_LINE,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_SINGLE_LINE },
   },
   {
     category: 'Terms & Conditions',
@@ -1545,15 +1513,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_NEWLINES,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_NEWLINES },
   },
   {
     category: 'Terms & Conditions',
@@ -1565,15 +1526,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_BR_TAGS,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_BR_TAGS },
   },
   {
     category: 'Terms & Conditions',
@@ -1585,15 +1539,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_BR_SLASH_TAGS,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_BR_SLASH_TAGS },
   },
   {
     category: 'Terms & Conditions',
@@ -1605,15 +1552,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_BR_SPACE_TAGS,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_BR_SPACE_TAGS },
   },
   {
     category: 'Terms & Conditions',
@@ -1625,15 +1565,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_MIXED_BREAKS,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_MIXED_BREAKS },
   },
   {
     category: 'Terms & Conditions',
@@ -1645,15 +1578,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_NUMBERED,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_NUMBERED },
   },
   {
     category: 'Terms & Conditions',
@@ -1665,15 +1591,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_LEGAL,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_LEGAL },
   },
   {
     category: 'Terms & Conditions',
@@ -1685,15 +1604,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_MULTILINE_WITH_BLANKS,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_MULTILINE_WITH_BLANKS },
   },
   {
     category: 'Terms & Conditions',
@@ -1705,15 +1617,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_BANGLA_ENGLISH,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_BANGLA_ENGLISH },
   },
   {
     category: 'Terms & Conditions',
@@ -1725,15 +1630,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_VERY_LONG,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_VERY_LONG },
   },
   {
     category: 'Terms & Conditions',
@@ -1745,15 +1643,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_NEWLINES,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_NEWLINES },
   },
   {
     category: 'Terms & Conditions',
@@ -1765,15 +1656,8 @@ const ALL_VARIATIONS: {
         showThankYou: false,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_LEGAL,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_LEGAL },
   },
   {
     category: 'Terms & Conditions',
@@ -1785,15 +1669,8 @@ const ALL_VARIATIONS: {
         showThankYou: false,
         showPrintDate: false,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_NUMBERED,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_NUMBERED },
   },
   {
     category: 'Terms & Conditions',
@@ -1805,16 +1682,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_LEGAL,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 18, subtitle: 13, heading: 10, body: 9, small: 6 },
     },
+    dataOverrides: { footerTerms: TERMS_LEGAL },
   },
   {
     category: 'Terms & Conditions',
@@ -1826,16 +1696,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_WITH_NEWLINES,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 20, subtitle: 14, heading: 11, body: 10, small: 9 },
     },
+    dataOverrides: { footerTerms: TERMS_WITH_NEWLINES },
   },
   {
     category: 'Terms & Conditions',
@@ -1851,15 +1714,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_NUMBERED,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_NUMBERED },
   },
   {
     category: 'Terms & Conditions',
@@ -1875,15 +1731,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'after',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_LEGAL,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { currencyPosition: 'after', footerTerms: TERMS_LEGAL },
   },
   {
     category: 'Terms & Conditions',
@@ -1899,15 +1748,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_VERY_LONG,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_VERY_LONG },
   },
   {
     category: 'Terms & Conditions',
@@ -1923,15 +1765,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_NUMBERED,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_NUMBERED },
   },
   {
     category: 'Terms & Conditions',
@@ -1943,15 +1778,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: '',
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: '' },
   },
   {
     category: 'Terms & Conditions',
@@ -1963,15 +1791,10 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms:
-          'Line one with CRLF\r\nLine two with CRLF\r\nLine three with CRLF',
-        storeName: '',
-        logoPath: '',
-      },
+    },
+    dataOverrides: {
+      footerTerms:
+        'Line one with CRLF\r\nLine two with CRLF\r\nLine three with CRLF',
     },
   },
   {
@@ -1984,15 +1807,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: 'Section A\n\n\nSection B\n\n\n\nSection C',
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: 'Section A\n\n\nSection B\n\n\n\nSection C' },
   },
   {
     category: 'Terms & Conditions',
@@ -2004,15 +1820,10 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms:
-          '\n\n   First line with leading spaces\n   Second line   \n\n   Third line   \n\n',
-        storeName: '',
-        logoPath: '',
-      },
+    },
+    dataOverrides: {
+      footerTerms:
+        '\n\n   First line with leading spaces\n   Second line   \n\n   Third line   \n\n',
     },
   },
   {
@@ -2025,15 +1836,8 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_RETAIL_SHOP,
-        storeName: '',
-        logoPath: '',
-      },
     },
+    dataOverrides: { footerTerms: TERMS_RETAIL_SHOP },
   },
 
   // ── USE CASES ─────────────────────────────────────────────
@@ -2106,16 +1910,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_RETAIL_SHOP,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 16, subtitle: 11, heading: 9, body: 8, small: 7 },
     },
+    dataOverrides: { footerTerms: TERMS_RETAIL_SHOP },
   },
   {
     category: 'Use Cases',
@@ -2186,15 +1983,11 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: 'VAT-987654321',
-        footerTerms: TERMS_RESTAURANT,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 18, subtitle: 12, heading: 10, body: 9, small: 7.5 },
+    },
+    dataOverrides: {
+      vatRegistrationNumber: 'VAT-987654321',
+      footerTerms: TERMS_RESTAURANT,
     },
   },
   {
@@ -2266,15 +2059,11 @@ const ALL_VARIATIONS: {
         showThankYou: false,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: 'BIN-1234567890',
-        footerTerms: TERMS_WHOLESALE,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 20, subtitle: 14, heading: 10, body: 9.5, small: 8 },
+    },
+    dataOverrides: {
+      vatRegistrationNumber: 'BIN-1234567890',
+      footerTerms: TERMS_WHOLESALE,
     },
   },
   {
@@ -2346,16 +2135,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_ONLINE_ORDER,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 18, subtitle: 13, heading: 10, body: 9, small: 7.5 },
     },
+    dataOverrides: { footerTerms: TERMS_ONLINE_ORDER },
   },
   {
     category: 'Use Cases',
@@ -2430,16 +2212,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_SHORT,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 14, subtitle: 10, heading: 8, body: 7, small: 6 },
     },
+    dataOverrides: { footerTerms: TERMS_SHORT },
   },
   {
     category: 'Use Cases',
@@ -2510,15 +2285,11 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: 'VAT-123456789',
-        footerTerms: TERMS_LEGAL,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 20, subtitle: 14, heading: 10, body: 9.5, small: 8 },
+    },
+    dataOverrides: {
+      vatRegistrationNumber: 'VAT-123456789',
+      footerTerms: TERMS_LEGAL,
     },
   },
   {
@@ -2590,16 +2361,9 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: '',
-        footerTerms: TERMS_MULTILINE_WITH_BLANKS,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 18, subtitle: 13, heading: 10, body: 9, small: 7.5 },
     },
+    dataOverrides: { footerTerms: TERMS_MULTILINE_WITH_BLANKS },
   },
   {
     category: 'Use Cases',
@@ -2670,15 +2434,11 @@ const ALL_VARIATIONS: {
         showThankYou: false,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: 'BIN-9876543210',
-        footerTerms: TERMS_VERY_LONG,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 20, subtitle: 14, heading: 10, body: 9.5, small: 8 },
+    },
+    dataOverrides: {
+      vatRegistrationNumber: 'BIN-9876543210',
+      footerTerms: TERMS_VERY_LONG,
     },
   },
   {
@@ -2821,15 +2581,11 @@ const ALL_VARIATIONS: {
         showThankYou: true,
         showPrintDate: true,
       },
-      branding: {
-        currencySymbol: '$',
-        currencyPosition: 'before',
-        vatRegistrationNumber: 'VAT-123456789',
-        footerTerms: TERMS_BANGLA_ENGLISH,
-        storeName: '',
-        logoPath: '',
-      },
       fontSizes: { title: 18, subtitle: 13, heading: 10, body: 9, small: 7.5 },
+    },
+    dataOverrides: {
+      vatRegistrationNumber: 'VAT-123456789',
+      footerTerms: TERMS_BANGLA_ENGLISH,
     },
   },
 ];

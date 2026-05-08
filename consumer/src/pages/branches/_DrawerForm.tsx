@@ -63,6 +63,7 @@ export default function DrawerForm({
       email: formValues.email,
       address: formValues.address,
       is_main: formValues.is_main || false,
+      vat_registration_number: formValues.vat_registration_number,
     };
 
     if (isEditing && editedItem) {
@@ -88,6 +89,7 @@ export default function DrawerForm({
         email: editedItem.email,
         address: editedItem.address,
         is_main: editedItem.is_main,
+        vat_registration_number: editedItem.vat_registration_number,
       });
     } else {
       form.resetFields();
@@ -118,6 +120,14 @@ export default function DrawerForm({
           rules={[{ required: true, message: "Branch name is required" }]}
         >
           <Input placeholder="Enter branch name" />
+        </Form.Item>
+
+        <Form.Item
+          label="VAT Registration Number"
+          name="vat_registration_number"
+          rules={[{ required: true, message: "VAT registration number is required" }]}
+        >
+          <Input placeholder="Enter VAT registration number" />
         </Form.Item>
 
         <Form.Item

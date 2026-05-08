@@ -244,6 +244,9 @@ model Consumer {
   email             String
   phone             String?
   address           String?
+  currency_symbol   String   @default("$")
+  currency_position String   @default("before") // 'before' | 'after'
+  receipt_terms     String? // Default terms & conditions for receipts
   subdomain         String   @unique
   plan_id           Int
   created_at        DateTime @default(now())
@@ -271,16 +274,17 @@ model Consumer {
   inventory_audit_logs     InventoryAuditLog[]
 
   // ERP
-  erp_settings      ERPSettings?
-  salary_structures SalaryStructure[]
-  attendances       Attendance[]
-  leaves            Leave[]
-  overtimes         Overtime[]
-  expenses          Expense[]
-  deductions        Deduction[]
-  advances          Advance[]
-  salary_increments SalaryIncrement[]
-  salary_payments   SalaryPayment[]
+  erp_settings       ERPSettings?
+  salary_structures  SalaryStructure[]
+  attendances        Attendance[]
+  leaves             Leave[]
+  overtimes          Overtime[]
+  expenses           Expense[]
+  deductions         Deduction[]
+  advances           Advance[]
+  salary_increments  SalaryIncrement[]
+  salary_payments    SalaryPayment[]
+  receiptPdfSettings ReceiptPdfSetting[]
 
   @@index([email])
   @@index([plan_id])
@@ -377,18 +381,19 @@ model User {
   // ERP
   salary_structures         SalaryStructure[]
   attendances               Attendance[]
-  leaves                    Leave[]           @relation("EmployeeLeaves")
-  approved_leaves           Leave[]           @relation("LeaveApprover")
-  overtimes                 Overtime[]        @relation("EmployeeOvertimes")
-  approved_overtimes        Overtime[]        @relation("OvertimeApprover")
-  expenses                  Expense[]         @relation("EmployeeExpenses")
-  approved_expenses         Expense[]         @relation("ExpenseApprover")
+  leaves                    Leave[]             @relation("EmployeeLeaves")
+  approved_leaves           Leave[]             @relation("LeaveApprover")
+  overtimes                 Overtime[]          @relation("EmployeeOvertimes")
+  approved_overtimes        Overtime[]          @relation("OvertimeApprover")
+  expenses                  Expense[]           @relation("EmployeeExpenses")
+  approved_expenses         Expense[]           @relation("ExpenseApprover")
   deductions                Deduction[]
-  advances                  Advance[]         @relation("EmployeeAdvances")
-  approved_advances         Advance[]         @relation("AdvanceApprover")
-  salary_increments         SalaryIncrement[] @relation("EmployeeSalaryIncrements")
-  salary_increments_created SalaryIncrement[] @relation("SalaryIncrementCreator")
+  advances                  Advance[]           @relation("EmployeeAdvances")
+  approved_advances         Advance[]           @relation("AdvanceApprover")
+  salary_increments         SalaryIncrement[]   @relation("EmployeeSalaryIncrements")
+  salary_increments_created SalaryIncrement[]   @relation("SalaryIncrementCreator")
   salary_payments           SalaryPayment[]
+  receiptPdfSettings        ReceiptPdfSetting[]
 
   @@unique([consumer_id, email])
   @@index([role_id])
@@ -621,16 +626,17 @@ model VariantAttribute {
 // ============================================
 
 model Branch {
-  id           Int      @id @default(autoincrement())
-  consumer_id  Int
-  name         String
-  address      String?
-  email        String?
-  phone        String?
-  is_main      Boolean  @default(false)
-  is_warehouse Boolean  @default(false)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id                      Int      @id @default(autoincrement())
+  consumer_id             Int
+  name                    String
+  address                 String?
+  email                   String?
+  phone                   String?
+  vat_registration_number String?
+  is_main                 Boolean  @default(false)
+  is_warehouse            Boolean  @default(false)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
 
   consumer             Consumer              @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   users                UserBranch[]
@@ -642,6 +648,7 @@ model Branch {
   Sales                Sale[]
   Returns              Return[]
   inventory_audit_logs InventoryAuditLog[]
+  receiptPdfSettings   ReceiptPdfSetting[]
 
   @@unique([consumer_id, name])
   @@map("branches")
@@ -1197,6 +1204,40 @@ model RewardsPointTransaction {
   @@index([consumer_id, type])
   @@index([expiry_date])
   @@map("rewards_point_transactions")
+}
+
+// ============================================
+// Receipt PDF Settings
+// ============================================
+
+model ReceiptPdfSetting {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  branch_id   Int?     // null = consumer-level default, set = branch-specific override
+  name        String   // Preset display name (e.g., "Default Receipt", "Thermal Receipt")
+  
+  // Type of document this preset is for
+  type        String   // 'receipt' | 'quotation' | 'return'
+  
+  // Only one setting can be active per scope (consumer or branch) per type
+  is_active   Boolean  @default(false)
+  
+  // Layout settings ONLY - no branding data (that comes from Consumer/Branch tables)
+  settings    Json
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+
+  consumer  Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  branch    Branch?  @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [created_by], references: [id], onDelete: SetNull)
+
+  @@unique([consumer_id, branch_id, name, type])
+  @@index([consumer_id, branch_id, type, is_active]) // Query: active setting for branch+type
+  @@index([consumer_id, type, is_active]) // Query: active consumer default for type
+  @@index([branch_id])
+  @@map("receipt_pdf_settings")
 }
 
 // ============================================
