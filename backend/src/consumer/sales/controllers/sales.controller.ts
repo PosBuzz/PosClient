@@ -11,7 +11,7 @@ import {
   Query,
   Req,
   Res,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
@@ -27,8 +27,8 @@ import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
 import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
-import { QuotationPdfService } from '../services/quotation-pdf.service';
 import { SalesService } from '../services/sales.service';
+import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
@@ -119,20 +119,23 @@ export class SalesController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
     @Res() res: Response,
-    @Query('download') download?: string,
   ) {
-    return this.buildAndSendReceipt(id, req, res, undefined, download);
-  }
+    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
 
-  @Post('receipt/:id')
-  async generateReceiptPdfPost(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body?: { settings?: Partial<ReceiptPdfSettings> },
-    @Query('download') download?: string,
-  ) {
-    return this.buildAndSendReceipt(id, req, res, body?.settings, download);
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(sale);
+
+    const saleNumber = (sale as any).sale_number || 'unknown';
+    const filename = `receipt-${saleNumber}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    res.send(pdfBuffer);
   }
 
   @Get('search/:saleNumber')
@@ -170,7 +173,6 @@ export class SalesController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
     @Res() res: Response,
-    @Query('download') download?: string,
   ) {
     // Get the quotation data
     const quotation = await this.salesService.findOneQuotation(
@@ -190,15 +192,7 @@ export class SalesController {
     const filename = `quotation-${(quotation as any).sale_number || 'unknown'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);
-
-    if (download === 'true') {
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"`,
-      );
-    } else {
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    }
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
     // Send the PDF
     res.send(pdfBuffer);
@@ -316,41 +310,5 @@ export class SalesController {
       updateStatusDto.status,
       req.user.consumer_id!,
     );
-  }
-
-  private async buildAndSendReceipt(
-    id: number,
-    req: Request,
-    res: Response,
-    settingsOverride?: Partial<ReceiptPdfSettings>,
-    download?: string,
-  ) {
-    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
-
-    if (!sale) {
-      return res.status(404).json({ message: 'Sale not found' });
-    }
-
-    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(
-      sale,
-      settingsOverride,
-    );
-
-    const saleNumber = (sale as any).sale_number || 'unknown';
-    const filename = `receipt-${saleNumber}.pdf`;
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Length', pdfBuffer.length);
-
-    if (download === 'true') {
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"`,
-      );
-    } else {
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    }
-
-    res.send(pdfBuffer);
   }
 }

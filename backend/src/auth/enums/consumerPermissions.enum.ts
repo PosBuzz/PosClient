@@ -13,7 +13,6 @@ export enum ConsumerPermission {
   inventory_adjustment = 'inventory_adjustment',
   sales = 'sales',
   quotations = 'quotations',
-  returns = 'returns',
   companyProfile = 'companyProfile',
   product_audit = 'product_audit',
   receipt_settings = 'receipt_settings',
