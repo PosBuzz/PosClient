@@ -143,12 +143,14 @@ export const endpoints = {
   getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
   createQuotation: "/consumer/sales",
   downloadQuotationPdf: (id: number) =>
-    `/consumer/sales/quotations/${id}/pdf?download=true`,
+    `/consumer/sales/quotations/${id}/pdf`,
 
   // Returns Management
   getReturns: "/consumer/returns",
   getReturn: (id: number) => `/consumer/returns/${id}`,
   createReturn: "/consumer/returns",
+  downloadReturnPdf: (id: number) =>
+    `/consumer/returns/${id}/pdf`,
 
   // Thermal Printer Management
   prepareReceipt: (saleId: number) =>

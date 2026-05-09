@@ -576,8 +576,13 @@ const CreateReturn = () => {
       ) ??
       0,
   );
-  const exchangeChangeGiven = Number(exchangeSaleQuery.data?.change_amount || 0);
-  const exchangeNetPaid = Math.max(0, exchangeTotalTendered - exchangeChangeGiven);
+  const exchangeChangeGiven = Number(
+    exchangeSaleQuery.data?.change_amount || 0,
+  );
+  const exchangeNetPaid = Math.max(
+    0,
+    exchangeTotalTendered - exchangeChangeGiven,
+  );
   const exchangeVat = Number(exchangeSaleQuery.data?.tax_amount || 0);
 
   const saleItemColumns = [
@@ -677,7 +682,7 @@ const CreateReturn = () => {
         );
         const currentQty = selectedItem?.quantity || 0;
         const maxAvailable =
-          record.available_for_return || record.quantity || 0; // Use available_for_return from backend
+          record.available_for_return ?? record.quantity ?? 0;
 
         return (
           <Space size="small">
@@ -1021,7 +1026,8 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#ff4d4f", fontSize: "16px" }}
                             >
-                              -${Number(saleData.discount_amount || 0).toFixed(2)}
+                              -$
+                              {Number(saleData.discount_amount || 0).toFixed(2)}
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -1063,7 +1069,8 @@ const CreateReturn = () => {
                                 borderRadius: "4px",
                               }}
                             >
-                              ${Number(
+                              $
+                              {Number(
                                 saleData.return_summary?.available_amount ??
                                   saleData.total_amount,
                               ).toFixed(2)}
@@ -1080,9 +1087,13 @@ const CreateReturn = () => {
                             >
                               ${totalTendered.toFixed(2)}
                             </Text>
-                            {saleData.payments && saleData.payments.length > 0 ? (
+                            {saleData.payments &&
+                            saleData.payments.length > 0 ? (
                               <div>
-                                <Text type="secondary" style={{ fontSize: "12px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
                                   {saleData.payments
                                     .map(
                                       (p: any) =>
@@ -1345,7 +1356,10 @@ const CreateReturn = () => {
                             <Row gutter={[20, 8]} style={{ marginTop: 8 }}>
                               <Col span={8}>
                                 <Text>Payment Methods: </Text>
-                                <Text type="secondary" style={{ fontSize: "12px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
                                   {exchangeSaleQuery.data.payments &&
                                   exchangeSaleQuery.data.payments.length > 0
                                     ? exchangeSaleQuery.data.payments
@@ -1361,13 +1375,19 @@ const CreateReturn = () => {
                               </Col>
                               <Col span={8}>
                                 <Text>Change Given: </Text>
-                                <Text strong style={{ color: "#cf1322", fontSize: "16px" }}>
+                                <Text
+                                  strong
+                                  style={{ color: "#cf1322", fontSize: "16px" }}
+                                >
                                   -${exchangeChangeGiven.toFixed(2)}
                                 </Text>
                               </Col>
                               <Col span={8}>
                                 <Text>Net Paid (Used in Sale): </Text>
-                                <Text strong style={{ color: "#52c41a", fontSize: "16px" }}>
+                                <Text
+                                  strong
+                                  style={{ color: "#52c41a", fontSize: "16px" }}
+                                >
                                   ${exchangeNetPaid.toFixed(2)}
                                 </Text>
                               </Col>
@@ -1479,9 +1499,7 @@ const CreateReturn = () => {
                     <Col span={4}>
                       <Text>Shipping Refund:</Text>
                       <div>
-                        <Text strong>
-                          ${shippingRefundAmount.toFixed(2)}
-                        </Text>
+                        <Text strong>${shippingRefundAmount.toFixed(2)}</Text>
                       </div>
                     </Col>
                     <Col span={4}>
@@ -1615,17 +1633,18 @@ const CreateReturn = () => {
                     <div style={{ marginTop: 8 }}>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Item return value: ${selectedReturnTotals.net.toFixed(2)}
+                          Item return value: $
+                          {selectedReturnTotals.net.toFixed(2)}
                         </Text>
                       </div>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Shipping refund value: ${shippingRefundAmount.toFixed(2)}
+                          Shipping refund value: $
+                          {shippingRefundAmount.toFixed(2)}
                         </Text>
                       </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Selected return value: $
-                        {selectedReturnValue.toFixed(2)}
+                        Selected return value: ${selectedReturnValue.toFixed(2)}
                       </Text>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1725,9 +1744,8 @@ const CreateReturn = () => {
                       }
                       const totalPaymentAmount = getTotalPayments();
                       if (
-                        Math.abs(
-                          totalPaymentAmount - selectedReturnValue,
-                        ) <= 0.01
+                        Math.abs(totalPaymentAmount - selectedReturnValue) <=
+                        0.01
                       ) {
                         return (
                           <CheckCircleOutlined style={{ color: "#52c41a" }} />
@@ -1744,9 +1762,8 @@ const CreateReturn = () => {
                       }
                       const totalPaymentAmount = getTotalPayments();
                       if (
-                        Math.abs(
-                          totalPaymentAmount - selectedReturnValue,
-                        ) <= 0.01
+                        Math.abs(totalPaymentAmount - selectedReturnValue) <=
+                        0.01
                       ) {
                         return `Payment amount matches selected return value ($${selectedReturnValue.toFixed(
                           2,
@@ -1805,9 +1822,8 @@ const CreateReturn = () => {
                       if (selectedReturnValue > availableAmount + 0.01)
                         return true;
                       return (
-                        Math.abs(
-                          totalPaymentAmount - selectedReturnValue,
-                        ) > 0.01
+                        Math.abs(totalPaymentAmount - selectedReturnValue) >
+                        0.01
                       );
                     })()
                   }
