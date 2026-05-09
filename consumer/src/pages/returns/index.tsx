@@ -1,7 +1,4 @@
-import {
-  EyeOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
+import { EyeOutlined, FilePdfOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -13,7 +10,8 @@ import {
   Space,
   Statistic,
   Table,
-  Typography
+  Tooltip,
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -22,11 +20,10 @@ import { returnsApi } from "../../api/returns-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
-import type {
-  Return,
-  ReturnListFilters,
-} from "../../types/return.types";
+import type { Return, ReturnListFilters } from "../../types/return.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import saveAs from "file-saver";
+import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -34,6 +31,7 @@ const { RangePicker } = DatePicker;
 
 const ReturnsTable = () => {
   const { user } = useAuthStore();
+  const { messageApi } = useMessageStore();
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState<ReturnListFilters>({
@@ -48,8 +46,6 @@ const ReturnsTable = () => {
     placeholderData: (previousData) => previousData,
     staleTime: queryStaleTimeMap[queryKeys.returns] || 300000, // 5 minutes default
   });
-
-
 
   const hasActiveFilters = () => {
     return (
@@ -67,6 +63,23 @@ const ReturnsTable = () => {
     });
   };
 
+  const handleDownloadPdf = async (id: number, saleNumber: string) => {
+    try {
+      // Call the API to generate and download PDF (similar to admin billing approach)
+      const pdfBlob = await returnsApi.downloadReturnPdf(id);
+
+      // Get the filename - you could also get this from response headers if backend sets it
+      const filename = `${saleNumber}.pdf`;
+
+      // Use file-saver to download the PDF
+      saveAs(pdfBlob, filename);
+
+      messageApi?.success("PDF receipt downloaded successfully!");
+    } catch (error: any) {
+      console.error("PDF download error:", error);
+      messageApi?.error("Failed to download PDF receipt");
+    }
+  };
 
   const columns = [
     {
@@ -83,7 +96,8 @@ const ReturnsTable = () => {
       render: (record: Return) => (
         <div>
           <Link to={`/sales/view/${record.original_sale_id}`}>
-            {record.original_sale?.sale_number || `Sale #${record.original_sale_id}`}
+            {record.original_sale?.sale_number ||
+              `Sale #${record.original_sale_id}`}
           </Link>
           {record.original_sale?.customer_name && (
             <div>
@@ -142,15 +156,22 @@ const ReturnsTable = () => {
       key: "actions",
       render: (record: Return) => (
         <Space>
+          <Tooltip title="Download PDF Receipt">
+            <Button
+              type="text"
+              icon={<FilePdfOutlined />}
+              onClick={() =>
+                handleDownloadPdf(record.id!, record.return_number!)
+              }
+            />
+          </Tooltip>
           <Button
             type="primary"
             ghost
             size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/returns/view/${record.id}`)}
-          >
-            View
-          </Button>
+          />
         </Space>
       ),
     },
@@ -159,12 +180,9 @@ const ReturnsTable = () => {
   return (
     <div>
       {setPageTitle("Returns Management")}
-      <PageTitle 
-        title="Returns Management" 
-        breadcrumbs={[
-          { title: "Dashboard", href: "/" },
-          { title: "Returns" }
-        ]}
+      <PageTitle
+        title="Returns Management"
+        breadcrumbs={[{ title: "Dashboard", href: "/" }, { title: "Returns" }]}
       />
 
       {/* Summary Statistics */}
@@ -182,10 +200,12 @@ const ReturnsTable = () => {
           <Card size="small">
             <Statistic
               title="Total Refunded"
-              value={returnsQuery.data?.data?.reduce(
-                (sum, ret) => sum + Number(ret.total_refund || 0), 
-                0
-              ) || 0}
+              value={
+                returnsQuery.data?.data?.reduce(
+                  (sum, ret) => sum + Number(ret.total_refund || 0),
+                  0,
+                ) || 0
+              }
               precision={2}
               prefix="$"
               loading={returnsQuery.isLoading}
@@ -196,10 +216,12 @@ const ReturnsTable = () => {
           <Card size="small">
             <Statistic
               title="Total Exchanged"
-              value={returnsQuery.data?.data?.reduce(
-                (sum, ret) => sum + Number(ret.total_exchange || 0), 
-                0
-              ) || 0}
+              value={
+                returnsQuery.data?.data?.reduce(
+                  (sum, ret) => sum + Number(ret.total_exchange || 0),
+                  0,
+                ) || 0
+              }
               precision={2}
               prefix="$"
               loading={returnsQuery.isLoading}
@@ -210,9 +232,11 @@ const ReturnsTable = () => {
           <Card size="small">
             <Statistic
               title="This Month"
-              value={returnsQuery.data?.data?.filter(
-                ret => dayjs(ret.return_date).isAfter(dayjs().startOf('month'))
-              ).length || 0}
+              value={
+                returnsQuery.data?.data?.filter((ret) =>
+                  dayjs(ret.return_date).isAfter(dayjs().startOf("month")),
+                ).length || 0
+              }
               loading={returnsQuery.isLoading}
             />
           </Card>
@@ -267,7 +291,11 @@ const ReturnsTable = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={8} lg={6}>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/returns/new")}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/returns/new")}
+            >
               Create Return
             </Button>
           </Col>

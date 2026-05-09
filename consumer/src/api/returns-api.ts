@@ -7,6 +7,7 @@ import {
   ReturnListResponse,
   SaleForReturn
 } from '../types/return.types';
+import axiosInstance from './axiosInstance';
 
 export const returnsApi = {
   // Get all returns with filters
@@ -27,5 +28,16 @@ export const returnsApi = {
   // Get sale details for creating return (using existing sales API)
   getSaleForReturn: async (saleId: number): Promise<SaleForReturn> => {
     return await get(endpoints.getSale(saleId));
+  },
+
+    // Download PDF
+  downloadReturnPdf: async (id: number): Promise<Blob> => {
+    const response = await axiosInstance.get(
+      endpoints.downloadReturnPdf(id),
+      {
+        responseType: "blob",
+      },
+    );
+    return response.data;
   },
 };

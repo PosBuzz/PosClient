@@ -67,7 +67,7 @@ export interface ReturnExchange {
 }
 
 export interface Return {
-  id?: number;
+  id: number;
   return_number: string;
   original_sale_id: number;
   exchange_sale_id?: number;

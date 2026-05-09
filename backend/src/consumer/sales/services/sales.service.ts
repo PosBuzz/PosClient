@@ -23,8 +23,8 @@ import {
   EODSummary,
 } from '../dto/eod-report.dto';
 import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
-import { QuotationPdfService } from './quotation-pdf.service';
 import { PromotionsService } from '../../promotions/services/promotions.service';
+import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
 
 @Injectable()
 export class SalesService {
@@ -1618,25 +1618,6 @@ export class SalesService {
       );
       throw new HttpException(
         'Error finding quotation',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async generateQuotationPdf(
-    quotationId: number,
-    consumerId: number,
-  ): Promise<Buffer> {
-    try {
-      const quotation = await this.findOneQuotation(quotationId, consumerId);
-      return this.quotationPdfService.generateQuotationPdf(quotation);
-    } catch (error) {
-      this.logger.error(
-        `Error generating PDF for quotation ${quotationId} and consumer ${consumerId}`,
-        error.stack,
-      );
-      throw new HttpException(
-        'Error generating quotation PDF',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

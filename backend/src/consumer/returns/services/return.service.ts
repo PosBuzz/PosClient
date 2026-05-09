@@ -54,6 +54,8 @@ export class ReturnService {
           'Shipping refund amount must be a valid non-negative number',
         );
       }
+  
+      dto.items = dto.items.filter((item) => item.quantity > 0);
 
       // Validate return items against original sale items
       const saleItemIds = originalSale.items.map((item) => item.id);
