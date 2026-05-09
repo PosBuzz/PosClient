@@ -151,26 +151,12 @@ async function main() {
       company_name: 'Possbuzz',
       email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
-      currency_symbol: '$',
-      currency_position: 'before',
-      receipt_terms: `• No return or exchange after purchase
-• Check products before leaving the counter
-• Keep this receipt for warranty claims
-• Warranty void if seal is broken
-• For complaints, call our helpline`,
     },
     create: {
       company_name: 'Possbuzz',
       subdomain: 'consumer1',
       email: 'consumer@example.com',
       plan_id: enterprisePlan.id,
-      currency_symbol: '$',
-      currency_position: 'before',
-      receipt_terms: `• No return or exchange after purchase
-• Check products before leaving the counter
-• Keep this receipt for warranty claims
-• Warranty void if seal is broken
-• For complaints, call our helpline`,
     },
   });
 

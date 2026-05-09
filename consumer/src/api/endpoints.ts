@@ -195,8 +195,7 @@ export const endpoints = {
   receiptSettingPreview: "/receipt-settings/preview",
   receiptSettingAction: (id: number) => `/receipt-settings/${id}`,
   receiptSettingActivate: (id: number) => `/receipt-settings/${id}/activate`,
+  receiptSettingDeactivate: (id: number) => `/receipt-settings/${id}/deactivate`,
   receiptSettingCopyToBranch: (id: number, branchId: number) =>
     `/receipt-settings/${id}/copy-to-branch/${branchId}`,
-  receiptSettingResetBranch: (branchId: number, type: string) =>
-    `/receipt-settings/reset-branch/${branchId}/${type}`,
 };

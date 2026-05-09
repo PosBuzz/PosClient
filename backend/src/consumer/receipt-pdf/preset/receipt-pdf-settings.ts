@@ -8,6 +8,9 @@ export interface ReceiptPdfSettings {
     margins: { top: number; right: number; bottom: number; left: number };
   };
 
+  currencySymbol?: string;
+  currencyPosition?: 'before' | 'after';
+
   header: {
     show: boolean;
     text: string;
@@ -78,19 +81,17 @@ export interface ReceiptPdfSettings {
   };
 
   footer: {
-    showTerms: boolean;
     showBarcode: boolean;
+    showTerms: boolean;
+    termsText?: string;
     showThankYou: boolean;
     showPrintDate: boolean;
   };
 
-  // NOTE: branding block REMOVED - all branding data now comes from Consumer/Branch tables
-  // - currencySymbol → Consumer.currency_symbol
-  // - currencyPosition → Consumer.currency_position
-  // - vatRegistrationNumber → Branch.vat_registration_number
-  // - footerTerms → Consumer.receipt_terms
-  // - storeName → Consumer.company_name
-  // - logoPath → Consumer.logo
+  // NOTE: Branding data like storeName, logoPath, branchName, etc., 
+  // still come from Consumer/Branch database tables.
+  // However, currencySymbol, currencyPosition, and footer termsText 
+  // are now configured directly here in the settings JSON.
 
   fontSizes: {
     title: number;
@@ -106,6 +107,8 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
     size: 'A4',
     margins: { top: 50, right: 50, bottom: 50, left: 50 },
   },
+  currencySymbol: '$',
+  currencyPosition: 'before',
   header: {
     show: true,
     text: 'RECEIPT',
@@ -167,6 +170,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   notes: { show: false },
   footer: {
     showTerms: true,
+    termsText: 'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -243,6 +247,7 @@ export const DEFAULT_QUOTATION_SETTINGS: ReceiptPdfSettings = {
   notes: { show: true },
   footer: {
     showTerms: true,
+    termsText: 'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
     showBarcode: false,
     showThankYou: true,
     showPrintDate: true,
@@ -310,6 +315,7 @@ export const DEFAULT_RETURN_SETTINGS: ReceiptPdfSettings = {
   notes: { show: true },
   footer: {
     showTerms: true,
+    termsText: 'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -397,6 +403,7 @@ export const COMPACT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   notes: { show: false },
   footer: {
     showTerms: true,
+    termsText: 'Thank you for your purchase!',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,

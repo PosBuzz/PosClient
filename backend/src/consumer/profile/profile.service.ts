@@ -15,10 +15,7 @@ export class ProfileService {
         'secondary_email',
         'phone',
         'address',
-        'currency_symbol',
-        'currency_position',
         'company_name',
-        'receipt_terms',
         'logo',
       ];
 
