@@ -34,6 +34,7 @@ import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
+const { TextArea } = Input;
 
 const PAGE_SIZE_OPTIONS = [
   { label: "A4 (210 × 297 mm)", value: "A4" },
@@ -41,10 +42,6 @@ const PAGE_SIZE_OPTIONS = [
   { label: "Letter (8.5 × 11 in)", value: "LETTER" },
   { label: "Legal (8.5 × 14 in)", value: "LEGAL" },
 ];
-
-/* ================================================================== */
-/*  HELPER: Deep Merge                                                */
-/* ================================================================== */
 
 function deepMerge(target: any, source: any): any {
   const out = { ...target };
@@ -62,10 +59,6 @@ function deepMerge(target: any, source: any): any {
   }
   return out;
 }
-
-/* ================================================================== */
-/*  SECTION CHILDREN MAP (for Master Toggles)                         */
-/* ================================================================== */
 
 const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
   header: [["settings", "header", "showLogo"]],
@@ -113,13 +106,8 @@ const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
   ],
 };
 
-/* ================================================================== */
-/*  HELPER: Handle master toggle sync via onValuesChange              */
-/* ================================================================== */
-
 function handleMasterToggleSync(form: FormInstance, changedValues: any) {
   if (!changedValues?.settings) return;
-
   const settings = changedValues.settings;
 
   for (const [sectionKey, sectionValue] of Object.entries(settings)) {
@@ -139,10 +127,6 @@ function handleMasterToggleSync(form: FormInstance, changedValues: any) {
     }
   }
 }
-
-/* ================================================================== */
-/*  HELPER: Section Master Toggle                                     */
-/* ================================================================== */
 
 function SectionToggle({ label, name }: { label: string; name: string[] }) {
   return (
@@ -183,19 +167,12 @@ function ToggleItem({
       <Form.Item name={name} valuePropName="checked" noStyle>
         <Switch size="small" disabled={disabled} />
       </Form.Item>
-      <Text
-        type={disabled ? "secondary" : undefined}
-        style={{ fontSize: 13 }}
-      >
+      <Text type={disabled ? "secondary" : undefined} style={{ fontSize: 13 }}>
         {label}
       </Text>
     </div>
   );
 }
-
-/* ================================================================== */
-/*  MAIN COMPONENT                                                     */
-/* ================================================================== */
 
 export default function ReceiptSettingsFormPage() {
   const navigate = useNavigate();
@@ -210,7 +187,6 @@ export default function ReceiptSettingsFormPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewUrlRef = useRef<string>("");
 
-  // Watch values for disabling sub-toggles
   const storeInfoShow = Form.useWatch(["settings", "storeInfo", "show"], form);
   const headerShow = Form.useWatch(["settings", "header", "show"], form);
   const orderInfoShow = Form.useWatch(["settings", "orderInfo", "show"], form);
@@ -225,7 +201,6 @@ export default function ReceiptSettingsFormPage() {
     | ReceiptPresetType
     | undefined;
 
-  // Queries
   const { data: branches = [] } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
@@ -253,14 +228,12 @@ export default function ReceiptSettingsFormPage() {
     staleTime: Infinity,
   });
 
-  // Load defaults when type changes (create mode only)
   useEffect(() => {
     if (!isEdit && presetDefaultsForCreate && settingsType) {
       form.setFieldValue("settings", presetDefaultsForCreate);
     }
   }, [presetDefaultsForCreate, settingsType, isEdit, form]);
 
-  // Populate form for edit with deep merge
   useEffect(() => {
     if (existingSetting) {
       const mergedSettings = presetDefaultsForEdit
@@ -276,14 +249,12 @@ export default function ReceiptSettingsFormPage() {
     }
   }, [existingSetting, presetDefaultsForEdit, form]);
 
-  // Cleanup blob urls
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);
 
-  // Mutations
   const createMutation = useMutation({
     mutationFn: receiptSettingsApi.create,
     onSuccess: () => {
@@ -313,7 +284,6 @@ export default function ReceiptSettingsFormPage() {
     },
   });
 
-  // Preview
   const handlePreview = useCallback(async () => {
     try {
       const values = await form.validateFields();
@@ -352,7 +322,6 @@ export default function ReceiptSettingsFormPage() {
     setPreviewUrl("");
   };
 
-  // Load preset defaults manually
   const handleLoadDefaults = () => {
     if (!settingsType) {
       messageApi?.warning("Please select a type first");
@@ -364,7 +333,6 @@ export default function ReceiptSettingsFormPage() {
     }
   };
 
-  // Submit
   const handleSubmit = async (values: any) => {
     const payload = {
       name: values.name,
@@ -390,9 +358,7 @@ export default function ReceiptSettingsFormPage() {
 
   return (
     <>
-      {setPageTitle(
-        isEdit ? "Edit Receipt Setting" : "Create Receipt Setting",
-      )}
+      {setPageTitle(isEdit ? "Edit Receipt Setting" : "Create Receipt Setting")}
       <PageTitle
         title={isEdit ? "Edit Receipt Setting" : "Create Receipt Setting"}
         breadcrumbs={[
@@ -420,16 +386,12 @@ export default function ReceiptSettingsFormPage() {
         layout="vertical"
         onFinish={handleSubmit}
         requiredMark={false}
-        onValuesChange={(changedValues) => {
-          handleMasterToggleSync(form, changedValues);
-        }}
-        initialValues={{
-          type: "receipt",
-          branchId: null,
-          settings: {},
-        }}
+        onValuesChange={(changedValues) =>
+          handleMasterToggleSync(form, changedValues)
+        }
+        initialValues={{ type: "receipt", branchId: null, settings: {} }}
       >
-        {/* ─── Basic Info ─── */}
+        {/* Basic Info */}
         <Card title="Basic Information" style={{ marginBottom: 16 }}>
           <Row gutter={[16, 8]}>
             <Col xs={24} sm={8}>
@@ -483,7 +445,7 @@ export default function ReceiptSettingsFormPage() {
           )}
         </Card>
 
-        {/* ─── Settings Sections ─── */}
+        {/* Settings Sections */}
         <Collapse
           defaultActiveKey={[
             "page",
@@ -514,6 +476,34 @@ export default function ReceiptSettingsFormPage() {
                         {opt.label}
                       </Select.Option>
                     ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              {/* Currency Settings Added Here */}
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name={["settings", "currencySymbol"]}
+                  label="Currency Symbol"
+                >
+                  <Select>
+                    <Select.Option value="$">$</Select.Option>
+                    <Select.Option value="€">€</Select.Option>
+                    <Select.Option value="£">£</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name={["settings", "currencyPosition"]}
+                  label="Currency Position"
+                >
+                  <Select>
+                    <Select.Option value="before">
+                      Before Amount ($100)
+                    </Select.Option>
+                    <Select.Option value="after">
+                      After Amount (100$)
+                    </Select.Option>
                   </Select>
                 </Form.Item>
               </Col>
@@ -603,11 +593,7 @@ export default function ReceiptSettingsFormPage() {
                     name={["settings", "header", "logoMaxWidth"]}
                     label="Logo Max Width"
                   >
-                    <InputNumber
-                      min={20}
-                      max={500}
-                      style={{ width: "100%" }}
-                    />
+                    <InputNumber min={20} max={500} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
                 <Col xs={12} sm={6}>
@@ -615,11 +601,7 @@ export default function ReceiptSettingsFormPage() {
                     name={["settings", "header", "logoMaxHeight"]}
                     label="Logo Max Height"
                   >
-                    <InputNumber
-                      min={20}
-                      max={300}
-                      style={{ width: "100%" }}
-                    />
+                    <InputNumber min={20} max={300} style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
               </Row>
@@ -962,6 +944,20 @@ export default function ReceiptSettingsFormPage() {
                 />
               </Col>
             </Row>
+            {/* Footer Terms Text Added Here */}
+            <Row gutter={[16, 12]} style={{ marginTop: 16 }}>
+              <Col xs={24}>
+                <Form.Item
+                  name={["settings", "footer", "termsText"]}
+                  label="Terms & Conditions Text"
+                >
+                  <TextArea
+                    rows={3}
+                    placeholder="e.g., All sales are final. Items must be returned within 7 days..."
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
           </Collapse.Panel>
 
           {/* Font Sizes */}
@@ -1036,7 +1032,7 @@ export default function ReceiptSettingsFormPage() {
           </Collapse.Panel>
         </Collapse>
 
-        {/* ─── Action Buttons ─── */}
+        {/* Action Buttons */}
         <Card>
           <div
             style={{
@@ -1067,7 +1063,7 @@ export default function ReceiptSettingsFormPage() {
         </Card>
       </Form>
 
-      {/* ─── Preview Modal ─── */}
+      {/* Preview Modal */}
       <Modal
         title="Receipt Preview"
         open={previewVisible}

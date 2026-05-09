@@ -68,7 +68,15 @@ export class ReceiptPdfSettingController {
       mockData.headerText = mergedSettings.header.text;
     }
 
-    // 3. Overlay real branding data from consumer/branch
+    // 3. Apply settings JSON values to mockData (Currency & Footer Terms)
+    mockData.currencySymbol =
+      mergedSettings.currencySymbol || mockData.currencySymbol;
+    mockData.currencyPosition =
+      mergedSettings.currencyPosition || mockData.currencyPosition;
+    mockData.footerTerms =
+      mergedSettings.footer?.termsText || mockData.footerTerms;
+
+    // 4. Overlay real branding data from consumer/branch
     try {
       let branding: any = null;
 
@@ -87,11 +95,6 @@ export class ReceiptPdfSettingController {
         // Overwrite mock branding with real data
         mockData.storeName = branding.storeName || mockData.storeName;
         mockData.logoPath = branding.logoPath || mockData.logoPath;
-        mockData.currencySymbol =
-          branding.currencySymbol || mockData.currencySymbol;
-        mockData.currencyPosition =
-          branding.currencyPosition || mockData.currencyPosition;
-        mockData.footerTerms = branding.footerTerms || mockData.footerTerms;
 
         // Branch-specific fields (only present when branchId was provided)
         if (branding.branchName) mockData.branchName = branding.branchName;
@@ -109,7 +112,7 @@ export class ReceiptPdfSettingController {
       );
     }
 
-    // 4. Generate PDF with safe settings and enriched data
+    // 5. Generate PDF with safe settings and enriched data
     const pdfBuffer = await this.receiptPdfService.generatePdf(
       mockData,
       mergedSettings,
@@ -120,6 +123,7 @@ export class ReceiptPdfSettingController {
     res.setHeader('Content-Length', pdfBuffer.length);
     res.send(pdfBuffer);
   }
+
   // GET /receipt-settings?type=receipt&branchId=1
   @Get()
   async list(
@@ -183,6 +187,13 @@ export class ReceiptPdfSettingController {
     return this.service.setActive(id, consumerId);
   }
 
+  // PATCH /receipt-settings/:id/deactivate
+  @Patch(':id/deactivate')
+  async deactivate(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    const consumerId = req.user.consumer_id;
+    return this.service.deactivateSetting(id, consumerId);
+  }
+
   // PATCH /receipt-settings/:id
   @Patch(':id')
   async update(
@@ -203,17 +214,6 @@ export class ReceiptPdfSettingController {
   ) {
     const consumerId = req.user.consumer_id;
     return this.service.copyToBranch(id, branchId, consumerId, req.user.id);
-  }
-
-  // POST /receipt-settings/reset-branch/:branchId/:type
-  @Post('reset-branch/:branchId/:type')
-  async resetBranch(
-    @Request() req: any,
-    @Param('branchId', ParseIntPipe) branchId: number,
-    @Param('type') type: ReceiptPresetType,
-  ) {
-    const consumerId = req.user.consumer_id;
-    return this.service.resetBranchToDefault(branchId, consumerId, type);
   }
 
   // DELETE /receipt-settings/:id

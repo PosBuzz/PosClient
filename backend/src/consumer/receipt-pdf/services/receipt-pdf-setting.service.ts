@@ -1,6 +1,12 @@
 // receipt-pdf-setting.service.ts
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ReceiptPdfSettings,
   ReceiptPresetType,
@@ -30,11 +36,14 @@ export class ReceiptPdfSettingService {
       ];
 
       for (const preset of presets) {
+        // No longer reading from the consumer DB fields.
+        // Just use the hardcoded PRESET_DEFAULTS which contain the default currency/terms.
         const settings = PRESET_DEFAULTS[preset.type];
+
         await this.prisma.receiptPdfSetting.create({
           data: {
             consumer_id: consumerId,
-            branch_id: null, // Consumer-level default
+            branch_id: null,
             name: preset.name,
             type: preset.type,
             is_active: true,
@@ -52,7 +61,6 @@ export class ReceiptPdfSettingService {
         `Failed to initialize receipt settings for consumer ${consumerId}`,
         error.stack,
       );
-      // Don't throw - consumer creation shouldn't fail because of this
     }
   }
 
@@ -65,7 +73,6 @@ export class ReceiptPdfSettingService {
     type: ReceiptPresetType,
     branchId?: number,
   ): Promise<ReceiptPdfSettings> {
-    // 1. Try branch-specific override
     if (branchId) {
       const branchSetting = await this.prisma.receiptPdfSetting.findFirst({
         where: {
@@ -81,7 +88,6 @@ export class ReceiptPdfSettingService {
       }
     }
 
-    // 2. Fall back to consumer-level default
     const consumerSetting = await this.prisma.receiptPdfSetting.findFirst({
       where: {
         consumer_id: consumerId,
@@ -95,7 +101,6 @@ export class ReceiptPdfSettingService {
       return consumerSetting.settings as unknown as ReceiptPdfSettings;
     }
 
-    // 3. Ultimate fallback to hardcoded defaults
     return PRESET_DEFAULTS[type];
   }
 
@@ -109,9 +114,6 @@ export class ReceiptPdfSettingService {
   ): Promise<{
     storeName: string;
     logoPath: string;
-    currencySymbol: string;
-    currencyPosition: 'before' | 'after';
-    footerTerms: string;
     branchName: string;
     branchAddress: string;
     branchPhone: string;
@@ -124,9 +126,6 @@ export class ReceiptPdfSettingService {
         select: {
           company_name: true,
           logo: true,
-          currency_symbol: true,
-          currency_position: true,
-          receipt_terms: true,
         },
       }),
       this.prisma.branch.findFirst({
@@ -151,9 +150,6 @@ export class ReceiptPdfSettingService {
     return {
       storeName: consumer.company_name,
       logoPath: consumer.logo || '',
-      currencySymbol: consumer.currency_symbol,
-      currencyPosition: consumer.currency_position as 'before' | 'after',
-      footerTerms: consumer.receipt_terms || '',
       branchName: branch.name,
       branchAddress: branch.address || '',
       branchPhone: branch.phone || '',
@@ -175,7 +171,13 @@ export class ReceiptPdfSettingService {
     isActive?: boolean;
     createdById?: number;
   }) {
-    // If setting as active, deactivate others in the same scope
+    await this.ensureNameIsUnique(
+      data.consumerId,
+      data.branchId ?? null,
+      data.type,
+      data.name,
+    );
+
     if (data.isActive) {
       await this.prisma.receiptPdfSetting.updateMany({
         where: {
@@ -210,7 +212,6 @@ export class ReceiptPdfSettingService {
       throw new NotFoundException('Setting not found');
     }
 
-    // Deactivate all in the same scope and type
     await this.prisma.receiptPdfSetting.updateMany({
       where: {
         consumer_id: consumerId,
@@ -221,10 +222,30 @@ export class ReceiptPdfSettingService {
       data: { is_active: false },
     });
 
-    // Activate the target
     return this.prisma.receiptPdfSetting.update({
       where: { id: settingId },
       data: { is_active: true },
+    });
+  }
+
+  async deactivateSetting(settingId: number, consumerId: number) {
+    const setting = await this.prisma.receiptPdfSetting.findFirst({
+      where: { id: settingId, consumer_id: consumerId },
+    });
+
+    if (!setting) {
+      throw new NotFoundException('Setting not found');
+    }
+
+    if (setting.branch_id === null) {
+      throw new BadRequestException(
+        'Cannot deactivate the consumer default setting.',
+      );
+    }
+
+    return this.prisma.receiptPdfSetting.update({
+      where: { id: settingId },
+      data: { is_active: false },
     });
   }
 
@@ -277,11 +298,7 @@ export class ReceiptPdfSettingService {
         consumer_id: consumerId,
         type,
       },
-      orderBy: [
-        { branch_id: 'asc' }, // null (consumer) first, then branches
-        { is_active: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ branch_id: 'asc' }, { is_active: 'desc' }, { name: 'asc' }],
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -309,6 +326,15 @@ export class ReceiptPdfSettingService {
       throw new NotFoundException('Setting not found');
     }
 
+    if (data.name && data.name !== setting.name) {
+      await this.ensureNameIsUnique(
+        consumerId,
+        setting.branch_id,
+        setting.type as ReceiptPresetType,
+        data.name,
+      );
+    }
+
     const currentSettings = setting.settings as unknown as ReceiptPdfSettings;
     const newSettings = data.settings
       ? this.deepMerge(currentSettings, data.settings)
@@ -332,9 +358,9 @@ export class ReceiptPdfSettingService {
       throw new NotFoundException('Setting not found');
     }
 
-    if (setting.is_active) {
-      throw new Error(
-        'Cannot delete active setting. Set another as active first.',
+    if (setting.branch_id === null && setting.is_active) {
+      throw new BadRequestException(
+        'Cannot delete the active consumer default setting. This is the ultimate fallback for all branches.',
       );
     }
 
@@ -368,27 +394,32 @@ export class ReceiptPdfSettingService {
     });
   }
 
-  async resetBranchToDefault(
-    branchId: number,
+  /* ================================================================== */
+  /*  HELPERS                                                           */
+  /* ================================================================== */
+
+  private async ensureNameIsUnique(
     consumerId: number,
+    branchId: number | null,
     type: ReceiptPresetType,
-  ) {
-    // Delete all branch-specific settings for this type
-    await this.prisma.receiptPdfSetting.deleteMany({
+    name: string,
+  ): Promise<void> {
+    const existing = await this.prisma.receiptPdfSetting.findFirst({
       where: {
         consumer_id: consumerId,
         branch_id: branchId,
         type,
+        name,
       },
     });
 
-    // Branch will now inherit from consumer default
-    return { message: 'Branch reset to consumer default' };
+    if (existing) {
+      const scope = branchId ? 'branch' : 'consumer';
+      throw new ConflictException(
+        `A setting with the name "${name}" already exists for this ${scope} and type "${type}". Please choose a different name.`,
+      );
+    }
   }
-
-  /* ================================================================== */
-  /*  HELPERS                                                           */
-  /* ================================================================== */
 
   private deepMerge(target: any, source: any): any {
     const out = { ...target };
@@ -410,18 +441,12 @@ export class ReceiptPdfSettingService {
   async getConsumerOnlyBrandingData(consumerId: number): Promise<{
     storeName: string;
     logoPath: string;
-    currencySymbol: string;
-    currencyPosition: 'before' | 'after';
-    footerTerms: string;
   }> {
     const consumer = await this.prisma.consumer.findUnique({
       where: { id: consumerId },
       select: {
         company_name: true,
         logo: true,
-        currency_symbol: true,
-        currency_position: true,
-        receipt_terms: true,
       },
     });
 
@@ -432,9 +457,6 @@ export class ReceiptPdfSettingService {
     return {
       storeName: consumer.company_name,
       logoPath: consumer.logo || '',
-      currencySymbol: consumer.currency_symbol,
-      currencyPosition: consumer.currency_position as 'before' | 'after',
-      footerTerms: consumer.receipt_terms || '',
     };
   }
 }

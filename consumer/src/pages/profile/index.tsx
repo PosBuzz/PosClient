@@ -56,9 +56,6 @@ function ProfilePage() {
             secondary_email: userData?.secondary_email,
             phone: userData?.phone,
             address: userData?.address,
-            currency_symbol: userData?.currency_symbol,
-            currency_position: userData?.currency_position,
-            receipt_terms: userData?.receipt_terms,
             logo: [
               {
                 uid: "-1",
@@ -86,25 +83,6 @@ function ProfilePage() {
 
           <Form.Item label="Address" name="address">
             <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item label="Receipt Terms" name="receipt_terms">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item label="Currency Symbol" name="currency_symbol">
-            <Select>
-              <Select.Option value="$">$</Select.Option>
-              <Select.Option value="€">€</Select.Option>
-              <Select.Option value="£">£</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Currency Position" name="currency_position">
-            <Select>
-              <Select.Option value="before">Before Amount</Select.Option>
-              <Select.Option value="after">After Amount</Select.Option>
-            </Select>
           </Form.Item>
 
           <ImageInput name="logo" label="logo" />
