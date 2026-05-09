@@ -17,9 +17,6 @@ type User = {
   phone: string;
   address: string;
   role: string;
-  currency_symbol: string;
-  currency_position: string;
-  receipt_terms: string;
   permissions: string[];
   branches: Array<{
     id: number;

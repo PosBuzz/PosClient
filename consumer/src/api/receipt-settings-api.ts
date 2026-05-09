@@ -180,6 +180,11 @@ export const receiptSettingsApi = {
     return patch(endpoints.receiptSettingActivate(id), {});
   },
 
+  // Deactivate a setting
+  deactivate: async (id: number): Promise<ReceiptPdfSetting> => {
+    return patch(endpoints.receiptSettingDeactivate(id), {});
+  },
+
   // Delete a setting
   remove: async (id: number): Promise<void> => {
     return deleteApi(endpoints.receiptSettingAction(id));
@@ -191,14 +196,6 @@ export const receiptSettingsApi = {
     branchId: number,
   ): Promise<ReceiptPdfSetting> => {
     return post(endpoints.receiptSettingCopyToBranch(id, branchId), {});
-  },
-
-  // Reset branch to consumer default
-  resetBranch: async (
-    branchId: number,
-    type: ReceiptPresetType,
-  ): Promise<{ message: string }> => {
-    return post(endpoints.receiptSettingResetBranch(branchId, type), {});
   },
 
   // Generate preview PDF — returns a Blob

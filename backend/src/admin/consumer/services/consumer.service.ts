@@ -32,9 +32,6 @@ export class ConsumerService {
           data: {
             ...consumerData,
             email,
-            // Set defaults if not provided
-            currency_symbol: '$',
-            currency_position: 'before',
           },
         });
 

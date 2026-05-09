@@ -6,7 +6,6 @@ import {
   FileTextOutlined,
   PlusOutlined,
   ReloadOutlined,
-  UndoOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -107,6 +106,22 @@ export default function ReceiptSettingsPage() {
     },
   });
 
+  // NEW: Deactivate mutation for toggling off branch settings
+  const deactivateMutation = useMutation({
+    mutationFn: receiptSettingsApi.deactivate, // You will need to add this API method
+    onSuccess: () => {
+      messageApi?.success("Setting deactivated. Branch will use consumer default.");
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.receiptSettings],
+      });
+    },
+    onError: (error: any) => {
+      messageApi?.error(
+        error.response?.data?.message || "Failed to deactivate setting",
+      );
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: receiptSettingsApi.remove,
     onSuccess: () => {
@@ -141,27 +156,6 @@ export default function ReceiptSettingsPage() {
     },
   });
 
-  const resetBranchMutation = useMutation({
-    mutationFn: ({
-      branchId,
-      type,
-    }: {
-      branchId: number;
-      type: ReceiptPresetType;
-    }) => receiptSettingsApi.resetBranch(branchId, type),
-    onSuccess: () => {
-      messageApi?.success("Branch reset to consumer default");
-      queryClient.invalidateQueries({
-        queryKey: [queryKeys.receiptSettings],
-      });
-    },
-    onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to reset branch",
-      );
-    },
-  });
-
   // Preview handler
   const handlePreview = useCallback(
     async (setting: ReceiptPdfSetting) => {
@@ -171,7 +165,7 @@ export default function ReceiptSettingsPage() {
         const blob = await receiptSettingsApi.generatePreview({
           settings: setting.settings,
           type: setting.type,
-          branchId: setting.branch_id, // ← SEND REAL BRANCH ID
+          branchId: setting.branch_id,
         });
         if (previewUrlRef.current) {
           URL.revokeObjectURL(previewUrlRef.current);
@@ -188,6 +182,7 @@ export default function ReceiptSettingsPage() {
     },
     [messageApi],
   );
+
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
@@ -264,15 +259,20 @@ export default function ReceiptSettingsPage() {
         <Switch
           checked={record.is_active}
           loading={
-            activateMutation.isPending &&
-            activateMutation.variables === record.id
+            (activateMutation.isPending &&
+              activateMutation.variables === record.id) ||
+            (deactivateMutation.isPending &&
+              deactivateMutation.variables === record.id)
           }
-          onChange={() => {
-            if (!record.is_active) {
+          onChange={(checked) => {
+            if (checked) {
               activateMutation.mutate(record.id);
+            } else {
+              deactivateMutation.mutate(record.id);
             }
           }}
-          disabled={record.is_active}
+          // Only disable the switch if it's the active Consumer Default (cannot be toggled off)
+          disabled={record.branch_id === null && record.is_active}
         />
       ),
     },
@@ -325,26 +325,8 @@ export default function ReceiptSettingsPage() {
               onClick={() => handleCopyClick(record)}
             />
           </Tooltip>
-          {record.branch_id !== null && (
-            <Tooltip title="Reset to Default">
-              <Popconfirm
-                title="Reset Branch"
-                description="This will delete all branch-specific settings for this type. The branch will inherit the consumer default."
-                onConfirm={() =>
-                  resetBranchMutation.mutate({
-                    branchId: record.branch_id!,
-                    type: record.type,
-                  })
-                }
-                okText="Reset"
-                cancelText="Cancel"
-                okType="danger"
-              >
-                <Button type="text" size="small" icon={<UndoOutlined />} />
-              </Popconfirm>
-            </Tooltip>
-          )}
-          {!record.is_active && (
+          {/* Show delete for all, except the ACTIVE CONSUMER DEFAULT (which is protected by backend anyway) */}
+          {!(record.branch_id === null && record.is_active) && (
             <Tooltip title="Delete">
               <Popconfirm
                 title="Delete Setting"

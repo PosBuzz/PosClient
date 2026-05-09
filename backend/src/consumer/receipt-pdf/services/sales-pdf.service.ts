@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
-import { ReceiptPdfSettings, ReceiptPresetType } from '../preset/receipt-pdf-settings';
+import {
+  ReceiptPdfSettings,
+  ReceiptPresetType,
+} from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 
 @Injectable()
@@ -12,10 +15,6 @@ export class SalesPdfService {
     private readonly receiptPdfService: ReceiptPdfService,
     private readonly receiptPdfSettingService: ReceiptPdfSettingService,
   ) {}
-
-  /* ================================================================== */
-  /*  PUBLIC API                                                        */
-  /* ================================================================== */
 
   async generateSaleReceiptPdf(
     sale: any,
@@ -42,7 +41,7 @@ export class SalesPdfService {
 
     let data = this.mapSaleToPdfData(sale, mergedSettings, branding);
 
-    // Merge in testing data overrides (like footerTerms, currencySymbol)
+    // Merge in testing data overrides
     if (dataOverrides) {
       data = { ...data, ...dataOverrides };
     }
@@ -50,19 +49,11 @@ export class SalesPdfService {
     return this.receiptPdfService.generatePdf(data, mergedSettings);
   }
 
-  /* ================================================================== */
-  /*  PRESET TYPE MAPPING                                               */
-  /* ================================================================== */
-
   private toPresetType(saleType: string): ReceiptPresetType {
     if (saleType === 'quotation') return 'quotation';
     if (saleType === 'return') return 'return';
     return 'receipt';
   }
-
-  /* ================================================================== */
-  /*  TEXT NORMALIZATION                                                */
-  /* ================================================================== */
 
   private normalizeLineBreaks(text: string): string {
     if (!text) return '';
@@ -76,19 +67,12 @@ export class SalesPdfService {
       .trim();
   }
 
-  /* ================================================================== */
-  /*  DATA MAPPING                                                      */
-  /* ================================================================== */
-
   private mapSaleToPdfData(
     sale: any,
     settings: ReceiptPdfSettings,
     branding: {
       storeName: string;
       logoPath: string;
-      currencySymbol: string;
-      currencyPosition: 'before' | 'after';
-      footerTerms: string;
       branchName: string;
       branchAddress: string;
       branchPhone: string;
@@ -97,20 +81,22 @@ export class SalesPdfService {
     },
   ): ReceiptPdfData {
     return {
-      // Branding (from Consumer/Branch tables via service)
+      // Branding
       storeName: branding.storeName,
       branchName: branding.branchName,
       branchAddress: branding.branchAddress,
       branchPhone: branding.branchPhone,
       branchEmail: branding.branchEmail,
       logoPath: branding.logoPath,
-      currencySymbol: branding.currencySymbol,
-      currencyPosition: branding.currencyPosition,
       vatRegistrationNumber: branding.vatRegistrationNumber,
-      footerTerms: this.normalizeLineBreaks(branding.footerTerms),
+
+      // Pulled directly from Settings JSON
+      currencySymbol: settings.currencySymbol || '$',
+      currencyPosition: settings.currencyPosition || 'before',
+      footerTerms: this.normalizeLineBreaks(settings.footer?.termsText || ''),
 
       // Header text from settings
-      headerText: settings.header.text,
+      headerText: settings.header?.text || 'RECEIPT',
 
       // Order details
       saleNumber: sale.sale_number || '',
@@ -181,10 +167,6 @@ export class SalesPdfService {
     };
   }
 
-  /* ================================================================== */
-  /*  ENUM FORMATTERS                                                   */
-  /* ================================================================== */
-
   private humanPaymentMethod(m: string): string {
     const map: Record<string, string> = {
       CASH: 'Cash',
@@ -221,10 +203,6 @@ export class SalesPdfService {
       .toLowerCase()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
-
-  /* ================================================================== */
-  /*  DEEP MERGE                                                        */
-  /* ================================================================== */
 
   private deepMerge(target: any, source: any): any {
     const out = { ...target };
