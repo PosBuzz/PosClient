@@ -166,7 +166,6 @@ const SaleDetail: React.FC = () => {
     if (!sale) return;
 
     try {
-      message.info("Preparing receipt for printing...");
 
       const customerRewards = sale.customer?.rewards_points;
       const amountPaid = Number(sale?.received_amount) || 0;
@@ -272,8 +271,6 @@ const SaleDetail: React.FC = () => {
         paymentStatus: sale.payment_status,
         notes: sale.notes || undefined,
       };
-
-      message.info("Sending to printer...");
 
       // Send direct request to localhost:8080/print
       const response = await fetch("http://localhost:8080/print", {

@@ -39,6 +39,11 @@ import type {
 import { PaymentMethod } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { useMessageStore } from "../../stores/messageStore";
+import {
+  getPaymentProviderOptions,
+  getPaymentProviderPlaceholder,
+  paymentMethodRequiresProvider,
+} from "../../utils/payment-provider.utils"; // <-- ADDED
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -70,32 +75,17 @@ const CreateReturn = () => {
   const shippingRefundAmountWatch =
     Number(Form.useWatch("shipping_refund_amount", form)) || 0;
 
-  // No need for saleQuery since we store complete sale data from search
-  // const saleQuery = useQuery(...)
-
   // Get exchange sale data when exchange sale ID is selected
   const exchangeSaleQuery = useQuery({
     queryKey: [queryKeys.sale, "exchange", exchangeSaleId],
     queryFn: async () => {
-      console.log("Fetching exchange sale with ID:", exchangeSaleId);
       try {
         const result = await salesApi.getSale(exchangeSaleId!);
-        console.log("Exchange sale data received:", result);
         return result;
       } catch (error: any) {
-        console.error("Error fetching exchange sale:", error);
-
-        // Show user-friendly error message
         if (error.response?.status === 404) {
           messageApi?.error(
             "Exchange sale not found. Please check the sale number.",
-          );
-        } else if (
-          error.code === "ECONNREFUSED" ||
-          error.message?.includes("Network Error")
-        ) {
-          messageApi?.error(
-            "Cannot connect to server. Please check if the backend is running.",
           );
         } else {
           messageApi?.error(
@@ -108,7 +98,7 @@ const CreateReturn = () => {
       }
     },
     enabled: !!exchangeSaleId,
-    retry: false, // Don't retry automatically to avoid spam
+    retry: false,
   });
 
   const createReturnMutation = useMutation({
@@ -153,22 +143,15 @@ const CreateReturn = () => {
     setSearchLoading(true);
 
     try {
-      console.log("Searching for sale number:", searchSaleNumber);
-
-      // Call the new API to search by sale number
       const foundSaleData = await salesApi.getSaleBySaleNumber(
         searchSaleNumber.trim(),
       );
 
-      console.log("Sale found:", foundSaleData);
-
-      // Store the complete sale data (includes available_for_return)
       setSaleData(foundSaleData);
       setSelectedItems([]);
       setPayments([]);
       form.setFieldValue("shipping_refund_amount", 0);
 
-      // Invalidate related queries for consistency
       queryClient.invalidateQueries({
         queryKey: [queryKeys.sale, foundSaleData.id],
       });
@@ -177,17 +160,8 @@ const CreateReturn = () => {
         `Sale ${foundSaleData.sale_number} loaded successfully!`,
       );
     } catch (error: any) {
-      console.error("Error searching for sale:", error);
-
       if (error.response?.status === 404) {
         messageApi?.error("Sale not found. Please check the sale number.");
-      } else if (
-        error.code === "ECONNREFUSED" ||
-        error.message?.includes("Network Error")
-      ) {
-        messageApi?.error(
-          "Cannot connect to server. Please check if the backend is running.",
-        );
       } else {
         messageApi?.error(
           `Error searching for sale: ${
@@ -196,7 +170,6 @@ const CreateReturn = () => {
         );
       }
 
-      // Reset the sale data if search failed
       setSaleData(null);
       form.setFieldValue("shipping_refund_amount", 0);
     } finally {
@@ -220,19 +193,10 @@ const CreateReturn = () => {
     setExchangeSearchLoading(true);
 
     try {
-      console.log(
-        "Searching for exchange sale number:",
-        searchExchangeSaleNumber,
-      );
-
-      // Call the API to search by exchange sale number
       const exchangeSaleData = await salesApi.getSaleBySaleNumber(
         searchExchangeSaleNumber.trim(),
       );
 
-      console.log("Exchange sale found:", exchangeSaleData);
-
-      // Validate that the exchange sale is from the same branch as processing branch
       if (exchangeSaleData.branch_id !== selectedBranch) {
         messageApi?.error(
           `Exchange sale is from a different branch. Please select an exchange sale from the same processing branch.`,
@@ -240,25 +204,15 @@ const CreateReturn = () => {
         return;
       }
 
-      // Set the exchange sale ID to trigger the query
       setExchangeSaleId(exchangeSaleData.id!);
 
       messageApi?.success(
         `Exchange Sale ${exchangeSaleData.sale_number} loaded successfully!`,
       );
     } catch (error: any) {
-      console.error("Error searching for exchange sale:", error);
-
       if (error.response?.status === 404) {
         messageApi?.error(
           "Exchange sale not found. Please check the sale number.",
-        );
-      } else if (
-        error.code === "ECONNREFUSED" ||
-        error.message?.includes("Network Error")
-      ) {
-        messageApi?.error(
-          "Cannot connect to server. Please check if the backend is running.",
         );
       } else {
         messageApi?.error(
@@ -268,7 +222,6 @@ const CreateReturn = () => {
         );
       }
 
-      // Reset the exchange sale ID if search failed
       setExchangeSaleId(null);
     } finally {
       setExchangeSearchLoading(false);
@@ -283,7 +236,6 @@ const CreateReturn = () => {
     );
 
     if (existingItemIndex >= 0) {
-      // Update existing item
       const updatedItems = [...selectedItems];
       updatedItems[existingItemIndex] = {
         ...updatedItems[existingItemIndex],
@@ -291,7 +243,6 @@ const CreateReturn = () => {
       };
       setSelectedItems(updatedItems);
     } else {
-      // Add new item
       const newItem: CreateReturnItemForm = {
         sale_item_id: saleItem.id,
         variant_id: saleItem.variant_id || saleItem.variant?.id,
@@ -317,7 +268,7 @@ const CreateReturn = () => {
   const addPayment = (payment: CreateReturnPaymentForm) => {
     const processedPayment = {
       ...payment,
-      amount: Number(payment.amount), // Ensure amount is a number
+      amount: Number(payment.amount),
     };
     setPayments([...payments, processedPayment]);
     setPaymentModalVisible(false);
@@ -326,11 +277,6 @@ const CreateReturn = () => {
   const removePayment = (index: number) => {
     setPayments(payments.filter((_, i) => i !== index));
   };
-
-  // Simplified - just track exchange sale ID for reference (commented out for now)
-  // const handleExchangeSaleUpdate = (saleId: string) => {
-  //   setExchangeSaleId(saleId);
-  // };
 
   const handleSubmit = async (values: any) => {
     if (!saleData) {
@@ -352,7 +298,6 @@ const CreateReturn = () => {
       return;
     }
 
-    // Validation: Check if payments are required
     if (payments.length === 0) {
       messageApi?.error(
         "Please add at least one payment method to process the return",
@@ -360,7 +305,6 @@ const CreateReturn = () => {
       return;
     }
 
-    // Validation: Payment must match exact selected return value
     const totalPaymentAmount = getTotalPayments();
     const availableAmount =
       saleData.return_summary?.available_amount ?? saleData.total_amount;
@@ -434,7 +378,6 @@ const CreateReturn = () => {
       return;
     }
 
-    // Validation: Check if exchange sale ID is required when return type is exchange
     if (values.return_type === "exchange") {
       if (!values.exchange_sale_number) {
         messageApi?.error(
@@ -450,7 +393,6 @@ const CreateReturn = () => {
       }
     }
 
-    // Validation: Check if exchange sale ID is provided but return type is not exchange
     if (values.return_type !== "exchange" && exchangeSaleId) {
       messageApi?.warning(
         "Exchange Sale ID will be ignored since return type is not Exchange",
@@ -459,7 +401,7 @@ const CreateReturn = () => {
 
     const returnData: CreateReturnForm = {
       original_sale_id: saleData.id,
-      branch_id: selectedBranch, // Use selected branch for return processing
+      branch_id: selectedBranch,
       exchange_sale_id:
         values.return_type === "exchange" && exchangeSaleId
           ? exchangeSaleId
@@ -480,13 +422,10 @@ const CreateReturn = () => {
               amount: Number(payment.amount),
             }))
           : undefined,
-      // exchanges: No complex exchange items, just reference the exchange sale ID
     };
 
     await createReturnMutation.mutateAsync(returnData);
   };
-
-  // Removed getTotalRefund and getTotalExchange as they're not needed anymore
 
   const getTotalPayments = () => {
     return payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
@@ -505,7 +444,6 @@ const CreateReturn = () => {
     const promoDiscount =
       (Number(saleItem?.promotion_discount_amount) || 0) * ratio;
     const totalDiscount = avgDiscount + specialDiscount + promoDiscount;
-    // line_total is already final after all discounts
     const netReturn = lineTotal;
 
     return {
@@ -585,6 +523,12 @@ const CreateReturn = () => {
   );
   const exchangeVat = Number(exchangeSaleQuery.data?.tax_amount || 0);
 
+  // Calculate remaining amount to prefill payment
+  const remainingRefundAmount = Math.max(
+    0,
+    selectedReturnValue - getTotalPayments(),
+  );
+
   const saleItemColumns = [
     {
       title: "Product",
@@ -614,9 +558,7 @@ const CreateReturn = () => {
         const selectedItem = selectedItems.find(
           (item) => item.sale_item_id === record.id,
         );
-        console.log(record);
 
-        // Use available_for_return from backend which accounts for previous returns
         const totalAvailable = record.available_for_return || 0;
         const available = totalAvailable - (selectedItem?.quantity || 0);
         return (
@@ -752,7 +694,6 @@ const CreateReturn = () => {
             onChange={(value) => {
               const newQty = value || 1;
 
-              // Find and update the item - no refund amount calculation here
               const updatedItems = selectedItems.map((item) =>
                 item.sale_item_id === record.sale_item_id
                   ? { ...item, quantity: newQty }
@@ -1026,8 +967,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#ff4d4f", fontSize: "16px" }}
                             >
-                              -$
-                              {Number(saleData.discount_amount || 0).toFixed(2)}
+                              -$                               {Number(saleData.discount_amount || 0).toFixed(2)}
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -1069,8 +1009,7 @@ const CreateReturn = () => {
                                 borderRadius: "4px",
                               }}
                             >
-                              $
-                              {Number(
+                              $                               {Number(
                                 saleData.return_summary?.available_amount ??
                                   saleData.total_amount,
                               ).toFixed(2)}
@@ -1134,7 +1073,6 @@ const CreateReturn = () => {
                             style={{
                               marginTop: 12,
                               padding: 12,
-                              // backgroundColor: '#fff2e8',
                               borderRadius: 6,
                               border: "2px solid #ffec3d",
                             }}
@@ -1165,8 +1103,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  $
-                                  {Number(
+                                  $                                   {Number(
                                     saleData.return_summary.total_refunded || 0,
                                   ).toFixed(2)}
                                 </Text>
@@ -1177,8 +1114,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  $
-                                  {Number(
+                                  $                                   {Number(
                                     saleData.return_summary.total_exchanged ||
                                       0,
                                   ).toFixed(2)}
@@ -1190,8 +1126,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#722ed1", fontSize: "16px" }}
                                 >
-                                  $
-                                  {Number(
+                                  $                                   {Number(
                                     (saleData.return_summary.total_refunded ||
                                       0) +
                                       (saleData.return_summary
@@ -1210,7 +1145,7 @@ const CreateReturn = () => {
                                 Return History:{" "}
                                 {saleData.return_summary.returns
                                   .map(
-                                    (ret, index) =>
+                                    (ret) =>
                                       `${ret.return_number} (${new Date(
                                         ret.return_date,
                                       ).toLocaleDateString()}) - $${Number(
@@ -1273,9 +1208,7 @@ const CreateReturn = () => {
                             style={{
                               marginTop: 12,
                               padding: 12,
-                              // backgroundColor: '#f6f8ff',
                               borderRadius: 6,
-                              // border: '2px solid #1890ff'
                             }}
                           >
                             <Title
@@ -1292,8 +1225,7 @@ const CreateReturn = () => {
                               <Col span={4}>
                                 <Text>Subtotal: </Text>
                                 <Text strong>
-                                  $
-                                  {Number(
+                                  $                                   {Number(
                                     exchangeSaleQuery.data.subtotal || 0,
                                   ).toFixed(2)}
                                 </Text>
@@ -1304,8 +1236,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  -$
-                                  {Number(
+                                  -$                                   {Number(
                                     exchangeSaleQuery.data.discount_amount || 0,
                                   ).toFixed(2)}
                                 </Text>
@@ -1325,8 +1256,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  +$
-                                  {Number(
+                                  +$                                   {Number(
                                     exchangeSaleQuery.data.shipping_cost || 0,
                                   ).toFixed(2)}
                                 </Text>
@@ -1337,8 +1267,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#52c41a", fontSize: "18px" }}
                                 >
-                                  $
-                                  {Number(
+                                  $                                   {Number(
                                     exchangeSaleQuery.data.total_amount,
                                   ).toFixed(2)}
                                 </Text>
@@ -1581,8 +1510,6 @@ const CreateReturn = () => {
                   Add Payment
                 </Button>
 
-                {/* Exchange sale ID moved to top section */}
-
                 {payments.length > 0 && (
                   <div>
                     <Title level={5}>Payments</Title>
@@ -1598,17 +1525,15 @@ const CreateReturn = () => {
                       >
                         <div>
                           <Text strong>
-                            {payment.payment_method}: $
-                            {payment.amount.toFixed(2)}
+                            {payment.payment_method.replace("_", " ")}
+                            {payment?.payment_type
+                              ? ` (${payment?.payment_type})`
+                              : ""}
+                            : ${payment.amount.toFixed(2)}
                           </Text>
                           {payment.reference && (
                             <div style={{ fontSize: "12px", color: "#666" }}>
                               Ref: {payment.reference}
-                            </div>
-                          )}
-                          {payment.notes && (
-                            <div style={{ fontSize: "12px", color: "#666" }}>
-                              Notes: {payment.notes}
                             </div>
                           )}
                         </div>
@@ -1624,8 +1549,6 @@ const CreateReturn = () => {
                   </div>
                 )}
 
-                {/* Exchange section removed - simplified to just track exchange sale ID */}
-
                 <Divider />
                 <div>
                   <Text>Total Payments: ${getTotalPayments().toFixed(2)}</Text>
@@ -1633,14 +1556,12 @@ const CreateReturn = () => {
                     <div style={{ marginTop: 8 }}>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Item return value: $
-                          {selectedReturnTotals.net.toFixed(2)}
+                          Item return value: $                           {selectedReturnTotals.net.toFixed(2)}
                         </Text>
                       </div>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Shipping refund value: $
-                          {shippingRefundAmount.toFixed(2)}
+                          Shipping refund value: $                           {shippingRefundAmount.toFixed(2)}
                         </Text>
                       </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1648,8 +1569,7 @@ const CreateReturn = () => {
                       </Text>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Available sale balance: $
-                          {(
+                          Available sale balance: $                           {(
                             saleData.return_summary?.available_amount ??
                             saleData.total_amount
                           ).toFixed(2)}
@@ -1836,55 +1756,93 @@ const CreateReturn = () => {
         </Row>
       </Form>
 
-      {/* Payment Modal */}
+      {/* Payment Modal - Added destroyOnClose and defaultAmount prop */}
       <Modal
         title="Add Payment"
         open={paymentModalVisible}
         onCancel={() => setPaymentModalVisible(false)}
         footer={null}
+        destroyOnClose
       >
         <PaymentForm
           onSubmit={addPayment}
           onCancel={() => setPaymentModalVisible(false)}
+          defaultAmount={remainingRefundAmount}
         />
       </Modal>
-
-      {/* Exchange modal removed - simplified approach */}
     </div>
   );
 };
 
-// Payment Form Component
+// Payment Form Component - Updated with Bank Name and Default Amount
 const PaymentForm = ({
   onSubmit,
   onCancel,
+  defaultAmount,
 }: {
   onSubmit: (payment: CreateReturnPaymentForm) => void;
   onCancel: () => void;
+  defaultAmount: number;
 }) => {
   const [form] = Form.useForm();
+  const selectedMethod = Form.useWatch("payment_method", form);
+  const requiresProvider = paymentMethodRequiresProvider(selectedMethod);
 
   const handleSubmit = async (values: any) => {
     await form.validateFields();
+    
+    // Clean up: If method doesn't require provider, remove payment_type
+    if (!requiresProvider) {
+      values.payment_type = undefined;
+    }
+
     onSubmit(values);
     form.resetFields();
   };
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      initialValues={{
+        amount: defaultAmount > 0 ? Number(defaultAmount.toFixed(2)) : undefined,
+      }}
+    >
       <Form.Item
         name="payment_method"
         label="Payment Method"
         rules={[{ required: true, message: "Please select payment method" }]}
       >
-        <Select>
+        <Select
+          onChange={() => {
+            form.setFieldsValue({ payment_type: undefined });
+          }}
+        >
           {Object.values(PaymentMethod).map((method) => (
             <Option key={method} value={method}>
-              {method}
+              {method.replace("_", " ")}
             </Option>
           ))}
         </Select>
       </Form.Item>
+
+      {/* Conditionally show Bank / Provider selection */}
+      {requiresProvider && (
+        <Form.Item
+          name="payment_type"
+          label={getPaymentProviderPlaceholder(selectedMethod)}
+          rules={[{ required: true, message: "Please select a provider" }]}
+        >
+          <Select
+            showSearch
+            allowClear
+            placeholder={getPaymentProviderPlaceholder(selectedMethod)}
+            options={getPaymentProviderOptions(selectedMethod)}
+            optionFilterProp="label"
+          />
+        </Form.Item>
+      )}
 
       <Form.Item
         name="amount"
@@ -1913,10 +1871,6 @@ const PaymentForm = ({
         <Input placeholder="Transaction reference..." />
       </Form.Item>
 
-      <Form.Item name="notes" label="Notes">
-        <TextArea rows={2} placeholder="Payment notes..." />
-      </Form.Item>
-
       <Form.Item>
         <Space>
           <Button onClick={onCancel}>Cancel</Button>
@@ -1928,7 +1882,5 @@ const PaymentForm = ({
     </Form>
   );
 };
-
-// Simplified - no complex exchange form needed
 
 export default CreateReturn;

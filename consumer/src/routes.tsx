@@ -524,7 +524,7 @@ export const routes = [
         ),
       },
       {
-        path: "receipt-settings",
+        path: "printer-settings",
         element: (
           <RequirePermission permission={Permissions.receipt_settings}>
             <ReceiptSettings />
@@ -532,7 +532,7 @@ export const routes = [
         ),
       },
       {
-        path: "receipt-settings/add",
+        path: "printer-settings/add",
         element: (
           <RequirePermission permission={Permissions.receipt_settings}>
             <AddOrEditReceiptSettings />
@@ -540,7 +540,7 @@ export const routes = [
         ),
       },
       {
-        path: "receipt-settings/edit/:id",
+        path: "printer-settings/edit/:id",
         element: (
           <RequirePermission permission={Permissions.receipt_settings}>
             <AddOrEditReceiptSettings />

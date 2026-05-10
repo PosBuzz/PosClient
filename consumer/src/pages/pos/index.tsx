@@ -39,6 +39,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BsCash } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
@@ -170,7 +171,6 @@ const NewSale = () => {
     // Reset states
     setSelectedItems([]);
     setSelectedCustomer(null);
-    // Note: We do NOT reset selectedBranch or selectedServedByUser state variables
     setPriceType(PriceType.REGULAR);
     setAverageDiscountType(DiscountType.FLAT);
     setAppliedPromotions([]);
@@ -221,7 +221,6 @@ const NewSale = () => {
         },
       });
     } else {
-      // If cart is empty, just clear silently or notify
       resetSaleData();
     }
   }, [resetSaleData, selectedItems.length]);
@@ -951,10 +950,12 @@ const NewSale = () => {
       };
 
       // Calculate net line_total (after all discounts)
+
       const totalDiscount = averageShare + specialShare + promotionShare;
       const netLineTotal = round2(Number(item.line_total) - totalDiscount);
 
       // sold_unit_price = net per-unit price paid; unit_price keeps the original product price
+
       const soldUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
       return {
@@ -993,13 +994,177 @@ const NewSale = () => {
     };
   };
 
+  // ─── Auto Print Thermal Receipt Logic ─────────────────────────────────
+  const printReceipt = useCallback(
+    async (sale: any) => {
+      if (!sale) return;
+
+      try {
+        const customerRewards = sale.customer?.rewards_points;
+        const amountPaid = Number(sale?.received_amount) || 0;
+        const correctTotal = Number(sale.total) || 0; // Fallback safely
+
+        const getPaymentMethodLabel = (method: string) => {
+          const map: Record<string, string> = {
+            CASH: "Cash",
+            CARD: "Card",
+            CHEQUE: "Cheque",
+            BANK_TRANSFER: "Transfer",
+            MOBILE_MONEY: "Mobile",
+            MFS: "MFS",
+            CREDIT: "Credit",
+            EXCHANGE: "Exchange",
+          };
+          return map[method] || method;
+        };
+
+        const paymentMethods =
+          sale.payments && sale.payments.length > 0
+            ? sale.payments
+                .map((payment: any) =>
+                  getPaymentMethodLabel(payment.payment_method),
+                )
+                .join(", ")
+            : "Cash";
+
+        const receiptData = {
+          orderId: sale.sale_number,
+          receiptNumber: sale.sale_number,
+          saleNumber: sale.sale_number,
+          sale_number: sale.sale_number,
+          barcodeValue: sale.sale_number,
+          date: dayjs(sale.sale_date).format("YYYY-MM-DD"),
+          time: dayjs(sale.sale_date).format("HH:mm:ss"),
+          sale_date: sale.sale_date,
+          cashier: sale.user?.name || sale.user_name || "Staff",
+          servedBy: sale.served_by?.name || undefined,
+          customer: sale.customer_name || "Walk-in Customer",
+          customerName:
+            sale.customer_name || sale.customer?.name || "Walk-in Customer",
+          customerPhone: sale.customer_phone || sale.customer?.phone || "",
+          customerEmail: sale.customer_email || sale.customer?.email || "",
+          rewardPoints: customerRewards?.total_points,
+          pointsEarned: customerRewards?.lifetime_earned,
+          pointsRedeemed: customerRewards?.lifetime_redeemed,
+          branch: sale.branch
+            ? {
+                name: sale.branch.name,
+                address: sale.branch.address,
+                phone: sale.branch.phone,
+                email: sale.branch.email,
+              }
+            : undefined,
+          user: sale.user
+            ? {
+                name: sale.user.name,
+                id: String(sale.user.id),
+              }
+            : undefined,
+          items:
+            sale.items?.map((item: any) => {
+              const quantity = Number(item.quantity) || 0;
+              const unitPrice = Number(item.unit_price) || 0;
+              const grossLineTotal = unitPrice * quantity;
+              const averageDiscountAmount =
+                Number(item.average_discount_amount) || 0;
+              const specialDiscountAmount =
+                Number(item.special_discount_amount) || 0;
+              const promotionDiscountAmount =
+                Number(item.promotion_discount_amount) || 0;
+              const discountAmount =
+                averageDiscountAmount +
+                specialDiscountAmount +
+                promotionDiscountAmount;
+              const taxAmount = Number(item.tax_amount) || 0;
+              const taxMethod =
+                item.variant?.product?.tax_method || "exclusive";
+              const isInclusiveTax = String(taxMethod)
+                .toLowerCase()
+                .startsWith("inc");
+              const computedLineTotal = Math.max(
+                0,
+                grossLineTotal -
+                  discountAmount +
+                  (isInclusiveTax ? 0 : taxAmount),
+              );
+
+              return {
+                name: `${item.variant?.product?.name || "Product"} - ${item.variant?.name || ""}`.trim(),
+                quantity,
+                unitPrice,
+                price: unitPrice,
+                grossLineTotal,
+                averageDiscountAmount,
+                specialDiscountAmount,
+                promotionDiscountAmount,
+                discountAmount,
+                taxAmount,
+                taxPercentage: Number(item.variant?.product?.tax) || 0,
+                taxMethod,
+                lineTotal: computedLineTotal,
+                total: computedLineTotal,
+              };
+            }) || [],
+          subtotal: Number(sale?.subtotal) || 0,
+          discount: Number(sale?.discount_amount) || 0,
+          discountAmount: Number(sale?.discount_amount) || 0,
+          shipping: Number(sale?.shipping_cost) || 0,
+          shippingCost: Number(sale?.shipping_cost) || 0,
+          tax: Number(sale?.tax_amount) || 0,
+          taxAmount: Number(sale?.tax_amount) || 0,
+          total: correctTotal,
+          totalAmount: correctTotal,
+          amountPaid,
+          receivedAmount: amountPaid,
+          change: Math.max(0, amountPaid - correctTotal),
+          changeAmount: Math.max(0, amountPaid - correctTotal),
+          paymentMethod: paymentMethods,
+          payments:
+            sale.payments?.map((payment: any) => ({
+              payment_method: getPaymentMethodLabel(payment.payment_method),
+              amount: Number(payment.amount) || 0,
+            })) || [],
+          paymentStatus: sale.payment_status,
+          notes: sale.notes || undefined,
+        };
+
+        const response = await fetch("http://localhost:8080/print", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(receiptData),
+        });
+
+        if (response.ok) {
+          await response.json();
+          messageApi?.success("Receipt sent to printer!");
+        } else {
+          const errorText = await response.text();
+          messageApi?.error("Failed to print receipt: " + errorText);
+        }
+      } catch (error: any) {
+        console.error("Print error:", error);
+        if (error.message.includes("fetch")) {
+          messageApi?.error(
+            "Printing agent is not running. Please start the printing agent on your computer and try again.",
+          );
+        } else {
+          messageApi?.error(
+            "Failed to print receipt. Please check your connection.",
+          );
+        }
+      }
+    },
+    [messageApi],
+  );
+
   const onFinish = async (values: any) => {
     if (selectedItems.length === 0) {
       messageApi?.error("Please add at least one item to the sale");
       return;
     }
 
-    // Check if payments are configured
     if (salePayments.length === 0) {
       messageApi?.error("Please add at least one payment method");
       return;
@@ -1049,7 +1214,6 @@ const NewSale = () => {
         applied_promotion_id: item.applied_promotion_id,
         tax_amount: item.tax_amount,
         line_total: item.line_total,
-        // Remove batch_id to let backend use FIFO automatically
       })),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
@@ -1061,7 +1225,7 @@ const NewSale = () => {
 
     try {
       setLoading(true);
-      await salesApi.createSale(saleData);
+      const createdSale = await salesApi.createSale(saleData); // Capture returned sale object
 
       // Invalidate all relevant caches after sales operation
       queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
@@ -1087,6 +1251,14 @@ const NewSale = () => {
 
       messageApi?.success("Sale created successfully!");
 
+      // ─── AUTO PRINT LOGIC ───────────────────────────────
+      const shouldAutoPrint =
+        localStorage.getItem("autoPrintThermal") === "true";
+      if (shouldAutoPrint && createdSale) {
+        printReceipt(createdSale); // Fire & forget async print process
+      }
+      // ─── END AUTO PRINT LOGIC ───────────────────────────
+
       // Reset form selections except branch
       setSelectedItems([]);
       setSelectedCustomer(null);
@@ -1110,7 +1282,6 @@ const NewSale = () => {
         notes: "",
         // Keep branch_id as is
       });
-      //   navigate(`/sales/view/${createdSale.id}`);
     } catch (error: any) {
       console.error("Error creating sale:", error);
       messageApi?.error(
@@ -1224,7 +1395,6 @@ const NewSale = () => {
               updateItemQuantity(record.variant_id, value || 1)
             }
             onPressEnter={(e) => {
-              // Just blur the input, the global handler will handle form submission
               (e.target as HTMLInputElement).blur();
             }}
             style={{ width: 70, marginBottom: 4 }}
@@ -2077,7 +2247,6 @@ const NewSale = () => {
                         style={{ borderRadius: 6 }}
                         bodyStyle={{ padding: 4 }}
                       >
-                        {/* Keep payment method/provider behavior aligned with Add Sale page. */}
                         {(() => {
                           const requiresProvider =
                             paymentMethodRequiresProvider(
@@ -2101,7 +2270,6 @@ const NewSale = () => {
                                       payment_type: undefined,
                                     };
                                     setSalePayments(updatedPayments);
-                                    // Remove focus after selection
                                     setTimeout(() => {
                                       const activeElement =
                                         document.activeElement as HTMLElement;
@@ -2246,7 +2414,6 @@ const NewSale = () => {
                   minWidth: 0,
                 }}
               >
-                {/* Card for displaying the Total Amount */}
                 <Card
                   style={{
                     borderRadius: 10,
@@ -2364,7 +2531,6 @@ const NewSale = () => {
               gap: 8,
             }}
           >
-            {/* Card for displaying Sale Breakdown, Notes, Change, and Action Buttons */}
             <Card
               style={{
                 borderRadius: 10,
@@ -2395,7 +2561,6 @@ const NewSale = () => {
               </div>
             </Card>
 
-            {/* Card for listing Cart Items */}
             <Card
               style={{
                 borderRadius: 10,
@@ -2522,7 +2687,6 @@ const NewSale = () => {
               </div>
             </Card>
 
-            {/* Card for Action Buttons (Cancel/Complete) */}
             <Card
               style={{
                 borderRadius: 10,

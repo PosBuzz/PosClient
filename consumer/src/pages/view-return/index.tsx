@@ -21,7 +21,6 @@ import { useMessageStore } from "../../stores/messageStore";
 import type { ReturnExchange, ReturnItem } from "../../types/return.types";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 
-
 const { Text } = Typography;
 
 export default function ViewReturn() {
@@ -96,6 +95,18 @@ export default function ViewReturn() {
       ),
     },
     {
+      title: "Reference",
+      dataIndex: "reference",
+      key: "reference",
+      render: (reference: string) => reference || "N/A",
+    },
+    {
+      title: "Payment Type",
+      dataIndex: "payment_type",
+      key: "payment_type",
+      render: (paymentType: string) => paymentType || "N/A",
+    },
+    {
       title: "Amount",
       dataIndex: "amount",
       key: "amount",
@@ -168,7 +179,13 @@ export default function ViewReturn() {
         >
           Back to Returns
         </Button>
-        <Button type="primary" icon={<FilePdfOutlined />} onClick={()=> handleDownloadPdf(returnDetail.id, returnDetail.return_number)}>
+        <Button
+          type="primary"
+          icon={<FilePdfOutlined />}
+          onClick={() =>
+            handleDownloadPdf(returnDetail.id, returnDetail.return_number)
+          }
+        >
           Download Return Receipt
         </Button>
       </Space>

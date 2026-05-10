@@ -1,4 +1,4 @@
-import { PaymentMethod } from './sale.types';
+import { PaymentMethod, PaymentType } from "./sale.types";
 
 export interface ReturnItem {
   id?: number;
@@ -129,10 +129,10 @@ export interface CreateReturnItemForm {
 }
 
 export interface CreateReturnPaymentForm {
+  payment_type?: PaymentType;
   payment_method: PaymentMethod;
   amount: number;
   reference?: string;
-  notes?: string;
 }
 
 export interface CreateReturnExchangeForm {

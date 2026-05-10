@@ -5,6 +5,7 @@ import {
   EyeOutlined,
   FileTextOutlined,
   PlusOutlined,
+  PrinterOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +42,26 @@ import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 
+// ─── Local Storage Key ───────────────────────────────────────────────
+const AUTO_PRINT_THERMAL_KEY = "autoPrintThermal";
+
+function getAutoPrintThermal(): boolean {
+  try {
+    return localStorage.getItem(AUTO_PRINT_THERMAL_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function setAutoPrintThermal(value: boolean): void {
+  try {
+    localStorage.setItem(AUTO_PRINT_THERMAL_KEY, String(value));
+  } catch {
+    // Silently fail if localStorage is unavailable
+  }
+}
+
+// ─── Type Options ────────────────────────────────────────────────────
 const TYPE_OPTIONS: {
   label: string;
   value: ReceiptPresetType;
@@ -69,6 +90,24 @@ export default function ReceiptSettingsPage() {
     number | undefined
   >();
   const previewUrlRef = useRef<string>("");
+
+  // ─── Auto Print Thermal state (localStorage-backed) ──────────────
+  const [autoPrintThermal, setAutoPrintThermalState] = useState<boolean>(
+    getAutoPrintThermal,
+  );
+
+  const handleAutoPrintThermalChange = useCallback(
+    (checked: boolean) => {
+      setAutoPrintThermal(checked);
+      setAutoPrintThermalState(checked);
+      messageApi?.success(
+        checked
+          ? "Auto print thermal receipt enabled"
+          : "Auto print thermal receipt disabled",
+      );
+    },
+    [messageApi],
+  );
 
   // Queries
   const { data: settings = [], isLoading } = useQuery({
@@ -106,11 +145,12 @@ export default function ReceiptSettingsPage() {
     },
   });
 
-  // NEW: Deactivate mutation for toggling off branch settings
   const deactivateMutation = useMutation({
-    mutationFn: receiptSettingsApi.deactivate, // You will need to add this API method
+    mutationFn: receiptSettingsApi.deactivate,
     onSuccess: () => {
-      messageApi?.success("Setting deactivated. Branch will use consumer default.");
+      messageApi?.success(
+        "Setting deactivated. Branch will use consumer default.",
+      );
       queryClient.invalidateQueries({
         queryKey: [queryKeys.receiptSettings],
       });
@@ -271,7 +311,6 @@ export default function ReceiptSettingsPage() {
               deactivateMutation.mutate(record.id);
             }
           }}
-          // Only disable the switch if it's the active Consumer Default (cannot be toggled off)
           disabled={record.branch_id === null && record.is_active}
         />
       ),
@@ -314,7 +353,7 @@ export default function ReceiptSettingsPage() {
               type="primary"
               size="small"
               icon={<EditOutlined />}
-              onClick={() => navigate(`/receipt-settings/edit/${record.id}`)}
+              onClick={() => navigate(`/printer-settings/edit/${record.id}`)}
             />
           </Tooltip>
           <Tooltip title="Copy to Branch">
@@ -325,7 +364,6 @@ export default function ReceiptSettingsPage() {
               onClick={() => handleCopyClick(record)}
             />
           </Tooltip>
-          {/* Show delete for all, except the ACTIVE CONSUMER DEFAULT (which is protected by backend anyway) */}
           {!(record.branch_id === null && record.is_active) && (
             <Tooltip title="Delete">
               <Popconfirm
@@ -377,7 +415,7 @@ export default function ReceiptSettingsPage() {
         }
       />
 
-      {/* Type Tabs as Buttons */}
+      {/* Controls Card */}
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 12]} align="middle">
           <Col>
@@ -395,6 +433,18 @@ export default function ReceiptSettingsPage() {
             </Space>
           </Col>
           <Col flex="auto" />
+          <Col>
+            <Space>
+              <PrinterOutlined style={{ color: "#666", fontSize: 16 }} />
+              <Text style={{ color: "#666" }}>Auto Print Thermal</Text>
+              <Switch
+                checked={autoPrintThermal}
+                onChange={handleAutoPrintThermalChange}
+                checkedChildren="ON"
+                unCheckedChildren="OFF"
+              />
+            </Space>
+          </Col>
           <Col>
             <Select
               placeholder="All Branches"
