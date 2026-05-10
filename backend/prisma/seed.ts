@@ -69,7 +69,7 @@ async function main() {
 
   // Super Admin user
   await prisma.superAdmin.upsert({
-    where: { email: ' ' },
+    where: { email: 'superadmin@posbuzz.cloud' },
     update: {},
     create: {
       name: 'Root Admin',
