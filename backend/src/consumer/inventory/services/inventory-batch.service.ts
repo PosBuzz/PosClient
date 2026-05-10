@@ -15,7 +15,11 @@ export class InventoryBatchService {
   private readonly logger = new Logger(InventoryBatchService.name);
   constructor(private prisma: PrismaService) {}
 
-  async create(consumerId: number, userId: number, dto: CreateInventoryBatchDto) {
+  async create(
+    consumerId: number,
+    userId: number,
+    dto: CreateInventoryBatchDto,
+  ) {
     try {
       // Verify variant belongs to consumer
       const variant = await this.prisma.productVariant.findFirst({
@@ -52,8 +56,27 @@ export class InventoryBatchService {
       });
 
       if (existingBatch) {
+        // Helper function to normalize dates to YYYY-MM-DD for accurate comparison
+        const formatDate = (
+          date: Date | string | null | undefined,
+        ): string | null => {
+          if (!date) return null;
+          return new Date(date).toISOString().split('T')[0];
+        };
+
+        const existingExpiry = formatDate(existingBatch.expiry_date);
+        const newExpiry = formatDate(dto.expiry_date);
+
+        if (existingExpiry !== newExpiry) {
+          // Batch number matches, but expiry date does NOT match
+          throw new BadRequestException(
+            `Batch number "${dto.batch_number}" already exists for this variant, but the expiry date does not match the existing record.`,
+          );
+        }
+
+        // Batch number AND expiry date both match (Exact duplicate)
         throw new BadRequestException(
-          'Batch number already exists for this variant',
+          `Batch number "${dto.batch_number}" already exists for this variant with the same expiry date.`,
         );
       }
 

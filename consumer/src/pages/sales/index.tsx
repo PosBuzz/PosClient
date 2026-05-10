@@ -101,8 +101,6 @@ const SalesTable = () => {
 
   const handlePrint = async (saleId: number) => {
     try {
-      showMessage("Preparing receipt for printing...", "info");
-
       // Get sale data first
       const sale = await salesApi.getSale(saleId);
 
@@ -229,8 +227,6 @@ const SalesTable = () => {
         paymentStatus: sale.payment_status,
         notes: sale.notes || undefined,
       };
-
-      showMessage("Sending to printer...", "info");
 
       // Send direct request to localhost:8080/print
       const response = await fetch("http://localhost:8080/print", {

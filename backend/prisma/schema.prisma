@@ -1095,9 +1095,9 @@ model ReturnPayment {
   id             Int               @id @default(autoincrement())
   return_id      Int
   payment_method PaymentMethodEnum
+  payment_type   PaymentTypeEnum?
   amount         Decimal           @db.Decimal(10, 2)
   reference      String?
-  notes          String?
   created_at     DateTime          @default(now())
   updated_at     DateTime          @updatedAt
 
@@ -1208,23 +1208,23 @@ model RewardsPointTransaction {
 // ============================================
 
 model ReceiptPdfSetting {
-  id          Int      @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   consumer_id Int
-  branch_id   Int?     // null = consumer-level default, set = branch-specific override
-  name        String   // Preset display name (e.g., "Default Receipt", "Thermal Receipt")
-  
-  // Type of document this preset is for
-  type        String   // 'receipt' | 'quotation' | 'return'
-  
-  // Only one setting can be active per scope (consumer or branch) per type
-  is_active   Boolean  @default(false)
-  
-  // Layout settings ONLY - no branding data (that comes from Consumer/Branch tables)
-  settings    Json
+  branch_id   Int? // null = consumer-level default, set = branch-specific override
+  name        String // Preset display name (e.g., "Default Receipt", "Thermal Receipt")
 
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  created_by  Int?
+  // Type of document this preset is for
+  type String // 'receipt' | 'quotation' | 'return'
+
+  // Only one setting can be active per scope (consumer or branch) per type
+  is_active Boolean @default(false)
+
+  // Layout settings ONLY - no branding data (that comes from Consumer/Branch tables)
+  settings Json
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by Int?
 
   consumer  Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   branch    Branch?  @relation(fields: [branch_id], references: [id], onDelete: Cascade)

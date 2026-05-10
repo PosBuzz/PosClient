@@ -54,7 +54,7 @@ export class ReturnService {
           'Shipping refund amount must be a valid non-negative number',
         );
       }
-  
+
       dto.items = dto.items.filter((item) => item.quantity > 0);
 
       // Validate return items against original sale items
@@ -386,9 +386,9 @@ export class ReturnService {
               data: {
                 return_id: returnRecord.id,
                 payment_method: paymentDto.payment_method,
+                payment_type: paymentDto.payment_type || null,
                 amount: paymentDto.amount,
                 reference: paymentDto.reference,
-                notes: paymentDto.notes,
               },
             });
             returnPayments.push(returnPayment);
