@@ -15,12 +15,10 @@ namespace Printer
         private TextBox txtHeaderText;
         private TextBox txtVatRegNumber;
         private TextBox txtFooterTerms;
-        private TextBox txtPoweredByText;
         private TextBox txtPrinterName;
         private TextBox txtBarcodePrinterName;
         private TextBox txtCurrency;
         private NumericUpDown numPort;
-        private CheckBox chkShowPoweredByPosbuzz;
         private CheckBox chkShowCustomerRewardPoints;
         private CheckBox chkStartupWithWindows;
         private Button btnSelectLogo;
@@ -37,7 +35,7 @@ namespace Printer
         private void InitializeComponent()
         {
             this.Text = "Configuration - PosBuzz Print Server";
-            this.Size = new Size(650, 760);
+            this.Size = new Size(650, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -45,7 +43,7 @@ namespace Printer
             this.AutoScroll = true;
 
             int yPos = 20;
-            
+
             // Store Name
             var lblStoreName = new Label { Text = "Store Name:", Location = new Point(20, yPos), Size = new Size(120, 20) };
             txtStoreName = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
@@ -53,9 +51,9 @@ namespace Printer
 
             // Header Text (multiline)
             var lblHeaderText = new Label { Text = "Header Text:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtHeaderText = new TextBox 
-            { 
-                Location = new Point(150, yPos - 2), 
+            txtHeaderText = new TextBox
+            {
+                Location = new Point(150, yPos - 2),
                 Size = new Size(460, 60),
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
@@ -63,11 +61,11 @@ namespace Printer
             };
             yPos += 70;
 
-            // Contact Info (multiline) - New unified field
+            // Contact Info (multiline)
             var lblContactInfo = new Label { Text = "Contact Info:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtContactInfo = new TextBox 
-            { 
-                Location = new Point(150, yPos - 2), 
+            txtContactInfo = new TextBox
+            {
+                Location = new Point(150, yPos - 2),
                 Size = new Size(460, 60),
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
@@ -94,9 +92,9 @@ namespace Printer
             yPos += 30;
 
             var lblPort = new Label { Text = "Server Port:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            numPort = new NumericUpDown 
-            { 
-                Location = new Point(150, yPos - 2), 
+            numPort = new NumericUpDown
+            {
+                Location = new Point(150, yPos - 2),
                 Size = new Size(100, 20),
                 Minimum = 1000,
                 Maximum = 65535,
@@ -106,10 +104,10 @@ namespace Printer
 
             // Logo upload button
             var lblLogo = new Label { Text = "Logo Image:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            btnSelectLogo = new Button 
-            { 
-                Text = "Select Logo...", 
-                Location = new Point(150, yPos - 2), 
+            btnSelectLogo = new Button
+            {
+                Text = "Select Logo...",
+                Location = new Point(150, yPos - 2),
                 Size = new Size(120, 25)
             };
             btnSelectLogo.Click += BtnSelectLogo_Click;
@@ -117,27 +115,15 @@ namespace Printer
 
             // Footer Terms (multiline)
             var lblFooterTerms = new Label { Text = "Footer Terms:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtFooterTerms = new TextBox 
-            { 
-                Location = new Point(150, yPos - 2), 
+            txtFooterTerms = new TextBox
+            {
+                Location = new Point(150, yPos - 2),
                 Size = new Size(460, 60),
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
                 AcceptsReturn = true
             };
             yPos += 70;
-
-            chkShowPoweredByPosbuzz = new CheckBox
-            {
-                Text = "Show Powered by footer",
-                Location = new Point(20, yPos),
-                Size = new Size(220, 20)
-            };
-            yPos += 30;
-
-            var lblPoweredByText = new Label { Text = "Powered By Text:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtPoweredByText = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
-            yPos += 30;
 
             chkShowCustomerRewardPoints = new CheckBox
             {
@@ -147,33 +133,33 @@ namespace Printer
             };
             yPos += 35;
 
-            chkStartupWithWindows = new CheckBox 
-            { 
-                Text = "Start with Windows (system tray)", 
-                Location = new Point(20, yPos), 
-                Size = new Size(250, 20) 
+            chkStartupWithWindows = new CheckBox
+            {
+                Text = "Start with Windows (system tray)",
+                Location = new Point(20, yPos),
+                Size = new Size(250, 20)
             };
             yPos += 35;
 
-            btnOK = new Button 
-            { 
-                Text = "OK", 
-                Location = new Point(450, yPos), 
+            btnOK = new Button
+            {
+                Text = "OK",
+                Location = new Point(450, yPos),
                 Size = new Size(75, 30),
                 DialogResult = DialogResult.OK
             };
             btnOK.Click += BtnOK_Click;
 
-            btnCancel = new Button 
-            { 
-                Text = "Cancel", 
-                Location = new Point(535, yPos), 
+            btnCancel = new Button
+            {
+                Text = "Cancel",
+                Location = new Point(535, yPos),
                 Size = new Size(75, 30),
                 DialogResult = DialogResult.Cancel
             };
 
             // Add controls to form
-            this.Controls.AddRange(new Control[] 
+            this.Controls.AddRange(new Control[]
             {
                 lblStoreName, txtStoreName,
                 lblHeaderText, txtHeaderText,
@@ -185,8 +171,6 @@ namespace Printer
                 lblPort, numPort,
                 lblLogo, btnSelectLogo,
                 lblFooterTerms, txtFooterTerms,
-                chkShowPoweredByPosbuzz,
-                lblPoweredByText, txtPoweredByText,
                 chkShowCustomerRewardPoints,
                 chkStartupWithWindows,
                 btnOK, btnCancel
@@ -207,11 +191,9 @@ namespace Printer
             txtCurrency.Text = config.Currency ?? "$";
             numPort.Value = config.Port > 0 ? config.Port : 8080;
             txtFooterTerms.Text = config.FooterTerms ?? "";
-            chkShowPoweredByPosbuzz.Checked = config.ShowPoweredByPosbuzz;
-            txtPoweredByText.Text = config.PoweredByText ?? "Powered by Posbuzz";
             chkShowCustomerRewardPoints.Checked = config.ShowCustomerRewardPoints;
             chkStartupWithWindows.Checked = StartupManager.IsStartupEnabled();
-            
+
             // Update logo button if logo exists
             if (!string.IsNullOrEmpty(config.LogoPath) && System.IO.File.Exists(config.LogoPath))
             {
@@ -232,10 +214,8 @@ namespace Printer
                 Currency = txtCurrency.Text,
                 Port = (int)numPort.Value,
                 FooterTerms = txtFooterTerms.Text,
-                ShowPoweredByPosbuzz = chkShowPoweredByPosbuzz.Checked,
-                PoweredByText = txtPoweredByText.Text,
                 ShowCustomerRewardPoints = chkShowCustomerRewardPoints.Checked,
-                LogoPath = config.LogoPath // Preserve logo path from current config
+                LogoPath = config.LogoPath
             };
 
             // Handle Windows startup setting
@@ -248,7 +228,7 @@ namespace Printer
                 StartupManager.DisableStartup();
             }
         }
-        
+
         private void BtnSelectLogo_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -256,20 +236,17 @@ namespace Printer
                 openFileDialog.Title = "Select Logo Image";
                 openFileDialog.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All Files|*.*";
                 openFileDialog.FilterIndex = 1;
-                
+
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
-                        // Copy the image to the application directory
-                        string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
                         string destPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo" + System.IO.Path.GetExtension(openFileDialog.FileName));
-                        
+
                         System.IO.File.Copy(openFileDialog.FileName, destPath, true);
-                        
-                        // Update the config with new logo path
+
                         config.LogoPath = destPath;
-                        
+
                         MessageBox.Show("Logo image uploaded successfully!\nPath: " + destPath, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         btnSelectLogo.Text = "Logo Selected ✓";
                     }
