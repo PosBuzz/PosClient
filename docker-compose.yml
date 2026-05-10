@@ -68,6 +68,21 @@ services:
       timeout: 10s
       retries: 5
 
+  # Adminer - Database Management UI
+  adminer:
+    image: adminer:latest
+    container_name: posbuzz-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    networks:
+      - posbuzz-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Backend API (NestJS)
   backend:
     build:
@@ -100,7 +115,7 @@ services:
         condition: service_healthy
     networks:
       - posbuzz-network
-    command: sh -c "npx prisma db push && npx prisma db seed && npm run start:prod"
+    command: sh -c "npx prisma migrate reset --force && && npm run start:prod"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/api/v1"]
       interval: 10s
