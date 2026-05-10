@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
-import { PRESET_DEFAULTS } from 'src/consumer/receipt-pdf/preset/receipt-pdf-settings';
+import { PRESET_DEFAULTS } from '../src/consumer/receipt-pdf/preset/receipt-pdf-settings';
 
 const prisma = new PrismaClient();
 
