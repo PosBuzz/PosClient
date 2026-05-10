@@ -54,13 +54,13 @@ namespace Printer
             {
                 this.receiptData = data;
                 this.config = ConfigManager.GetConfig();
-                
+
                 // If no printer name specified, try to use default printer
                 if (string.IsNullOrEmpty(printerName))
                 {
                     printerName = config.PrinterName;
                 }
-                
+
                 // If still no printer name, use default system printer
                 if (string.IsNullOrEmpty(printerName))
                 {
@@ -71,22 +71,22 @@ namespace Printer
                 {
                     Console.WriteLine("Attempting to print to: " + printerName);
                 }
-                
+
                 this.Print(printerName, this.PrintReceipt);
-                
+
                 if (data.OpenCashDrawer)
                 {
                     Console.WriteLine("Opening cash drawer...");
                     // Cash drawer opening logic here
                 }
-                
+
                 Console.WriteLine("✓ Receipt printed successfully!");
                 return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error printing receipt: " + ex.Message);
-                
+
                 // Provide more specific error information
                 if (ex.Message.Contains("Settings to access printer"))
                 {
@@ -96,7 +96,7 @@ namespace Printer
                     Console.WriteLine("3. Try printing a test page from Windows");
                     Console.WriteLine("4. Check if printer is set as default or available");
                 }
-                
+
                 return false;
             }
         }
@@ -125,7 +125,7 @@ namespace Printer
                         float logoWidth = 50; // Fixed width in mm
                         float logoHeight = 25; // Fixed height in mm
                         float logoX = (this.width - logoWidth) / 2;
-                        
+
                         g.DrawImage(logoImage, logoX, y, logoWidth, logoHeight);
                         y += logoHeight + 3;
                     }
@@ -138,7 +138,7 @@ namespace Printer
 
             // Store information - Show "Shop Name — Branch Name" format
             string headerText = "";
-            
+
             // Build header with Shop Name and Branch Name
             if (receiptData.Branch != null && !string.IsNullOrEmpty(receiptData.Branch.Name))
             {
@@ -157,7 +157,7 @@ namespace Printer
                 // Fallback to just store name if no branch info
                 headerText = config.StoreName;
             }
-            
+
             if (!string.IsNullOrEmpty(headerText))
             {
                 y += this.DrawCenteredText(g, y, headerText, 12f, FontStyle.Bold);
@@ -166,7 +166,7 @@ namespace Printer
 
             // Contact information - Use ContactInfo if available, otherwise legacy fields
             string contactToDisplay = "";
-            
+
             if (!string.IsNullOrEmpty(config.ContactInfo))
             {
                 // Use new unified contact field - preserves line breaks
@@ -194,7 +194,7 @@ namespace Printer
                         contactToDisplay += config.Email;
                 }
             }
-            
+
             if (!string.IsNullOrEmpty(contactToDisplay))
             {
                 y += this.DrawWrappedText(g, y, contactToDisplay.Trim(), 8f);
@@ -436,18 +436,13 @@ namespace Printer
                 y += this.DrawReceiptBarcode(g, y, barcodeValue);
             }
 
-            // Footer
-            y += 6; // Reduced gap before thanks
+            // Footer — always show Powered by Posbuzz
+            y += 6;
             y += this.DrawCenteredText(g, y, "Thank you for your business!", 8f, FontStyle.Bold);
             y += 2;
             y += this.DrawCenteredText(g, y, DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"), 6f);
-
-            if (config.ShowPoweredByPosbuzz)
-            {
-                string poweredByText = !string.IsNullOrEmpty(config.PoweredByText) ? config.PoweredByText : "Powered by Posbuzz";
-                y += 2;
-                y += this.DrawCenteredText(g, y, poweredByText, 6f, FontStyle.Italic);
-            }
+            y += 2;
+            y += this.DrawCenteredText(g, y, "Powered by Posbuzz", 6f, FontStyle.Italic);
         }
 
         private string FormatCurrency(decimal amount)
@@ -584,7 +579,7 @@ namespace Printer
                 // Handle explicit line breaks in the text
                 string[] lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
                 float totalHeight = 0;
-                
+
                 foreach (string line in lines)
                 {
                     // Measure and wrap the line if needed (including empty lines)
@@ -596,7 +591,7 @@ namespace Printer
                         LineAlignment = StringAlignment.Near,
                         Trimming = StringTrimming.Word
                     };
-                    
+
                     if (string.IsNullOrEmpty(line))
                     {
                         // Empty line - use minimal spacing (just the font height)
@@ -612,7 +607,7 @@ namespace Printer
                         totalHeight += textSize.Height;
                     }
                 }
-                
+
                 return totalHeight;
             }
         }
@@ -624,7 +619,7 @@ namespace Printer
                 // Handle explicit line breaks in the text
                 string[] lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
                 float totalHeight = 0;
-                
+
                 foreach (string line in lines)
                 {
                     // Measure and wrap the line if needed (including empty lines)
@@ -635,7 +630,7 @@ namespace Printer
                         LineAlignment = StringAlignment.Near,
                         Trimming = StringTrimming.Word
                     };
-                    
+
                     if (string.IsNullOrEmpty(line))
                     {
                         // Empty line - use minimal spacing (just the font height)
@@ -651,7 +646,7 @@ namespace Printer
                         totalHeight += textSize.Height;
                     }
                 }
-                
+
                 return totalHeight;
             }
         }
@@ -680,12 +675,12 @@ namespace Printer
             try
             {
                 Console.WriteLine("Opening cash drawer for printer: " + printerName);
-                
+
                 // ESC/POS commands to open cash drawer
                 // Standard commands that work with most thermal printers
                 byte[] openDrawerCommand1 = { 0x1B, 0x70, 0x00, 0x19, 0xFA }; // ESC p 0 25 250
                 byte[] openDrawerCommand2 = { 0x1B, 0x70, 0x01, 0x19, 0xFA }; // ESC p 1 25 250 (alternative pin)
-                
+
                 // Try the working approach first
                 bool success = SendRawCommandViaPrintSpooler(printerName, openDrawerCommand1);
                 if (!success)
@@ -693,7 +688,7 @@ namespace Printer
                     Console.WriteLine("First cash drawer command failed, trying alternative...");
                     success = SendRawCommandViaPrintSpooler(printerName, openDrawerCommand2);
                 }
-                
+
                 if (success)
                 {
                     Console.WriteLine("✓ Cash drawer command sent successfully");
@@ -702,7 +697,7 @@ namespace Printer
                 {
                     Console.WriteLine("✗ All cash drawer commands failed");
                 }
-                
+
                 return success;
             }
             catch (Exception ex)
@@ -718,14 +713,14 @@ namespace Printer
             {
                 // This is a more direct approach using .NET's printing capabilities
                 // Create a print job that sends raw ESC/POS data
-                
+
                 using (var printDoc = new PrintDocument())
                 {
                     printDoc.PrinterSettings.PrinterName = printerName;
-                    
+
                     // Set to raw mode if possible
                     printDoc.PrinterSettings.DefaultPageSettings.PrinterSettings.PrinterName = printerName;
-                    
+
                     bool success = false;
                     printDoc.PrintPage += (sender, e) =>
                     {
@@ -733,10 +728,10 @@ namespace Printer
                         {
                             // Create a very small graphic to trigger the print
                             var font = new Font("Courier New", 6);
-                            
+
                             // Draw an invisible character that forces the printer to process
                             e.Graphics.DrawString(System.Text.Encoding.ASCII.GetString(data), font, Brushes.White, 0, 0);
-                            
+
                             Console.WriteLine("ESC/POS cash drawer command sent: " + BitConverter.ToString(data));
                             success = true;
                         }
@@ -745,7 +740,7 @@ namespace Printer
                             Console.WriteLine("Error sending cash drawer command: " + ex.Message);
                         }
                     };
-                    
+
                     printDoc.Print();
                     return success;
                 }
@@ -753,7 +748,7 @@ namespace Printer
             catch (Exception ex)
             {
                 Console.WriteLine("Error in SendRawCommandViaPrintSpooler: " + ex.Message);
-                
+
                 // If the main approach fails, return false
                 return false;
             }
