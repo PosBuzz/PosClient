@@ -247,8 +247,8 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.branches],
         },
         {
-          label: <span title="Receipt Settings">Receipt Settings</span>,
-          key: "/receipt-settings",
+          label: <span title="Printer Settings">Printer Settings</span>,
+          key: "/printer-settings",
           permissions: [Permissions.receipt_settings],
         },
         {

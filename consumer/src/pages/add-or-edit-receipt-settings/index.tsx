@@ -260,7 +260,7 @@ export default function ReceiptSettingsFormPage() {
     onSuccess: () => {
       messageApi?.success("Setting created successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.receiptSettings] });
-      navigate("/receipt-settings");
+      navigate("/printer-settings");
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -275,7 +275,7 @@ export default function ReceiptSettingsFormPage() {
     onSuccess: () => {
       messageApi?.success("Setting updated successfully");
       queryClient.invalidateQueries({ queryKey: [queryKeys.receiptSettings] });
-      navigate("/receipt-settings");
+      navigate("/printer-settings");
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -363,7 +363,7 @@ export default function ReceiptSettingsFormPage() {
         title={isEdit ? "Edit Receipt Setting" : "Create Receipt Setting"}
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Settings", href: "/receipt-settings" },
+          { title: "Settings", href: "/printer-settings" },
           { title: "Receipt PDF" },
           { title: isEdit ? "Edit" : "Create" },
         ]}
@@ -1047,7 +1047,7 @@ export default function ReceiptSettingsFormPage() {
               </Button>
             </Space>
             <Space>
-              <Button onClick={() => navigate("/receipt-settings")}>
+              <Button onClick={() => navigate("/printer-settings")}>
                 Cancel
               </Button>
               <Button

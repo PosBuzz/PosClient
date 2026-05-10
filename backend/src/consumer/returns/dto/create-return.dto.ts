@@ -1,6 +1,15 @@
-import { IsInt, IsString, IsOptional, IsArray, ValidateNested, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsInt,
+  IsString,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+  IsEnum,
+  ValidateIf,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { PaymentMethodEnum } from '@prisma/client';
+import { PaymentMethodEnum, PaymentTypeEnum } from '@prisma/client';
 
 export class CreateReturnItemDto {
   @IsInt()
@@ -33,9 +42,15 @@ export class CreateReturnPaymentDto {
   @IsString()
   reference?: string;
 
-  @IsOptional()
-  @IsString()
-  notes?: string;
+   @ValidateIf((payment) =>
+      [
+        PaymentMethodEnum.CARD,
+        PaymentMethodEnum.BANK_TRANSFER,
+        PaymentMethodEnum.MFS,
+      ].includes(payment.payment_method),
+    )
+    @IsEnum(PaymentTypeEnum)
+    payment_type?: PaymentTypeEnum;
 }
 
 export class CreateReturnExchangeDto {
@@ -84,7 +99,9 @@ export class CreateReturnDto {
   notes?: string;
 
   @IsOptional()
-  @Transform(({ value }) => (value === undefined || value === null ? 0 : parseFloat(value)))
+  @Transform(({ value }) =>
+    value === undefined || value === null ? 0 : parseFloat(value),
+  )
   @IsNumber()
   shipping_refund_amount?: number;
 

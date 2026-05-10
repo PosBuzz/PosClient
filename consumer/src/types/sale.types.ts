@@ -365,7 +365,6 @@ export interface SalePayment {
   payment_method: PaymentMethod;
   amount: number;
   reference?: string;
-  // notes?: string;
   payment_type?: PaymentType;
   created_at?: string;
   updated_at?: string;
