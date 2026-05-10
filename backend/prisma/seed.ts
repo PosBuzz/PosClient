@@ -5,7 +5,7 @@ import { PRESET_DEFAULTS } from 'src/consumer/receipt-pdf/preset/receipt-pdf-set
 const prisma = new PrismaClient();
 
 async function main() {
-  const hash = bcryptjs.hashSync('123456', 10);
+  const hash = bcryptjs.hashSync('PosBuzz!234', 10);
 
   // Super Admin permissions
   const adminPermissions = [
@@ -69,11 +69,11 @@ async function main() {
 
   // Super Admin user
   await prisma.superAdmin.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: 'superadmin@posbuzz.cloud' },
     update: {},
     create: {
       name: 'Root Admin',
-      email: 'admin@example.com',
+      email: 'superadmin@posbuzz.cloud',
       password: hash,
       role_id: adminRole.id,
     },
