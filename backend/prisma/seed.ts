@@ -1,8 +1,237 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
-import { PRESET_DEFAULTS } from '../src/consumer/receipt-pdf/preset/receipt-pdf-settings';
 
 const prisma = new PrismaClient();
+
+ const DEFAULT_RECEIPT_SETTINGS = {
+  page: {
+    size: 'A4',
+    margins: { top: 50, right: 50, bottom: 50, left: 50 },
+  },
+  currencySymbol: '$',
+  currencyPosition: 'before',
+  header: {
+    show: true,
+    text: 'RECEIPT',
+    showLogo: true,
+    logoMaxWidth: 120,
+    logoMaxHeight: 60,
+    layout: 'centered',
+  },
+  storeInfo: {
+    show: true,
+    showStoreName: true,
+    showBranchName: true,
+    showAddress: true,
+    showPhone: true,
+    showEmail: true,
+    showVatRegistration: false,
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: false,
+    showDate: true,
+    showCashier: true,
+    showServedBy: false,
+    showPriceType: false,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: false,
+    showRewardPoints: false,
+  },
+  items: {
+    show: true,
+    showSku: false,
+    showVariantName: true,
+    showUnitPrice: true,
+    showQuantity: true,
+    showDiscount: true,
+    discountDisplay: 'total',
+    showTax: false,
+    taxDisplay: 'total',
+    showLineTotal: true,
+  },
+  totals: {
+    show: true,
+    showSubtotal: true,
+    showDiscount: true,
+    showShipping: false,
+    showTax: false,
+  },
+  payment: {
+    show: true,
+    showBreakdown: false,
+    showReceivedAmount: true,
+    showChangeAmount: true,
+  },
+  notes: { show: false },
+  footer: {
+    showTerms: true,
+    termsText: 'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
+    showBarcode: true,
+    showThankYou: true,
+    showPrintDate: true,
+  },
+  fontSizes: {
+    title: 18,
+    subtitle: 13,
+    heading: 10,
+    body: 9,
+    small: 7.5,
+  },
+};
+
+ const DEFAULT_QUOTATION_SETTINGS = {
+  ...DEFAULT_RECEIPT_SETTINGS,
+  header: {
+    show: true,
+    text: 'QUOTATION',
+    showLogo: true,
+    logoMaxWidth: 150,
+    logoMaxHeight: 75,
+    layout: 'logo-left',
+  },
+  storeInfo: {
+    show: true,
+    showStoreName: true,
+    showBranchName: true,
+    showAddress: true,
+    showPhone: true,
+    showEmail: true,
+    showVatRegistration: true,
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: true,
+    showDate: true,
+    showCashier: true,
+    showServedBy: true,
+    showPriceType: true,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: true,
+    showRewardPoints: false,
+  },
+  items: {
+    show: true,
+    showSku: true,
+    showVariantName: true,
+    showUnitPrice: true,
+    showQuantity: true,
+    showDiscount: true,
+    discountDisplay: 'breakdown',
+    showTax: true,
+    taxDisplay: 'breakdown',
+    showLineTotal: true,
+  },
+  totals: {
+    show: true,
+    showSubtotal: true,
+    showDiscount: true,
+    showShipping: true,
+    showTax: true,
+  },
+  payment: {
+    show: false,
+    showBreakdown: false,
+    showReceivedAmount: false,
+    showChangeAmount: false,
+  },
+  notes: { show: true },
+  footer: {
+    showTerms: true,
+    termsText: 'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
+    showBarcode: false,
+    showThankYou: true,
+    showPrintDate: true,
+  },
+  fontSizes: {
+    title: 20,
+    subtitle: 14,
+    heading: 10,
+    body: 9.5,
+    small: 8,
+  },
+};
+
+ const DEFAULT_RETURN_SETTINGS = {
+  ...DEFAULT_RECEIPT_SETTINGS,
+  header: {
+    show: true,
+    text: 'RETURN RECEIPT',
+    showLogo: true,
+    logoMaxWidth: 120,
+    logoMaxHeight: 60,
+    layout: 'centered',
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: true,
+    showDate: true,
+    showCashier: true,
+    showServedBy: false,
+    showPriceType: false,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: false,
+    showRewardPoints: true,
+  },
+  items: {
+    show: true,
+    showSku: false,
+    showVariantName: true,
+    showUnitPrice: true,
+    showQuantity: true,
+    showDiscount: false,
+    discountDisplay: 'total',
+    showTax: true,
+    taxDisplay: 'total',
+    showLineTotal: true,
+  },
+  totals: {
+    show: true,
+    showSubtotal: true,
+    showDiscount: false,
+    showShipping: false,
+    showTax: true,
+  },
+  payment: {
+    show: true,
+    showBreakdown: true,
+    showReceivedAmount: true,
+    showChangeAmount: true,
+  },
+  notes: { show: true },
+  footer: {
+    showTerms: true,
+    termsText: 'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
+    showBarcode: true,
+    showThankYou: true,
+    showPrintDate: true,
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Preset type to default settings mapping                           */
+/* ------------------------------------------------------------------ */
+
+export const PRESET_DEFAULTS = {
+  receipt: DEFAULT_RECEIPT_SETTINGS,
+  quotation: DEFAULT_QUOTATION_SETTINGS,
+  return: DEFAULT_RETURN_SETTINGS,
+};
 
 async function main() {
   const hash = bcryptjs.hashSync('PosBuzz!234', 10);
