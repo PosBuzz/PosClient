@@ -408,7 +408,7 @@ export default function ReceiptSettingsPage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate("/receipt-settings/add")}
+            onClick={() => navigate("/printer-settings/add")}
           >
             Create Setting
           </Button>
