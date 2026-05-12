@@ -102,11 +102,10 @@ export class ConsumerService {
         });
 
         // Step 7: Initialize default receipt PDF settings
-        // Note: This runs outside the transaction because it's not critical
-        // If it fails, consumer creation still succeeds
         await this.receiptPdfSettingService.initializeConsumerDefaults(
           consumer.id,
           user.id,
+          tx,
         );
 
         return {

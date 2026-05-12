@@ -27,8 +27,10 @@ export class ReceiptPdfSettingService {
   async initializeConsumerDefaults(
     consumerId: number,
     adminUserId: number,
+    tx?: any,
   ): Promise<void> {
     try {
+      const client = tx || this.prisma;
       const presets: { name: string; type: ReceiptPresetType }[] = [
         { name: 'Default Receipt', type: 'receipt' },
         { name: 'Default Quotation', type: 'quotation' },
@@ -36,11 +38,9 @@ export class ReceiptPdfSettingService {
       ];
 
       for (const preset of presets) {
-        // No longer reading from the consumer DB fields.
-        // Just use the hardcoded PRESET_DEFAULTS which contain the default currency/terms.
         const settings = PRESET_DEFAULTS[preset.type];
 
-        await this.prisma.receiptPdfSetting.create({
+        await client.receiptPdfSetting.create({
           data: {
             consumer_id: consumerId,
             branch_id: null,
