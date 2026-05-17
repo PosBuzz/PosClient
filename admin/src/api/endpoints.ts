@@ -4,7 +4,13 @@ export const getUrlForModel = (model: string, id: any = null) => {
   }
   return `crud?model=${model}`;
 };
-export const baseUrlWithPrefix = `${import.meta.env.VITE_API_BASE_URL}/api/v1`;
+const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").replace(
+  /\/+$/,
+  "",
+);
+export const baseUrlWithPrefix = /\/api\/v1$/.test(apiBaseUrl)
+  ? apiBaseUrl
+  : `${apiBaseUrl}/api/v1`;
 export const API_CRUD_FIND_WHERE = "crud/find-where";
 
 export const endpoints = {
@@ -23,5 +29,5 @@ export const endpoints = {
   restore: "/admin/restore",
   downloadBillingInvoice: `${baseUrlWithPrefix}/admin/billing/invoice/pdf`,
   downloadBillingHistoryPDF: `${baseUrlWithPrefix}/admin/billing/history/pdf`,
-  downloadBillingHistoryExcel: '/admin/billing/history/excel',
+  downloadBillingHistoryExcel: "/admin/billing/history/excel",
 };

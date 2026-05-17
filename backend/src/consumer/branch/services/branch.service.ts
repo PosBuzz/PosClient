@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -15,10 +16,27 @@ export class BranchService {
   constructor(private readonly prismaService: PrismaService) {}
   async create(createBranchDto: CreateBranchDto, consumerId: number) {
     try {
+      const consumer = await this.prismaService.consumer.findUnique({
+        where: { id: consumerId },
+        select: { max_branch: true },
+      });
+
+      if (!consumer) {
+        throw new NotFoundException('Consumer not found');
+      }
+
       // Get count of existing branches
       const branchCount = await this.prismaService.branch.count({
         where: { consumer_id: consumerId },
-      }); // If this is the first branch, make it the main branch regardless of DTO
+      });
+
+      if (branchCount >= consumer.max_branch) {
+        throw new BadRequestException(
+          `Branch limit reached. This account can create up to ${consumer.max_branch} branch${consumer.max_branch === 1 ? '' : 'es'}.`,
+        );
+      }
+
+      // If this is the first branch, make it the main branch regardless of DTO
       // If it's not the first branch and they want it to be main, we need to handle it specially
       const wantsToBeMain = branchCount === 0 ? true : createBranchDto.is_main;
 
@@ -76,6 +94,13 @@ export class BranchService {
 
       return result;
     } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
       this.logger.error(
         `Error creating branch for consumer ${consumerId}`,
         error.stack,
@@ -181,11 +206,6 @@ export class BranchService {
     try {
       // First check if the branch exists and belongs to this consumer
       const currentBranch = await this.findOne(id, consumerId);
-
-      // Get total branch count
-      const branchCount = await this.prismaService.branch.count({
-        where: { consumer_id: consumerId },
-      });
 
       let result; // Determine the final is_main value
       const newIsMain =

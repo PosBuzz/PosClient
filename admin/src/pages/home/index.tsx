@@ -6,6 +6,7 @@ import { post } from "../../api/crud-api";
 import { API_CRUD_FIND_WHERE } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
 import { models } from "../../constants/Models";
+import { setPageTitle } from "../../utils/setPageTitle";
 
 function Index() {
   const KEY = `all-${models.Consumer}`;
@@ -32,7 +33,7 @@ function Index() {
   if (fetchData) {
     fetchData?.forEach((consumer: any) => {
       const hasActiveBill = consumer?.billing_logs?.some(
-        (log: any) => log?.billing_month === currentMonth
+        (log: any) => log?.billing_month === currentMonth,
       );
       if (hasActiveBill) {
         const planName = consumer?.plan?.name || "Unknown";
@@ -44,6 +45,7 @@ function Index() {
 
   return (
     <>
+      {setPageTitle("Dashboard")}
       <PageTitle title={"Dashboard"} breadcrumbs={[]} />
 
       <>

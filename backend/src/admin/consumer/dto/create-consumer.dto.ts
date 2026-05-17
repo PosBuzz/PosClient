@@ -1,4 +1,4 @@
-import { IsEmail, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateConsumerDto {
   @IsString()
@@ -12,6 +12,11 @@ export class CreateConsumerDto {
 
   @IsInt()
   plan_id: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  max_branch?: number;
 
   @IsEmail()
   email: string; // Added email validation

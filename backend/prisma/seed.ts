@@ -389,34 +389,6 @@ async function main() {
     },
   });
 
-  // Create Warehouse Branch
-  const warehouseBranch = await prisma.branch.upsert({
-    where: {
-      consumer_id_name: {
-        consumer_id: consumer1.id,
-        name: 'Warehouse',
-      },
-    },
-    update: {
-      address: 'Central Warehouse Location',
-      email: 'warehouse@example.com',
-      phone: '+1-555-0100',
-      vat_registration_number: 'BIN-1234567890',
-      is_main: false,
-      is_warehouse: true,
-    },
-    create: {
-      consumer_id: consumer1.id,
-      name: 'Warehouse',
-      address: 'Central Warehouse Location',
-      email: 'warehouse@example.com',
-      phone: '+1-555-0100',
-      vat_registration_number: 'BIN-1234567890',
-      is_main: false,
-      is_warehouse: true,
-    },
-  });
-
   // Create Main Branch
   const mainBranch = await prisma.branch.upsert({
     where: {
@@ -508,10 +480,6 @@ async function main() {
 
   await prisma.userBranch.createMany({
     data: [
-      {
-        user_id: adminUser.id,
-        branch_id: warehouseBranch.id,
-      },
       {
         user_id: adminUser.id,
         branch_id: mainBranch.id,
