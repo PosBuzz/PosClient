@@ -9,15 +9,25 @@ export class ConfigService {
     return this.configService.get<string>('NODE_ENV') || 'development';
   }
 
+  get isProduction(): boolean {
+    return this.nodeEnv === 'production';
+  }
+
   get port(): number {
     return this.configService.get<number>('PORT') || 8000;
   }
 
   get jwtSecret(): string {
-    return (
-      this.configService.get<string>('JWT_SECRET_KEY') ||
-      'at-least-32-characters-long-secret-key'
-    );
+    const secret = this.configService.get<string>('JWT_SECRET_KEY');
+    if (!secret) {
+      throw new Error('JWT_SECRET_KEY is not defined in environment variables');
+    }
+
+    return secret;
+  }
+
+  get csrfSecret(): string {
+    return this.configService.get<string>('CSRF_SECRET_KEY') || this.jwtSecret;
   }
 
   get jwtAlgorithm(): string {

@@ -7,7 +7,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { CookieOptions, Request, Response } from 'express';
 
 // Extend the Request interface to include csrfToken
 import { LoginDto } from '../dto/login.dto';
@@ -16,6 +16,12 @@ import { ClientAuthGuard } from '../guards/client.auth.guard';
 import { AuthService } from '../services/auth.service';
 import { Throttle } from '@nestjs/throttler';
 import { SubdomainUtilService } from 'src/common/services/subdomain-util.service';
+
+const AUTH_COOKIE_OPTIONS: CookieOptions = {
+  httpOnly: true,
+  sameSite: 'none',
+  secure: true,
+};
 
 @Controller('auth')
 export class AuthController {
@@ -26,15 +32,33 @@ export class AuthController {
 
   @Get('csrf-token')
   getCsrfToken(@Req() req: Request, @Res() res: Response): void {
-    // Set the CSRF token in an HTTP-only cookie
-    res.cookie('XSRF-TOKEN', req.csrfToken(), {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
-    // You can also send the CSRF token in the response body, if necessary
     res.json({ csrfToken: req.csrfToken() });
+  }
+
+  private setAuthCookie(
+    res: Response,
+    name: string,
+    value: string,
+    maxAge: number,
+  ) {
+    res.cookie(name, value, {
+      ...AUTH_COOKIE_OPTIONS,
+      maxAge,
+    });
+  }
+
+  private clearAuthCookie(res: Response, name: string) {
+    res.clearCookie(name, AUTH_COOKIE_OPTIONS);
+  }
+
+  private clearAdminCookies(res: Response) {
+    this.clearAuthCookie(res, 'admin_access_token');
+    this.clearAuthCookie(res, 'admin_refresh_token');
+  }
+
+  private clearClientCookies(res: Response) {
+    this.clearAuthCookie(res, 'client_access_token');
+    this.clearAuthCookie(res, 'client_refresh_token');
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -48,18 +72,13 @@ export class AuthController {
     const { access_token, refresh_token } =
       await this.authService.loginSuperAdmin(superAdmin);
 
-    res.cookie('admin_access_token', access_token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-      maxAge: 15 * 60 * 1000,
-    }); // 15 minutes
-    res.cookie('admin_refresh_token', refresh_token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    }); // 7 days
+    this.setAuthCookie(res, 'admin_access_token', access_token, 15 * 60 * 1000);
+    this.setAuthCookie(
+      res,
+      'admin_refresh_token',
+      refresh_token,
+      7 * 24 * 60 * 60 * 1000,
+    );
 
     return res.send({ message: 'Login successful' });
   }
@@ -85,7 +104,8 @@ export class AuthController {
 
     if (!subdomain) {
       return res.status(400).send({
-        message: 'No valid subdomain found. Please access via tenant subdomain.',
+        message:
+          'No valid subdomain found. Please access via tenant subdomain.',
       });
     }
 
@@ -110,18 +130,18 @@ export class AuthController {
       consumer_subdomain: user.consumer.subdomain,
     });
 
-    res.cookie('client_access_token', access_token, {
-      httpOnly: true,
-      maxAge: 15 * 60 * 1000,
-      sameSite: 'none',
-      secure: true,
-    }); // 15 minutes
-    res.cookie('client_refresh_token', refresh_token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: 'none',
-      secure: true,
-    }); // 7 days
+    this.setAuthCookie(
+      res,
+      'client_access_token',
+      access_token,
+      15 * 60 * 1000,
+    );
+    this.setAuthCookie(
+      res,
+      'client_refresh_token',
+      refresh_token,
+      7 * 24 * 60 * 60 * 1000,
+    );
 
     return res.send({
       access_token,
@@ -135,8 +155,7 @@ export class AuthController {
 
     if (!refreshToken) {
       // If refresh token is not found, clear cookies and log the user out
-      res.clearCookie('admin_access_token', { httpOnly: true });
-      res.clearCookie('admin_refresh_token', { httpOnly: true });
+      this.clearAdminCookies(res);
       return res
         .status(401)
         .send({ message: 'Refresh token not found. Logged out successfully.' });
@@ -146,31 +165,21 @@ export class AuthController {
       const { access_token, refresh_token: newRefreshToken } =
         await this.authService.adminRefreshToken(refreshToken);
 
-      res.cookie('admin_access_token', access_token, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 15 * 60 * 1000,
-      }); // 15 minutes
-      // Rotate: replace the old refresh token cookie with the newly issued one.
-      res.cookie('admin_refresh_token', newRefreshToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      }); // 7 days
+      this.setAuthCookie(
+        res,
+        'admin_access_token',
+        access_token,
+        15 * 60 * 1000,
+      );
+      this.setAuthCookie(
+        res,
+        'admin_refresh_token',
+        newRefreshToken,
+        7 * 24 * 60 * 60 * 1000,
+      );
       return res.send({ message: 'Token refreshed' });
     } catch (error) {
-      res.clearCookie('admin_access_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
-      res.clearCookie('admin_refresh_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
+      this.clearAdminCookies(res);
       return res
         .status(401)
         .send({ message: 'Invalid refresh token or expired session.' });
@@ -183,16 +192,7 @@ export class AuthController {
 
     if (!refreshToken) {
       // If refresh token is not found, clear cookies and log the user out
-      res.clearCookie('client_access_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
-      res.clearCookie('client_refresh_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
+      this.clearClientCookies(res);
       return res
         .status(401)
         .send({ message: 'Refresh token not found. Logged out successfully.' });
@@ -202,31 +202,21 @@ export class AuthController {
       const { access_token, refresh_token: newRefreshToken } =
         await this.authService.clientRefreshToken(refreshToken);
 
-      res.cookie('client_access_token', access_token, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 15 * 60 * 1000,
-      }); // 15 minutes
-      // Rotate: replace the old refresh token cookie with the newly issued one.
-      res.cookie('client_refresh_token', newRefreshToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      }); // 7 days
+      this.setAuthCookie(
+        res,
+        'client_access_token',
+        access_token,
+        15 * 60 * 1000,
+      );
+      this.setAuthCookie(
+        res,
+        'client_refresh_token',
+        newRefreshToken,
+        7 * 24 * 60 * 60 * 1000,
+      );
       return res.send({ message: 'Token refreshed' });
     } catch (error) {
-      res.clearCookie('client_access_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
-      res.clearCookie('client_refresh_token', {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
+      this.clearClientCookies(res);
       return res
         .status(401)
         .send({ message: 'Invalid refresh token or expired session.' });
@@ -241,17 +231,7 @@ export class AuthController {
       await this.authService.invalidateClientRefreshToken(refreshToken);
     }
 
-    // Clear the cookies
-    res.clearCookie('client_access_token', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-    res.clearCookie('client_refresh_token', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
+    this.clearClientCookies(res);
 
     return res.send({ message: 'Logout successful' });
   }
@@ -264,9 +244,7 @@ export class AuthController {
       await this.authService.invalidateAdminRefreshToken(refreshToken);
     }
 
-    // Clear the cookies
-    res.clearCookie('admin_access_token', { httpOnly: true });
-    res.clearCookie('admin_refresh_token', { httpOnly: true });
+    this.clearAdminCookies(res);
 
     return res.send({ message: 'Logout successful' });
   }
