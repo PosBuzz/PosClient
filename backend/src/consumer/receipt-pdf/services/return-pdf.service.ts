@@ -155,6 +155,7 @@ export class ReturnPdfService {
 
       receivedAmount: 0,
       changeAmount: 0,
+      dueAmount: 0,
 
       notes: normalizeLineBreaks(returnRecord.reason || returnRecord.notes || ''),
       isOnlineOrder: false,

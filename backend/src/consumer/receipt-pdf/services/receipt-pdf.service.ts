@@ -1082,6 +1082,17 @@ export class ReceiptPdfService {
       );
     }
 
+    if (s.payment.showDueAmount !== false && data.dueAmount > 0) {
+      y = this.drawKeyValueRight(
+        doc,
+        'Due:',
+        this.fmt(data.dueAmount, data),
+        y,
+        rightEdge,
+        fs,
+      );
+    }
+
     if (data.paymentStatus && data.paymentStatus !== 'paid') {
       doc
         .font('Helvetica-Bold')

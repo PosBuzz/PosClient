@@ -103,6 +103,7 @@ const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
     ["settings", "payment", "showBreakdown"],
     ["settings", "payment", "showReceivedAmount"],
     ["settings", "payment", "showChangeAmount"],
+    ["settings", "payment", "showDueAmount"],
   ],
 };
 
@@ -902,6 +903,13 @@ export default function ReceiptSettingsFormPage() {
                 <ToggleItem
                   label="Change"
                   name={["settings", "payment", "showChangeAmount"]}
+                  disabled={!paymentShow}
+                />
+              </Col>
+              <Col xs={12} sm={8}>
+                <ToggleItem
+                  label="Due Amount"
+                  name={["settings", "payment", "showDueAmount"]}
                   disabled={!paymentShow}
                 />
               </Col>

@@ -262,6 +262,8 @@ const SaleDetail: React.FC = () => {
         receivedAmount: amountPaid,
         change: Math.max(0, amountPaid - correctTotal),
         changeAmount: Math.max(0, amountPaid - correctTotal),
+        due: Math.max(0, correctTotal - amountPaid),
+        dueAmount: Math.max(0, correctTotal - amountPaid),
         paymentMethod: paymentMethods,
         payments:
           sale.payments?.map((payment: any) => ({
@@ -769,6 +771,24 @@ const SaleDetail: React.FC = () => {
               {(() => {
                 const correctTotal = getCorrectTotal(sale);
                 const received = Number(sale?.received_amount) || 0;
+                const due = Math.max(0, correctTotal - received);
+                if (due > 0) {
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Text>Due:</Text>
+                      <Text style={{ color: "#ff4d4f" }}>
+                        ${due.toFixed(2)}
+                      </Text>
+                    </div>
+                  );
+                }
+
                 const change = Math.max(0, received - correctTotal);
                 return change !== 0 ? (
                   <div

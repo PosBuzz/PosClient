@@ -109,6 +109,7 @@ export class QuotationPdfService {
       payments: [], // Quotations typically don't have payments yet
       receivedAmount: 0,
       changeAmount: 0,
+      dueAmount: Number(quotation.total_amount) || 0,
 
       notes: normalizeLineBreaks(quotation.notes || ''),
       isOnlineOrder: false,
