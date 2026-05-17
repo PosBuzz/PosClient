@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
+import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from 'src/config/config.service';
 import { JwtPayload } from './jwt-payload.interface';
@@ -15,6 +16,7 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>
         req.cookies['admin_access_token'],
       secretOrKey: configService.jwtSecret,
+      algorithms: [configService.jwtAlgorithm as Algorithm],
     });
   }
 

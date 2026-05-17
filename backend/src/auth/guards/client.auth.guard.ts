@@ -12,9 +12,7 @@ import { SubdomainUtilService } from 'src/common/services/subdomain-util.service
 export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
   private readonly logger = new Logger(ClientAuthGuard.name);
 
-  constructor(
-    private readonly subdomainUtil: SubdomainUtilService,
-  ) {
+  constructor(private readonly subdomainUtil: SubdomainUtilService) {
     super();
   }
 
@@ -47,11 +45,9 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
     // Check if user has consumer_subdomain in JWT
     if (!user.consumer_subdomain) {
       this.logger.warn(
-        `User ${user.id} missing consumer_subdomain for ${method} ${url} - JWT needs refresh`,
+        `User ${user.id} missing consumer_subdomain for ${method} ${url}`,
       );
-      // Allow for now - subdomain validation will happen after user logs out/in again
-      // TODO: Remove this fallback after all users have new JWTs
-      return true;
+      throw new UnauthorizedException('Access denied: tenant is missing');
     }
 
     // Validate subdomain matches the one in JWT
@@ -59,7 +55,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
       this.logger.warn(
         `Subdomain mismatch for ${method} ${url}: request='${subdomain}' jwt='${user.consumer_subdomain}' user='${user.id}' - clearing cookies`,
       );
-      
+
       // Clear cookies to force re-authentication
       response.clearCookie('client_access_token', {
         httpOnly: true,
@@ -71,7 +67,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
         sameSite: 'none',
         secure: true,
       });
-      
+
       throw new UnauthorizedException(
         'Access denied: subdomain does not match your tenant',
       );

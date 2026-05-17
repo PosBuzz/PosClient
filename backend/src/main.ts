@@ -1,12 +1,38 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
-import * as csurf from 'csurf';
+import helmet from 'helmet';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { Request, Response, NextFunction } from 'express';
 import { PrismaClientExceptionFilter } from 'prisma-client-exception/prisma-client-exception.filter';
 import { PrismaClientValidationExceptionFilter } from 'prisma-client-exception/prisma-client-validation-exception.filter';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
+
+const CSRF_COOKIE_NAME = 'csrf_signature';
+const CSRF_HEADER_NAME = 'x-csrf-token';
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function signCsrfToken(token: string, secret: string): string {
+  return createHmac('sha256', secret).update(token).digest('base64url');
+}
+
+function secureCompare(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+
+  return aBuffer.length === bBuffer.length && timingSafeEqual(aBuffer, bBuffer);
+}
+
+function createCsrfToken(secret: string): { token: string; signature: string } {
+  const token = randomBytes(32).toString('base64url');
+
+  return {
+    token,
+    signature: signCsrfToken(token, secret),
+  };
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -16,6 +42,28 @@ async function bootstrap() {
 
   // Get config service
   const configService = app.get(ConfigService);
+
+  app.disable('x-powered-by');
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          connectSrc: ["'self'", ...configService.corsOrigins],
+          fontSrc: ["'self'", 'https:', 'data:'],
+          frameAncestors: ["'none'"],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          upgradeInsecureRequests: configService.isProduction ? [] : null,
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // Dynamic CORS Configuration for multi-tenant subdomains
   const options = {
@@ -68,24 +116,45 @@ async function bootstrap() {
   // Use cookie-parser before CSRF middleware
   app.use(cookieParser());
 
-  // CSRF Protection Middleware Configuration with excluded paths
-  app.use((req, res, next) => {
+  // Signed double-submit CSRF protection.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    req.csrfToken = () => {
+      const { token, signature } = createCsrfToken(configService.csrfSecret);
+
+      res.cookie(CSRF_COOKIE_NAME, signature, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+
+      return token;
+    };
+
     // Exclude public endpoints from CSRF protection
     const publicPaths = ['/api/v1/public'];
     const isPublicPath = publicPaths.some((path) => req.path.startsWith(path));
-    
-    if (isPublicPath) {
+
+    if (isPublicPath || SAFE_METHODS.has(req.method)) {
       return next();
     }
 
-    // Apply CSRF protection for non-public paths
-    return csurf({
-      cookie: {
-        sameSite: 'none',
-        secure: true,
-        httpOnly: true, // Ensures cookie is not accessible via JavaScript
-      },
-    })(req, res, next);
+    const csrfToken = req.get(CSRF_HEADER_NAME);
+    const csrfSignature = req.cookies?.[CSRF_COOKIE_NAME];
+
+    if (!csrfToken || !csrfSignature) {
+      return res.status(403).json({ message: 'invalid csrf token' });
+    }
+
+    const expectedSignature = signCsrfToken(
+      csrfToken,
+      configService.csrfSecret,
+    );
+
+    if (!secureCompare(csrfSignature, expectedSignature)) {
+      return res.status(403).json({ message: 'invalid csrf token' });
+    }
+
+    return next();
   });
 
   // Global pipes for validation
@@ -105,7 +174,7 @@ async function bootstrap() {
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
   app.useGlobalFilters(new PrismaClientValidationExceptionFilter(httpAdapter));
- 
+
   // Start the server on the specified port
   const PORT = configService.port;
   await app.listen(PORT);

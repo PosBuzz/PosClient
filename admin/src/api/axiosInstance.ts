@@ -54,6 +54,41 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
+const isInvalidCsrfError = (err: any) => {
+  return (
+    err?.response?.status === 403 &&
+    err?.response?.data?.message === "invalid csrf token"
+  );
+};
+
+const refreshCsrfToken = async () => {
+  const response = await refreshInstance.get(endpoints.csrfToken);
+  const newCsrfToken = response.data?.csrfToken;
+  useAuthStore.getState().setCsrfToken(newCsrfToken || null);
+  return newCsrfToken;
+};
+
+const refreshAccessTokenWithCsrfRecovery = async () => {
+  try {
+    await refreshInstance.post(endpoints.refreshToken);
+  } catch (refreshErr: any) {
+    if (!isInvalidCsrfError(refreshErr)) {
+      throw refreshErr;
+    }
+
+    const newCsrfToken = await refreshCsrfToken();
+    if (!newCsrfToken) {
+      throw refreshErr;
+    }
+
+    await refreshInstance.post(endpoints.refreshToken, null, {
+      headers: {
+        "X-CSRF-TOKEN": newCsrfToken,
+      },
+    });
+  }
+};
+
 // Clears auth state and redirects to login when the refresh token is
 // invalid or has already been rotated (token rotation invalidates old tokens).
 const handleAuthFailure = () => {
@@ -69,6 +104,21 @@ axiosInstance.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
 
+    if (isInvalidCsrfError(err)) {
+      try {
+        const newCsrfToken = await refreshCsrfToken();
+        if (!newCsrfToken) {
+          return Promise.reject(err);
+        }
+
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers["X-CSRF-TOKEN"] = newCsrfToken;
+        return axiosInstance(originalRequest);
+      } catch (csrfError) {
+        return Promise.reject(csrfError);
+      }
+    }
+
     if (err.response?.status === 401 && !originalRequest._retry) {
       // Another refresh is already in-flight — queue this request.
       if (isRefreshing) {
@@ -78,7 +128,11 @@ axiosInstance.interceptors.response.use(
           .then(() => {
             // Mark as retried so a 401 on this retry doesn't trigger another refresh.
             originalRequest._retry = true;
-            // Cookie is already updated by the refresh call; just retry.
+            originalRequest.headers = originalRequest.headers || {};
+            const token = useAuthStore.getState().csrfToken;
+            if (token) {
+              originalRequest.headers["X-CSRF-TOKEN"] = token;
+            }
             return axiosInstance(originalRequest);
           })
           .catch((error) => {
@@ -92,7 +146,7 @@ axiosInstance.interceptors.response.use(
       try {
         // Token rotation: server invalidates the old refresh token and
         // issues a new one, so a replay of the old token will be rejected.
-        await refreshInstance.post(endpoints.refreshToken);
+        await refreshAccessTokenWithCsrfRecovery();
         processQueue(); // resume all queued requests
         return axiosInstance(originalRequest);
       } catch (refreshErr) {

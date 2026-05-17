@@ -1,8 +1,10 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as dayjs from 'dayjs';
+import { createHmac } from 'crypto';
 import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
@@ -14,23 +16,50 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
+  private get jwtAlgorithm(): Algorithm {
+    return this.configService.jwtAlgorithm as Algorithm;
+  }
+
+  private signToken(
+    payload: Record<string, unknown>,
+    expiresIn: string,
+  ): string {
+    return this.jwtService.sign(payload, {
+      expiresIn,
+      algorithm: this.jwtAlgorithm,
+    });
+  }
+
+  private verifyToken(refreshToken: string) {
+    return this.jwtService.verify(refreshToken, {
+      algorithms: [this.jwtAlgorithm],
+    });
+  }
+
+  private hashRefreshToken(refreshToken: string): string {
+    const digest = createHmac('sha256', this.configService.jwtSecret)
+      .update(refreshToken)
+      .digest('base64url');
+
+    return `sha256:${digest}`;
+  }
+
   async loginSuperAdmin(superAdmin: { email: string; id: number }) {
     try {
       const payload = { email: superAdmin.email, sub: superAdmin.id };
-      const refreshToken = this.jwtService.sign(payload, {
-        expiresIn: this.configService.jwtRefreshExpiration, // Refresh token validity
-      });
+      const refreshToken = this.signToken(
+        payload,
+        this.configService.jwtRefreshExpiration,
+      );
 
       // Save refresh token in the database
       await this.prisma.superAdmin.update({
         where: { id: superAdmin.id },
-        data: { refresh_token: refreshToken },
+        data: { refresh_token: this.hashRefreshToken(refreshToken) },
       });
 
       return {
-        access_token: this.jwtService.sign(payload, {
-          expiresIn: this.configService.jwtExpiration,
-        }),
+        access_token: this.signToken(payload, this.configService.jwtExpiration),
         refresh_token: refreshToken,
       };
     } catch (error) {
@@ -58,20 +87,19 @@ export class AuthService {
         consumer_id: user.consumer_id,
         consumer_subdomain: user.consumer_subdomain,
       };
-      const refreshToken = this.jwtService.sign(payload, {
-        expiresIn: this.configService.jwtRefreshExpiration, // Refresh token validity
-      });
+      const refreshToken = this.signToken(
+        payload,
+        this.configService.jwtRefreshExpiration,
+      );
 
       // Save refresh token in the database
       await this.prisma.user.update({
         where: { id: user.id },
-        data: { refresh_token: refreshToken },
+        data: { refresh_token: this.hashRefreshToken(refreshToken) },
       });
 
       return {
-        access_token: this.jwtService.sign(payload, {
-          expiresIn: this.configService.jwtExpiration,
-        }),
+        access_token: this.signToken(payload, this.configService.jwtExpiration),
         refresh_token: refreshToken,
       };
     } catch (error) {
@@ -170,11 +198,18 @@ export class AuthService {
 
   async clientRefreshToken(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.verifyToken(refreshToken);
+      const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
       // Validate refresh token in the database
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub, refresh_token: refreshToken },
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: payload.sub,
+          OR: [
+            { refresh_token: refreshTokenHash },
+            { refresh_token: refreshToken },
+          ],
+        },
         include: {
           consumer: {
             select: {
@@ -197,17 +232,19 @@ export class AuthService {
         consumer_id: payload.consumer_id,
         consumer_subdomain: user.consumer.subdomain,
       };
+      const currentRefreshToken = user.refresh_token;
 
       // Token rotation: issue a new refresh token and invalidate the old one.
-      const newRefreshToken = this.jwtService.sign(tokenPayload, {
-        expiresIn: this.configService.jwtRefreshExpiration,
-      });
+      const newRefreshToken = this.signToken(
+        tokenPayload,
+        this.configService.jwtRefreshExpiration,
+      );
 
       // Atomic compare-and-swap: only the request that still holds the current
       // refresh token can rotate it. Concurrent losers will get count=0.
       const rotateResult = await this.prisma.user.updateMany({
-        where: { id: user.id, refresh_token: refreshToken },
-        data: { refresh_token: newRefreshToken },
+        where: { id: user.id, refresh_token: currentRefreshToken },
+        data: { refresh_token: this.hashRefreshToken(newRefreshToken) },
       });
 
       if (rotateResult.count !== 1) {
@@ -217,9 +254,10 @@ export class AuthService {
         );
       }
 
-      const newAccessToken = this.jwtService.sign(tokenPayload, {
-        expiresIn: this.configService.jwtExpiration,
-      });
+      const newAccessToken = this.signToken(
+        tokenPayload,
+        this.configService.jwtExpiration,
+      );
 
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
@@ -238,11 +276,18 @@ export class AuthService {
 
   async adminRefreshToken(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.verifyToken(refreshToken);
+      const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
       // Validate refresh token in the database
-      const user = await this.prisma.superAdmin.findUnique({
-        where: { id: payload.sub, refresh_token: refreshToken },
+      const user = await this.prisma.superAdmin.findFirst({
+        where: {
+          id: payload.sub,
+          OR: [
+            { refresh_token: refreshTokenHash },
+            { refresh_token: refreshToken },
+          ],
+        },
       });
 
       if (!user) {
@@ -253,16 +298,18 @@ export class AuthService {
       }
 
       const tokenPayload = { email: payload.email, sub: payload.sub };
+      const currentRefreshToken = user.refresh_token;
 
       // Token rotation: issue a new refresh token and invalidate the old one.
-      const newRefreshToken = this.jwtService.sign(tokenPayload, {
-        expiresIn: this.configService.jwtRefreshExpiration,
-      });
+      const newRefreshToken = this.signToken(
+        tokenPayload,
+        this.configService.jwtRefreshExpiration,
+      );
 
       // Atomic compare-and-swap: only one concurrent refresh can succeed.
       const rotateResult = await this.prisma.superAdmin.updateMany({
-        where: { id: user.id, refresh_token: refreshToken },
-        data: { refresh_token: newRefreshToken },
+        where: { id: user.id, refresh_token: currentRefreshToken },
+        data: { refresh_token: this.hashRefreshToken(newRefreshToken) },
       });
 
       if (rotateResult.count !== 1) {
@@ -272,9 +319,10 @@ export class AuthService {
         );
       }
 
-      const newAccessToken = this.jwtService.sign(tokenPayload, {
-        expiresIn: this.configService.jwtExpiration,
-      });
+      const newAccessToken = this.signToken(
+        tokenPayload,
+        this.configService.jwtExpiration,
+      );
 
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
@@ -301,12 +349,18 @@ export class AuthService {
 
       // Invalidate the refresh token in the database
       await this.prisma.superAdmin.updateMany({
-        where: { id: payload.sub, refresh_token: refreshToken },
+        where: {
+          id: payload.sub,
+          OR: [
+            { refresh_token: this.hashRefreshToken(refreshToken) },
+            { refresh_token: refreshToken },
+          ],
+        },
         data: { refresh_token: null },
       });
     } catch (error) {
       this.logger.error(
-        `Error occurred while invalidating admin refresh token for refresh token ${refreshToken}`,
+        'Error occurred while invalidating admin refresh token',
         error.stack,
       );
       throw new HttpException(
@@ -326,12 +380,18 @@ export class AuthService {
 
       // Invalidate the refresh token in the database
       await this.prisma.user.updateMany({
-        where: { id: payload.sub, refresh_token: refreshToken },
+        where: {
+          id: payload.sub,
+          OR: [
+            { refresh_token: this.hashRefreshToken(refreshToken) },
+            { refresh_token: refreshToken },
+          ],
+        },
         data: { refresh_token: null },
       });
     } catch (error) {
       this.logger.error(
-        `Error occurred while invalidating client refresh token for refresh token ${refreshToken}`,
+        'Error occurred while invalidating client refresh token',
         error.stack,
       );
       throw new HttpException(
