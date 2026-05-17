@@ -274,6 +274,11 @@ export default function _TableGrid({
       key: "plan",
     },
     {
+      title: "Max Branches",
+      dataIndex: "max_branch",
+      key: "max_branch",
+    },
+    {
       title: "Status",
       render: (record: any) => {
         const isActive = record.billing_logs?.some((log: any) =>

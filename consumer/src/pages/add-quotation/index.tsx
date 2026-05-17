@@ -80,6 +80,7 @@ const NewQuotation = () => {
     servedByUsers,
     filteredVariants,
     selectedBranch,
+    setSelectedBranch,
     selectedCustomer,
     setSelectedCustomer,
     selectedServedByUser,
@@ -158,9 +159,16 @@ const NewQuotation = () => {
 
   // Populate form when copying from existing quotation
   useEffect(() => {
-    if (copyFromQuotationQuery.data && selectedBranch) {
-      isHydratingFromCopyRef.current = true;
+    if (copyFromQuotationQuery.data) {
       const quotation = copyFromQuotationQuery.data;
+
+      if (selectedBranch !== quotation.branch_id) {
+        form.setFieldsValue({ branch_id: quotation.branch_id });
+        setSelectedBranch(quotation.branch_id);
+        return;
+      }
+
+      isHydratingFromCopyRef.current = true;
 
       const copyAverageDiscountTotal = (quotation.items || []).reduce(
         (sum: number, item: any) =>

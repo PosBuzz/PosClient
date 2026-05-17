@@ -68,19 +68,7 @@ export class ConsumerService {
           skipDuplicates: true,
         });
 
-        // Step 5: Create default branches
-        const warehouseBranch = await tx.branch.create({
-          data: {
-            consumer_id: consumer.id,
-            name: 'Warehouse',
-            address: 'Central Warehouse',
-            email: consumer.email,
-            phone: consumer.phone,
-            is_main: false,
-            is_warehouse: true,
-          },
-        });
-
+        // Step 5: Create default main branch
         const mainBranch = await tx.branch.create({
           data: {
             consumer_id: consumer.id,
@@ -93,12 +81,9 @@ export class ConsumerService {
           },
         });
 
-        // Step 6: Assign both branches to the admin user
+        // Step 6: Assign the main branch to the admin user
         await tx.userBranch.createMany({
-          data: [
-            { user_id: user.id, branch_id: warehouseBranch.id },
-            { user_id: user.id, branch_id: mainBranch.id },
-          ],
+          data: [{ user_id: user.id, branch_id: mainBranch.id }],
         });
 
         // Step 7: Initialize default receipt PDF settings

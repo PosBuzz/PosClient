@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button, Drawer, Form, Input, Select } from "antd";
+import { Button, Drawer, Form, Input, InputNumber, Select } from "antd";
 import { useEffect } from "react";
 import { get, patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -61,6 +61,7 @@ export default function DrawerForm({
       address: formValues.address,
       subdomain: formValues.subdomain,
       plan_id: formValues.plan_id, // dropdown or input
+      max_branch: formValues.max_branch,
       email: formValues.email,
       password: formValues.password,
       secondary_email: formValues?.secondary_email
@@ -100,9 +101,11 @@ export default function DrawerForm({
         address: editedItem.address,
         subdomain: editedItem.subdomain,
         plan_id: editedItem.plan_id,
+        max_branch: editedItem.max_branch || 1,
       });
     } else {
       form.resetFields();
+      form.setFieldsValue({ max_branch: 1 });
     }
   }, [isEditing, editedItem, form]);
 
@@ -194,6 +197,14 @@ export default function DrawerForm({
               // }
               options={planOptions}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Max Branches"
+            name="max_branch"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
+            <InputNumber min={1} precision={0} style={{ width: "100%" }} />
           </Form.Item>
 
           <Form.Item
