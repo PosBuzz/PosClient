@@ -25,7 +25,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -47,9 +47,7 @@ import {
 } from "../../types/sale.types";
 import {
   Promotion,
-  PromotionValidationResponse,
 } from "../../types/promotion.types";
-import { evaluatePromotionLocally } from "../../utils/promotion-validation";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
   getVariantPriceForSale as getVariantPriceForSaleByType,
@@ -58,8 +56,10 @@ import {
   updateSaleItemSpecialDiscount,
   upsertVariantInSaleItems as upsertSaleItemVariant,
 } from "../../utils/sale-item.utils";
+import { calculateSaleTotals } from "../../utils/calculate-totals.utils";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import { useSaleManager } from "../../hooks/useSaleManager";
+import { usePromotionManager } from "../../hooks/usePromotionManager";
 import {
   getPaymentProviderOptions,
   getPaymentProviderPlaceholder,
@@ -107,16 +107,6 @@ const NewSale = () => {
     setAverageDiscountType,
     loading,
     setLoading,
-    promotionDrawerOpen,
-    setPromotionDrawerOpen,
-    appliedPromotions,
-    setAppliedPromotions,
-    dismissedAutoPromotionIds,
-    setDismissedAutoPromotionIds,
-    applyingPromotionId,
-    setApplyingPromotionId,
-    promotionEligibilityMap,
-    setPromotionEligibilityMap,
     salePayments,
     setSalePayments,
     userBranches,
@@ -127,6 +117,36 @@ const NewSale = () => {
 
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const isHydratingFromQuotationRef = useRef(false);
+
+  const upsertFn = (items: SaleItem[], variant: ProductVariantForSale, qty: number) =>
+    upsertSaleItemVariant({ sourceItems: items, variant, quantityToAdd: qty, priceType });
+
+  const getVariantPriceFn = (variant: ProductVariantForSale) =>
+    getVariantPriceForSaleByType(variant, priceType);
+
+  const {
+    appliedPromotions,
+    setAppliedPromotions,
+    applyingPromotionId,
+    promotionEligibilityMap,
+    promotionDrawerOpen,
+    setPromotionDrawerOpen,
+    evaluatePromotionForItems,
+    removeAppliedPromotion,
+    clearAppliedPromotions,
+    applyPromotion: applyPromotionToCurrentSale,
+  } = usePromotionManager({
+    selectedItems,
+    selectedBranch,
+    selectedCustomer,
+    filteredVariants,
+    activePromotionsQuery,
+    setSelectedItems,
+    upsertFn,
+    getVariantPriceFn,
+    messageApi: messageApi || null,
+    shouldSkipAutoApply: () => isHydratingFromQuotationRef.current,
+  });
 
   // Load quotation data if converting from quotation
   const quotationQuery = useQuery({
@@ -159,6 +179,17 @@ const NewSale = () => {
         if (customer) {
           setSelectedCustomer(customer);
         }
+      }
+
+      if (quotation.served_by_id) {
+        const servedByUser =
+          quotation.served_by ||
+          servedByUsers.find((user) => user.id === quotation.served_by_id);
+        if (servedByUser) {
+          setSelectedServedByUser(servedByUser);
+        }
+      } else {
+        setSelectedServedByUser(null);
       }
 
       // Set price type
@@ -251,6 +282,7 @@ const NewSale = () => {
         customer_name: quotation.customer_name,
         customer_phone: quotation.customer_phone,
         customer_email: quotation.customer_email,
+        served_by_id: quotation.served_by_id,
         average_discount_amount: averageDiscountValue,
         shipping_cost: quotation.shipping_cost,
         notes: quotation.notes,
@@ -339,485 +371,13 @@ const NewSale = () => {
     productsForSaleQuery.data,
     activePromotionsQuery.data,
     customers,
+    servedByUsers,
     form,
     messageApi,
   ]);
 
-  // Auto-apply promotions when cart changes
-  useEffect(() => {
-    const tryAutoApplyPromotions = async () => {
-      if (isHydratingFromQuotationRef.current) {
-        return;
-      }
-
-      if (
-        selectedItems.length === 0 ||
-        !selectedBranch ||
-        !activePromotionsQuery.data ||
-        activePromotionsQuery.data.length === 0
-      ) {
-        return;
-      }
-
-      const autoApplyPromotions = activePromotionsQuery.data.filter(
-        (p) => p.auto_apply && p.is_active,
-      );
-
-      if (autoApplyPromotions.length === 0) {
-        return;
-      }
-
-      // Keep a dismissed auto promotion blocked only while it stays eligible.
-      // If conditions no longer match, unblock it so it can auto-apply later.
-      setDismissedAutoPromotionIds((prev) => {
-        if (prev.length === 0) {
-          return prev;
-        }
-
-        const retained = prev.filter((promotionId) => {
-          const promotion = autoApplyPromotions.find(
-            (p) => p.id === promotionId,
-          );
-          if (!promotion) {
-            return false;
-          }
-
-          const validation = evaluatePromotionForItems(
-            promotion,
-            selectedItems,
-          );
-          return validation.is_eligible;
-        });
-
-        return retained.length === prev.length ? prev : retained;
-      });
-
-      const alreadyAppliedIds = new Set(appliedPromotions.map((p) => p.id));
-      const dismissedIds = new Set(dismissedAutoPromotionIds);
-      const promotionsToAdd: Promotion[] = [];
-
-      for (const promotion of autoApplyPromotions) {
-        if (
-          alreadyAppliedIds.has(promotion.id) ||
-          dismissedIds.has(promotion.id)
-        ) {
-          continue;
-        }
-
-        const validation = evaluatePromotionForItems(promotion, selectedItems);
-
-        if (validation.is_eligible) {
-          promotionsToAdd.push(promotion);
-        }
-      }
-
-      if (promotionsToAdd.length > 0) {
-        setAppliedPromotions((prev) => [...prev, ...promotionsToAdd]);
-        messageApi?.success(
-          `${promotionsToAdd.map((p) => p.name).join(", ")} auto-applied`,
-        );
-      }
-    };
-
-    tryAutoApplyPromotions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedItems,
-
-    selectedBranch,
-
-    selectedCustomer?.id,
-
-    activePromotionsQuery.data,
-    appliedPromotions,
-    dismissedAutoPromotionIds,
-  ]);
-
-  const upsertVariantInSaleItems = (
-    sourceItems: SaleItem[],
-    variant: ProductVariantForSale,
-    quantityToAdd: number,
-  ) => {
-    return upsertSaleItemVariant({
-      sourceItems,
-      variant,
-      quantityToAdd,
-      priceType,
-    });
-  };
-
   const addToSale = (variant: ProductVariantForSale) => {
-    setSelectedItems((items) => upsertVariantInSaleItems(items, variant, 1));
-  };
-
-  const variantBrandById = useMemo(() => {
-    const map: Record<number, number | undefined> = {};
-    for (const variant of filteredVariants) {
-      map[variant.id] = variant.brand_id ? Number(variant.brand_id) : undefined;
-    }
-    return map;
-  }, [filteredVariants]);
-
-  const evaluatePromotionForItems = (
-    promotion: Promotion,
-    items: SaleItem[],
-  ): PromotionValidationResponse => {
-    return evaluatePromotionLocally({
-      promotion,
-      items,
-      branchId: selectedBranch,
-      customerId: selectedCustomer?.id,
-      variantBrandById,
-    });
-  };
-
-  const getVariantPriceForSale = (variant: ProductVariantForSale) => {
-    return getVariantPriceForSaleByType(variant, priceType);
-  };
-
-  const getPromotionRequiredVariantIds = (promotion: Promotion) => {
-    if (promotion.scope === "BRAND") {
-      return [];
-    }
-
-    return promotion.variant_ids?.length > 0
-      ? promotion.variant_ids
-      : promotion.products?.map((item) => item.variant_id) || [];
-  };
-
-  const getPromotionCandidateVariants = (promotion: Promotion) => {
-    if (promotion.scope === "BRAND") {
-      return filteredVariants.filter(
-        (variant) =>
-          promotion.brand_id &&
-          Number(variant.brand_id) === Number(promotion.brand_id),
-      );
-    }
-
-    const requiredIds = getPromotionRequiredVariantIds(promotion);
-    return requiredIds
-      .map((variantId) =>
-        filteredVariants.find((variant) => variant.id === variantId),
-      )
-      .filter(Boolean) as ProductVariantForSale[];
-  };
-
-  const enrichCartForPromotion = (
-    promotion: Promotion,
-    sourceItems: SaleItem[],
-    reason?: string,
-  ) => {
-    let nextItems = [...sourceItems];
-    let changed = false;
-    const reasonText = (reason || "").toLowerCase();
-
-    const requiredIds = getPromotionRequiredVariantIds(promotion);
-    const requiredVariants = requiredIds
-      .map((variantId) =>
-        filteredVariants.find((variant) => variant.id === variantId),
-      )
-      .filter(Boolean) as ProductVariantForSale[];
-
-    if (promotion.scope !== "BRAND") {
-      const existingIds = new Set(nextItems.map((item) => item.variant_id));
-      const missingRequired = requiredVariants.filter(
-        (variant) => !existingIds.has(variant.id),
-      );
-
-      if (missingRequired.length > 0) {
-        missingRequired.forEach((variant) => {
-          nextItems = upsertVariantInSaleItems(nextItems, variant, 1);
-          changed = true;
-        });
-      }
-    }
-
-    const candidateVariants = getPromotionCandidateVariants(promotion);
-    const highestPriceVariant = [...candidateVariants].sort(
-      (a, b) => getVariantPriceForSale(b) - getVariantPriceForSale(a),
-    )[0];
-
-    if (!highestPriceVariant) {
-      return { items: nextItems, changed };
-    }
-
-    const candidateIds = new Set(
-      candidateVariants.map((variant) => variant.id),
-    );
-    const currentMatchedQty = nextItems.reduce((sum, item) => {
-      return candidateIds.has(item.variant_id)
-        ? sum + Number(item.quantity || 0)
-        : sum;
-    }, 0);
-
-    const minQty = Number(promotion.min_quantity || 1);
-    const currentSubtotal = nextItems.reduce(
-      (sum, item) => sum + Number(item.line_total || 0),
-      0,
-    );
-    const minPurchase = Number(promotion.min_purchase || 0);
-
-    const needsMinQty =
-      currentMatchedQty < minQty || reasonText.includes("minimum quantity");
-    if (needsMinQty) {
-      const qtyToAdd = Math.max(1, minQty - currentMatchedQty);
-      nextItems = upsertVariantInSaleItems(
-        nextItems,
-        highestPriceVariant,
-        qtyToAdd,
-      );
-      changed = true;
-    }
-
-    const recalculatedSubtotal = nextItems.reduce(
-      (sum, item) => sum + Number(item.line_total || 0),
-      0,
-    );
-    const needsMinPurchase =
-      recalculatedSubtotal < minPurchase ||
-      reasonText.includes("minimum purchase");
-
-    if (needsMinPurchase) {
-      const unitPrice = Math.max(
-        0.01,
-        getVariantPriceForSale(highestPriceVariant),
-      );
-      const qtyToAdd = Math.max(
-        1,
-        Math.ceil(Math.max(0, minPurchase - recalculatedSubtotal) / unitPrice),
-      );
-      nextItems = upsertVariantInSaleItems(
-        nextItems,
-        highestPriceVariant,
-        qtyToAdd,
-      );
-      changed = true;
-    }
-
-    if (
-      !changed &&
-      (reasonText.includes("required product") ||
-        reasonText.includes("bundle") ||
-        reasonText.includes("no matching brand"))
-    ) {
-      nextItems = upsertVariantInSaleItems(nextItems, highestPriceVariant, 1);
-      changed = true;
-    }
-
-    if (!changed && currentSubtotal < minPurchase) {
-      const unitPrice = Math.max(
-        0.01,
-        getVariantPriceForSale(highestPriceVariant),
-      );
-      const qtyToAdd = Math.max(
-        1,
-        Math.ceil(Math.max(0, minPurchase - currentSubtotal) / unitPrice),
-      );
-      nextItems = upsertVariantInSaleItems(
-        nextItems,
-        highestPriceVariant,
-        qtyToAdd,
-      );
-      changed = true;
-    }
-
-    return { items: nextItems, changed };
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const evaluatePromotionsForCurrentCart = async () => {
-      if (
-        !promotionDrawerOpen ||
-        !selectedBranch ||
-        !activePromotionsQuery.data ||
-        activePromotionsQuery.data.length === 0 ||
-        selectedItems.length === 0
-      ) {
-        setPromotionEligibilityMap({});
-        return;
-      }
-
-      const evaluations = await Promise.all(
-        activePromotionsQuery.data.map(async (promotion) => {
-          const validation = evaluatePromotionForItems(
-            promotion,
-            selectedItems,
-          );
-          return [promotion.id, validation] as const;
-        }),
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      setPromotionEligibilityMap(Object.fromEntries(evaluations));
-    };
-
-    evaluatePromotionsForCurrentCart();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    promotionDrawerOpen,
-    selectedBranch,
-    selectedCustomer?.id,
-    selectedItems,
-    activePromotionsQuery.data,
-  ]);
-
-  useEffect(() => {
-    if (isHydratingFromQuotationRef.current) {
-      return;
-    }
-
-    if (appliedPromotions.length === 0) {
-      return;
-    }
-
-    if (!selectedBranch || selectedItems.length === 0) {
-      setAppliedPromotions([]);
-      if (selectedItems.length === 0) {
-        messageApi?.warning("Applied promotions removed: cart is empty");
-      }
-      return;
-    }
-
-    const kept: Promotion[] = [];
-    const removed: string[] = [];
-
-    appliedPromotions.forEach((promotion) => {
-      const validation = evaluatePromotionForItems(promotion, selectedItems);
-      if (validation.is_eligible) {
-        kept.push(promotion);
-      } else {
-        removed.push(promotion.name);
-      }
-    });
-
-    if (removed.length > 0) {
-      setAppliedPromotions(kept);
-      messageApi?.warning(
-        `Removed ineligible promotions: ${removed.join(", ")}`,
-      );
-    }
-  }, [
-    appliedPromotions,
-    selectedItems,
-    selectedBranch,
-    selectedCustomer?.id,
-    variantBrandById,
-    messageApi,
-  ]);
-
-  const clearAppliedPromotions = () => {
-    const autoEligiblePromotionIds = appliedPromotions
-      .filter((promotion) => {
-        if (!promotion.auto_apply) {
-          return false;
-        }
-        const validation = evaluatePromotionForItems(promotion, selectedItems);
-        return validation.is_eligible;
-      })
-      .map((promotion) => promotion.id);
-
-    if (autoEligiblePromotionIds.length > 0) {
-      setDismissedAutoPromotionIds((prev) =>
-        Array.from(new Set([...prev, ...autoEligiblePromotionIds])),
-      );
-    }
-
-    setAppliedPromotions([]);
-  };
-
-  const removeAppliedPromotion = (promotionId: number) => {
-    const promotion = appliedPromotions.find((p) => p.id === promotionId);
-    if (promotion?.auto_apply) {
-      const validation = evaluatePromotionForItems(promotion, selectedItems);
-      if (validation.is_eligible) {
-        setDismissedAutoPromotionIds((prev) =>
-          prev.includes(promotionId) ? prev : [...prev, promotionId],
-        );
-      }
-    }
-
-    setAppliedPromotions((prev) => prev.filter((p) => p.id !== promotionId));
-  };
-
-  const applyPromotionToCurrentSale = (promotion: Promotion) => {
-    if (!selectedBranch) {
-      messageApi?.error("Please select a branch before applying a promotion");
-      return;
-    }
-
-    if (appliedPromotions.some((item) => item.id === promotion.id)) {
-      messageApi?.info(`${promotion.name} is already applied`);
-      return;
-    }
-
-    let workingItems = [...selectedItems];
-    let cartUpdated = false;
-
-    setApplyingPromotionId(promotion.id);
-
-    try {
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        if (workingItems.length === 0) {
-          const enriched = enrichCartForPromotion(promotion, workingItems);
-          if (enriched.changed) {
-            workingItems = enriched.items;
-            cartUpdated = true;
-          }
-        }
-
-        if (workingItems.length === 0) {
-          break;
-        }
-
-        const validation = evaluatePromotionForItems(promotion, workingItems);
-
-        if (validation.is_eligible) {
-          if (cartUpdated) {
-            setSelectedItems(workingItems);
-          }
-
-          setAppliedPromotions((prev) => [...prev, promotion]);
-          messageApi?.success(`${promotion.name} applied`);
-          setPromotionDrawerOpen(false);
-          return;
-        }
-
-        const enriched = enrichCartForPromotion(
-          promotion,
-          workingItems,
-          validation.reason,
-        );
-
-        if (!enriched.changed) {
-          if (cartUpdated) {
-            setSelectedItems(workingItems);
-          }
-          messageApi?.error(
-            validation.reason || "Promotion conditions not matched",
-          );
-          return;
-        }
-
-        workingItems = enriched.items;
-        cartUpdated = true;
-      }
-
-      if (cartUpdated) {
-        setSelectedItems(workingItems);
-      }
-
-      messageApi?.error("Promotion conditions not matched");
-    } finally {
-      setApplyingPromotionId(null);
-    }
+    setSelectedItems((items) => upsertFn(items, variant, 1));
   };
 
   // Handle barcode scanning
@@ -881,245 +441,14 @@ const NewSale = () => {
   };
 
   const calculateTotals = () => {
-    const round2 = (value: number) => Number((value || 0).toFixed(2));
-    const getItemBaseAmount = (item: SaleItem) => {
-      const taxMethod = String(item.tax_method || "EXCLUSIVE").toUpperCase();
-      if (taxMethod === "INCLUSIVE") {
-        return Math.max(
-          0,
-          Number(item.line_total) - Number(item.tax_amount || 0),
-        );
-      }
-      return Number(item.unit_price) * Number(item.quantity);
-    };
-
-    // Calculate subtotal for sale totals (price before tax for exclusive, pre-tax base for inclusive)
-    const subtotal = selectedItems.reduce((sum, item) => {
-      return sum + getItemBaseAmount(item);
-    }, 0);
-
-    // Average discount must be based on raw base price regardless of tax method.
-    const averageDiscountBaseSubtotal = selectedItems.reduce((sum, item) => {
-      return sum + Number(item.unit_price) * Number(item.quantity || 0);
-    }, 0);
-
-    const totalTax = selectedItems.reduce(
-      (sum, item) => sum + (Number(item.tax_amount) || 0),
-      0,
-    );
-
-    const averageDiscountAmountNum = Number(averageDiscountAmount) || 0;
-    const shippingCostNum = Number(shippingCost) || 0;
-
-    const averageDiscount =
-      averageDiscountType === DiscountType.PERCENTAGE
-        ? (averageDiscountBaseSubtotal * averageDiscountAmountNum) / 100
-        : averageDiscountAmountNum;
-
-    const specialDiscount = selectedItems.reduce(
-      (sum, item) => sum + (Number(item.special_discount_amount) || 0),
-      0,
-    );
-
-    const variantAverageBaseMap = new Map<number, number>();
-    const variantPromoBaseMap = new Map<number, number>();
-    const variantQuantityMap = new Map<number, number>();
-    selectedItems.forEach((item) => {
-      const rawBase = Number(item.unit_price) * Number(item.quantity || 0);
-      variantAverageBaseMap.set(item.variant_id, Number(rawBase) || 0);
-      variantPromoBaseMap.set(item.variant_id, Number(rawBase) || 0);
-      variantQuantityMap.set(item.variant_id, Number(item.quantity || 0));
+    return calculateSaleTotals({
+      selectedItems,
+      averageDiscountAmount,
+      averageDiscountType,
+      shippingCost,
+      appliedPromotions,
+      evaluatePromotionFn: evaluatePromotionForItems,
     });
-
-    const distributeDiscount = (
-      totalDiscount: number,
-      baseMap: Map<number, number>,
-    ) => {
-      const distributed = new Map<number, number>();
-      if (
-        totalDiscount <= 0 ||
-        selectedItems.length === 0 ||
-        averageDiscountBaseSubtotal <= 0
-      ) {
-        selectedItems.forEach((item) => distributed.set(item.variant_id, 0));
-        return distributed;
-      }
-
-      let assigned = 0;
-      selectedItems.forEach((item, index) => {
-        const isLast = index === selectedItems.length - 1;
-        if (isLast) {
-          distributed.set(item.variant_id, round2(totalDiscount - assigned));
-          return;
-        }
-        const base = baseMap.get(item.variant_id) || 0;
-        const share = round2(
-          (totalDiscount * base) / averageDiscountBaseSubtotal,
-        );
-        distributed.set(item.variant_id, share);
-        assigned += share;
-      });
-
-      return distributed;
-    };
-
-    const averageDiscountMap = distributeDiscount(
-      Number(averageDiscount) || 0,
-      variantAverageBaseMap,
-    );
-
-    const promotionChoiceByVariant = new Map<
-      number,
-      {
-        amount: number;
-        promotionId: number;
-        promotionName: string;
-        promotionMatchedQuantity: number;
-      }
-    >();
-
-    for (const promotion of appliedPromotions) {
-      const validation = evaluatePromotionForItems(promotion, selectedItems);
-      if (!validation.is_eligible) {
-        continue;
-      }
-
-      const matchedVariantIds = (validation.matched_variant_ids || []).filter(
-        (id) => selectedItems.some((item) => item.variant_id === id),
-      );
-
-      if (matchedVariantIds.length === 0) {
-        continue;
-      }
-
-      const promotionMatchedQuantity = matchedVariantIds.reduce(
-        (sum, variantId) => sum + (variantQuantityMap.get(variantId) || 0),
-        0,
-      );
-
-      const matchedBaseTotal = matchedVariantIds.reduce(
-        (sum, variantId) => sum + (variantPromoBaseMap.get(variantId) || 0),
-        0,
-      );
-
-      const promoTotal = Number(validation.discount_amount || 0);
-      if (promoTotal <= 0 || matchedBaseTotal <= 0) {
-        continue;
-      }
-
-      let assigned = 0;
-
-      matchedVariantIds.forEach((variantId, index) => {
-        const isLast = index === matchedVariantIds.length - 1;
-        const nextAmount = isLast
-          ? round2(promoTotal - assigned)
-          : round2(
-              (promoTotal * (variantPromoBaseMap.get(variantId) || 0)) /
-                matchedBaseTotal,
-            );
-
-        assigned += nextAmount;
-
-        const existing = promotionChoiceByVariant.get(variantId);
-        const shouldReplace =
-          !existing ||
-          nextAmount > existing.amount ||
-          (nextAmount === existing.amount &&
-            promotionMatchedQuantity > existing.promotionMatchedQuantity);
-
-        if (shouldReplace) {
-          promotionChoiceByVariant.set(variantId, {
-            amount: nextAmount,
-            promotionId: promotion.id,
-            promotionName: promotion.name,
-            promotionMatchedQuantity,
-          });
-        }
-      });
-    }
-
-    const promotionDiscountMap = new Map<number, number>();
-    promotionChoiceByVariant.forEach((value, variantId) => {
-      promotionDiscountMap.set(variantId, round2(value.amount));
-    });
-
-    const promotionDiscountAmount = Array.from(
-      promotionDiscountMap.values(),
-    ).reduce((sum, value) => sum + Number(value || 0), 0);
-
-    // Total discount = average + special + promotion
-    const finalDiscount =
-      promotionDiscountAmount + averageDiscount + specialDiscount;
-
-    // Total = subtotal - total_discount + tax + shipping
-    const total = subtotal - finalDiscount + totalTax + shippingCostNum;
-
-    const discountBreakdownByVariant: Record<
-      number,
-      {
-        average: number;
-        special: number;
-        promotion: number;
-        total: number;
-        appliedPromotionId?: number;
-        appliedPromotionName?: string;
-        appliedPromotionMatchedQuantity?: number;
-      }
-    > = {};
-
-    const discountedItems = selectedItems.map((item) => {
-      const averageShare = Number(averageDiscountMap.get(item.variant_id) || 0);
-      const promotionShare = Number(
-        promotionDiscountMap.get(item.variant_id) || 0,
-      );
-      const specialShare = Number(item.special_discount_amount || 0);
-
-      discountBreakdownByVariant[item.variant_id] = {
-        average: round2(averageShare),
-        special: round2(specialShare),
-        promotion: round2(promotionShare),
-        total: round2(averageShare + specialShare + promotionShare),
-        appliedPromotionId: promotionChoiceByVariant.get(item.variant_id)
-          ?.promotionId,
-        appliedPromotionName: promotionChoiceByVariant.get(item.variant_id)
-          ?.promotionName,
-        appliedPromotionMatchedQuantity: promotionChoiceByVariant.get(
-          item.variant_id,
-        )?.promotionMatchedQuantity,
-      };
-
-      // Calculate net line_total (after all discounts)
-      const totalDiscount = averageShare + specialShare + promotionShare;
-      const netLineTotal = round2(Number(item.line_total) - totalDiscount);
-
-      // sold_unit_price = net per-unit price paid; unit_price keeps the original product price
-      const soldUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
-
-      return {
-        ...item,
-        unit_price: item.unit_price,
-        sold_unit_price: soldUnitPrice,
-        line_total: netLineTotal,
-        average_discount_amount: round2(averageShare),
-        special_discount_amount: round2(specialShare),
-        promotion_discount_amount: round2(promotionShare),
-        applied_promotion_id: promotionChoiceByVariant.get(item.variant_id)
-          ?.promotionId,
-      };
-    });
-
-    return {
-      subtotal: Number(subtotal),
-      totalTax: Number(totalTax),
-      promotionDiscount: Number(promotionDiscountAmount),
-      averageDiscount: Number(averageDiscount),
-      specialDiscount: Number(specialDiscount),
-      finalDiscount: Number(finalDiscount),
-      discountBreakdownByVariant,
-      discountedItems,
-      shippingCost: Number(shippingCostNum),
-      total: Number(total),
-    };
   };
 
   const onFinish = async (values: any) => {
@@ -1261,6 +590,12 @@ const NewSale = () => {
   ]);
 
   const totals = calculateTotals();
+  const totalPaidAmount = salePayments.reduce(
+    (sum, payment) => sum + Number(payment.amount || 0),
+    0,
+  );
+  const dueAmount = Math.max(0, Number(totals.total || 0) - totalPaidAmount);
+  const changeAmount = Math.max(0, totalPaidAmount - Number(totals.total || 0));
   const effectiveAppliedPromotions = appliedPromotions.filter((promotion) =>
     Object.values(totals.discountBreakdownByVariant || {}).some(
       (breakdown) => breakdown.appliedPromotionId === promotion.id,
@@ -2097,6 +1432,20 @@ const NewSale = () => {
                     ${(Number(totals.total) || 0).toFixed(2)}
                   </Text>
                 </div>
+                {dueAmount > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12 }}>Due:</Text>
+                    <Text style={{ fontSize: 12, color: "#ff4d4f" }}>
+                      ${dueAmount.toFixed(2)}
+                    </Text>
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -2108,22 +1457,10 @@ const NewSale = () => {
                   <Text
                     style={{
                       fontSize: 12,
-                      color:
-                        Math.max(
-                          0,
-                          salePayments.reduce((sum, p) => sum + p.amount, 0) -
-                            totals.total,
-                        ) >= 0
-                          ? "#52c41a"
-                          : "#ff4d4f",
+                      color: changeAmount > 0 ? "#52c41a" : undefined,
                     }}
                   >
-                    $
-                    {Math.max(
-                      0,
-                      salePayments.reduce((sum, p) => sum + p.amount, 0) -
-                        totals.total,
-                    ).toFixed(2)}
+                    ${changeAmount.toFixed(2)}
                   </Text>
                 </div>
               </div>

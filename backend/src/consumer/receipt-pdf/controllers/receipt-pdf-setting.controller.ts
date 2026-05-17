@@ -320,6 +320,7 @@ export class ReceiptPdfSettingController {
       ],
       receivedAmount: 170.0,
       changeAmount: 2.38,
+      dueAmount: 0,
       notes: 'Customer requested gift wrapping.',
       isOnlineOrder: false,
       onlineOrderStatus: null,
@@ -332,6 +333,7 @@ export class ReceiptPdfSettingController {
       base.payments = [];
       base.receivedAmount = 0;
       base.changeAmount = 0;
+      base.dueAmount = base.totalAmount;
       base.notes = 'Valid for 30 days from issue date.';
     } else if (type === 'return') {
       base.saleType = 'return';

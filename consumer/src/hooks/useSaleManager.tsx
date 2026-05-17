@@ -5,8 +5,8 @@ import { endpoints } from "../api/endpoints";
 import { promotionApi } from "../api/promotion-api";
 import { salesApi } from "../api/sales-api";
 import { queryKeys, queryStaleTimeMap } from "../constants/queryKeys";
-import { Customer } from "../types/customer.types";
 import {
+  Customer,
   DiscountType,
   PaymentMethod,
   PriceType,
@@ -14,7 +14,6 @@ import {
   SaleItem,
   SalePayment,
 } from "../types/sale.types";
-import { Promotion } from "../types/promotion.types";
 
 type UserBranch = {
   id: number;
@@ -54,17 +53,6 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     DiscountType.FLAT,
   );
   const [loading, setLoading] = useState(false);
-  const [promotionDrawerOpen, setPromotionDrawerOpen] = useState(false);
-  const [appliedPromotions, setAppliedPromotions] = useState<Promotion[]>([]);
-  const [dismissedAutoPromotionIds, setDismissedAutoPromotionIds] = useState<
-    number[]
-  >([]);
-  const [applyingPromotionId, setApplyingPromotionId] = useState<number | null>(
-    null,
-  );
-  const [promotionEligibilityMap, setPromotionEligibilityMap] = useState<
-    Record<number, { is_eligible: boolean; reason?: string }>
-  >({});
   const [salePayments, setSalePayments] = useState<SalePayment[]>([
     {
       payment_method: PaymentMethod.CASH,
@@ -143,8 +131,6 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   const handleBranchChange = (branchId: number) => {
     setSelectedBranch(branchId);
     setSelectedItems([]);
-    setAppliedPromotions([]);
-    setDismissedAutoPromotionIds([]);
     setAverageDiscountType(DiscountType.FLAT);
     form.setFieldsValue({ branch_id: branchId, average_discount_amount: 0 });
   };
@@ -172,16 +158,6 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     setAverageDiscountType,
     loading,
     setLoading,
-    promotionDrawerOpen,
-    setPromotionDrawerOpen,
-    appliedPromotions,
-    setAppliedPromotions,
-    dismissedAutoPromotionIds,
-    setDismissedAutoPromotionIds,
-    applyingPromotionId,
-    setApplyingPromotionId,
-    promotionEligibilityMap,
-    setPromotionEligibilityMap,
     salePayments,
     setSalePayments,
     userBranches,

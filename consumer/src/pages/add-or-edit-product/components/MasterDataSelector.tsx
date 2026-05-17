@@ -9,6 +9,7 @@ import {
   Button,
   Form,
   Input,
+  type InputRef,
   List,
   Modal,
   Select,
@@ -16,7 +17,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useMemo, useState } from "react";
+import { type RefObject, useMemo, useRef, useState } from "react";
 import { productApi } from "../../../api/product-api";
 import { queryKeys, queryStaleTimeMap } from "../../../constants/queryKeys";
 import { useMessageStore } from "../../../stores/messageStore";
@@ -131,6 +132,8 @@ export default function MasterDataSelector({
   const [editingItem, setEditingItem] = useState<BaseOption | null>(null);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [form] = Form.useForm<{ name: string }>();
+  const createNameInputRef = useRef<InputRef>(null);
+  const editNameInputRef = useRef<InputRef>(null);
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
   const shouldCloseTagDropdown = type === "tag" && mode === "multiple";
@@ -233,6 +236,12 @@ export default function MasterDataSelector({
       return;
     }
     updateMutation.mutate({ id: editingItem.id, name: values.name.trim() });
+  };
+
+  const focusInputAfterModalOpen = (inputRef: RefObject<InputRef | null>) => {
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ cursor: "end" });
+    });
   };
 
   return (
@@ -342,6 +351,11 @@ export default function MasterDataSelector({
         <Modal
           title={`Add ${label}`}
           open={createOpen}
+          afterOpenChange={(open) => {
+            if (open) {
+              focusInputAfterModalOpen(createNameInputRef);
+            }
+          }}
           onCancel={() => {
             setCreateOpen(false);
             form.resetFields();
@@ -361,7 +375,7 @@ export default function MasterDataSelector({
                 },
               ]}
             >
-              <Input autoFocus maxLength={100} />
+              <Input ref={createNameInputRef} maxLength={100} />
             </Form.Item>
           </Form>
         </Modal>
@@ -369,6 +383,11 @@ export default function MasterDataSelector({
         <Modal
           title={`Edit ${label}`}
           open={Boolean(editingItem)}
+          afterOpenChange={(open) => {
+            if (open) {
+              focusInputAfterModalOpen(editNameInputRef);
+            }
+          }}
           onCancel={() => {
             setEditingItem(null);
             form.resetFields();
@@ -388,7 +407,7 @@ export default function MasterDataSelector({
                 },
               ]}
             >
-              <Input autoFocus maxLength={100} />
+              <Input ref={editNameInputRef} maxLength={100} />
             </Form.Item>
           </Form>
         </Modal>
