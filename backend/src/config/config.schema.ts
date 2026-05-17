@@ -11,8 +11,12 @@ export const configValidationSchema = Joi.object({
 
   // JWT
   JWT_SECRET_KEY: Joi.string().required(),
+  JWT_ALGORITHM: Joi.string()
+    .valid('HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512')
+    .default('HS256'),
   JWT_EXPIRATION: Joi.string().default('15m'),
   JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
+  CSRF_SECRET_KEY: Joi.string().optional(),
 
   // Database connection
   DATABASE_URL: Joi.string().required(),

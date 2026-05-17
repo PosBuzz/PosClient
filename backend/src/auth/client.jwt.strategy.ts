@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
+import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from 'src/config/config.service';
 import { JwtPayload } from './jwt-payload.interface';
@@ -18,6 +19,7 @@ export class JwtClientStrategy extends PassportStrategy(
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>
         req.cookies['client_access_token'],
       secretOrKey: configService.jwtSecret,
+      algorithms: [configService.jwtAlgorithm as Algorithm],
     });
   }
 
@@ -57,7 +59,7 @@ export class JwtClientStrategy extends PassportStrategy(
 
     // Extract permission actions from role
     const permissions = user.role.permissions.map((rp) => rp.permission.action);
-    
+
     // Extract branch information
     const branches = user.branches.map((ub) => ({
       id: ub.branch.id,
