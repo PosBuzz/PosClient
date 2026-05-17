@@ -18,7 +18,6 @@ import {
 } from "antd";
 import { TaxMethod } from "../../../types/product.types";
 import { ProductFormState, ValidationState } from "../types";
-import AiDescriptionGenerator from "./AiDescriptionGenerator";
 import MasterDataSelector from "./MasterDataSelector";
 
 // Renders top-level product fields: details, classification, tax, and product type toggle.
@@ -100,12 +99,12 @@ export default function BasicInfoSection({
               align="center"
             >
               <Text strong>Description</Text>
-              <AiDescriptionGenerator
+              {/* <AiDescriptionGenerator
                 productName={formState.name}
                 onDescriptionGenerated={(description) =>
                   onFieldUpdate("description", description)
                 }
-              />
+              /> */}
             </Space>
             <TextArea
               rows={3}

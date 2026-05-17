@@ -74,6 +74,7 @@ export interface ReceiptPdfSettings {
     showBreakdown: boolean;
     showReceivedAmount: boolean;
     showChangeAmount: boolean;
+    showDueAmount?: boolean;
   };
 
   notes: {
@@ -166,6 +167,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
     showBreakdown: false,
     showReceivedAmount: true,
     showChangeAmount: true,
+    showDueAmount: true,
   },
   notes: { show: false },
   footer: {
@@ -243,6 +245,7 @@ export const DEFAULT_QUOTATION_SETTINGS: ReceiptPdfSettings = {
     showBreakdown: false,
     showReceivedAmount: false,
     showChangeAmount: false,
+    showDueAmount: false,
   },
   notes: { show: true },
   footer: {
@@ -399,6 +402,7 @@ export const COMPACT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
     showBreakdown: false,
     showReceivedAmount: true,
     showChangeAmount: true,
+    showDueAmount: true,
   },
   notes: { show: false },
   footer: {

@@ -218,6 +218,8 @@ const SalesTable = () => {
         receivedAmount: amountPaid,
         change: Math.max(0, amountPaid - correctTotal),
         changeAmount: Math.max(0, amountPaid - correctTotal),
+        due: Math.max(0, correctTotal - amountPaid),
+        dueAmount: Math.max(0, correctTotal - amountPaid),
         paymentMethod: paymentMethods,
         payments:
           sale.payments?.map((payment: any) => ({

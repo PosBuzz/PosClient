@@ -62,6 +62,7 @@ export interface ReceiptPdfData {
   payments: ReceiptPdfPayment[];
   receivedAmount: number;
   changeAmount: number;
+  dueAmount: number;
 
   notes: string;
 

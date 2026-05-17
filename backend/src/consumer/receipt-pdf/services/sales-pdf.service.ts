@@ -130,6 +130,7 @@ export class SalesPdfService {
 
       receivedAmount: Number(sale.received_amount) || 0,
       changeAmount: Math.max(0, (Number(sale.received_amount) || 0) - (Number(sale.total_amount) || 0)),
+      dueAmount: Math.max(0, (Number(sale.total_amount) || 0) - (Number(sale.received_amount) || 0)),
 
       notes: normalizeLineBreaks(sale.notes || ''),
       isOnlineOrder: sale.is_online_order || false,
