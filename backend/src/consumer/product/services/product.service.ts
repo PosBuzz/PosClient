@@ -86,46 +86,53 @@ export class ProductService {
       // Ensure same batch number always uses the same expiry date per variant.
       this.validateBatchExpiryConsistency(dto);
 
-      // Create the product
-      const product = await this.prisma.product.create({
-        data: {
-          consumer_id: consumerId,
-          name: dto.name,
-          code: dto.code,
-          description: dto.description,
-          category_id: dto.category_id,
-          brand_id: dto.brand_id,
-          has_variants: dto.has_variants,
-          tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
-          tax: dto.tax || 0,
-        },
-      });
-
-      // Add tags if provided
-      if (dto.tag_ids && dto.tag_ids.length > 0) {
-        await this.prisma.$transaction(
-          dto.tag_ids.map((tagId) =>
-            this.prisma.tagOnProduct.create({
-              data: {
-                product_id: product.id,
-                tag_id: tagId,
-              },
-            }),
-          ),
-        );
-      }
-
-      // Create variants
       // For simple products, mark the variant as default
       if (!dto.has_variants) {
         dto.variants[0].is_default = true;
       }
 
-      await Promise.all(
-        dto.variants.map((variantDto) =>
-          this.variantService.create(product.id, userId, variantDto),
-        ),
-      );
+      const product = await this.prisma.$transaction(async (prisma) => {
+        const createdProduct = await prisma.product.create({
+          data: {
+            consumer_id: consumerId,
+            name: dto.name,
+            code: dto.code,
+            description: dto.description,
+            category_id: dto.category_id,
+            brand_id: dto.brand_id,
+            has_variants: dto.has_variants,
+            tax_method: dto.tax_method || TaxMethod.EXCLUSIVE,
+            tax: dto.tax || 0,
+          },
+        });
+
+        if (dto.tag_ids && dto.tag_ids.length > 0) {
+          await Promise.all(
+            dto.tag_ids.map((tagId) =>
+              prisma.tagOnProduct.create({
+                data: {
+                  product_id: createdProduct.id,
+                  tag_id: tagId,
+                },
+              }),
+            ),
+          );
+        }
+
+        await Promise.all(
+          dto.variants.map((variantDto) =>
+            this.variantService.create(
+              createdProduct.id,
+              userId,
+              variantDto,
+              prisma,
+              false,
+            ),
+          ),
+        );
+
+        return createdProduct;
+      });
 
       return this.findOne(product.id, consumerId);
     } catch (error) {

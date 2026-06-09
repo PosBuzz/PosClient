@@ -17,6 +17,8 @@ export interface InventoryBatch {
   cost_price: string;
   vendor_id?: number;
   expiry_date?: string;
+  payment_status: string;
+  paid_amount: string;
   created_at: string;
   updated_at: string;
   variant: {
@@ -37,6 +39,14 @@ export interface InventoryBatch {
     id: number;
     name: string;
   };
+  purchasePayments?: Array<{
+    id: number;
+    payment_method: string;
+    payment_type?: string;
+    amount: string;
+    reference?: string;
+    created_at: string;
+  }>;
 }
 
 export interface CreateBatchData {
@@ -47,6 +57,12 @@ export interface CreateBatchData {
   cost_price: string;
   vendor_id?: number;
   expiry_date?: string;
+  payments?: Array<{
+    payment_method: string;
+    payment_type?: string;
+    amount: number;
+    reference?: string;
+  }>;
 }
 
 export interface ProductForInventory {

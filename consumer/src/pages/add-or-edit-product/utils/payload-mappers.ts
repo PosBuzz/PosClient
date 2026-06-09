@@ -17,6 +17,19 @@ const toDecimalString = (
   return parsed.toFixed(2);
 };
 
+const mapBatchPaymentsForPayload = (
+  payments: ProductFormState["variants"][string]["batches"][number]["payments"],
+) => {
+  return payments
+    ?.filter((payment) => Number(payment.amount) > 0)
+    .map((payment) => ({
+      payment_method: payment.payment_method,
+      payment_type: payment.payment_type,
+      amount: Number(payment.amount),
+      reference: payment.reference?.trim() || undefined,
+    }));
+};
+
 const mapVariantsForPayload = (
   formState: ProductFormState,
   includeBatches: boolean,
@@ -52,6 +65,7 @@ const mapVariantsForPayload = (
           cost_price: toDecimalString(batch.cost_price),
           vendor_id: batch.vendor_id,
           expiry_date: batch.expiry_date,
+          payments: mapBatchPaymentsForPayload(batch.payments),
         })),
     }),
   }));

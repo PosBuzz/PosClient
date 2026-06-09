@@ -1,11 +1,13 @@
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   MailOutlined,
   PhoneOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tooltip } from "antd";
+import { Link } from "react-router-dom";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
@@ -45,7 +47,12 @@ export default function _TableGrid({ onClickEdit }) {
       key: "name",
       render: (text: string, record: any) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{text}</div>
+          <Link
+            to={`/vendors/view/${record.id}`}
+            style={{ fontWeight: 500, color: "#1890ff" }}
+          >
+            {text}
+          </Link>
           {record.contact && (
             <div style={{ fontSize: "12px", color: "#666" }}>
               Contact: {record.contact}
@@ -118,6 +125,9 @@ export default function _TableGrid({ onClickEdit }) {
       key: "actions",
       render: (record: any) => (
         <Space>
+          <Link to={`/vendors/view/${record.id}`}>
+            <Button type="link" icon={<EyeOutlined />} />
+          </Link>
           <Button onClick={() => onClickEdit(record)} type="link">
             <EditOutlined />
           </Button>

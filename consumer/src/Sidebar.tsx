@@ -212,6 +212,11 @@ const SideBar: React.FC = () => {
           key: "/vendors",
           permissions: [Permissions.vendors, Permissions.inventory_batches],
         },
+        {
+          label: <span title="Purchase Payments">Purchase Payments</span>,
+          key: "/purchase-payments",
+          permissions: [Permissions.inventory_batches],
+        },
       ],
     },
     {

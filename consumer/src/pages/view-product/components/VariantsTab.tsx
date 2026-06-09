@@ -124,13 +124,13 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               <Text style={{ color: hasLowStockBranch ? "#ff4d4f" : totalStock > 0 ? "#52c41a" : "#8c8c8c" }}>
                 {totalStock} units
               </Text>
-              {hasLowStockBranch && (
+              {!hasLowStockBranch || (
                 <Tooltip title="Low stock alert in one or more branches">
                   <AlertOutlined style={{ color: "#ff4d4f" }} />
                 </Tooltip>
               )}
             </Space>
-            {record.alert_quantity && (
+            {!record.alert_quantity || (
               <Text type="secondary" style={{ fontSize: "12px" }}>
                 Alert: {record.alert_quantity}
               </Text>

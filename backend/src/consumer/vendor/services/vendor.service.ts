@@ -134,4 +134,111 @@ export class VendorService {
       );
     }
   }
+
+  /**
+   * Get vendor details with batches, payments, and summary
+   */
+  async findOneWithDetails(
+    id: number,
+    consumerId: number,
+    options?: { page?: number; limit?: number },
+  ) {
+    try {
+      // 1. Fetch vendor info
+      const vendor = await this.findOne(id, consumerId);
+
+      // 2. Build where clause for batches
+      const whereClause = {
+        vendor_id: id,
+        variant: {
+          product: { consumer_id: consumerId },
+        },
+      };
+
+      const page = options?.page || 1;
+      const limit = options?.limit || 50;
+      const skip = (page - 1) * limit;
+
+      // 3. Fetch batches and total count
+      const [batches, totalBatches] = await Promise.all([
+        this.prismaService.inventoryBatch.findMany({
+          where: whereClause,
+          include: {
+            variant: {
+              select: {
+                id: true,
+                name: true,
+                product: { select: { id: true, name: true } },
+              },
+            },
+            branch: { select: { id: true, name: true } },
+            purchasePayments: {
+              orderBy: { created_at: 'desc' },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prismaService.inventoryBatch.count({ where: whereClause }),
+      ]);
+
+      // 4. Compute aggregates
+      const totalCost = batches.reduce(
+        (sum, b) => sum + Number(b.cost_price) * b.quantity,
+        0,
+      );
+      const totalPaid = batches.reduce(
+        (sum, b) => sum + Number(b.paid_amount),
+        0,
+      );
+      const totalOwed = totalCost - totalPaid;
+
+      // 5. Collect all payments across batches for payment history
+      const allPayments = batches.flatMap((batch) =>
+        batch.purchasePayments.map((payment) => ({
+          ...payment,
+          batch_id: batch.id,
+          batch_number: batch.batch_number,
+          product_name: batch.variant.product.name,
+          variant_name: batch.variant.name,
+        })),
+      );
+
+      // 6. Add computed fields to batches
+      const batchesWithTotals = batches.map((batch) => ({
+        ...batch,
+        total_cost: Number(batch.cost_price) * batch.quantity,
+        remaining_amount:
+          Number(batch.cost_price) * batch.quantity - Number(batch.paid_amount),
+      }));
+
+      return {
+        vendor,
+        batches: batchesWithTotals,
+        allPayments,
+        summary: {
+          totalCost,
+          totalPaid,
+          totalOwed,
+          totalBatches,
+        },
+        meta: {
+          page,
+          limit,
+          totalPages: Math.ceil(totalBatches / limit),
+        },
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(
+        `Error getting vendor details for ID ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to get vendor details',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

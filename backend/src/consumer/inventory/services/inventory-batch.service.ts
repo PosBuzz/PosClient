@@ -82,6 +82,26 @@ export class InventoryBatchService {
 
       // Create batch and audit log in transaction
       const batch = await this.prisma.$transaction(async (prisma) => {
+        // Determine payment status and paid amount
+        const totalCost = Number(dto.cost_price) * dto.quantity;
+        let paidAmount = 0;
+        let paymentStatus = 'paid';
+
+        if (dto.payments && dto.payments.length > 0) {
+          paidAmount = dto.payments.reduce(
+            (sum, p) => sum + Number(p.amount),
+            0,
+          );
+          if (paidAmount >= totalCost) {
+            paymentStatus = 'paid';
+          } else if (paidAmount > 0) {
+            paymentStatus = 'partial';
+          } else {
+            paymentStatus = 'due';
+          }
+        }
+        // If no payments provided, default to fully paid (backward compatible)
+
         const newBatch = await prisma.inventoryBatch.create({
           data: {
             variant_id: dto.variant_id,
@@ -91,6 +111,10 @@ export class InventoryBatchService {
             cost_price: dto.cost_price,
             vendor_id: dto.vendor_id,
             expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
+            payment_status: paymentStatus,
+            paid_amount: paymentStatus === 'paid' && !dto.payments?.length
+              ? totalCost
+              : paidAmount,
           },
           include: {
             variant: {
@@ -127,6 +151,23 @@ export class InventoryBatchService {
               created_by_user_id: userId,
             },
           });
+        }
+
+        // Create purchase payment records if provided
+        if (dto.payments && dto.payments.length > 0) {
+          await Promise.all(
+            dto.payments.map((payment) =>
+              prisma.purchasePayment.create({
+                data: {
+                  batch_id: newBatch.id,
+                  payment_method: payment.payment_method,
+                  payment_type: (payment.payment_type as any) || null,
+                  amount: payment.amount,
+                  reference: payment.reference || null,
+                },
+              }),
+            ),
+          );
         }
 
         return newBatch;
@@ -207,6 +248,9 @@ export class InventoryBatchService {
             vendor: {
               select: { id: true, name: true },
             },
+            purchasePayments: {
+              orderBy: { created_at: 'desc' },
+            },
           },
           skip,
           take: limit,
@@ -261,6 +305,9 @@ export class InventoryBatchService {
           },
           vendor: {
             select: { id: true, name: true },
+          },
+          purchasePayments: {
+            orderBy: { created_at: 'desc' },
           },
         },
       });
