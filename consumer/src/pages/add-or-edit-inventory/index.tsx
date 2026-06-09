@@ -31,10 +31,14 @@ import {
 } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import PaymentMethodSection from "../../components/PaymentMethodSection";
 import VendorSelector from "../../components/VendorSelector";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { PurchasePayment } from "../../types/purchase-payment.types";
+import { PaymentMethod } from "../../types/sale.types";
+import { PAYMENT_METHODS_REQUIRING_PROVIDER } from "../../utils/payment-provider.utils";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -53,6 +57,9 @@ export default function AddEditInventory() {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null,
   );
+  const [batchPayments, setBatchPayments] = useState<PurchasePayment[]>([
+    { payment_method: PaymentMethod.CASH, amount: 0, reference: "" },
+  ]);
 
   // Watch form values for real-time summary updates
   const quantity = Form.useWatch("quantity", form) || 0;
@@ -150,6 +157,24 @@ export default function AddEditInventory() {
         id: existingBatch.variant.id,
         name: existingBatch.variant.name,
       });
+
+      // Populate payments from existing batch
+      if (existingBatch.purchasePayments && existingBatch.purchasePayments.length > 0) {
+        setBatchPayments(
+          existingBatch.purchasePayments.map((p: any) => ({
+            payment_method: p.payment_method as PaymentMethod,
+            payment_type: p.payment_type as any,
+            amount: Number(p.amount),
+            reference: p.reference || "",
+          })),
+        );
+      } else {
+        // Default to full payment
+        const totalCost = Number(existingBatch.cost_price) * existingBatch.quantity;
+        setBatchPayments([
+          { payment_method: PaymentMethod.CASH, amount: totalCost, reference: "" },
+        ]);
+      }
     }
   }, [existingBatch, form]);
 
@@ -194,6 +219,19 @@ export default function AddEditInventory() {
       return;
     }
 
+    // Validate payment providers
+    for (const payment of batchPayments) {
+      if (
+        PAYMENT_METHODS_REQUIRING_PROVIDER.includes(payment.payment_method) &&
+        !payment.payment_type
+      ) {
+        messageApi?.error(
+          `${payment.payment_method} payment must have a provider selected`,
+        );
+        return;
+      }
+    }
+
     const batchData: CreateBatchData = {
       variant_id: selectedVariant.id,
       branch_id: values.branch_id,
@@ -204,6 +242,7 @@ export default function AddEditInventory() {
       expiry_date: values.expiry_date
         ? values.expiry_date.format("YYYY-MM-DD")
         : null,
+      payments: batchPayments.filter((p) => p.amount > 0),
     };
 
     if (isEdit && id) {
@@ -471,6 +510,20 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
           </Row>
+          {/* Payment Section */}
+          {selectedVariant && (
+            <Card
+              title="Payment"
+              size="small"
+              style={{ marginTop: 16, marginBottom: 16 }}
+            >
+              <PaymentMethodSection
+                payments={batchPayments}
+                onChange={setBatchPayments}
+                maxAmount={costPrice * quantity}
+              />
+            </Card>
+          )}
           {/* Summary Section - Now updates in real-time */}
           {selectedVariant && (
             <Card>
@@ -478,7 +531,7 @@ export default function AddEditInventory() {
                 Summary
               </Title>
               <Row gutter={16}>
-                <Col span={8}>
+                <Col span={6}>
                   <Text type="secondary">Product:</Text>
                   <br />
                   <Text strong>
@@ -486,15 +539,43 @@ export default function AddEditInventory() {
                     {selectedVariant.name}
                   </Text>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Text type="secondary">Quantity Adding:</Text>
                   <br />
                   <Text strong>{quantity} units</Text>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Text type="secondary">Total Cost:</Text>
                   <br />
                   <Text strong>${(costPrice * quantity).toFixed(2)}</Text>
+                </Col>
+                <Col span={6}>
+                  <Text type="secondary">Payment Status:</Text>
+                  <br />
+                  <Text
+                    strong
+                    style={{
+                      color:
+                        batchPayments.reduce(
+                          (s, p) => s + (Number(p.amount) || 0),
+                          0,
+                        ) >= costPrice * quantity
+                          ? "#52c41a"
+                          : "#ff4d4f",
+                    }}
+                  >
+                    {batchPayments.reduce(
+                      (s, p) => s + (Number(p.amount) || 0),
+                      0,
+                    ) >= costPrice * quantity
+                      ? "Paid"
+                      : batchPayments.reduce(
+                            (s, p) => s + (Number(p.amount) || 0),
+                            0,
+                          ) > 0
+                        ? "Partial"
+                        : "Due"}
+                  </Text>
                 </Col>
               </Row>
             </Card>
