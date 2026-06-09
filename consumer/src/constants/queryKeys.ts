@@ -44,6 +44,10 @@ export const queryKeys = {
   quotation: "quotation",
   partialPayments: "partial-payments",
   saleForPayment: "sale-for-payment",
+  vendorDetails: "vendor-details",
+  purchasePaymentBatches: "purchase-payment-batches",
+  batchForPayment: "batch-for-payment",
+  batchPayments: "batch-payments",
 };
 
 // Stale time configurations for different data types
@@ -95,6 +99,10 @@ export const queryStaleTimeMap = {
   [queryKeys.quotation]: staleTimeConfig.dynamic,
   [queryKeys.partialPayments]: staleTimeConfig.dynamic,
   [queryKeys.saleForPayment]: staleTimeConfig.dynamic,
+  [queryKeys.vendorDetails]: staleTimeConfig.dynamic,
+  [queryKeys.purchasePaymentBatches]: staleTimeConfig.dynamic,
+  [queryKeys.batchForPayment]: staleTimeConfig.dynamic,
+  [queryKeys.batchPayments]: staleTimeConfig.dynamic,
   [queryKeys.receiptSettings]: staleTimeConfig.dynamic,
 
   // Real-time data

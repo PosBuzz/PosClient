@@ -6,6 +6,7 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
+  Card,
   Col,
   DatePicker,
   Input,
@@ -18,6 +19,9 @@ import {
 import dayjs from "dayjs";
 import { ValidationState, VariantBatchInput } from "../types";
 import VendorSelector from "./VendorSelector";
+import PaymentMethodSection from "../../../components/PaymentMethodSection";
+import { PurchasePayment } from "../../../types/purchase-payment.types";
+import { PaymentMethod } from "../../../types/sale.types";
 
 // Initial inventory batch editor for a variant (branch, ref, qty, cost, vendor, expiry).
 
@@ -65,14 +69,14 @@ const getError = (
 
 export default function VariantBatchSection({
   variantId,
-  variantName,
   batches,
   branches,
   validationState,
   onChange,
 }: VariantBatchSectionProps) {
   const addBatch = () => {
-    // Appends one default batch row.
+    // Appends one default batch row with default payment.
+    const batchTotal = 0;
     onChange([
       ...batches,
       {
@@ -80,6 +84,13 @@ export default function VariantBatchSection({
         batch_number: "",
         quantity: 1,
         cost_price: 0,
+        payments: [
+          {
+            payment_method: PaymentMethod.CASH,
+            amount: batchTotal,
+            reference: "",
+          },
+        ],
       },
     ]);
   };
@@ -95,6 +106,29 @@ export default function VariantBatchSection({
       ...next[index],
       [field]: value,
     };
+
+    // Auto-update payment amount when cost/quantity changes and there's only one CASH payment
+    if (
+      (field === "cost_price" || field === "quantity") &&
+      next[index].payments?.length === 1 &&
+      next[index].payments![0].payment_method === PaymentMethod.CASH
+    ) {
+      const qty = field === "quantity" ? (value as number) || 0 : next[index].quantity;
+      const cost = field === "cost_price" ? Number(value) || 0 : Number(next[index].cost_price);
+      const updatedPayments = [...next[index].payments!];
+      updatedPayments[0] = { ...updatedPayments[0], amount: qty * cost };
+      next[index] = { ...next[index], payments: updatedPayments };
+    }
+
+    onChange(next);
+  };
+
+  const updateBatchPayments = (
+    index: number,
+    payments: PurchasePayment[],
+  ) => {
+    const next = [...batches];
+    next[index] = { ...next[index], payments };
     onChange(next);
   };
 
@@ -120,162 +154,214 @@ export default function VariantBatchSection({
         </Text>
       )}
 
-      {batches.map((batch, index) => (
-        <Row key={`${variantId}-batch-${index}`} gutter={[8, 8]} align="middle">
-          <Col xs={24} md={5}>
-            <Text strong>Branch *</Text>
-            <Select
-              style={{ width: "100%" }}
-              placeholder="Select branch"
-              value={batch.branch_id || undefined}
-              options={branches.map((branch) => ({
-                value: branch.id,
-                label: branch.name,
-              }))}
-              status={
-                getError(validationState, variantId, index, "branch_id").status
-              }
-              onChange={(value) => updateBatch(index, "branch_id", value)}
-            />
-            {getError(validationState, variantId, index, "branch_id").help && (
-              <Text type="danger">
-                {getError(validationState, variantId, index, "branch_id").help}
-              </Text>
-            )}
-          </Col>
+      {batches.map((batch, index) => {
+        const batchTotal =
+          (Number(batch.cost_price) || 0) * (batch.quantity || 0);
 
-          <Col xs={24} md={4}>
-            <Text strong>Batch No *</Text>
-            <Space.Compact style={{ width: "100%" }}>
-              <Input
-                value={batch.batch_number}
-                placeholder="Generate batch"
-                status={
-                  getError(validationState, variantId, index, "batch_number")
-                    .status
+        return (
+          <Card
+            key={`${variantId}-batch-${index}`}
+            size="small"
+          >
+            {/* Main batch row */}
+            <Row gutter={[8, 8]} align="middle">
+              <Col xs={24} md={4} style={{ minWidth: 0 }}>
+                <Text strong>Branch *</Text>
+                <Select
+                  style={{ width: "100%", minWidth: 0 }}
+                  placeholder="Select branch"
+                  value={batch.branch_id || undefined}
+                  options={branches.map((branch) => ({
+                    value: branch.id,
+                    label: branch.name,
+                  }))}
+                  status={
+                    getError(validationState, variantId, index, "branch_id")
+                      .status
+                  }
+                  onChange={(value) => updateBatch(index, "branch_id", value)}
+                />
+                {getError(validationState, variantId, index, "branch_id")
+                  .help && (
+                    <Text type="danger">
+                      {getError(validationState, variantId, index, "branch_id")
+                        .help}
+                    </Text>
+                  )}
+              </Col>
+
+              <Col xs={24} md={4} style={{ minWidth: 0 }}>
+                <Text strong>Batch No *</Text>
+                <Space.Compact style={{ width: "100%" }}>
+                  <Input
+                    value={batch.batch_number}
+                    placeholder="Generate batch"
+                    status={
+                      getError(validationState, variantId, index, "batch_number")
+                        .status
+                    }
+                    onChange={(event) =>
+                      updateBatch(index, "batch_number", event.target.value)
+                    }
+                  />
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() =>
+                      updateBatch(index, "batch_number", createBatchRef())
+                    }
+                  />
+                </Space.Compact>
+                {getError(validationState, variantId, index, "batch_number")
+                  .help && (
+                    <Text type="danger">
+                      {
+                        getError(validationState, variantId, index, "batch_number")
+                          .help
+                      }
+                    </Text>
+                  )}
+              </Col>
+
+              <Col xs={24} md={4} style={{ minWidth: 0 }}>
+                <Text strong>Quantity *</Text>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  type="number"
+                  placeholder="0"
+                  min={1}
+                  precision={0}
+                  value={batch.quantity}
+                  status={
+                    getError(validationState, variantId, index, "quantity")
+                      .status
+                  }
+                  onChange={(value) => updateBatch(index, "quantity", value || 1)}
+                />
+                {getError(validationState, variantId, index, "quantity").help && (
+                  <Text type="danger">
+                    {getError(validationState, variantId, index, "quantity").help}
+                  </Text>
+                )}
+              </Col>
+
+              <Col xs={24} md={3} style={{ minWidth: 0 }}>
+                <Text strong>Cost Price *</Text>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  type="number"
+                  placeholder="0.00"
+                  min={0}
+                  precision={2}
+                  prefix="$"
+                  value={
+                    batch.cost_price === null ||
+                    batch.cost_price === undefined ||
+                    batch.cost_price === ""
+                      ? undefined
+                      : Number(batch.cost_price)
+                  }
+                  status={
+                    getError(validationState, variantId, index, "cost_price")
+                      .status
+                  }
+                  onChange={(value) =>
+                    updateBatch(index, "cost_price", value === null ? null : value)
+                  }
+                />
+                {getError(validationState, variantId, index, "cost_price")
+                  .help && (
+                    <Text type="danger">
+                      {getError(validationState, variantId, index, "cost_price")
+                        .help}
+                    </Text>
+                  )}
+              </Col>
+
+              <Col xs={24} md={4} style={{ minWidth: 0 }}>
+                <Text strong>Vendor</Text>
+                <VendorSelector
+                  value={
+                    typeof batch.vendor_id === "number"
+                      ? batch.vendor_id
+                      : undefined
+                  }
+                  onChange={(value) => updateBatch(index, "vendor_id", value)}
+                />
+              </Col>
+
+              <Col xs={24} md={3} style={{ minWidth: 0 }}>
+                <Text strong>
+                  <Space size={4}>
+                    <CalendarOutlined />
+                    Expiry
+                  </Space>
+                </Text>
+                <DatePicker
+                  style={{ width: "100%" }}
+                  value={batch.expiry_date ? dayjs(batch.expiry_date) : null}
+                  status={
+                    getError(validationState, variantId, index, "expiry_date")
+                      .status
+                  }
+                  onChange={(date) =>
+                    updateBatch(
+                      index,
+                      "expiry_date",
+                      date ? date.format("YYYY-MM-DD") : undefined,
+                    )
+                  }
+                />
+                {getError(validationState, variantId, index, "expiry_date")
+                  .help && (
+                    <Text type="danger">
+                      {getError(validationState, variantId, index, "expiry_date")
+                        .help}
+                    </Text>
+                  )}
+              </Col>
+
+              <Col
+                xs={24}
+                md={2}
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  paddingLeft: 8,
+                  paddingTop: 22,
+                }}
+              >
+                <Space size={12} style={{ justifyContent: "center" }}>
+                  <Button
+                    danger
+                    icon={<MinusCircleOutlined />}
+                    onClick={() => removeBatch(index)}
+                  />
+                </Space>
+              </Col>
+            </Row>
+
+            <div style={{ marginTop: 12 }}>
+              <PaymentMethodSection
+                payments={
+                  batch.payments || [
+                    {
+                      payment_method: PaymentMethod.CASH,
+                      amount: batchTotal,
+                      reference: "",
+                    },
+                  ]
                 }
-                onChange={(event) =>
-                  updateBatch(index, "batch_number", event.target.value)
-                }
+                onChange={(payments) => updateBatchPayments(index, payments)}
+                maxAmount={batchTotal}
+                compact
+                size="small"
+                validationState={validationState}
+                validationPrefix={`variant_${variantId}_batch_${index}`}
               />
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() =>
-                  updateBatch(index, "batch_number", createBatchRef())
-                }
-              />
-            </Space.Compact>
-            {getError(validationState, variantId, index, "batch_number")
-              .help && (
-              <Text type="danger">
-                {
-                  getError(validationState, variantId, index, "batch_number")
-                    .help
-                }
-              </Text>
-            )}
-          </Col>
-
-          <Col xs={24} md={3}>
-            <Text strong>Quantity *</Text>
-            <InputNumber
-              style={{ width: "100%" }}
-              type="number"
-              placeholder="0"
-              min={1}
-              precision={0}
-              value={batch.quantity}
-              status={
-                getError(validationState, variantId, index, "quantity").status
-              }
-              onChange={(value) => updateBatch(index, "quantity", value || 1)}
-            />
-            {getError(validationState, variantId, index, "quantity").help && (
-              <Text type="danger">
-                {getError(validationState, variantId, index, "quantity").help}
-              </Text>
-            )}
-          </Col>
-
-          <Col xs={24} md={3}>
-            <Text strong>Cost Price *</Text>
-            <InputNumber
-              style={{ width: "100%" }}
-              type="number"
-              placeholder="0.00"
-              min={0}
-              precision={2}
-              prefix="$"
-              value={
-                batch.cost_price === null ||
-                batch.cost_price === undefined ||
-                batch.cost_price === ""
-                  ? undefined
-                  : Number(batch.cost_price)
-              }
-              status={
-                getError(validationState, variantId, index, "cost_price").status
-              }
-              onChange={(value) =>
-                updateBatch(index, "cost_price", value === null ? null : value)
-              }
-            />
-            {getError(validationState, variantId, index, "cost_price").help && (
-              <Text type="danger">
-                {getError(validationState, variantId, index, "cost_price").help}
-              </Text>
-            )}
-          </Col>
-
-          <Col xs={24} md={4}>
-            <Text strong>Vendor</Text>
-            <VendorSelector
-              value={
-                typeof batch.vendor_id === "number"
-                  ? batch.vendor_id
-                  : undefined
-              }
-              onChange={(value) => updateBatch(index, "vendor_id", value)}
-            />
-          </Col>
-
-          <Col xs={24} md={4}>
-            <Text strong>
-              <Space size={4}>
-                <CalendarOutlined />
-                Expiry Date
-              </Space>
-            </Text>
-            <DatePicker
-              style={{ width: "100%" }}
-              value={batch.expiry_date ? dayjs(batch.expiry_date) : null}
-              status={
-                getError(validationState, variantId, index, "expiry_date").status
-              }
-              onChange={(date) =>
-                updateBatch(
-                  index,
-                  "expiry_date",
-                  date ? date.format("YYYY-MM-DD") : undefined,
-                )
-              }
-            />
-            {getError(validationState, variantId, index, "expiry_date").help && (
-              <Text type="danger">
-                {getError(validationState, variantId, index, "expiry_date").help}
-              </Text>
-            )}
-          </Col>
-
-          <Col xs={24} md={1}>
-            <Button
-              danger
-              icon={<MinusCircleOutlined />}
-              onClick={() => removeBatch(index)}
-            />
-          </Col>
-        </Row>
-      ))}
+            </div>
+          </Card>
+        );
+      })}
     </Space>
   );
 }

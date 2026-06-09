@@ -165,7 +165,7 @@ export default function VendorSelector({
 
   return (
     <>
-      <Space.Compact style={{ width: "100%" }}>
+      <Space.Compact style={{ width: "100%", minWidth: 0 }}>
         <Select
           allowClear={allowClear}
           showSearch
@@ -177,7 +177,7 @@ export default function VendorSelector({
           disabled={disabled}
           placeholder={placeholder || "Select vendor"}
           onChange={(nextValue) => onChange(nextValue)}
-          style={{ width: "100%" }}
+          style={{ width: "100%", minWidth: 0 }}
           optionFilterProp="label"
         />
         {showManageButton && (

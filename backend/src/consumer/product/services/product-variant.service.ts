@@ -8,16 +8,23 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductVariantService {
   private readonly logger = new Logger(ProductVariantService.name);
   constructor(private prisma: PrismaService) {}
 
-  async create(productId: number, userId: number | undefined, dto: CreateProductVariantDto) {
+  async create(
+    productId: number,
+    userId: number | undefined,
+    dto: CreateProductVariantDto,
+    prisma: Prisma.TransactionClient | PrismaService = this.prisma,
+    returnHydrated = true,
+  ) {
     try {
       // Create the variant
-      const variant = await this.prisma.productVariant.create({
+      const variant = await prisma.productVariant.create({
         data: {
           product_id: productId,
           name: dto.name,
@@ -41,7 +48,7 @@ export class ProductVariantService {
       });
 
       // Create initial price history record
-      await this.prisma.priceHistory.create({
+      await prisma.priceHistory.create({
         data: {
           variant_id: variant.id,
           regular_price: dto.regular_price,
@@ -51,7 +58,7 @@ export class ProductVariantService {
 
       // Create variant attributes if provided
       if (dto.attributes && dto.attributes.length > 0) {
-        await this.prisma.variantAttribute.createMany({
+        await prisma.variantAttribute.createMany({
           data: dto.attributes.map((attr) => ({
             variant_id: variant.id,
             consumer_id: variant.product.consumer_id,
@@ -64,7 +71,7 @@ export class ProductVariantService {
 
       // Create serial numbers if provided
       if (dto.serials && dto.serials.length > 0) {
-        await this.prisma.productSerial.createMany({
+        await prisma.productSerial.createMany({
           data: dto.serials.map((serialDto) => ({
             variant_id: variant.id,
             serial_number: serialDto.serial_number,
@@ -79,8 +86,27 @@ export class ProductVariantService {
       if (dto.batches && dto.batches.length > 0) {
         for (const batchDto of dto.batches) {
           try {
+            // Determine payment status and paid amount
+            const totalCost = Number(batchDto.cost_price) * batchDto.quantity;
+            let paidAmount = 0;
+            let paymentStatus = 'paid';
+
+            if (batchDto.payments && batchDto.payments.length > 0) {
+              paidAmount = batchDto.payments.reduce(
+                (sum, p) => sum + Number(p.amount),
+                0,
+              );
+              if (paidAmount >= totalCost) {
+                paymentStatus = 'paid';
+              } else if (paidAmount > 0) {
+                paymentStatus = 'partial';
+              } else {
+                paymentStatus = 'due';
+              }
+            }
+
             // 1. Create the batch and capture the result
-            const newBatch = await this.prisma.inventoryBatch.create({
+            const newBatch = await prisma.inventoryBatch.create({
               data: {
                 variant_id: variant.id,
                 branch_id: batchDto.branch_id,
@@ -91,12 +117,17 @@ export class ProductVariantService {
                 expiry_date: batchDto.expiry_date
                   ? new Date(batchDto.expiry_date)
                   : null,
+                payment_status: paymentStatus,
+                paid_amount:
+                  paymentStatus === 'paid' && !batchDto.payments?.length
+                    ? totalCost
+                    : paidAmount,
               },
             });
 
             // 2. Create Audit Log for the initial stock
             if (batchDto.quantity > 0) {
-              await this.prisma.inventoryAuditLog.create({
+              await prisma.inventoryAuditLog.create({
                 data: {
                   consumer_id: variant.product.consumer_id,
                   branch_id: batchDto.branch_id,
@@ -113,14 +144,35 @@ export class ProductVariantService {
                 },
               });
             }
+
+            // 3. Create purchase payment records if provided
+            if (batchDto.payments && batchDto.payments.length > 0) {
+              await Promise.all(
+                batchDto.payments.map((payment) =>
+                  prisma.purchasePayment.create({
+                    data: {
+                      batch_id: newBatch.id,
+                      payment_method: payment.payment_method,
+                      payment_type: (payment.payment_type as any) || null,
+                      amount: payment.amount,
+                      reference: payment.reference || null,
+                    },
+                  }),
+                ),
+              );
+            }
           } catch (error) {
-            // Log the error but continue with other batches
-            console.error(
+            this.logger.error(
               `Failed to create batch ${batchDto.batch_number}:`,
-              error,
+              error instanceof Error ? error.stack : error,
             );
+            throw error;
           }
         }
+      }
+
+      if (!returnHydrated) {
+        return variant;
       }
 
       return this.findOne(variant.id);

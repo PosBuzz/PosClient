@@ -7,6 +7,7 @@ import { CustomerModule } from './customer/customer.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PurchasePaymentsModule } from './purchase-payments/purchase-payments.module';
 import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
 import { PromotionsModule } from './promotions/promotions.module';
@@ -38,6 +39,7 @@ import { ReceiptModule } from './receipt-pdf/receipt.module';
     ReturnsModule,
     RewardsModule,
     PaymentsModule,
+    PurchasePaymentsModule,
     PromotionsModule,
     DashboardModule,
     ProductAuditModule,

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { VendorService } from '../services/vendor.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
@@ -35,6 +36,19 @@ export class VendorController {
   @Get()
   async findAll(@Req() req: Request) {
     return this.vendorService.findAll(Number(req.user.consumer_id));
+  }
+
+  @Get(':id/details')
+  async findOneWithDetails(
+    @Param('id') id: string,
+    @Query() query: { page?: number; limit?: number },
+    @Req() req: Request,
+  ) {
+    return this.vendorService.findOneWithDetails(
+      +id,
+      Number(req.user.consumer_id),
+      query,
+    );
   }
 
   @Get(':id')

@@ -3,6 +3,7 @@ import {
   FormSerial,
   TaxMethod,
 } from "../../types/product.types";
+import { PurchasePayment } from "../../types/purchase-payment.types";
 
 // Shared feature types for add/edit product state, payload fragments, and validation.
 
@@ -14,6 +15,7 @@ export interface VariantBatchInput {
   cost_price: number | string;
   vendor_id?: number;
   expiry_date?: string;
+  payments?: PurchasePayment[];
 }
 
 export interface VariantFormState {
@@ -88,5 +90,6 @@ export interface ProductPayloadVariant {
     cost_price: string;
     vendor_id?: number;
     expiry_date?: string;
+    payments?: PurchasePayment[];
   }[];
 }

@@ -58,6 +58,7 @@ export const endpoints = {
   createVendor: "/consumer/vendors",
   updateVendor: (id: number) => `/consumer/vendors/${id}`,
   deleteVendor: (id: number) => `/consumer/vendors/${id}`,
+  getVendorDetails: (id: number) => `/consumer/vendors/${id}/details`,
 
   // Customer management
   getCustomers: "/consumer/customers",
@@ -185,6 +186,14 @@ export const endpoints = {
   getSaleForPayment: (id: number) => `/consumer/payments/sales/${id}`,
   makePayment: "/consumer/payments/make-payment",
   getSalePayments: (id: number) => `/consumer/payments/sales/${id}/payments`,
+
+  // Purchase Payments Management
+  getPurchasePaymentBatches: "/consumer/purchase-payments/batches",
+  getBatchForPayment: (id: number) =>
+    `/consumer/purchase-payments/batches/${id}`,
+  makePurchasePayment: "/consumer/purchase-payments/make-payment",
+  getBatchPayments: (id: number) =>
+    `/consumer/purchase-payments/batches/${id}/payments`,
 
   // Product Audit
   getProductAudit: "/consumer/inventory/audit",

@@ -3,6 +3,7 @@ import {
   ProductFormValidationOptions,
   ValidationState,
 } from "../types";
+import { paymentMethodRequiresProvider } from "../../../utils/payment-provider.utils";
 
 // Central validation rules for product + variant forms, returning field-keyed errors.
 
@@ -235,6 +236,43 @@ export const validateProductForm = (
             `variant_${variantId}_batch_${batchIndex}_cost_price`,
             "Batch cost cannot be negative",
           );
+        }
+
+        const batchTotal = asNumber(batch.cost_price) * Number(batch.quantity || 0);
+        const validPayments =
+          batch.payments?.filter((payment) => Number(payment.amount) > 0) || [];
+        const totalPaid = validPayments.reduce(
+          (sum, payment) => sum + Number(payment.amount || 0),
+          0,
+        );
+
+        batch.payments?.forEach((payment, paymentIndex) => {
+          if (Number(payment.amount) <= 0) {
+            return;
+          }
+
+          if (
+            paymentMethodRequiresProvider(payment.payment_method) &&
+            !payment.payment_type
+          ) {
+            pushError(
+              validation,
+              `variant_${variantId}_batch_${batchIndex}_payment_${paymentIndex}_payment_type`,
+              "Provider is required",
+            );
+          }
+        });
+
+        if (totalPaid > batchTotal) {
+          batch.payments?.forEach((payment, paymentIndex) => {
+            if (Number(payment.amount) > 0) {
+              pushError(
+                validation,
+                `variant_${variantId}_batch_${batchIndex}_payment_${paymentIndex}_amount`,
+                "Payments exceed total cost",
+              );
+            }
+          });
         }
 
         if (normalizedBatchNo) {

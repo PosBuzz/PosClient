@@ -674,11 +674,13 @@ model InventoryBatch {
   quantity     Int
   // REMOVED: original_quantity — derive from PURCHASE_IN audit log row
   // REMOVED: source            — derive from event_type in audit log
-  cost_price   Decimal   @db.Decimal(10, 2)
-  vendor_id    Int?
-  expiry_date  DateTime?
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
+  cost_price     Decimal   @db.Decimal(10, 2)
+  vendor_id      Int?
+  expiry_date    DateTime?
+  payment_status String    @default("paid") // paid | partial | due
+  paid_amount    Decimal   @default(0) @db.Decimal(10, 2)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
   variant              ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
   branch               Branch                  @relation(fields: [branch_id], references: [id])
@@ -690,13 +692,32 @@ model InventoryBatch {
   ReturnItems          ReturnItem[]
   ReturnExchanges      ReturnExchange[]
   inventory_audit_logs InventoryAuditLog[]
+  purchasePayments     PurchasePayment[]
 
   @@index([variant_id, branch_id, quantity])
   @@index([vendor_id])
   @@index([expiry_date])
   @@index([batch_number])
   @@index([created_at])
+  @@index([payment_status])
   @@map("inventory_batches")
+}
+
+model PurchasePayment {
+  id             Int               @id @default(autoincrement())
+  batch_id       Int
+  payment_method PaymentMethodEnum
+  payment_type   PaymentTypeEnum?
+  amount         Decimal           @db.Decimal(10, 2)
+  reference      String?
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  batch InventoryBatch @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+
+  @@index([batch_id])
+  @@index([payment_method])
+  @@map("purchase_payments")
 }
 
 model InventoryTransfer {

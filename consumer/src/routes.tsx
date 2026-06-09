@@ -39,6 +39,7 @@ const InventoryMovementHistory = lazy(
   () => import("./pages/inventory-movement-history"),
 );
 const Vendors = lazy(() => import("./pages/vendors"));
+const ViewVendor = lazy(() => import("./pages/view-vendor"));
 const Branches = lazy(() => import("./pages/branches"));
 const Tags = lazy(() => import("./pages/tags"));
 const Categories = lazy(() => import("./pages/categories"));
@@ -68,6 +69,10 @@ const AddQuotation = lazy(() => import("./pages/add-quotation"));
 const ViewQuotation = lazy(() => import("./pages/view-quotation"));
 const PartialPayments = lazy(() => import("./pages/partial-payments"));
 const MakePayment = lazy(() => import("./pages/partial-payments/make-payment"));
+const PurchasePayments = lazy(() => import("./pages/purchase-payments"));
+const MakePurchasePayment = lazy(
+  () => import("./pages/purchase-payments/make-payment"),
+);
 const ProductVariantSalesStats = lazy(
   () => import("./pages/product-variant-sales-stats"),
 );
@@ -201,6 +206,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.vendors}>
             <Vendors />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "vendors/view/:id",
+        element: (
+          <RequirePermission permission={Permissions.vendors}>
+            <ViewVendor />
           </RequirePermission>
         ),
       },
@@ -496,6 +509,23 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <MakePayment />
+          </RequirePermission>
+        ),
+      },
+      // Purchase Payments Routes
+      {
+        path: "purchase-payments",
+        element: (
+          <RequirePermission permission={Permissions.inventory_batches}>
+            <PurchasePayments />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "purchase-payments/:id",
+        element: (
+          <RequirePermission permission={Permissions.inventory_batches}>
+            <MakePurchasePayment />
           </RequirePermission>
         ),
       },

@@ -1,5 +1,39 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+} from 'class-validator';
+import { PaymentMethodEnum, PaymentTypeEnum } from '@prisma/client';
+
+export class BatchPaymentItemDto {
+  @IsNotEmpty()
+  @IsEnum(PaymentMethodEnum)
+  payment_method: PaymentMethodEnum;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  @IsPositive()
+  @Min(0.01, { message: 'Payment amount must be greater than 0' })
+  amount: number;
+
+  @IsOptional()
+  @IsString()
+  reference?: string;
+
+  @IsOptional()
+  @IsEnum(PaymentTypeEnum)
+  payment_type?: PaymentTypeEnum;
+}
 
 export class CreateInventoryBatchDto {
   @IsInt()
@@ -29,4 +63,10 @@ export class CreateInventoryBatchDto {
   @IsOptional()
   @IsDateString()
   expiry_date?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BatchPaymentItemDto)
+  payments?: BatchPaymentItemDto[];
 }
