@@ -15,6 +15,8 @@ export interface ReceiptPdfSettings {
     size: string | number[];
     margins: { top: number; right: number; bottom: number; left: number };
   };
+  currencySymbol?: string;
+  currencyPosition?: "before" | "after";
   header: {
     show: boolean;
     text: string;

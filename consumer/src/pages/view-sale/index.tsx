@@ -1,4 +1,8 @@
-import { ArrowLeftOutlined, PrinterOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  FilePdfOutlined,
+  PrinterOutlined,
+} from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -7,6 +11,7 @@ import {
   Descriptions,
   Divider,
   message,
+  Modal,
   Row,
   Space,
   Spin,
@@ -15,7 +20,7 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
@@ -28,6 +33,10 @@ const { Text } = Typography;
 const SaleDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewUrlRef = useRef("");
 
   const saleQuery = useQuery({
     queryKey: [queryKeys.sale, parseInt(id || "0")],
@@ -77,6 +86,14 @@ const SaleDetail: React.FC = () => {
       setPageTitle(`Sale #${sale.sale_number}`);
     }
   }, [sale]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const getPaymentStatusColor = (status: PaymentStatus) => {
     switch (status) {
@@ -302,6 +319,38 @@ const SaleDetail: React.FC = () => {
     }
   };
 
+  const handleA4Preview = async () => {
+    if (!sale || !id) return;
+
+    setPreviewVisible(true);
+    setPreviewLoading(true);
+
+    try {
+      const blob = await salesApi.generateReceipt(Number(id));
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+
+      const url = URL.createObjectURL(blob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+    } catch {
+      message.error("Failed to generate A4 receipt preview");
+      setPreviewVisible(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewVisible(false);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = "";
+    }
+    setPreviewUrl("");
+  };
+
   const itemColumns = [
     {
       title: "Product",
@@ -473,6 +522,9 @@ const SaleDetail: React.FC = () => {
               onClick={handlePrint}
             >
               Print Receipt
+            </Button>
+            <Button icon={<FilePdfOutlined />} onClick={handleA4Preview}>
+              A4 Preview
             </Button>
           </Space>
         }
@@ -863,6 +915,48 @@ const SaleDetail: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      <Modal
+        title={`A4 Receipt Preview - ${sale.sale_number}`}
+        open={previewVisible}
+        onCancel={handleClosePreview}
+        width={800}
+        footer={[
+          <Button key="close" onClick={handleClosePreview}>
+            Close
+          </Button>,
+          previewUrl && (
+            <Button
+              key="download"
+              type="primary"
+              href={previewUrl}
+              download={`receipt-${sale.sale_number}.pdf`}
+            >
+              Download PDF
+            </Button>
+          ),
+        ]}
+        styles={{ body: { padding: 0, height: "100vh" } }}
+      >
+        {previewLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <Text>Generating preview...</Text>
+          </div>
+        ) : previewUrl ? (
+          <iframe
+            src={previewUrl}
+            style={{ width: "100%", height: "100%", border: "none" }}
+            title="A4 Receipt Preview"
+          />
+        ) : null}
+      </Modal>
     </div>
   );
 };

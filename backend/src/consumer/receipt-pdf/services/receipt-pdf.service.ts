@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as PDFDocument from 'pdfkit';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as bwipjs from 'bwip-js';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
-import { ReceiptPdfData, ReceiptPdfItem } from '../interfaces/receipt-pdf-data.interface';
+import {
+  ReceiptPdfData,
+  ReceiptPdfItem,
+} from '../interfaces/receipt-pdf-data.interface';
 
 /* ------------------------------------------------------------------ */
 /*  Internal helpers for table column layout                          */
@@ -21,6 +25,12 @@ interface ColumnDef {
 @Injectable()
 export class ReceiptPdfService {
   private readonly logger = new Logger(ReceiptPdfService.name);
+  private readonly pdfFontRegularPath = this.findFontFile(
+    'NotoSansBengali-Regular.ttf',
+  );
+  private readonly pdfFontBoldPath = this.findFontFile(
+    'NotoSansBengali-Bold.ttf',
+  );
 
   /* ================================================================== */
   /*  PUBLIC API                                                        */
@@ -47,6 +57,7 @@ export class ReceiptPdfService {
           Author: data.storeName,
         },
       });
+      this.registerPdfFonts(doc);
 
       const buffers: Buffer[] = [];
       doc.on('data', (b: Buffer) => buffers.push(b));
@@ -78,6 +89,30 @@ export class ReceiptPdfService {
 
       doc.end();
     });
+  }
+
+  private findFontFile(fileName: string): string | null {
+    const candidates = [
+      path.resolve(process.cwd(), 'src/assets/fonts', fileName),
+      path.resolve(process.cwd(), 'dist/assets/fonts', fileName),
+      path.resolve(process.cwd(), 'dist/assets/assets/fonts', fileName),
+      path.resolve(process.cwd(), 'assets/fonts', fileName),
+      path.resolve(__dirname, '../../../../assets/fonts', fileName),
+    ];
+
+    return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+  }
+
+  private registerPdfFonts(doc: PDFKit.PDFDocument): void {
+    if (!this.pdfFontRegularPath || !this.pdfFontBoldPath) {
+      this.logger.warn(
+        'Receipt PDF Unicode fonts were not found; falling back to built-in Helvetica fonts.',
+      );
+      return;
+    }
+
+    doc.registerFont('ReceiptCurrency', this.pdfFontRegularPath);
+    doc.registerFont('ReceiptCurrency-Bold', this.pdfFontBoldPath);
   }
 
   /* ================================================================== */
@@ -130,10 +165,7 @@ export class ReceiptPdfService {
   private async loadImage(pathOrUrl: string): Promise<Buffer | null> {
     if (!pathOrUrl) return null;
 
-    if (
-      !pathOrUrl.startsWith('http://') &&
-      !pathOrUrl.startsWith('https://')
-    ) {
+    if (!pathOrUrl.startsWith('http://') && !pathOrUrl.startsWith('https://')) {
       try {
         if (fs.existsSync(pathOrUrl)) return fs.readFileSync(pathOrUrl);
       } catch {
@@ -227,6 +259,105 @@ export class ReceiptPdfService {
     return lo > 0 ? text.substring(0, lo) + '…' : '…';
   }
 
+  private widthOfCurrencyAwareText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    font: string,
+    fontSize: number,
+    bold = false,
+  ): number {
+    if (!text.includes('৳') || !this.pdfFontRegularPath) {
+      return doc.font(font).fontSize(fontSize).widthOfString(text);
+    }
+
+    let width = 0;
+    for (const part of this.splitCurrencyText(text)) {
+      doc
+        .font(part === '৳' ? this.currencyFontName(bold) : font)
+        .fontSize(fontSize);
+      width += doc.widthOfString(part);
+    }
+    doc.font(font).fontSize(fontSize);
+    return width;
+  }
+
+  private drawCurrencyAwareText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x: number,
+    y: number,
+    options: PDFKit.Mixins.TextOptions & {
+      font: string;
+      fontSize: number;
+      bold?: boolean;
+    },
+  ): void {
+    const {
+      font,
+      fontSize,
+      bold = false,
+      width,
+      align,
+      ...textOptions
+    } = options;
+
+    if (!text.includes('৳') || !this.pdfFontRegularPath) {
+      doc
+        .font(font)
+        .fontSize(fontSize)
+        .text(text, x, y, {
+          width,
+          align,
+          ...textOptions,
+        });
+      return;
+    }
+
+    let cursorX = x;
+    const totalWidth = this.widthOfCurrencyAwareText(
+      doc,
+      text,
+      font,
+      fontSize,
+      bold,
+    );
+
+    if (width && align === 'right') cursorX = x + width - totalWidth;
+    if (width && align === 'center') cursorX = x + (width - totalWidth) / 2;
+
+    for (const part of this.splitCurrencyText(text)) {
+      const isCurrencyGlyph = part === '৳';
+      const partFont = isCurrencyGlyph ? this.currencyFontName(bold) : font;
+      const partY = isCurrencyGlyph
+        ? y + this.currencyGlyphYOffset(fontSize)
+        : y;
+      doc
+        .font(partFont)
+        .fontSize(fontSize)
+        .text(part, cursorX, partY, {
+          ...textOptions,
+          lineBreak: false,
+        });
+      cursorX += doc.font(partFont).fontSize(fontSize).widthOfString(part);
+    }
+
+    doc.font(font).fontSize(fontSize);
+  }
+
+  private splitCurrencyText(text: string): string[] {
+    return text.split(/(৳)/).filter(Boolean);
+  }
+
+  private currencyFontName(bold: boolean): string {
+    return bold && this.pdfFontBoldPath
+      ? 'ReceiptCurrency-Bold'
+      : 'ReceiptCurrency';
+  }
+
+  private currencyGlyphYOffset(fontSize: number): number {
+    return -fontSize * 0.16;
+  }
+
   private hr(
     doc: PDFKit.PDFDocument,
     y: number,
@@ -288,17 +419,27 @@ export class ReceiptPdfService {
   ): number {
     doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(fontSize);
 
-    const vw = doc.widthOfString(value);
+    const valueFont = bold ? 'Helvetica-Bold' : 'Helvetica';
+    const vw = this.widthOfCurrencyAwareText(
+      doc,
+      value,
+      valueFont,
+      fontSize,
+      bold,
+    );
     const valueX = rightEdge - vw;
     const gap = 8;
 
     const keyStartX = doc.page.margins.left;
     const keyMaxWidth = valueX - gap - keyStartX;
 
-    doc.text(value, valueX, y, {
+    this.drawCurrencyAwareText(doc, value, valueX, y, {
       width: vw + 2,
       lineBreak: false,
       align: 'right',
+      font: valueFont,
+      fontSize,
+      bold,
     });
 
     doc.font('Helvetica').fontSize(fontSize);
@@ -547,10 +688,7 @@ export class ReceiptPdfService {
       y += lh;
     }
 
-    let ry = Math.max(
-      startY,
-      y - lh * this.countOrderRightFields(data, s),
-    );
+    let ry = Math.max(startY, y - lh * this.countOrderRightFields(data, s));
 
     if (s.orderInfo.showCashier && data.cashierName) {
       doc
@@ -650,10 +788,7 @@ export class ReceiptPdfService {
       y += s.fontSizes.small + 3;
     }
 
-    if (
-      s.customerInfo.showRewardPoints &&
-      data.customerRewardPoints !== null
-    ) {
+    if (s.customerInfo.showRewardPoints && data.customerRewardPoints !== null) {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.small)
@@ -816,9 +951,7 @@ export class ReceiptPdfService {
       qty: String(item.quantity),
       unitPrice: this.fmt(item.unitPrice, data),
       discount:
-        item.totalDiscount > 0
-          ? '-' + this.fmt(item.totalDiscount, data)
-          : '—',
+        item.totalDiscount > 0 ? '-' + this.fmt(item.totalDiscount, data) : '—',
       tax:
         item.taxAmount > 0
           ? `${this.fmt(item.taxAmount, data)} ${item.taxMethod === 'INCLUSIVE' ? 'Inc.' : 'Exc.'}`
@@ -839,20 +972,21 @@ export class ReceiptPdfService {
     for (const c of cols) {
       const val = values[c.key] || '';
       const maxW = c.width - padding * 2;
+      const font = 'Helvetica';
+      doc.font(font).fontSize(s.fontSizes.body);
 
       let displayVal = val;
       if (c.key !== 'item') {
         displayVal = this.truncateText(doc, val, maxW);
       }
 
-      doc
-        .font('Helvetica')
-        .fontSize(s.fontSizes.body)
-        .text(displayVal, c.x + padding, y + 2, {
-          width: maxW,
-          align: c.align,
-          lineBreak: c.key === 'item',
-        });
+      this.drawCurrencyAwareText(doc, displayVal, c.x + padding, y + 2, {
+        width: maxW,
+        align: c.align,
+        lineBreak: c.key === 'item',
+        font,
+        fontSize: s.fontSizes.body,
+      });
     }
 
     y += rowH;
@@ -867,24 +1001,21 @@ export class ReceiptPdfService {
       const parts: string[] = [];
 
       if (item.specialDiscount > 0)
-        parts.push(
-          `Special Discount: ${this.fmt(item.specialDiscount, data)}`,
-        );
+        parts.push(`Special Discount: ${this.fmt(item.specialDiscount, data)}`);
       if (item.promotionDiscount > 0)
         parts.push(
           `Promotion Discount: ${this.fmt(item.promotionDiscount, data)}`,
         );
       if (item.averageDiscount > 0)
-        parts.push(
-          `Average Discount: ${this.fmt(item.averageDiscount, data)}`,
-        );
+        parts.push(`Average Discount: ${this.fmt(item.averageDiscount, data)}`);
 
-      doc
-        .font('Helvetica')
-        .fontSize(s.fontSizes.small)
-        .fillColor('#333333')
-        .text(parts.join('   |   '), indent, y, { width: uw - 12 })
-        .fillColor('#000000');
+      doc.font('Helvetica').fontSize(s.fontSizes.small).fillColor('#333333');
+      this.drawCurrencyAwareText(doc, parts.join('   |   '), indent, y, {
+        width: uw - 12,
+        font: 'Helvetica',
+        fontSize: s.fontSizes.small,
+      });
+      doc.fillColor('#000000');
       y += s.fontSizes.small + 3;
     }
 
@@ -895,19 +1026,19 @@ export class ReceiptPdfService {
     ) {
       y = this.ensureSpace(doc, y, 14, s);
       const indent = lm + 12;
-      const methodLabel =
-        item.taxMethod === 'INCLUSIVE' ? 'Incl.' : 'Excl.';
+      const methodLabel = item.taxMethod === 'INCLUSIVE' ? 'Incl.' : 'Excl.';
       const taxLine =
         item.taxPercentage > 0
           ? `Tax (${item.taxPercentage}% ${methodLabel}): ${this.fmt(item.taxAmount, data)}`
           : `Tax (${methodLabel}): ${this.fmt(item.taxAmount, data)}`;
 
-      doc
-        .font('Helvetica')
-        .fontSize(s.fontSizes.small)
-        .fillColor('#333333')
-        .text(taxLine, indent, y, { width: uw - 12 })
-        .fillColor('#000000');
+      doc.font('Helvetica').fontSize(s.fontSizes.small).fillColor('#333333');
+      this.drawCurrencyAwareText(doc, taxLine, indent, y, {
+        width: uw - 12,
+        font: 'Helvetica',
+        fontSize: s.fontSizes.small,
+      });
+      doc.fillColor('#000000');
       y += s.fontSizes.small + 3;
     }
 
