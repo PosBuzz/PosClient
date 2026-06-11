@@ -487,6 +487,7 @@ export default function ReceiptSettingsFormPage() {
                   label="Currency Symbol"
                 >
                   <Select>
+                    <Select.Option value="৳">৳</Select.Option>
                     <Select.Option value="$">$</Select.Option>
                     <Select.Option value="€">€</Select.Option>
                     <Select.Option value="£">£</Select.Option>
@@ -500,10 +501,10 @@ export default function ReceiptSettingsFormPage() {
                 >
                   <Select>
                     <Select.Option value="before">
-                      Before Amount ($100)
+                      Before Amount (৳100)
                     </Select.Option>
                     <Select.Option value="after">
-                      After Amount (100$)
+                      After Amount (100৳)
                     </Select.Option>
                   </Select>
                 </Form.Item>
@@ -1073,7 +1074,7 @@ export default function ReceiptSettingsFormPage() {
 
       {/* Preview Modal */}
       <Modal
-        title="Receipt Preview"
+        title="Sample Receipt Preview"
         open={previewVisible}
         onCancel={handleClosePreview}
         width={800}
@@ -1086,7 +1087,7 @@ export default function ReceiptSettingsFormPage() {
               key="download"
               type="primary"
               href={previewUrl}
-              download="receipt-preview.pdf"
+              download="sample-receipt-preview.pdf"
             >
               Download PDF
             </Button>
@@ -1104,9 +1105,9 @@ export default function ReceiptSettingsFormPage() {
             }}
           >
             <Space direction="vertical" align="center">
-              <Text>Generating preview...</Text>
+              <Text>Generating sample preview...</Text>
               <Text type="secondary">
-                Using sample data with your current settings
+                Using fake sample data with your current settings
               </Text>
             </Space>
           </div>
@@ -1114,7 +1115,7 @@ export default function ReceiptSettingsFormPage() {
           <iframe
             src={previewUrl}
             style={{ width: "100%", height: "100%", border: "none" }}
-            title="PDF Preview"
+            title="Sample PDF Preview"
           />
         ) : null}
       </Modal>

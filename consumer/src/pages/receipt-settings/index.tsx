@@ -560,7 +560,7 @@ export default function ReceiptSettingsPage() {
 
       {/* Preview Drawer */}
       <Modal
-        title="Receipt Preview"
+        title="Sample Receipt Preview"
         open={previewVisible}
         onCancel={handleClosePreview}
         width={800}
@@ -573,7 +573,7 @@ export default function ReceiptSettingsPage() {
               key="download"
               type="primary"
               href={previewUrl}
-              download="receipt-preview.pdf"
+              download="sample-receipt-preview.pdf"
             >
               Download PDF
             </Button>
@@ -590,13 +590,18 @@ export default function ReceiptSettingsPage() {
               height: "100%",
             }}
           >
-            <Text>Generating preview...</Text>
+            <Space direction="vertical" align="center">
+              <Text>Generating sample preview...</Text>
+              <Text type="secondary">
+                Using fake sample data with this receipt setting
+              </Text>
+            </Space>
           </div>
         ) : previewUrl ? (
           <iframe
             src={previewUrl}
             style={{ width: "100%", height: "100%", border: "none" }}
-            title="PDF Preview"
+            title="Sample PDF Preview"
           />
         ) : null}
       </Modal>
