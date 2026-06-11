@@ -108,7 +108,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
     size: 'A4',
     margins: { top: 50, right: 50, bottom: 50, left: 50 },
   },
-  currencySymbol: '$',
+  currencySymbol: '৳',
   currencyPosition: 'before',
   header: {
     show: true,

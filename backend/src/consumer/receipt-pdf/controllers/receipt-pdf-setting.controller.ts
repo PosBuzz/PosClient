@@ -61,7 +61,7 @@ export class ReceiptPdfSettingController {
     const defaults = PRESET_DEFAULTS[body.type] || PRESET_DEFAULTS.receipt;
     const mergedSettings = this.deepMergeSettings(defaults, body.settings);
 
-    // 2. Get mock data as base (items, totals, payments, etc.)
+    // 2. Get sample data as base (items, totals, payments, etc.)
     const mockData = this.getMockPdfData(body.type);
 
     if (mergedSettings.header?.text) {
@@ -92,7 +92,7 @@ export class ReceiptPdfSettingController {
       }
 
       if (branding) {
-        // Overwrite mock branding with real data
+        // Show real branding/layout context, while all transaction data stays sample.
         mockData.storeName = branding.storeName || mockData.storeName;
         mockData.logoPath = branding.logoPath || mockData.logoPath;
 
@@ -106,9 +106,9 @@ export class ReceiptPdfSettingController {
           mockData.vatRegistrationNumber = branding.vatRegistrationNumber;
       }
     } catch (error) {
-      // If branding fetch fails, continue with pure mock data
+      // If branding fetch fails, continue with pure sample data
       this.logger?.warn?.(
-        `Preview: Could not load branding data, using mock — ${error.message}`,
+        `Preview: Could not load branding data, using sample data — ${error.message}`,
       );
     }
 
@@ -223,39 +223,39 @@ export class ReceiptPdfSettingController {
     return this.service.deleteSetting(id, consumerId);
   }
 
-  // ─── MOCK DATA ───
+  // ─── SAMPLE PREVIEW DATA ───
 
   private getMockPdfData(type: ReceiptPresetType): ReceiptPdfData {
     const base: ReceiptPdfData = {
-      storeName: 'PosBuzz Store',
-      branchName: 'Main Branch',
-      branchAddress: '123 Commerce Street, Business District',
-      branchPhone: '+1 234 567 890',
-      branchEmail: 'store@posbuzz.com',
+      storeName: 'Sample Preview Store',
+      branchName: 'Sample Branch (Preview)',
+      branchAddress: '123 Sample Street, Demo City',
+      branchPhone: '+880 1000 000 000',
+      branchEmail: 'fake.sample@email.com',
       logoPath: '',
-      currencySymbol: '$',
+      currencySymbol: '৳',
       currencyPosition: 'before',
-      vatRegistrationNumber: 'VAT123456789',
+      vatRegistrationNumber: 'SAMPLE-VAT-000000',
       footerTerms:
-        'All sales are final. Items must be returned within 7 days with original receipt.',
-      headerText: 'RECEIPT',
-      saleNumber: 'SL-2024-001234',
+        'SAMPLE PREVIEW ONLY. This fake receipt data is used only to preview PDF layout and settings.',
+      headerText: 'SAMPLE RECEIPT',
+      saleNumber: 'SAMPLE-SL-000123',
       saleDate: new Date(),
       saleType: 'sale',
       priceType: 'regular',
       paymentStatus: 'paid',
-      cashierName: 'John Doe',
-      servedByName: 'Jane Smith',
-      customerName: 'Alice Johnson',
-      customerPhone: '+1 987 654 321',
-      customerEmail: 'alice@example.com',
+      cashierName: 'Sample Cashier',
+      servedByName: 'Sample Staff',
+      customerName: 'Sample Customer (Fake)',
+      customerPhone: '+880 1999 000 000',
+      customerEmail: 'fake.sample@email.com',
       customerRewardPoints: 150,
       items: [
         {
-          productName: 'Wireless Bluetooth Headphones',
-          variantName: 'Black',
-          sku: 'WBH-001',
-          barcode: '1234567890',
+          productName: 'Sample Product - Bluetooth Headphones',
+          variantName: 'Demo Black',
+          sku: 'SAMPLE-WBH-001',
+          barcode: 'SAMPLE123456',
           quantity: 2,
           unitPrice: 49.99,
           soldUnitPrice: 49.99,
@@ -269,10 +269,10 @@ export class ReceiptPdfSettingController {
           lineTotal: 94.98,
         },
         {
-          productName: 'USB-C Charging Cable',
-          variantName: '1m',
-          sku: 'UCC-010',
-          barcode: '9876543210',
+          productName: 'Sample Product - USB-C Cable',
+          variantName: 'Demo 1m',
+          sku: 'SAMPLE-UCC-010',
+          barcode: 'SAMPLE987654',
           quantity: 3,
           unitPrice: 12.99,
           soldUnitPrice: 12.99,
@@ -286,10 +286,10 @@ export class ReceiptPdfSettingController {
           lineTotal: 36.97,
         },
         {
-          productName: 'Phone Case Premium',
-          variantName: 'iPhone 15',
-          sku: 'PCP-015',
-          barcode: '5556667778',
+          productName: 'Sample Product - Phone Case',
+          variantName: 'Demo Model',
+          sku: 'SAMPLE-PCP-015',
+          barcode: 'SAMPLE555666',
           quantity: 1,
           unitPrice: 29.99,
           soldUnitPrice: 29.99,
@@ -313,32 +313,37 @@ export class ReceiptPdfSettingController {
         { method: 'Cash', type: '', amount: 100.0, reference: '' },
         {
           method: 'Card',
-          type: 'Visa',
+          type: 'Sample Card',
           amount: 67.62,
-          reference: 'TXN-789012',
+          reference: 'SAMPLE-TXN-789012',
         },
       ],
       receivedAmount: 170.0,
       changeAmount: 2.38,
       dueAmount: 0,
-      notes: 'Customer requested gift wrapping.',
+      notes:
+        'SAMPLE PREVIEW ONLY - This is fake data for testing the receipt PDF layout.',
       isOnlineOrder: false,
       onlineOrderStatus: null,
     };
 
     if (type === 'quotation') {
       base.saleType = 'quotation';
-      base.headerText = 'QUOTATION';
+      base.headerText = 'SAMPLE QUOTATION';
+      base.saleNumber = 'SAMPLE-QT-000123';
       base.paymentStatus = 'unpaid';
       base.payments = [];
       base.receivedAmount = 0;
       base.changeAmount = 0;
       base.dueAmount = base.totalAmount;
-      base.notes = 'Valid for 30 days from issue date.';
+      base.notes =
+        'SAMPLE PREVIEW ONLY - This fake quotation is used to preview layout.';
     } else if (type === 'return') {
       base.saleType = 'return';
-      base.headerText = 'RETURN RECEIPT';
-      base.notes = 'Refund processed to original payment method.';
+      base.headerText = 'SAMPLE RETURN RECEIPT';
+      base.saleNumber = 'SAMPLE-RT-000123';
+      base.notes =
+        'SAMPLE PREVIEW ONLY - This fake return receipt is used to preview layout.';
     }
 
     return base;

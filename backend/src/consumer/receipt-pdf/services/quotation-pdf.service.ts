@@ -57,7 +57,7 @@ export class QuotationPdfService {
       logoPath: branding.logoPath,
       vatRegistrationNumber: branding.vatRegistrationNumber,
 
-      currencySymbol: settings.currencySymbol || '$',
+      currencySymbol: settings.currencySymbol || '৳',
       currencyPosition: settings.currencyPosition || 'before',
       footerTerms: normalizeLineBreaks(settings.footer?.termsText || ''),
 

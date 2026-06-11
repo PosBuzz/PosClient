@@ -55,7 +55,7 @@ export class ReturnPdfService {
       .map((item: any) => {
         const variant = item.variant || item.sale_item?.variant;
         const saleItem = item.sale_item;
-        
+
         // Use sold_unit_price for accurate refund representation
         const unitPrice = Number(saleItem?.sold_unit_price || saleItem?.unit_price || 0);
         const qty = Number(item.quantity) || 0;
@@ -117,7 +117,7 @@ export class ReturnPdfService {
       logoPath: branding.logoPath,
       vatRegistrationNumber: branding.vatRegistrationNumber,
 
-      currencySymbol: settings.currencySymbol || '$',
+      currencySymbol: settings.currencySymbol || '৳',
       currencyPosition: settings.currencyPosition || 'before',
       footerTerms: normalizeLineBreaks(settings.footer?.termsText || ''),
 
