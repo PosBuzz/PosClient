@@ -910,6 +910,7 @@ export class SalesService {
           { sku: { contains: search, mode: 'insensitive' } },
           { barcode: { contains: search, mode: 'insensitive' } },
           { product: { name: { contains: search, mode: 'insensitive' } } },
+          { product: { code: { contains: search, mode: 'insensitive' } } },
         ];
       }
 
@@ -939,6 +940,7 @@ export class SalesService {
         wholesale_price: variant.wholesale_price,
         image: variant.image,
         product_name: variant.product.name,
+        product_code: variant.product.code,
         unit_name: variant.sale_unit.name,
         tax_percentage: variant.product.tax || 0,
         tax_method: variant.product.tax_method || 'exclusive',
@@ -1001,6 +1003,7 @@ export class SalesService {
         wholesale_price: variant.wholesale_price,
         image: variant.image,
         product_name: variant.product.name,
+        product_code: variant.product.code,
         unit_name: variant.sale_unit.name,
         tax_percentage: variant.product.tax || 0,
         tax_method: variant.product.tax_method || 'exclusive',
