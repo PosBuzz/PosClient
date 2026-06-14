@@ -93,6 +93,7 @@ const NewSale = () => {
     setCustomers,
     servedByUsers,
     filteredVariants,
+    setProductSearch,
     selectedBranch,
     setSelectedBranch,
     selectedCustomer,
@@ -1002,6 +1003,8 @@ const NewSale = () => {
             style={{ width: "100%" }}
             optionFilterProp="children"
             value={null}
+            onSearch={setProductSearch}
+            onClear={() => setProductSearch("")}
             onChange={(value) => {
               if (value) {
                 const selectedVariant = filteredVariants.find(
@@ -1011,6 +1014,7 @@ const NewSale = () => {
                   addToSale(selectedVariant);
                 }
               }
+              setProductSearch("");
             }}
             filterOption={(input, option) =>
               (option?.label?.toString().toLowerCase() || "").includes(
@@ -1024,7 +1028,9 @@ const NewSale = () => {
               <Option
                 key={variant.id}
                 value={variant.id}
-                label={`${variant.product_name} - ${variant.name}`}
+                label={`${variant.product_name} - ${variant.name}${
+                  variant.product_code ? ` - ${variant.product_code}` : ""
+                }`}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {variant.image && (
@@ -1043,6 +1049,11 @@ const NewSale = () => {
                     <span style={{ fontWeight: 500 }}>
                       {variant.product_name} - {variant.name}
                     </span>
+                    {variant.product_code && (
+                      <div style={{ fontSize: 11, color: "#666" }}>
+                        Code: {variant.product_code}
+                      </div>
+                    )}
                     {variant.sku && (
                       <div style={{ fontSize: 11, color: "#666" }}>
                         SKU: {variant.sku}

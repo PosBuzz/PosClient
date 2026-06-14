@@ -39,6 +39,7 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   const [filteredVariants, setFilteredVariants] = useState<
     ProductVariantForSale[]
   >([]);
+  const [productSearch, setProductSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
@@ -83,8 +84,12 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   });
 
   const productsForSaleQuery = useQuery({
-    queryKey: [queryKeys.productsForSale, selectedBranch],
-    queryFn: () => salesApi.getProductsForSale(selectedBranch!),
+    queryKey: [queryKeys.productsForSale, selectedBranch, productSearch],
+    queryFn: () =>
+      salesApi.getProductsForSale(
+        selectedBranch!,
+        productSearch.trim() || undefined,
+      ),
     enabled: !!selectedBranch,
     staleTime: queryStaleTimeMap[queryKeys.productsForSale],
   });
@@ -131,6 +136,7 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   const handleBranchChange = (branchId: number) => {
     setSelectedBranch(branchId);
     setSelectedItems([]);
+    setProductSearch("");
     setAverageDiscountType(DiscountType.FLAT);
     form.setFieldsValue({ branch_id: branchId, average_discount_amount: 0 });
   };
@@ -144,6 +150,8 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     setServedByUsers,
     filteredVariants,
     setFilteredVariants,
+    productSearch,
+    setProductSearch,
     selectedBranch,
     setSelectedBranch,
     selectedCustomer,
