@@ -250,6 +250,7 @@ export interface ProductVariantForSale {
   wholesale_price?: number;
   image?: string;
   product_name: string;
+  product_code?: string;
   unit_name: string;
   tax_percentage: number;
   tax_method: string; // "inclusive" or "exclusive"

@@ -106,6 +106,7 @@ const NewSale = () => {
     setCustomers,
     servedByUsers,
     filteredVariants,
+    setProductSearch,
     selectedBranch,
     selectedServedByUser,
     setSelectedServedByUser,
@@ -1308,6 +1309,8 @@ const NewSale = () => {
                   size="small"
                   optionFilterProp="children"
                   value={null}
+                  onSearch={setProductSearch}
+                  onClear={() => setProductSearch("")}
                   onChange={(value) => {
                     if (value) {
                       const selectedVariant = filteredVariants.find(
@@ -1315,6 +1318,7 @@ const NewSale = () => {
                       );
                       if (selectedVariant) addToSale(selectedVariant);
                     }
+                    setProductSearch("");
                     setTimeout(() => {
                       const activeElement =
                         document.activeElement as HTMLElement;
@@ -1334,7 +1338,9 @@ const NewSale = () => {
                     <Option
                       key={variant.id}
                       value={variant.id}
-                      label={`${variant.product_name} - ${variant.name}`}
+                      label={`${variant.product_name} - ${variant.name}${
+                        variant.product_code ? ` - ${variant.product_code}` : ""
+                      }`}
                     >
                       <div
                         style={{
@@ -1375,6 +1381,8 @@ const NewSale = () => {
                           </div>
                           <div style={{ fontSize: 11 }}>
                             {variant.name}
+                            {variant.product_code &&
+                              ` • Code: ${variant.product_code}`}
                             {variant.sku && ` • ${variant.sku}`}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 700 }}>
