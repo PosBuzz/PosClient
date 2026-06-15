@@ -1455,7 +1455,7 @@ const NewSale = () => {
                           fontSize: 11,
                         }}
                       >
-                        <PercentageOutlined /> %
+                        <PercentageOutlined />
                       </Radio.Button>
                     </Radio.Group>
                   </Col>
