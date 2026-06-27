@@ -64,6 +64,7 @@ export interface ReceiptPdfSettings {
   };
   totals: {
     show: boolean;
+    titleAlign?: "left" | "right";
     showSubtotal: boolean;
     showDiscount: boolean;
     showShipping: boolean;
@@ -71,9 +72,11 @@ export interface ReceiptPdfSettings {
   };
   payment: {
     show: boolean;
+    titleAlign?: "left" | "right";
     showBreakdown: boolean;
     showReceivedAmount: boolean;
     showChangeAmount: boolean;
+    showDueAmount?: boolean;
   };
   notes: {
     show: boolean;

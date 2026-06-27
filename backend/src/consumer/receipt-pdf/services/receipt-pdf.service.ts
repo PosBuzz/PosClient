@@ -416,6 +416,7 @@ export class ReceiptPdfService {
     rightEdge: number,
     fontSize: number,
     bold = false,
+    keyAlign: 'left' | 'right' = 'left',
   ): number {
     doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(fontSize);
 
@@ -430,8 +431,17 @@ export class ReceiptPdfService {
     const valueX = rightEdge - vw;
     const gap = 8;
 
-    const keyStartX = doc.page.margins.left;
-    const keyMaxWidth = valueX - gap - keyStartX;
+    const keyAvailableWidth = Math.max(0, valueX - gap - doc.page.margins.left);
+    const keyTextWidth = doc
+      .font('Helvetica')
+      .fontSize(fontSize)
+      .widthOfString(key);
+    const keyMaxWidth =
+      keyAlign === 'right'
+        ? Math.min(Math.max(keyTextWidth + 2, 40), keyAvailableWidth)
+        : keyAvailableWidth;
+    const keyStartX =
+      keyAlign === 'right' ? valueX - gap - keyMaxWidth : doc.page.margins.left;
 
     this.drawCurrencyAwareText(doc, value, valueX, y, {
       width: vw + 2,
@@ -446,11 +456,99 @@ export class ReceiptPdfService {
 
     if (keyMaxWidth > 0) {
       const keyHeight = doc.heightOfString(key, { width: keyMaxWidth });
-      doc.text(key, keyStartX, y, { width: keyMaxWidth, lineBreak: true });
+      doc.text(key, keyStartX, y, {
+        width: keyMaxWidth,
+        align: keyAlign,
+        lineBreak: true,
+      });
       return y + keyHeight + 5;
     }
 
     return y + fontSize + 5;
+  }
+
+  private drawRightAlignedKeyValueRows(
+    doc: PDFKit.PDFDocument,
+    rows: { key: string; value: string; bold?: boolean }[],
+    y: number,
+    rightEdge: number,
+    fontSize: number,
+  ): number {
+    if (!rows.length) return y;
+
+    const gap = 8;
+    const leftEdge = doc.page.margins.left;
+
+    const valueWidths = rows.map((row) =>
+      this.widthOfCurrencyAwareText(
+        doc,
+        row.value,
+        row.bold ? 'Helvetica-Bold' : 'Helvetica',
+        fontSize,
+        !!row.bold,
+      ),
+    );
+    const maxValueWidth = Math.max(...valueWidths);
+    const labelRightEdge = rightEdge - maxValueWidth - gap;
+    const availableLabelWidth = Math.max(0, labelRightEdge - leftEdge);
+
+    if (availableLabelWidth <= 0) {
+      return rows.reduce(
+        (currentY, row) =>
+          this.drawKeyValueRight(
+            doc,
+            row.key,
+            row.value,
+            currentY,
+            rightEdge,
+            fontSize,
+            !!row.bold,
+          ),
+        y,
+      );
+    }
+
+    const labelWidth = Math.min(
+      Math.max(
+        ...rows.map((row) =>
+          doc
+            .font(row.bold ? 'Helvetica-Bold' : 'Helvetica')
+            .fontSize(fontSize)
+            .widthOfString(row.key),
+        ),
+        40,
+      ) + 2,
+      availableLabelWidth,
+    );
+    const labelX = labelRightEdge - labelWidth;
+
+    rows.forEach((row, index) => {
+      const bold = !!row.bold;
+      const valueFont = bold ? 'Helvetica-Bold' : 'Helvetica';
+      const valueX = rightEdge - valueWidths[index];
+
+      doc
+        .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+        .fontSize(fontSize)
+        .text(row.key, labelX, y, {
+          width: labelWidth,
+          align: 'right',
+          lineBreak: false,
+        });
+
+      this.drawCurrencyAwareText(doc, row.value, valueX, y, {
+        width: valueWidths[index] + 2,
+        lineBreak: false,
+        align: 'right',
+        font: valueFont,
+        fontSize,
+        bold,
+      });
+
+      y += fontSize + 5;
+    });
+
+    return y;
   }
 
   private formatDate(d: Date): string {
@@ -764,7 +862,7 @@ export class ReceiptPdfService {
       doc
         .font('Helvetica')
         .fontSize(s.fontSizes.body)
-        .text(data.customerName, lm + 8, y, { width: uw });
+        .text(data.customerName, lm, y, { width: uw });
       y += lh;
     }
 
@@ -772,7 +870,7 @@ export class ReceiptPdfService {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.small)
-        .text('Phone: ', lm + 8, y, { continued: true, width: uw })
+        .text('Phone: ', lm, y, { continued: true, width: uw })
         .font('Helvetica')
         .text(data.customerPhone);
       y += s.fontSizes.small + 3;
@@ -782,7 +880,7 @@ export class ReceiptPdfService {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.small)
-        .text('Email: ', lm + 8, y, { continued: true, width: uw })
+        .text('Email: ', lm, y, { continued: true, width: uw })
         .font('Helvetica')
         .text(data.customerEmail);
       y += s.fontSizes.small + 3;
@@ -792,7 +890,7 @@ export class ReceiptPdfService {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.small)
-        .text('Reward Points: ', lm + 8, y, { continued: true, width: uw })
+        .text('Reward Points: ', lm, y, { continued: true, width: uw })
         .font('Helvetica')
         .text(String(data.customerRewardPoints));
       y += s.fontSizes.small + 3;
@@ -1061,27 +1159,20 @@ export class ReceiptPdfService {
 
     const rightEdge = lm + uw;
     const fs = s.fontSizes.body;
+    const totalRows: { key: string; value: string; bold?: boolean }[] = [];
 
     if (s.totals.showSubtotal) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Subtotal:',
-        this.fmt(data.subtotal, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      totalRows.push({
+        key: 'Subtotal:',
+        value: this.fmt(data.subtotal, data),
+      });
     }
 
     if (s.totals.showDiscount && data.discountAmount > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Discount:',
-        '-' + this.fmt(data.discountAmount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      totalRows.push({
+        key: 'Discount:',
+        value: '-' + this.fmt(data.discountAmount, data),
+      });
     }
 
     if (
@@ -1089,50 +1180,59 @@ export class ReceiptPdfService {
       data.promotionDiscount > 0 &&
       data.discountAmount !== data.promotionDiscount
     ) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Promo Discount:',
-        '-' + this.fmt(data.promotionDiscount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      totalRows.push({
+        key: 'Promo Discount:',
+        value: '-' + this.fmt(data.promotionDiscount, data),
+      });
     }
 
     if (s.totals.showShipping && data.shippingCost > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Shipping:',
-        this.fmt(data.shippingCost, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      totalRows.push({
+        key: 'Shipping:',
+        value: this.fmt(data.shippingCost, data),
+      });
     }
 
     if (s.totals.showTax && data.taxAmount > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Tax:',
-        this.fmt(data.taxAmount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      totalRows.push({ key: 'Tax:', value: this.fmt(data.taxAmount, data) });
+    }
+
+    if (s.totals.titleAlign === 'right') {
+      y = this.drawRightAlignedKeyValueRows(doc, totalRows, y, rightEdge, fs);
+    } else {
+      for (const row of totalRows) {
+        y = this.drawKeyValueRight(doc, row.key, row.value, y, rightEdge, fs);
+      }
     }
 
     y += 2;
     const hrWidth = Math.min(Math.max(uw * 0.6, 100), uw);
     y = this.doubleHr(doc, y, rightEdge - hrWidth, hrWidth);
-    y = this.drawKeyValueRight(
-      doc,
-      'TOTAL:',
-      this.fmt(data.totalAmount, data),
-      y,
-      rightEdge,
-      s.fontSizes.subtitle,
-      true,
-    );
+    if (s.totals.titleAlign === 'right') {
+      y = this.drawRightAlignedKeyValueRows(
+        doc,
+        [
+          {
+            key: 'TOTAL:',
+            value: this.fmt(data.totalAmount, data),
+            bold: true,
+          },
+        ],
+        y,
+        rightEdge,
+        s.fontSizes.subtitle,
+      );
+    } else {
+      y = this.drawKeyValueRight(
+        doc,
+        'TOTAL:',
+        this.fmt(data.totalAmount, data),
+        y,
+        rightEdge,
+        s.fontSizes.subtitle,
+        true,
+      );
+    }
     y += 4;
 
     y = this.hr(doc, y, lm, uw);
@@ -1160,8 +1260,13 @@ export class ReceiptPdfService {
     doc
       .font('Helvetica-Bold')
       .fontSize(s.fontSizes.heading)
-      .text('Payment', lm, y, { width: uw });
+      .text('Payment', lm, y, {
+        width: uw,
+        align: s.payment.titleAlign === 'right' ? 'right' : 'left',
+      });
     y += s.fontSizes.heading + 6;
+
+    const paymentRows: { key: string; value: string }[] = [];
 
     if (s.payment.showBreakdown && data.payments.length > 0) {
       for (const p of data.payments) {
@@ -1169,59 +1274,43 @@ export class ReceiptPdfService {
         if (p.type) label += ' (' + p.type + ')';
         if (p.reference) label += ' — Ref: ' + p.reference;
 
-        y = this.drawKeyValueRight(
-          doc,
-          label + ':',
-          this.fmt(p.amount, data),
-          y,
-          rightEdge,
-          fs,
-        );
+        paymentRows.push({ key: label + ':', value: this.fmt(p.amount, data) });
       }
     } else if (data.payments.length === 1) {
       const p = data.payments[0];
-      const label = 'Method:';
-      y = this.drawKeyValueRight(
-        doc,
-        label,
-        p.method + (p.type ? ' (' + p.type + ')' : ''),
-        y,
-        rightEdge,
-        fs,
-      );
+      paymentRows.push({
+        key: 'Method:',
+        value: p.method + (p.type ? ' (' + p.type + ')' : ''),
+      });
     }
 
     if (s.payment.showReceivedAmount && data.receivedAmount > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Received:',
-        this.fmt(data.receivedAmount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      paymentRows.push({
+        key: 'Received:',
+        value: this.fmt(data.receivedAmount, data),
+      });
     }
 
     if (s.payment.showChangeAmount && data.changeAmount > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Change:',
-        this.fmt(data.changeAmount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      paymentRows.push({
+        key: 'Change:',
+        value: this.fmt(data.changeAmount, data),
+      });
     }
 
     if (s.payment.showDueAmount !== false && data.dueAmount > 0) {
-      y = this.drawKeyValueRight(
-        doc,
-        'Due:',
-        this.fmt(data.dueAmount, data),
-        y,
-        rightEdge,
-        fs,
-      );
+      paymentRows.push({
+        key: 'Due:',
+        value: this.fmt(data.dueAmount, data),
+      });
+    }
+
+    if (s.payment.titleAlign === 'right') {
+      y = this.drawRightAlignedKeyValueRows(doc, paymentRows, y, rightEdge, fs);
+    } else {
+      for (const row of paymentRows) {
+        y = this.drawKeyValueRight(doc, row.key, row.value, y, rightEdge, fs);
+      }
     }
 
     if (data.paymentStatus && data.paymentStatus !== 'paid') {
