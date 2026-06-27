@@ -145,7 +145,9 @@ export class InventoryService {
         whereClause.OR = [
           { name: { contains: search, mode: 'insensitive' } },
           { product: { name: { contains: search, mode: 'insensitive' } } },
+          { product: { code: { contains: search, mode: 'insensitive' } } },
           { sku: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
         ];
       }
 

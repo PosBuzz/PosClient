@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   BankOutlined,
@@ -79,6 +80,7 @@ import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useModalStore } from "../../stores/modalStore";
+import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -721,7 +723,7 @@ const NewSale = () => {
       title: "Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
+      render: (price: number) => <Money value={price} />,
     },
     {
       title: "Qty",
@@ -758,7 +760,7 @@ const NewSale = () => {
           .toString()
           .toUpperCase();
         const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
-        return `$${(Number(record.tax_amount) || 0).toFixed(2)} (${taxLabel})`;
+        return <Money value={record.tax_amount} suffix={` (${taxLabel})`} />;
       },
     },
     {
@@ -767,7 +769,7 @@ const NewSale = () => {
       render: (record: SaleItem) => {
         const avgDiscount =
           totals.discountBreakdownByVariant?.[record.variant_id]?.average || 0;
-        return `-$${(Number(avgDiscount) || 0).toFixed(2)}`;
+        return <Money value={avgDiscount} negative />;
       },
     },
     {
@@ -799,7 +801,7 @@ const NewSale = () => {
           totals.discountBreakdownByVariant?.[record.variant_id]?.promotionId;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span>{`-$${(Number(promoDiscount) || 0).toFixed(2)}`}</span>
+            <Money value={promoDiscount} negative />
             {promoName ? (
               <Tag
                 className="w-max"
@@ -827,7 +829,7 @@ const NewSale = () => {
           totals.discountBreakdownByVariant?.[record.variant_id]?.total || 0;
         const netLineTotal =
           (Number(record.line_total) || 0) - (Number(rowDiscount) || 0);
-        return `$${(Number(netLineTotal) || 0).toFixed(2)}`;
+        return <Money value={netLineTotal} />;
       },
     },
     {
@@ -1326,11 +1328,7 @@ const NewSale = () => {
                         activeElement.blur();
                     }, 0);
                   }}
-                  filterOption={(input, option) =>
-                    (option?.label?.toString().toLowerCase() || "").includes(
-                      input.toLowerCase(),
-                    )
-                  }
+                  filterOption={false}
                   loading={productsForSaleQuery.isLoading}
                   disabled={!selectedBranch}
                 >
@@ -1338,9 +1336,7 @@ const NewSale = () => {
                     <Option
                       key={variant.id}
                       value={variant.id}
-                      label={`${variant.product_name} - ${variant.name}${
-                        variant.product_code ? ` - ${variant.product_code}` : ""
-                      }`}
+                      label={getProductVariantSearchLabel(variant)}
                     >
                       <div
                         style={{
@@ -1384,6 +1380,7 @@ const NewSale = () => {
                             {variant.product_code &&
                               ` • Code: ${variant.product_code}`}
                             {variant.sku && ` • ${variant.sku}`}
+                            {variant.barcode && ` • ${variant.barcode}`}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 700 }}>
                             ${" "}
@@ -1477,7 +1474,7 @@ const NewSale = () => {
                         prefix={
                           averageDiscountType === DiscountType.PERCENTAGE
                             ? "%"
-                            : "$"
+                            : takaPrefix
                         }
                         onPressEnter={(e) =>
                           (e.target as HTMLInputElement).blur()
@@ -1499,7 +1496,7 @@ const NewSale = () => {
                         min={0}
                         size="small"
                         style={{ width: "100%" }}
-                        prefix="$"
+                        prefix={takaPrefix}
                         onPressEnter={(e) =>
                           (e.target as HTMLInputElement).blur()
                         }
@@ -1698,7 +1695,7 @@ const NewSale = () => {
                                   precision={2}
                                   style={{ width: "100%" }}
                                   placeholder="Amount"
-                                  prefix="$"
+                                  prefix={takaPrefix}
                                 />
                               </Col>
                               <Col span={requiresProvider ? 5 : 7}>
@@ -1929,32 +1926,32 @@ const NewSale = () => {
               {[
                 {
                   label: "Subtotal",
-                  value: `$${(Number(totals.subtotal) || 0).toFixed(2)}`,
+                  value: <Money value={totals.subtotal} />,
                 },
                 {
                   label: "Tax",
-                  value: `$${(Number(totals.totalTax) || 0).toFixed(2)}`,
+                  value: <Money value={totals.totalTax} />,
                 },
                 {
                   label: "Discount",
-                  value: `-$${(Number(totals.finalDiscount) || 0).toFixed(2)}`,
+                  value: <Money value={totals.finalDiscount} negative />,
                   highlight: totals.finalDiscount > 0,
                 },
                 {
                   label: "Promo Disc",
-                  value: `-$${(Number(totals.promotionDiscount) || 0).toFixed(2)}`,
+                  value: <Money value={totals.promotionDiscount} negative />,
                 },
                 {
                   label: "Avg Disc",
-                  value: `-$${(Number(totals.averageDiscount) || 0).toFixed(2)}`,
+                  value: <Money value={totals.averageDiscount} negative />,
                 },
                 {
                   label: "Special Disc",
-                  value: `-$${(Number(totals.specialDiscount) || 0).toFixed(2)}`,
+                  value: <Money value={totals.specialDiscount} negative />,
                 },
                 {
                   label: "Shipping",
-                  value: `$${(Number(totals.shippingCost) || 0).toFixed(2)}`,
+                  value: <Money value={totals.shippingCost} />,
                 },
               ].map((row) => (
                 <div
@@ -2020,10 +2017,12 @@ const NewSale = () => {
                     {dueAmount > 0 ? "Due" : "Change"}
                   </Text>
                   <Text strong style={{ fontSize: 18, fontWeight: 700 }}>
-                    ${" "}
-                    {Math.floor(
-                      dueAmount > 0 ? dueAmount : changeAmount,
-                    ).toFixed(0)}
+                    <Money
+                      value={Math.floor(
+                        dueAmount > 0 ? dueAmount : changeAmount,
+                      )}
+                      decimals={0}
+                    />
                   </Text>
                 </div>
               </div>

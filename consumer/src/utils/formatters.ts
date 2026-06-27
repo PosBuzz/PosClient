@@ -2,10 +2,7 @@ export const formatCurrency = (amount: number | null | undefined): string => {
   if (amount === null || amount === undefined) {
     return 'N/A';
   }
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+  return `BDT ${Number(amount || 0).toFixed(2)}`;
 };
 
 export const formatDate = (dateString: string | Date): string => {

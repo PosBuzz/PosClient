@@ -27,7 +27,7 @@ const discountTypeOptions = [
   { label: "Fixed Amount", value: "fixed_amount" },
 ];
 
-const formatCurrency = (value: number) => `$${Number(value || 0).toFixed(2)}`;
+const formatCurrency = (value: number) => `BDT ${Number(value || 0).toFixed(2)}`;
 
 export default function DrawerForm({
   onClose,
