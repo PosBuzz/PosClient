@@ -93,6 +93,7 @@ export default function _TableGrid({
       title: "Reference",
       dataIndex: "reference",
       key: "reference",
+      render: (reference: string | null) => reference || "-",
     },
     {
       title: "Actions",

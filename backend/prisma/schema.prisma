@@ -321,7 +321,7 @@ model BillingHistory {
   consumer_id  Int
   plan_id      Int
   amount       Float
-  reference    String
+  reference    String?
   billing_date DateTime
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt

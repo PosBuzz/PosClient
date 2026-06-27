@@ -8,7 +8,7 @@ interface BillingLog {
   id: number;
   consumer_id: number;
   amount: number;
-  reference: string;
+  reference: string | null;
   billing_date: Date;
   plan: Plan;
 }
@@ -53,7 +53,7 @@ interface Billing {
   id: number;
   consumer_id: number;
   amount: number;
-  reference: string;
+  reference: string | null;
   billing_date: Date;
   created_at: Date;
   updated_at: Date;
@@ -104,7 +104,7 @@ export class BillingInvoicesService {
             month: 'long',
             day: 'numeric',
           }),
-          log.reference,
+          log.reference || 'N/A',
           log.plan?.name || 'N/A',
           log.amount,
         ]);
@@ -461,7 +461,7 @@ export class BillingInvoicesService {
           (i + 1).toString(),
           createdOn, // Add Created On
           date,
-          log.reference,
+          log.reference || 'N/A',
           log.plan?.name || 'N/A',
           amount,
         ],
