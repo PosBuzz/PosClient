@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   EyeOutlined,
   PlusOutlined,
@@ -155,7 +156,7 @@ const QuotationsTable = () => {
       title: "Total Amount",
       dataIndex: "total_amount",
       key: "total_amount",
-      render: (amount: number) => `$${Number(amount || 0).toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
     },
     {
       title: "Status",
@@ -259,7 +260,7 @@ const QuotationsTable = () => {
               <Statistic
                 title="Total Value"
                 value={Number(summary.total_amount || 0).toFixed(2)}
-                prefix="$"
+                prefix={takaPrefix}
                 valueStyle={{ color: "#1890ff" }}
               />
             </Card>
@@ -269,7 +270,7 @@ const QuotationsTable = () => {
               <Statistic
                 title="Average Value"
                 value={Number(summary.average_sale || 0).toFixed(2)}
-                prefix="$"
+                prefix={takaPrefix}
               />
             </Card>
           </Col>

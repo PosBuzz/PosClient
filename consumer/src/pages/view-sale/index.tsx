@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { PaymentMethod, PaymentStatus } from "../../types/sale.types";
@@ -408,13 +409,14 @@ const SaleDetail: React.FC = () => {
       title: "Unit Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
+      render: (price: number) => <Money value={price} />,
     },
     {
       title: "Unit Price (Sold)",
       key: "sold_unit_price",
-      render: (_: any, record: any) =>
-        `$${(Number(record.sold_unit_price ?? record.unit_price) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.sold_unit_price ?? record.unit_price} />
+      ),
     },
     {
       title: "Quantity",
@@ -434,14 +436,16 @@ const SaleDetail: React.FC = () => {
     {
       title: "Avg Disc",
       key: "average_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.average_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.average_discount_amount} negative />
+      ),
     },
     {
       title: "Special Disc",
       key: "special_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.special_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.special_discount_amount} negative />
+      ),
     },
     {
       title: "Promo Disc",
@@ -451,7 +455,7 @@ const SaleDetail: React.FC = () => {
 
         return (
           <div className="flex items-center gap-2">
-            <span>{`-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`}</span>
+            <Money value={record.promotion_discount_amount} negative />
             {promoLabel ? <Tag color="processing">{promoLabel}</Tag> : null}
           </div>
         );
@@ -465,7 +469,7 @@ const SaleDetail: React.FC = () => {
         const isInc = String(record.tax_method || "").toLowerCase().startsWith("inc");
         return (
           <div>
-            <span>${(Number(tax) || 0).toFixed(2)}</span>
+            <Money value={tax} />
             <span style={{ marginLeft: 4, fontSize: 11, color: isInc ? "#389e0d" : "#cf1322" }}>
               ({isInc ? "inc" : "exc"})
             </span>
@@ -478,7 +482,7 @@ const SaleDetail: React.FC = () => {
       dataIndex: "line_total",
       key: "line_total",
       render: (total: number) => (
-        <Text strong>${(Number(total) || 0).toFixed(2)}</Text>
+        <Text strong><Money value={total} /></Text>
       ),
     },
   ];

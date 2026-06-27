@@ -31,6 +31,7 @@ import { post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { salesApi } from "../../api/sales-api";
 import CustomerModal from "../../components/CustomerModal";
+import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
@@ -66,6 +67,7 @@ import {
   PAYMENT_METHODS_REQUIRING_PROVIDER,
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
+import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -641,7 +643,7 @@ const NewSale = () => {
       title: "Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
+      render: (price: number) => <Money value={price} />,
     },
     {
       title: "Quantity",
@@ -679,7 +681,7 @@ const NewSale = () => {
           .toString()
           .toUpperCase();
         const taxLabel = taxMethod === "INCLUSIVE" ? "Inc" : "Exc";
-        return `$${(Number(record.tax_amount) || 0).toFixed(2)} (${taxLabel})`;
+        return <Money value={record.tax_amount} suffix={` (${taxLabel})`} />;
       },
     },
     {
@@ -688,7 +690,7 @@ const NewSale = () => {
       render: (record: SaleItem) => {
         const avgDiscount =
           totals.discountBreakdownByVariant?.[record.variant_id]?.average || 0;
-        return `-$${(Number(avgDiscount) || 0).toFixed(2)}`;
+        return <Money value={avgDiscount} negative />;
       },
     },
     {
@@ -707,7 +709,7 @@ const NewSale = () => {
 
         return (
           <Space size={4} wrap>
-            <span>{`-$${(Number(promoDiscount) || 0).toFixed(2)}`}</span>
+            <Money value={promoDiscount} negative />
             {promoName && promoId ? (
               <Tag
                 color="processing"
@@ -748,7 +750,7 @@ const NewSale = () => {
           totals.discountBreakdownByVariant?.[record.variant_id]?.total || 0;
         const netLineTotal =
           (Number(record.line_total) || 0) - (Number(rowDiscount) || 0);
-        return `$${(Number(netLineTotal) || 0).toFixed(2)}`;
+        return <Money value={netLineTotal} />;
       },
     },
     {
@@ -1016,11 +1018,7 @@ const NewSale = () => {
               }
               setProductSearch("");
             }}
-            filterOption={(input, option) =>
-              (option?.label?.toString().toLowerCase() || "").includes(
-                input.toLowerCase(),
-              )
-            }
+            filterOption={false}
             loading={productsForSaleQuery.isLoading}
             disabled={!selectedBranch}
           >
@@ -1028,9 +1026,7 @@ const NewSale = () => {
               <Option
                 key={variant.id}
                 value={variant.id}
-                label={`${variant.product_name} - ${variant.name}${
-                  variant.product_code ? ` - ${variant.product_code}` : ""
-                }`}
+                label={getProductVariantSearchLabel(variant)}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {variant.image && (
@@ -1057,6 +1053,11 @@ const NewSale = () => {
                     {variant.sku && (
                       <div style={{ fontSize: 11, color: "#666" }}>
                         SKU: {variant.sku}
+                      </div>
+                    )}
+                    {variant.barcode && (
+                      <div style={{ fontSize: 11, color: "#666" }}>
+                        Barcode: {variant.barcode}
                       </div>
                     )}
                     <div style={{ fontSize: 11, color: "#666" }}>
@@ -1343,7 +1344,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Subtotal:</Text>
                   <Text style={{ fontSize: 12 }} strong>
-                    ${(Number(totals.subtotal) || 0).toFixed(2)}
+                    <Money value={totals.subtotal} />
                   </Text>
                 </div>
                 <div
@@ -1355,7 +1356,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Tax:</Text>
                   <Text style={{ fontSize: 12 }}>
-                    ${(Number(totals.totalTax) || 0).toFixed(2)}
+                    <Money value={totals.totalTax} />
                   </Text>
                 </div>
                 {totals.promotionDiscount > 0 && (
@@ -1370,7 +1371,7 @@ const NewSale = () => {
                       Promo Discount:
                     </Text>
                     <Text style={{ fontSize: 12, color: "#52c41a" }}>
-                      -${(Number(totals.promotionDiscount) || 0).toFixed(2)}
+                      <Money value={totals.promotionDiscount} negative />
                     </Text>
                   </div>
                 )}
@@ -1384,7 +1385,7 @@ const NewSale = () => {
                   >
                     <Text style={{ fontSize: 12 }}>Average Discount:</Text>
                     <Text style={{ fontSize: 12 }}>
-                      -${(Number(totals.averageDiscount) || 0).toFixed(2)}
+                      <Money value={totals.averageDiscount} negative />
                     </Text>
                   </div>
                 )}
@@ -1398,7 +1399,7 @@ const NewSale = () => {
                   >
                     <Text style={{ fontSize: 12 }}>Special Discount:</Text>
                     <Text style={{ fontSize: 12 }}>
-                      -${(Number(totals.specialDiscount) || 0).toFixed(2)}
+                      <Money value={totals.specialDiscount} negative />
                     </Text>
                   </div>
                 )}
@@ -1414,7 +1415,7 @@ const NewSale = () => {
                       >
                         <Text style={{ fontSize: 12 }}>Discount:</Text>
                         <Text style={{ fontSize: 12 }}>
-                          -${(Number(totals.finalDiscount) || 0).toFixed(2)}
+                          <Money value={totals.finalDiscount} negative />
                         </Text>
                       </div>
                     )} */}
@@ -1427,7 +1428,7 @@ const NewSale = () => {
                 >
                   <Text style={{ fontSize: 12 }}>Shipping:</Text>
                   <Text style={{ fontSize: 12 }}>
-                    ${(Number(totals.shippingCost) || 0).toFixed(2)}
+                    <Money value={totals.shippingCost} />
                   </Text>
                 </div>
                 <Divider style={{ margin: "8px 0" }} />
@@ -1440,7 +1441,7 @@ const NewSale = () => {
                 >
                   <Text strong>Total:</Text>
                   <Text strong style={{ fontSize: 16 }}>
-                    ${(Number(totals.total) || 0).toFixed(2)}
+                    <Money value={totals.total} />
                   </Text>
                 </div>
                 {dueAmount > 0 && (
@@ -1453,7 +1454,7 @@ const NewSale = () => {
                   >
                     <Text style={{ fontSize: 12 }}>Due:</Text>
                     <Text style={{ fontSize: 12, color: "#ff4d4f" }}>
-                      ${dueAmount.toFixed(2)}
+                      <Money value={dueAmount} />
                     </Text>
                   </div>
                 )}
@@ -1471,7 +1472,7 @@ const NewSale = () => {
                       color: changeAmount > 0 ? "#52c41a" : undefined,
                     }}
                   >
-                    ${changeAmount.toFixed(2)}
+                    <Money value={changeAmount} />
                   </Text>
                 </div>
               </div>

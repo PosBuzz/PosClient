@@ -23,6 +23,7 @@ import saveAs from "file-saver";
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
@@ -152,13 +153,14 @@ const QuotationDetail: React.FC = () => {
       title: "Unit Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (price: number) => `$${(Number(price) || 0).toFixed(2)}`,
+      render: (price: number) => <Money value={price} />,
     },
     {
       title: "Unit Price (Sold)",
       key: "sold_unit_price",
-      render: (_: any, record: any) =>
-        `$${(Number(record.sold_unit_price ?? record.unit_price) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.sold_unit_price ?? record.unit_price} />
+      ),
     },
     {
       title: "Quantity",
@@ -175,14 +177,16 @@ const QuotationDetail: React.FC = () => {
     {
       title: "Avg Disc",
       key: "average_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.average_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.average_discount_amount} negative />
+      ),
     },
     {
       title: "Special Disc",
       key: "special_discount_amount",
-      render: (_: any, record: any) =>
-        `-$${(Number(record.special_discount_amount) || 0).toFixed(2)}`,
+      render: (_: any, record: any) => (
+        <Money value={record.special_discount_amount} negative />
+      ),
     },
     {
       title: "Promo Disc",
@@ -192,7 +196,7 @@ const QuotationDetail: React.FC = () => {
 
         return (
           <div className="flex items-center gap-2">
-            <span>{`-$${(Number(record.promotion_discount_amount) || 0).toFixed(2)}`}</span>
+            <Money value={record.promotion_discount_amount} negative />
             {promoLabel ? <Tag color="processing">{promoLabel}</Tag> : null}
           </div>
         );
@@ -208,7 +212,7 @@ const QuotationDetail: React.FC = () => {
           .startsWith("inc");
         return (
           <div>
-            <span>${(Number(tax) || 0).toFixed(2)}</span>
+            <Money value={tax} />
             <span
               style={{
                 marginLeft: 4,
@@ -226,7 +230,7 @@ const QuotationDetail: React.FC = () => {
       title: "Line Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number) => `$${Number(total || 0).toFixed(2)}`,
+      render: (total: number) => <Money value={total} />,
     },
   ];
 
@@ -398,12 +402,12 @@ const QuotationDetail: React.FC = () => {
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Subtotal:</Text>
                 <Text strong>
-                  ${Number(quotation.subtotal || 0).toFixed(2)}
+                  <Money value={quotation.subtotal} />
                 </Text>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Tax:</Text>
-                <Text>${Number(quotation.tax_amount || 0).toFixed(2)}</Text>
+                <Text><Money value={quotation.tax_amount} /></Text>
               </div>
               {promotionDiscount > 0 && (
                 <div
@@ -411,7 +415,7 @@ const QuotationDetail: React.FC = () => {
                 >
                   <Text style={{ color: "#52c41a" }}>Promo Discount:</Text>
                   <Text style={{ color: "#52c41a" }}>
-                    -${promotionDiscount.toFixed(2)}
+                    <Money value={promotionDiscount} negative />
                   </Text>
                 </div>
               )}
@@ -420,7 +424,7 @@ const QuotationDetail: React.FC = () => {
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
                   <Text>Average Discount:</Text>
-                  <Text>-${averageDiscount.toFixed(2)}</Text>
+                  <Text><Money value={averageDiscount} negative /></Text>
                 </div>
               )}
               {specialDiscount > 0 && (
@@ -428,20 +432,18 @@ const QuotationDetail: React.FC = () => {
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
                   <Text>Special Discount:</Text>
-                  <Text>-${specialDiscount.toFixed(2)}</Text>
+                  <Text><Money value={specialDiscount} negative /></Text>
                 </div>
               )}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text strong>Total Discount:</Text>
                 <Text strong>
-                  {totalDiscount > 0
-                    ? `-$${totalDiscount.toFixed(2)}`
-                    : "$0.00"}
+                  <Money value={totalDiscount} negative={totalDiscount > 0} />
                 </Text>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Shipping:</Text>
-                <Text>${Number(quotation.shipping_cost || 0).toFixed(2)}</Text>
+                <Text><Money value={quotation.shipping_cost} /></Text>
               </div>
               <Divider style={{ margin: "12px 0" }} />
               <div
@@ -453,7 +455,7 @@ const QuotationDetail: React.FC = () => {
               >
                 <Text strong>Total:</Text>
                 <Text strong style={{ color: "#1890ff" }}>
-                  ${Number(quotation.total_amount || 0).toFixed(2)}
+                  <Money value={quotation.total_amount} />
                 </Text>
               </div>
             </Space>

@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   CalculatorOutlined,
   CheckCircleOutlined,
@@ -298,7 +299,7 @@ function Dashboard() {
                 <Statistic
                   title="Today's Sale Amount"
                   value={data?.summary?.today_total_sale || 0}
-                  prefix="$"
+                  prefix={takaPrefix}
                   precision={2}
                   valueStyle={{ color: "#1890ff" }}
                 />
@@ -514,7 +515,7 @@ function Dashboard() {
                               flexShrink: 0,
                             }}
                           >
-                            $ {method.amount.toFixed(2)}
+                            <Money value={method.amount} />
                           </Tag>
                         </div>
                       ))}
@@ -677,7 +678,7 @@ function Dashboard() {
                               flexShrink: 0,
                             }}
                           >
-                            $ {method.amount.toFixed(2)}
+                            <Money value={method.amount} />
                           </Tag>
                         </div>
                       ))}
@@ -958,7 +959,7 @@ function Dashboard() {
                           }}
                           formatter={(value, name) => [
                             name === "Amount"
-                              ? `$${value?.toLocaleString()}`
+                              ? `BDT ${value?.toLocaleString()}`
                               : value,
                             name,
                           ]}

@@ -1,4 +1,5 @@
-import { DollarOutlined, SearchOutlined } from "@ant-design/icons";
+import { CurrencyIcon, takaPrefix } from "../../components/Currency";
+import { SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -199,7 +200,7 @@ const PurchasePayments = () => {
         <Link to={`/purchase-payments/${record.id}`}>
           <Button
             type={record.payment_status === "paid" ? "default" : "primary"}
-            icon={<DollarOutlined />}
+            icon={<CurrencyIcon />}
             size="small"
           >
             {record.payment_status === "paid" ? "View" : "Pay"}
@@ -236,7 +237,7 @@ const PurchasePayments = () => {
             <Statistic
               title="Tracked Batches"
               value={meta?.total || 0}
-              prefix={<DollarOutlined />}
+              prefix={takaPrefix}
             />
           </Card>
         </Col>
@@ -247,7 +248,7 @@ const PurchasePayments = () => {
               value={totalPaid}
               precision={2}
               valueStyle={{ color: "#52c41a" }}
-              prefix="$"
+              prefix={takaPrefix}
             />
           </Card>
         </Col>
@@ -258,7 +259,7 @@ const PurchasePayments = () => {
               value={totalRemaining}
               precision={2}
               valueStyle={{ color: "#ff4d4f" }}
-              prefix="$"
+              prefix={takaPrefix}
             />
           </Card>
         </Col>

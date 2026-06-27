@@ -1,4 +1,5 @@
-import { DollarOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
+import { CurrencyIcon, takaPrefix } from "../../components/Currency";
+import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -206,7 +207,7 @@ const PartialPayments = () => {
           </Tooltip>
           <Tooltip title="Make Payment">
             <Link to={`/partial-payments/${record.id}/pay`}>
-              <Button type="primary" icon={<DollarOutlined />} size="small">
+              <Button type="primary" icon={<CurrencyIcon />} size="small">
                 Pay
               </Button>
             </Link>
@@ -244,7 +245,7 @@ const PartialPayments = () => {
             <Statistic
               title="Partially Paid Sales"
               value={meta?.total || 0}
-              prefix={<DollarOutlined />}
+              prefix={takaPrefix}
             />
           </Card>
         </Col>

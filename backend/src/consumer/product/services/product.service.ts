@@ -181,6 +181,17 @@ export class ProductService {
           { name: { contains: search, mode: 'insensitive' as any } },
           { code: { contains: search, mode: 'insensitive' as any } },
           { description: { contains: search, mode: 'insensitive' as any } },
+          {
+            variants: {
+              some: {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' as any } },
+                  { sku: { contains: search, mode: 'insensitive' as any } },
+                  { barcode: { contains: search, mode: 'insensitive' as any } },
+                ],
+              },
+            },
+          },
         ];
       }
 

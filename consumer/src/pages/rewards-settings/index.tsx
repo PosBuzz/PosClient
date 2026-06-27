@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../components/Currency";
 import { ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import {
     Alert,
@@ -229,7 +230,7 @@ const RewardsSettingsPage: React.FC = () => {
                       precision={2}
                       style={{ width: "100%" }}
                       placeholder="e.g., 10.00"
-                      addonBefore="$"
+                      addonBefore={takaPrefix}
                     />
                   </Form.Item>
                 </Col>
@@ -301,7 +302,7 @@ const RewardsSettingsPage: React.FC = () => {
                       precision={4}
                       style={{ width: "100%" }}
                       placeholder="e.g., 0.01"
-                      addonBefore="$"
+                      addonBefore={takaPrefix}
                     />
                   </Form.Item>
                 </Col>

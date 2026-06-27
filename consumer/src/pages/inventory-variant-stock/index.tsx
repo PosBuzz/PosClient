@@ -1,7 +1,7 @@
+import { CurrencyIcon, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
-  DollarOutlined,
   ShopOutlined,
   WarningOutlined,
   HistoryOutlined,
@@ -201,7 +201,7 @@ export default function VariantStockPage() {
       align: "right",
       render: (price) => (
         <Space>
-          <DollarOutlined />
+          <CurrencyIcon />
           <Text>${parseFloat(price).toFixed(2)}</Text>
         </Space>
       ),
@@ -352,7 +352,7 @@ export default function VariantStockPage() {
             <Statistic
               title="Total Value"
               value={totalValue}
-              prefix="$"
+              prefix={takaPrefix}
               precision={2}
               valueStyle={{ color: "#1890ff" }}
             />

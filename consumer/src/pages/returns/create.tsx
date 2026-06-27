@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -1863,7 +1864,7 @@ const PaymentForm = ({
           style={{ width: "100%" }}
           min={0}
           step={0.01}
-          addonBefore="$"
+          addonBefore={takaPrefix}
         />
       </Form.Item>
 

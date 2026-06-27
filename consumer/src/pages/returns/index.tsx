@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import { EyeOutlined, FilePdfOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -130,13 +131,13 @@ const ReturnsTable = () => {
       title: "Total Refund",
       dataIndex: "total_refund",
       key: "total_refund",
-      render: (amount: number) => `$${Number(amount || 0).toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
     },
     {
       title: "Total Exchange",
       dataIndex: "total_exchange",
       key: "total_exchange",
-      render: (amount: number) => `$${Number(amount || 0).toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
     },
     {
       title: "Reason",
@@ -207,7 +208,7 @@ const ReturnsTable = () => {
                 ) || 0
               }
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               loading={returnsQuery.isLoading}
             />
           </Card>
@@ -223,7 +224,7 @@ const ReturnsTable = () => {
                 ) || 0
               }
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               loading={returnsQuery.isLoading}
             />
           </Card>

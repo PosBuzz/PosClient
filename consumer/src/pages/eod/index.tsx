@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -132,7 +133,7 @@ const EODReport = () => {
       title: "Total Amount",
       dataIndex: "total_amount",
       key: "total_amount",
-      render: (amount: number) => `$${amount.toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
       sorter: (a: PaymentMethodBreakdown, b: PaymentMethodBreakdown) =>
         a.total_amount - b.total_amount,
     },
@@ -179,7 +180,7 @@ const EODReport = () => {
       title: "Total Amount",
       dataIndex: "total_amount",
       key: "total_amount",
-      render: (amount: number) => `$${amount.toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
       sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
         a.total_amount - b.total_amount,
     },
@@ -187,7 +188,7 @@ const EODReport = () => {
       title: "Avg Unit Price",
       dataIndex: "average_unit_price",
       key: "average_unit_price",
-      render: (price: number) => `$${price.toFixed(2)}`,
+      render: (price: number) => <Money value={price} />,
       sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
         a.average_unit_price - b.average_unit_price,
     },
@@ -262,7 +263,7 @@ const EODReport = () => {
                 <Statistic
                   title="Total Amount"
                   value={eodData.summary.total_amount}
-                  prefix="$"
+                  prefix={takaPrefix}
                   precision={2}
                 />
               </Card>
@@ -272,7 +273,7 @@ const EODReport = () => {
                 <Statistic
                   title="Cash Sales"
                   value={eodData.summary.cash_sales}
-                  prefix="$"
+                  prefix={takaPrefix}
                   precision={2}
                 />
               </Card>
@@ -282,7 +283,7 @@ const EODReport = () => {
                 <Statistic
                   title="Non-Cash Sales"
                   value={eodData.summary.non_cash_sales}
-                  prefix="$"
+                  prefix={takaPrefix}
                   precision={2}
                 />
               </Card>
@@ -295,7 +296,7 @@ const EODReport = () => {
                 <Statistic
                   title="Average Transaction"
                   value={eodData.summary.average_transaction_value}
-                  prefix="$"
+                  prefix={takaPrefix}
                   precision={2}
                 />
               </Card>
@@ -373,7 +374,7 @@ const EODReport = () => {
                       </Pie>
                       <Tooltip
                         formatter={(value) => [
-                          `$${Number(value).toFixed(2)}`,
+                          `BDT ${Number(value).toFixed(2)}`,
                           "Amount",
                         ]}
                       />
@@ -399,7 +400,7 @@ const EODReport = () => {
                   <Tooltip
                     formatter={(value, name) => [
                       name === "amount"
-                        ? `$${Number(value).toFixed(2)}`
+                        ? `BDT ${Number(value).toFixed(2)}`
                         : value,
                       name === "amount" ? "Amount" : "Sales Count",
                     ]}

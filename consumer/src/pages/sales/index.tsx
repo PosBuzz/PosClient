@@ -1,3 +1,4 @@
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   EyeOutlined,
   PlusOutlined,
@@ -365,7 +366,7 @@ const SalesTable = () => {
       render: (amount: number, record: Sale) => {
         // Use corrected total calculation instead of backend total
         const correctTotal = getCorrectTotal(record);
-        return `$${correctTotal.toFixed(2)}`;
+        return <Money value={correctTotal} />;
       },
     },
     {
@@ -481,7 +482,7 @@ const SalesTable = () => {
               <Statistic
                 title="Total Amount"
                 value={salesQuery.data.summary.total_amount}
-                prefix="$"
+                prefix={takaPrefix}
                 precision={2}
               />
             </Card>
@@ -491,7 +492,7 @@ const SalesTable = () => {
               <Statistic
                 title="Average Sale"
                 value={salesQuery.data.summary.average_sale}
-                prefix="$"
+                prefix={takaPrefix}
                 precision={2}
               />
             </Card>

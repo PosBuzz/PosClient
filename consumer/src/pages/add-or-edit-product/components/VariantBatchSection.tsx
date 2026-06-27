@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../../components/Currency";
 import {
   CalendarOutlined,
   MinusCircleOutlined,
@@ -252,7 +253,7 @@ export default function VariantBatchSection({
                   placeholder="0.00"
                   min={0}
                   precision={2}
-                  prefix="$"
+                  prefix={takaPrefix}
                   value={
                     batch.cost_price === null ||
                     batch.cost_price === undefined ||

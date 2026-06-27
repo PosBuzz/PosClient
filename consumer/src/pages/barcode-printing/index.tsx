@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../components/Currency";
 import { ClearOutlined, EyeOutlined, PrinterOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -43,6 +44,8 @@ interface BarcodePrintData {
 interface ProductOption {
   id: number;
   label: string;
+  productCode?: string;
+  sku?: string;
   barcode: string;
   price: number;
   productName: string;
@@ -100,6 +103,8 @@ const BarcodePrinting = () => {
             options.push({
               id: variant.id || 0,
               label: `${product.name} - ${variant.name}`,
+              productCode: product.code,
+              sku: variant.sku,
               barcode: variant.barcode,
               price: Number(variant.regular_price) || 0,
               productName: product.name,
@@ -403,8 +408,13 @@ const BarcodePrinting = () => {
                     >
                       {productOptions.map((product) => (
                         <Option key={product.id} value={product.id.toString()}>
-                          {product.label} | Barcode: {product.barcode} | Price:
-                          ${parseFloat(product.price.toString()).toFixed(2)}
+                          {product.label}
+                          {product.productCode
+                            ? ` | Code: ${product.productCode}`
+                            : ""}
+                          {product.sku ? ` | SKU: ${product.sku}` : ""} |
+                          Barcode: {product.barcode} | Price: $
+                          {parseFloat(product.price.toString()).toFixed(2)}
                         </Option>
                       ))}
                     </Select>
@@ -445,7 +455,7 @@ const BarcodePrinting = () => {
                       step={0.01}
                       precision={2}
                       style={{ width: "100%" }}
-                      prefix="$"
+                      prefix={takaPrefix}
                     />
                   </Form.Item>
                 </Col>
