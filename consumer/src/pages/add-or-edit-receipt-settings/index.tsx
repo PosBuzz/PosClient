@@ -847,6 +847,19 @@ export default function ReceiptSettingsFormPage() {
               label="Show Totals"
               name={["settings", "totals", "show"]}
             />
+            <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name={["settings", "totals", "titleAlign"]}
+                  label="Totals Position"
+                >
+                  <Select disabled={!totalsShow}>
+                    <Select.Option value="left">Regular</Select.Option>
+                    <Select.Option value="right">Right aligned</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
             <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
               <Col xs={12} sm={8}>
                 <ToggleItem
@@ -885,6 +898,19 @@ export default function ReceiptSettingsFormPage() {
               label="Show Payment Info"
               name={["settings", "payment", "show"]}
             />
+            <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name={["settings", "payment", "titleAlign"]}
+                  label="Payment Position"
+                >
+                  <Select disabled={!paymentShow}>
+                    <Select.Option value="left">Regular</Select.Option>
+                    <Select.Option value="right">Right aligned</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
             <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
               <Col xs={12} sm={8}>
                 <ToggleItem

@@ -63,6 +63,7 @@ export interface ReceiptPdfSettings {
 
   totals: {
     show: boolean;
+    titleAlign?: 'left' | 'right';
     showSubtotal: boolean;
     showDiscount: boolean;
     showShipping: boolean;
@@ -71,6 +72,7 @@ export interface ReceiptPdfSettings {
 
   payment: {
     show: boolean;
+    titleAlign?: 'left' | 'right';
     showBreakdown: boolean;
     showReceivedAmount: boolean;
     showChangeAmount: boolean;
@@ -89,9 +91,9 @@ export interface ReceiptPdfSettings {
     showPrintDate: boolean;
   };
 
-  // NOTE: Branding data like storeName, logoPath, branchName, etc., 
+  // NOTE: Branding data like storeName, logoPath, branchName, etc.,
   // still come from Consumer/Branch database tables.
-  // However, currencySymbol, currencyPosition, and footer termsText 
+  // However, currencySymbol, currencyPosition, and footer termsText
   // are now configured directly here in the settings JSON.
 
   fontSizes: {
@@ -157,6 +159,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   },
   totals: {
     show: true,
+    titleAlign: 'left',
     showSubtotal: true,
     showDiscount: true,
     showShipping: false,
@@ -164,6 +167,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   },
   payment: {
     show: true,
+    titleAlign: 'left',
     showBreakdown: false,
     showReceivedAmount: true,
     showChangeAmount: true,
@@ -172,7 +176,8 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   notes: { show: false },
   footer: {
     showTerms: true,
-    termsText: 'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
+    termsText:
+      'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -235,6 +240,7 @@ export const DEFAULT_QUOTATION_SETTINGS: ReceiptPdfSettings = {
   },
   totals: {
     show: true,
+    titleAlign: 'left',
     showSubtotal: true,
     showDiscount: true,
     showShipping: true,
@@ -242,6 +248,7 @@ export const DEFAULT_QUOTATION_SETTINGS: ReceiptPdfSettings = {
   },
   payment: {
     show: false,
+    titleAlign: 'left',
     showBreakdown: false,
     showReceivedAmount: false,
     showChangeAmount: false,
@@ -250,7 +257,8 @@ export const DEFAULT_QUOTATION_SETTINGS: ReceiptPdfSettings = {
   notes: { show: true },
   footer: {
     showTerms: true,
-    termsText: 'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
+    termsText:
+      'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
     showBarcode: false,
     showThankYou: true,
     showPrintDate: true,
@@ -304,6 +312,7 @@ export const DEFAULT_RETURN_SETTINGS: ReceiptPdfSettings = {
   },
   totals: {
     show: true,
+    titleAlign: 'left',
     showSubtotal: true,
     showDiscount: false,
     showShipping: false,
@@ -311,6 +320,7 @@ export const DEFAULT_RETURN_SETTINGS: ReceiptPdfSettings = {
   },
   payment: {
     show: true,
+    titleAlign: 'left',
     showBreakdown: true,
     showReceivedAmount: true,
     showChangeAmount: true,
@@ -318,7 +328,8 @@ export const DEFAULT_RETURN_SETTINGS: ReceiptPdfSettings = {
   notes: { show: true },
   footer: {
     showTerms: true,
-    termsText: 'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
+    termsText:
+      'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -392,6 +403,7 @@ export const COMPACT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   },
   totals: {
     show: true,
+    titleAlign: 'left',
     showSubtotal: false,
     showDiscount: true,
     showShipping: false,
@@ -399,6 +411,7 @@ export const COMPACT_RECEIPT_SETTINGS: ReceiptPdfSettings = {
   },
   payment: {
     show: true,
+    titleAlign: 'left',
     showBreakdown: false,
     showReceivedAmount: true,
     showChangeAmount: true,
