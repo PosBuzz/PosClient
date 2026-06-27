@@ -117,7 +117,7 @@ export class BillingInvoicesController {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `inline; filename=invoice-${billing.reference}.pdf`,
+        `inline; filename=invoice-${billing.reference || billing.id}.pdf`,
       );
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
 

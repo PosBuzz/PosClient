@@ -56,12 +56,14 @@ export default function DrawerForm({
   }));
 
   const onFinish = async (formValues: any) => {
+    const reference = formValues.reference?.trim() || null;
+
     const payload = {
       consumer_id: formValues.consumer_id,
       plan_id: selectedConsumer?.plan.id,
       amount: +formValues.amount,
       billing_date: dayjs(formValues.billing_date).toISOString(),
-      reference: formValues.reference,
+      reference,
     };
 
     if (isEditing && editedItem) {
@@ -160,11 +162,7 @@ export default function DrawerForm({
             <Input type="number" />
           </Form.Item>
 
-          <Form.Item
-            label="Reference"
-            name="reference"
-            rules={[{ required: true, message: "This field is required" }]}
-          >
+          <Form.Item label="Reference" name="reference">
             <Input />
           </Form.Item>
 
