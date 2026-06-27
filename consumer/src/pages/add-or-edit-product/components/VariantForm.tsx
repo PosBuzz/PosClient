@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../../components/Currency";
 import {
   AlertOutlined,
   AimOutlined,
@@ -171,7 +172,7 @@ export default function VariantForm({
               placeholder="0.00"
               min={0}
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               value={
                 variant.regular_price !== null && variant.regular_price !== ""
                   ? Number(variant.regular_price)
@@ -198,7 +199,7 @@ export default function VariantForm({
               placeholder="0.00"
               min={0}
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               value={
                 variant.wholesale_price !== null &&
                 variant.wholesale_price !== undefined &&

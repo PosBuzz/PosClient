@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
 import dayjs from "dayjs";
 import { promotionApi } from "../../api/promotion-api";
+import { Money } from "../../components/Currency";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 
@@ -60,7 +61,7 @@ export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) 
       render: (record: any) =>
         record.discount_type === "percentage"
           ? `${record.discount_value}%`
-          : `$${Number(record.discount_value).toFixed(2)}`,
+          : <Money value={record.discount_value} />,
     },
     {
       title: "Valid",
@@ -89,7 +90,7 @@ export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) 
       title: "Total Discount",
       dataIndex: "total_discount_given",
       key: "total_discount_given",
-      render: (value: number) => `$${Number(value || 0).toFixed(2)}`,
+      render: (value: number) => <Money value={value} />,
     },
     {
       title: "Actions",

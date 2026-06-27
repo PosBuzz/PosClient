@@ -1,3 +1,4 @@
+import { takaPrefix } from "../../components/Currency";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -283,7 +284,7 @@ const ViewVariantSalesStats = () => {
             <Statistic
               title="Total Amount"
               value={summary.total_amount ?? 0}
-              prefix="$"
+              prefix={takaPrefix}
               precision={2}
             />
           </Card>
@@ -293,7 +294,7 @@ const ViewVariantSalesStats = () => {
             <Statistic
               title="Avg Amount / Sale"
               value={summary.avg_amount ?? 0}
-              prefix="$"
+              prefix={takaPrefix}
               precision={2}
             />
           </Card>

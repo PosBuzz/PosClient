@@ -1,4 +1,5 @@
-import { ArrowLeftOutlined, DollarOutlined } from "@ant-design/icons";
+import { takaPrefix } from "../../components/Currency";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -285,7 +286,7 @@ const ViewVendor: React.FC = () => {
               title="Total Purchases"
               value={summary.totalCost}
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               valueStyle={{ color: "#1890ff" }}
             />
           </Card>
@@ -294,7 +295,7 @@ const ViewVendor: React.FC = () => {
               title="Total Paid"
               value={summary.totalPaid}
               precision={2}
-              prefix="$"
+              prefix={takaPrefix}
               valueStyle={{ color: "#52c41a" }}
             />
           </Card>
@@ -304,7 +305,7 @@ const ViewVendor: React.FC = () => {
               value={summary.totalOwed}
               precision={2}
               valueStyle={{ color: summary.totalOwed > 0 ? "#ff4d4f" : "#52c41a" }}
-              prefix={<DollarOutlined />}
+              prefix={takaPrefix}
             />
           </Card>
           <Card>

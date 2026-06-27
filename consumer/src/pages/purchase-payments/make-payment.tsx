@@ -1,4 +1,5 @@
-import { ArrowLeftOutlined, DollarOutlined } from "@ant-design/icons";
+import { CurrencyIcon } from "../../components/Currency";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -379,7 +380,7 @@ const MakePurchasePayment = () => {
                 <Space style={{ width: "100%" }}>
                   <Button
                     type="primary"
-                    icon={<DollarOutlined />}
+                    icon={<CurrencyIcon />}
                     loading={makePaymentMutation.isPending}
                     onClick={handleSubmit}
                   >

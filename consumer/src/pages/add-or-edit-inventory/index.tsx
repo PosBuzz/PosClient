@@ -1,6 +1,6 @@
+import { takaPrefix } from "../../components/Currency";
 import {
   CalendarOutlined,
-  DollarOutlined,
   ReloadOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
@@ -448,7 +448,7 @@ export default function AddEditInventory() {
                   placeholder="Enter cost price"
                   min={0}
                   precision={2}
-                  prefix={<DollarOutlined />}
+                  prefix={takaPrefix}
                 />
               </Form.Item>
             </Col>

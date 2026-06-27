@@ -1,4 +1,4 @@
-import { DollarOutlined } from "@ant-design/icons";
+import { CurrencyIcon } from "../../../components/Currency";
 import { Card, Descriptions, Space, Typography } from "antd";
 import { formatCurrency } from "../../../utils/formatters";
 
@@ -34,7 +34,7 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
     <Card
       title="Pricing Information"
       style={{ marginTop: 16 }}
-      extra={<DollarOutlined />}
+      extra={<CurrencyIcon />}
     >
       {mainVariant ? (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>

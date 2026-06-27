@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
@@ -172,7 +173,7 @@ const OnlineOrders = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       width: 120,
-      render: (amount: number) => `$${Number(amount).toFixed(2)}`,
+      render: (amount: number) => <Money value={amount} />,
     },
     {
       title: "Payment",
@@ -239,7 +240,7 @@ const OnlineOrders = () => {
               <Statistic
                 title="Today's Orders"
                 value={statsData.today?.count || 0}
-                suffix={`($${(statsData.today?.total || 0).toFixed(2)})`}
+                suffix={`(BDT ${(statsData.today?.total || 0).toFixed(2)})`}
               />
             </Card>
           </Col>
@@ -250,7 +251,7 @@ const OnlineOrders = () => {
                   title={statusNames[status.toUpperCase()] || status}
                   value={data.count || 0}
                   valueStyle={{ color: statusColors[status.toUpperCase()] }}
-                  suffix={`($${(data.total || 0).toFixed(2)})`}
+                  suffix={`(BDT ${(data.total || 0).toFixed(2)})`}
                 />
               </Card>
             </Col>

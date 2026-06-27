@@ -1,5 +1,5 @@
+import { CurrencyIcon } from "../../../components/Currency";
 import {
-  DollarCircleOutlined,
   ProductOutlined,
   SyncOutlined,
   TagsOutlined,
@@ -163,7 +163,7 @@ export default function BasicInfoSection({
       <Card
         title={
           <Space>
-            <DollarCircleOutlined />
+            <CurrencyIcon />
             <span>Tax & Product Type</span>
           </Space>
         }
