@@ -1,4 +1,5 @@
 import {
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
@@ -227,6 +228,10 @@ const ProductsTable = () => {
     navigate(`/products/edit/${id}`);
   };
 
+  const handleCopy = (id: number) => {
+    navigate(`/products/add?copy_from=${id}`);
+  };
+
   // Navigate to view page
   const handleView = (id: number) => {
     navigate(`/products/view/${id}`);
@@ -387,6 +392,16 @@ const ProductsTable = () => {
                 type="primary"
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record.id)}
+                size="small"
+              />
+            </Tooltip>
+          )}
+          {hasPermission(Permissions.add_product) && (
+            <Tooltip title="Copy Product">
+              <Button
+                type="default"
+                icon={<CopyOutlined />}
+                onClick={() => handleCopy(record.id)}
                 size="small"
               />
             </Tooltip>

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { ProductFormState, ValidationState } from "../types";
 import {
   createInitialFormState,
+  mapProductToCopyFormState,
   mapProductToFormState,
 } from "../utils/transformers";
 import { buildSimpleProductSku, makeBarcode } from "../utils/form-generators";
@@ -76,6 +77,16 @@ export const useProductFormState = () => {
     [],
   );
 
+  const initializeFromProductCopy = useCallback(
+    (product: Parameters<typeof mapProductToCopyFormState>[0]) => {
+      const nextState = mapProductToCopyFormState(product);
+      setFormState(nextState);
+      setValidationState({});
+      initialSnapshotRef.current = JSON.stringify(nextState);
+    },
+    [],
+  );
+
   const resetForm = useCallback(() => {
     // Resets to clean add-form state with default simple variant identifiers.
     const nextState = createInitialFormState();
@@ -119,6 +130,7 @@ export const useProductFormState = () => {
     generateBarcode,
     validateForm,
     initializeFromProduct,
+    initializeFromProductCopy,
     resetForm,
     markSnapshot,
     setValidationState,

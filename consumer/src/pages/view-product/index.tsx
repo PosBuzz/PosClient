@@ -1,5 +1,6 @@
 import {
   ArrowLeftOutlined,
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
 } from "@ant-design/icons";
@@ -106,6 +107,11 @@ const ProductDetailsPage = () => {
                 <Button type="primary" icon={<EditOutlined />}>
                   Edit Product
                 </Button>
+              </Link>
+            )}
+            {hasPermission(Permissions.add_product) && (
+              <Link to={`/products/add?copy_from=${productId}`}>
+                <Button icon={<CopyOutlined />}>Copy Product</Button>
               </Link>
             )}
             {hasPermission(Permissions.delete_product) && (
