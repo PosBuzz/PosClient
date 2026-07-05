@@ -9,6 +9,12 @@ import {
   mapStateToCreateProductPayload,
   mapStateToUpdateProductPayload,
 } from "./payload-mappers";
+import {
+  buildSimpleProductSku,
+  buildVariantSku,
+  createRandomDigits,
+  makeBarcode,
+} from "./form-generators";
 
 // helper function
 function toValidNumber(value: unknown): number | undefined {
@@ -140,6 +146,37 @@ export const mapProductToFormState = (product: Product): ProductFormState => {
       Object.keys(variants).length > 0
         ? variants
         : { "0": createDefaultVariant(product.name) },
+    deletedVariantIds: [],
+  };
+};
+
+export const mapProductToCopyFormState = (product: Product): ProductFormState => {
+  // Copies reusable catalogue details while regenerating create-only identifiers.
+  const copiedState = mapProductToFormState(product);
+  const productPrefix = "PRD";
+
+  return {
+    ...copiedState,
+    name: "",
+    code: `${productPrefix}-${createRandomDigits(6)}`,
+    original_has_variants: false,
+    variants: Object.entries(copiedState.variants).reduce<
+      ProductFormState["variants"]
+    >((acc, [key, variant]) => {
+      acc[key] = {
+        ...variant,
+        id: undefined,
+        name: "",
+        sku: copiedState.has_variants
+          ? buildVariantSku(variant.name || "SKU")
+          : buildSimpleProductSku(),
+        barcode: makeBarcode(),
+        attributes: [],
+        serials: [],
+        batches: [],
+      };
+      return acc;
+    }, {}),
     deletedVariantIds: [],
   };
 };
