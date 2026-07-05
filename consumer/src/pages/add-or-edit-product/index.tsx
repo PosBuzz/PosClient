@@ -2,7 +2,7 @@ import { SaveOutlined } from "@ant-design/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Space, Tabs } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
 import { productApi } from "../../api/product-api";
 import CenterLoader from "../../components/CenterLoader";
@@ -21,6 +21,9 @@ export default function AddOrEditProductPage() {
   const [activeTab, setActiveTab] = useState("basic");
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+  const [searchParams] = useSearchParams();
+  const copyFromId = searchParams.get("copy_from");
+  const isCopyMode = !isEditMode && Boolean(copyFromId);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { messageApi } = useMessageStore();
@@ -45,6 +48,7 @@ export default function AddOrEditProductPage() {
     generateBarcode,
     validateForm,
     initializeFromProduct,
+    initializeFromProductCopy,
     resetForm,
     markSnapshot,
   } = useProductFormState();
@@ -55,6 +59,13 @@ export default function AddOrEditProductPage() {
     queryFn: () => productApi.getProduct(Number(id)),
     enabled: isEditMode,
     staleTime: queryStaleTimeMap[queryKeys.product],
+  });
+
+  const { data: copyProductData, isLoading: copyProductLoading } = useQuery({
+    queryKey: [queryKeys.product, "copy", copyFromId],
+    queryFn: () => productApi.getProduct(Number(copyFromId)),
+    enabled: isCopyMode,
+    staleTime: 0,
   });
 
   const { data: branches = [] } = useQuery({
@@ -68,10 +79,22 @@ export default function AddOrEditProductPage() {
     if (isEditMode && productData) {
       initializeFromProduct(productData);
     }
-    if (!isEditMode) {
+    if (isCopyMode && copyProductData) {
+      initializeFromProductCopy(copyProductData);
+      return;
+    }
+    if (!isEditMode && !isCopyMode) {
       resetForm();
     }
-  }, [initializeFromProduct, isEditMode, productData, resetForm]);
+  }, [
+    copyProductData,
+    initializeFromProduct,
+    initializeFromProductCopy,
+    isCopyMode,
+    isEditMode,
+    productData,
+    resetForm,
+  ]);
 
   const { onSave, isSaving } = useProductSaveMutations({
     formState,
@@ -154,19 +177,25 @@ export default function AddOrEditProductPage() {
     ],
   );
 
-  if (productLoading) {
+  const pageTitle = isEditMode
+    ? "Edit Product"
+    : isCopyMode
+      ? "Copy Product"
+      : "Add Product";
+
+  if (productLoading || copyProductLoading) {
     return <CenterLoader />;
   }
 
   return (
     <>
-      {setPageTitle(isEditMode ? "Edit Product" : "Add Product")}
+      {setPageTitle(pageTitle)}
       <PageTitle
-        title={isEditMode ? "Edit Product" : "Add Product"}
+        title={pageTitle}
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
           { title: "Products", href: "/products" },
-          { title: isEditMode ? "Edit Product" : "Add Product" },
+          { title: pageTitle },
         ]}
         rightSection={
           <Space wrap>
