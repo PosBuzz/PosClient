@@ -192,7 +192,7 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
-          label: <span title="Partial Payments">Partial Payments</span>,
+          label: <span title="Due Payments">Due Payments</span>,
           key: "/partial-payments",
           permissions: [Permissions.sales],
         },

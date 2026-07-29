@@ -463,7 +463,7 @@ const NewSale = () => {
     const totals = calculateTotals();
 
     // Zero-amount rows are dropped. No payment at all is allowed: the sale is
-    // recorded as fully unpaid (DUE) and collected later from Partial Payments.
+    // recorded as fully unpaid (DUE) and collected later from Due Payments.
     const effectivePayments = salePayments.filter(
       (payment) => Number(payment.amount) > 0,
     );

@@ -232,10 +232,10 @@ const PartialPayments = () => {
 
   return (
     <div>
-      {setPageTitle("Partial Payments")}
+      {setPageTitle("Due Payments")}
       <PageTitle
-        title="Partial Payments"
-        breadcrumbs={[{ title: "Home" }, { title: "Partial Payments" }]}
+        title="Due Payments"
+        breadcrumbs={[{ title: "Home" }, { title: "Due Payments" }]}
       />
 
       {/* Summary Statistics */}
@@ -243,7 +243,7 @@ const PartialPayments = () => {
         <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
-              title="Unpaid & Partially Paid Sales"
+              title="Sales With Due Payments"
               value={meta?.total || 0}
               prefix={takaPrefix}
             />
@@ -274,7 +274,7 @@ const PartialPayments = () => {
       </Row>
 
       <Card
-        title="Unpaid & Partially Paid Sales"
+        title="Sales With Due Payments"
         extra={
           hasActiveFilters() && (
             <Button onClick={clearFilters} type="link">
