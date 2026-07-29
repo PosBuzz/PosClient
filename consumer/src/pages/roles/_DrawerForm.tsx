@@ -89,7 +89,7 @@ const permissionGuide = {
   [Permissions.sales]: {
     title: "Sales",
     summary: "Lets users run the POS sales workflow and related sales operations.",
-    gives: ["New/view sales", "Returns", "Partial payments", "Promotions", "Sales targets and stats"],
+    gives: ["New/view sales", "Returns", "Due payments", "Promotions", "Sales targets and stats"],
   },
   [Permissions.quotations]: {
     title: "Quotations",

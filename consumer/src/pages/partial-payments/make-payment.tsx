@@ -216,7 +216,7 @@ const MakePayment = () => {
         title={`Make Payment - Sale #${sale.sale_number}`}
         breadcrumbs={[
           { title: "Home" },
-          { title: "Partial Payments" },
+          { title: "Due Payments" },
           { title: "Make Payment" },
         ]}
         rightSection={
@@ -225,7 +225,7 @@ const MakePayment = () => {
             onClick={() => navigate("/partial-payments")}
             style={{ marginBottom: 16 }}
           >
-            Back to Partial Payments
+            Back to Due Payments
           </Button>
         }
       />
