@@ -113,7 +113,25 @@ export class DashboardService {
         consumer_id: consumerId,
         sale_type: 'sale',
         payment_status: { not: 'cancelled' },
+        deleted_at: null, // Soft-deleted sales never count towards analytics
         ...branchFilter,
+      };
+
+      // Returns are counted in the period they were refunded in — the original
+      // sale row is never rewritten.
+      const returnBaseWhere = {
+        consumer_id: consumerId,
+        ...branchFilter,
+      };
+
+      const weeklyReturnWhere = {
+        ...returnBaseWhere,
+        return_date: { gte: weekStart, lte: weekEnd },
+      };
+
+      const todayReturnWhere = {
+        ...returnBaseWhere,
+        return_date: { gte: todayStart, lte: todayEnd },
       };
 
       const weeklyWhere = {
@@ -159,6 +177,7 @@ export class DashboardService {
         Prisma.sql`consumer_id = ${consumerId}`,
         Prisma.sql`sale_type = 'sale'`,
         Prisma.sql`payment_status <> 'cancelled'`,
+        Prisma.sql`deleted_at IS NULL`,
         Prisma.sql`sale_date BETWEEN ${weekStart} AND ${weekEnd}`,
       ];
       if (query.branch_id) {
@@ -166,9 +185,22 @@ export class DashboardService {
       }
 
       const rawWhereClause = Prisma.join(rawSqlConditions, ' AND ');
+
+      const rawReturnConditions = [
+        Prisma.sql`consumer_id = ${consumerId}`,
+        Prisma.sql`return_date BETWEEN ${weekStart} AND ${weekEnd}`,
+      ];
+      if (query.branch_id) {
+        rawReturnConditions.push(Prisma.sql`branch_id = ${query.branch_id}`);
+      }
+
+      const rawReturnWhereClause = Prisma.join(rawReturnConditions, ' AND ');
       const [
         weeklyAgg,
         todayAgg,
+        weeklyReturnAgg,
+        todayReturnAgg,
+        weeklyReturnsByDay,
         weeklySalesByDay,
         paymentBreakdown,
         returnPaymentBreakdown,
@@ -188,6 +220,31 @@ export class DashboardService {
           _count: { id: true },
           _sum: { total_amount: true },
         }),
+
+        this.prisma.return.aggregate({
+          where: weeklyReturnWhere,
+          _count: { id: true },
+          _sum: { total_refund: true },
+        }),
+
+        this.prisma.return.aggregate({
+          where: todayReturnWhere,
+          _count: { id: true },
+          _sum: { total_refund: true },
+        }),
+
+        this.prisma.$queryRaw<
+          Array<{ date: string; return_count: bigint; total_refund: number }>
+        >`
+          SELECT
+            DATE(return_date)::text        AS date,
+            COUNT(*)                       AS return_count,
+            COALESCE(SUM(total_refund), 0) AS total_refund
+          FROM "returns"
+          WHERE ${rawReturnWhereClause}
+          GROUP BY DATE(return_date)
+          ORDER BY DATE(return_date) ASC
+        `,
 
         // DB-side groupBy on date string avoids pulling every row
         this.prisma.$queryRaw<
@@ -268,13 +325,46 @@ export class DashboardService {
       const variantMap = new Map(variants.map((v) => [v.id, v]));
 
       // Build response
-      const weeklySalesTrend: SalesTrendPoint[] = weeklySalesByDay.map(
-        (row) => ({
-          date: row.date,
-          sales_count: Number(row.sales_count),
-          total_amount: Number(row.total_amount),
-        }),
+      const refundsByDate = new Map(
+        weeklyReturnsByDay.map((row) => [
+          row.date,
+          {
+            count: Number(row.return_count),
+            amount: Number(row.total_refund),
+          },
+        ]),
       );
+
+      const trendDates = Array.from(
+        new Set([
+          ...weeklySalesByDay.map((row) => row.date),
+          ...weeklyReturnsByDay.map((row) => row.date),
+        ]),
+      ).sort();
+
+      const salesByDate = new Map(
+        weeklySalesByDay.map((row) => [
+          row.date,
+          {
+            count: Number(row.sales_count),
+            amount: Number(row.total_amount),
+          },
+        ]),
+      );
+
+      const weeklySalesTrend: SalesTrendPoint[] = trendDates.map((date) => {
+        const sales = salesByDate.get(date) ?? { count: 0, amount: 0 };
+        const refunds = refundsByDate.get(date) ?? { count: 0, amount: 0 };
+
+        return {
+          date,
+          sales_count: sales.count,
+          total_amount: sales.amount,
+          returns_count: refunds.count,
+          returns_amount: refunds.amount,
+          net_amount: sales.amount - refunds.amount,
+        };
+      });
 
       const topProducts = topProductsGrouped.map((item) => {
         const variant = variantMap.get(item.variant_id);
@@ -329,12 +419,25 @@ export class DashboardService {
         })),
       };
 
+      const weeklyGross = Number(weeklyAgg._sum.total_amount ?? 0);
+      const todayGross = Number(todayAgg._sum.total_amount ?? 0);
+      const weeklyRefunds = Number(weeklyReturnAgg._sum.total_refund ?? 0);
+      const todayRefunds = Number(todayReturnAgg._sum.total_refund ?? 0);
+
       return {
         summary: {
-          weekly_total_sale: Number(weeklyAgg._sum.total_amount ?? 0),
+          // weekly_total_sale / today_total_sale stay GROSS so they reconcile
+          // with the sales list; returns and net are reported alongside.
+          weekly_total_sale: weeklyGross,
           weekly_transactions: weeklyAgg._count.id ?? 0,
-          today_total_sale: Number(todayAgg._sum.total_amount ?? 0),
+          weekly_returns_total: weeklyRefunds,
+          weekly_returns_count: weeklyReturnAgg._count.id ?? 0,
+          weekly_net_sale: weeklyGross - weeklyRefunds,
+          today_total_sale: todayGross,
           today_transactions: todayAgg._count.id ?? 0,
+          today_returns_total: todayRefunds,
+          today_returns_count: todayReturnAgg._count.id ?? 0,
+          today_net_sale: todayGross - todayRefunds,
         },
         weekly_sales_trend: weeklySalesTrend,
         payment_method_breakdown: paymentMethodBreakdown,

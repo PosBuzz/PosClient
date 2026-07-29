@@ -19,6 +19,7 @@ export const endpoints = {
 
   // Product management
   products: "/consumer/products",
+  productLimit: "/consumer/products/limit",
   productCount: "/consumer/products/count",
   getProduct: (id: number) => `/consumer/products/${id}`,
   updateProduct: (id: number) => `/consumer/products/${id}`,
@@ -113,6 +114,8 @@ export const endpoints = {
   getSale: (id: number) => `/consumer/sales/${id}`,
   getSaleBySaleNumber: (saleNumber: string) =>
     `/consumer/sales/search/${saleNumber}`,
+  updateSaleNote: (id: number) => `/consumer/sales/${id}/note`,
+  restoreSale: (id: number) => `/consumer/sales/${id}/restore`,
   createSale: "/consumer/sales",
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",

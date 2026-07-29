@@ -25,6 +25,7 @@ export class ReturnService {
         where: {
           id: dto.original_sale_id,
           consumer_id: consumerId,
+          deleted_at: null, // Cannot return against a deleted sale
         },
         include: {
           items: true,

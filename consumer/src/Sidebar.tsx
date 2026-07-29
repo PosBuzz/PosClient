@@ -90,6 +90,68 @@ const SideBar: React.FC = () => {
       ],
     },
     {
+      label: <span title="Inventory">Inventory</span>,
+      key: "/inventory",
+      icon: <MdOutlineInventory />,
+      children: [
+        {
+          label: <span title="Add Inventory">Add Inventory</span>,
+          key: "/inventory/batches/add",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="View Inventory">View Inventory</span>,
+          key: "/inventory/batches",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Add Transfer">Add Transfer</span>,
+          key: "/inventory/transfers/add",
+          permissions: [Permissions.inventory_transfer],
+        },
+        {
+          label: <span title="Inventory Transfer">Inventory Transfer</span>,
+          key: "/inventory/transfers",
+          permissions: [Permissions.inventory_transfer],
+        },
+        {
+          label: <span title="Add Adjustment">Add Adjustment</span>,
+          key: "/inventory/adjustments/add",
+          permissions: [Permissions.inventory_adjustment],
+        },
+        {
+          label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
+          key: "/inventory/adjustments",
+          permissions: [Permissions.inventory_adjustment],
+        },
+        {
+          label: <span title="Stock by Variant">Stock by Variant</span>,
+          key: "/inventory/stock-by-variant",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Expiring Items">Expiring Items</span>,
+          key: "/inventory/expiring",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Low Stock">Low Stock</span>,
+          key: "/inventory/low-stock",
+          permissions: [Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Vendors">Vendors</span>,
+          key: "/vendors",
+          permissions: [Permissions.vendors, Permissions.inventory_batches],
+        },
+        {
+          label: <span title="Purchase Payments">Purchase Payments</span>,
+          key: "/purchase-payments",
+          permissions: [Permissions.inventory_batches],
+        },
+      ],
+    },
+    {
       label: <span title="Sales">Sales</span>,
       key: "/sales-menu",
       icon: <ShoppingCartOutlined />,
@@ -155,68 +217,6 @@ const SideBar: React.FC = () => {
         //   key: "/eod",
         //   permissions: [Permissions.sales],
         // },
-      ],
-    },
-    {
-      label: <span title="Inventory">Inventory</span>,
-      key: "/inventory",
-      icon: <MdOutlineInventory />,
-      children: [
-        {
-          label: <span title="Add Inventory">Add Inventory</span>,
-          key: "/inventory/batches/add",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="View Inventory">View Inventory</span>,
-          key: "/inventory/batches",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Add Transfer">Add Transfer</span>,
-          key: "/inventory/transfers/add",
-          permissions: [Permissions.inventory_transfer],
-        },
-        {
-          label: <span title="Inventory Transfer">Inventory Transfer</span>,
-          key: "/inventory/transfers",
-          permissions: [Permissions.inventory_transfer],
-        },
-        {
-          label: <span title="Add Adjustment">Add Adjustment</span>,
-          key: "/inventory/adjustments/add",
-          permissions: [Permissions.inventory_adjustment],
-        },
-        {
-          label: <span title="Inventory Adjustment">Inventory Adjustment</span>,
-          key: "/inventory/adjustments",
-          permissions: [Permissions.inventory_adjustment],
-        },
-        {
-          label: <span title="Stock by Variant">Stock by Variant</span>,
-          key: "/inventory/stock-by-variant",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Expiring Items">Expiring Items</span>,
-          key: "/inventory/expiring",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Low Stock">Low Stock</span>,
-          key: "/inventory/low-stock",
-          permissions: [Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Vendors">Vendors</span>,
-          key: "/vendors",
-          permissions: [Permissions.vendors, Permissions.inventory_batches],
-        },
-        {
-          label: <span title="Purchase Payments">Purchase Payments</span>,
-          key: "/purchase-payments",
-          permissions: [Permissions.inventory_batches],
-        },
       ],
     },
     {

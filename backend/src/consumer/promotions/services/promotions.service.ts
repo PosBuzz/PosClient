@@ -870,6 +870,7 @@ export class PromotionsService {
           promotion_id: promotionId,
           sale_type: 'sale',
           payment_status: { not: 'cancelled' },
+          deleted_at: null,
         },
         _sum: {
           promotion_discount: true,
@@ -881,6 +882,7 @@ export class PromotionsService {
           promotion_id: promotionId,
           sale_type: 'sale',
           payment_status: { not: 'cancelled' },
+          deleted_at: null,
         },
       }),
     ]);
@@ -903,6 +905,7 @@ export class PromotionsService {
       customer_id: customerId,
       sale_type: 'sale',
       payment_status: { not: 'cancelled' },
+      deleted_at: null,
     };
 
     if (dailyReset) {

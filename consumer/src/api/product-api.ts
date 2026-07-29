@@ -35,6 +35,17 @@ export const productApi = {
     return get(endpoints.products, formattedParams);
   },
 
+  // Plan-imposed product cap for this tenant (max_products = null → unlimited)
+  getProductLimit: async (): Promise<{
+    plan_name: string | null;
+    max_products: number | null;
+    used: number;
+    remaining: number | null;
+    limit_reached: boolean;
+  }> => {
+    return get(endpoints.productLimit);
+  },
+
   getProduct: async (id: number): Promise<Product> => {
     return get(endpoints.getProduct(id));
   },

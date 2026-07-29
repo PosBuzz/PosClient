@@ -77,6 +77,12 @@ export class ProductController {
   }
 
   @HasPermissions([ConsumerPermission.view_product])
+  @Get('limit')
+  getProductLimit(@Req() req: Request) {
+    return this.productService.getProductLimit(Number(req?.user.consumer_id));
+  }
+
+  @HasPermissions([ConsumerPermission.view_product])
   @Get(':id')
   findOne(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
     return this.productService.findOne(id, Number(req?.user.consumer_id));

@@ -68,6 +68,42 @@ export class ConsumerService {
           skipDuplicates: true,
         });
 
+        // Step 4b: Create the default "Cash In Charge" role — the shop-floor
+        // role that can run sales/returns and look things up, but not manage
+        // the business. Only the permissions the plan actually includes.
+        const cashInChargePermissionActions = [
+          'sales',
+          'quotations',
+          'customers',
+          'view_product',
+        ];
+
+        const cashInChargePermissions = await tx.permission.findMany({
+          where: {
+            action: { in: cashInChargePermissionActions },
+            id: { in: planPermissions.map((p) => p.permission_id) },
+          },
+          select: { id: true },
+        });
+
+        if (cashInChargePermissions.length) {
+          const cashInChargeRole = await tx.role.create({
+            data: {
+              name: 'Cash In Charge',
+              is_admin: false,
+              consumer_id: consumer.id,
+            },
+          });
+
+          await tx.rolePermission.createMany({
+            data: cashInChargePermissions.map((permission) => ({
+              role_id: cashInChargeRole.id,
+              permission_id: permission.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
         // Step 5: Create default main branch
         const mainBranch = await tx.branch.create({
           data: {

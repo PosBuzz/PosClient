@@ -146,6 +146,9 @@ export default function _TableGrid({
           },
           plan: true,
           billing_logs: true,
+          _count: {
+            select: { Product: true },
+          },
         },
       }),
   });
@@ -237,6 +240,24 @@ export default function _TableGrid({
         return adminUser ? adminUser.name : "-";
       },
       key: "user_name",
+    },
+    {
+      title: "Products",
+      key: "product_usage",
+      render: (record: any) => {
+        const used = record._count?.Product ?? 0;
+        const max = record.plan?.max_products ?? null;
+
+        if (max === null) {
+          return <span>{used} / &infin;</span>;
+        }
+
+        return (
+          <Tag color={used >= max ? "red" : used >= max * 0.8 ? "orange" : "blue"}>
+            {used} / {max}
+          </Tag>
+        );
+      },
     },
     {
       title: "Business Category",
