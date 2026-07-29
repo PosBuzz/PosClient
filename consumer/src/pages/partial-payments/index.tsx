@@ -243,7 +243,7 @@ const PartialPayments = () => {
         <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
-              title="Partially Paid Sales"
+              title="Unpaid & Partially Paid Sales"
               value={meta?.total || 0}
               prefix={takaPrefix}
             />
@@ -274,7 +274,7 @@ const PartialPayments = () => {
       </Row>
 
       <Card
-        title="Partially Paid Sales"
+        title="Unpaid & Partially Paid Sales"
         extra={
           hasActiveFilters() && (
             <Button onClick={clearFilters} type="link">

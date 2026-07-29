@@ -501,12 +501,15 @@ const NewSale = () => {
       return;
     }
 
-    if (salePayments.length === 0) {
-      messageApi?.error("Please add at least one payment method");
-      return;
-    }
+    const totals = calculateTotals();
 
-    for (const payment of salePayments) {
+    // Zero-amount rows are dropped. No payment at all is allowed: the sale is
+    // recorded as fully unpaid (DUE) and collected later from Partial Payments.
+    const effectivePayments = salePayments.filter(
+      (payment) => Number(payment.amount) > 0,
+    );
+
+    for (const payment of effectivePayments) {
       if (
         PAYMENT_METHODS_REQUIRING_PROVIDER.includes(payment.payment_method) &&
         !payment.payment_type
@@ -517,19 +520,18 @@ const NewSale = () => {
         return;
       }
     }
-
-    const totals = calculateTotals();
-    const totalPaymentAmount = salePayments.reduce(
-      (sum, payment) => sum + payment.amount,
+    const totalPaymentAmount = effectivePayments.reduce(
+      (sum, payment) => sum + Number(payment.amount),
       0,
     );
 
-    // Determine payment status
+    // Determine payment status — check "nothing paid" first, otherwise a fully
+    // unpaid sale would be recorded as PARTIAL
     let paymentStatus = PaymentStatus.PAID;
-    if (totalPaymentAmount < totals.total) {
-      paymentStatus = PaymentStatus.PARTIAL;
-    } else if (totalPaymentAmount === 0) {
+    if (totalPaymentAmount === 0) {
       paymentStatus = PaymentStatus.DUE;
+    } else if (totalPaymentAmount < totals.total) {
+      paymentStatus = PaymentStatus.PARTIAL;
     }
 
     const saleData: SaleFormData = {
@@ -556,7 +558,7 @@ const NewSale = () => {
       shipping_cost: totals.shippingCost,
       payment_status: paymentStatus,
       received_amount: totalPaymentAmount,
-      payments: salePayments,
+      payments: effectivePayments,
     };
 
     try {
