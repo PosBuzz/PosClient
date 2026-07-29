@@ -294,7 +294,7 @@ function Dashboard() {
           {/* KPI Summary Cards Row */}
           {/* Sales and Return metrics */}
           <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-            <Col xs={24} sm={12} md={12} lg={6}>
+            <Col xs={24} sm={12} md={12} lg={4}>
               <Card>
                 <Statistic
                   title="Today's Sale Amount"
@@ -306,7 +306,7 @@ function Dashboard() {
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={6}>
+            <Col xs={24} sm={12} md={12} lg={4}>
               <Card>
                 <Statistic
                   title="Today's Sale Count"
@@ -317,7 +317,36 @@ function Dashboard() {
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={6}>
+            <Col xs={24} sm={12} md={12} lg={4}>
+              <Card>
+                <Statistic
+                  title="Today's Returns"
+                  value={data?.summary?.today_returns_total || 0}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={{ color: "#cf1322" }}
+                  suffix={
+                    <span style={{ fontSize: "12px", color: "#8c8c8c" }}>
+                      ({data?.summary?.today_returns_count || 0})
+                    </span>
+                  }
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={12} lg={4}>
+              <Card>
+                <Statistic
+                  title="Today's Net Sale"
+                  value={data?.summary?.today_net_sale || 0}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={{ color: "#389e0d" }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={12} lg={4}>
               <Card
                 hoverable
                 style={{ borderBottom: `3px solid #EF4444` }}
@@ -345,7 +374,7 @@ function Dashboard() {
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={6}>
+            <Col xs={24} sm={12} md={12} lg={4}>
               <Card
                 hoverable
                 style={{ borderBottom: `3px solid #F59E0B` }}
@@ -958,7 +987,9 @@ function Dashboard() {
                             color: isDarkMode ? "#ffffff" : "#000000",
                           }}
                           formatter={(value, name) => [
-                            name === "Amount"
+                            name === "Amount" ||
+                            name === "Net" ||
+                            name === "Returns"
                               ? `BDT ${value?.toLocaleString()}`
                               : value,
                             name,
@@ -977,6 +1008,25 @@ function Dashboard() {
                           strokeWidth={2}
                           dot={{ r: 3, strokeWidth: 0, fill: "#2563EB" }}
                           activeDot={{ r: 4, fill: "#2563EB" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="net_amount"
+                          stroke="#389E0D"
+                          name="Net"
+                          strokeWidth={2}
+                          strokeDasharray="4 2"
+                          dot={{ r: 3, strokeWidth: 0, fill: "#389E0D" }}
+                          activeDot={{ r: 4, fill: "#389E0D" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="returns_amount"
+                          stroke="#CF1322"
+                          name="Returns"
+                          strokeWidth={2}
+                          dot={{ r: 3, strokeWidth: 0, fill: "#CF1322" }}
+                          activeDot={{ r: 4, fill: "#CF1322" }}
                         />
                         <Line
                           type="monotone"

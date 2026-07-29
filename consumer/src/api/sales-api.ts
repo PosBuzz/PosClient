@@ -1,4 +1,4 @@
-import { get, post, patch } from "./crud-api";
+import { get, post, patch, deleteApi } from "./crud-api";
 import { endpoints } from "./endpoints";
 import {
   Sale,
@@ -20,9 +20,30 @@ export const salesApi = {
     return await get(endpoints.getSales, filters);
   },
 
-  // Get a single sale by ID
-  getSale: async (id: number): Promise<Sale> => {
-    return await get(endpoints.getSale(id));
+  // Get a single sale by ID (pass includeDeleted for soft-deleted sales)
+  getSale: async (id: number, includeDeleted = false): Promise<Sale> => {
+    return await get(
+      endpoints.getSale(id),
+      includeDeleted ? { include_deleted: true } : undefined,
+    );
+  },
+
+  // Update the note on a sale (the only editable field after a sale is made)
+  updateSaleNote: async (id: number, notes: string): Promise<Sale> => {
+    return await patch(endpoints.updateSaleNote(id), { notes });
+  },
+
+  // Soft-delete a sale: restores stock, keeps the record in the Deleted tab
+  deleteSale: async (
+    id: number,
+    reason?: string,
+  ): Promise<{ message: string; sale_id: number }> => {
+    return await deleteApi(endpoints.getSale(id), reason ? { reason } : {});
+  },
+
+  // Restore a soft-deleted sale (re-deducts stock)
+  restoreSale: async (id: number): Promise<Sale> => {
+    return await post(endpoints.restoreSale(id), {});
   },
 
   // Create a new sale

@@ -1,20 +1,24 @@
 import {
   ArrowLeftOutlined,
+  EditOutlined,
   FilePdfOutlined,
   PrinterOutlined,
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Card,
   Col,
   Descriptions,
   Divider,
+  Input,
   message,
   Modal,
   Row,
   Space,
   Spin,
+  Statistic,
   Table,
   Tag,
   Typography,
@@ -38,10 +42,16 @@ const SaleDetail: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewUrlRef = useRef("");
+  const queryClient = useQueryClient();
+
+  // Notes are the only editable field on a completed sale
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
 
   const saleQuery = useQuery({
     queryKey: [queryKeys.sale, parseInt(id || "0")],
-    queryFn: () => salesApi.getSale(parseInt(id!)),
+    // include_deleted so a soft-deleted sale can still be opened from the Deleted tab
+    queryFn: () => salesApi.getSale(parseInt(id!), true),
     enabled: !!id,
     staleTime: queryStaleTimeMap[queryKeys.sale],
     retry: (failureCount, error: any) => {
@@ -55,6 +65,23 @@ const SaleDetail: React.FC = () => {
 
   const sale = saleQuery.data;
   const loading = saleQuery.isLoading;
+
+  const updateNoteMutation = useMutation({
+    mutationFn: (notes: string) => salesApi.updateSaleNote(parseInt(id!), notes),
+    onSuccess: () => {
+      message.success("Note updated");
+      setIsEditingNote(false);
+      queryClient.invalidateQueries({
+        queryKey: [queryKeys.sale, parseInt(id || "0")],
+      });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+    },
+    onError: (error: any) => {
+      message.error(
+        error?.response?.data?.message || "Failed to update the note",
+      );
+    },
+  });
   const promotionDiscount =
     sale?.items?.reduce(
       (sum: number, item: any) =>
@@ -434,6 +461,20 @@ const SaleDetail: React.FC = () => {
       ),
     },
     {
+      title: "Returned",
+      key: "returned_quantity",
+      render: (_: any, record: any) => {
+        const returned = Number(record.returned_quantity) || 0;
+        if (!returned) return <Text type="secondary">—</Text>;
+
+        return (
+          <Tag color={returned >= record.quantity ? "red" : "orange"}>
+            {returned} of {record.quantity}
+          </Tag>
+        );
+      },
+    },
+    {
       title: "Avg Disc",
       key: "average_discount_amount",
       render: (_: any, record: any) => (
@@ -534,8 +575,119 @@ const SaleDetail: React.FC = () => {
         }
       />
 
+      {sale.deleted_at && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="This sale has been deleted"
+          description={
+            <>
+              Deleted by {sale.deleted_by?.name || "unknown"} on{" "}
+              {dayjs(sale.deleted_at).format("DD/MM/YYYY HH:mm")}
+              {sale.delete_reason ? ` — ${sale.delete_reason}` : ""}. Its stock
+              has been returned to inventory and it is excluded from all reports.
+            </>
+          }
+        />
+      )}
+
       <Row gutter={16}>
         <Col span={16}>
+          {/* Returns recorded against this sale — the sale itself is unchanged */}
+          {sale.return_summary?.has_returns && (
+            <Card
+              title="Returns against this sale"
+              style={{ marginBottom: 16 }}
+              extra={
+                <Tag
+                  color={
+                    sale.return_summary.status === "fully_returned"
+                      ? "red"
+                      : "orange"
+                  }
+                >
+                  {sale.return_summary.status === "fully_returned"
+                    ? "FULLY RETURNED"
+                    : "PARTIALLY RETURNED"}
+                </Tag>
+              }
+            >
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col span={8}>
+                  <Statistic
+                    title="Sale Total"
+                    value={Number(sale.total_amount) || 0}
+                    precision={2}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Refunded"
+                    value={sale.return_summary.total_refund}
+                    precision={2}
+                    valueStyle={{ color: "#cf1322" }}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Net After Returns"
+                    value={sale.return_summary.net_amount}
+                    precision={2}
+                  />
+                </Col>
+              </Row>
+
+              <Table
+                size="small"
+                pagination={false}
+                rowKey="id"
+                dataSource={sale.returns || []}
+                columns={[
+                  {
+                    title: "Return #",
+                    dataIndex: "return_number",
+                    key: "return_number",
+                    render: (returnNumber: string, record: any) => (
+                      <Button
+                        type="link"
+                        style={{ padding: 0 }}
+                        onClick={() => navigate(`/returns/view/${record.id}`)}
+                      >
+                        {returnNumber}
+                      </Button>
+                    ),
+                  },
+                  {
+                    title: "Date",
+                    dataIndex: "return_date",
+                    key: "return_date",
+                    render: (date: string) =>
+                      dayjs(date).format("DD/MM/YYYY HH:mm"),
+                  },
+                  {
+                    title: "Refund",
+                    dataIndex: "total_refund",
+                    key: "total_refund",
+                    render: (amount: number) => <Money value={amount} />,
+                  },
+                  {
+                    title: "Exchange",
+                    dataIndex: "total_exchange",
+                    key: "total_exchange",
+                    render: (amount: number) => <Money value={amount} />,
+                  },
+                  {
+                    title: "Reason",
+                    dataIndex: "reason",
+                    key: "reason",
+                    render: (reason: string) => reason || "—",
+                  },
+                ]}
+              />
+            </Card>
+          )}
+
           {/* Show quotation banner if converted from quotation */}
           {sale.converted_from_quotations &&
             sale.converted_from_quotations.length > 0 &&
@@ -631,17 +783,62 @@ const SaleDetail: React.FC = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            {sale.notes && (
-              <>
-                <Divider />
-                <div>
-                  <Text strong>Notes:</Text>
-                  <div style={{ marginTop: 8 }}>
-                    <Text>{sale.notes}</Text>
-                  </div>
+            <Divider />
+            <div>
+              <Space>
+                <Text strong>Notes:</Text>
+                {!isEditingNote && !sale.deleted_at && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setNoteDraft(sale.notes || "");
+                      setIsEditingNote(true);
+                    }}
+                  >
+                    {sale.notes ? "Edit" : "Add note"}
+                  </Button>
+                )}
+              </Space>
+
+              {isEditingNote ? (
+                <div style={{ marginTop: 8 }}>
+                  <Input.TextArea
+                    rows={3}
+                    value={noteDraft}
+                    maxLength={2000}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    placeholder="Add a note for this sale"
+                  />
+                  <Space style={{ marginTop: 8 }}>
+                    <Button
+                      type="primary"
+                      size="small"
+                      loading={updateNoteMutation.isPending}
+                      onClick={() => updateNoteMutation.mutate(noteDraft)}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setIsEditingNote(false)}
+                      disabled={updateNoteMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </Space>
                 </div>
-              </>
-            )}
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  {sale.notes ? (
+                    <Text>{sale.notes}</Text>
+                  ) : (
+                    <Text type="secondary">No note added</Text>
+                  )}
+                </div>
+              )}
+            </div>
           </Card>
 
           {/* Sale Items */}

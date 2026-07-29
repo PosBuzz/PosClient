@@ -65,12 +65,50 @@ export class ProductService {
     });
   }
 
+  /**
+   * Plans can cap how many products a tenant may hold (Plan.max_products,
+   * null = unlimited). Tenants already over the cap keep their data — they just
+   * cannot add more.
+   */
+  async getProductLimit(consumerId: number) {
+    const consumer = await this.prisma.consumer.findUnique({
+      where: { id: consumerId },
+      select: { plan: { select: { name: true, max_products: true } } },
+    });
+
+    const used = await this.prisma.product.count({
+      where: { consumer_id: consumerId },
+    });
+
+    const max = consumer?.plan?.max_products ?? null;
+
+    return {
+      plan_name: consumer?.plan?.name ?? null,
+      max_products: max,
+      used,
+      remaining: max === null ? null : Math.max(max - used, 0),
+      limit_reached: max !== null && used >= max,
+    };
+  }
+
+  private async assertProductLimitNotReached(consumerId: number) {
+    const limit = await this.getProductLimit(consumerId);
+
+    if (limit.limit_reached) {
+      throw new BadRequestException(
+        `Product limit reached: your ${limit.plan_name ?? 'current'} plan allows ${limit.max_products} product(s) and you already have ${limit.used}. Upgrade your plan to add more products.`,
+      );
+    }
+  }
+
   async create(
     consumerId: number,
     userId: number | undefined,
     dto: CreateProductDto,
   ) {
     try {
+      await this.assertProductLimitNotReached(consumerId);
+
       // Validate that at least one variant is provided
       if (!dto.variants || dto.variants.length === 0) {
         throw new BadRequestException('At least one variant is required');

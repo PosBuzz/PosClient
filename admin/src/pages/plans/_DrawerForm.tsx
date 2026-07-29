@@ -55,6 +55,13 @@ export default function DrawerForm({
     const payload = {
       name: formValues.name,
       price: +formValues.price,
+      // Blank = unlimited products on this plan
+      max_products:
+        formValues.max_products === undefined ||
+        formValues.max_products === null ||
+        formValues.max_products === ""
+          ? null
+          : +formValues.max_products,
       permission_ids: formValues.permission_ids,
     };
 
@@ -78,6 +85,7 @@ export default function DrawerForm({
       form.setFieldsValue({
         name: editedItem.name,
         price: editedItem.price,
+        max_products: editedItem.max_products ?? undefined,
         permission_ids: editedItem.permissions?.map(
           (p: any) => p.permission_id
         ),
@@ -125,6 +133,22 @@ export default function DrawerForm({
             ]}
           >
             <Input type="number" />
+          </Form.Item>
+
+          <Form.Item
+            label="Max Products"
+            name="max_products"
+            tooltip="Maximum number of products a consumer on this plan can create. Leave blank for unlimited."
+            rules={[
+              {
+                validator: (_, value) =>
+                  value === undefined || value === null || value === "" || +value >= 1
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("Must be at least 1")),
+              },
+            ]}
+          >
+            <Input type="number" min={1} placeholder="Unlimited" />
           </Form.Item>
 
           <Form.Item

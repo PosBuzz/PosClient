@@ -15,6 +15,7 @@ export class PlanService {
         data: {
           name: data.name,
           price: data.price,
+          max_products: data.max_products ?? null,
           permissions: {
             create: data.permission_ids.map((permission_id) => ({
               permission: { connect: { id: permission_id } },

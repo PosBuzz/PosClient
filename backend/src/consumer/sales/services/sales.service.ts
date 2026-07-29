@@ -9,7 +9,12 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
-import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
+import {
+  SaleListFiltersDto,
+  SaleRecordStatus,
+} from '../dto/sale-list-filters.dto';
+import { DeleteSaleDto } from '../dto/delete-sale.dto';
+import { UpdateSaleNoteDto } from '../dto/update-sale-note.dto';
 import {
   DailyTargetReportDto,
   DailyTargetReportResponse,
@@ -85,6 +90,93 @@ export class SalesService {
           : null,
       })),
     };
+  }
+
+  /**
+   * Sales rows are never rewritten when a return happens — returns are recorded
+   * separately and surfaced alongside the sale. This attaches, per sale:
+   *  - return_summary: refund/exchange totals + whether it is fully returned
+   *  - items[].returned_quantity
+   */
+  private async attachReturnSummaries<
+    T extends { id: number; items?: any[]; total_amount?: any },
+  >(sales: T[]): Promise<T[]> {
+    if (!sales.length) return sales;
+
+    const saleIds = sales.map((sale) => sale.id);
+
+    const [returns, returnedByItem] = await Promise.all([
+      this.prisma.return.findMany({
+        where: { original_sale_id: { in: saleIds } },
+        select: {
+          id: true,
+          return_number: true,
+          return_date: true,
+          total_refund: true,
+          total_exchange: true,
+          reason: true,
+          original_sale_id: true,
+        },
+        orderBy: { return_date: 'desc' },
+      }),
+      this.prisma.returnItem.groupBy({
+        by: ['sale_item_id'],
+        where: { return_record: { original_sale_id: { in: saleIds } } },
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    const returnsBySale = new Map<number, typeof returns>();
+    for (const returnRecord of returns) {
+      const existing = returnsBySale.get(returnRecord.original_sale_id) || [];
+      existing.push(returnRecord);
+      returnsBySale.set(returnRecord.original_sale_id, existing);
+    }
+
+    const returnedQtyByItem = new Map(
+      returnedByItem.map((row) => [row.sale_item_id, row._sum.quantity || 0]),
+    );
+
+    return sales.map((sale) => {
+      const saleReturns = returnsBySale.get(sale.id) || [];
+
+      const items = sale.items?.map((item) => ({
+        ...item,
+        returned_quantity: returnedQtyByItem.get(item.id) || 0,
+      }));
+
+      const totalRefund = saleReturns.reduce(
+        (sum, record) => sum + Number(record.total_refund),
+        0,
+      );
+      const totalExchange = saleReturns.reduce(
+        (sum, record) => sum + Number(record.total_exchange),
+        0,
+      );
+
+      const fullyReturned =
+        !!items?.length &&
+        items.every((item) => item.returned_quantity >= item.quantity);
+
+      return {
+        ...sale,
+        ...(items ? { items } : {}),
+        returns: saleReturns.map(({ original_sale_id, ...rest }) => rest),
+        return_summary: {
+          has_returns: saleReturns.length > 0,
+          return_count: saleReturns.length,
+          total_refund: totalRefund,
+          total_exchange: totalExchange,
+          // Sale total stays untouched; this is what it is worth after refunds
+          net_amount: Number(sale.total_amount ?? 0) - totalRefund,
+          status: !saleReturns.length
+            ? 'none'
+            : fullyReturned
+              ? 'fully_returned'
+              : 'partially_returned',
+        },
+      };
+    });
   }
 
   async create(
@@ -542,6 +634,7 @@ export class SalesService {
       sort_by = 'created_at',
       sort_order = 'desc',
       source,
+      status = SaleRecordStatus.ACTIVE,
     } = filters;
 
     try {
@@ -550,6 +643,7 @@ export class SalesService {
       const where: any = {
         consumer_id: consumerId,
         sale_type: SaleType.SALE, // Only return actual sales, not quotations
+        deleted_at: status === SaleRecordStatus.DELETED ? { not: null } : null,
       };
 
       if (search) {
@@ -612,6 +706,7 @@ export class SalesService {
             branch: true,
             user: { select: { id: true, name: true } },
             served_by: { select: { id: true, name: true } },
+            deleted_by: { select: { id: true, name: true } },
             payments: true, // Include payment details
             items: {
               include: {
@@ -651,7 +746,7 @@ export class SalesService {
 
       return {
         ...result,
-        data: salesWithPromotions,
+        data: await this.attachReturnSummaries(salesWithPromotions),
       };
     } catch (error) {
       this.logger.error(
@@ -665,13 +760,14 @@ export class SalesService {
     }
   }
 
-  async findOne(id: number, consumerId: number) {
+  async findOne(id: number, consumerId: number, includeDeleted = false) {
     try {
       const sale = await this.prisma.sale.findFirst({
         where: {
           id,
           consumer_id: consumerId,
           sale_type: SaleType.SALE, // Only return actual sales, not quotations
+          ...(includeDeleted ? {} : { deleted_at: null }),
         },
         include: {
           customer: {
@@ -683,6 +779,7 @@ export class SalesService {
           branch: true,
           user: { select: { id: true, name: true } },
           served_by: { select: { id: true, name: true } },
+          deleted_by: { select: { id: true, name: true } },
           promotion: {
             select: {
               id: true,
@@ -719,14 +816,348 @@ export class SalesService {
         throw new NotFoundException('Sale not found');
       }
 
-      return this.attachAppliedPromotions(sale, consumerId);
+      const withPromotions = await this.attachAppliedPromotions(
+        sale,
+        consumerId,
+      );
+      const [withReturns] = await this.attachReturnSummaries([withPromotions]);
+
+      return withReturns;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.error(
         `Error fetching sale ${id} for consumer ${consumerId}`,
         error.stack,
       );
       throw new HttpException(
         'Failed to fetch sale',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Notes are the only editable field on a completed sale — nothing financial
+   * can be rewritten after the fact.
+   */
+  async updateNote(
+    id: number,
+    consumerId: number,
+    dto: UpdateSaleNoteDto,
+    userId: number,
+  ) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { id, consumer_id: consumerId, deleted_at: null },
+      select: { id: true, sale_number: true },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Sale not found');
+    }
+
+    try {
+      await this.prisma.sale.update({
+        where: { id: sale.id },
+        data: { notes: dto.notes?.trim() ? dto.notes.trim() : null },
+      });
+
+      this.logger.log(
+        `Note updated on sale ${sale.sale_number} by user ${userId}`,
+      );
+
+      return this.findOne(id, consumerId);
+    } catch (error) {
+      this.logger.error(
+        `Error updating note on sale ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to update sale note',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Points earned by a sale are cancelled with an offsetting ADJUSTMENT when the
+   * sale is deleted, and re-applied when it is restored. Never destructive: the
+   * original EARN transaction stays in the customer's history.
+   */
+  private async reverseSaleRewardPoints(
+    saleId: number,
+    consumerId: number,
+    userId: number,
+    context: { saleNumber: string; direction: 'delete' | 'restore' },
+  ) {
+    try {
+      const transactions = await this.prisma.rewardsPointTransaction.findMany({
+        where: {
+          sale_id: saleId,
+          consumer_id: consumerId,
+          type: { in: ['EARN', 'ADJUSTMENT'] },
+        },
+        select: { customer_id: true, points: true },
+      });
+
+      const netByCustomer = new Map<number, number>();
+      for (const transaction of transactions) {
+        netByCustomer.set(
+          transaction.customer_id,
+          (netByCustomer.get(transaction.customer_id) || 0) + transaction.points,
+        );
+      }
+
+      for (const [customerId, netPoints] of netByCustomer) {
+        // On delete we cancel the points the sale earned, on restore we re-add them
+        const points = context.direction === 'delete' ? -netPoints : netPoints;
+        if (!points) continue;
+
+        await this.rewardsService.adjustPoints(
+          consumerId,
+          {
+            customer_id: customerId,
+            points,
+            description:
+              context.direction === 'delete'
+                ? `Points reversed - sale #${context.saleNumber} deleted`
+                : `Points re-applied - sale #${context.saleNumber} restored`,
+          } as any,
+          userId,
+        );
+      }
+    } catch (error) {
+      // Never block the delete/restore itself on a rewards bookkeeping failure
+      this.logger.error(
+        `Failed to ${context.direction} rewards points for sale ${saleId}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Soft-deletes a sale: the row is kept (and stays visible in the Deleted tab)
+   * but is excluded from every listing, report and stat. Stock sold by the sale
+   * is put back into the exact batches it came from.
+   *
+   * Refused when the sale already has a return, or has payments collected after
+   * the sale was created (partial payments) — those must be unwound first.
+   */
+  async softDelete(
+    id: number,
+    consumerId: number,
+    userId: number,
+    dto: DeleteSaleDto,
+  ) {
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+        sale_type: SaleType.SALE,
+        deleted_at: null,
+      },
+      include: {
+        items: true,
+        payments: true,
+        returns_as_original: { select: { id: true, return_number: true } },
+        returns_as_exchange: { select: { id: true } },
+      },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Sale not found');
+    }
+
+    if (sale.returns_as_original.length) {
+      throw new BadRequestException(
+        `This sale has ${sale.returns_as_original.length} return(s) against it (${sale.returns_as_original
+          .map((record) => record.return_number)
+          .join(', ')}). Delete or reverse the return(s) first.`,
+      );
+    }
+
+    if (sale.returns_as_exchange.length) {
+      throw new BadRequestException(
+        'This sale was created as an exchange for a return and cannot be deleted.',
+      );
+    }
+
+    // Payments recorded after the sale was created = partial payment collections
+    const laterPayments = sale.payments.filter(
+      (payment) =>
+        payment.created_at.getTime() - sale.created_at.getTime() > 60_000,
+    );
+    if (laterPayments.length) {
+      throw new BadRequestException(
+        'This sale has partial payments collected after it was created. Reverse those payments before deleting.',
+      );
+    }
+
+    if (sale.converted_to_sale_id) {
+      throw new BadRequestException(
+        'A quotation-converted record cannot be deleted from here.',
+      );
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        for (const item of sale.items) {
+          if (!item.batch_id) continue;
+
+          const updatedBatch = await tx.inventoryBatch.update({
+            where: { id: item.batch_id },
+            data: { quantity: { increment: item.quantity } },
+          });
+
+          await tx.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: sale.branch_id,
+              variant_id: item.variant_id,
+              batch_id: item.batch_id,
+              inventoryBatchId: item.batch_id,
+              event_type: 'SALE_DELETE_IN',
+              quantity_delta: item.quantity,
+              quantity_after: updatedBatch.quantity,
+              reference_id: item.id,
+              reference_type: 'sale_items',
+              notes: `Sale #${sale.sale_number} deleted - stock restored: ${item.quantity}`,
+              created_by_user_id: userId,
+            },
+          });
+        }
+
+        await tx.sale.update({
+          where: { id: sale.id },
+          data: {
+            deleted_at: new Date(),
+            deleted_by_id: userId,
+            delete_reason: dto?.reason?.trim() || null,
+          },
+        });
+      });
+
+      // Reverse any rewards points the sale earned, as an auditable adjustment
+      await this.reverseSaleRewardPoints(sale.id, consumerId, userId, {
+        saleNumber: sale.sale_number,
+        direction: 'delete',
+      });
+
+      this.logger.log(`Sale ${sale.sale_number} soft-deleted by user ${userId}`);
+
+      return {
+        message: 'Sale deleted and stock restored',
+        sale_id: sale.id,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error deleting sale ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to delete sale',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Restores a soft-deleted sale, taking the stock back out of the same batches.
+   * Refused when a batch no longer holds enough stock to cover the sale.
+   */
+  async restore(id: number, consumerId: number, userId: number) {
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+        sale_type: SaleType.SALE,
+        deleted_at: { not: null },
+      },
+      include: { items: true },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Deleted sale not found');
+    }
+
+    const batchedItems = sale.items.filter((item) => item.batch_id);
+
+    const requiredByBatch = new Map<number, number>();
+    for (const item of batchedItems) {
+      requiredByBatch.set(
+        item.batch_id!,
+        (requiredByBatch.get(item.batch_id!) || 0) + item.quantity,
+      );
+    }
+
+    const batches = await this.prisma.inventoryBatch.findMany({
+      where: { id: { in: [...requiredByBatch.keys()] } },
+      select: { id: true, quantity: true, batch_number: true },
+    });
+
+    const missing = batches.filter(
+      (batch) => batch.quantity < (requiredByBatch.get(batch.id) || 0),
+    );
+
+    if (missing.length || batches.length !== requiredByBatch.size) {
+      throw new BadRequestException(
+        'Cannot restore this sale: the stock it consumed is no longer available in the original batch(es).',
+      );
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        for (const item of batchedItems) {
+          const updatedBatch = await tx.inventoryBatch.update({
+            where: { id: item.batch_id! },
+            data: { quantity: { decrement: item.quantity } },
+          });
+
+          await tx.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: sale.branch_id,
+              variant_id: item.variant_id,
+              batch_id: item.batch_id,
+              inventoryBatchId: item.batch_id,
+              event_type: 'SALE_RESTORE_OUT',
+              quantity_delta: -item.quantity,
+              quantity_after: updatedBatch.quantity,
+              reference_id: item.id,
+              reference_type: 'sale_items',
+              notes: `Sale #${sale.sale_number} restored - stock deducted: ${item.quantity}`,
+              created_by_user_id: userId,
+            },
+          });
+        }
+
+        await tx.sale.update({
+          where: { id: sale.id },
+          data: {
+            deleted_at: null,
+            deleted_by_id: null,
+            delete_reason: null,
+          },
+        });
+      });
+
+      await this.reverseSaleRewardPoints(sale.id, consumerId, userId, {
+        saleNumber: sale.sale_number,
+        direction: 'restore',
+      });
+
+      this.logger.log(`Sale ${sale.sale_number} restored by user ${userId}`);
+
+      return this.findOne(id, consumerId);
+    } catch (error) {
+      this.logger.error(
+        `Error restoring sale ${id} for consumer ${consumerId}`,
+        error.stack,
+      );
+      throw new HttpException(
+        'Failed to restore sale',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -739,6 +1170,7 @@ export class SalesService {
           sale_number: saleNumber,
           consumer_id: consumerId,
           sale_type: SaleType.SALE, // Only return actual sales, not quotations
+          deleted_at: null, // Deleted sales cannot be returned against
         },
         include: {
           customer: {
@@ -1041,6 +1473,7 @@ export class SalesService {
         consumer_id: consumerId,
         sale_type: 'sale',
         payment_status: { not: 'cancelled' },
+        deleted_at: null,
       };
 
       if (branchId) {
@@ -1132,6 +1565,7 @@ export class SalesService {
       const whereClause: any = {
         sale_type: SaleType.SALE, // Only include actual sales in EOD, not quotations
         consumer_id: consumerId,
+        deleted_at: null,
         sale_date: {
           gte: startOfDay,
           lte: endOfDay,
@@ -1473,6 +1907,7 @@ export class SalesService {
       const where: any = {
         consumer_id: consumerId,
         sale_type: SaleType.QUOTATION, // Only quotations
+        deleted_at: null,
       };
 
       if (search) {
@@ -1580,6 +2015,7 @@ export class SalesService {
           id,
           consumer_id: consumerId,
           sale_type: SaleType.QUOTATION,
+          deleted_at: null,
         },
         include: {
           customer: true,
@@ -1876,6 +2312,7 @@ export class SalesService {
           JOIN sales s ON si.sale_id = s.id
           WHERE s.consumer_id = ${consumerId}
             AND s.sale_type = ${SaleType.SALE}
+            AND s.deleted_at IS NULL
             AND s.payment_status <> ${PaymentStatus.CANCELLED}
             AND s.sale_date >= ${start}
             AND s.sale_date <= ${end}
@@ -1949,6 +2386,7 @@ export class SalesService {
         sale: {
           consumer_id: consumerId,
           sale_type: SaleType.SALE,
+          deleted_at: null,
           payment_status: { not: PaymentStatus.CANCELLED },
           sale_date: { gte: start, lte: end },
         },
@@ -2113,6 +2551,7 @@ export class SalesService {
     const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
+      deleted_at: null,
       served_by_id: { not: null },
       payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
@@ -2189,6 +2628,7 @@ export class SalesService {
     const where: any = {
       consumer_id: consumerId,
       sale_type: SaleType.SALE,
+      deleted_at: null,
       served_by_id: servedById,
       payment_status: { not: PaymentStatus.CANCELLED },
       sale_date: {
@@ -2309,6 +2749,7 @@ export class SalesService {
         consumer_id: consumerId,
         sale_type: SaleType.SALE,
         is_online_order: true,
+        deleted_at: null,
       };
 
       if (search) {
@@ -2373,6 +2814,7 @@ export class SalesService {
         where: {
           consumer_id: consumerId,
           is_online_order: true,
+          deleted_at: null,
         },
         _count: true,
         _sum: { total_amount: true },
@@ -2424,6 +2866,7 @@ export class SalesService {
           id,
           consumer_id: consumerId,
           is_online_order: true,
+          deleted_at: null,
         },
       });
 
@@ -2473,6 +2916,7 @@ export class SalesService {
         consumer_id: consumerId,
         is_online_order: true,
         sale_type: 'sale',
+        deleted_at: null,
       };
 
       if (branchId) {
@@ -2592,6 +3036,7 @@ export class SalesService {
         sale: {
           consumer_id: consumerId,
           sale_type: SaleType.SALE,
+          deleted_at: null,
           sale_date: { gte: startOfDay, lte: endOfDay },
           ...(branchId ? { branch_id: branchId } : {}),
         },

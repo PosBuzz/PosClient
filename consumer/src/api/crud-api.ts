@@ -35,7 +35,7 @@ export const patch = async (endpoint: string, data: any) => {
   return response.data;
 };
 
-export const deleteApi = async (endpoint: string) => {
-  const response = await axiosInstance.delete(endpoint);
+export const deleteApi = async (endpoint: string, data?: any) => {
+  const response = await axiosInstance.delete(endpoint, data ? { data } : undefined);
   return response.data;
 };

@@ -2,6 +2,11 @@ import { IsEnum, IsOptional, IsString, IsInt, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaymentMethod, PaymentStatus } from './create-sale.dto';
 
+export enum SaleRecordStatus {
+  ACTIVE = 'active',
+  DELETED = 'deleted',
+}
+
 export class SaleListFiltersDto {
   @IsOptional()
   @IsInt()
@@ -51,4 +56,9 @@ export class SaleListFiltersDto {
   @IsOptional()
   @IsString()
   source?: 'pending' | 'converted' | 'quotation' | 'direct';
+
+  // 'active' (default) hides soft-deleted sales, 'deleted' shows only those
+  @IsOptional()
+  @IsEnum(SaleRecordStatus)
+  status?: SaleRecordStatus;
 }

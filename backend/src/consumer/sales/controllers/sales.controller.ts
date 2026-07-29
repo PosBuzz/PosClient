@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -27,6 +28,8 @@ import { GetUserSalesDetailDto } from '../dto/get-user-sales-detail.dto';
 import { GetVariantSalesStatsDto } from '../dto/get-variant-sales-stats.dto';
 import { SaleListFiltersDto } from '../dto/sale-list-filters.dto';
 import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
+import { UpdateSaleNoteDto } from '../dto/update-sale-note.dto';
+import { DeleteSaleDto } from '../dto/delete-sale.dto';
 import { SalesService } from '../services/sales.service';
 import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
 
@@ -274,8 +277,49 @@ export class SalesController {
     );
   }
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
-    return this.salesService.findOne(id, req.user.consumer_id!);
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Query('include_deleted') includeDeleted?: string,
+  ) {
+    return this.salesService.findOne(
+      id,
+      req.user.consumer_id!,
+      includeDeleted === 'true',
+    );
+  }
+
+  @Patch(':id/note')
+  async updateNote(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateSaleNoteDto: UpdateSaleNoteDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.updateNote(
+      id,
+      req.user.consumer_id!,
+      updateSaleNoteDto,
+      req.user.id,
+    );
+  }
+
+  @Delete(':id')
+  async softDelete(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() deleteSaleDto: DeleteSaleDto,
+    @Req() req: Request,
+  ) {
+    return this.salesService.softDelete(
+      id,
+      req.user.consumer_id!,
+      req.user.id,
+      deleteSaleDto,
+    );
+  }
+
+  @Post(':id/restore')
+  async restore(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.salesService.restore(id, req.user.consumer_id!, req.user.id);
   }
 
   // ========== ONLINE ORDERS ENDPOINTS ==========

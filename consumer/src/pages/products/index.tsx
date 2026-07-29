@@ -156,6 +156,12 @@ const ProductsTable = () => {
       staleTime: queryStaleTimeMap[queryKeys.products],
     });
 
+  // Plan-imposed product cap (null max_products = unlimited)
+  const { data: productLimit } = useQuery({
+    queryKey: [queryKeys.products, "limit"],
+    queryFn: productApi.getProductLimit,
+  });
+
   // TanStack Query for categories
   const { data: categories = [] } = useQuery({
     queryKey: [queryKeys.categories],
@@ -452,11 +458,28 @@ const ProductsTable = () => {
         ]}
         rightSection={
           hasPermission(Permissions.add_product) && (
-            <Link to={"/products/add"}>
-              <Button icon={<PlusOutlined />} type="primary">
-                Add Product
-              </Button>
-            </Link>
+            <Space>
+              {productLimit && productLimit.max_products !== null && (
+                <Tag color={productLimit.limit_reached ? "red" : "blue"}>
+                  {productLimit.used} / {productLimit.max_products} products
+                </Tag>
+              )}
+              {productLimit?.limit_reached ? (
+                <Tooltip
+                  title={`Your ${productLimit.plan_name ?? "current"} plan allows ${productLimit.max_products} products. Upgrade your plan to add more.`}
+                >
+                  <Button icon={<PlusOutlined />} type="primary" disabled>
+                    Add Product
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Link to={"/products/add"}>
+                  <Button icon={<PlusOutlined />} type="primary">
+                    Add Product
+                  </Button>
+                </Link>
+              )}
+            </Space>
           )
         }
       />
