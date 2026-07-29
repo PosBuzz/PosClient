@@ -419,12 +419,13 @@ export class SalesService {
         paymentMethods = [];
       }
 
-      // Determine payment status
+      // Determine payment status — "nothing paid" must be checked first, else a
+      // fully unpaid sale falls into the PARTIAL branch and DUE is unreachable
       let paymentStatus = PaymentStatus.PAID;
-      if (totalPaymentAmount < totalAmount) {
-        paymentStatus = PaymentStatus.PARTIAL;
-      } else if (totalPaymentAmount === 0) {
+      if (totalPaymentAmount === 0) {
         paymentStatus = PaymentStatus.DUE;
+      } else if (totalPaymentAmount < totalAmount) {
+        paymentStatus = PaymentStatus.PARTIAL;
       }
 
       // Create sale with items in transaction
