@@ -29,16 +29,26 @@ export class DashboardAnalyticsDto {
 }
 
 export interface DashboardSummary {
+  // Gross figures — sale rows are never rewritten when a return happens
   weekly_total_sale: number;
   weekly_transactions: number;
+  weekly_returns_total: number;
+  weekly_returns_count: number;
+  weekly_net_sale: number;
   today_total_sale: number;
   today_transactions: number;
+  today_returns_total: number;
+  today_returns_count: number;
+  today_net_sale: number;
 }
 
 export interface SalesTrendPoint {
   date: string;
   sales_count: number;
   total_amount: number;
+  returns_count: number;
+  returns_amount: number;
+  net_amount: number;
 }
 
 export interface PaymentBreakdownPoint {

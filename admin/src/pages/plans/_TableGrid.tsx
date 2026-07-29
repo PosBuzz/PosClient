@@ -58,6 +58,16 @@ export default function _TableGrid({ model, onClickEdit }) {
       key: "Price",
     },
     {
+      title: "Max Products",
+      key: "max_products",
+      render: (record: any) =>
+        record.max_products ? (
+          record.max_products
+        ) : (
+          <Tag color="green">Unlimited</Tag>
+        ),
+    },
+    {
       title: "Permissions",
       render: (record: any) => (
         <>

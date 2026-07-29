@@ -42,6 +42,7 @@ export class PaymentsService {
         consumer_id: consumerId,
         payment_status: 'partial', // Only partially paid sales
         sale_type: 'sale', // Exclude quotations
+        deleted_at: null, // Exclude soft-deleted sales
       };
 
       // Add search filter
@@ -135,6 +136,7 @@ export class PaymentsService {
           id: saleId,
           consumer_id: consumerId,
           sale_type: 'sale', // Only sales, not quotations
+          deleted_at: null,
         },
         select: {
           id: true,
@@ -231,6 +233,7 @@ export class PaymentsService {
           id: sale_id,
           consumer_id: consumerId,
           sale_type: 'sale',
+          deleted_at: null,
         },
       });
 
@@ -343,6 +346,7 @@ export class PaymentsService {
         where: {
           id: saleId,
           consumer_id: consumerId,
+          deleted_at: null,
         },
       });
 

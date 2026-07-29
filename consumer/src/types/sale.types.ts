@@ -40,6 +40,27 @@ export interface SaleItem {
   unit_name: string;
   tax_percentage?: number;
   tax_method?: string; // "inclusive" or "exclusive"
+  returned_quantity?: number; // Qty of this line returned across all returns
+}
+
+export interface SaleReturnRecord {
+  id: number;
+  return_number: string;
+  return_date: string;
+  total_refund: number | string;
+  total_exchange: number | string;
+  reason?: string | null;
+}
+
+export type SaleReturnStatus = "none" | "partially_returned" | "fully_returned";
+
+export interface SaleReturnSummary {
+  has_returns: boolean;
+  return_count: number;
+  total_refund: number;
+  total_exchange: number;
+  net_amount: number; // total_amount - refunds; the sale row itself is untouched
+  status: SaleReturnStatus;
 }
 
 export interface Sale {
@@ -101,6 +122,11 @@ export interface Sale {
   online_order_status?: OnlineOrderStatus | string;
   items: SaleItem[];
   payments?: SalePayment[]; // New: support for partial payments
+  returns?: SaleReturnRecord[];
+  return_summary?: SaleReturnSummary;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
+  deleted_by?: { id: number; name: string } | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -223,6 +249,7 @@ export interface SaleListFilters {
   sort_by?: string;
   sort_order?: "asc" | "desc";
   source?: "pending" | "converted" | "quotation" | "direct"; // Unified filter: pending/converted for quotations, quotation/direct for sales
+  status?: "active" | "deleted"; // 'deleted' lists soft-deleted sales
 }
 
 export interface SaleListResponse {
@@ -417,16 +444,26 @@ export interface EODReportResponse {
 }
 
 export interface DashboardAnalyticsSummary {
+  // Gross totals: sale rows are never rewritten when a return happens
   weekly_total_sale: number;
   weekly_transactions: number;
+  weekly_returns_total: number;
+  weekly_returns_count: number;
+  weekly_net_sale: number;
   today_total_sale: number;
   today_transactions: number;
+  today_returns_total: number;
+  today_returns_count: number;
+  today_net_sale: number;
 }
 
 export interface DashboardSalesTrendPoint {
   date: string;
   sales_count: number;
   total_amount: number;
+  returns_count: number;
+  returns_amount: number;
+  net_amount: number;
 }
 
 export interface DashboardPaymentBreakdownPoint {

@@ -5,8 +5,10 @@ import {
   PrinterOutlined,
   SearchOutlined,
   FilePdfOutlined,
+  DeleteOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -18,9 +20,12 @@ import {
   Space,
   Statistic,
   Table,
+  Tabs,
   Tag,
   Tooltip,
   Typography,
+  Modal,
+  Popconfirm,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
@@ -56,10 +61,50 @@ const SalesTable = () => {
     messageApi?.[type](content);
   };
 
+  const queryClient = useQueryClient();
+
   const [filters, setFilters] = useState<SaleListFilters>({
     page: 1,
     limit: 20,
     search: "",
+    status: "active",
+  });
+
+  const isDeletedTab = filters.status === "deleted";
+
+  // Soft delete: keeps the sale in the Deleted tab and restores its stock
+  const [deleteTarget, setDeleteTarget] = useState<Sale | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
+      salesApi.deleteSale(id, reason),
+    onSuccess: () => {
+      showMessage("Sale deleted and stock restored", "success");
+      setDeleteTarget(null);
+      setDeleteReason("");
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+    },
+    onError: (error: any) => {
+      showMessage(
+        error?.response?.data?.message || "Failed to delete sale",
+        "error",
+      );
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => salesApi.restoreSale(id),
+    onSuccess: () => {
+      showMessage("Sale restored", "success");
+      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+    },
+    onError: (error: any) => {
+      showMessage(
+        error?.response?.data?.message || "Failed to restore sale",
+        "error",
+      );
+    },
   });
 
   // Use real API query with optimized caching
@@ -370,6 +415,32 @@ const SalesTable = () => {
       },
     },
     {
+      title: "Returns",
+      key: "returns",
+      render: (record: Sale) => {
+        const summary = record.return_summary;
+
+        if (!summary?.has_returns) {
+          return <Text type="secondary">—</Text>;
+        }
+
+        return (
+          <Tooltip
+            title={`${summary.return_count} return(s) · Net after refunds: ${summary.net_amount}`}
+          >
+            <Space direction="vertical" size={0}>
+              <Tag color={summary.status === "fully_returned" ? "red" : "orange"}>
+                {summary.status === "fully_returned" ? "RETURNED" : "PARTIAL RETURN"}
+              </Tag>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Refund: <Money value={summary.total_refund} />
+              </Text>
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: "Payment",
       key: "payment",
       render: (record: Sale) => {
@@ -426,6 +497,38 @@ const SalesTable = () => {
               onClick={() => handleDownloadPdf(record.id!, record.sale_number)}
             />
           </Tooltip>
+          {isDeletedTab ? (
+            <Popconfirm
+              title="Restore this sale?"
+              description="Stock will be deducted again from the original batches."
+              okText="Restore"
+              cancelText="Cancel"
+              onConfirm={() => restoreMutation.mutate(record.id!)}
+            >
+              <Tooltip title="Restore Sale">
+                <Button
+                  type="text"
+                  icon={<UndoOutlined />}
+                  loading={
+                    restoreMutation.isPending &&
+                    restoreMutation.variables === record.id
+                  }
+                />
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title="Delete Sale">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  setDeleteTarget(record);
+                  setDeleteReason("");
+                }}
+              />
+            </Tooltip>
+          )}
           {/* <Tooltip title="Edit Sale">
             <Button
               type="text"
@@ -447,6 +550,35 @@ const SalesTable = () => {
       ),
     },
   ];
+
+  const deletedColumns = [
+    {
+      title: "Deleted By",
+      key: "deleted_by",
+      render: (record: Sale) => record.deleted_by?.name || "—",
+    },
+    {
+      title: "Deleted At",
+      key: "deleted_at",
+      render: (record: Sale) =>
+        record.deleted_at
+          ? dayjs(record.deleted_at).format("MMM DD, YYYY HH:mm")
+          : "—",
+    },
+    {
+      title: "Reason",
+      key: "delete_reason",
+      render: (record: Sale) => record.delete_reason || "—",
+    },
+  ];
+
+  const tableColumns = isDeletedTab
+    ? [
+        ...columns.slice(0, columns.length - 1),
+        ...deletedColumns,
+        columns[columns.length - 1],
+      ]
+    : columns;
 
   return (
     <div>
@@ -516,6 +648,21 @@ const SalesTable = () => {
       )}
 
       <Card>
+        <Tabs
+          activeKey={filters.status || "active"}
+          onChange={(key) =>
+            setFilters((prev) => ({
+              ...prev,
+              status: key as "active" | "deleted",
+              page: 1,
+            }))
+          }
+          items={[
+            { key: "active", label: "Sales" },
+            { key: "deleted", label: "Deleted Sales" },
+          ]}
+        />
+
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col xs={24} sm={12} md={4}>
@@ -772,7 +919,7 @@ const SalesTable = () => {
         )}
 
         <Table
-          columns={columns}
+          columns={tableColumns}
           dataSource={salesQuery.data?.data || []}
           loading={salesQuery.isLoading}
           rowKey="id"
@@ -818,6 +965,34 @@ const SalesTable = () => {
           }}
         />
       </Card>
+
+      <Modal
+        title={`Delete sale ${deleteTarget?.sale_number ?? ""}`}
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        okText="Delete Sale"
+        okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
+        onOk={() =>
+          deleteTarget &&
+          deleteMutation.mutate({
+            id: deleteTarget.id!,
+            reason: deleteReason.trim() || undefined,
+          })
+        }
+      >
+        <p>
+          The sale is kept under <strong>Deleted Sales</strong> and the stock it
+          sold is put back into the original batches. Sales that already have a
+          return against them cannot be deleted.
+        </p>
+        <Input.TextArea
+          rows={3}
+          placeholder="Reason (optional)"
+          value={deleteReason}
+          onChange={(e) => setDeleteReason(e.target.value)}
+          maxLength={500}
+        />
+      </Modal>
     </div>
   );
 };

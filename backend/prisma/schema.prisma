@@ -178,6 +178,8 @@ enum InventoryEventType {
   TRANSFER_IN // Stock arrived at destination branch
   ADJUSTMENT // Manual InventoryAdjustment
   EXCHANGE_OUT // Stock given out via ReturnExchange
+  SALE_DELETE_IN // Stock restocked because a sale was soft-deleted
+  SALE_RESTORE_OUT // Stock deducted again because a deleted sale was restored
 }
 
 // ============================================
@@ -296,6 +298,7 @@ model Plan {
   id             Int              @id @default(autoincrement())
   name           String           @unique
   price          Float
+  max_products   Int? // Null = unlimited products for consumers on this plan
   created_at     DateTime         @default(now())
   updated_at     DateTime         @updatedAt
   consumers      Consumer[]
@@ -371,6 +374,7 @@ model User {
   promotions                   Promotion[]
   Sales                        Sale[]
   served_by_sales              Sale[]                    @relation("ServedBy")
+  deleted_sales                Sale[]                    @relation("SaleDeletedBy")
   Returns                      Return[]
   created_rewards_transactions RewardsPointTransaction[]
   inventory_audit_logs         InventoryAuditLog[]
@@ -987,6 +991,9 @@ model Sale {
   converted_at         DateTime?
   is_online_order      Boolean   @default(false)
   online_order_status  String?   @default("PENDING")
+  deleted_at           DateTime?
+  deleted_by_id        Int?
+  delete_reason        String?
   created_at           DateTime  @default(now())
   updated_at           DateTime  @updatedAt
 
@@ -996,6 +1003,7 @@ model Sale {
   branch                     Branch                    @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   user                       User?                     @relation(fields: [user_id], references: [id], onDelete: SetNull)
   served_by                  User?                     @relation("ServedBy", fields: [served_by_id], references: [id], onDelete: SetNull)
+  deleted_by                 User?                     @relation("SaleDeletedBy", fields: [deleted_by_id], references: [id], onDelete: SetNull)
   items                      SaleItem[]
   payments                   SalePayment[]
   returns_as_original        Return[]                  @relation("OriginalSale")
@@ -1011,6 +1019,7 @@ model Sale {
   @@index([payment_status])
   @@index([converted_to_sale_id])
   @@index([is_online_order, online_order_status]) // Online order management view
+  @@index([consumer_id, deleted_at]) // Active vs. soft-deleted sales listing
   // sale_type standalone index dropped — always queried scoped to consumer/branch
   @@map("sales")
 }
