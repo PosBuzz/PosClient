@@ -33,11 +33,6 @@ const SideBar: React.FC = () => {
 
   const menuItems: MenuItem[] = [
     {
-      key: "/",
-      icon: <DashboardOutlined />,
-      label: <span title="Dashboard">Dashboard</span>,
-    },
-    {
       label: <span title="Products">Products</span>,
       key: "/products-menu",
       icon: <ProductOutlined />,
@@ -88,6 +83,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.add_product],
         },
       ],
+    },
+    {
+      key: "/",
+      icon: <DashboardOutlined />,
+      label: <span title="Dashboard">Dashboard</span>,
     },
     {
       label: <span title="Inventory">Inventory</span>,
