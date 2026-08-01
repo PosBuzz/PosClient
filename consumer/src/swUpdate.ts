@@ -1,18 +1,23 @@
 /**
- * Service worker update handling.
+ * Service worker update checks.
  *
- * vite-plugin-pwa's `registerType: "autoUpdate"` only makes the new service
- * worker call skipWaiting() + clientsClaim(). It does NOT reload open pages, and
- * the injected registerSW.js is a bare register() call. Without the code below, a
- * deploy lands like this:
+ * The service worker intercepts navigation before the HTTP cache, so nginx cache
+ * headers cannot make a deploy reach an installed PWA - only a newer service
+ * worker can. The browser normally checks for one just on navigation, which
+ * leaves an ordinary refresh a step behind after a deploy:
  *
- *   load N   - old SW serves the old precached index.html; new SW installs and
- *              activates in the background, but the page on screen is still old
- *   load N+1 - new SW is in control, new index.html is served
+ *   refresh 1 - old SW serves the old precached index.html; only now does the
+ *               browser notice the new sw.js and start installing it
+ *   refresh 2 - new SW is in control, new build is served
  *
- * so a single refresh looks like it did nothing and users reach for a hard
- * reload (which works only because it bypasses the SW). Reloading on
- * controllerchange collapses that to a single automatic refresh.
+ * That is why a single refresh looked like it did nothing and a hard reload
+ * (which bypasses the SW entirely) appeared to be required.
+ *
+ * Checking for updates in the background fixes that. `registerType: "autoUpdate"`
+ * already makes a newly installed SW call skipWaiting() + clientsClaim(), so by
+ * the time the user refreshes, the new SW is active and that one refresh serves
+ * the new build. The page is deliberately never reloaded automatically - a POS
+ * terminal must not refresh itself out from under an in-progress sale.
  */
 
 const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -20,20 +25,8 @@ const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
 export function registerSWUpdateHandler() {
   if (!("serviceWorker" in navigator)) return;
 
-  // Snapshot before any activation: on a first-ever visit there is no controller,
-  // and clientsClaim() will fire controllerchange even though the page already
-  // holds the newest build. Reloading there would be a pointless extra refresh.
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  let reloading = false;
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadController || reloading) return;
-    reloading = true;
-    window.location.reload();
-  });
-
-  // A POS terminal can sit on one tab for a whole shift. The browser only checks
-  // for a new SW on navigation, so without this a deploy would never reach it.
+  // A terminal can sit on one tab for a whole shift without navigating, so
+  // without these checks the browser would never look for a new service worker.
   navigator.serviceWorker.ready.then((registration) => {
     const checkForUpdate = () => {
       if (document.visibilityState === "visible") void registration.update();
