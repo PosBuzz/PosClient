@@ -46,6 +46,11 @@ To use nodemon
 ```
 
 
+## Security
+
+See [SECURITY-NOTES.md](SECURITY-NOTES.md) for accepted `npm audit` findings and the
+dependency overrides in place, with the reasoning for each.
+
 ## Support
 
 For support, email istiaktashrif@gmail.com 
