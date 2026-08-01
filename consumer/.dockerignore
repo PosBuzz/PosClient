@@ -1,0 +1,20 @@
+# Installed inside the image by the deps stage - never copy the host copy,
+# it may contain native modules built for a different platform.
+node_modules
+
+# Rebuilt inside the image by the builder stage.
+dist
+dev-dist
+
+.git
+.gitignore
+*.log
+npm-debug.log*
+.DS_Store
+.vscode
+.idea
+
+# Local-only env files. .env.docker IS needed by the build and must not be ignored.
+.env
+.env.local
+.env.*.local
