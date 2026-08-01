@@ -27,6 +27,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.claude
 
 # Build and cache files
 admin/dist/
