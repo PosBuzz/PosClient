@@ -22,34 +22,10 @@ RUN npm run build
 # Production stage - serve with nginx
 FROM nginx:alpine AS runner
 
-# Copy nginx configuration
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create nginx config for PWA/SPA
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # PWA service worker \
-    location ~ ^/(sw\.js|workbox-.*\.js)$ { \
-        add_header Cache-Control "no-cache"; \
-        proxy_cache_bypass $http_pragma; \
-        proxy_cache_revalidate on; \
-        expires off; \
-        access_log off; \
-    } \
-    \
-    # PWA manifest and icons \
-    location ~ \.(webmanifest|png|svg|ico)$ { \
-        add_header Cache-Control "public, max-age=604800"; \
-    } \
-    \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# nginx config for PWA/SPA (cache headers live in nginx.conf)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
