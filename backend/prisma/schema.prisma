@@ -1081,7 +1081,7 @@ model SalePayment {
 
 model Return {
   id               Int      @id @default(autoincrement())
-  return_number    String   @unique
+  return_number    String
   original_sale_id Int
   exchange_sale_id Int?
   consumer_id      Int
@@ -1104,6 +1104,7 @@ model Return {
   payments      ReturnPayment[]
   exchanges     ReturnExchange[]
 
+  @@unique([return_number, consumer_id])
   @@index([original_sale_id])
   @@index([consumer_id, return_date])
   @@index([branch_id])
