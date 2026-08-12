@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
+import * as dayjs from 'dayjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
@@ -220,6 +221,133 @@ export class ConsumerService {
       );
       throw new HttpException(
         'Failed to update consumer',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Consumer listing for the admin table. Filters are explicit query params
+   * rather than a client-supplied Prisma `where`, so the shape of the query is
+   * fixed by the server.
+   */
+  async findAll(params: {
+    search?: string;
+    planId?: number;
+    status?: 'active' | 'inactive';
+    deleted?: boolean;
+  }) {
+    const { search, planId, status, deleted } = params;
+
+    // "Active" means billed within the last month.
+    const billingWindow = {
+      billing_date: {
+        gte: dayjs().subtract(1, 'month').toDate(),
+        lte: dayjs().toDate(),
+      },
+    };
+
+    try {
+      return await this.prisma.consumer.findMany({
+        where: {
+          deleted_at: deleted ? { not: null } : null,
+          ...(planId ? { plan_id: planId } : {}),
+          ...(search
+            ? {
+                OR: [
+                  'company_name',
+                  'email',
+                  'secondary_email',
+                  'phone',
+                  'subdomain',
+                  'business_category',
+                ].map((field) => ({
+                  [field]: { contains: search, mode: 'insensitive' as const },
+                })),
+              }
+            : {}),
+          ...(status === 'active'
+            ? { billing_logs: { some: billingWindow } }
+            : {}),
+          ...(status === 'inactive'
+            ? { billing_logs: { none: billingWindow } }
+            : {}),
+        },
+        include: {
+          users: { select: { name: true, role: true } },
+          plan: true,
+          billing_logs: true,
+          _count: { select: { Product: true } },
+        },
+        orderBy: { id: 'asc' },
+      });
+    } catch (error) {
+      this.logger.error('Fetching consumers failed', error.stack);
+
+      throw new HttpException(
+        'Failed to fetch consumers',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Soft delete. The tenant keeps its subdomain and all of its data; use the
+   * purge endpoint to erase it permanently.
+   */
+  async softDelete(id: number, deletedById?: number, reason?: string) {
+    const existing = await this.prisma.consumer.findFirst({
+      where: { id, deleted_at: null },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Consumer not found or already deleted');
+    }
+
+    try {
+      await this.prisma.consumer.update({
+        where: { id },
+        data: {
+          deleted_at: new Date(),
+          deleted_by_id: deletedById ?? null,
+          delete_reason: reason ?? null,
+        },
+      });
+
+      return { success: true, soft_deleted: true };
+    } catch (error) {
+      this.logger.error(`Deleting consumer ${id} failed`, error.stack);
+
+      throw new HttpException(
+        'Failed to delete consumer',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async restore(id: number) {
+    const existing = await this.prisma.consumer.findFirst({
+      where: { id, deleted_at: { not: null } },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Consumer not found or is not deleted');
+    }
+
+    try {
+      await this.prisma.consumer.update({
+        where: { id },
+        data: { deleted_at: null, deleted_by_id: null, delete_reason: null },
+      });
+
+      return { success: true, restored: true };
+    } catch (error) {
+      this.logger.error(`Restoring consumer ${id} failed`, error.stack);
+
+      throw new HttpException(
+        'Failed to restore consumer',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

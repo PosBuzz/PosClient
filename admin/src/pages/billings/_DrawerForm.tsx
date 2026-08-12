@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { Button, DatePicker, Drawer, Form, Input, Select } from "antd";
 import dayjs from "dayjs";
 import { useEffect } from "react";
-import { patch, post } from "../../api/crud-api";
-import { getUrlForModel } from "../../api/endpoints";
+import { patch, post } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 // @ts-ignore
@@ -24,7 +24,7 @@ export default function DrawerForm({
   const { messageApi } = useMessageStore();
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(getUrlForModel(model), data),
+    mutationFn: async (data) => await post(endpoints.billing, data),
     onSuccess: (response) => {
       refetch();
       messageApi?.success("Saved Successfully");
@@ -38,7 +38,7 @@ export default function DrawerForm({
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
-      await patch(getUrlForModel(model, data.id), data),
+      await patch(`${endpoints.billing}/${data.id}`, data),
     onSuccess: (response) => {
       refetch();
       messageApi?.success("Updated Successfully");

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Button, Card, Form, Input, Space, Typography } from "antd";
-import { patch } from "../../api/crud-api";
+import { patch } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";

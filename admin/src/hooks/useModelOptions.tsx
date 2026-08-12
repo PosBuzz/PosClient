@@ -1,18 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { API_CRUD_FIND_WHERE, getUrlForModel } from "../api/endpoints";
-import { get, post } from "../api/crud-api";
+import { get } from "../api/http";
 
-function useModelOptions(modelName: string, labelColumn: string | any) {
+/**
+ * Fetches a list from a dedicated endpoint and maps it to Select options.
+ *
+ * Takes an endpoint path rather than a model name: each resource now has its
+ * own typed endpoint instead of the generic /crud route.
+ */
+function useModelOptions(endpoint: string, labelColumn: string) {
   const { isLoading, isSuccess, isError, data } = useQuery({
-    queryKey: [`all-${modelName}`],
-    queryFn: () => get(getUrlForModel(modelName)),
+    queryKey: [endpoint],
+    queryFn: () => get(endpoint),
   });
 
   if (isLoading || isError) {
     return [];
   }
 
-  // Ensure data.data is an array before mapping over it
   if (isSuccess && Array.isArray(data)) {
     return data.map((i: any) => ({
       label: i[labelColumn],
@@ -24,47 +28,3 @@ function useModelOptions(modelName: string, labelColumn: string | any) {
 }
 
 export default useModelOptions;
-
-export function useGetSingleDataById(modelName: string, id: number) {
-  return useQuery({
-    queryKey: [modelName, "post by", id],
-    queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${modelName}`, {
-        where: { id },
-      }),
-    select(data) {
-      return data?.data?.[0] ?? {};
-    },
-  });
-}
-
-export const useModelOptionByFilter = (
-  modelName: string,
-  key: string,
-  filterOption: any,
-  field: string
-) => {
-  const { data } = useQuery({
-    queryKey: [`${key}-${modelName}`],
-    queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${modelName}`, {
-        where: filterOption,
-      }),
-    select(data) {
-      return data?.data ?? [];
-    },
-  });
-
-  if (data?.length) {
-    const options = data?.map((i) => {
-      return {
-        value: i?.id,
-        label: i[field],
-      };
-    });
-
-    return options;
-  }
-
-  return [];
-};

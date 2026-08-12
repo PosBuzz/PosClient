@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -38,6 +41,32 @@ export class UsersController {
     );
   }
 
+  // Static segments must be declared before the ':id' routes below, otherwise
+  // Nest matches 'roles' / 'permissions' as an id.
+  @HasPermissions([AdminPermission.users])
+  @Get('roles')
+  findAllRoles() {
+    return this.usersService.findAllRoles();
+  }
+
+  @HasPermissions([AdminPermission.users])
+  @Get('permissions')
+  findAllPermissions() {
+    return this.usersService.findAllPermissions();
+  }
+
+  @HasPermissions([AdminPermission.users])
+  @Get()
+  findAllUsers(
+    @Query('search') search?: string,
+    @Query('role_id') roleId?: string,
+  ) {
+    return this.usersService.findAllUsers({
+      search,
+      roleId: roleId ? Number(roleId) : undefined,
+    });
+  }
+
   @HasPermissions([AdminPermission.users])
   @Post()
   createUser(@Body() dto: CreateSuperAdminUserDto) {
@@ -66,5 +95,17 @@ export class UsersController {
     @Body() dto: UpdateSuperAdminRoleDto,
   ) {
     return this.usersService.updateRole(id, dto);
+  }
+
+  @HasPermissions([AdminPermission.users])
+  @Delete('roles/:id')
+  removeRole(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.removeRole(id);
+  }
+
+  @HasPermissions([AdminPermission.users])
+  @Delete(':id')
+  removeUser(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.removeUser(id);
   }
 }

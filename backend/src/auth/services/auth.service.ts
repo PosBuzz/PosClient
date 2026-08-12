@@ -152,6 +152,8 @@ export class AuthService {
           email,
           consumer: {
             subdomain,
+            // Soft-deleted tenants cannot be logged into.
+            deleted_at: null,
           },
         },
         include: {
@@ -214,6 +216,7 @@ export class AuthService {
           consumer: {
             select: {
               subdomain: true,
+              deleted_at: true,
             },
           },
         },
@@ -222,6 +225,15 @@ export class AuthService {
       if (!user) {
         throw new HttpException(
           'Invalid refresh token',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Stop refreshing sessions for a soft-deleted tenant. Access tokens
+      // already issued stay valid until they expire (JWT_EXPIRATION).
+      if (user.consumer?.deleted_at) {
+        throw new HttpException(
+          'This account is no longer active',
           HttpStatus.UNAUTHORIZED,
         );
       }

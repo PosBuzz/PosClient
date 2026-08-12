@@ -4,14 +4,18 @@ import {
   EditOutlined,
   FileExcelOutlined,
   SearchOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Col,
   Input,
+  Modal,
   Popconfirm,
   Row,
+  Segmented,
   Select,
   Space,
   Table,
@@ -22,12 +26,8 @@ import { saveAs } from "file-saver";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
-import { deleteApi, post } from "../../api/crud-api";
-import {
-  API_CRUD_FIND_WHERE,
-  endpoints,
-  getUrlForModel,
-} from "../../api/endpoints";
+import { deleteApi, get, post } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import { AdminPermission } from "../../constants/adminPermissions";
 import { useMessageStore } from "../../stores/messageStore";
 const { Option } = Select;
@@ -43,6 +43,16 @@ export default function _TableGrid({
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const { messageApi } = useMessageStore();
+
+  // "active" hides soft-deleted tenants (the default listing); "deleted" shows
+  // only them, where they can be restored or permanently purged.
+  const [view, setView] = useState<"active" | "deleted">("active");
+  const showingDeleted = view === "deleted";
+
+  // Permanent delete requires typing the subdomain back, so a misclick on the
+  // wrong row cannot destroy a tenant.
+  const [purgeTarget, setPurgeTarget] = useState<any>(null);
+  const [purgeConfirm, setPurgeConfirm] = useState("");
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -67,91 +77,18 @@ export default function _TableGrid({
     data: fetchData,
     refetch,
   } = useQuery({
-    queryKey: [KEY, debouncedSearchText, selectedStatus, selectedPlan],
+    queryKey: [KEY, debouncedSearchText, selectedStatus, selectedPlan, view],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
-        where: {
-          ...(debouncedSearchText
-            ? {
-                OR: [
-                  {
-                    company_name: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    email: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    secondary_email: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    phone: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    subdomain: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    business_category: {
-                      contains: debouncedSearchText,
-                      mode: "insensitive",
-                    },
-                  },
-                ],
-              }
-            : {}),
-          ...(selectedStatus
-            ? {
-                billing_logs:
-                  selectedStatus === "active"
-                    ? {
-                        some: {
-                          billing_date: {
-                            gte: dayjs().subtract(1, "month").toISOString(),
-                            lte: dayjs().toISOString(),
-                          },
-                        },
-                      }
-                    : {
-                        none: {
-                          billing_date: {
-                            gte: dayjs().subtract(1, "month").toISOString(),
-                            lte: dayjs().toISOString(),
-                          },
-                        },
-                      },
-              }
-            : {}),
-          ...(selectedPlan ? { plan_id: selectedPlan } : {}),
-        },
-        include: {
-          users: {
-            select: {
-              name: true,
-              role: true,
-            },
-          },
-          plan: true,
-          billing_logs: true,
-          _count: {
-            select: { Product: true },
-          },
-        },
-      }),
+      get(
+        `${endpoints.consumer}?${new URLSearchParams({
+          ...(debouncedSearchText ? { search: debouncedSearchText } : {}),
+          ...(selectedStatus ? { status: String(selectedStatus) } : {}),
+          ...(selectedPlan ? { plan_id: String(selectedPlan) } : {}),
+          ...(showingDeleted ? { deleted: "true" } : {}),
+        } as Record<string, string>)}`
+      ),
   });
+
 
   const getBillingHistory = async (consumer_id: any, openInNewTab: boolean) => {
     try {
@@ -211,7 +148,8 @@ export default function _TableGrid({
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
+    mutationFn: async (id: any) =>
+      await deleteApi(`${endpoints.consumer}/${id}`),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();
@@ -224,6 +162,36 @@ export default function _TableGrid({
   const handleDeleteClient = (id: any) => {
     deleteMutation.mutate(id);
   };
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: any) =>
+      await post(`${endpoints.consumer}/${id}/restore`, {}),
+    onSuccess: () => {
+      messageApi?.success("Consumer restored");
+      refetch();
+    },
+    onError: () => {
+      messageApi?.error("Failed to restore consumer");
+    },
+  });
+
+  const purgeMutation = useMutation({
+    mutationFn: async ({ id, subdomain }: any) =>
+      await axiosInstance.delete(`${endpoints.consumer}/${id}/purge`, {
+        data: { confirm_subdomain: subdomain },
+      }),
+    onSuccess: () => {
+      messageApi?.success("Consumer permanently deleted");
+      setPurgeTarget(null);
+      setPurgeConfirm("");
+      refetch();
+    },
+    onError: (e: any) => {
+      messageApi?.error(
+        e?.response?.data?.message || "Failed to permanently delete consumer"
+      );
+    },
+  });
 
   const columns = [
     {
@@ -319,6 +287,28 @@ export default function _TableGrid({
       },
       key: "status",
     },
+    ...(showingDeleted
+      ? [
+          {
+            title: "Deleted",
+            key: "deleted_at",
+            render: (record: any) => (
+              <Space direction="vertical" size={0}>
+                <span>
+                  {record.deleted_at
+                    ? dayjs(record.deleted_at).format("DD MMM YYYY, HH:mm")
+                    : "-"}
+                </span>
+                {record.delete_reason && (
+                  <span style={{ color: "#888", fontSize: 12 }}>
+                    {record.delete_reason}
+                  </span>
+                )}
+              </Space>
+            ),
+          },
+        ]
+      : []),
     {
       title: "Actions",
       key: "actions",
@@ -347,19 +337,48 @@ export default function _TableGrid({
                 <EditOutlined />
               </Button>
             )}
-            {hasPermission(AdminPermission.delete_consumers) && (
-              <Popconfirm
-                title="Delete this item?"
-                description="This action cannot be undone"
-                onConfirm={() => handleDeleteClient(record.id)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button danger type="link">
-                  <DeleteOutlined />
-                </Button>
-              </Popconfirm>
-            )}
+            {hasPermission(AdminPermission.delete_consumers) &&
+              !showingDeleted && (
+                <Popconfirm
+                  title="Delete this consumer?"
+                  description="It will be hidden and can be restored later."
+                  onConfirm={() => handleDeleteClient(record.id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button danger type="link">
+                    <DeleteOutlined />
+                  </Button>
+                </Popconfirm>
+              )}
+
+            {hasPermission(AdminPermission.delete_consumers) &&
+              showingDeleted && (
+                <>
+                  <Popconfirm
+                    title="Restore this consumer?"
+                    description="The tenant will be able to log in again."
+                    onConfirm={() => restoreMutation.mutate(record.id)}
+                    okText="Restore"
+                    cancelText="Cancel"
+                  >
+                    <Button type="link" loading={restoreMutation.isPending}>
+                      <UndoOutlined /> Restore
+                    </Button>
+                  </Popconfirm>
+
+                  <Button
+                    danger
+                    type="link"
+                    onClick={() => {
+                      setPurgeTarget(record);
+                      setPurgeConfirm("");
+                    }}
+                  >
+                    <DeleteOutlined /> Delete forever
+                  </Button>
+                </>
+              )}
           </Space>
         );
       },
@@ -372,6 +391,66 @@ export default function _TableGrid({
 
   return (
     <>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24}>
+          <Segmented
+            value={view}
+            onChange={(v: any) => setView(v)}
+            options={[
+              { label: "Active", value: "active" },
+              { label: "Deleted", value: "deleted" },
+            ]}
+          />
+        </Col>
+      </Row>
+
+      {showingDeleted && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Deleted consumers"
+          description="These tenants cannot log in and their subdomains stay reserved. Restore brings them back with all data intact. Delete forever erases the tenant and every record it owns — this cannot be undone."
+        />
+      )}
+
+      <Modal
+        open={!!purgeTarget}
+        title="Permanently delete this consumer?"
+        okText="Delete forever"
+        okButtonProps={{
+          danger: true,
+          disabled: purgeConfirm !== purgeTarget?.subdomain,
+          loading: purgeMutation.isPending,
+        }}
+        onOk={() =>
+          purgeMutation.mutate({
+            id: purgeTarget.id,
+            subdomain: purgeTarget.subdomain,
+          })
+        }
+        onCancel={() => {
+          setPurgeTarget(null);
+          setPurgeConfirm("");
+        }}
+      >
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="This cannot be undone"
+          description={`Every record owned by ${purgeTarget?.company_name} will be erased, including products, sales, customers, payroll and audit history.`}
+        />
+        <p>
+          Type <strong>{purgeTarget?.subdomain}</strong> to confirm:
+        </p>
+        <Input
+          value={purgeConfirm}
+          onChange={(e) => setPurgeConfirm(e.target.value)}
+          placeholder={purgeTarget?.subdomain}
+        />
+      </Modal>
+
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12} lg={8}>
           <Input

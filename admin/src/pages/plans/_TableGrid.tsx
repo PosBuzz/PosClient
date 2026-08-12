@@ -3,8 +3,8 @@
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Popconfirm, Space, Table, Tag } from "antd";
-import { deleteApi, post } from "../../api/crud-api";
-import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
+import { deleteApi, get } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({ model, onClickEdit }) {
@@ -19,20 +19,11 @@ export default function _TableGrid({ model, onClickEdit }) {
   } = useQuery({
     queryKey: [KEY],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
-        where: {},
-        include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      }),
+      get(endpoints.plan),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
+    mutationFn: async (id: any) => await deleteApi(`${endpoints.plan}/${id}`),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();
