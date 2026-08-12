@@ -187,18 +187,19 @@ enum InventoryEventType {
 // ============================================
 
 model SuperAdmin {
-  id            Int            @id @default(autoincrement())
-  role_id       Int
-  email         String         @unique
-  name          String
-  password      String
-  refresh_token String?
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  created_by_id Int?
-  created_by    SuperAdmin?    @relation("CreatedBy", fields: [created_by_id], references: [id])
-  created       SuperAdmin[]   @relation("CreatedBy")
-  role          SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  id                Int            @id @default(autoincrement())
+  role_id           Int
+  email             String         @unique
+  name              String
+  password          String
+  refresh_token     String?
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  created_by_id     Int?
+  created_by        SuperAdmin?    @relation("CreatedBy", fields: [created_by_id], references: [id])
+  created           SuperAdmin[]   @relation("CreatedBy")
+  role              SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  deleted_consumers Consumer[]     @relation("ConsumerDeletedBy")
 
   @@index([role_id])
   @@map("super_admins")
@@ -251,7 +252,13 @@ model Consumer {
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
+  // Soft delete (superadmin). Subdomain stays reserved while deleted_at is set.
+  deleted_at    DateTime?
+  deleted_by_id Int?
+  delete_reason String?
+
   plan                     Plan                      @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+  deleted_by               SuperAdmin?               @relation("ConsumerDeletedBy", fields: [deleted_by_id], references: [id], onDelete: SetNull)
   users                    User[]
   roles                    Role[]
   billing_logs             BillingHistory[]
@@ -287,6 +294,7 @@ model Consumer {
 
   @@index([email])
   @@index([plan_id])
+  @@index([deleted_at]) // Active vs. soft-deleted consumer listing
   @@map("consumers")
 }
 
@@ -616,7 +624,7 @@ model VariantAttribute {
   value       String
 
   variant  ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
-  consumer Consumer       @relation(fields: [consumer_id], references: [id])
+  consumer Consumer       @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
 
   @@unique([variant_id, name])
   @@index([consumer_id, name])
@@ -671,11 +679,11 @@ model UserBranch {
 // ============================================
 
 model InventoryBatch {
-  id           Int       @id @default(autoincrement())
-  variant_id   Int
-  branch_id    Int
-  batch_number String
-  quantity     Int
+  id             Int       @id @default(autoincrement())
+  variant_id     Int
+  branch_id      Int
+  batch_number   String
+  quantity       Int
   // REMOVED: original_quantity — derive from PURCHASE_IN audit log row
   // REMOVED: source            — derive from event_type in audit log
   cost_price     Decimal   @db.Decimal(10, 2)

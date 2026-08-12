@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
@@ -21,6 +23,23 @@ import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 @Controller('admin/plans')
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
+
+  @Get()
+  findAll() {
+    return this.planService.findAll();
+  }
+
+  // Must precede ':id' so it is not matched as an id.
+  @Get('permissions')
+  findAllPermissions() {
+    return this.planService.findAllPermissions();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.planService.findOne(id);
+  }
+
   @Post()
   create(@Body() dto: CreatePlanDto) {
     return this.planService.create(dto);
@@ -29,5 +48,10 @@ export class PlanController {
   @Patch(':id')
   update(@Param('id',ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
     return this.planService.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.planService.remove(id);
   }
 }

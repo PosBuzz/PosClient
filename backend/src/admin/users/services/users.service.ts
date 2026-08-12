@@ -81,9 +81,22 @@ export class UsersService {
     }
   }
 
-  async findAllUsers() {
+  async findAllUsers(params: { search?: string; roleId?: number } = {}) {
+    const { search, roleId } = params;
+
     try {
       return await this.prisma.superAdmin.findMany({
+        where: {
+          ...(roleId ? { role_id: roleId } : {}),
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' as const } },
+                  { email: { contains: search, mode: 'insensitive' as const } },
+                ],
+              }
+            : {}),
+        },
         select: {
           id: true,
           email: true,
@@ -272,6 +285,67 @@ export class UsersService {
       this.logger.error(`Error changing password for user ${id}`, error.stack);
       throw new HttpException(
         'Failed to change password',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /** Permission catalogue used to populate the role form. */
+  async findAllPermissions() {
+    try {
+      return await this.prisma.superAdminPermission.findMany({
+        orderBy: { id: 'asc' },
+      });
+    } catch (error) {
+      this.logger.error('Error finding super admin permissions', error.stack);
+      throw new HttpException(
+        'Failed to find permissions',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async removeUser(id: number) {
+    try {
+      await this.prisma.superAdmin.delete({ where: { id } });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Error deleting super admin user ${id}`, error.stack);
+
+      if (error.code === 'P2025') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      throw new HttpException(
+        'Failed to delete user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async removeRole(id: number) {
+    try {
+      await this.prisma.superAdminRole.delete({ where: { id } });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Error deleting super admin role ${id}`, error.stack);
+
+      if (error.code === 'P2025') {
+        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
+      }
+
+      // SuperAdmin.role_id is Restrict-free but users still reference it.
+      if (error.code === 'P2003') {
+        throw new HttpException(
+          'Cannot delete a role that still has users assigned',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      throw new HttpException(
+        'Failed to delete role',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

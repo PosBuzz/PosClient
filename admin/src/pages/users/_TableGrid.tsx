@@ -17,8 +17,8 @@ import {
 } from "antd";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
-import { deleteApi, post } from "../../api/crud-api";
-import { API_CRUD_FIND_WHERE, getUrlForModel } from "../../api/endpoints";
+import { deleteApi, get } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({ model, onClickEdit, roleOptions = [] }) {
@@ -51,24 +51,16 @@ export default function _TableGrid({ model, onClickEdit, roleOptions = [] }) {
   } = useQuery({
     queryKey: [KEY, debouncedSearchText, selectedRole],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
-        where: {
-          ...(debouncedSearchText && {
-            OR: [
-              { name: { contains: debouncedSearchText, mode: "insensitive" } },
-              { email: { contains: debouncedSearchText, mode: "insensitive" } },
-            ],
-          }),
-          ...(selectedRole ? { role_id: selectedRole } : {}),
-        },
-        include: {
-          role: true,
-        },
-      }),
+      get(
+        `${endpoints.user}?${new URLSearchParams({
+          ...(debouncedSearchText ? { search: debouncedSearchText } : {}),
+          ...(selectedRole ? { role_id: String(selectedRole) } : {}),
+        })}`
+      ),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
+    mutationFn: async (id: any) => await deleteApi(`${endpoints.user}/${id}`),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();

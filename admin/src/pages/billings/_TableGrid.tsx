@@ -10,8 +10,8 @@ import { Button, Popconfirm, Space, Table } from "antd";
 import dayjs from "dayjs";
 import saveAs from 'file-saver';
 import axiosInstance from "../../api/axiosInstance";
-import { deleteApi } from "../../api/crud-api";
-import { endpoints, getUrlForModel } from "../../api/endpoints";
+import { deleteApi } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
 export default function _TableGrid({
@@ -25,7 +25,7 @@ export default function _TableGrid({
   const { messageApi } = useMessageStore();
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(getUrlForModel(model, id)),
+    mutationFn: async (id: any) => await deleteApi(`${endpoints.billing}/${id}`),
     onSuccess: () => {
       messageApi?.success("Deleted Successfully");
       refetch();

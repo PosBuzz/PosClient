@@ -2,9 +2,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Drawer, Form, Input, Select } from "antd";
 import { useEffect } from "react";
-import { patch, post } from "../../api/crud-api";
+import { patch, post } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
-import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
 import { useMessageStore } from "../../stores/messageStore";
 
@@ -49,7 +48,7 @@ export default function DrawerForm({
     },
   });
 
-  const permissionOptions: any = useModelOptions(models?.Permission, "action");
+  const permissionOptions: any = useModelOptions(`${endpoints.plan}/permissions`, "action");
 
   const onFinish = async (formValues: any) => {
     const payload = {

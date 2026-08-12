@@ -2,26 +2,19 @@ import { UserOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Card, Col, Row, Statistic } from "antd";
 import dayjs from "dayjs";
-import { post } from "../../api/crud-api";
-import { API_CRUD_FIND_WHERE } from "../../api/endpoints";
+import { get } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 function Index() {
-  const KEY = `all-${models.Consumer}`;
+  const KEY = `all-${"Consumer"}`;
   const currentMonth = dayjs().format("YYYY-MM");
 
   const { isLoading, data: fetchData } = useQuery({
     queryKey: [KEY],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${models.Consumer}`, {
-        where: {},
-        include: {
-          plan: true,
-          billing_logs: true,
-        },
-      }),
+      get(endpoints.consumer),
   });
 
   const totalUsers = fetchData?.length || 0;

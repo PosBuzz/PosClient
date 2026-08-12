@@ -3,15 +3,14 @@ import { PlusOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Col, Input, Row, Select } from "antd";
 import { useState } from "react";
-import { post } from "../../api/crud-api";
-import { API_CRUD_FIND_WHERE } from "../../api/endpoints";
+import { get } from "../../api/http";
+import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
 
-const model = models.BillingHistory;
+const model = "BillingHistory";
 const title = "Billing Histories";
 
 const Billings = () => {
@@ -32,34 +31,22 @@ const Billings = () => {
   } = useQuery({
     queryKey: [KEY],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${model}`, {
-        include: {
-          consumer: true,
-        },
-        where: {
-          ...(consumerFilter.length > 0 && {
-            consumer_id: { in: consumerFilter },
-          }),
-          ...(referenceFilter && {
-            reference: {
-              contains: referenceFilter,
-              mode: "insensitive",
-            },
-          }),
-        },
-      }),
+      get(
+        `${endpoints.billing}?${new URLSearchParams({
+          ...(consumerFilter.length > 0
+            ? { consumer_ids: consumerFilter.join(",") }
+            : {}),
+          ...(referenceFilter ? { reference: referenceFilter } : {}),
+        })}`
+      ),
   });
 
-  const ConsumersKey = `all-${models.Consumer}`;
+  const ConsumersKey = `all-${"Consumer"}`;
 
   const { data: consumers } = useQuery({
     queryKey: [ConsumersKey],
     queryFn: () =>
-      post(`${API_CRUD_FIND_WHERE}?model=${models.Consumer}`, {
-        include: {
-          plan: true,
-        },
-      }),
+      get(endpoints.consumer),
   });
 
   const consumerOptions =

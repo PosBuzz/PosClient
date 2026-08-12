@@ -1,7 +1,12 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
+  Post,
+  Query,
   Res,
   NotFoundException,
   HttpException,
@@ -11,6 +16,9 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { BillingInvoicesService } from './billing-invoices.service';
+import { BillingHistoryService } from './billing-history.service';
+import { CreateBillingHistoryDto } from './dto/create-billing-history.dto';
+import { UpdateBillingHistoryDto } from './dto/update-billing-history.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
 import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
@@ -24,7 +32,42 @@ export class BillingInvoicesController {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly billingInvoicesService: BillingInvoicesService,
+    private readonly billingHistoryService: BillingHistoryService,
   ) {}
+
+  @Get()
+  findAll(
+    @Query('consumer_ids') consumerIds?: string,
+    @Query('reference') reference?: string,
+  ) {
+    return this.billingHistoryService.findAll({
+      consumerIds: consumerIds
+        ? consumerIds
+            .split(',')
+            .map((v) => Number(v))
+            .filter((v) => !Number.isNaN(v))
+        : undefined,
+      reference,
+    });
+  }
+
+  @Post()
+  create(@Body() dto: CreateBillingHistoryDto) {
+    return this.billingHistoryService.create(dto);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateBillingHistoryDto,
+  ) {
+    return this.billingHistoryService.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.billingHistoryService.remove(id);
+  }
 
   @Get('history/pdf/:consumerId')
   async getBillingHistoryPdf(
