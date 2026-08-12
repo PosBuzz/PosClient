@@ -3,20 +3,20 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
+import { endpoints } from "../../api/endpoints";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
 
-const model = models.SuperAdmin;
+const model = "SuperAdmin";
 const title = "Users";
 
 const Users = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const roleOptions: any = useModelOptions(models?.SuperAdminRole, "name");
+  const roleOptions: any = useModelOptions(endpoints.role, "name");
 
   const showDrawer = () => {
     setOpen(true);

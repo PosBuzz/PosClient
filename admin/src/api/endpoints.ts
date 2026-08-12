@@ -1,9 +1,3 @@
-export const getUrlForModel = (model: string, id: any = null) => {
-  if (id) {
-    return `crud/${id}?model=${model}`;
-  }
-  return `crud?model=${model}`;
-};
 const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").replace(
   /\/+$/,
   "",
@@ -11,8 +5,6 @@ const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").replace(
 export const baseUrlWithPrefix = /\/api\/v1$/.test(apiBaseUrl)
   ? apiBaseUrl
   : `${apiBaseUrl}/api/v1`;
-export const API_CRUD_FIND_WHERE = "crud/find-where";
-
 export const endpoints = {
   csrfToken: "/auth/csrf-token",
   login: "/auth/login-superadmin",
@@ -25,6 +17,8 @@ export const endpoints = {
   user: "/admin/users",
   changePassword: "/admin/users/change-password",
   role: "/admin/users/roles",
+  adminPermission: "/admin/users/permissions",
+  billing: "/admin/billing",
   backup: "/admin/backup",
   restore: "/admin/restore",
   downloadBillingInvoice: `${baseUrlWithPrefix}/admin/billing/invoice/pdf`,

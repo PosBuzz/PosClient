@@ -3,12 +3,11 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
 
-const model = models.SuperAdminRole;
+const model = "SuperAdminRole";
 const title = "Roles";
 
 const Roles = () => {

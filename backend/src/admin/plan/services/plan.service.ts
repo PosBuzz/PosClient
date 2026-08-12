@@ -204,4 +204,45 @@ export class PlanService {
       );
     }
   }
+
+  /** Permission catalogue used to populate the plan form. */
+  async findAllPermissions() {
+    try {
+      return await this.prisma.permission.findMany({ orderBy: { id: 'asc' } });
+    } catch (error) {
+      this.logger.error('Fetching permissions failed', error.stack);
+
+      throw new HttpException(
+        'Failed to fetch permissions',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async remove(id: number) {
+    try {
+      await this.prisma.plan.delete({ where: { id } });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Deleting plan ${id} failed`, error.stack);
+
+      if (error.code === 'P2025') {
+        throw new HttpException('Plan not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Consumers reference their plan with onDelete: Restrict.
+      if (error.code === 'P2003') {
+        throw new HttpException(
+          'Cannot delete a plan that consumers are still subscribed to',
+          HttpStatus.CONFLICT,
+        );
+      }
+
+      throw new HttpException(
+        'Failed to delete plan',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

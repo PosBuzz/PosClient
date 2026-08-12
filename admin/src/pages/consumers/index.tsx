@@ -3,15 +3,15 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import { models } from "../../constants/Models";
 import useModelOptions from "../../hooks/useModelOptions";
+import { endpoints } from "../../api/endpoints";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
 import { useAuthStore } from "../../stores/authStore";
 import { AdminPermission } from "../../constants/adminPermissions";
 
-const model = models.Consumer;
+const model = "Consumer";
 const title = "Consumers";
 
 const Consumers = () => {
@@ -24,7 +24,7 @@ const Consumers = () => {
   const [open, setOpen] = useState(false);
   const [editedItem, setEditedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const planOptions: any = useModelOptions(models?.Plan, "name");
+  const planOptions: any = useModelOptions(endpoints.plan, "name");
 
   const showDrawer = () => {
     setOpen(true);

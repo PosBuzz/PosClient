@@ -42,6 +42,7 @@ export class SubdomainValidationService {
         select: {
           id: true,
           subdomain: true,
+          deleted_at: true,
           billing_logs: {
             where: {
               billing_date: {
@@ -56,7 +57,9 @@ export class SubdomainValidationService {
         },
       });
 
-      if (!consumer) {
+      // A soft-deleted tenant keeps its subdomain reserved, but must look
+      // identical to a non-existent one from the outside.
+      if (!consumer || consumer.deleted_at) {
         return {
           exists: false,
           message: 'Subdomain not found',
