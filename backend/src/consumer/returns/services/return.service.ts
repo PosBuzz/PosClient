@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { RewardsService } from '../../rewards/services/rewards.service';
@@ -254,7 +255,10 @@ export class ReturnService {
       // Start transaction
       const result = await this.prisma.$transaction(async (prisma) => {
         // Generate return number
-        const returnNumber = await this.generateReturnNumber(consumerId);
+        const returnNumber = await this.generateReturnNumber(
+          consumerId,
+          prisma,
+        );
 
         // Create return record
         const returnRecord = await prisma.return.create({
@@ -698,28 +702,34 @@ export class ReturnService {
     }
   }
 
-  private async generateReturnNumber(consumerId: number): Promise<string> {
+  private async generateReturnNumber(
+    consumerId: number,
+    client: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
     try {
-      const prefix = 'RET';
       const today = new Date();
-      const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
 
-      // Get the count of returns created today for this consumer
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+      const prefix = `RET-${year}${month}${day}`;
 
-      const count = await this.prisma.return.count({
+      // Find the latest return number for today for this consumer
+      const latestReturn = await client.return.findFirst({
         where: {
           consumer_id: consumerId,
-          created_at: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+          return_number: { startsWith: prefix },
         },
+        orderBy: { return_number: 'desc' },
       });
 
-      const sequence = String(count + 1).padStart(4, '0');
-      return `${prefix}-${dateString}-${sequence}`;
+      let sequenceNumber = 1;
+      if (latestReturn) {
+        const lastSequence = latestReturn.return_number.split('-').pop();
+        sequenceNumber = parseInt(lastSequence || '0') + 1;
+      }
+
+      return `${prefix}-${String(sequenceNumber).padStart(4, '0')}`;
     } catch (error) {
       this.logger.error(
         `Error generating return number for consumer ${consumerId}`,
