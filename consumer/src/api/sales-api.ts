@@ -13,6 +13,7 @@ import {
   OnlineOrderStatus,
 } from "../types/sale.types";
 import axiosInstance from "./axiosInstance";
+import type { ReceiptPresetType } from "./receipt-settings-api";
 
 export const salesApi = {
   // Get all sales with filters
@@ -157,10 +158,29 @@ export const salesApi = {
     }
   },
 
-  // Generate sale receipt PDF
-  generateReceipt: async (id: number): Promise<Blob> => {
+  // Generate sale receipt PDF. Pass a preset type to print the same sale as a
+  // chalan, money receipt or delivery slip instead of the normal receipt.
+  generateReceipt: async (
+    id: number,
+    type?: ReceiptPresetType,
+  ): Promise<Blob> => {
     const response = await axiosInstance.get(
-      endpoints.generateSaleReceipt(id),
+      endpoints.generateSaleReceipt(id, type),
+      {
+        responseType: "blob",
+      },
+    );
+    return response.data;
+  },
+
+  // Money receipt for a single payment against a sale (date, method, reference
+  // and balance before/after), as opposed to the sale-level money receipt.
+  generatePaymentReceipt: async (
+    id: number,
+    paymentId: number,
+  ): Promise<Blob> => {
+    const response = await axiosInstance.get(
+      endpoints.generateSalePaymentReceipt(id, paymentId),
       {
         responseType: "blob",
       },

@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   DeleteOutlined,
@@ -237,7 +238,7 @@ export default function AddInventoryTransfer() {
       title: "Cost Price",
       dataIndex: "cost_price",
       align: "right" as const,
-      render: (price: string) => `$${parseFloat(price).toFixed(2)}`,
+      render: (price: string) => <Money value={price} />,
     },
     {
       title: "Action",
@@ -302,7 +303,9 @@ export default function AddInventoryTransfer() {
       align: "right" as const,
       render: (_, record: TransferItem) => (
         <Text strong>
-          ${(parseFloat(record.batch.cost_price) * record.quantity).toFixed(2)}
+          <Money
+            value={parseFloat(record.batch.cost_price) * record.quantity}
+          />
         </Text>
       ),
     },
@@ -498,7 +501,7 @@ export default function AddInventoryTransfer() {
                   <div>
                     <Text strong>Total Value: </Text>
                     <Text strong style={{ fontSize: 16 }}>
-                      ${totalTransferValue.toFixed(2)}
+                      <Money value={totalTransferValue} />
                     </Text>
                   </div>
                 </Space>

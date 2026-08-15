@@ -1,4 +1,4 @@
-import { takaPrefix } from "../../components/Currency";
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   CalendarOutlined,
   ReloadOutlined,
@@ -547,7 +547,9 @@ export default function AddEditInventory() {
                 <Col span={6}>
                   <Text type="secondary">Total Cost:</Text>
                   <br />
-                  <Text strong>${(costPrice * quantity).toFixed(2)}</Text>
+                  <Text strong>
+                    <Money value={costPrice * quantity} />
+                  </Text>
                 </Col>
                 <Col span={6}>
                   <Text type="secondary">Payment Status:</Text>

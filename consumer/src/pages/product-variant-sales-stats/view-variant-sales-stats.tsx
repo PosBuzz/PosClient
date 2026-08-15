@@ -1,4 +1,5 @@
-import { takaPrefix } from "../../components/Currency";
+import { Money, takaPrefix } from "../../components/Currency";
+import { formatCurrency } from "../../utils/formatters";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -175,7 +176,7 @@ const ViewVariantSalesStats = () => {
       align: "right" as const,
       render: (v: number) => (
         <Text type="success" strong>
-          ${Number(v).toFixed(2)}
+          <Money value={v} />
         </Text>
       ),
       sorter: (a: any, b: any) => a.line_total - b.line_total,
@@ -316,7 +317,7 @@ const ViewVariantSalesStats = () => {
                     <YAxis />
                     <Tooltip
                       formatter={(value: any) => [
-                        `$${Number(value).toFixed(2)}`,
+                        formatCurrency(Number(value)),
                         "Amount",
                       ]}
                       labelFormatter={(label) =>

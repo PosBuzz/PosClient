@@ -1,4 +1,5 @@
-import { takaPrefix } from "../../components/Currency";
+import { Money, takaPrefix } from "../../components/Currency";
+import { formatCurrency } from "../../utils/formatters";
 import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -328,10 +329,10 @@ const CreateReturn = () => {
 
     if (shippingRefundAmount > availableShippingRefund + 0.01) {
       messageApi?.error(
-        `Shipping refund amount ($${shippingRefundAmount.toFixed(
-          2,
-        )}) cannot exceed remaining refundable shipping ($${availableShippingRefund.toFixed(
-          2,
+        `Shipping refund amount (${formatCurrency(
+          shippingRefundAmount,
+        )}) cannot exceed remaining refundable shipping (${formatCurrency(
+          availableShippingRefund,
         )}).`,
       );
       return;
@@ -339,10 +340,10 @@ const CreateReturn = () => {
 
     if (selectedReturnValue > availableAmount + 0.01) {
       messageApi?.error(
-        `Selected return value ($${selectedReturnValue.toFixed(
-          2,
-        )}) exceeds available amount ($${availableAmount.toFixed(
-          2,
+        `Selected return value (${formatCurrency(
+          selectedReturnValue,
+        )}) exceeds available amount (${formatCurrency(
+          availableAmount,
         )}). Reduce return quantities.`,
       );
       return;
@@ -361,10 +362,10 @@ const CreateReturn = () => {
 
     if (totalPaymentAmount > selectedReturnValue + 0.01) {
       messageApi?.error(
-        `Total payment amount ($${totalPaymentAmount.toFixed(
-          2,
-        )}) exceeds selected return value ($${selectedReturnValue.toFixed(
-          2,
+        `Total payment amount (${formatCurrency(
+          totalPaymentAmount,
+        )}) exceeds selected return value (${formatCurrency(
+          selectedReturnValue,
         )}). ` + `Please adjust your payment amounts.`,
       );
       return;
@@ -372,9 +373,9 @@ const CreateReturn = () => {
 
     if (Math.abs(totalPaymentAmount - selectedReturnValue) > 0.01) {
       messageApi?.error(
-        `Total payment amount must exactly match selected return value. Expected $${selectedReturnValue.toFixed(
-          2,
-        )}, got $${totalPaymentAmount.toFixed(2)}.`,
+        `Total payment amount must exactly match selected return value. Expected ${formatCurrency(
+          selectedReturnValue,
+        )}, got ${formatCurrency(totalPaymentAmount)}.`,
       );
       return;
     }
@@ -573,9 +574,7 @@ const CreateReturn = () => {
       title: "Unit Price",
       dataIndex: "unit_price",
       key: "unit_price",
-      render: (unit_price: any) => {
-        return `$${Number(unit_price).toFixed(2)}`;
-      },
+      render: (unit_price: any) => <Money value={unit_price} />,
     },
     {
       title: "Tax",
@@ -587,7 +586,9 @@ const CreateReturn = () => {
             .toUpperCase() === "INCLUSIVE"
             ? "Inc"
             : "Exc";
-        return `$${Number(record.tax_amount || 0).toFixed(2)} (${taxMethod})`;
+        return (
+          <Money value={record.tax_amount || 0} suffix={` (${taxMethod})`} />
+        );
       },
     },
     {
@@ -600,7 +601,9 @@ const CreateReturn = () => {
         const total = avg + special + promo;
         return (
           <div>
-            <div>-${total.toFixed(2)}</div>
+            <div>
+              <Money value={total} negative />
+            </div>
             <Text type="secondary" style={{ fontSize: 11 }}>
               A:{avg.toFixed(2)} S:{special.toFixed(2)} P:{promo.toFixed(2)}
             </Text>
@@ -612,9 +615,7 @@ const CreateReturn = () => {
       title: "Line Total",
       dataIndex: "line_total",
       key: "line_total",
-      render: (total: number) => {
-        return `$${Number(total || 0).toFixed(2)}`;
-      },
+      render: (total: number) => <Money value={total || 0} />,
     },
     {
       title: "Add to Return",
@@ -714,12 +715,12 @@ const CreateReturn = () => {
         const saleItem = saleData?.items?.find(
           (item: any) => item.id === record.sale_item_id,
         );
-        if (!saleItem) return "$0.00";
+        if (!saleItem) return <Money value={0} />;
         const breakdown = getReturnItemBreakdown(
           saleItem,
           Number(record.quantity) || 0,
         );
-        return `$${breakdown.tax_amount.toFixed(2)}`;
+        return <Money value={breakdown.tax_amount} />;
       },
     },
     {
@@ -729,14 +730,16 @@ const CreateReturn = () => {
         const saleItem = saleData?.items?.find(
           (item: any) => item.id === record.sale_item_id,
         );
-        if (!saleItem) return "-$0.00";
+        if (!saleItem) return <Money value={0} negative />;
         const breakdown = getReturnItemBreakdown(
           saleItem,
           Number(record.quantity) || 0,
         );
         return (
           <div>
-            <div>-${breakdown.total_discount.toFixed(2)}</div>
+            <div>
+              <Money value={breakdown.total_discount} negative />
+            </div>
             <Text type="secondary" style={{ fontSize: 11 }}>
               A:{breakdown.avg_discount.toFixed(2)} S:
               {breakdown.special_discount.toFixed(2)} P:
@@ -753,12 +756,12 @@ const CreateReturn = () => {
         const saleItem = saleData?.items?.find(
           (item: any) => item.id === record.sale_item_id,
         );
-        if (!saleItem) return "$0.00";
+        if (!saleItem) return <Money value={0} />;
         const breakdown = getReturnItemBreakdown(
           saleItem,
           Number(record.quantity) || 0,
         );
-        return `$${breakdown.net_return.toFixed(2)}`;
+        return <Money value={breakdown.net_return} />;
       },
     },
     {
@@ -959,7 +962,7 @@ const CreateReturn = () => {
                           <Col span={4}>
                             <Text>Subtotal: </Text>
                             <Text strong>
-                              ${Number(saleData.subtotal || 0).toFixed(2)}
+                              <Money value={Number(saleData.subtotal || 0)} />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -968,7 +971,10 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#ff4d4f", fontSize: "16px" }}
                             >
-                              -$                               {Number(saleData.discount_amount || 0).toFixed(2)}
+                              <Money
+                                value={Number(saleData.discount_amount || 0)}
+                                negative
+                              />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -977,7 +983,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#fa8c16", fontSize: "16px" }}
                             >
-                              +${saleVat.toFixed(2)}
+                              +<Money value={saleVat} />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -986,7 +992,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#1890ff", fontSize: "16px" }}
                             >
-                              +${Number(saleData.shipping_cost || 0).toFixed(2)}
+                              +<Money value={Number(saleData.shipping_cost || 0)} />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -995,7 +1001,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#52c41a", fontSize: "18px" }}
                             >
-                              ${Number(saleData.total_amount || 0).toFixed(2)}
+                              <Money value={Number(saleData.total_amount || 0)} />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -1010,10 +1016,10 @@ const CreateReturn = () => {
                                 borderRadius: "4px",
                               }}
                             >
-                              $                               {Number(
+                              <Money value={Number(
                                 saleData.return_summary?.available_amount ??
                                   saleData.total_amount,
-                              ).toFixed(2)}
+                              )} />
                             </Text>
                           </Col>
                         </Row>
@@ -1025,7 +1031,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#722ed1", fontSize: "16px" }}
                             >
-                              ${totalTendered.toFixed(2)}
+                              <Money value={totalTendered} />
                             </Text>
                             {saleData.payments &&
                             saleData.payments.length > 0 ? (
@@ -1037,9 +1043,10 @@ const CreateReturn = () => {
                                   {saleData.payments
                                     .map(
                                       (p: any) =>
-                                        `${p.payment_method?.replace("_", " ")}: $${Number(
-                                          p.amount,
-                                        ).toFixed(2)}`,
+                                        `${p.payment_method?.replace(
+                                          "_",
+                                          " ",
+                                        )}: ${formatCurrency(Number(p.amount))}`,
                                     )
                                     .join(", ")}
                                 </Text>
@@ -1052,7 +1059,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#cf1322", fontSize: "16px" }}
                             >
-                              -${changeGiven.toFixed(2)}
+                              <Money value={changeGiven} negative />
                             </Text>
                           </Col>
                           <Col span={8}>
@@ -1061,7 +1068,7 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#52c41a", fontSize: "16px" }}
                             >
-                              ${netPaid.toFixed(2)}
+                              <Money value={netPaid} />
                             </Text>
                           </Col>
                         </Row>
@@ -1104,9 +1111,9 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  $                                   {Number(
+                                  <Money value={Number(
                                     saleData.return_summary.total_refunded || 0,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={6}>
@@ -1115,10 +1122,10 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  $                                   {Number(
+                                  <Money value={Number(
                                     saleData.return_summary.total_exchanged ||
                                       0,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={6}>
@@ -1127,12 +1134,12 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#722ed1", fontSize: "16px" }}
                                 >
-                                  $                                   {Number(
+                                  <Money value={Number(
                                     (saleData.return_summary.total_refunded ||
                                       0) +
                                       (saleData.return_summary
                                         .total_exchanged || 0),
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                             </Row>
@@ -1149,9 +1156,9 @@ const CreateReturn = () => {
                                     (ret) =>
                                       `${ret.return_number} (${new Date(
                                         ret.return_date,
-                                      ).toLocaleDateString()}) - $${Number(
+                                      ).toLocaleDateString()}) - ${formatCurrency(Number(
                                         ret.total_refund + ret.total_exchange,
-                                      ).toFixed(2)}`,
+                                      ))}`,
                                   )
                                   .join(" | ")}
                               </Text>
@@ -1226,9 +1233,9 @@ const CreateReturn = () => {
                               <Col span={4}>
                                 <Text>Subtotal: </Text>
                                 <Text strong>
-                                  $                                   {Number(
+                                  <Money value={Number(
                                     exchangeSaleQuery.data.subtotal || 0,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1237,9 +1244,9 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  -$                                   {Number(
+                                  -<Money value={Number(
                                     exchangeSaleQuery.data.discount_amount || 0,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1248,7 +1255,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#fa8c16", fontSize: "16px" }}
                                 >
-                                  +${exchangeVat.toFixed(2)}
+                                  +<Money value={exchangeVat} />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1257,9 +1264,9 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  +$                                   {Number(
+                                  +<Money value={Number(
                                     exchangeSaleQuery.data.shipping_cost || 0,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1268,9 +1275,9 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#52c41a", fontSize: "18px" }}
                                 >
-                                  $                                   {Number(
+                                  <Money value={Number(
                                     exchangeSaleQuery.data.total_amount,
-                                  ).toFixed(2)}
+                                  )} />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1279,7 +1286,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#f59e0b", fontSize: "16px" }}
                                 >
-                                  ${exchangeTotalTendered.toFixed(2)}
+                                  <Money value={exchangeTotalTendered} />
                                 </Text>
                               </Col>
                             </Row>
@@ -1295,9 +1302,12 @@ const CreateReturn = () => {
                                     ? exchangeSaleQuery.data.payments
                                         .map(
                                           (p: any) =>
-                                            `${p.payment_method?.replace("_", " ")}: $${Number(
-                                              p.amount,
-                                            ).toFixed(2)}`,
+                                            `${p.payment_method?.replace(
+                                              "_",
+                                              " ",
+                                            )}: ${formatCurrency(
+                                              Number(p.amount),
+                                            )}`,
                                         )
                                         .join(", ")
                                     : "N/A"}
@@ -1309,7 +1319,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#cf1322", fontSize: "16px" }}
                                 >
-                                  -${exchangeChangeGiven.toFixed(2)}
+                                  <Money value={exchangeChangeGiven} negative />
                                 </Text>
                               </Col>
                               <Col span={8}>
@@ -1318,7 +1328,7 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#52c41a", fontSize: "16px" }}
                                 >
-                                  ${exchangeNetPaid.toFixed(2)}
+                                  <Money value={exchangeNetPaid} />
                                 </Text>
                               </Col>
                             </Row>
@@ -1382,7 +1392,7 @@ const CreateReturn = () => {
                       <Text>Gross:</Text>
                       <div>
                         <Text strong>
-                          ${selectedReturnTotals.gross.toFixed(2)}
+                          <Money value={selectedReturnTotals.gross} />
                         </Text>
                       </div>
                     </Col>
@@ -1390,7 +1400,7 @@ const CreateReturn = () => {
                       <Text>Tax:</Text>
                       <div>
                         <Text strong>
-                          ${selectedReturnTotals.tax.toFixed(2)}
+                          <Money value={selectedReturnTotals.tax} />
                         </Text>
                       </div>
                     </Col>
@@ -1398,7 +1408,10 @@ const CreateReturn = () => {
                       <Text>Avg Disc:</Text>
                       <div>
                         <Text strong>
-                          -${selectedReturnTotals.average_discount.toFixed(2)}
+                          <Money
+                            value={selectedReturnTotals.average_discount}
+                            negative
+                          />
                         </Text>
                       </div>
                     </Col>
@@ -1406,7 +1419,10 @@ const CreateReturn = () => {
                       <Text>Special Disc:</Text>
                       <div>
                         <Text strong>
-                          -${selectedReturnTotals.special_discount.toFixed(2)}
+                          <Money
+                            value={selectedReturnTotals.special_discount}
+                            negative
+                          />
                         </Text>
                       </div>
                     </Col>
@@ -1414,7 +1430,10 @@ const CreateReturn = () => {
                       <Text>Promo Disc:</Text>
                       <div>
                         <Text strong>
-                          -${selectedReturnTotals.promotion_discount.toFixed(2)}
+                          <Money
+                            value={selectedReturnTotals.promotion_discount}
+                            negative
+                          />
                         </Text>
                       </div>
                     </Col>
@@ -1422,21 +1441,23 @@ const CreateReturn = () => {
                       <Text>Net Return:</Text>
                       <div>
                         <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
-                          ${selectedReturnTotals.net.toFixed(2)}
+                          <Money value={selectedReturnTotals.net} />
                         </Text>
                       </div>
                     </Col>
                     <Col span={4}>
                       <Text>Shipping Refund:</Text>
                       <div>
-                        <Text strong>${shippingRefundAmount.toFixed(2)}</Text>
+                        <Text strong>
+                          <Money value={shippingRefundAmount} />
+                        </Text>
                       </div>
                     </Col>
                     <Col span={4}>
                       <Text>Total Return Value:</Text>
                       <div>
                         <Text strong style={{ color: "#0958d9", fontSize: 16 }}>
-                          ${selectedReturnValue.toFixed(2)}
+                          <Money value={selectedReturnValue} />
                         </Text>
                       </div>
                     </Col>
@@ -1466,11 +1487,11 @@ const CreateReturn = () => {
               <Form.Item
                 name="shipping_refund_amount"
                 label="Shipping Refund Amount (Optional)"
-                extra={`Maximum refundable shipping: $${Number(
+                extra={`Maximum refundable shipping: ${formatCurrency(Number(
                   saleData?.return_summary?.available_shipping_refund ??
                     saleData?.shipping_cost ??
                     0,
-                ).toFixed(2)}`}
+                ))}`}
               >
                 <InputNumber
                   min={0}
@@ -1530,7 +1551,7 @@ const CreateReturn = () => {
                             {payment?.payment_type
                               ? ` (${payment?.payment_type})`
                               : ""}
-                            : ${payment.amount.toFixed(2)}
+                            : <Money value={payment.amount} />
                           </Text>
                           {payment.reference && (
                             <div style={{ fontSize: "12px", color: "#666" }}>
@@ -1552,28 +1573,36 @@ const CreateReturn = () => {
 
                 <Divider />
                 <div>
-                  <Text>Total Payments: ${getTotalPayments().toFixed(2)}</Text>
+                  <Text>
+                    Total Payments: <Money value={getTotalPayments()} />
+                  </Text>
                   {saleData && (
                     <div style={{ marginTop: 8 }}>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Item return value: $                           {selectedReturnTotals.net.toFixed(2)}
+                          Item return value:{" "}
+                          <Money value={selectedReturnTotals.net} />
                         </Text>
                       </div>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Shipping refund value: $                           {shippingRefundAmount.toFixed(2)}
+                          Shipping refund value:{" "}
+                          <Money value={shippingRefundAmount} />
                         </Text>
                       </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Selected return value: ${selectedReturnValue.toFixed(2)}
+                        Selected return value:{" "}
+                        <Money value={selectedReturnValue} />
                       </Text>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Available sale balance: $                           {(
-                            saleData.return_summary?.available_amount ??
-                            saleData.total_amount
-                          ).toFixed(2)}
+                          Available sale balance:{" "}
+                          <Money
+                            value={
+                              saleData.return_summary?.available_amount ??
+                              saleData.total_amount
+                            }
+                          />
                         </Text>
                       </div>
                       {Math.abs(getTotalPayments() - selectedReturnValue) >
@@ -1686,13 +1715,13 @@ const CreateReturn = () => {
                         Math.abs(totalPaymentAmount - selectedReturnValue) <=
                         0.01
                       ) {
-                        return `Payment amount matches selected return value ($${selectedReturnValue.toFixed(
-                          2,
+                        return `Payment amount matches selected return value (${formatCurrency(
+                          selectedReturnValue,
                         )})`;
                       } else {
-                        return `Payment amount must match selected return value. Entered $${totalPaymentAmount.toFixed(
-                          2,
-                        )}, expected $${selectedReturnValue.toFixed(2)}`;
+                        return `Payment amount must match selected return value. Entered ${formatCurrency(
+                          totalPaymentAmount,
+                        )}, expected ${formatCurrency(selectedReturnValue)}`;
                       }
                     })()}
                   </Text>

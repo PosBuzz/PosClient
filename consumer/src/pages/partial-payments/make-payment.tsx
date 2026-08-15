@@ -3,6 +3,7 @@ import {
     ArrowLeftOutlined,
     DeleteOutlined,
     PlusOutlined,
+    PrinterOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -19,12 +20,15 @@ import {
     Spin,
     Table,
     Tag,
+    Tooltip,
     Typography,
 } from "antd";
 import dayjs from "dayjs";
+import saveAs from "file-saver";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { paymentsApi } from "../../api/payments-api";
+import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
@@ -41,6 +45,9 @@ const MakePayment = () => {
   const navigate = useNavigate();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
+  const [downloadingPaymentId, setDownloadingPaymentId] = useState<
+    number | null
+  >(null);
   const [payments, setPayments] = useState<SalePayment[]>([
     {
       payment_method: PaymentMethod.CASH,
@@ -124,7 +131,9 @@ const MakePayment = () => {
 
     if (totalPaymentAmount > sale!.remaining_amount) {
       messageApi?.error(
-        `Total payment amount (${totalPaymentAmount.toFixed(2)}) exceeds remaining amount (${sale!.remaining_amount.toFixed(2)})`,
+        `Total payment amount (${formatCurrency(
+          totalPaymentAmount,
+        )}) exceeds remaining amount (${formatCurrency(sale!.remaining_amount)})`,
       );
       return;
     }
@@ -152,6 +161,24 @@ const MakePayment = () => {
         return "cyan";
       default:
         return "default";
+    }
+  };
+
+  // Money receipt for one payment: its own date, method, reference and the
+  // balance before/after, unlike the sale-level receipt.
+  const handleDownloadPaymentReceipt = async (paymentId: number) => {
+    if (!id) return;
+    setDownloadingPaymentId(paymentId);
+    try {
+      const blob = await salesApi.generatePaymentReceipt(
+        parseInt(id),
+        paymentId,
+      );
+      saveAs(blob, `money-receipt-${sale?.sale_number}-${paymentId}.pdf`);
+    } catch {
+      messageApi?.error("Failed to download money receipt");
+    } finally {
+      setDownloadingPaymentId(null);
     }
   };
 
@@ -195,6 +222,23 @@ const MakePayment = () => {
       dataIndex: "notes",
       key: "notes",
       render: (notes: string) => notes || "-",
+    },
+    {
+      title: "Receipt",
+      key: "receipt",
+      align: "right" as const,
+      width: 90,
+      render: (record: SalePayment & { id: number }) => (
+        <Tooltip title="Download money receipt for this payment">
+          <Button
+            type="text"
+            size="small"
+            icon={<PrinterOutlined />}
+            loading={downloadingPaymentId === record.id}
+            onClick={() => handleDownloadPaymentReceipt(record.id)}
+          />
+        </Tooltip>
+      ),
     },
   ];
 

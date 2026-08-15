@@ -1,4 +1,4 @@
-import { CurrencyIcon, takaPrefix } from "../../components/Currency";
+import { Money, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
@@ -200,10 +200,9 @@ export default function VariantStockPage() {
       key: "cost_price",
       align: "right",
       render: (price) => (
-        <Space>
-          <CurrencyIcon />
-          <Text>${parseFloat(price).toFixed(2)}</Text>
-        </Space>
+        <Text>
+          <Money value={price} />
+        </Text>
       ),
     },
     {
@@ -212,7 +211,7 @@ export default function VariantStockPage() {
       align: "right",
       render: (_, record) => (
         <Text strong>
-          ${(parseFloat(record.cost_price) * record.quantity).toFixed(2)}
+          <Money value={parseFloat(record.cost_price) * record.quantity} />
         </Text>
       ),
     },
@@ -437,7 +436,7 @@ export default function VariantStockPage() {
                     {branch.stock} units
                   </div>
                   <Text type="secondary" style={{ fontSize: "12px" }}>
-                    Value: ${branch.value.toFixed(2)}
+                    Value: <Money value={branch.value} />
                   </Text>
                 </div>
               </Card>
@@ -498,14 +497,13 @@ export default function VariantStockPage() {
                 <Table.Summary.Cell index={3}></Table.Summary.Cell>
                 <Table.Summary.Cell index={4}>
                   <Text strong>
-                    $
-                    {displayBatches
-                      .reduce(
+                    <Money
+                      value={displayBatches.reduce(
                         (sum, batch) =>
                           sum + parseFloat(batch.cost_price) * batch.quantity,
                         0
-                      )
-                      .toFixed(2)}
+                      )}
+                    />
                   </Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={5} colSpan={3}></Table.Summary.Cell>

@@ -120,7 +120,12 @@ export const endpoints = {
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
   getProductByBarcode: "/consumer/sales/product-by-barcode",
-  generateSaleReceipt: (id: number) => `/consumer/sales/receipt/${id}`,
+  generateSalePaymentReceipt: (id: number, paymentId: number) =>
+    `/consumer/sales/receipt/${id}/payment/${paymentId}`,
+  generateSaleReceipt: (id: number, type?: string) =>
+    type
+      ? `/consumer/sales/receipt/${id}?type=${type}`
+      : `/consumer/sales/receipt/${id}`,
   getDailyTargetReport: "/consumer/sales/reports/daily-target",
   getUserSalesStats: "/consumer/sales/user-sales-stats",
   getUserSalesDetail: (userId: number) =>

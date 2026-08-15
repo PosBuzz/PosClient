@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   CheckOutlined,
   CloseOutlined,
@@ -226,16 +227,18 @@ export default function InventoryTransfersPage() {
                 },
                 {
                   title: "Cost Price",
-                  render: (_, item) =>
-                    `$${parseFloat(item.batch.cost_price).toFixed(2)}`,
+                  render: (_, item) => <Money value={item.batch.cost_price} />,
                   align: "right",
                 },
                 {
                   title: "Total Value",
-                  render: (_, item) =>
-                    `$${(
-                      parseFloat(item.batch.cost_price) * item.quantity
-                    ).toFixed(2)}`,
+                  render: (_, item) => (
+                    <Money
+                      value={
+                        parseFloat(item.batch.cost_price) * item.quantity
+                      }
+                    />
+                  ),
                   align: "right",
                 },
               ]}

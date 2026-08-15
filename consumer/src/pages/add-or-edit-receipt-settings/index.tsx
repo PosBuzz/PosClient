@@ -39,6 +39,7 @@ const { TextArea } = Input;
 const PAGE_SIZE_OPTIONS = [
   { label: "A4 (210 × 297 mm)", value: "A4" },
   { label: "A5 (148 × 210 mm)", value: "A5" },
+  { label: "A6 (105 × 148 mm) — labels/stickers", value: "A6" },
   { label: "Letter (8.5 × 11 in)", value: "LETTER" },
   { label: "Legal (8.5 × 14 in)", value: "LEGAL" },
 ];
@@ -82,6 +83,7 @@ const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
     ["settings", "customerInfo", "showName"],
     ["settings", "customerInfo", "showPhone"],
     ["settings", "customerInfo", "showEmail"],
+    ["settings", "customerInfo", "showAddress"],
     ["settings", "customerInfo", "showRewardPoints"],
   ],
   items: [
@@ -104,6 +106,8 @@ const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
     ["settings", "payment", "showReceivedAmount"],
     ["settings", "payment", "showChangeAmount"],
     ["settings", "payment", "showDueAmount"],
+    ["settings", "payment", "showPaymentDate"],
+    ["settings", "payment", "showReference"],
   ],
 };
 
@@ -198,6 +202,10 @@ export default function ReceiptSettingsFormPage() {
   const itemsShow = Form.useWatch(["settings", "items", "show"], form);
   const totalsShow = Form.useWatch(["settings", "totals", "show"], form);
   const paymentShow = Form.useWatch(["settings", "payment", "show"], form);
+  const paymentBreakdown = Form.useWatch(
+    ["settings", "payment", "showBreakdown"],
+    form,
+  );
   const settingsType = Form.useWatch(["type"], form) as
     | ReceiptPresetType
     | undefined;
@@ -414,6 +422,13 @@ export default function ReceiptSettingsFormPage() {
                   <Select.Option value="receipt">Receipt</Select.Option>
                   <Select.Option value="quotation">Quotation</Select.Option>
                   <Select.Option value="return">Return Receipt</Select.Option>
+                  <Select.Option value="chalan">Delivery Chalan</Select.Option>
+                  <Select.Option value="money_receipt">
+                    Money Receipt
+                  </Select.Option>
+                  <Select.Option value="delivery_slip">
+                    Delivery Slip / Sticker
+                  </Select.Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -744,6 +759,13 @@ export default function ReceiptSettingsFormPage() {
               </Col>
               <Col xs={12} sm={8}>
                 <ToggleItem
+                  label="Address"
+                  name={["settings", "customerInfo", "showAddress"]}
+                  disabled={!customerInfoShow}
+                />
+              </Col>
+              <Col xs={12} sm={8}>
+                <ToggleItem
                   label="Reward Points"
                   name={["settings", "customerInfo", "showRewardPoints"]}
                   disabled={!customerInfoShow}
@@ -940,7 +962,27 @@ export default function ReceiptSettingsFormPage() {
                   disabled={!paymentShow}
                 />
               </Col>
+              <Col xs={12} sm={8}>
+                <ToggleItem
+                  label="Payment Date"
+                  name={["settings", "payment", "showPaymentDate"]}
+                  disabled={!paymentShow || !paymentBreakdown}
+                />
+              </Col>
+              <Col xs={12} sm={8}>
+                <ToggleItem
+                  label="Reference / Txn ID"
+                  name={["settings", "payment", "showReference"]}
+                  disabled={!paymentShow || !paymentBreakdown}
+                />
+              </Col>
             </Row>
+            {paymentShow && !paymentBreakdown && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Payment date and reference are printed per payment line, so they
+                need "Payment Breakdown" turned on.
+              </Text>
+            )}
           </Collapse.Panel>
 
           {/* Notes */}
