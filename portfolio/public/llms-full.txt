@@ -1,0 +1,58 @@
+# PosBuzz Complete Product Architecture & Knowledge Graph
+
+## About PosBuzz
+PosBuzz is a cloud-native Point of Sale (POS) and Multi-Branch Management platform built for retailers, boutiques, cafes, supermarkets, and growing multi-store chains.
+
+## Key System Pillars
+
+### 1. Offline-First Point of Sale Engine
+- Operates 100% uninterrupted during network/internet outages.
+- Local indexed cache for catalog lookup, barcode scans, and tax calculations.
+- Transactions are queued locally and automatically synced with background retry upon reconnection.
+- Multi-tender payment options: Cash, Credit/Debit Cards, Bank Transfers, and Mobile Money / MFS (e.g., bKash, Nagad, Rocket, Upay).
+- Cart features: Hold & recall multiple carts, item-level discounts, order-level promotions, and price type toggles (Retail vs Wholesale).
+
+### 2. Multi-Branch & Centralized HQ Management
+- Single master product catalog with branch-specific pricing and tax overrides.
+- Inter-branch inventory transfer workflows with dispatch tracking and receiving confirmation.
+- Chain-wide consolidated financial rollups, P&L statements, and top-selling SKU leaderboards.
+- Granular Role-Based Access Control (RBAC): Admin, Store Manager, Accountant, Cashier.
+
+### 3. Batch Expiry (FEFO) & Serial Number Tracking
+- Batch-wise inventory management with purchase invoices, cost per unit, and expiry date alerts.
+- Individual Serial Number tracking for high-value appliances and electronic warranty lookup.
+- Audited inventory adjustments for damage, loss, shrinkage, and physical count reconciliation.
+
+### 4. Quotations & Promotions
+- Pro-forma quotation builder with 1-click conversion to finalized sales invoice.
+- Time-bound branch promotional campaigns (percentage, flat, combo discounts).
+- Customer credit ledger and partial payment tracking.
+
+### 5. Hardware & Peripherals Compatibility
+- Zero proprietary hardware lock-in.
+- Supports ESC/POS 58mm and 80mm thermal receipt printers via USB, LAN/Ethernet, Wi-Fi, Bluetooth, and Serial COM.
+- Direct web-to-printer bridging with automated cash drawer triggering.
+- Compatible with all 1D/2D handheld and omnidirectional barcode scanners (Code128, EAN-13, QR).
+- Electronic weighing scale integration (RS232/USB) with auto-tare calculations.
+
+### 6. Customer Loyalty & Marketing Engine
+- Configurable loyalty points accrual per currency spent.
+- Tiered VIP member discounts.
+- Digital receipts via SMS and Email.
+
+### 7. Audit Security & End of Day (EOD) Closing
+- Tamper-proof Blind EOD Cash Closing to eliminate cashier bias.
+- Operational expense and petty cash tracking directly at the register.
+- Real-time gross and net profit margin analytics.
+
+## Pricing Plans
+- **Starter**: $29/mo ($24/mo annual) - 1 location, 2 registers, 5,000 SKUs, offline POS, thermal printing.
+- **Professional**: $79/mo ($64/mo annual) - Up to 5 branches, unlimited SKUs, stock transfers, batch/serials, customer loyalty, blind EOD audit.
+- **Enterprise**: $199/mo ($169/mo annual) - Unlimited locations & registers, private cloud or on-premise container deployment, custom webhooks, 99.99% SLA.
+
+## Contacts & Company Information
+- Company: PosBuzz Technologies Inc.
+- Website: https://posbuzz.io
+- Developer: Istiak Tashrif (istiaktashrif@gmail.com)
+- Sales & Inquiries: sales@posbuzz.io
+- GitHub: https://github.com/PosBuzz/PosClient

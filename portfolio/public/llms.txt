@@ -1,0 +1,22 @@
+# PosBuzz - Cloud Point of Sale & Multi-Branch Retail Platform
+
+> PosBuzz is a modern cloud-native, offline-first Point of Sale (POS) and Multi-Branch Inventory Platform engineered for retail boutiques, apparel stores, cafes, restaurants, supermarkets, and multi-store chains.
+
+## Key Active Capabilities & Architecture
+- **Offline-First Point of Sale**: Ring up transactions, scan barcodes, take cash/card/MFS payments, and print thermal receipts without active internet. Auto-syncs when online.
+- **Multi-Branch Inventory & Stock Transfers**: Centralized product catalogs, branch-specific pricing, and dispatch-approved inter-store stock transfers.
+- **Batch Expiry (FEFO) & Serial Number Tracking**: Batch lots with expiry alerts and serialized warranty lookups.
+- **Multi-Tender Payments**: Cash, Cards, Bank Transfers, and MFS (bKash, Nagad, Rocket, Upay).
+- **Quotations to Sales**: Pro-forma quotation generator with 1-click invoice conversion.
+- **Customer Rewards & Loyalty Engine**: Point accrual per dollar spent, customer ledger, and tiered promotional campaigns.
+- **Blind End-of-Day (EOD) Cash Reconciliation**: Tamper-proof shift closing with automated discrepancy alerts.
+- **Direct Thermal Hardware Bridge**: Plug-and-play driverless ESC/POS printing over USB, LAN/Ethernet, Bluetooth, and Serial COM.
+
+## Pricing Tiers
+- **Starter ($24/mo billed annually / $29 monthly)**: 1 store, 2 POS registers, 5,000 SKUs, offline engine, thermal receipt printing.
+- **Professional ($64/mo billed annually / $79 monthly)**: Up to 5 stores, unlimited products, multi-branch transfers, batch/serial tracking, loyalty rewards, blind EOD audit.
+- **Enterprise ($169/mo billed annually / $199 monthly)**: Unlimited outlets, dedicated private cloud or on-premise VM option, custom webhooks, 99.99% SLA.
+
+## Documentation & Full Information
+- Website: https://posbuzz.io
+- Contact: sales@posbuzz.io / istiaktashrif@gmail.com
