@@ -202,6 +202,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
+          label: <span title="Pending Deliveries">Pending Deliveries</span>,
+          key: "/pending-deliveries",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Daily Sales Target">Sales Target</span>,
           key: "/daily-target",
           permissions: [Permissions.sales],

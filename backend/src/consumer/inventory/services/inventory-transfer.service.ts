@@ -73,9 +73,10 @@ export class InventoryTransferService {
           );
         }
 
-        if (batch.quantity < item.quantity) {
+        const availableQuantity = batch.quantity - batch.reserved_quantity;
+        if (availableQuantity < item.quantity) {
           throw new BadRequestException(
-            `Insufficient quantity in batch ${item.batch_id}. Available: ${batch.quantity}, Requested: ${item.quantity}`,
+            `Insufficient available quantity in batch ${item.batch_id}. Available: ${availableQuantity}, Requested: ${item.quantity}`,
           );
         }
       }

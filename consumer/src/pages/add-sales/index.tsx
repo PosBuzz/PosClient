@@ -119,6 +119,7 @@ const NewSale = () => {
   } = useSaleManager({ form, user });
 
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
+  const [isDeliveryLater, setIsDeliveryLater] = useState(false);
   const isHydratingFromQuotationRef = useRef(false);
 
   const upsertFn = (
@@ -532,6 +533,7 @@ const NewSale = () => {
       quotation_id: quotationId ? parseInt(quotationId) : undefined,
       is_online_order: isOnlineOrder,
       online_order_status: isOnlineOrder ? "PENDING" : undefined,
+      is_delivery_later: isDeliveryLater,
     };
 
     try {
@@ -924,6 +926,18 @@ const NewSale = () => {
                     </Option>
                   ))}
                 </Select>
+              </Form.Item>
+              <Form.Item
+                name="is_delivery_later"
+                valuePropName="checked"
+                style={{ marginTop: 8, marginBottom: 0 }}
+              >
+                <Checkbox
+                  checked={isDeliveryLater}
+                  onChange={(event) => setIsDeliveryLater(event.target.checked)}
+                >
+                  Deliver products later (reserve inventory)
+                </Checkbox>
               </Form.Item>
             </Col>
             <Col span={8}>

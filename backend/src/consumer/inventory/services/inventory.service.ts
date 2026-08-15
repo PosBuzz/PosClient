@@ -39,7 +39,7 @@ export class InventoryService {
           // Total quantity across all batches
           this.prisma.inventoryBatch.aggregate({
             where: whereClause,
-            _sum: { quantity: true },
+            _sum: { quantity: true, reserved_quantity: true },
           }), // Low stock variants (where branch-specific quantity <= alert_quantity)
           this.prisma.productVariant
             .findMany({
@@ -50,7 +50,11 @@ export class InventoryService {
               include: {
                 inventory_items: {
                   where: branchId ? { branch_id: branchId } : {},
-                  select: { quantity: true, branch_id: true },
+                  select: {
+                    quantity: true,
+                    reserved_quantity: true,
+                    branch_id: true,
+                  },
                 },
                 product: { select: { id: true, name: true } },
               },
@@ -61,7 +65,7 @@ export class InventoryService {
                 if (branchId) {
                   // If checking specific branch, count variant if that branch's stock is low
                   const branchStock = variant.inventory_items.reduce(
-                    (sum, item) => sum + item.quantity,
+                    (sum, item) => sum + item.quantity - item.reserved_quantity,
                     0,
                   );
                   if (branchStock <= (variant.alert_quantity || 0)) {
@@ -72,7 +76,9 @@ export class InventoryService {
                   const branchStockMap = variant.inventory_items.reduce(
                     (acc, item) => {
                       acc[item.branch_id] =
-                        (acc[item.branch_id] || 0) + item.quantity;
+                        (acc[item.branch_id] || 0) +
+                        item.quantity -
+                        item.reserved_quantity;
                       return acc;
                     },
                     {} as Record<number, number>,
@@ -103,7 +109,11 @@ export class InventoryService {
         ]);
       return {
         total_batches: totalBatches,
-        total_quantity: totalQuantity._sum.quantity || 0,
+        total_quantity:
+          (totalQuantity._sum.quantity || 0) -
+          (totalQuantity._sum.reserved_quantity || 0),
+        physical_quantity: totalQuantity._sum.quantity || 0,
+        reserved_quantity: totalQuantity._sum.reserved_quantity || 0,
         low_stock_variants: lowStockVariants,
         expiring_soon: expiringSoon,
       };
@@ -166,6 +176,7 @@ export class InventoryService {
             where: branch_id ? { branch_id } : {},
             select: {
               quantity: true,
+              reserved_quantity: true,
               branch_id: true,
               location: true,
               branch: { select: { id: true, name: true } },
@@ -179,7 +190,7 @@ export class InventoryService {
       const enrichedVariants = variants
         .map((variant) => {
           const totalStock = variant.inventory_items.reduce(
-            (sum, item) => sum + item.quantity,
+            (sum, item) => sum + item.quantity - item.reserved_quantity,
             0,
           );
 
@@ -197,7 +208,9 @@ export class InventoryService {
             const branchStockMap = variant.inventory_items.reduce(
               (acc, item) => {
                 acc[item.branch_id] =
-                  (acc[item.branch_id] || 0) + item.quantity;
+                  (acc[item.branch_id] || 0) +
+                  item.quantity -
+                  item.reserved_quantity;
                 return acc;
               },
               {} as Record<number, number>,
@@ -234,7 +247,10 @@ export class InventoryService {
             stock_by_branch: variant.inventory_items.reduce(
               (acc, item) => {
                 const branchName = item.branch?.name || 'Central';
-                acc[branchName] = (acc[branchName] || 0) + item.quantity;
+                acc[branchName] =
+                  (acc[branchName] || 0) +
+                  item.quantity -
+                  item.reserved_quantity;
                 return acc;
               },
               {} as Record<string, number>,
@@ -408,13 +424,14 @@ export class InventoryService {
         orderBy: { created_at: 'desc' },
       });
       const totalStock = batches.reduce(
-        (sum, batch) => sum + batch.quantity,
+        (sum, batch) => sum + batch.quantity - batch.reserved_quantity,
         0,
       );
       const stockByBranch = batches.reduce(
         (acc, batch) => {
           const branchName = batch.branch?.name || 'Central';
-          acc[branchName] = (acc[branchName] || 0) + batch.quantity;
+          acc[branchName] =
+            (acc[branchName] || 0) + batch.quantity - batch.reserved_quantity;
           return acc;
         },
         {} as Record<string, number>,
@@ -434,7 +451,9 @@ export class InventoryService {
         const branchStockMap = batches.reduce(
           (acc, batch) => {
             acc[batch.branch?.id || 0] =
-              (acc[batch.branch?.id || 0] || 0) + batch.quantity;
+              (acc[batch.branch?.id || 0] || 0) +
+              batch.quantity -
+              batch.reserved_quantity;
             return acc;
           },
           {} as Record<number, number>,
@@ -486,6 +505,7 @@ export class InventoryService {
             where: branchId ? { branch_id: branchId } : {},
             select: {
               quantity: true,
+              reserved_quantity: true,
               branch_id: true,
               branch: { select: { id: true, name: true } },
             },
@@ -499,7 +519,7 @@ export class InventoryService {
         if (branchId) {
           // If filtering by branch, check only that branch's stock
           const branchStock = variant.inventory_items.reduce(
-            (sum, item) => sum + item.quantity,
+            (sum, item) => sum + item.quantity - item.reserved_quantity,
             0,
           );
 
@@ -507,7 +527,10 @@ export class InventoryService {
             const stockByBranch = variant.inventory_items.reduce(
               (acc, item) => {
                 const branchName = item.branch?.name || 'Central';
-                acc[branchName] = (acc[branchName] || 0) + item.quantity;
+                acc[branchName] =
+                  (acc[branchName] || 0) +
+                  item.quantity -
+                  item.reserved_quantity;
                 return acc;
               },
               {} as Record<string, number>,
@@ -528,7 +551,8 @@ export class InventoryService {
           const stockByBranch = variant.inventory_items.reduce(
             (acc, item) => {
               const branchName = item.branch?.name || 'Central';
-              acc[branchName] = (acc[branchName] || 0) + item.quantity;
+              acc[branchName] =
+                (acc[branchName] || 0) + item.quantity - item.reserved_quantity;
               return acc;
             },
             {} as Record<string, number>,
@@ -537,7 +561,10 @@ export class InventoryService {
           // Check each branch for low stock
           const branchStockMap = variant.inventory_items.reduce(
             (acc, item) => {
-              acc[item.branch_id] = (acc[item.branch_id] || 0) + item.quantity;
+              acc[item.branch_id] =
+                (acc[item.branch_id] || 0) +
+                item.quantity -
+                item.reserved_quantity;
               return acc;
             },
             {} as Record<number, number>,

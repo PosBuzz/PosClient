@@ -682,22 +682,23 @@ model UserBranch {
 // ============================================
 
 model InventoryBatch {
-  id             Int       @id @default(autoincrement())
-  variant_id     Int
-  branch_id      Int
-  batch_number   String
-  quantity       Int
+  id                Int       @id @default(autoincrement())
+  variant_id        Int
+  branch_id         Int
+  batch_number      String
+  quantity          Int
+  reserved_quantity Int       @default(0)
   // REMOVED: original_quantity — derive from PURCHASE_IN audit log row
   // REMOVED: source            — derive from event_type in audit log
-  cost_price     Decimal   @db.Decimal(10, 2)
-  vendor_id      Int?
+  cost_price        Decimal   @db.Decimal(10, 2)
+  vendor_id         Int?
   // Where the stock physically sits, e.g. "A-3-2" or "Cold Room, Rack 4"
-  location       String?
-  expiry_date    DateTime?
-  payment_status String    @default("paid") // paid | partial | due
-  paid_amount    Decimal   @default(0) @db.Decimal(10, 2)
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
+  location          String?
+  expiry_date       DateTime?
+  payment_status    String    @default("paid") // paid | partial | due
+  paid_amount       Decimal   @default(0) @db.Decimal(10, 2)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
 
   variant              ProductVariant          @relation(fields: [variant_id], references: [id], onDelete: Cascade)
   branch               Branch                  @relation(fields: [branch_id], references: [id])
@@ -1007,6 +1008,9 @@ model Sale {
   converted_at         DateTime?
   is_online_order      Boolean   @default(false)
   online_order_status  String?   @default("PENDING")
+  is_delivery_later    Boolean   @default(false)
+  delivery_status      String?
+  delivered_at         DateTime?
   deleted_at           DateTime?
   deleted_by_id        Int?
   delete_reason        String?
@@ -1036,6 +1040,7 @@ model Sale {
   @@index([converted_to_sale_id])
   @@index([is_online_order, online_order_status]) // Online order management view
   @@index([consumer_id, deleted_at]) // Active vs. soft-deleted sales listing
+  @@index([consumer_id, is_delivery_later, delivery_status])
   // sale_type standalone index dropped — always queried scoped to consumer/branch
   @@map("sales")
 }
