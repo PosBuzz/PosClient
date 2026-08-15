@@ -19,6 +19,7 @@ import {
     Tooltip,
     Typography,
 } from "antd";
+import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { deleteApi, get } from "../../api/crud-api";
@@ -141,6 +142,25 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
           {getCustomerTypeLabel(type)}
         </Tag>
       ),
+    },
+    {
+      title: "Birthday",
+      dataIndex: "birthday",
+      key: "birthday",
+      render: (birthday: string | null) => {
+        if (!birthday) return <Text type="secondary">—</Text>;
+
+        const date = dayjs(birthday);
+        // Same day and month as today, whatever the year
+        const isToday = date.format("MM-DD") === dayjs().format("MM-DD");
+
+        return (
+          <Space size={4}>
+            <Text style={{ fontSize: 12 }}>{date.format("DD MMM YYYY")}</Text>
+            {isToday && <Tag color="magenta">Today</Tag>}
+          </Space>
+        );
+      },
     },
     {
       title: "Address",

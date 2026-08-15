@@ -1,4 +1,5 @@
-import { Button, Form, Input, Modal, Select, Space } from "antd";
+import { Button, DatePicker, Form, Input, Modal, Select, Space } from "antd";
+import dayjs from "dayjs";
 import { useEffect } from "react";
 import { Customer, CustomerType } from "../types/customer.types";
 
@@ -22,6 +23,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ open, onClose, onCreateCu
 			email: values.email,
 			phone: values.phone,
 			address: values.address,
+			birthday: values.birthday
+				? values.birthday.format("YYYY-MM-DD")
+				: undefined,
 			customer_type: values.customer_type,
 		};
 		onCreateCustomer(newCustomer);
@@ -87,6 +91,15 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ open, onClose, onCreateCu
 					rules={[{ type: "email", message: "Please enter valid email" }]}
 				>
 					<Input placeholder="Enter email address" />
+				</Form.Item>
+
+				<Form.Item name="birthday" label="Birthday">
+					<DatePicker
+						style={{ width: "100%" }}
+						format="YYYY-MM-DD"
+						placeholder="Select date of birth (optional)"
+						disabledDate={(current) => current && current > dayjs().endOf("day")}
+					/>
 				</Form.Item>
 
 				<Form.Item name="address" label="Address">

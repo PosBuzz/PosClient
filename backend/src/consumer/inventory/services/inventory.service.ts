@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { collectBatchLocations } from '../utils/batch-location.util';
 import { InventoryHelperService } from './inventory-helper.service';
 
 @Injectable()
@@ -148,6 +149,11 @@ export class InventoryService {
           { product: { code: { contains: search, mode: 'insensitive' } } },
           { sku: { contains: search, mode: 'insensitive' } },
           { barcode: { contains: search, mode: 'insensitive' } },
+          {
+            inventory_items: {
+              some: { location: { contains: search, mode: 'insensitive' } },
+            },
+          },
         ];
       }
 
@@ -160,6 +166,7 @@ export class InventoryService {
             select: {
               quantity: true,
               branch_id: true,
+              location: true,
               branch: { select: { id: true, name: true } },
             },
           },
@@ -208,6 +215,21 @@ export class InventoryService {
             ...variant,
             total_stock: totalStock,
             is_low_stock: isLowStock,
+            // Surfaced on the list itself so no drill-down is needed
+            locations: collectBatchLocations(variant.inventory_items),
+            locations_by_branch: variant.inventory_items.reduce(
+              (acc, item) => {
+                const location = item.location?.trim();
+                if (!location) return acc;
+                const branchName = item.branch?.name || 'Central';
+                acc[branchName] = acc[branchName] || [];
+                if (!acc[branchName].includes(location)) {
+                  acc[branchName].push(location);
+                }
+                return acc;
+              },
+              {} as Record<string, string[]>,
+            ),
             stock_by_branch: variant.inventory_items.reduce(
               (acc, item) => {
                 const branchName = item.branch?.name || 'Central';

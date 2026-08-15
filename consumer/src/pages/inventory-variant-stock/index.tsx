@@ -2,6 +2,7 @@ import { Money, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
+  EnvironmentOutlined,
   ShopOutlined,
   WarningOutlined,
   HistoryOutlined,
@@ -186,6 +187,19 @@ export default function VariantStockPage() {
           </Tag>
         </Space>
       ),
+    },
+    {
+      title: "Location",
+      dataIndex: "location",
+      key: "location",
+      render: (location: string | null) =>
+        location ? (
+          <Tag color="geekblue" icon={<EnvironmentOutlined />}>
+            {location}
+          </Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: "Quantity",

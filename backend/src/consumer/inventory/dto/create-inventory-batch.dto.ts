@@ -4,6 +4,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   IsArray,
   ValidateNested,
@@ -59,6 +60,12 @@ export class CreateInventoryBatchDto {
   @IsInt()
   @Type(() => Number)
   vendor_id?: number;
+
+  /** Physical storage location, e.g. "A-3-2" */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  location?: string;
 
   @IsOptional()
   @IsDateString()

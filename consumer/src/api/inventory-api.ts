@@ -16,6 +16,8 @@ export interface InventoryBatch {
   quantity: number;
   cost_price: string;
   vendor_id?: number;
+  /** Physical storage location, e.g. "A-3-2" */
+  location?: string | null;
   expiry_date?: string;
   payment_status: string;
   paid_amount: string;
@@ -56,6 +58,7 @@ export interface CreateBatchData {
   quantity: number;
   cost_price: string;
   vendor_id?: number;
+  location?: string;
   expiry_date?: string;
   payments?: Array<{
     payment_method: string;

@@ -20,6 +20,7 @@ import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ProductAuditModule } from 'src/product-audit/product-audit.module';
 import { ReceiptModule } from './receipt-pdf/receipt.module';
+import { ImportModule } from './import/import.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ReceiptModule } from './receipt-pdf/receipt.module';
     VendorModule,
     ProductModule,
     InventoryModule,
+    ImportModule,
     CustomerModule,
     SalesModule,
     ReturnsModule,

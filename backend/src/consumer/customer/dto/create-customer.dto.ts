@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -27,6 +28,11 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  /** Date of birth as YYYY-MM-DD */
+  @IsOptional()
+  @IsDateString()
+  birthday?: string;
 
   @IsEnum(CustomerType)
   customer_type: CustomerType;

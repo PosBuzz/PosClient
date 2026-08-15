@@ -146,6 +146,7 @@ export default function AddEditInventory() {
         quantity: existingBatch.quantity,
         cost_price: parseFloat(existingBatch.cost_price),
         vendor_id: existingBatch.vendor_id,
+        location: existingBatch.location,
         expiry_date: existingBatch.expiry_date
           ? dayjs(existingBatch.expiry_date)
           : null,
@@ -193,6 +194,7 @@ export default function AddEditInventory() {
       variant_id: undefined,
       cost_price: undefined,
       batch_number: undefined,
+      location: undefined,
     });
   };
 
@@ -239,6 +241,7 @@ export default function AddEditInventory() {
       quantity: values.quantity,
       cost_price: values.cost_price.toString(),
       vendor_id: values.vendor_id,
+      location: values.location?.trim() || undefined,
       expiry_date: values.expiry_date
         ? values.expiry_date.format("YYYY-MM-DD")
         : null,
@@ -497,7 +500,7 @@ export default function AddEditInventory() {
               </Form.Item>
             </Col>
           </Row>
-          {/* Vendor Row */}
+          {/* Vendor & Location Row */}
           <Row gutter={[12, 6]}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -507,6 +510,17 @@ export default function AddEditInventory() {
                 extra="Who did you purchase this from?"
               >
                 <VendorSelector />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="location"
+                label="Storage Location"
+                style={{ marginBottom: 8 }}
+                extra="Where this stock is kept — shown in product search"
+                rules={[{ max: 100, message: "Location is too long" }]}
+              >
+                <Input placeholder="e.g. A-3-2, Cold Room Rack 4" allowClear />
               </Form.Item>
             </Col>
           </Row>

@@ -1,4 +1,5 @@
 import {
+  EnvironmentOutlined,
   EyeOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -47,9 +48,12 @@ interface StockByVariantItem {
   total_stock: number;
   is_low_stock: boolean;
   stock_by_branch: Record<string, number>;
+  locations: string[];
+  locations_by_branch: Record<string, string[]>;
   inventory_items: Array<{
     quantity: number;
     branch_id: number;
+    location?: string | null;
     branch: {
       id: number;
       name: string;
@@ -285,6 +289,22 @@ export default function InventoryStockByVariantPage() {
           ))}
         </Space>
       ),
+    },
+    {
+      title: "Location",
+      key: "locations",
+      render: (_, record) =>
+        record.locations?.length ? (
+          <Space wrap size={4}>
+            {record.locations.map((location) => (
+              <Tag key={location} color="geekblue" icon={<EnvironmentOutlined />}>
+                {location}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: "Status",
