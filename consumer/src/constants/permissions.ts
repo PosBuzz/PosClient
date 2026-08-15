@@ -13,7 +13,7 @@ export const Permissions = {
   sales: "sales",
   quotations: "quotations",
   customers: "customers",
-  companyProfile: 'companyProfile',
+  companyProfile: "companyProfile",
   product_audit: "product_audit",
   receipt_settings: "receipt_settings",
 };

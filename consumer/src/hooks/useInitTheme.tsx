@@ -6,17 +6,14 @@ const useInitTheme = () => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("themeSettings") as
-      | "dark"
-      | "light"
-      | "system"
-      | null;
+      "dark" | "light" | "system" | null;
 
     const themeToApply =
       savedTheme === "dark" || savedTheme === "light"
         ? savedTheme
         : isSystemDark
-        ? "dark"
-        : "light";
+          ? "dark"
+          : "light";
 
     document.documentElement.setAttribute("data-theme", themeToApply);
     localStorage.setItem("isDarkMode", String(themeToApply === "dark"));

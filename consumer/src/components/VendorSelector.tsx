@@ -73,7 +73,7 @@ export default function VendorSelector({
       messageApi?.error(
         `Failed to create vendor: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     },
   });
@@ -106,7 +106,7 @@ export default function VendorSelector({
       messageApi?.error(
         `Failed to update vendor: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     },
   });
@@ -130,7 +130,7 @@ export default function VendorSelector({
       messageApi?.error(
         `Failed to delete vendor: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     },
   });

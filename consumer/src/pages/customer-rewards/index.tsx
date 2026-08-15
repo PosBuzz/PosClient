@@ -1,35 +1,35 @@
 import {
-    GiftOutlined,
-    HistoryOutlined,
-    MinusOutlined,
-    PlusOutlined
+  GiftOutlined,
+  HistoryOutlined,
+  MinusOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import {
-    Button,
-    Card,
-    Col,
-    Form,
-    Input,
-    InputNumber,
-    Modal,
-    Row,
-    Space,
-    Table,
-    Tag,
-    Tooltip,
-    Typography
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { rewardsApi } from "../../api/rewards.api";
 import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
 import {
-    AdjustPointsDto,
-    CustomerRewardsPoints,
-    RedeemPointsDto,
-    RewardsFilters,
-    RewardsPointTransaction,
-    RewardsTransactionType,
+  AdjustPointsDto,
+  CustomerRewardsPoints,
+  RedeemPointsDto,
+  RewardsFilters,
+  RewardsPointTransaction,
+  RewardsTransactionType,
 } from "../../types/rewards.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -57,7 +57,7 @@ const CustomerRewardsPage: React.FC = () => {
     useState<CustomerRewardsPoints | null>(null);
   const [processing, setProcessing] = useState(false);
   const [transactions, setTransactions] = useState<RewardsPointTransaction[]>(
-    []
+    [],
   );
   const [transactionLoading, setTransactionLoading] = useState(false);
 
@@ -111,7 +111,9 @@ const CustomerRewardsPage: React.FC = () => {
       redeemForm.resetFields();
       loadCustomers();
     } catch (error: any) {
-      messageApi?.error(error.response?.data?.message || "Failed to redeem points");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to redeem points",
+      );
     } finally {
       setProcessing(false);
     }
@@ -128,7 +130,9 @@ const CustomerRewardsPage: React.FC = () => {
       adjustForm.resetFields();
       loadCustomers();
     } catch (error: any) {
-      messageApi?.error(error.response?.data?.message || "Failed to adjust points");
+      messageApi?.error(
+        error.response?.data?.message || "Failed to adjust points",
+      );
     } finally {
       setProcessing(false);
     }
@@ -309,7 +313,6 @@ const CustomerRewardsPage: React.FC = () => {
       <Row gutter={[24, 24]}>
         <Col span={24}>
           <Card>
-
             <div style={{ marginBottom: 16 }}>
               <Search
                 placeholder="Search customers by name, phone, or email"
@@ -555,8 +558,8 @@ const CustomerRewardsPage: React.FC = () => {
                         type === RewardsTransactionType.EARN
                           ? "green"
                           : type === RewardsTransactionType.REDEEM
-                          ? "orange"
-                          : "blue"
+                            ? "orange"
+                            : "blue"
                       }
                     >
                       {type}
@@ -575,16 +578,16 @@ const CustomerRewardsPage: React.FC = () => {
                           record.type === RewardsTransactionType.EARN
                             ? "#52c41a"
                             : record.type === RewardsTransactionType.REDEEM
-                            ? "#fa8c16"
-                            : "#1890ff",
+                              ? "#fa8c16"
+                              : "#1890ff",
                         fontWeight: 500,
                       }}
                     >
                       {record.type === RewardsTransactionType.EARN
                         ? "+"
                         : record.type === RewardsTransactionType.REDEEM
-                        ? "-"
-                        : ""}
+                          ? "-"
+                          : ""}
                       {Math.abs(points).toLocaleString()}
                     </Text>
                   ),

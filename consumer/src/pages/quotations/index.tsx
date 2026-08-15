@@ -113,7 +113,6 @@ const QuotationsTable = () => {
     }
   };
 
-
   const columns = [
     {
       title: "Quotation #",

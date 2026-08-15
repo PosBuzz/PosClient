@@ -8,7 +8,6 @@ import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
-
 interface VendorFormValues {
   id: number;
   name: string;
@@ -38,7 +37,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createVendor, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createVendor, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor created successfully");
@@ -47,7 +47,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create vendor"
+        error.response?.data?.message || "Failed to create vendor",
       );
     },
   });
@@ -63,7 +63,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update vendor"
+        error.response?.data?.message || "Failed to update vendor",
       );
     },
   });

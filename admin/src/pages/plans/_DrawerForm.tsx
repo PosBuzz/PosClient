@@ -48,7 +48,10 @@ export default function DrawerForm({
     },
   });
 
-  const permissionOptions: any = useModelOptions(`${endpoints.plan}/permissions`, "action");
+  const permissionOptions: any = useModelOptions(
+    `${endpoints.plan}/permissions`,
+    "action",
+  );
 
   const onFinish = async (formValues: any) => {
     const payload = {
@@ -86,7 +89,7 @@ export default function DrawerForm({
         price: editedItem.price,
         max_products: editedItem.max_products ?? undefined,
         permission_ids: editedItem.permissions?.map(
-          (p: any) => p.permission_id
+          (p: any) => p.permission_id,
         ),
       });
     } else {
@@ -141,7 +144,10 @@ export default function DrawerForm({
             rules={[
               {
                 validator: (_, value) =>
-                  value === undefined || value === null || value === "" || +value >= 1
+                  value === undefined ||
+                  value === null ||
+                  value === "" ||
+                  +value >= 1
                     ? Promise.resolve()
                     : Promise.reject(new Error("Must be at least 1")),
               },
@@ -168,7 +174,7 @@ export default function DrawerForm({
               optionFilterProp="label"
               filterSort={(
                 optionA: { label?: string },
-                optionB: { label?: string }
+                optionB: { label?: string },
               ) =>
                 (optionA?.label ?? "")
                   .toLowerCase()

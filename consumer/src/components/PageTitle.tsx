@@ -16,8 +16,6 @@ interface PageTitleProps {
   rightSection?: ReactNode;
 }
 
-
-
 function itemRender(
   route: Partial<BreadcrumbItemType>,
   _params: unknown,

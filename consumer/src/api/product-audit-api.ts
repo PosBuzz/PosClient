@@ -15,7 +15,9 @@ const getAuditData = async (query: ProductAuditQuery) => {
     end_date: query.end_date,
   };
   if (query.branch_id) params.branch_id = query.branch_id;
-  const { data } = await axiosInstance.get(endpoints.getProductAudit, { params });
+  const { data } = await axiosInstance.get(endpoints.getProductAudit, {
+    params,
+  });
   return data;
 };
 
@@ -36,7 +38,8 @@ const downloadAuditPdf = async (query: ProductAuditQuery): Promise<void> => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const disposition = response.headers["content-disposition"] as string | undefined;
+  const disposition = response.headers["content-disposition"] as
+    string | undefined;
   const match = disposition?.match(/filename="?([^"]+)"?/);
   a.download = match ? match[1] : `product-audit.pdf`;
   a.click();

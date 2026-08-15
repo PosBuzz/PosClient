@@ -22,7 +22,7 @@ const SideBar: React.FC = () => {
     setSelectedKeys([currentKey]);
 
     const parentKey = menuItems.find((item) =>
-      item?.children?.some((child) => child.key === currentKey)
+      item?.children?.some((child) => child.key === currentKey),
     )?.key;
 
     if (parentKey) {

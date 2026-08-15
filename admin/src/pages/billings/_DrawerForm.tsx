@@ -126,7 +126,7 @@ export default function DrawerForm({
               optionFilterProp="label"
               filterSort={(
                 optionA: { label?: string },
-                optionB: { label?: string }
+                optionB: { label?: string },
               ) =>
                 (optionA?.label ?? "")
                   .toLowerCase()

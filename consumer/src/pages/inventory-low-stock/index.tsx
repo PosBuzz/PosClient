@@ -74,7 +74,7 @@ export default function InventoryLowStockPage() {
   // Debounce search
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export default function InventoryLowStockPage() {
               <Space>
                 <Progress
                   percent={Number(
-                    Math.min(stockRatio * 100, 100).toPrecision(4)
+                    Math.min(stockRatio * 100, 100).toPrecision(4),
                   )}
                   strokeColor={urgency.color}
                   size="small"
@@ -204,8 +204,8 @@ export default function InventoryLowStockPage() {
                     urgency.level === "critical"
                       ? "red"
                       : urgency.level === "warning"
-                      ? "orange"
-                      : "yellow"
+                        ? "orange"
+                        : "yellow"
                   }
                 >
                   {urgency.text}
@@ -222,7 +222,7 @@ export default function InventoryLowStockPage() {
                   key: branchName,
                   branch_name: branchName,
                   stock,
-                })
+                }),
               )}
               rowKey="key"
               pagination={false}
@@ -375,8 +375,8 @@ export default function InventoryLowStockPage() {
               urgency.level === "critical"
                 ? "red"
                 : urgency.level === "warning"
-                ? "orange"
-                : "yellow"
+                  ? "orange"
+                  : "yellow"
             }
           >
             {percentage}%
@@ -401,8 +401,8 @@ export default function InventoryLowStockPage() {
               urgency.level === "critical"
                 ? "red"
                 : urgency.level === "warning"
-                ? "orange"
-                : "yellow"
+                  ? "orange"
+                  : "yellow"
             }
             icon={urgency.icon}
           >
@@ -416,7 +416,8 @@ export default function InventoryLowStockPage() {
         const urgencyB = getUrgencyConfig(b);
         return urgencyOrder[urgencyB.level] - urgencyOrder[urgencyA.level];
       },
-      defaultSortOrder: "ascend",    },
+      defaultSortOrder: "ascend",
+    },
     {
       title: "Affected Branch",
       key: "affected_branch",
@@ -436,7 +437,11 @@ export default function InventoryLowStockPage() {
                 {branchName}: {stock} units
               </Tag>
             ));
-          return <Space direction="vertical" size={2}>{lowStockBranches}</Space>;
+          return (
+            <Space direction="vertical" size={2}>
+              {lowStockBranches}
+            </Space>
+          );
         }
       },
     },
@@ -494,13 +499,13 @@ export default function InventoryLowStockPage() {
   }
 
   const criticalCount = filteredData.filter(
-    (item) => getUrgencyConfig(item).level === "critical"
+    (item) => getUrgencyConfig(item).level === "critical",
   ).length;
   const warningCount = filteredData.filter(
-    (item) => getUrgencyConfig(item).level === "warning"
+    (item) => getUrgencyConfig(item).level === "warning",
   ).length;
   const attentionCount = filteredData.filter(
-    (item) => getUrgencyConfig(item).level === "attention"
+    (item) => getUrgencyConfig(item).level === "attention",
   ).length;
 
   return (
@@ -672,7 +677,9 @@ export default function InventoryLowStockPage() {
         )}
       </Card>
       {/* Table */}
-      <Card style={getCardStyle()}>        <Table
+      <Card style={getCardStyle()}>
+        {" "}
+        <Table
           columns={columns}
           dataSource={filteredData}
           rowKey={(record) => record.unique_key || record.id.toString()}

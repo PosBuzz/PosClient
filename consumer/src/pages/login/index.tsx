@@ -28,7 +28,7 @@ export default function LoginPage() {
       navigate(from);
     } catch (err) {
       messageApi?.error(
-        (err as any)?.response?.data?.message || "Login failed"
+        (err as any)?.response?.data?.message || "Login failed",
       );
     } finally {
       setLoading(false);

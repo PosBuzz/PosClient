@@ -8,7 +8,8 @@ interface ProductImageCardProps {
 }
 
 const ProductImageCard: React.FC<ProductImageCardProps> = ({ product }) => {
-  const mainVariant = product.variants?.find((v) => v.is_default) || product.variants?.[0];
+  const mainVariant =
+    product.variants?.find((v) => v.is_default) || product.variants?.[0];
 
   return (
     <Card bodyStyle={{ padding: 0 }} className="product-image-card">

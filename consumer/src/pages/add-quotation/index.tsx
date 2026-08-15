@@ -118,8 +118,17 @@ const NewQuotation = () => {
     staleTime: 0,
   });
 
-  const upsertFn = (items: SaleItem[], variant: ProductVariantForSale, qty: number) =>
-    upsertSaleItemVariant({ sourceItems: items, variant, quantityToAdd: qty, priceType });
+  const upsertFn = (
+    items: SaleItem[],
+    variant: ProductVariantForSale,
+    qty: number,
+  ) =>
+    upsertSaleItemVariant({
+      sourceItems: items,
+      variant,
+      quantityToAdd: qty,
+      priceType,
+    });
 
   const getVariantPriceFn = (variant: ProductVariantForSale) =>
     getVariantPriceForSale(variant, priceType);
@@ -252,9 +261,7 @@ const NewQuotation = () => {
             ? (baseAmount * taxPercentage) / 100
             : (baseAmount * taxPercentage) / 100;
         const lineTotal =
-          taxMethod === "INCLUSIVE"
-            ? baseAmount
-            : baseAmount + taxAmount;
+          taxMethod === "INCLUSIVE" ? baseAmount : baseAmount + taxAmount;
 
         return {
           variant_id: item.variant_id,
@@ -264,8 +271,9 @@ const NewQuotation = () => {
           unit_price: Number(baseUnitPrice) || 0,
           average_discount_amount: Number(item.average_discount_amount || 0),
           special_discount_amount: Number(item.special_discount_amount || 0),
-          promotion_discount_amount:
-            Number(item.promotion_discount_amount || 0),
+          promotion_discount_amount: Number(
+            item.promotion_discount_amount || 0,
+          ),
           applied_promotion_id: item.applied_promotion_id || undefined,
           tax_amount: Number(taxAmount) || 0,
           line_total: Number(lineTotal) || 0,
@@ -303,7 +311,6 @@ const NewQuotation = () => {
         isHydratingFromCopyRef.current = false;
       }, 0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     copyFromQuotationQuery.data,
     selectedBranch,
@@ -320,7 +327,12 @@ const NewQuotation = () => {
   const addToQuotation = (variant: ProductVariantForSale) => {
     hasManualCartMutationRef.current = true;
     setSelectedItems((items) =>
-      upsertSaleItemVariant({ sourceItems: items, variant, quantityToAdd: 1, priceType }),
+      upsertSaleItemVariant({
+        sourceItems: items,
+        variant,
+        quantityToAdd: 1,
+        priceType,
+      }),
     );
   };
 

@@ -53,11 +53,7 @@ const getError = (
   variantId: string,
   index: number,
   field:
-    | "branch_id"
-    | "batch_number"
-    | "quantity"
-    | "cost_price"
-    | "expiry_date",
+    "branch_id" | "batch_number" | "quantity" | "cost_price" | "expiry_date",
 ) => {
   // Validation keys encode variant + batch row index + field name.
   const key = `variant_${variantId}_batch_${index}_${field}`;
@@ -114,8 +110,12 @@ export default function VariantBatchSection({
       next[index].payments?.length === 1 &&
       next[index].payments![0].payment_method === PaymentMethod.CASH
     ) {
-      const qty = field === "quantity" ? (value as number) || 0 : next[index].quantity;
-      const cost = field === "cost_price" ? Number(value) || 0 : Number(next[index].cost_price);
+      const qty =
+        field === "quantity" ? (value as number) || 0 : next[index].quantity;
+      const cost =
+        field === "cost_price"
+          ? Number(value) || 0
+          : Number(next[index].cost_price);
       const updatedPayments = [...next[index].payments!];
       updatedPayments[0] = { ...updatedPayments[0], amount: qty * cost };
       next[index] = { ...next[index], payments: updatedPayments };
@@ -124,10 +124,7 @@ export default function VariantBatchSection({
     onChange(next);
   };
 
-  const updateBatchPayments = (
-    index: number,
-    payments: PurchasePayment[],
-  ) => {
+  const updateBatchPayments = (index: number, payments: PurchasePayment[]) => {
     const next = [...batches];
     next[index] = { ...next[index], payments };
     onChange(next);
@@ -160,10 +157,7 @@ export default function VariantBatchSection({
           (Number(batch.cost_price) || 0) * (batch.quantity || 0);
 
         return (
-          <Card
-            key={`${variantId}-batch-${index}`}
-            size="small"
-          >
+          <Card key={`${variantId}-batch-${index}`} size="small">
             {/* Main batch row */}
             <Row gutter={[8, 8]} align="middle">
               <Col xs={24} md={4} style={{ minWidth: 0 }}>
@@ -184,11 +178,13 @@ export default function VariantBatchSection({
                 />
                 {getError(validationState, variantId, index, "branch_id")
                   .help && (
-                    <Text type="danger">
-                      {getError(validationState, variantId, index, "branch_id")
-                        .help}
-                    </Text>
-                  )}
+                  <Text type="danger">
+                    {
+                      getError(validationState, variantId, index, "branch_id")
+                        .help
+                    }
+                  </Text>
+                )}
               </Col>
 
               <Col xs={24} md={4} style={{ minWidth: 0 }}>
@@ -198,8 +194,12 @@ export default function VariantBatchSection({
                     value={batch.batch_number}
                     placeholder="Generate batch"
                     status={
-                      getError(validationState, variantId, index, "batch_number")
-                        .status
+                      getError(
+                        validationState,
+                        variantId,
+                        index,
+                        "batch_number",
+                      ).status
                     }
                     onChange={(event) =>
                       updateBatch(index, "batch_number", event.target.value)
@@ -214,13 +214,17 @@ export default function VariantBatchSection({
                 </Space.Compact>
                 {getError(validationState, variantId, index, "batch_number")
                   .help && (
-                    <Text type="danger">
-                      {
-                        getError(validationState, variantId, index, "batch_number")
-                          .help
-                      }
-                    </Text>
-                  )}
+                  <Text type="danger">
+                    {
+                      getError(
+                        validationState,
+                        variantId,
+                        index,
+                        "batch_number",
+                      ).help
+                    }
+                  </Text>
+                )}
               </Col>
 
               <Col xs={24} md={4} style={{ minWidth: 0 }}>
@@ -236,11 +240,17 @@ export default function VariantBatchSection({
                     getError(validationState, variantId, index, "quantity")
                       .status
                   }
-                  onChange={(value) => updateBatch(index, "quantity", value || 1)}
+                  onChange={(value) =>
+                    updateBatch(index, "quantity", value || 1)
+                  }
                 />
-                {getError(validationState, variantId, index, "quantity").help && (
+                {getError(validationState, variantId, index, "quantity")
+                  .help && (
                   <Text type="danger">
-                    {getError(validationState, variantId, index, "quantity").help}
+                    {
+                      getError(validationState, variantId, index, "quantity")
+                        .help
+                    }
                   </Text>
                 )}
               </Col>
@@ -266,16 +276,22 @@ export default function VariantBatchSection({
                       .status
                   }
                   onChange={(value) =>
-                    updateBatch(index, "cost_price", value === null ? null : value)
+                    updateBatch(
+                      index,
+                      "cost_price",
+                      value === null ? null : value,
+                    )
                   }
                 />
                 {getError(validationState, variantId, index, "cost_price")
                   .help && (
-                    <Text type="danger">
-                      {getError(validationState, variantId, index, "cost_price")
-                        .help}
-                    </Text>
-                  )}
+                  <Text type="danger">
+                    {
+                      getError(validationState, variantId, index, "cost_price")
+                        .help
+                    }
+                  </Text>
+                )}
               </Col>
 
               <Col xs={24} md={4} style={{ minWidth: 0 }}>
@@ -314,11 +330,13 @@ export default function VariantBatchSection({
                 />
                 {getError(validationState, variantId, index, "expiry_date")
                   .help && (
-                    <Text type="danger">
-                      {getError(validationState, variantId, index, "expiry_date")
-                        .help}
-                    </Text>
-                  )}
+                  <Text type="danger">
+                    {
+                      getError(validationState, variantId, index, "expiry_date")
+                        .help
+                    }
+                  </Text>
+                )}
               </Col>
 
               <Col

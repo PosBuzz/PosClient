@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Col, Input, Row, Select } from "antd";
@@ -37,7 +36,7 @@ const Billings = () => {
             ? { consumer_ids: consumerFilter.join(",") }
             : {}),
           ...(referenceFilter ? { reference: referenceFilter } : {}),
-        })}`
+        })}`,
       ),
   });
 
@@ -45,8 +44,7 @@ const Billings = () => {
 
   const { data: consumers } = useQuery({
     queryKey: [ConsumersKey],
-    queryFn: () =>
-      get(endpoints.consumer),
+    queryFn: () => get(endpoints.consumer),
   });
 
   const consumerOptions =

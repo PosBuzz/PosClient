@@ -64,7 +64,7 @@ export default function AddInventoryTransfer() {
     debounce((value: string) => {
       setDebouncedSearchText(value);
     }, 300),
-    []
+    [],
   );
 
   // Cleanup debounced function on unmount
@@ -127,7 +127,7 @@ export default function AddInventoryTransfer() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create transfer"
+        error.response?.data?.message || "Failed to create transfer",
       );
     },
   });
@@ -139,7 +139,7 @@ export default function AddInventoryTransfer() {
 
   const handleAddItem = (batch: InventoryBatch) => {
     const existingItem = selectedItems.find(
-      (item) => item.batch_id === batch.id
+      (item) => item.batch_id === batch.id,
     );
 
     if (existingItem) {
@@ -165,8 +165,8 @@ export default function AddInventoryTransfer() {
   const handleQuantityChange = (key: string, quantity: number) => {
     setSelectedItems(
       selectedItems.map((item) =>
-        item.key === key ? { ...item, quantity } : item
-      )
+        item.key === key ? { ...item, quantity } : item,
+      ),
     );
   };
 
@@ -188,7 +188,7 @@ export default function AddInventoryTransfer() {
 
     // Validate quantities
     const invalidItems = selectedItems.filter(
-      (item) => item.quantity <= 0 || item.quantity > item.max_quantity
+      (item) => item.quantity <= 0 || item.quantity > item.max_quantity,
     );
 
     if (invalidItems.length > 0) {
@@ -331,7 +331,7 @@ export default function AddInventoryTransfer() {
 
   const totalTransferValue = selectedItems.reduce(
     (sum, item) => sum + parseFloat(item.batch.cost_price) * item.quantity,
-    0
+    0,
   );
 
   // Helper function to get branch name
@@ -494,7 +494,7 @@ export default function AddInventoryTransfer() {
                     <Text>
                       {selectedItems.reduce(
                         (sum, item) => sum + item.quantity,
-                        0
+                        0,
                       )}
                     </Text>
                   </div>

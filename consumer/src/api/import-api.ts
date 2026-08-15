@@ -35,10 +35,7 @@ export const IMPORT_LABELS: Record<ImportEntity, string> = {
   customers: "Customers",
 };
 
-async function upload(
-  url: string,
-  file: File | Blob,
-): Promise<ImportResult> {
+async function upload(url: string, file: File | Blob): Promise<ImportResult> {
   const formData = new FormData();
   formData.append("file", file);
 

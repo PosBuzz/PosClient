@@ -42,9 +42,9 @@ export const usePromotionManager = ({
   const [dismissedAutoPromotionIds, setDismissedAutoPromotionIds] = useState<
     number[]
   >([]);
-  const [applyingPromotionId, setApplyingPromotionId] = useState<
-    number | null
-  >(null);
+  const [applyingPromotionId, setApplyingPromotionId] = useState<number | null>(
+    null,
+  );
   const [promotionEligibilityMap, setPromotionEligibilityMap] = useState<
     Record<number, { is_eligible: boolean; reason?: string }>
   >({});
@@ -135,7 +135,6 @@ export const usePromotionManager = ({
     };
 
     tryAutoApplyPromotions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedItems,
     selectedBranch,
@@ -163,7 +162,10 @@ export const usePromotionManager = ({
 
       const evaluations = await Promise.all(
         activePromotionsQuery.data.map(async (promotion) => {
-          const validation = evaluatePromotionForItems(promotion, selectedItems);
+          const validation = evaluatePromotionForItems(
+            promotion,
+            selectedItems,
+          );
           return [promotion.id, validation] as const;
         }),
       );
@@ -215,7 +217,6 @@ export const usePromotionManager = ({
         `Removed ineligible promotions: ${removed.join(", ")}`,
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     appliedPromotions,
     selectedItems,

@@ -21,14 +21,15 @@ export default function TableGrid({ onClickEdit }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: any) => await deleteApi(endpoints.deleteCategory(id)),
+    mutationFn: async (id: any) =>
+      await deleteApi(endpoints.deleteCategory(id)),
     onSuccess: () => {
       messageApi?.success("Category deleted successfully");
       refetch();
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete category"
+        error.response?.data?.message || "Failed to delete category",
       );
     },
   });

@@ -58,7 +58,7 @@ export default function TableGrid({
   // Debounced API call function using lodash's debounce
   const debouncedSearch = useCallback(
     debounce((nextValue) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -84,10 +84,9 @@ export default function TableGrid({
           ...(selectedStatus ? { status: String(selectedStatus) } : {}),
           ...(selectedPlan ? { plan_id: String(selectedPlan) } : {}),
           ...(showingDeleted ? { deleted: "true" } : {}),
-        } as Record<string, string>)}`
+        } as Record<string, string>)}`,
       ),
   });
-
 
   const getBillingHistory = async (consumer_id: any, openInNewTab: boolean) => {
     try {
@@ -128,7 +127,7 @@ export default function TableGrid({
         `${endpoints.downloadBillingHistoryExcel}/${consumer_id}`, // or your actual route
         {
           responseType: "blob", // Important for binary file
-        }
+        },
       );
 
       let filename = `billing-history-${consumer_id}.xlsx`;
@@ -187,7 +186,7 @@ export default function TableGrid({
     },
     onError: (e: any) => {
       messageApi?.error(
-        e?.response?.data?.message || "Failed to permanently delete consumer"
+        e?.response?.data?.message || "Failed to permanently delete consumer",
       );
     },
   });
@@ -202,7 +201,7 @@ export default function TableGrid({
       title: "Owner Name",
       render: (record: any) => {
         const adminUser = record.users?.find(
-          (user: any) => user.role?.name === "Admin"
+          (user: any) => user.role?.name === "Admin",
         );
         return adminUser ? adminUser.name : "-";
       },
@@ -220,7 +219,9 @@ export default function TableGrid({
         }
 
         return (
-          <Tag color={used >= max ? "red" : used >= max * 0.8 ? "orange" : "blue"}>
+          <Tag
+            color={used >= max ? "red" : used >= max * 0.8 ? "orange" : "blue"}
+          >
             {used} / {max}
           </Tag>
         );
@@ -274,8 +275,8 @@ export default function TableGrid({
             dayjs().subtract(1, "month"),
             dayjs(),
             null,
-            "[]"
-          )
+            "[]",
+          ),
         );
 
         return (

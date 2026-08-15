@@ -14,16 +14,13 @@ export default function CacheInvalidationButton({
   const [messageApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
 
-
   const handleClearAll = async () => {
-     await queryClient.invalidateQueries();
-      messageApi.success({
-        content: `All admin caches cleared!`,
-        duration: 3,
-      });
+    await queryClient.invalidateQueries();
+    messageApi.success({
+      content: `All admin caches cleared!`,
+      duration: 3,
+    });
   };
-
-  
 
   return (
     <>
@@ -32,8 +29,8 @@ export default function CacheInvalidationButton({
         <Button
           type={type}
           size={size}
-          icon={<ReloadOutlined  />}
-        
+          icon={<ReloadOutlined />}
+
           onClick={handleClearAll}
         />
       </Tooltip>

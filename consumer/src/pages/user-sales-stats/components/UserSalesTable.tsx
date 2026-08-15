@@ -21,7 +21,6 @@ const UserSalesTable: React.FC<UserSalesTableProps> = ({
   const navigate = useNavigate();
 
   const handleViewDetails = (record: any) => {
-
     navigate(`/user-sales-stats/${record.id}`, {
       state: {
         startDate: dateRange[0].format("YYYY-MM-DD"),

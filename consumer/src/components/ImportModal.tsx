@@ -104,9 +104,7 @@ export default function ImportModal({
       }
     },
     onError: (error: unknown) =>
-      messageApi?.error(
-        apiMessage(error, "Import failed, nothing was saved"),
-      ),
+      messageApi?.error(apiMessage(error, "Import failed, nothing was saved")),
   });
 
   const handleFile = useCallback(
@@ -204,7 +202,9 @@ export default function ImportModal({
           disabled={busy}
           fileList={
             file
-              ? ([{ uid: "1", name: file.name, status: "done" }] as UploadFile[])
+              ? ([
+                  { uid: "1", name: file.name, status: "done" },
+                ] as UploadFile[])
               : []
           }
           beforeUpload={(picked) => {
@@ -262,9 +262,7 @@ export default function ImportModal({
               dataSource={result!.errors}
               rowKey={(row, index) => `${row.row}-${row.column}-${index}`}
               size="small"
-              pagination={
-                result!.errors.length > 10 ? { pageSize: 10 } : false
-              }
+              pagination={result!.errors.length > 10 ? { pageSize: 10 } : false}
               scroll={{ y: 260 }}
             />
           </>

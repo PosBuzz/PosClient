@@ -150,7 +150,9 @@ export const mapProductToFormState = (product: Product): ProductFormState => {
   };
 };
 
-export const mapProductToCopyFormState = (product: Product): ProductFormState => {
+export const mapProductToCopyFormState = (
+  product: Product,
+): ProductFormState => {
   // Copies reusable catalogue details while regenerating create-only identifiers.
   const copiedState = mapProductToFormState(product);
   const productPrefix = "PRD";

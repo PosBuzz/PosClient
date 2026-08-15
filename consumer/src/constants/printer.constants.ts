@@ -1,21 +1,21 @@
 export const PRINTER_CONFIG = {
   // Default agent settings
-  DEFAULT_AGENT_URL: 'http://localhost:8080',
-  
+  DEFAULT_AGENT_URL: "http://localhost:8080",
+
   // Agent endpoints
   AGENT_ENDPOINTS: {
-    PRINT: '/print',
-    STATUS: '/status',
-    CONFIG: '/config',
+    PRINT: "/print",
+    STATUS: "/status",
+    CONFIG: "/config",
   },
-  
+
   // Timeout settings
   AGENT_TIMEOUT: 5000, // 5 seconds
-  
+
   // Default receipt settings
   DEFAULT_RECEIPT_SETTINGS: {
-    defaultCustomerName: 'Walk-in Customer',
-    thankYouMessage: 'Thank you for your business!',
+    defaultCustomerName: "Walk-in Customer",
+    thankYouMessage: "Thank you for your business!",
   },
 } as const;
 

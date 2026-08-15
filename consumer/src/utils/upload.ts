@@ -14,15 +14,16 @@ export const uploadToCloudinary = async (file) => {
         {
           method: "POST",
           body: formData,
-        }
+        },
       )
         .then((response) => response.json())
         .then((result) => {
           // Check if eager transformations exist and use the first one's secure_url if available
-          const eagerSecureUrl = result.eager && result.eager.length > 0 
-            ? result.eager[0].secure_url 
-            : null;
-            
+          const eagerSecureUrl =
+            result.eager && result.eager.length > 0
+              ? result.eager[0].secure_url
+              : null;
+
           resolve({
             success: true,
             data: {
@@ -76,7 +77,7 @@ export const getImageUrlForCloudinaryImage = (formValues, fileInputName) => {
 
 export const getImageUrlForCloudinaryImageMultiple = (
   formValues,
-  fileInputName
+  fileInputName,
 ) => {
   if (formValues[fileInputName] && Array.isArray(formValues[fileInputName])) {
     // Map over all files and extract the URL or thumbUrl

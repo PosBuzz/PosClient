@@ -20,7 +20,7 @@ function itemRender(
   route: Partial<BreadcrumbItemType>,
   _params: any,
   routes: Partial<BreadcrumbItemType>[],
-  paths: string[]
+  paths: string[],
 ): ReactNode {
   void paths;
   const isLast = routes.indexOf(route) === routes.length - 1;

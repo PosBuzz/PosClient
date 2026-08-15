@@ -75,7 +75,8 @@ const SaleDetail: React.FC = () => {
   const loading = saleQuery.isLoading;
 
   const updateNoteMutation = useMutation({
-    mutationFn: (notes: string) => salesApi.updateSaleNote(parseInt(id!), notes),
+    mutationFn: (notes: string) =>
+      salesApi.updateSaleNote(parseInt(id!), notes),
     onSuccess: () => {
       message.success("Note updated");
       setIsEditingNote(false);
@@ -95,7 +96,9 @@ const SaleDetail: React.FC = () => {
       (sum: number, item: any) =>
         sum + (Number(item.promotion_discount_amount) || 0),
       0,
-    ) || Number(sale?.promotion_discount) || 0;
+    ) ||
+    Number(sale?.promotion_discount) ||
+    0;
   const averageDiscount =
     sale?.items?.reduce(
       (sum: number, item: any) =>
@@ -220,7 +223,6 @@ const SaleDetail: React.FC = () => {
     if (!sale) return;
 
     try {
-
       const customerRewards = sale.customer?.rewards_points;
       const amountPaid = Number(sale?.received_amount) || 0;
       const correctTotal = getCorrectTotal(sale);
@@ -248,7 +250,8 @@ const SaleDetail: React.FC = () => {
         cashier: sale.user?.name || sale.user_name || "Staff",
         servedBy: sale.served_by?.name || undefined,
         customer: sale.customer_name || "Walk-in Customer",
-        customerName: sale.customer_name || sale.customer?.name || "Walk-in Customer",
+        customerName:
+          sale.customer_name || sale.customer?.name || "Walk-in Customer",
         customerPhone: sale.customer_phone || sale.customer?.phone || "",
         customerEmail: sale.customer_email || sale.customer?.email || "",
         rewardPoints: customerRewards?.total_points,
@@ -273,17 +276,26 @@ const SaleDetail: React.FC = () => {
             const quantity = Number(item.quantity) || 0;
             const unitPrice = Number(item.unit_price) || 0;
             const grossLineTotal = unitPrice * quantity;
-            const averageDiscountAmount = Number(item.average_discount_amount) || 0;
-            const specialDiscountAmount = Number(item.special_discount_amount) || 0;
-            const promotionDiscountAmount = Number(item.promotion_discount_amount) || 0;
+            const averageDiscountAmount =
+              Number(item.average_discount_amount) || 0;
+            const specialDiscountAmount =
+              Number(item.special_discount_amount) || 0;
+            const promotionDiscountAmount =
+              Number(item.promotion_discount_amount) || 0;
             const discountAmount =
-              averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
+              averageDiscountAmount +
+              specialDiscountAmount +
+              promotionDiscountAmount;
             const taxAmount = Number(item.tax_amount) || 0;
             const taxMethod = item.variant?.product?.tax_method || "exclusive";
-            const isInclusiveTax = String(taxMethod).toLowerCase().startsWith("inc");
+            const isInclusiveTax = String(taxMethod)
+              .toLowerCase()
+              .startsWith("inc");
             const computedLineTotal = Math.max(
               0,
-              grossLineTotal - discountAmount + (isInclusiveTax ? 0 : taxAmount),
+              grossLineTotal -
+                discountAmount +
+                (isInclusiveTax ? 0 : taxAmount),
             );
 
             return {
@@ -552,11 +564,19 @@ const SaleDetail: React.FC = () => {
       dataIndex: "tax_amount",
       key: "tax_amount",
       render: (tax: number, record: any) => {
-        const isInc = String(record.tax_method || "").toLowerCase().startsWith("inc");
+        const isInc = String(record.tax_method || "")
+          .toLowerCase()
+          .startsWith("inc");
         return (
           <div>
             <Money value={tax} />
-            <span style={{ marginLeft: 4, fontSize: 11, color: isInc ? "#389e0d" : "#cf1322" }}>
+            <span
+              style={{
+                marginLeft: 4,
+                fontSize: 11,
+                color: isInc ? "#389e0d" : "#cf1322",
+              }}
+            >
               ({isInc ? "inc" : "exc"})
             </span>
           </div>
@@ -568,7 +588,9 @@ const SaleDetail: React.FC = () => {
       dataIndex: "line_total",
       key: "line_total",
       render: (total: number) => (
-        <Text strong><Money value={total} /></Text>
+        <Text strong>
+          <Money value={total} />
+        </Text>
       ),
     },
   ];
@@ -644,7 +666,8 @@ const SaleDetail: React.FC = () => {
               Deleted by {sale.deleted_by?.name || "unknown"} on{" "}
               {dayjs(sale.deleted_at).format("DD/MM/YYYY HH:mm")}
               {sale.delete_reason ? ` — ${sale.delete_reason}` : ""}. Its stock
-              has been returned to inventory and it is excluded from all reports.
+              has been returned to inventory and it is excluded from all
+              reports.
             </>
           }
         />

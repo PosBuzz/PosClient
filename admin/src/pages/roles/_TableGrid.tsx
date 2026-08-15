@@ -18,8 +18,7 @@ export default function _TableGrid({ model, onClickEdit }) {
     refetch,
   } = useQuery({
     queryKey: [KEY],
-    queryFn: () =>
-      get(endpoints.role),
+    queryFn: () => get(endpoints.role),
   });
 
   const deleteMutation = useMutation({

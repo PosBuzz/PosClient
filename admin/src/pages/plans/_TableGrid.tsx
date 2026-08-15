@@ -14,12 +14,11 @@ export default function _TableGrid({ model, onClickEdit }) {
   const {
     isLoading,
     isError,
-    data: fetchData, 
+    data: fetchData,
     refetch,
   } = useQuery({
     queryKey: [KEY],
-    queryFn: () =>
-      get(endpoints.plan),
+    queryFn: () => get(endpoints.plan),
   });
 
   const deleteMutation = useMutation({

@@ -5,5 +5,5 @@ import Providers from "./Providers.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Providers />
-  </StrictMode>
+  </StrictMode>,
 );

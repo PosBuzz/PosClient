@@ -23,7 +23,8 @@ const { Text } = Typography;
 const permissionGuide = {
   [Permissions.profile]: {
     title: "Profile",
-    summary: "Lets users access their own profile and password/security actions.",
+    summary:
+      "Lets users access their own profile and password/security actions.",
     gives: ["Personal profile", "Change password"],
   },
   [Permissions.companyProfile]: {
@@ -33,7 +34,8 @@ const permissionGuide = {
   },
   [Permissions.users]: {
     title: "Users & Roles",
-    summary: "Lets users manage staff accounts and roles. This is an admin-level permission.",
+    summary:
+      "Lets users manage staff accounts and roles. This is an admin-level permission.",
     gives: ["Users page", "Roles page", "Create and update roles"],
   },
   [Permissions.branches]: {
@@ -44,11 +46,16 @@ const permissionGuide = {
   [Permissions.add_product]: {
     title: "Add Product",
     summary: "Lets users create products and supporting product setup records.",
-    gives: ["Add product", "Barcode printing", "Categories, brands, tags, and units setup"],
+    gives: [
+      "Add product",
+      "Barcode printing",
+      "Categories, brands, tags, and units setup",
+    ],
   },
   [Permissions.view_product]: {
     title: "View Product",
-    summary: "Lets users view product catalog, product details, and product sales stats.",
+    summary:
+      "Lets users view product catalog, product details, and product sales stats.",
     gives: ["Product list", "Product details", "Variant sales stats"],
   },
   [Permissions.edit_product]: {
@@ -68,8 +75,14 @@ const permissionGuide = {
   },
   [Permissions.inventory_batches]: {
     title: "Inventory",
-    summary: "Lets users manage stock batches, stock reports, vendors from inventory, and purchase payments.",
-    gives: ["Add/view inventory", "Stock by variant", "Low/expiring stock", "Purchase payments"],
+    summary:
+      "Lets users manage stock batches, stock reports, vendors from inventory, and purchase payments.",
+    gives: [
+      "Add/view inventory",
+      "Stock by variant",
+      "Low/expiring stock",
+      "Purchase payments",
+    ],
   },
   [Permissions.inventory_transfer]: {
     title: "Inventory Transfer",
@@ -78,7 +91,8 @@ const permissionGuide = {
   },
   [Permissions.inventory_adjustment]: {
     title: "Inventory Adjustment",
-    summary: "Lets users adjust stock counts for correction, loss, or reconciliation.",
+    summary:
+      "Lets users adjust stock counts for correction, loss, or reconciliation.",
     gives: ["Add adjustment", "View adjustment records"],
   },
   [Permissions.vendors]: {
@@ -88,8 +102,15 @@ const permissionGuide = {
   },
   [Permissions.sales]: {
     title: "Sales",
-    summary: "Lets users run the POS sales workflow and related sales operations.",
-    gives: ["New/view sales", "Returns", "Due payments", "Promotions", "Sales targets and stats"],
+    summary:
+      "Lets users run the POS sales workflow and related sales operations.",
+    gives: [
+      "New/view sales",
+      "Returns",
+      "Due payments",
+      "Promotions",
+      "Sales targets and stats",
+    ],
   },
   [Permissions.quotations]: {
     title: "Quotations",
@@ -98,12 +119,14 @@ const permissionGuide = {
   },
   [Permissions.customers]: {
     title: "Customers",
-    summary: "Lets users manage customers, reward points, and customer reward data.",
+    summary:
+      "Lets users manage customers, reward points, and customer reward data.",
     gives: ["Customers page", "Reward points"],
   },
   [Permissions.receipt_settings]: {
     title: "Receipt & Printer Settings",
-    summary: "Lets users configure receipt templates and printer/PDF receipt settings.",
+    summary:
+      "Lets users configure receipt templates and printer/PDF receipt settings.",
     gives: ["Printer settings", "Receipt settings"],
   },
 };
@@ -176,7 +199,10 @@ export default function DrawerForm({
         ),
         children: (
           <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Text>{guide?.summary || "Controls access to this permission's related pages and actions."}</Text>
+            <Text>
+              {guide?.summary ||
+                "Controls access to this permission's related pages and actions."}
+            </Text>
             {guide?.gives?.length ? (
               <Space wrap size={[6, 6]}>
                 {guide.gives.map((item) => (
@@ -235,7 +261,7 @@ export default function DrawerForm({
       form.setFieldsValue({
         name: editedItem.name,
         permission_ids: editedItem.permissions?.map(
-          (p: any) => p.permission_id
+          (p: any) => p.permission_id,
         ),
       });
     } else {
@@ -288,7 +314,7 @@ export default function DrawerForm({
               optionFilterProp="searchText"
               filterSort={(
                 optionA: { displayLabel?: string },
-                optionB: { displayLabel?: string }
+                optionB: { displayLabel?: string },
               ) =>
                 (optionA?.displayLabel ?? "")
                   .toLowerCase()
@@ -322,7 +348,9 @@ export default function DrawerForm({
                   .map((item) => item.key)}
               />
             ) : (
-              <Text type="secondary">Permission guide will appear after permissions load.</Text>
+              <Text type="secondary">
+                Permission guide will appear after permissions load.
+              </Text>
             )}
           </Form.Item>
 

@@ -48,10 +48,10 @@ export interface CustomerRewardsPoints {
 }
 
 export enum RewardsTransactionType {
-  EARN = 'EARN',
-  REDEEM = 'REDEEM',
-  EXPIRE = 'EXPIRE',
-  ADJUSTMENT = 'ADJUSTMENT',
+  EARN = "EARN",
+  REDEEM = "REDEEM",
+  EXPIRE = "EXPIRE",
+  ADJUSTMENT = "ADJUSTMENT",
 }
 
 export interface RewardsPointTransaction {
@@ -107,7 +107,7 @@ export interface RewardsFilters {
   date_to?: string;
   type?: RewardsTransactionType;
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export interface RewardsListResponse<T> {

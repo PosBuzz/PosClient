@@ -10,22 +10,22 @@ interface InventoryTabProps {
 
 const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
   // Flatten all inventory items from all variants
-  const allInventoryItems = product.variants?.flatMap((variant) =>
-    variant.inventory_items?.map((item) => ({
-      ...item,
-      variant_name: variant.name,
-      variant_id: variant.id,
-      alert_quantity: variant.alert_quantity,
-    })) || []
-  ) || [];
+  const allInventoryItems =
+    product.variants?.flatMap(
+      (variant) =>
+        variant.inventory_items?.map((item) => ({
+          ...item,
+          variant_name: variant.name,
+          variant_id: variant.id,
+          alert_quantity: variant.alert_quantity,
+        })) || [],
+    ) || [];
 
   const inventoryColumns = [
     {
       title: "Variant",
       key: "variant",
-      render: (_, record) => (
-        <Text strong>{record.variant_name}</Text>
-      ),
+      render: (_, record) => <Text strong>{record.variant_name}</Text>,
     },
     {
       title: "Branch",
@@ -37,21 +37,23 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
           {record.branch?.is_main && <Tag color="green">Main</Tag>}
         </Space>
       ),
-    },    {
+    },
+    {
       title: "Quantity",
       dataIndex: "quantity",
       key: "quantity",
-      render: (quantity) => (
-        <Text>{quantity} units</Text>
-      ),
+      render: (quantity) => <Text>{quantity} units</Text>,
     },
     {
       title: "Batch Number",
       dataIndex: "batch_number",
       key: "batch_number",
-      render: (batchNumber) => (
-        batchNumber ? <Text code>{batchNumber}</Text> : <Text type="secondary">-</Text>
-      ),
+      render: (batchNumber) =>
+        batchNumber ? (
+          <Text code>{batchNumber}</Text>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: "Expiry Date",
@@ -59,19 +61,21 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
       key: "expiry_date",
       render: (expiryDate) => {
         if (!expiryDate) return <Text type="secondary">No expiry</Text>;
-        
+
         const expiry = new Date(expiryDate);
         const now = new Date();
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(now.getDate() + 30);
-        
+
         const isExpired = expiry <= now;
         const isExpiringSoon = expiry <= thirtyDaysFromNow && expiry > now;
-        
+
         return (
           <Space>
-            <Text 
-              type={isExpired ? "danger" : isExpiringSoon ? "warning" : undefined}
+            <Text
+              type={
+                isExpired ? "danger" : isExpiringSoon ? "warning" : undefined
+              }
             >
               {formatDate(expiryDate)}
             </Text>
@@ -86,9 +90,11 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
       key: "vendor",
       render: (_, record) => {
         if (!record.vendor) return <Text type="secondary">No vendor</Text>;
-        
+
         return (
-          <Tooltip title={`Contact: ${record.vendor.contact || 'N/A'}, Phone: ${record.vendor.phone || 'N/A'}`}>
+          <Tooltip
+            title={`Contact: ${record.vendor.contact || "N/A"}, Phone: ${record.vendor.phone || "N/A"}`}
+          >
             <Text>{record.vendor.name}</Text>
           </Tooltip>
         );
@@ -109,24 +115,33 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
 
   if (allInventoryItems.length === 0) {
     return <Text type="secondary">No inventory records available</Text>;
-  }  // Calculate summary statistics
-  const totalStock = allInventoryItems.reduce((sum, item) => sum + item.quantity, 0);
-  
+  } // Calculate summary statistics
+  const totalStock = allInventoryItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
+
   // Calculate low stock branches (count unique branches with low stock)
-  const lowStockBranches = [...new Set(
-    allInventoryItems
-      .filter(item => item.alert_quantity && item.quantity <= item.alert_quantity)
-      .map(item => item.branch?.name || 'Main')
-  )].length;
-  
-  const expiringItems = allInventoryItems.filter(item => {
+  const lowStockBranches = [
+    ...new Set(
+      allInventoryItems
+        .filter(
+          (item) => item.alert_quantity && item.quantity <= item.alert_quantity,
+        )
+        .map((item) => item.branch?.name || "Main"),
+    ),
+  ].length;
+
+  const expiringItems = allInventoryItems.filter((item) => {
     if (!item.expiry_date) return false;
     const expiryDate = new Date(item.expiry_date);
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     return expiryDate <= thirtyDaysFromNow;
   }).length;
-  const branches = [...new Set(allInventoryItems.map(item => item.branch?.name || 'Main'))].length;
+  const branches = [
+    ...new Set(allInventoryItems.map((item) => item.branch?.name || "Main")),
+  ].length;
 
   return (
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -137,7 +152,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
         </Tag>
         <Tag color="green" style={{ padding: "4px 8px" }}>
           Branches: {branches}
-        </Tag>        {lowStockBranches > 0 && (
+        </Tag>{" "}
+        {lowStockBranches > 0 && (
           <Tag color="red" style={{ padding: "4px 8px" }}>
             Low Stock: {lowStockBranches} branches
           </Tag>
@@ -153,7 +169,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ product }) => {
       <Table
         dataSource={allInventoryItems}
         columns={inventoryColumns}
-        rowKey={(record) => `${record.variant_id}-${record.branch?.id || 'main'}-${record.batch_number || 'no-batch'}`}
+        rowKey={(record) =>
+          `${record.variant_id}-${record.branch?.id || "main"}-${record.batch_number || "no-batch"}`
+        }
         pagination={{ pageSize: 10, showSizeChanger: true }}
         size="small"
         scroll={{ x: 1000 }}

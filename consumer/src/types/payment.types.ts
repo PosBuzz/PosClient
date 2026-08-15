@@ -1,4 +1,4 @@
-import { PaymentStatus, Sale, SalePayment } from './sale.types';
+import { PaymentStatus, Sale, SalePayment } from "./sale.types";
 
 // Type for a sale with partial payment information
 export interface SaleForPayment {

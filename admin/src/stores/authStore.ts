@@ -53,7 +53,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isAuthLoading: true });
     try {
       const response = await axiosInstance.get(endpoints.getMe);
-      set({ user: response.data?.user, isAuthenticated: true, isAuthLoading: false });
+      set({
+        user: response.data?.user,
+        isAuthenticated: true,
+        isAuthLoading: false,
+      });
     } catch {
       set({ isAuthenticated: false, user: null, isAuthLoading: false });
     }
@@ -62,7 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   getCsrfToken: async () => {
     try {
       const response = await axiosInstance.get(endpoints.csrfToken);
-      const token = response.data?.csrfToken; 
+      const token = response.data?.csrfToken;
       if (token) {
         set({ csrfToken: token });
       }

@@ -51,7 +51,7 @@ export default function InventoryExpiringPage() {
   // Debounce search
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -331,10 +331,7 @@ export default function InventoryExpiringPage() {
       {setPageTitle("Expiring Inventory")}
       <PageTitle
         title="Expiring Inventory"
-        breadcrumbs={[
-          { title: "Dashboard", href: "/" },
-          { title: "Expiring" },
-        ]}
+        breadcrumbs={[{ title: "Dashboard", href: "/" }, { title: "Expiring" }]}
       />{" "}
       {/* Filters */}
       <Card style={{ ...getCardStyle(), marginBottom: 24 }}>
@@ -466,7 +463,7 @@ export default function InventoryExpiringPage() {
                 >
                   {
                     expiringData.filter(
-                      (b) => getExpiryStatus(b.expiry_date!).urgency >= 3
+                      (b) => getExpiryStatus(b.expiry_date!).urgency >= 3,
                     ).length
                   }
                 </div>
@@ -486,7 +483,7 @@ export default function InventoryExpiringPage() {
                 >
                   {
                     expiringData.filter(
-                      (b) => getExpiryStatus(b.expiry_date!).urgency === 2
+                      (b) => getExpiryStatus(b.expiry_date!).urgency === 2,
                     ).length
                   }
                 </div>
@@ -504,7 +501,7 @@ export default function InventoryExpiringPage() {
                 >
                   {
                     expiringData.filter(
-                      (b) => getExpiryStatus(b.expiry_date!).urgency === 1
+                      (b) => getExpiryStatus(b.expiry_date!).urgency === 1,
                     ).length
                   }
                 </div>

@@ -1,4 +1,4 @@
-import { IsOptional, IsDateString, IsInt } from 'class-validator';
+import { IsOptional, IsDateString, IsInt, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class EODReportDto {
@@ -10,6 +10,10 @@ export class EODReportDto {
   @IsInt()
   @Type(() => Number)
   branch_id?: number; // If not provided, includes all branches
+
+  @IsOptional()
+  @IsIn(['day', 'month', 'all'])
+  period?: 'day' | 'month' | 'all';
 }
 
 export interface PaymentMethodBreakdown {
@@ -37,10 +41,15 @@ export interface EODSummary {
   average_transaction_value: number;
   total_items_sold: number;
   unique_products_sold: number;
+  operational_costs: number;
+  net_operating_result: number;
 }
 
 export interface EODReportResponse {
   date: string;
+  period: 'day' | 'month' | 'all';
+  period_start: string;
+  period_end: string;
   branch_name?: string;
   summary: EODSummary;
   payment_method_breakdown: PaymentMethodBreakdown[];
@@ -54,5 +63,12 @@ export interface EODReportResponse {
     status: string;
     count: number;
     total_amount: number;
+  }[];
+  operational_costs: {
+    id: number;
+    name: string;
+    amount: number;
+    incurred_on: string;
+    branch_name?: string;
   }[];
 }

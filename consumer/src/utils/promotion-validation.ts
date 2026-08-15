@@ -130,7 +130,10 @@ export const evaluatePromotionLocally = ({
   variantBrandById,
 }: EvaluatePromotionLocallyInput): PromotionValidationResponse => {
   if (!branchId) {
-    return ineligible(promotion.id, "Please select a branch before applying a promotion");
+    return ineligible(
+      promotion.id,
+      "Please select a branch before applying a promotion",
+    );
   }
 
   if (!promotion.is_active) {
@@ -154,7 +157,10 @@ export const evaluatePromotionLocally = ({
     promotion.branch_specific &&
     (!promotion.branch_ids?.length || !promotion.branch_ids.includes(branchId))
   ) {
-    return ineligible(promotion.id, "Promotion is not available for selected branch");
+    return ineligible(
+      promotion.id,
+      "Promotion is not available for selected branch",
+    );
   }
 
   const usageLimit =
@@ -171,7 +177,10 @@ export const evaluatePromotionLocally = ({
   const usedDiscountAmount = toNumber(promotion.total_discount_given);
 
   if (usageLimit !== null && usageLimit > 0 && usedUsageCount >= usageLimit) {
-    return ineligible(promotion.id, "Promotion usage limit reached and promo closed");
+    return ineligible(
+      promotion.id,
+      "Promotion usage limit reached and promo closed",
+    );
   }
 
   if (
@@ -179,11 +188,17 @@ export const evaluatePromotionLocally = ({
     maxDiscountAmount > 0 &&
     usedDiscountAmount >= maxDiscountAmount
   ) {
-    return ineligible(promotion.id, "Promotion max discount reached and promo closed");
+    return ineligible(
+      promotion.id,
+      "Promotion max discount reached and promo closed",
+    );
   }
 
   if (promotion.member_only && !customerId) {
-    return ineligible(promotion.id, "This promotion is for registered customers only");
+    return ineligible(
+      promotion.id,
+      "This promotion is for registered customers only",
+    );
   }
 
   if (promotion.limit_per_customer && !customerId) {
@@ -237,7 +252,10 @@ export const evaluatePromotionLocally = ({
       : null;
 
   if (minPurchase !== null && minPurchase > 0 && cartSubtotal < minPurchase) {
-    return ineligible(promotion.id, "Minimum purchase amount condition not met");
+    return ineligible(
+      promotion.id,
+      "Minimum purchase amount condition not met",
+    );
   }
 
   const minQuantity = Math.max(1, toNumber(promotion.min_quantity || 1));
@@ -251,7 +269,10 @@ export const evaluatePromotionLocally = ({
         : null;
 
     if (!brandId) {
-      return ineligible(promotion.id, "Promotion brand is not configured correctly");
+      return ineligible(
+        promotion.id,
+        "Promotion brand is not configured correctly",
+      );
     }
 
     matchedVariantIds = Array.from(cartMap.keys()).filter(
@@ -259,7 +280,10 @@ export const evaluatePromotionLocally = ({
     );
 
     if (!matchedVariantIds.length) {
-      return ineligible(promotion.id, "No matching brand products found in cart");
+      return ineligible(
+        promotion.id,
+        "No matching brand products found in cart",
+      );
     }
   } else if (promotion.scope === "SINGLE_PRODUCT") {
     const requiredVariantIds = getRequiredVariantIds(promotion);
@@ -270,7 +294,10 @@ export const evaluatePromotionLocally = ({
     }
 
     if (!cartMap.has(selectedVariantId)) {
-      return ineligible(promotion.id, "Required product is not present in cart");
+      return ineligible(
+        promotion.id,
+        "Required product is not present in cart",
+      );
     }
 
     matchedVariantIds = [selectedVariantId];
@@ -286,7 +313,10 @@ export const evaluatePromotionLocally = ({
     );
 
     if (missingVariant) {
-      return ineligible(promotion.id, "Bundle conditions are not matched in cart");
+      return ineligible(
+        promotion.id,
+        "Bundle conditions are not matched in cart",
+      );
     }
 
     matchedVariantIds = requiredVariantIds;
@@ -346,7 +376,10 @@ export const evaluatePromotionLocally = ({
       : computedDiscount;
 
   if (finalDiscount <= 0) {
-    return ineligible(promotion.id, "Promotion max discount reached and promo closed");
+    return ineligible(
+      promotion.id,
+      "Promotion max discount reached and promo closed",
+    );
   }
 
   return {
