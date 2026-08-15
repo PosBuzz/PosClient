@@ -5,6 +5,7 @@ import {
   PrinterOutlined,
   SearchOutlined,
   FilePdfOutlined,
+  FileTextOutlined,
   DeleteOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
@@ -14,6 +15,7 @@ import {
   Card,
   Col,
   DatePicker,
+  Dropdown,
   Input,
   Row,
   Select,
@@ -33,6 +35,7 @@ import saveAs from "file-saver";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { SALE_DOCUMENT_PRESETS } from "../../api/receipt-settings-api";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
@@ -326,6 +329,22 @@ const SalesTable = () => {
     }
   };
 
+  // Chalan / money receipt / delivery slip: same sale, different receipt preset.
+  const handleDownloadDocument = async (
+    saleId: number,
+    saleNumber: string,
+    preset: (typeof SALE_DOCUMENT_PRESETS)[number],
+  ) => {
+    try {
+      const pdfBlob = await salesApi.generateReceipt(saleId, preset.type);
+      saveAs(pdfBlob, `${preset.filePrefix}-${saleNumber}.pdf`);
+      showMessage(`${preset.label} downloaded successfully!`, "success");
+    } catch (error) {
+      console.error("Document download error:", error);
+      showMessage(`Failed to download ${preset.label}`, "error");
+    }
+  };
+
   const getPaymentStatusColor = (status: PaymentStatus) => {
     const colors = {
       paid: "success",
@@ -496,6 +515,26 @@ const SalesTable = () => {
               icon={<FilePdfOutlined />}
               onClick={() => handleDownloadPdf(record.id!, record.sale_number)}
             />
+          </Tooltip>
+          <Tooltip title="Other Documents">
+            <Dropdown
+              trigger={["click"]}
+              menu={{
+                items: SALE_DOCUMENT_PRESETS.map((preset) => ({
+                  key: preset.type,
+                  label: preset.label,
+                  icon: <FileTextOutlined />,
+                  onClick: () =>
+                    handleDownloadDocument(
+                      record.id!,
+                      record.sale_number,
+                      preset,
+                    ),
+                })),
+              }}
+            >
+              <Button type="text" icon={<FileTextOutlined />} />
+            </Dropdown>
           </Tooltip>
           {isDeletedTab ? (
             <Popconfirm

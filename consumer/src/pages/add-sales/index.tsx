@@ -1,3 +1,4 @@
+import { formatCurrency } from "../../utils/formatters";
 import {
   CalculatorOutlined,
   DeleteOutlined,
@@ -868,7 +869,9 @@ const NewSale = () => {
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {promotion.discount_type === "percentage"
                           ? `${promotion.discount_value}% discount`
-                          : `$${Number(promotion.discount_value).toFixed(2)} discount`}
+                          : `${formatCurrency(
+                              Number(promotion.discount_value),
+                            )} discount`}
                       </Text>
                       {promotion.description ? (
                         <Text type="secondary" style={{ fontSize: 12 }}>

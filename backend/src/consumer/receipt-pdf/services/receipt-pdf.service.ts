@@ -847,7 +847,12 @@ export class ReceiptPdfService {
     lm: number,
   ): number {
     if (!s.customerInfo.show) return y;
-    if (!data.customerName && !data.customerPhone && !data.customerEmail)
+    if (
+      !data.customerName &&
+      !data.customerPhone &&
+      !data.customerEmail &&
+      !data.customerAddress
+    )
       return y;
 
     const lh = s.fontSizes.body + 3;
@@ -884,6 +889,17 @@ export class ReceiptPdfService {
         .font('Helvetica')
         .text(data.customerEmail);
       y += s.fontSizes.small + 3;
+    }
+
+    if (s.customerInfo.showAddress && data.customerAddress) {
+      const addressText = this.normalizeLineBreaks(data.customerAddress);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.small)
+        .text('Address: ', lm, y, { continued: true, width: uw })
+        .font('Helvetica')
+        .text(addressText, { width: uw });
+      y = doc.y + 3;
     }
 
     if (s.customerInfo.showRewardPoints && data.customerRewardPoints !== null) {
@@ -963,7 +979,8 @@ export class ReceiptPdfService {
       specs.push({
         key: 'discount',
         header: 'Discount',
-        weight: 1.6,
+        // Wider than the other money columns: the cell carries "-৳5.00 (10%)".
+        weight: 2.2,
         align: 'right',
       });
 
@@ -1023,6 +1040,21 @@ export class ReceiptPdfService {
     return y + s.fontSizes.heading + 5;
   }
 
+  /**
+   * " (10%)" — the discount as a share of the line before discount. Empty when
+   * the base is unknown or the rate would round to nothing meaningful.
+   */
+  private discountPercentSuffix(item: ReceiptPdfItem, amount: number): string {
+    const grossLine = item.unitPrice * item.quantity;
+    if (grossLine <= 0 || amount <= 0) return '';
+
+    const pct = (amount / grossLine) * 100;
+    if (pct < 0.01) return '';
+
+    const rounded = Math.round(pct * 100) / 100;
+    return ` (${rounded}%)`;
+  }
+
   private drawItemRow(
     doc: PDFKit.PDFDocument,
     data: ReceiptPdfData,
@@ -1049,7 +1081,11 @@ export class ReceiptPdfService {
       qty: String(item.quantity),
       unitPrice: this.fmt(item.unitPrice, data),
       discount:
-        item.totalDiscount > 0 ? '-' + this.fmt(item.totalDiscount, data) : '—',
+        item.totalDiscount > 0
+          ? '-' +
+            this.fmt(item.totalDiscount, data) +
+            this.discountPercentSuffix(item, item.totalDiscount)
+          : '—',
       tax:
         item.taxAmount > 0
           ? `${this.fmt(item.taxAmount, data)} ${item.taxMethod === 'INCLUSIVE' ? 'Inc.' : 'Exc.'}`
@@ -1098,14 +1134,20 @@ export class ReceiptPdfService {
       const indent = lm + 12;
       const parts: string[] = [];
 
+      // Each discount carries its rate as well as its amount, the way the tax
+      // breakdown does — a flat "-৳5.00" alone doesn't say how deep the cut was.
       if (item.specialDiscount > 0)
-        parts.push(`Special Discount: ${this.fmt(item.specialDiscount, data)}`);
+        parts.push(
+          `Special Discount${this.discountPercentSuffix(item, item.specialDiscount)}: ${this.fmt(item.specialDiscount, data)}`,
+        );
       if (item.promotionDiscount > 0)
         parts.push(
-          `Promotion Discount: ${this.fmt(item.promotionDiscount, data)}`,
+          `Promotion Discount${this.discountPercentSuffix(item, item.promotionDiscount)}: ${this.fmt(item.promotionDiscount, data)}`,
         );
       if (item.averageDiscount > 0)
-        parts.push(`Average Discount: ${this.fmt(item.averageDiscount, data)}`);
+        parts.push(
+          `Average Discount${this.discountPercentSuffix(item, item.averageDiscount)}: ${this.fmt(item.averageDiscount, data)}`,
+        );
 
       doc.font('Helvetica').fontSize(s.fontSizes.small).fillColor('#333333');
       this.drawCurrencyAwareText(doc, parts.join('   |   '), indent, y, {
@@ -1272,7 +1314,10 @@ export class ReceiptPdfService {
       for (const p of data.payments) {
         let label = p.method;
         if (p.type) label += ' (' + p.type + ')';
-        if (p.reference) label += ' — Ref: ' + p.reference;
+        if (s.payment.showPaymentDate && p.date)
+          label += ' — ' + this.formatDate(p.date);
+        if (s.payment.showReference !== false && p.reference)
+          label += ' — Ref: ' + p.reference;
 
         paymentRows.push({ key: label + ':', value: this.fmt(p.amount, data) });
       }
@@ -1281,6 +1326,14 @@ export class ReceiptPdfService {
       paymentRows.push({
         key: 'Method:',
         value: p.method + (p.type ? ' (' + p.type + ')' : ''),
+      });
+    }
+
+    // Per-payment money receipts carry the balance the payment was set against.
+    if (data.previousDueAmount !== undefined) {
+      paymentRows.push({
+        key: 'Previous Balance:',
+        value: this.fmt(data.previousDueAmount, data),
       });
     }
 
@@ -1298,9 +1351,14 @@ export class ReceiptPdfService {
       });
     }
 
-    if (s.payment.showDueAmount !== false && data.dueAmount > 0) {
+    if (
+      s.payment.showDueAmount !== false &&
+      (data.dueAmount > 0 || data.previousDueAmount !== undefined)
+    ) {
       paymentRows.push({
-        key: 'Due:',
+        // On a per-payment receipt a ৳0 balance is the point of the document,
+        // so it is printed even when nothing is left owing.
+        key: data.previousDueAmount !== undefined ? 'Balance Due:' : 'Due:',
         value: this.fmt(data.dueAmount, data),
       });
     }

@@ -149,7 +149,9 @@ const MakePurchasePayment = () => {
 
     if (totalPaymentAmount > batch.remaining_amount) {
       messageApi?.error(
-        `Total payment amount (${totalPaymentAmount.toFixed(2)}) exceeds remaining amount (${batch.remaining_amount.toFixed(2)})`,
+        `Total payment amount (${formatCurrency(
+          totalPaymentAmount,
+        )}) exceeds remaining amount (${formatCurrency(batch.remaining_amount)})`,
       );
       return;
     }

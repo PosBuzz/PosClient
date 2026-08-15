@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
   MinusOutlined,
@@ -333,8 +334,8 @@ export default function AddInventoryAdjustment() {
                     >
                       <span>{batch.batch_number}</span>
                       <span style={{ color: "#666", fontSize: 11 }}>
-                        {batch.quantity} units - $
-                        {parseFloat(batch.cost_price).toFixed(2)}
+                        {batch.quantity} units -{" "}
+                        <Money value={batch.cost_price} />
                       </span>
                     </div>
                   </Option>
@@ -359,7 +360,7 @@ export default function AddInventoryAdjustment() {
                     Cost:{" "}
                   </Text>
                   <Text style={{ fontSize: 11 }}>
-                    ${parseFloat(selectedBatch.cost_price).toFixed(2)}
+                    <Money value={selectedBatch.cost_price} />
                   </Text>
                 </Col>
                 <Col xs={8} sm={8}>

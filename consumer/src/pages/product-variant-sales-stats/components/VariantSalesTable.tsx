@@ -1,3 +1,4 @@
+import { Money } from "../../../components/Currency";
 import { EyeOutlined } from "@ant-design/icons";
 import { Button, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
@@ -85,7 +86,7 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
       align: "right" as const,
       render: (v: number) => (
         <Text type="success" strong>
-          ${Number(v).toFixed(2)}
+          <Money value={v} />
         </Text>
       ),
       sorter: (a: any, b: any) => a.total_amount - b.total_amount,

@@ -1,3 +1,4 @@
+import { formatCurrency } from "../../utils/formatters";
 import { takaPrefix } from "../../components/Currency";
 import { ClearOutlined, EyeOutlined, PrinterOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
@@ -413,8 +414,8 @@ const BarcodePrinting = () => {
                             ? ` | Code: ${product.productCode}`
                             : ""}
                           {product.sku ? ` | SKU: ${product.sku}` : ""} |
-                          Barcode: {product.barcode} | Price: $
-                          {parseFloat(product.price.toString()).toFixed(2)}
+                          Barcode: {product.barcode} | Price:{" "}
+                          {formatCurrency(parseFloat(product.price.toString()))}
                         </Option>
                       ))}
                     </Select>

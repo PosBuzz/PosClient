@@ -35,6 +35,9 @@ export class ReceiptPdfSettingService {
         { name: 'Default Receipt', type: 'receipt' },
         { name: 'Default Quotation', type: 'quotation' },
         { name: 'Default Return Receipt', type: 'return' },
+        { name: 'Default Delivery Chalan', type: 'chalan' },
+        { name: 'Default Money Receipt', type: 'money_receipt' },
+        { name: 'Default Delivery Slip', type: 'delivery_slip' },
       ];
 
       for (const preset of presets) {

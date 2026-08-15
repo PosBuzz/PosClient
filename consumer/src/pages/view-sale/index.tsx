@@ -1,7 +1,9 @@
 import {
   ArrowLeftOutlined,
   EditOutlined,
+  DownOutlined,
   FilePdfOutlined,
+  FileTextOutlined,
   PrinterOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +14,7 @@ import {
   Col,
   Descriptions,
   Divider,
+  Dropdown,
   Input,
   message,
   Modal,
@@ -27,6 +30,8 @@ import dayjs from "dayjs";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
+import { SALE_DOCUMENT_PRESETS } from "../../api/receipt-settings-api";
+import { discountPercentSuffix } from "../../utils/formatters";
 import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -41,6 +46,9 @@ const SaleDetail: React.FC = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<
+    (typeof SALE_DOCUMENT_PRESETS)[number] | null
+  >(null);
   const previewUrlRef = useRef("");
   const queryClient = useQueryClient();
 
@@ -101,6 +109,7 @@ const SaleDetail: React.FC = () => {
       0,
     ) || 0;
   const totalDiscount = Number(sale?.discount_amount) || 0;
+  const saleSubtotal = Number(sale?.subtotal) || 0;
 
   useEffect(() => {
     if (saleQuery.isError) {
@@ -347,14 +356,19 @@ const SaleDetail: React.FC = () => {
     }
   };
 
-  const handleA4Preview = async () => {
+  // Preview the sale as a PDF. Without a preset it renders the normal receipt;
+  // chalan / money receipt / delivery slip reuse the same sale with their preset.
+  const handleA4Preview = async (
+    preset?: (typeof SALE_DOCUMENT_PRESETS)[number],
+  ) => {
     if (!sale || !id) return;
 
+    setPreviewDoc(preset ?? null);
     setPreviewVisible(true);
     setPreviewLoading(true);
 
     try {
-      const blob = await salesApi.generateReceipt(Number(id));
+      const blob = await salesApi.generateReceipt(Number(id), preset?.type);
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current);
       }
@@ -363,7 +377,9 @@ const SaleDetail: React.FC = () => {
       previewUrlRef.current = url;
       setPreviewUrl(url);
     } catch {
-      message.error("Failed to generate A4 receipt preview");
+      message.error(
+        `Failed to generate ${preset ? preset.label : "A4 receipt"} preview`,
+      );
       setPreviewVisible(false);
     } finally {
       setPreviewLoading(false);
@@ -372,12 +388,20 @@ const SaleDetail: React.FC = () => {
 
   const handleClosePreview = () => {
     setPreviewVisible(false);
+    setPreviewDoc(null);
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = "";
     }
     setPreviewUrl("");
   };
+
+  // Price of the line before any discount — the base each discount rate is
+  // stated against, matching how the receipt PDF computes it.
+  const grossLineTotal = (record: {
+    unit_price?: number | string;
+    quantity?: number | string;
+  }) => (Number(record.unit_price) || 0) * (Number(record.quantity) || 0);
 
   const itemColumns = [
     {
@@ -478,14 +502,28 @@ const SaleDetail: React.FC = () => {
       title: "Avg Disc",
       key: "average_discount_amount",
       render: (_: any, record: any) => (
-        <Money value={record.average_discount_amount} negative />
+        <Money
+          value={record.average_discount_amount}
+          negative
+          suffix={discountPercentSuffix(
+            record.average_discount_amount,
+            grossLineTotal(record),
+          )}
+        />
       ),
     },
     {
       title: "Special Disc",
       key: "special_discount_amount",
       render: (_: any, record: any) => (
-        <Money value={record.special_discount_amount} negative />
+        <Money
+          value={record.special_discount_amount}
+          negative
+          suffix={discountPercentSuffix(
+            record.special_discount_amount,
+            grossLineTotal(record),
+          )}
+        />
       ),
     },
     {
@@ -496,7 +534,14 @@ const SaleDetail: React.FC = () => {
 
         return (
           <div className="flex items-center gap-2">
-            <Money value={record.promotion_discount_amount} negative />
+            <Money
+              value={record.promotion_discount_amount}
+              negative
+              suffix={discountPercentSuffix(
+                record.promotion_discount_amount,
+                grossLineTotal(record),
+              )}
+            />
             {promoLabel ? <Tag color="processing">{promoLabel}</Tag> : null}
           </div>
         );
@@ -568,9 +613,22 @@ const SaleDetail: React.FC = () => {
             >
               Print Receipt
             </Button>
-            <Button icon={<FilePdfOutlined />} onClick={handleA4Preview}>
-              A4 Preview
-            </Button>
+            {/* Clicking the button itself always prints the default receipt
+                preset; the arrow offers the other presets. */}
+            <Dropdown.Button
+              icon={<DownOutlined />}
+              onClick={() => handleA4Preview()}
+              menu={{
+                items: SALE_DOCUMENT_PRESETS.map((preset) => ({
+                  key: preset.type,
+                  label: `Print as ${preset.label}`,
+                  icon: <FileTextOutlined />,
+                  onClick: () => handleA4Preview(preset),
+                })),
+              }}
+            >
+              <FilePdfOutlined /> A4 Preview
+            </Dropdown.Button>
           </Space>
         }
       />
@@ -765,8 +823,8 @@ const SaleDetail: React.FC = () => {
                         color={getPaymentMethodColor(payment.payment_method)}
                         style={{ marginBottom: 4 }}
                       >
-                        {getPaymentMethodLabel(payment.payment_method)}: $
-                        {(Number(payment.amount) || 0).toFixed(2)}
+                        {getPaymentMethodLabel(payment.payment_method)}:{" "}
+                        <Money value={payment.amount} />
                       </Tag>
                     ))}
                   </div>
@@ -871,8 +929,7 @@ const SaleDetail: React.FC = () => {
                     title: "Amount",
                     dataIndex: "amount",
                     key: "amount",
-                    render: (amount: number) =>
-                      `$${(Number(amount) || 0).toFixed(2)}`,
+                    render: (amount: number) => <Money value={amount} />,
                   },
                   {
                     title: "Reference",
@@ -916,7 +973,9 @@ const SaleDetail: React.FC = () => {
                 }}
               >
                 <Text>Subtotal:</Text>
-                <Text>${(Number(sale?.subtotal) || 0).toFixed(2)}</Text>
+                <Text>
+                  <Money value={sale?.subtotal} />
+                </Text>
               </div>
               {promotionDiscount > 0 && (
                 <div
@@ -928,7 +987,14 @@ const SaleDetail: React.FC = () => {
                 >
                   <Text style={{ color: "#52c41a" }}>Promo Discount:</Text>
                   <Text style={{ color: "#52c41a" }}>
-                    -${promotionDiscount.toFixed(2)}
+                    <Money
+                      value={promotionDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        promotionDiscount,
+                        saleSubtotal,
+                      )}
+                    />
                   </Text>
                 </div>
               )}
@@ -941,7 +1007,16 @@ const SaleDetail: React.FC = () => {
                   }}
                 >
                   <Text>Average Discount:</Text>
-                  <Text>-${averageDiscount.toFixed(2)}</Text>
+                  <Text>
+                    <Money
+                      value={averageDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        averageDiscount,
+                        saleSubtotal,
+                      )}
+                    />
+                  </Text>
                 </div>
               )}
               {specialDiscount > 0 && (
@@ -953,7 +1028,16 @@ const SaleDetail: React.FC = () => {
                   }}
                 >
                   <Text>Special Discount:</Text>
-                  <Text>-${specialDiscount.toFixed(2)}</Text>
+                  <Text>
+                    <Money
+                      value={specialDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        specialDiscount,
+                        saleSubtotal,
+                      )}
+                    />
+                  </Text>
                 </div>
               )}
               <div
@@ -965,7 +1049,11 @@ const SaleDetail: React.FC = () => {
               >
                 <Text strong>Total Discount:</Text>
                 <Text strong>
-                  {totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : "$0.00"}
+                  <Money
+                    value={totalDiscount}
+                    negative={totalDiscount > 0}
+                    suffix={discountPercentSuffix(totalDiscount, saleSubtotal)}
+                  />
                 </Text>
               </div>
               {(Number(sale?.shipping_cost) || 0) > 0 && (
@@ -977,7 +1065,9 @@ const SaleDetail: React.FC = () => {
                   }}
                 >
                   <Text>Shipping:</Text>
-                  <Text>${(Number(sale?.shipping_cost) || 0).toFixed(2)}</Text>
+                  <Text>
+                    <Money value={sale?.shipping_cost} />
+                  </Text>
                 </div>
               )}
               {(Number(sale?.tax_amount) || 0) > 0 && (
@@ -989,7 +1079,9 @@ const SaleDetail: React.FC = () => {
                   }}
                 >
                   <Text>Tax:</Text>
-                  <Text>${(Number(sale?.tax_amount) || 0).toFixed(2)}</Text>
+                  <Text>
+                    <Money value={sale?.tax_amount} />
+                  </Text>
                 </div>
               )}
               <Divider style={{ margin: "12px 0" }} />
@@ -1004,7 +1096,7 @@ const SaleDetail: React.FC = () => {
                   Total:
                 </Text>
                 <Text strong style={{ fontSize: 16 }}>
-                  ${getCorrectTotal(sale).toFixed(2)}
+                  <Money value={getCorrectTotal(sale)} />
                 </Text>
               </div>
 
@@ -1017,7 +1109,7 @@ const SaleDetail: React.FC = () => {
               >
                 <Text>Total Paid:</Text>
                 <Text style={{ color: "#52c41a" }}>
-                  ${(Number(sale?.received_amount) || 0).toFixed(2)}
+                  <Money value={sale?.received_amount} />
                 </Text>
               </div>
               {/* Calculate change based on correct total */}
@@ -1036,7 +1128,7 @@ const SaleDetail: React.FC = () => {
                     >
                       <Text>Due:</Text>
                       <Text style={{ color: "#ff4d4f" }}>
-                        ${due.toFixed(2)}
+                        <Money value={due} />
                       </Text>
                     </div>
                   );
@@ -1057,7 +1149,7 @@ const SaleDetail: React.FC = () => {
                         color: change >= 0 ? "#52c41a" : "#ff4d4f",
                       }}
                     >
-                      ${change.toFixed(2)}
+                      <Money value={change} />
                     </Text>
                   </div>
                 ) : null;
@@ -1106,7 +1198,7 @@ const SaleDetail: React.FC = () => {
                         </Tag>
                       </Text>
                       <Text style={{ fontSize: 12 }}>
-                        ${(Number(payment.amount) || 0).toFixed(2)}
+                        <Money value={payment.amount} />
                       </Text>
                     </div>
                   ))}
@@ -1118,7 +1210,7 @@ const SaleDetail: React.FC = () => {
       </Row>
 
       <Modal
-        title={`A4 Receipt Preview - ${sale.sale_number}`}
+        title={`${previewDoc ? previewDoc.label : "A4 Receipt"} Preview - ${sale.sale_number}`}
         open={previewVisible}
         onCancel={handleClosePreview}
         width={800}
@@ -1131,7 +1223,7 @@ const SaleDetail: React.FC = () => {
               key="download"
               type="primary"
               href={previewUrl}
-              download={`receipt-${sale.sale_number}.pdf`}
+              download={`${previewDoc ? previewDoc.filePrefix : "receipt"}-${sale.sale_number}.pdf`}
             >
               Download PDF
             </Button>

@@ -135,6 +135,7 @@ export class ReturnPdfService {
       customerName: originalSale?.customer?.name || originalSale?.customer_name || '',
       customerPhone: originalSale?.customer?.phone || originalSale?.customer_phone || '',
       customerEmail: originalSale?.customer?.email || originalSale?.customer_email || '',
+      customerAddress: originalSale?.customer?.address || '',
       customerRewardPoints: originalSale?.customer?.rewards_points?.total_points ?? null,
 
       items: [...returnedItems, ...exchangeItems],

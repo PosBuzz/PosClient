@@ -74,6 +74,7 @@ export class QuotationPdfService {
       customerName: quotation.customer?.name || quotation.customer_name || '',
       customerPhone: quotation.customer?.phone || quotation.customer_phone || '',
       customerEmail: quotation.customer?.email || quotation.customer_email || '',
+      customerAddress: quotation.customer?.address || '',
       customerRewardPoints: quotation.customer?.rewards_points?.total_points ?? null,
 
       items: (quotation.items || []).map((it: any) => {
