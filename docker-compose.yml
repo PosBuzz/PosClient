@@ -151,6 +151,24 @@ services:
     networks:
       - posbuzz-network
 
+  # Portfolio & Landing Hub (Next.js / SEO / AEO)
+  portfolio:
+    build:
+      context: ./portfolio
+      dockerfile: Dockerfile
+    container_name: posbuzz-portfolio
+    restart: unless-stopped
+    ports:
+      - "${PORTFOLIO_PORT:-3002}:3000"
+    networks:
+      - posbuzz-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+
 networks:
   posbuzz-network:
     driver: bridge
