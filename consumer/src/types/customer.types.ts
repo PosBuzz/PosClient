@@ -4,6 +4,8 @@ export interface Customer {
   email?: string;
   phone?: string;
   address?: string;
+  /** Date of birth, ISO date string */
+  birthday?: string | null;
   customer_type: CustomerType;
   consumer_id: number;
   created_at: string;

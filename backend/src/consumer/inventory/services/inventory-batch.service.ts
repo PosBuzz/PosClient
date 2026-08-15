@@ -110,6 +110,7 @@ export class InventoryBatchService {
             quantity: dto.quantity,
             cost_price: dto.cost_price,
             vendor_id: dto.vendor_id,
+            location: dto.location?.trim() || null,
             expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
             payment_status: paymentStatus,
             paid_amount: paymentStatus === 'paid' && !dto.payments?.length
@@ -214,6 +215,7 @@ export class InventoryBatchService {
       if (search) {
         whereClause.OR = [
           { batch_number: { contains: search, mode: 'insensitive' } },
+          { location: { contains: search, mode: 'insensitive' } },
           { variant: { name: { contains: search, mode: 'insensitive' } } },
           {
             variant: {
@@ -340,6 +342,8 @@ export class InventoryBatchService {
           cost_price: dto.cost_price,
           branch_id: dto.branch_id,
           vendor_id: dto.vendor_id,
+          location:
+            dto.location === undefined ? undefined : dto.location?.trim() || null,
           expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
         },
       });

@@ -5,6 +5,7 @@ import {
   CalculatorOutlined,
   CreditCardOutlined,
   DeleteOutlined,
+  EnvironmentOutlined,
   FileTextOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
@@ -1412,11 +1413,20 @@ const NewSale = () => {
                             {variant.sku && ` • ${variant.sku}`}
                             {variant.barcode && ` • ${variant.barcode}`}
                           </div>
+                          {variant.locations?.length ? (
+                            <div style={{ fontSize: 11, color: "#666" }}>
+                              <EnvironmentOutlined /> {variant.locations.join(", ")}
+                            </div>
+                          ) : null}
                           <div style={{ fontSize: 13, fontWeight: 700 }}>
-                            ${" "}
-                            {priceType === PriceType.WHOLESALE
-                              ? variant.wholesale_price || variant.regular_price
-                              : variant.regular_price}
+                            <Money
+                              value={
+                                priceType === PriceType.WHOLESALE
+                                  ? variant.wholesale_price ||
+                                    variant.regular_price
+                                  : variant.regular_price
+                              }
+                            />
                           </div>
                         </div>
                       </div>

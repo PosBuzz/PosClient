@@ -281,6 +281,8 @@ export interface ProductVariantForSale {
   unit_name: string;
   tax_percentage: number;
   tax_method: string; // "inclusive" or "exclusive"
+  /** Distinct storage locations of this variant's batches in the branch */
+  locations?: string[];
 }
 
 export interface InventoryBatch {
@@ -289,6 +291,7 @@ export interface InventoryBatch {
   quantity: number;
   cost_price: number;
   expiry_date?: string;
+  location?: string | null;
 }
 
 export interface Branch {

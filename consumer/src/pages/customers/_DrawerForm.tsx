@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button, Drawer, Form, Input, Select } from "antd";
+import { Button, DatePicker, Drawer, Form, Input, Select } from "antd";
+import dayjs from "dayjs";
 import { useEffect } from "react";
 import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
@@ -60,6 +61,10 @@ export default function DrawerForm({
       email: formValues.email,
       phone: formValues.phone,
       address: formValues.address,
+      // Date only — send null so clearing the field clears the stored birthday
+      birthday: formValues.birthday
+        ? formValues.birthday.format("YYYY-MM-DD")
+        : null,
       customer_type: formValues.customer_type,
     };
 
@@ -85,6 +90,7 @@ export default function DrawerForm({
         email: editedItem.email,
         phone: editedItem.phone,
         address: editedItem.address,
+        birthday: editedItem.birthday ? dayjs(editedItem.birthday) : undefined,
         customer_type: editedItem.customer_type,
       });
     } else {
@@ -155,6 +161,15 @@ export default function DrawerForm({
           ]}
         >
           <Input placeholder="Enter phone number" />
+        </Form.Item>
+
+        <Form.Item label="Birthday" name="birthday">
+          <DatePicker
+            style={{ width: "100%" }}
+            format="YYYY-MM-DD"
+            placeholder="Select date of birth (optional)"
+            disabledDate={(current) => current && current > dayjs().endOf("day")}
+          />
         </Form.Item>
 
         <Form.Item label="Address" name="address" rules={[{ required: false }]}>

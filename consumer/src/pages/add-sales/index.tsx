@@ -2,6 +2,7 @@ import { formatCurrency } from "../../utils/formatters";
 import {
   CalculatorOutlined,
   DeleteOutlined,
+  EnvironmentOutlined,
   PlusOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
@@ -1066,11 +1067,19 @@ const NewSale = () => {
                         Barcode: {variant.barcode}
                       </div>
                     )}
+                    {variant.locations?.length ? (
+                      <div style={{ fontSize: 11, color: "#666" }}>
+                        <EnvironmentOutlined /> {variant.locations.join(", ")}
+                      </div>
+                    ) : null}
                     <div style={{ fontSize: 11, color: "#666" }}>
-                      $
-                      {priceType === PriceType.WHOLESALE
-                        ? variant.wholesale_price || variant.regular_price
-                        : variant.regular_price}
+                      <Money
+                        value={
+                          priceType === PriceType.WHOLESALE
+                            ? variant.wholesale_price || variant.regular_price
+                            : variant.regular_price
+                        }
+                      />
                     </div>
                   </div>
                 </div>
