@@ -14,6 +14,9 @@ export class CustomerService {
         email: createCustomerDto.email,
         phone: createCustomerDto.phone,
         address: createCustomerDto.address,
+        birthday: createCustomerDto.birthday
+          ? new Date(createCustomerDto.birthday)
+          : null,
         customer_type: createCustomerDto.customer_type,
         consumer_id: consumerId,
       },
@@ -59,6 +62,12 @@ export class CustomerService {
         email: updateCustomerDto.email,
         phone: updateCustomerDto.phone,
         address: updateCustomerDto.address,
+        // Absent = leave as is; explicitly empty = clear the stored birthday
+        birthday: updateCustomerDto.birthday
+          ? new Date(updateCustomerDto.birthday)
+          : updateCustomerDto.birthday === undefined
+            ? undefined
+            : null,
         customer_type: updateCustomerDto.customer_type,
       },
     });

@@ -120,6 +120,12 @@ export const endpoints = {
   getSalesStats: "/consumer/sales/stats",
   getProductsForSale: "/consumer/sales/products",
   getProductByBarcode: "/consumer/sales/product-by-barcode",
+  // Excel imports
+  importTemplate: (entity: string) => `/consumer/import/${entity}/template`,
+  importColumns: (entity: string) => `/consumer/import/${entity}/columns`,
+  importPreview: (entity: string) => `/consumer/import/${entity}/preview`,
+  import: (entity: string) => `/consumer/import/${entity}`,
+
   generateSalePaymentReceipt: (id: number, paymentId: number) =>
     `/consumer/sales/receipt/${id}/payment/${paymentId}`,
   generateSaleReceipt: (id: number, type?: string) =>

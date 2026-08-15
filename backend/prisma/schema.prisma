@@ -688,6 +688,8 @@ model InventoryBatch {
   // REMOVED: source            — derive from event_type in audit log
   cost_price     Decimal   @db.Decimal(10, 2)
   vendor_id      Int?
+  // Where the stock physically sits, e.g. "A-3-2" or "Cold Room, Rack 4"
+  location       String?
   expiry_date    DateTime?
   payment_status String    @default("paid") // paid | partial | due
   paid_amount    Decimal   @default(0) @db.Decimal(10, 2)
@@ -710,6 +712,7 @@ model InventoryBatch {
   @@index([vendor_id])
   @@index([expiry_date])
   @@index([batch_number])
+  @@index([location])
   @@index([created_at])
   @@index([payment_status])
   @@map("inventory_batches")
@@ -945,15 +948,17 @@ model PromotionBranch {
 // ============================================
 
 model Customer {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   consumer_id   Int
   name          String
   email         String?
-  phone         String   @unique
+  phone         String    @unique
   address       String?
+  // Date only; the time part is never meaningful here
+  birthday      DateTime? @db.Date
   customer_type String
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
   consumer           Consumer                  @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
   Sales              Sale[]

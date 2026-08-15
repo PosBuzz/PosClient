@@ -1,12 +1,15 @@
 import { Money } from "../../components/Currency";
+import ImportModal from "../../components/ImportModal";
 import {
   EditOutlined,
+  EnvironmentOutlined,
+  UploadOutlined,
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Button,
@@ -38,11 +41,12 @@ const { Option } = Select;
 
 export default function InventoryPage() {
   const navigate = useNavigate();
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const { modal } = useModalStore();
   // const { messageApi } = useMessageStore();
 
   // Input state (tracks what the user is typing)
+  const [importOpen, setImportOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -182,6 +186,13 @@ export default function InventoryPage() {
             </Col>
 
             <Col span={8}>
+              <Text strong>Location:</Text>
+            </Col>
+            <Col span={16}>
+              <Text>{batch.location || "Not set"}</Text>
+            </Col>
+
+            <Col span={8}>
               <Text strong>Quantity:</Text>
             </Col>
             <Col span={16}>
@@ -299,6 +310,19 @@ export default function InventoryPage() {
       dataIndex: "batch_number",
       key: "batch_number",
       render: (text) => <Text code>{text}</Text>,
+    },
+    {
+      title: "Location",
+      dataIndex: "location",
+      key: "location",
+      render: (location) =>
+        location ? (
+          <Tag color="geekblue" icon={<EnvironmentOutlined />}>
+            {location}
+          </Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: "Quantity",
@@ -432,13 +456,21 @@ export default function InventoryPage() {
           { title: "Inventory" },
         ]}
         rightSection={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate("/inventory/batches/add")}
-          >
-            Add Inventory
-          </Button>
+          <Space>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setImportOpen(true)}
+            >
+              Import Excel
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/inventory/batches/add")}
+            >
+              Add Inventory
+            </Button>
+          </Space>
         }
       />
       {/* Summary Cards */}
@@ -700,6 +732,18 @@ export default function InventoryPage() {
           size="middle"
         />
       </Card>
+
+      <ImportModal
+        entity="inventory"
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
+          queryClient.invalidateQueries({
+            queryKey: [queryKeys.inventorySummary],
+          });
+        }}
+      />
     </>
   );
 }
