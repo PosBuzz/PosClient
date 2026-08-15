@@ -1,6 +1,6 @@
 // sales-pdf.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import { ReceiptPdfSettings, ReceiptPresetType } from '../preset/receipt-pdf-settings';
@@ -20,11 +20,14 @@ export class SalesPdfService {
     sale: any,
     settingsOverride?: Partial<ReceiptPdfSettings>,
     dataOverrides?: Partial<ReceiptPdfData>,
+    presetTypeOverride?: ReceiptPresetType,
   ): Promise<Buffer> {
     const consumerId: number = sale.consumer_id;
     const branchId: number = sale.branch_id;
     const saleType: string = sale.sale_type || 'sale';
-    const presetType = this.toPresetType(saleType);
+    // Documents like chalan / money receipt / delivery slip are printed from the
+    // same sale, only the preset differs — so the caller may pick it explicitly.
+    const presetType = presetTypeOverride ?? this.toPresetType(saleType);
 
     const [settings, branding] = await Promise.all([
       this.receiptPdfSettingService.getActiveSettings(consumerId, presetType, branchId),
@@ -42,6 +45,64 @@ export class SalesPdfService {
     }
 
     return this.receiptPdfService.generatePdf(data, mergedSettings);
+  }
+
+  /**
+   * Money receipt for a single payment against a sale — the slip handed over
+   * when someone clears part of a due. Unlike the per-sale money receipt it is
+   * pinned to one SalePayment: its own date, method and reference, with the
+   * balance before and after that payment.
+   */
+  async generatePaymentReceiptPdf(sale: any, paymentId: number): Promise<Buffer> {
+    const payments: any[] = [...(sale.payments || [])].sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
+        a.id - b.id,
+    );
+
+    const index = payments.findIndex((p) => p.id === paymentId);
+    if (index === -1) {
+      throw new NotFoundException('Payment not found for this sale');
+    }
+
+    const payment = payments[index];
+    const paymentAmount = Number(payment.amount) || 0;
+    const totalAmount = Number(sale.total_amount) || 0;
+
+    // Balances are rebuilt from the payments up to this one, so reprinting an
+    // old receipt shows what it showed originally rather than today's balance.
+    const paidBefore = payments
+      .slice(0, index)
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const previousDueAmount = Math.max(0, totalAmount - paidBefore);
+    const dueAmount = Math.max(0, previousDueAmount - paymentAmount);
+
+    return this.generateSaleReceiptPdf(
+      sale,
+      undefined,
+      {
+        saleDate: payment.created_at
+          ? new Date(payment.created_at)
+          : new Date(sale.sale_date),
+        payments: [
+          {
+            method: humanPaymentMethod(payment.payment_method),
+            type: payment.payment_type
+              ? humanPaymentType(payment.payment_type)
+              : '',
+            amount: paymentAmount,
+            reference: payment.reference || '',
+            date: payment.created_at ? new Date(payment.created_at) : undefined,
+          },
+        ],
+        receivedAmount: paymentAmount,
+        changeAmount: 0,
+        previousDueAmount,
+        dueAmount,
+        paymentStatus: dueAmount > 0 ? 'partial' : 'paid',
+      },
+      'money_receipt',
+    );
   }
 
   private toPresetType(saleType: string): ReceiptPresetType {
@@ -89,6 +150,7 @@ export class SalesPdfService {
       customerName: sale.customer?.name || sale.customer_name || '',
       customerPhone: sale.customer?.phone || sale.customer_phone || '',
       customerEmail: sale.customer?.email || sale.customer_email || '',
+      customerAddress: sale.customer?.address || sale.customer_address || '',
       customerRewardPoints: sale.customer?.rewards_points?.total_points ?? null,
 
       items: (sale.items || []).map((it: any) => {
@@ -126,6 +188,7 @@ export class SalesPdfService {
         type: p.payment_type ? humanPaymentType(p.payment_type) : '',
         amount: Number(p.amount) || 0,
         reference: p.reference || '',
+        date: p.created_at ? new Date(p.created_at) : undefined,
       })),
 
       receivedAmount: Number(sale.received_amount) || 0,

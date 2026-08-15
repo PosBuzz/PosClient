@@ -1,3 +1,4 @@
+import { Money } from "../../../components/Currency";
 import { BarcodeOutlined } from "@ant-design/icons";
 import { Card, Descriptions, Divider, Space, Tag, Typography } from "antd";
 import { formatDate } from "../../../utils/formatters";
@@ -180,8 +181,8 @@ const ProductBasicInfo: React.FC<ProductBasicInfoProps> = ({ product }) => {
           {priceRange && product.has_variants && (
             <Descriptions.Item label="Price Range" span={2}>
               <Text>
-                ${priceRange.minPrice.toFixed(2)} - $
-                {priceRange.maxPrice.toFixed(2)}
+                <Money value={priceRange.minPrice} /> -{" "}
+                <Money value={priceRange.maxPrice} />
               </Text>
             </Descriptions.Item>
           )}

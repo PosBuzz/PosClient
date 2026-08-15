@@ -21,6 +21,8 @@ export interface ReceiptPdfPayment {
   type: string;
   amount: number;
   reference: string;
+  /** Set on per-payment money receipts, where the individual date matters */
+  date?: Date;
 }
 
 export interface ReceiptPdfData {
@@ -48,6 +50,7 @@ export interface ReceiptPdfData {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  customerAddress?: string;
   customerRewardPoints: number | null;
 
   items: ReceiptPdfItem[];
@@ -63,6 +66,12 @@ export interface ReceiptPdfData {
   receivedAmount: number;
   changeAmount: number;
   dueAmount: number;
+
+  /**
+   * Per-payment money receipts only: what the customer owed before this
+   * payment landed. `dueAmount` is then the balance left after it.
+   */
+  previousDueAmount?: number;
 
   notes: string;
 

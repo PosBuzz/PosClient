@@ -1,3 +1,4 @@
+import { Money } from "../../../components/Currency";
 import { EyeOutlined } from "@ant-design/icons";
 import { Button, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
@@ -50,7 +51,7 @@ const UserSalesTable: React.FC<UserSalesTableProps> = ({
       align: "right" as const,
       render: (value: number) => (
         <Text type="success" strong>
-          ${Number(value ?? 0).toFixed(2)}
+          <Money value={value ?? 0} />
         </Text>
       ),
       sorter: (a: any, b: any) => a.totalSales - b.totalSales,

@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   CalendarOutlined,
   EyeOutlined,
@@ -133,7 +134,9 @@ export default function InventoryExpiringPage() {
               <Text strong>Cost Price:</Text>
             </Col>
             <Col span={16}>
-              <Text>${parseFloat(batch.cost_price).toFixed(2)} per unit</Text>
+              <Text>
+                <Money value={batch.cost_price} /> per unit
+              </Text>
             </Col>
 
             <Col span={8}>
@@ -141,7 +144,7 @@ export default function InventoryExpiringPage() {
             </Col>
             <Col span={16}>
               <Text strong>
-                ${(parseFloat(batch.cost_price) * batch.quantity).toFixed(2)}
+                <Money value={parseFloat(batch.cost_price) * batch.quantity} />
               </Text>
             </Col>
 
@@ -235,7 +238,7 @@ export default function InventoryExpiringPage() {
       align: "right",
       render: (_, record) => (
         <Text strong>
-          ${(parseFloat(record.cost_price) * record.quantity).toFixed(2)}
+          <Money value={parseFloat(record.cost_price) * record.quantity} />
         </Text>
       ),
     },

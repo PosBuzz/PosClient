@@ -60,6 +60,10 @@ import {
   SaleFormData,
   SaleItem,
 } from "../../types/sale.types";
+import {
+  discountPercentSuffix,
+  formatCurrency,
+} from "../../utils/formatters";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
   getVariantPriceForSale as getVariantPriceForSaleByType,
@@ -771,24 +775,42 @@ const NewSale = () => {
       render: (record: SaleItem) => {
         const avgDiscount =
           totals.discountBreakdownByVariant?.[record.variant_id]?.average || 0;
-        return <Money value={avgDiscount} negative />;
+        return (
+          <Money
+            value={avgDiscount}
+            negative
+            suffix={discountPercentSuffix(avgDiscount, record.line_total)}
+          />
+        );
       },
     },
     {
       title: "Special Disc",
       key: "special_discount",
-      render: (record: SaleItem) => (
-        <InputNumber
-          min={0}
-          precision={2}
-          value={Number(record.special_discount_amount) || 0}
-          onChange={(value) =>
-            updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
-          }
-          style={{ width: 100 }}
-          size="small"
-        />
-      ),
+      render: (record: SaleItem) => {
+        const specialDiscount = Number(record.special_discount_amount) || 0;
+        const percent = discountPercentSuffix(
+          specialDiscount,
+          record.line_total,
+        );
+        return (
+          <div>
+            <InputNumber
+              min={0}
+              precision={2}
+              value={specialDiscount}
+              onChange={(value) =>
+                updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
+              }
+              style={{ width: 100 }}
+              size="small"
+            />
+            {percent && (
+              <div style={{ fontSize: 11, color: "#666" }}>{percent.trim()}</div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "Promo Disc",
@@ -803,7 +825,11 @@ const NewSale = () => {
           totals.discountBreakdownByVariant?.[record.variant_id]?.promotionId;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <Money value={promoDiscount} negative />
+            <Money
+              value={promoDiscount}
+              negative
+              suffix={discountPercentSuffix(promoDiscount, record.line_total)}
+            />
             {promoName ? (
               <Tag
                 className="w-max"
@@ -941,7 +967,9 @@ const NewSale = () => {
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {promotion.discount_type === "percentage"
                           ? `${promotion.discount_value}% discount`
-                          : `$${Number(promotion.discount_value).toFixed(2)} discount`}
+                          : `${formatCurrency(
+                              Number(promotion.discount_value),
+                            )} discount`}
                       </Text>
                       {promotion.description ? (
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1902,7 +1930,10 @@ const NewSale = () => {
                     letterSpacing: "-1px",
                   }}
                 >
-                  ${Math.ceil(Number(totals.total) || 0).toFixed(0)}
+                  <Money
+                    value={Math.ceil(Number(totals.total) || 0)}
+                    decimals={0}
+                  />
                 </Text>
               </div>
             </Card>
@@ -1936,20 +1967,56 @@ const NewSale = () => {
                 },
                 {
                   label: "Discount",
-                  value: <Money value={totals.finalDiscount} negative />,
+                  value: (
+                    <Money
+                      value={totals.finalDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        totals.finalDiscount,
+                        totals.subtotal,
+                      )}
+                    />
+                  ),
                   highlight: totals.finalDiscount > 0,
                 },
                 {
                   label: "Promo Disc",
-                  value: <Money value={totals.promotionDiscount} negative />,
+                  value: (
+                    <Money
+                      value={totals.promotionDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        totals.promotionDiscount,
+                        totals.subtotal,
+                      )}
+                    />
+                  ),
                 },
                 {
                   label: "Avg Disc",
-                  value: <Money value={totals.averageDiscount} negative />,
+                  value: (
+                    <Money
+                      value={totals.averageDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        totals.averageDiscount,
+                        totals.subtotal,
+                      )}
+                    />
+                  ),
                 },
                 {
                   label: "Special Disc",
-                  value: <Money value={totals.specialDiscount} negative />,
+                  value: (
+                    <Money
+                      value={totals.specialDiscount}
+                      negative
+                      suffix={discountPercentSuffix(
+                        totals.specialDiscount,
+                        totals.subtotal,
+                      )}
+                    />
+                  ),
                 },
                 {
                   label: "Shipping",

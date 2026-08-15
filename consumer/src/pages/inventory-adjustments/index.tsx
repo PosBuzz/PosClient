@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   EyeOutlined,
   PlusOutlined,
@@ -170,7 +171,7 @@ export default function InventoryAdjustmentsPage() {
                   <Text>
                     Cost Price:{" "}
                     <Text strong>
-                      ${parseFloat(adjustment.batch.cost_price).toFixed(2)}
+                      <Money value={adjustment.batch.cost_price} />
                     </Text>
                   </Text>
                 </div>

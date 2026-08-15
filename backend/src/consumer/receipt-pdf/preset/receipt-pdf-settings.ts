@@ -1,10 +1,19 @@
 // receipt-pdf-settings.ts
 
-export type ReceiptPresetType = 'receipt' | 'quotation' | 'return';
+export const RECEIPT_PRESET_TYPES = [
+  'receipt',
+  'quotation',
+  'return',
+  'chalan',
+  'money_receipt',
+  'delivery_slip',
+] as const;
+
+export type ReceiptPresetType = (typeof RECEIPT_PRESET_TYPES)[number];
 
 export interface ReceiptPdfSettings {
   page: {
-    size: 'A4' | 'A5' | 'Letter';
+    size: 'A4' | 'A5' | 'A6' | 'Letter';
     margins: { top: number; right: number; bottom: number; left: number };
   };
 
@@ -45,6 +54,7 @@ export interface ReceiptPdfSettings {
     showName: boolean;
     showPhone: boolean;
     showEmail: boolean;
+    showAddress?: boolean;
     showRewardPoints: boolean;
   };
 
@@ -74,6 +84,10 @@ export interface ReceiptPdfSettings {
     show: boolean;
     titleAlign?: 'left' | 'right';
     showBreakdown: boolean;
+    /** Date of each payment in the breakdown. Defaults off. */
+    showPaymentDate?: boolean;
+    /** Reference/transaction id of each payment. Defaults on. */
+    showReference?: boolean;
     showReceivedAmount: boolean;
     showChangeAmount: boolean;
     showDueAmount?: boolean;
@@ -336,6 +350,265 @@ export const DEFAULT_RETURN_SETTINGS: ReceiptPdfSettings = {
   },
 };
 
+/**
+ * Delivery chalan / challan: goods hand-over document.
+ * Lists what is being delivered, deliberately without any money on it.
+ */
+export const DEFAULT_CHALAN_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_RECEIPT_SETTINGS,
+  header: {
+    show: true,
+    text: 'DELIVERY CHALAN',
+    showLogo: true,
+    logoMaxWidth: 150,
+    logoMaxHeight: 75,
+    layout: 'logo-left',
+  },
+  storeInfo: {
+    show: true,
+    showStoreName: true,
+    showBranchName: true,
+    showAddress: true,
+    showPhone: true,
+    showEmail: false,
+    showVatRegistration: true,
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: false,
+    showDate: true,
+    showCashier: false,
+    showServedBy: true,
+    showPriceType: false,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: false,
+    showAddress: true,
+    showRewardPoints: false,
+  },
+  items: {
+    show: true,
+    showSku: true,
+    showVariantName: true,
+    showUnitPrice: false,
+    showQuantity: true,
+    showDiscount: false,
+    discountDisplay: 'total',
+    showTax: false,
+    taxDisplay: 'total',
+    showLineTotal: false,
+  },
+  totals: {
+    show: false,
+    titleAlign: 'left',
+    showSubtotal: false,
+    showDiscount: false,
+    showShipping: false,
+    showTax: false,
+  },
+  payment: {
+    show: false,
+    titleAlign: 'left',
+    showBreakdown: false,
+    showReceivedAmount: false,
+    showChangeAmount: false,
+    showDueAmount: false,
+  },
+  notes: { show: true },
+  footer: {
+    showTerms: true,
+    termsText:
+      'Goods received in good condition and correct quantity.\n\nReceiver Signature: ____________________     Date: ____________',
+    showBarcode: true,
+    showThankYou: false,
+    showPrintDate: true,
+  },
+};
+
+/**
+ * Money receipt: acknowledges payment received against a sale.
+ * No item table — the money side is the whole point.
+ */
+export const DEFAULT_MONEY_RECEIPT_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_RECEIPT_SETTINGS,
+  page: {
+    size: 'A5',
+    margins: { top: 30, right: 30, bottom: 30, left: 30 },
+  },
+  header: {
+    show: true,
+    text: 'MONEY RECEIPT',
+    showLogo: true,
+    logoMaxWidth: 120,
+    logoMaxHeight: 60,
+    layout: 'centered',
+  },
+  storeInfo: {
+    show: true,
+    showStoreName: true,
+    showBranchName: true,
+    showAddress: true,
+    showPhone: true,
+    showEmail: false,
+    showVatRegistration: true,
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: false,
+    showDate: true,
+    showCashier: true,
+    showServedBy: false,
+    showPriceType: false,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: false,
+    showRewardPoints: false,
+  },
+  items: {
+    show: false,
+    showSku: false,
+    showVariantName: false,
+    showUnitPrice: false,
+    showQuantity: false,
+    showDiscount: false,
+    discountDisplay: 'total',
+    showTax: false,
+    taxDisplay: 'total',
+    showLineTotal: false,
+  },
+  totals: {
+    show: true,
+    titleAlign: 'left',
+    showSubtotal: false,
+    showDiscount: false,
+    showShipping: false,
+    showTax: false,
+  },
+  payment: {
+    show: true,
+    titleAlign: 'left',
+    showBreakdown: true,
+    showPaymentDate: true,
+    showReference: true,
+    showReceivedAmount: true,
+    showChangeAmount: false,
+    showDueAmount: true,
+  },
+  notes: { show: true },
+  footer: {
+    showTerms: true,
+    termsText:
+      'Received with thanks.\n\nAuthorised Signature: ____________________',
+    showBarcode: false,
+    showThankYou: false,
+    showPrintDate: true,
+  },
+  fontSizes: {
+    title: 16,
+    subtitle: 11,
+    heading: 9,
+    body: 8.5,
+    small: 7,
+  },
+};
+
+/**
+ * Delivery slip / sticker: small label that goes on the parcel.
+ * Delivery address first, item lines as a packing check, no money.
+ */
+export const DEFAULT_DELIVERY_SLIP_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_RECEIPT_SETTINGS,
+  page: {
+    size: 'A6',
+    margins: { top: 12, right: 12, bottom: 12, left: 12 },
+  },
+  header: {
+    show: true,
+    text: 'DELIVERY SLIP',
+    showLogo: true,
+    logoMaxWidth: 70,
+    logoMaxHeight: 35,
+    layout: 'logo-left',
+  },
+  storeInfo: {
+    show: true,
+    showStoreName: true,
+    showBranchName: false,
+    showAddress: false,
+    showPhone: true,
+    showEmail: false,
+    showVatRegistration: false,
+  },
+  orderInfo: {
+    show: true,
+    showSaleNumber: true,
+    showSaleType: false,
+    showDate: true,
+    showCashier: false,
+    showServedBy: false,
+    showPriceType: false,
+  },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: true,
+    showEmail: false,
+    showAddress: true,
+    showRewardPoints: false,
+  },
+  items: {
+    show: true,
+    showSku: false,
+    showVariantName: true,
+    showUnitPrice: false,
+    showQuantity: true,
+    showDiscount: false,
+    discountDisplay: 'total',
+    showTax: false,
+    taxDisplay: 'total',
+    showLineTotal: false,
+  },
+  totals: {
+    show: false,
+    titleAlign: 'left',
+    showSubtotal: false,
+    showDiscount: false,
+    showShipping: false,
+    showTax: false,
+  },
+  payment: {
+    show: false,
+    titleAlign: 'left',
+    showBreakdown: false,
+    showReceivedAmount: false,
+    showChangeAmount: false,
+    showDueAmount: false,
+  },
+  notes: { show: true },
+  footer: {
+    showTerms: false,
+    termsText: '',
+    showBarcode: true,
+    showThankYou: false,
+    showPrintDate: false,
+  },
+  fontSizes: {
+    title: 13,
+    subtitle: 9,
+    heading: 8,
+    body: 7.5,
+    small: 6,
+  },
+};
+
 /* ------------------------------------------------------------------ */
 /*  Preset type to default settings mapping                           */
 /* ------------------------------------------------------------------ */
@@ -344,6 +617,9 @@ export const PRESET_DEFAULTS: Record<ReceiptPresetType, ReceiptPdfSettings> = {
   receipt: DEFAULT_RECEIPT_SETTINGS,
   quotation: DEFAULT_QUOTATION_SETTINGS,
   return: DEFAULT_RETURN_SETTINGS,
+  chalan: DEFAULT_CHALAN_SETTINGS,
+  money_receipt: DEFAULT_MONEY_RECEIPT_SETTINGS,
+  delivery_slip: DEFAULT_DELIVERY_SLIP_SETTINGS,
 };
 
 /* ------------------------------------------------------------------ */

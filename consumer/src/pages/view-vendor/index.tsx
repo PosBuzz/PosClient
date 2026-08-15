@@ -1,4 +1,4 @@
-import { takaPrefix } from "../../components/Currency";
+import { Money, takaPrefix } from "../../components/Currency";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -103,21 +103,21 @@ const ViewVendor: React.FC = () => {
       dataIndex: "cost_price",
       key: "cost_price",
       width: 100,
-      render: (val: string) => `$${Number(val).toFixed(2)}`,
+      render: (val: string) => <Money value={val} />,
     },
     {
       title: "Total Cost",
       dataIndex: "total_cost",
       key: "total_cost",
       width: 110,
-      render: (val: number) => `$${Number(val).toFixed(2)}`,
+      render: (val: number) => <Money value={val} />,
     },
     {
       title: "Paid",
       dataIndex: "paid_amount",
       key: "paid_amount",
       width: 110,
-      render: (val: number) => `$${Number(val).toFixed(2)}`,
+      render: (val: number) => <Money value={val} />,
     },
     {
       title: "Remaining",
@@ -129,7 +129,7 @@ const ViewVendor: React.FC = () => {
           type={Number(val) > 0 ? "danger" : "success"}
           strong={Number(val) > 0}
         >
-          ${Number(val).toFixed(2)}
+          <Money value={val} />
         </Text>
       ),
     },
@@ -190,7 +190,7 @@ const ViewVendor: React.FC = () => {
       dataIndex: "amount",
       key: "amount",
       width: 110,
-      render: (val: number) => `$${Number(val).toFixed(2)}`,
+      render: (val: number) => <Money value={val} />,
     },
     {
       title: "Reference",

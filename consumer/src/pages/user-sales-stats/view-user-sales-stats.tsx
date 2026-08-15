@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -96,7 +97,11 @@ const ViewUserSalesStats = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       align: "right" as const,
-      render: (v: number) => <Text strong>${Number(v).toFixed(2)}</Text>,
+      render: (v: number) => (
+        <Text strong>
+          <Money value={v} />
+        </Text>
+      ),
     },
     {
       title: "Status",

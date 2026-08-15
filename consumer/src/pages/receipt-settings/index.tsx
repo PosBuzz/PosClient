@@ -70,7 +70,19 @@ const TYPE_OPTIONS: {
   { label: "Receipt", value: "receipt", color: "blue" },
   { label: "Quotation", value: "quotation", color: "green" },
   { label: "Return", value: "return", color: "orange" },
+  { label: "Chalan", value: "chalan", color: "cyan" },
+  { label: "Money Receipt", value: "money_receipt", color: "gold" },
+  { label: "Delivery Slip", value: "delivery_slip", color: "magenta" },
 ];
+
+const TYPE_LABELS: Record<ReceiptPresetType, string> = {
+  receipt: "Receipt",
+  quotation: "Quotation",
+  return: "Return",
+  chalan: "Delivery Chalan",
+  money_receipt: "Money Receipt",
+  delivery_slip: "Delivery Slip / Sticker",
+};
 
 export default function ReceiptSettingsPage() {
   const navigate = useNavigate();
@@ -269,7 +281,7 @@ export default function ReceiptSettingsPage() {
           </Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.type.charAt(0).toUpperCase() + record.type.slice(1)}
+            {TYPE_LABELS[record.type] ?? record.type}
           </Text>
         </div>
       ),
@@ -419,7 +431,7 @@ export default function ReceiptSettingsPage() {
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 12]} align="middle">
           <Col>
-            <Space>
+            <Space wrap>
               {TYPE_OPTIONS.map((opt) => (
                 <Button
                   key={opt.value}

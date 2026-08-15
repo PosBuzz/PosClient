@@ -1,3 +1,4 @@
+import { Money } from "../../components/Currency";
 import {
   EditOutlined,
   EyeOutlined,
@@ -191,7 +192,9 @@ export default function InventoryPage() {
               <Text strong>Cost Price:</Text>
             </Col>
             <Col span={16}>
-              <Text>${parseFloat(batch.cost_price).toFixed(2)} per unit</Text>
+              <Text>
+                <Money value={batch.cost_price} /> per unit
+              </Text>
             </Col>
 
             <Col span={8}>
@@ -199,7 +202,7 @@ export default function InventoryPage() {
             </Col>
             <Col span={16}>
               <Text strong>
-                ${(parseFloat(batch.cost_price) * batch.quantity).toFixed(2)}
+                <Money value={parseFloat(batch.cost_price) * batch.quantity} />
               </Text>
             </Col>
 
@@ -309,7 +312,7 @@ export default function InventoryPage() {
       dataIndex: "cost_price",
       key: "cost_price",
       align: "right",
-      render: (price) => `$${parseFloat(price).toFixed(2)}`,
+      render: (price) => <Money value={price} />,
     },
     {
       title: "Total Value",
@@ -317,7 +320,7 @@ export default function InventoryPage() {
       align: "right",
       render: (_, record) => (
         <Text strong>
-          ${(parseFloat(record.cost_price) * record.quantity).toFixed(2)}
+          <Money value={parseFloat(record.cost_price) * record.quantity} />
         </Text>
       ),
     },

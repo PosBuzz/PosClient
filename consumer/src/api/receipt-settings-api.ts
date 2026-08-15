@@ -8,7 +8,35 @@ import axiosInstance from "./axiosInstance"; // <-- Import your axios instance
 /*  TYPES                                                             */
 /* ================================================================== */
 
-export type ReceiptPresetType = "receipt" | "quotation" | "return";
+export type ReceiptPresetType =
+  | "receipt"
+  | "quotation"
+  | "return"
+  | "chalan"
+  | "money_receipt"
+  | "delivery_slip";
+
+/**
+ * Extra documents that can be printed off an existing sale. Same sale data,
+ * only the receipt preset differs.
+ */
+export const SALE_DOCUMENT_PRESETS: {
+  label: string;
+  type: ReceiptPresetType;
+  filePrefix: string;
+}[] = [
+  { label: "Chalan Slip", type: "chalan", filePrefix: "chalan" },
+  {
+    label: "Money Receipt",
+    type: "money_receipt",
+    filePrefix: "money-receipt",
+  },
+  {
+    label: "Delivery Slip / Sticker",
+    type: "delivery_slip",
+    filePrefix: "delivery-slip",
+  },
+];
 
 export interface ReceiptPdfSettings {
   page: {
@@ -48,6 +76,7 @@ export interface ReceiptPdfSettings {
     showName: boolean;
     showPhone: boolean;
     showEmail: boolean;
+    showAddress?: boolean;
     showRewardPoints: boolean;
   };
   items: {
@@ -74,6 +103,8 @@ export interface ReceiptPdfSettings {
     show: boolean;
     titleAlign?: "left" | "right";
     showBreakdown: boolean;
+    showPaymentDate?: boolean;
+    showReference?: boolean;
     showReceivedAmount: boolean;
     showChangeAmount: boolean;
     showDueAmount?: boolean;

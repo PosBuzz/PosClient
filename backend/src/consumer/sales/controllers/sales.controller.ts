@@ -19,7 +19,11 @@ import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
 import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
-import { ReceiptPdfSettings } from '../../receipt-pdf/preset/receipt-pdf-settings';
+import {
+  RECEIPT_PRESET_TYPES,
+  ReceiptPdfSettings,
+  ReceiptPresetType,
+} from '../../receipt-pdf/preset/receipt-pdf-settings';
 import { SalesPdfService } from '../../receipt-pdf/services/sales-pdf.service';
 import { CreateSaleDto } from '../dto/create-sale.dto';
 import { DailyTargetReportDto } from '../dto/daily-target-report.dto';
@@ -122,6 +126,7 @@ export class SalesController {
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
     @Res() res: Response,
+    @Query('type') type?: string,
   ) {
     const sale = await this.salesService.findOne(id, req.user.consumer_id!);
 
@@ -129,10 +134,55 @@ export class SalesController {
       return res.status(404).json({ message: 'Sale not found' });
     }
 
-    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(sale);
+    // Chalan / money receipt / delivery slip are the same sale printed with a
+    // different preset; without ?type the sale's own type decides as before.
+    let presetType: ReceiptPresetType | undefined;
+    if (type) {
+      if (!(RECEIPT_PRESET_TYPES as readonly string[]).includes(type)) {
+        return res
+          .status(400)
+          .json({ message: `Unsupported receipt type: ${type}` });
+      }
+      presetType = type as ReceiptPresetType;
+    }
+
+    const pdfBuffer = await this.salesPdfService.generateSaleReceiptPdf(
+      sale,
+      undefined,
+      undefined,
+      presetType,
+    );
 
     const saleNumber = (sale as any).sale_number || 'unknown';
-    const filename = `receipt-${saleNumber}.pdf`;
+    const filename = `${presetType ?? 'receipt'}-${saleNumber}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    res.send(pdfBuffer);
+  }
+
+  @Get('receipt/:id/payment/:paymentId')
+  async generatePaymentReceiptPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('paymentId', ParseIntPipe) paymentId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const sale = await this.salesService.findOne(id, req.user.consumer_id!);
+
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    const pdfBuffer = await this.salesPdfService.generatePaymentReceiptPdf(
+      sale,
+      paymentId,
+    );
+
+    const saleNumber = (sale as any).sale_number || 'unknown';
+    const filename = `money-receipt-${saleNumber}-${paymentId}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', pdfBuffer.length);

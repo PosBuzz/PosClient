@@ -249,6 +249,7 @@ export class ReceiptPdfSettingController {
       customerName: 'Sample Customer (Fake)',
       customerPhone: '+880 1999 000 000',
       customerEmail: 'fake.sample@email.com',
+      customerAddress: '456 Sample Road, Apt 7B, Demo City - 1200',
       customerRewardPoints: 150,
       items: [
         {
@@ -344,6 +345,25 @@ export class ReceiptPdfSettingController {
       base.saleNumber = 'SAMPLE-RT-000123';
       base.notes =
         'SAMPLE PREVIEW ONLY - This fake return receipt is used to preview layout.';
+    } else if (type === 'chalan') {
+      base.headerText = 'SAMPLE DELIVERY CHALAN';
+      base.saleNumber = 'SAMPLE-CH-000123';
+      base.notes =
+        'SAMPLE PREVIEW ONLY - Delivery address: 456 Sample Road, Demo City. Handle with care.';
+    } else if (type === 'money_receipt') {
+      base.headerText = 'SAMPLE MONEY RECEIPT';
+      base.saleNumber = 'SAMPLE-MR-000123';
+      base.paymentStatus = 'partial';
+      base.receivedAmount = 100.0;
+      base.changeAmount = 0;
+      base.dueAmount = 67.62;
+      base.notes =
+        'SAMPLE PREVIEW ONLY - This fake money receipt is used to preview layout.';
+    } else if (type === 'delivery_slip') {
+      base.headerText = 'SAMPLE DELIVERY SLIP';
+      base.saleNumber = 'SAMPLE-DS-000123';
+      base.notes =
+        'SAMPLE PREVIEW ONLY - Deliver to: 456 Sample Road, Demo City. Call before delivery.';
     }
 
     return base;
