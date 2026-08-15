@@ -43,8 +43,8 @@ function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const isDarkMode = useDarkMode();
-  const hasSalesPermission =
-    user?.permissions?.includes(Permissions.sales) ?? false;
+  const hasBusinessInsightsPermission =
+    user?.permissions?.includes(Permissions.business_insights) ?? false;
 
   const [paymentPeriod, setPaymentPeriod] = useState<
     "daily" | "weekly" | "monthly"
@@ -103,7 +103,7 @@ function Dashboard() {
         top_products_period: topProductsPeriod,
       }),
     staleTime: queryStaleTimeMap[queryKeys.dashboardAnalytics],
-    enabled: hasSalesPermission,
+    enabled: hasBusinessInsightsPermission,
   });
 
   // Clear loading state when data loads and restore scroll position
@@ -276,7 +276,7 @@ function Dashboard() {
         </Row>
       </div>
 
-      {hasSalesPermission && isError && (
+      {hasBusinessInsightsPermission && isError && (
         <Alert
           type="error"
           showIcon
@@ -289,7 +289,7 @@ function Dashboard() {
         />
       )}
 
-      {hasSalesPermission && (
+      {hasBusinessInsightsPermission && (
         <>
           {/* KPI Summary Cards Row */}
           {/* Sales and Return metrics */}
