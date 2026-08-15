@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { errorStack } from '../../common/utils/error.util';
 
 @Injectable()
 export class ProfileService {
@@ -50,8 +51,8 @@ export class ProfileService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating consumer profile for ID ${consumerId}`,
-        error.stack,
-      ); 
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to update consumer profile',
         HttpStatus.INTERNAL_SERVER_ERROR,

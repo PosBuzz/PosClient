@@ -1,8 +1,17 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { errorMessage } from '../common/utils/error.util';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -14,12 +23,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       errorFormat: 'minimal',
     });
 
-    // @ts-ignore - Prisma event types
+    // @ts-expect-error - Prisma event types are not exposed for $on
     this.$on('error', (e: any) => {
       this.logger.error(`🔴 Database Error: ${e.message}`, e.target);
     });
 
-    // @ts-ignore - Prisma event types
+    // @ts-expect-error - Prisma event types are not exposed for $on
     this.$on('warn', (e: any) => {
       this.logger.warn(`⚠️ Database Warning: ${e.message}`);
     });
@@ -30,7 +39,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       await this.$connect();
       this.logger.log('✅ Database connected');
     } catch (error) {
-      this.logger.error(`❌ Database connection failed: ${error.message}`);
+      this.logger.error(
+        `❌ Database connection failed: ${errorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -40,7 +51,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       await this.$disconnect();
       this.logger.log('✅ Database disconnected');
     } catch (error) {
-      this.logger.warn(`⚠️ Error disconnecting: ${error.message}`);
+      this.logger.warn(`⚠️ Error disconnecting: ${errorMessage(error)}`);
     }
   }
 
@@ -50,18 +61,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async getPoolMetrics() {
     try {
       // Get database statistics
-      const stats = await this.$queryRaw<Array<{ 
-        numbackends: number;
-        xact_commit: bigint;
-        xact_rollback: bigint;
-        blks_read: bigint;
-        blks_hit: bigint;
-        tup_returned: bigint;
-        tup_fetched: bigint;
-        tup_inserted: bigint;
-        tup_updated: bigint;
-        tup_deleted: bigint;
-      }>>`
+      const stats = await this.$queryRaw<
+        Array<{
+          numbackends: number;
+          xact_commit: bigint;
+          xact_rollback: bigint;
+          blks_read: bigint;
+          blks_hit: bigint;
+          tup_returned: bigint;
+          tup_fetched: bigint;
+          tup_inserted: bigint;
+          tup_updated: bigint;
+          tup_deleted: bigint;
+        }>
+      >`
         SELECT 
           numbackends,
           xact_commit,
@@ -85,12 +98,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       `;
 
       // Get long-running queries
-      const longQueries = await this.$queryRaw<Array<{
-        pid: number;
-        duration: string;
-        query: string;
-        state: string;
-      }>>`
+      const longQueries = await this.$queryRaw<
+        Array<{
+          pid: number;
+          duration: string;
+          query: string;
+          state: string;
+        }>
+      >`
         SELECT 
           pid,
           now() - query_start as duration,
@@ -104,7 +119,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       `;
 
       const statsData = stats[0];
-      
+
       return {
         stats: {
           numbackends: statsData.numbackends,
@@ -122,7 +137,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         longRunningQueries: longQueries,
       };
     } catch (error) {
-      this.logger.error(`Failed to get pool metrics: ${error.message}`);
+      this.logger.error(`Failed to get pool metrics: ${errorMessage(error)}`);
       return null;
     }
   }
@@ -140,7 +155,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$queryRaw`SELECT 1`;
       const latency = Date.now() - startTime;
-      
+
       // Get connection count
       const connections = await this.$queryRaw<Array<{ count: bigint }>>`
         SELECT count(*) as count
@@ -163,10 +178,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         connections: connectionCount,
       };
     } catch (error) {
-      this.logger.error(`❌ Database health check failed: ${error.message}`);
+      this.logger.error(
+        `❌ Database health check failed: ${errorMessage(error)}`,
+      );
       return {
         healthy: false,
-        error: error.message,
+        error: errorMessage(error),
       };
     }
   }

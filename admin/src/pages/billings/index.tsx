@@ -83,7 +83,6 @@ const Billings = () => {
           refetch={refetch}
           onClose={onClose}
           open={open}
-          model={model}
           isEditing={isEditing}
           editedItem={editedItem}
           onSubmitSuccess={onSubmitSuccess}

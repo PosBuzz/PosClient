@@ -9,6 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { Prisma } from '@prisma/client';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class ProductVariantService {
@@ -164,7 +165,7 @@ export class ProductVariantService {
           } catch (error) {
             this.logger.error(
               `Failed to create batch ${batchDto.batch_number}:`,
-              error instanceof Error ? error.stack : error,
+              error instanceof Error ? errorStack(error) : error,
             );
             throw error;
           }
@@ -180,7 +181,7 @@ export class ProductVariantService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating product variant for ${productId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create product variant',
@@ -262,7 +263,7 @@ export class ProductVariantService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding product variant with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find product variant',
@@ -287,7 +288,7 @@ export class ProductVariantService {
         throw new NotFoundException(`Product variant with ID ${id} not found`);
       }
 
-      const updatedVariant = await this.prisma.productVariant.update({
+      const _updatedVariant = await this.prisma.productVariant.update({
         where: { id },
         data: {
           name: dto.name,
@@ -428,7 +429,7 @@ export class ProductVariantService {
         }
       }
 
-      const variant = await this.prisma.productVariant.findUnique({
+      const _variant = await this.prisma.productVariant.findUnique({
         where: { id },
         select: {
           product_id: true,
@@ -441,7 +442,7 @@ export class ProductVariantService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating product variant with ID ${id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update product variant',
@@ -473,7 +474,7 @@ export class ProductVariantService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting product variant with ID ${id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete product variant',

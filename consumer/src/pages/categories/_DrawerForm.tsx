@@ -6,22 +6,31 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 
-// @ts-ignore
+
+interface CategoryFormValues { id: number; name: string }
+
+interface DrawerFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmitSuccess: () => void;
+  isEditing: boolean;
+  editedItem: CategoryFormValues | null;
+}
+
 export default function DrawerForm({
   onClose,
   open,
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
-}) {
+}: DrawerFormProps) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.createCategory, data),
-    onSuccess: (response) => {
+    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createCategory, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.categories] });
       messageApi?.success("Category created successfully");
       form.resetFields();
@@ -35,13 +44,13 @@ export default function DrawerForm({
   });
 
   const updateData = useMutation({
-    mutationFn: async (data: any) =>
+    mutationFn: async (data: { id: number } & Record<string, unknown>) =>
       await patch(endpoints.updateCategory(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.categories] });
       messageApi?.success("Category updated successfully");
       form.resetFields();
-      onSubmitSuccess(true);
+      onSubmitSuccess();
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -58,7 +67,6 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
     createData.mutate(formValues);
   };
 

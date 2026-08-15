@@ -5,7 +5,12 @@ import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
-import { deepMerge, normalizeLineBreaks, humanPaymentMethod, humanPaymentType } from '../helpers/receipt-pdf.helpers';
+import {
+  deepMerge,
+  normalizeLineBreaks,
+  humanPaymentMethod,
+  humanPaymentType,
+} from '../helpers/receipt-pdf.helpers';
 
 @Injectable()
 export class ReturnPdfService {
@@ -25,7 +30,11 @@ export class ReturnPdfService {
     const branchId: number = returnRecord.branch_id;
 
     const [settings, branding] = await Promise.all([
-      this.receiptPdfSettingService.getActiveSettings(consumerId, 'return', branchId),
+      this.receiptPdfSettingService.getActiveSettings(
+        consumerId,
+        'return',
+        branchId,
+      ),
       this.receiptPdfSettingService.getBrandingData(consumerId, branchId),
     ]);
 
@@ -57,7 +66,9 @@ export class ReturnPdfService {
         const saleItem = item.sale_item;
 
         // Use sold_unit_price for accurate refund representation
-        const unitPrice = Number(saleItem?.sold_unit_price || saleItem?.unit_price || 0);
+        const unitPrice = Number(
+          saleItem?.sold_unit_price || saleItem?.unit_price || 0,
+        );
         const qty = Number(item.quantity) || 0;
         const lineTotal = qty * unitPrice; // Positive value for returned item
 
@@ -106,7 +117,10 @@ export class ReturnPdfService {
     });
 
     // Calculate subtotal manually from returned items to match the receipt table
-    const subtotal = returnedItems.reduce((sum, item) => sum + item.lineTotal, 0);
+    const subtotal = returnedItems.reduce(
+      (sum, item) => sum + item.lineTotal,
+      0,
+    );
 
     return {
       storeName: branding.storeName,
@@ -124,7 +138,9 @@ export class ReturnPdfService {
       headerText: settings.header?.text || 'RETURN RECEIPT',
 
       saleNumber: returnRecord.return_number || '',
-      saleDate: returnRecord.return_date ? new Date(returnRecord.return_date) : new Date(),
+      saleDate: returnRecord.return_date
+        ? new Date(returnRecord.return_date)
+        : new Date(),
       saleType: 'return',
       priceType: 'regular',
       paymentStatus: 'refunded',
@@ -132,11 +148,15 @@ export class ReturnPdfService {
       servedByName: originalSale?.served_by?.name || '',
 
       // Customer pulled from original sale
-      customerName: originalSale?.customer?.name || originalSale?.customer_name || '',
-      customerPhone: originalSale?.customer?.phone || originalSale?.customer_phone || '',
-      customerEmail: originalSale?.customer?.email || originalSale?.customer_email || '',
+      customerName:
+        originalSale?.customer?.name || originalSale?.customer_name || '',
+      customerPhone:
+        originalSale?.customer?.phone || originalSale?.customer_phone || '',
+      customerEmail:
+        originalSale?.customer?.email || originalSale?.customer_email || '',
       customerAddress: originalSale?.customer?.address || '',
-      customerRewardPoints: originalSale?.customer?.rewards_points?.total_points ?? null,
+      customerRewardPoints:
+        originalSale?.customer?.rewards_points?.total_points ?? null,
 
       items: [...returnedItems, ...exchangeItems],
 
@@ -145,7 +165,9 @@ export class ReturnPdfService {
       promotionDiscount: 0,
       shippingCost: 0,
       taxAmount: 0,
-      totalAmount: Number(returnRecord.total_refund || 0) - Number(returnRecord.total_exchange || 0), 
+      totalAmount:
+        Number(returnRecord.total_refund || 0) -
+        Number(returnRecord.total_exchange || 0),
 
       payments: (returnRecord.payments || []).map((p: any) => ({
         method: humanPaymentMethod(p.payment_method),
@@ -158,7 +180,9 @@ export class ReturnPdfService {
       changeAmount: 0,
       dueAmount: 0,
 
-      notes: normalizeLineBreaks(returnRecord.reason || returnRecord.notes || ''),
+      notes: normalizeLineBreaks(
+        returnRecord.reason || returnRecord.notes || '',
+      ),
       isOnlineOrder: false,
       onlineOrderStatus: null,
     };

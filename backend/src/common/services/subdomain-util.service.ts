@@ -12,7 +12,7 @@ export class SubdomainUtilService {
   /**
    * Extract subdomain from a full URL or hostname
    * Handles: tenant.localhost, tenant.example.com, etc.
-   * 
+   *
    * @param urlOrHost - Full URL or hostname string
    * @returns Extracted subdomain or null if not found/excluded
    */
@@ -30,7 +30,10 @@ export class SubdomainUtilService {
 
       return this.extractSubdomainFromHost(hostname);
     } catch (error) {
-      this.logger.error(`Error extracting subdomain from '${urlOrHost}':`, error);
+      this.logger.error(
+        `Error extracting subdomain from '${urlOrHost}':`,
+        error,
+      );
       return null;
     }
   }
@@ -42,7 +45,7 @@ export class SubdomainUtilService {
    * - tenant.example.com -> tenant
    * - example.com -> null (no subdomain)
    * - localhost -> null
-   * 
+   *
    * @param host - Hostname (may include port)
    * @returns Extracted subdomain or null
    */
@@ -86,7 +89,7 @@ export class SubdomainUtilService {
   /**
    * Extract subdomain from Express request object
    * Tries Origin header first, then Host header
-   * 
+   *
    * @param request - Express Request object
    * @returns Extracted subdomain or null
    */
@@ -122,7 +125,7 @@ export class SubdomainUtilService {
 
   /**
    * Check if a subdomain is in the excluded list
-   * 
+   *
    * @param subdomain - Subdomain to check
    * @returns true if subdomain is excluded (www, api, admin, app)
    */
@@ -132,7 +135,7 @@ export class SubdomainUtilService {
 
   /**
    * Get the list of excluded subdomains
-   * 
+   *
    * @returns Array of excluded subdomain strings
    */
   getExcludedSubdomains(): string[] {

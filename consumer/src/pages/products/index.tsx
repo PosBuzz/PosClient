@@ -25,6 +25,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import type { TablePaginationConfig } from "antd";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -215,15 +216,11 @@ const ProductsTable = () => {
   });
 
   // Handle table change (pagination)
-  const handleTableChange = (
-    paginationData: any,
-    filters: any,
-    sorter: any
-  ) => {
-    setPagination({
-      current: paginationData.current,
-      pageSize: paginationData.pageSize,
-    });
+  const handleTableChange = (paginationData: TablePaginationConfig) => {
+    setPagination((previous) => ({
+      current: paginationData.current ?? previous.current,
+      pageSize: paginationData.pageSize ?? previous.pageSize,
+    }));
     // The query will automatically refetch when pagination state changes
   };
 

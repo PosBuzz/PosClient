@@ -1,4 +1,3 @@
-
 // dto/update-receipt-pdf-setting.dto.ts
 
 import { IsString, IsOptional, IsObject } from 'class-validator';

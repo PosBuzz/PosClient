@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBillingHistoryDto } from './dto/create-billing-history.dto';
 import { UpdateBillingHistoryDto } from './dto/update-billing-history.dto';
+import { errorStack } from '../../common/utils/error.util';
 
 /**
  * CRUD for billing records. Replaces the generic /crud endpoint, so the query
@@ -28,7 +29,7 @@ export class BillingHistoryService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error('Fetching billing history failed', error.stack);
+      this.logger.error('Fetching billing history failed', errorStack(error));
 
       throw new HttpException(
         'Failed to fetch billing history',
@@ -49,7 +50,7 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      this.logger.error('Creating billing record failed', error.stack);
+      this.logger.error('Creating billing record failed', errorStack(error));
 
       // @@unique([consumer_id, billing_date])
       if (error.code === 'P2002') {
@@ -85,7 +86,10 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      this.logger.error(`Updating billing record ${id} failed`, error.stack);
+      this.logger.error(
+        `Updating billing record ${id} failed`,
+        errorStack(error),
+      );
 
       if (error.code === 'P2025') {
         throw new HttpException(
@@ -114,7 +118,10 @@ export class BillingHistoryService {
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Deleting billing record ${id} failed`, error.stack);
+      this.logger.error(
+        `Deleting billing record ${id} failed`,
+        errorStack(error),
+      );
 
       if (error.code === 'P2025') {
         throw new HttpException(

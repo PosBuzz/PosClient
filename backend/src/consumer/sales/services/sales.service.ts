@@ -31,6 +31,7 @@ import {
 import { RewardsService } from '../../../consumer/rewards/services/rewards.service';
 import { PromotionsService } from '../../promotions/services/promotions.service';
 import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class SalesService {
@@ -162,7 +163,9 @@ export class SalesService {
       return {
         ...sale,
         ...(items ? { items } : {}),
-        returns: saleReturns.map(({ original_sale_id, ...rest }) => rest),
+        returns: saleReturns.map(
+          ({ original_sale_id: _original_sale_id, ...rest }) => rest,
+        ),
         return_summary: {
           has_returns: saleReturns.length > 0,
           return_count: saleReturns.length,
@@ -407,17 +410,14 @@ export class SalesService {
 
       // Calculate payment totals and determine payment status
       let totalPaymentAmount = 0;
-      let paymentMethods: string[] = [];
 
       if (createSaleDto.payments && createSaleDto.payments.length > 0) {
         totalPaymentAmount = createSaleDto.payments.reduce(
           (sum, payment) => sum + payment.amount,
           0,
         );
-        paymentMethods = createSaleDto.payments.map((p) => p.payment_method);
       } else {
         totalPaymentAmount = 0;
-        paymentMethods = [];
       }
 
       // Determine payment status — "nothing paid" must be checked first, else a
@@ -614,7 +614,7 @@ export class SalesService {
 
       this.logger.error(
         `Error creating sale for consumer ${consumerId} and user ${userId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create sale',
@@ -753,7 +753,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching sales for consumer ${consumerId} with filters`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch sales',
@@ -832,7 +832,7 @@ export class SalesService {
 
       this.logger.error(
         `Error fetching sale ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch sale',
@@ -874,7 +874,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error updating note on sale ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update sale note',
@@ -908,7 +908,8 @@ export class SalesService {
       for (const transaction of transactions) {
         netByCustomer.set(
           transaction.customer_id,
-          (netByCustomer.get(transaction.customer_id) || 0) + transaction.points,
+          (netByCustomer.get(transaction.customer_id) || 0) +
+            transaction.points,
         );
       }
 
@@ -934,7 +935,7 @@ export class SalesService {
       // Never block the delete/restore itself on a rewards bookkeeping failure
       this.logger.error(
         `Failed to ${context.direction} rewards points for sale ${saleId}`,
-        error.stack,
+        errorStack(error),
       );
     }
   }
@@ -1047,7 +1048,9 @@ export class SalesService {
         direction: 'delete',
       });
 
-      this.logger.log(`Sale ${sale.sale_number} soft-deleted by user ${userId}`);
+      this.logger.log(
+        `Sale ${sale.sale_number} soft-deleted by user ${userId}`,
+      );
 
       return {
         message: 'Sale deleted and stock restored',
@@ -1056,7 +1059,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error deleting sale ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete sale',
@@ -1156,7 +1159,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error restoring sale ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to restore sale',
@@ -1313,7 +1316,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching sale by sale number ${saleNumber} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching sale',
@@ -1386,7 +1389,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching products for sale for consumer ${consumerId} and branch ${branchId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching products',
@@ -1450,7 +1453,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching product by barcode for consumer ${consumerId} and branch ${branchId} and barcode ${barcode}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching product',
@@ -1545,7 +1548,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching sales stats for consumer ${consumerId} and branch ${branchId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching sales stats',
@@ -1783,7 +1786,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error generating EOD report for consumer ${consumerId} and branch ${eodDto.branch_id} and date ${eodDto.date}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error generating EOD report',
@@ -1821,7 +1824,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error generating sale number for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error generating sale number',
@@ -1859,7 +1862,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error generating quotation number for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error generating quotation number',
@@ -1883,7 +1886,7 @@ export class SalesService {
         average_sale: stats._avg.total_amount || 0,
       };
     } catch (error) {
-      this.logger.error(`Error calculating summary stats`, error.stack);
+      this.logger.error(`Error calculating summary stats`, errorStack(error));
       throw new HttpException(
         'Error calculating summary stats',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -2004,7 +2007,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error finding all quotations for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error finding all quotations',
@@ -2058,7 +2061,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error finding quotation ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error finding quotation',
@@ -2237,7 +2240,7 @@ export class SalesService {
 
       this.logger.error(
         `Error converting quotation ${quotationId} to sale for consumer ${consumerId} and user ${userId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error converting quotation to sale',
@@ -2351,7 +2354,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching variant sales stats for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching variant sales stats',
@@ -2530,7 +2533,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching variant sales detail for variant ${variantId} and consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching variant sales detail',
@@ -2850,7 +2853,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching online orders for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching online orders',
@@ -2906,7 +2909,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error updating online order status for consumer ${consumerId} and order ${id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error updating online order status',
@@ -2972,7 +2975,7 @@ export class SalesService {
     } catch (error) {
       this.logger.error(
         `Error fetching online order stats for consumer ${consumerId} and branch ${branchId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Error fetching online order stats',

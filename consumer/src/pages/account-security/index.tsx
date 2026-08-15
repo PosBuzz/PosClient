@@ -9,7 +9,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Text } = Typography;
 
-function index() {
+function AccountSecurity() {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const { user: userData } = useAuthStore();
@@ -17,7 +17,7 @@ function index() {
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(endpoints.changePassword, data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       messageApi?.success("Password changed successfully!");
       form.resetFields();
     },
@@ -132,4 +132,4 @@ function index() {
   );
 }
 
-export default index;
+export default AccountSecurity;

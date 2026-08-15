@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUnitDto } from '../dto/create-unit.dto';
 import { UpdateUnitDto } from '../dto/update-unit.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class UnitService {
@@ -42,7 +43,7 @@ export class UnitService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating unit for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create unit',
@@ -74,7 +75,7 @@ export class UnitService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching unit with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch unit',
@@ -112,7 +113,7 @@ export class UnitService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating unit with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update unit',
@@ -133,7 +134,7 @@ export class UnitService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting unit with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete unit',

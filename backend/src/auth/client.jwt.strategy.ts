@@ -50,10 +50,10 @@ export class JwtClientStrategy extends PassportStrategy(
     if (!user) throw new Error('Client user not found');
 
     const {
-      password,
-      created_at,
-      updated_at,
-      consumer,
+      password: _password,
+      created_at: _created_at,
+      updated_at: _updated_at,
+      consumer: _consumer,
       ...userWithoutPassword
     } = user;
 

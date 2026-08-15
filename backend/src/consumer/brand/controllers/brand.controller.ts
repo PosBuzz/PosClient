@@ -31,7 +31,10 @@ export class BrandController {
 
   @Post()
   async create(@Body() createBrandDto: CreateBrandDto, @Req() req: Request) {
-    return this.brandService.create(createBrandDto, Number(req.user.consumer_id));
+    return this.brandService.create(
+      createBrandDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Get()
@@ -50,7 +53,11 @@ export class BrandController {
     @Body() updateBrandDto: UpdateBrandDto,
     @Req() req: Request,
   ) {
-    return this.brandService.update(+id, updateBrandDto, Number(req.user.consumer_id));
+    return this.brandService.update(
+      +id,
+      updateBrandDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @HasPermissions([ConsumerPermission.delete_product])

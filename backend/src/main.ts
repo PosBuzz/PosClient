@@ -184,4 +184,4 @@ async function bootstrap() {
   logger.log(`CORS Origins: ${configService.corsOrigins.join(', ')}`);
 }
 
-bootstrap();
+void bootstrap();

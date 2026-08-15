@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { MakePaymentDto } from '../dto/make-payment.dto';
 import { PartialPaymentFiltersDto } from '../dto/partial-payment-filters.dto';
 import { Prisma } from '@prisma/client';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class PaymentsService {
@@ -117,7 +118,7 @@ export class PaymentsService {
     } catch (error) {
       this.logger.error(
         `Error getting partially paid sales for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get partially paid sales',
@@ -192,7 +193,7 @@ export class PaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error getting sale for payment with ID ${saleId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get sale for payment',
@@ -327,7 +328,7 @@ export class PaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error making payment for sale with ID ${paymentData.sale_id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to make payment',
@@ -373,7 +374,7 @@ export class PaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching sale payments with ID ${saleId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch sale payments',

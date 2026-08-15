@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsBoolean,
   IsDecimal,
-  IsUrl,
   Min,
   IsArray,
   ValidateNested,

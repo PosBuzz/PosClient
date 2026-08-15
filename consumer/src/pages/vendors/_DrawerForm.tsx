@@ -8,22 +8,38 @@ import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
-// @ts-ignore
+
+interface VendorFormValues {
+  id: number;
+  name: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+interface DrawerFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmitSuccess: () => void;
+  isEditing: boolean;
+  editedItem: VendorFormValues | null;
+}
+
 export default function DrawerForm({
   onClose,
   open,
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
-}) {
+}: DrawerFormProps) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.createVendor, data),
-    onSuccess: (response) => {
+    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createVendor, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor created successfully");
       form.resetFields();
@@ -37,13 +53,13 @@ export default function DrawerForm({
   });
 
   const updateData = useMutation({
-    mutationFn: async (data: any) =>
+    mutationFn: async (data: { id: number } & Record<string, unknown>) =>
       await patch(endpoints.updateVendor(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.vendors] });
       messageApi?.success("Vendor updated successfully");
       form.resetFields();
-      onSubmitSuccess(true);
+      onSubmitSuccess();
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -68,7 +84,6 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
     createData.mutate(payload);
   };
 
@@ -130,7 +145,7 @@ export default function DrawerForm({
           rules={[
             { required: false },
             {
-              pattern: /^[\d\s\-\+\(\)]+$/,
+              pattern: /^[\d\s\-+()]+$/,
               message: "Please enter a valid phone number",
             },
           ]}

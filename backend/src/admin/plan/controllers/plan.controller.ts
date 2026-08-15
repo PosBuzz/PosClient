@@ -46,7 +46,7 @@ export class PlanController {
   }
 
   @Patch(':id')
-  update(@Param('id',ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
     return this.planService.update(id, dto);
   }
 

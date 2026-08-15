@@ -35,7 +35,7 @@ const Customers = () => {
     setOpen(true);
   };
 
-  const onSubmitSuccess = (isEditing?: boolean) => {
+  const onSubmitSuccess = () => {
     setOpen(false);
     setIsEditing(false);
     setEditedItem(null);

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { collectBatchLocations } from '../utils/batch-location.util';
 import { InventoryHelperService } from './inventory-helper.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class InventoryService {
@@ -109,7 +110,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting inventory summary with branch ID ${branchId} for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get inventory summary',
@@ -260,7 +261,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting stock by variant for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get stock by variant',
@@ -298,7 +299,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting expiring batches for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get expiring batches',
@@ -325,7 +326,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting products for inventory for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get products for inventory',
@@ -361,7 +362,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting product variants for ${productId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get product variants',
@@ -464,7 +465,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error getting variant stock with ID ${variantId} for consumer ${consumerId} branch ${branchId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get variant stock',
@@ -544,7 +545,7 @@ export class InventoryService {
 
           // Find branches with low stock
           const lowStockBranches = Object.entries(branchStockMap).filter(
-            ([branchId, stock]) => stock <= (variant.alert_quantity || 0),
+            ([, stock]) => stock <= (variant.alert_quantity || 0),
           );
 
           if (lowStockBranches.length > 0) {
@@ -574,7 +575,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error fetching low stock items for consumer ${consumerId} branch ${branchId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch low stock items',
@@ -753,7 +754,7 @@ export class InventoryService {
     } catch (error) {
       this.logger.error(
         `Error finding inventory movements with variant ID ${variantId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory movements',

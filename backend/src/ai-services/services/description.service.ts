@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from 'src/config/config.service';
 import { RabbitMQService } from 'src/rabbitmq/rabbitmq.service';
+import { errorMessage } from '../../common/utils/error.util';
 
 @Injectable()
 export class DescriptionService {
@@ -47,7 +48,7 @@ export class DescriptionService {
       } catch (error) {
         // If RabbitMQ fails, fall back to HTTP
         this.logger.warn(
-          `RabbitMQ processing failed: ${error.message}, falling back to direct HTTP call`,
+          `RabbitMQ processing failed: ${errorMessage(error)}, falling back to direct HTTP call`,
         );
         return await this.generateDescriptionViaHttp(
           dto.product,
@@ -56,7 +57,9 @@ export class DescriptionService {
         );
       }
     } catch (error) {
-      this.logger.error(`Failed to generate description: ${error.message}`);
+      this.logger.error(
+        `Failed to generate description: ${errorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -85,16 +88,13 @@ export class DescriptionService {
 
       return response.data.description;
     } catch (error) {
-      this.logger.error(`HTTP fallback failed: ${error.message}`);
+      this.logger.error(`HTTP fallback failed: ${errorMessage(error)}`);
       throw error;
     }
   }
 
   // Add the new method for submitting feedback
-  async submitFeedback(
-    dto: SubmitFeedbackDto,
-    jwt: string,
-  ): Promise<boolean> {
+  async submitFeedback(dto: SubmitFeedbackDto, jwt: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
         this.httpService.post(
@@ -117,7 +117,7 @@ export class DescriptionService {
       this.logger.log(`Feedback submitted for product: ${dto.product}`);
       return response.data.success;
     } catch (error) {
-      this.logger.error(`Failed to submit feedback: ${error.message}`);
+      this.logger.error(`Failed to submit feedback: ${errorMessage(error)}`);
       throw error;
     }
   }

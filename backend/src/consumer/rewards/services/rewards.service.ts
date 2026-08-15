@@ -19,6 +19,7 @@ import {
 } from '../dto/rewards-transaction.dto';
 import { RewardsFiltersDto } from '../dto/rewards-filters.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class RewardsService {
@@ -53,7 +54,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error fetching rewards settings for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch rewards settings',
@@ -81,7 +82,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error creating or updating rewards settings for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create or update rewards settings',
@@ -142,7 +143,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error fetching customer points for customer ${customerId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch customer points',
@@ -208,7 +209,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error fetching customers with points for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch customers with points',
@@ -274,7 +275,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error earning points with customer ${customerId} sale ${saleId} amount ${purchaseAmount} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to earn points',
@@ -335,7 +336,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error redeeming points with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to redeem points',
@@ -361,7 +362,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error adjusting points with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to adjust points',
@@ -446,7 +447,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error creating point transaction with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create point transaction',
@@ -548,7 +549,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error fetching point transactions for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch point transactions',
@@ -564,10 +565,6 @@ export class RewardsService {
       if (!settings.is_enabled || !settings.points_expire_days) {
         return { expired: 0 };
       }
-
-      const expiryDate = new Date(
-        Date.now() - settings.points_expire_days * 24 * 60 * 60 * 1000,
-      );
 
       // Find expired point transactions that haven't been processed
       const expiredTransactions =
@@ -625,7 +622,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error expiring points for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to expire points',
@@ -682,7 +679,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error validating point redemption with customer ${customerId} points ${points} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to validate point redemption',
@@ -751,7 +748,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error validating credit payment with customer ${customerId} amount ${creditAmount} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to validate credit payment',
@@ -798,7 +795,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error processing credit payment with customer ${customerId} amount ${creditAmount} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to process credit payment',
@@ -845,7 +842,7 @@ export class RewardsService {
     } catch (error) {
       this.logger.error(
         `Error processing credit refund with customer ${customerId} amount ${refundAmount} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to process credit refund',

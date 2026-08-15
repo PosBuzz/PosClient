@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { exec as execCb } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 import { ConfigService } from '../../config/config.service';
+import { errorStack } from '../../common/utils/error.util';
 
 const exec = promisify(execCb);
 
@@ -47,7 +43,7 @@ export class BackupRestoreService {
 
       return filePath;
     } catch (error) {
-      this.logger.error(`Failed to create backup`, error.stack);
+      this.logger.error(`Failed to create backup`, errorStack(error));
       throw new HttpException(
         'Failed to create backup',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -76,7 +72,7 @@ export class BackupRestoreService {
         fs.unlinkSync(filePath);
       }
     } catch (error) {
-      this.logger.error(`Failed to restore backup`, error.stack);
+      this.logger.error(`Failed to restore backup`, errorStack(error));
       throw new HttpException(
         'Failed to restore backup',
         HttpStatus.INTERNAL_SERVER_ERROR,

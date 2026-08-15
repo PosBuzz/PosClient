@@ -8,7 +8,7 @@ import {
   Post,
   Query,
   Req,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
@@ -43,7 +43,10 @@ export class RewardsController {
     @Req() req: Request,
     @Body() dto: CreateRewardsSettingsDto,
   ) {
-    return await this.rewardsService.createOrUpdateSettings(Number(req.user.consumer_id), dto);
+    return await this.rewardsService.createOrUpdateSettings(
+      Number(req.user.consumer_id),
+      dto,
+    );
   }
 
   @Patch('settings')
@@ -51,7 +54,10 @@ export class RewardsController {
     @Req() req: Request,
     @Body() dto: UpdateRewardsSettingsDto,
   ) {
-    return await this.rewardsService.createOrUpdateSettings(Number(req.user.consumer_id), dto);
+    return await this.rewardsService.createOrUpdateSettings(
+      Number(req.user.consumer_id),
+      dto,
+    );
   }
 
   // Customer points endpoints
@@ -60,7 +66,10 @@ export class RewardsController {
     @Req() req: Request,
     @Query() filters: RewardsFiltersDto,
   ) {
-    return await this.rewardsService.getCustomersWithPoints(Number(req.user.consumer_id), filters);
+    return await this.rewardsService.getCustomersWithPoints(
+      Number(req.user.consumer_id),
+      filters,
+    );
   }
 
   @Get('customers/:id/points')
@@ -68,7 +77,10 @@ export class RewardsController {
     @Req() req: Request,
     @Param('id', ParseIntPipe) customerId: number,
   ) {
-    return await this.rewardsService.getCustomerPoints(Number(req.user.consumer_id), customerId);
+    return await this.rewardsService.getCustomerPoints(
+      Number(req.user.consumer_id),
+      customerId,
+    );
   }
 
   @Post('customers/:id/redeem')
@@ -103,7 +115,11 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Param('points', ParseIntPipe) points: number,
   ) {
-    return await this.rewardsService.canRedeemPoints(Number(req.user.consumer_id), customerId, points);
+    return await this.rewardsService.canRedeemPoints(
+      Number(req.user.consumer_id),
+      customerId,
+      points,
+    );
   }
 
   // Transaction endpoints
@@ -112,7 +128,10 @@ export class RewardsController {
     @Req() req: Request,
     @Query() filters: RewardsFiltersDto,
   ) {
-    return await this.rewardsService.getPointTransactions(Number(req.user.consumer_id), filters);
+    return await this.rewardsService.getPointTransactions(
+      Number(req.user.consumer_id),
+      filters,
+    );
   }
 
   @Get('customers/:id/transactions')
@@ -122,7 +141,10 @@ export class RewardsController {
     @Query() filters: RewardsFiltersDto,
   ) {
     const filtersWithCustomer = { ...filters, customer_id: customerId };
-    return await this.rewardsService.getPointTransactions(Number(req.user.consumer_id), filtersWithCustomer);
+    return await this.rewardsService.getPointTransactions(
+      Number(req.user.consumer_id),
+      filtersWithCustomer,
+    );
   }
 
   // Utility endpoints
@@ -136,9 +158,18 @@ export class RewardsController {
     @Req() req: Request,
     @Param('points', ParseIntPipe) points: number,
   ) {
-    const settings = await this.rewardsService.getSettings(Number(req.user.consumer_id));
-    const value = this.rewardsService.calculateRedemptionValue(points, settings.redemption_value);
-    return { points, value, redemption_rate: Number(settings.redemption_value) };
+    const settings = await this.rewardsService.getSettings(
+      Number(req.user.consumer_id),
+    );
+    const value = this.rewardsService.calculateRedemptionValue(
+      points,
+      settings.redemption_value,
+    );
+    return {
+      points,
+      value,
+      redemption_rate: Number(settings.redemption_value),
+    };
   }
 
   // CREDIT payment validation and processing
@@ -152,11 +183,11 @@ export class RewardsController {
     if (isNaN(creditAmount) || creditAmount <= 0) {
       return { isValid: false, reason: 'Invalid credit amount' };
     }
-    
+
     return await this.rewardsService.validateCreditPayment(
-      Number(req.user.consumer_id), 
-      customerId, 
-      creditAmount
+      Number(req.user.consumer_id),
+      customerId,
+      creditAmount,
     );
   }
 
@@ -171,7 +202,7 @@ export class RewardsController {
       customerId,
       dto.amount,
       dto.sale_id,
-      dto.reference
+      dto.reference,
     );
   }
 
@@ -179,11 +210,12 @@ export class RewardsController {
   async processCreditRefund(
     @Req() req: Request,
     @Param('id', ParseIntPipe) customerId: number,
-    @Body() dto: { 
-      amount: number; 
-      original_sale_id?: number; 
-      return_id?: number; 
-      reference?: string 
+    @Body()
+    dto: {
+      amount: number;
+      original_sale_id?: number;
+      return_id?: number;
+      reference?: string;
     },
   ) {
     return await this.rewardsService.processCreditRefund(
@@ -192,7 +224,7 @@ export class RewardsController {
       dto.amount,
       dto.original_sale_id,
       dto.return_id,
-      dto.reference
+      dto.reference,
     );
   }
 }

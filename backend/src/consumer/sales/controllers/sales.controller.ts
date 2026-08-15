@@ -21,7 +21,6 @@ import { PermissionsGuard } from '../../../auth/guards/permissions.guard';
 import { HasPermissions } from '../../../decorators/hasPermissions.decorator';
 import {
   RECEIPT_PRESET_TYPES,
-  ReceiptPdfSettings,
   ReceiptPresetType,
 } from '../../receipt-pdf/preset/receipt-pdf-settings';
 import { SalesPdfService } from '../../receipt-pdf/services/sales-pdf.service';

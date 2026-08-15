@@ -1,12 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsNumber,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsNumber, IsInt, IsOptional, Min } from 'class-validator';
 
 export class CreateRewardsSettingsDto {
   @IsOptional()
@@ -24,7 +17,7 @@ export class CreateRewardsSettingsDto {
   minimum_purchase_amount: number = 0;
 
   @IsOptional()
-  @Transform(({ value }) => value ? Number(value) : null)
+  @Transform(({ value }) => (value ? Number(value) : null))
   @IsNumber()
   @Min(0)
   maximum_points_per_sale?: number;

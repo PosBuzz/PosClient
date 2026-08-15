@@ -6,7 +6,7 @@ import { endpoints } from "../../api/endpoints";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 
-export default function _TableGrid({ onClickEdit }) {
+export default function TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
 
   const {

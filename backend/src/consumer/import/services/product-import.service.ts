@@ -232,7 +232,11 @@ export class ProductImportService {
       const description = validator.text('Description', { max: 1000 });
       const categoryName = validator.text('Category', { max: 191 });
       const brandName = validator.text('Brand', { max: 191 });
-      const tax = validator.number('Tax %', { min: 0, max: 100, integer: true });
+      const tax = validator.number('Tax %', {
+        min: 0,
+        max: 100,
+        integer: true,
+      });
       const taxMethod = validator.choice('Tax Method', TAX_METHODS, {
         fallback: 'EXCLUSIVE',
       });

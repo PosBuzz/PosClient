@@ -35,7 +35,10 @@ export class CategoryController {
     @Body() createCategoryDto: CreateCategoryDto,
     @Req() req: Request,
   ) {
-    return this.categoryService.create(createCategoryDto, Number(req.user.consumer_id));
+    return this.categoryService.create(
+      createCategoryDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Get()
@@ -54,7 +57,11 @@ export class CategoryController {
     @Body() updateCategoryDto: UpdateCategoryDto,
     @Req() req: Request,
   ) {
-    return this.categoryService.update(+id, updateCategoryDto, Number(req.user.consumer_id));
+    return this.categoryService.update(
+      +id,
+      updateCategoryDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Delete(':id')

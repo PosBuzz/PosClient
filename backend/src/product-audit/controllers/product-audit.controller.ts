@@ -25,22 +25,22 @@ export class ProductAuditController {
 
   // 2. PDF Download endpoint
   @Get('pdf')
-  async getAuditPdf(@Req() req: Request, @Query() query: GetProductAuditDto, @Res() res: Response) {
-    try {
-      const pdfBuffer = await this.productAuditService.generateAuditReport(
-        Number(req?.user.consumer_id),
-        query,
-      );
+  async getAuditPdf(
+    @Req() req: Request,
+    @Query() query: GetProductAuditDto,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.productAuditService.generateAuditReport(
+      Number(req?.user.consumer_id),
+      query,
+    );
 
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="audit-variant-${query.variant_id}.pdf"`,
-        'Content-Length': pdfBuffer.length,
-      });
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="audit-variant-${query.variant_id}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
 
-      res.end(pdfBuffer);
-    } catch (error) {
-      throw error;
-    }
+    res.end(pdfBuffer);
   }
 }
