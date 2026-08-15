@@ -3,7 +3,7 @@ import * as bcryptjs from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
- const DEFAULT_RECEIPT_SETTINGS = {
+const DEFAULT_RECEIPT_SETTINGS = {
   page: {
     size: 'A4',
     margins: { top: 50, right: 50, bottom: 50, left: 50 },
@@ -71,7 +71,8 @@ const prisma = new PrismaClient();
   notes: { show: false },
   footer: {
     showTerms: true,
-    termsText: 'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
+    termsText:
+      'Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -85,7 +86,7 @@ const prisma = new PrismaClient();
   },
 };
 
- const DEFAULT_QUOTATION_SETTINGS = {
+const DEFAULT_QUOTATION_SETTINGS = {
   ...DEFAULT_RECEIPT_SETTINGS,
   header: {
     show: true,
@@ -148,7 +149,8 @@ const prisma = new PrismaClient();
   notes: { show: true },
   footer: {
     showTerms: true,
-    termsText: 'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
+    termsText:
+      'This quotation is valid for 30 days from the date of issue. Prices are subject to change after expiration.',
     showBarcode: false,
     showThankYou: true,
     showPrintDate: true,
@@ -162,7 +164,7 @@ const prisma = new PrismaClient();
   },
 };
 
- const DEFAULT_RETURN_SETTINGS = {
+const DEFAULT_RETURN_SETTINGS = {
   ...DEFAULT_RECEIPT_SETTINGS,
   header: {
     show: true,
@@ -216,7 +218,8 @@ const prisma = new PrismaClient();
   notes: { show: true },
   footer: {
     showTerms: true,
-    termsText: 'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
+    termsText:
+      'Refunds will be processed within 3-5 business days. Items must be in their original condition with tags attached.',
     showBarcode: true,
     showThankYou: true,
     showPrintDate: true,
@@ -335,6 +338,7 @@ async function main() {
     'inventory_adjustment',
     'customers',
     'sales',
+    'business_insights',
     'quotations',
     'companyProfile',
     'receipt_settings',

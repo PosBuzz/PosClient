@@ -107,11 +107,13 @@ export class SalesController {
   }
 
   @Get('reports/eod')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getEODReport(@Query() eodDto: EODReportDto, @Req() req: Request) {
     return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
   }
 
   @Get('reports/business/pdf')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getBusinessReportPdf(
     @Query() reportDto: EODReportDto,
     @Req() req: Request,
@@ -139,6 +141,7 @@ export class SalesController {
   }
 
   @Get('reports/daily-target')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getDailyTargetReport(
     @Query() dailyTargetDto: DailyTargetReportDto,
     @Req() req: Request,
@@ -280,6 +283,7 @@ export class SalesController {
   }
 
   @Get('variant-sales-stats')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getVariantSalesStats(
     @Query() query: GetVariantSalesStatsDto,
     @Req() req: Request,
@@ -301,6 +305,7 @@ export class SalesController {
   }
 
   @Get('variant-sales-stats/:variantId')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getVariantSalesDetail(
     @Param('variantId', ParseIntPipe) variantId: number,
     @Query() query: GetVariantSalesStatsDto,
@@ -319,6 +324,7 @@ export class SalesController {
   }
 
   @Get('user-sales-stats')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getUserSalesStats(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -337,6 +343,7 @@ export class SalesController {
   }
 
   @Get('user-sales-stats/:userId')
+  @HasPermissions([ConsumerPermission.business_insights])
   async getUserSalesDetail(
     @Param('userId', ParseIntPipe) userId: number,
     @Query() query: GetUserSalesDetailDto,

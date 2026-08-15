@@ -9,7 +9,7 @@ import { DashboardService } from '../services/dashboard.service';
 
 @Controller('consumer/dashboard')
 @UseGuards(ClientAuthGuard, PermissionsGuard)
-@HasPermissions([ConsumerPermission.sales])
+@HasPermissions([ConsumerPermission.business_insights])
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 

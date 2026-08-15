@@ -384,7 +384,7 @@ export const routes = [
       {
         path: "user-sales-stats",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.business_insights}>
             <UserSalesStats />
           </RequirePermission>
         ),
@@ -392,7 +392,7 @@ export const routes = [
       {
         path: "user-sales-stats/:userId",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.business_insights}>
             <ViewUserSalesStats />
           </RequirePermission>
         ),
@@ -451,7 +451,7 @@ export const routes = [
       {
         path: "product-variant-sales-stats",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.business_insights}>
             <ProductVariantSalesStats />
           </RequirePermission>
         ),
@@ -459,7 +459,7 @@ export const routes = [
       {
         path: "product-variant-sales-stats/:variantId",
         element: (
-          <RequirePermission permission={Permissions.view_product}>
+          <RequirePermission permission={Permissions.business_insights}>
             <ViewVariantSalesStats />
           </RequirePermission>
         ),
@@ -467,7 +467,7 @@ export const routes = [
       {
         path: "daily-target",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.business_insights}>
             <DailyTargetReport />
           </RequirePermission>
         ),
@@ -475,7 +475,7 @@ export const routes = [
       {
         path: "business-report",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.business_insights}>
             <BusinessReport />
           </RequirePermission>
         ),
@@ -483,7 +483,7 @@ export const routes = [
       {
         path: "operational-costs",
         element: (
-          <RequirePermission permission={Permissions.sales}>
+          <RequirePermission permission={Permissions.business_insights}>
             <OperationalCosts />
           </RequirePermission>
         ),
