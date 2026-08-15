@@ -308,11 +308,12 @@ export class SalesService {
                 `Batch ${item.batch_id} not found for variant ${item.variant_id}`,
               );
             }
-            availableStock = selectedBatch.quantity;
+            availableStock =
+              selectedBatch.quantity - selectedBatch.reserved_quantity;
           } else {
             // Use FIFO (First In, First Out) - oldest batch first
             selectedBatch = variant.inventory_items
-              .filter((batch) => batch.quantity > 0)
+              .filter((batch) => batch.quantity - batch.reserved_quantity > 0)
               .sort(
                 (a, b) => a.created_at.getTime() - b.created_at.getTime(),
               )[0];
@@ -322,7 +323,8 @@ export class SalesService {
                 `No stock available for variant ${item.variant_id}`,
               );
             }
-            availableStock = selectedBatch.quantity;
+            availableStock =
+              selectedBatch.quantity - selectedBatch.reserved_quantity;
           }
 
           if (availableStock < item.quantity) {
@@ -459,6 +461,8 @@ export class SalesService {
             online_order_status: createSaleDto.is_online_order
               ? createSaleDto.online_order_status || 'PENDING'
               : null,
+            is_delivery_later: createSaleDto.is_delivery_later || false,
+            delivery_status: createSaleDto.is_delivery_later ? 'PENDING' : null,
           },
         });
 
@@ -515,28 +519,29 @@ export class SalesService {
             if (!isQuotation && item.selectedBatch) {
               const updatedBatch = await tx.inventoryBatch.update({
                 where: { id: item.selectedBatch.id },
-                data: {
-                  quantity: { decrement: item.quantity },
-                },
+                data: createSaleDto.is_delivery_later
+                  ? { reserved_quantity: { increment: item.quantity } }
+                  : { quantity: { decrement: item.quantity } },
               });
 
-              // Create SALE_OUT audit log
-              await tx.inventoryAuditLog.create({
-                data: {
-                  consumer_id: consumerId,
-                  branch_id: createSaleDto.branch_id,
-                  variant_id: item.variant_id,
-                  batch_id: item.selectedBatch.id,
-                  inventoryBatchId: item.selectedBatch.id,
-                  event_type: 'SALE_OUT',
-                  quantity_delta: -item.quantity,
-                  quantity_after: updatedBatch.quantity,
-                  reference_id: saleItem.id,
-                  reference_type: 'sale_items',
-                  notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
-                  created_by_user_id: userId,
-                },
-              });
+              if (!createSaleDto.is_delivery_later) {
+                await tx.inventoryAuditLog.create({
+                  data: {
+                    consumer_id: consumerId,
+                    branch_id: createSaleDto.branch_id,
+                    variant_id: item.variant_id,
+                    batch_id: item.selectedBatch.id,
+                    inventoryBatchId: item.selectedBatch.id,
+                    event_type: 'SALE_OUT',
+                    quantity_delta: -item.quantity,
+                    quantity_after: updatedBatch.quantity,
+                    reference_id: saleItem.id,
+                    reference_type: 'sale_items',
+                    notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
+                    created_by_user_id: userId,
+                  },
+                });
+              }
             }
           }),
         );
@@ -1009,10 +1014,21 @@ export class SalesService {
         for (const item of sale.items) {
           if (!item.batch_id) continue;
 
+          const isPendingDelivery =
+            sale.is_delivery_later && sale.delivery_status === 'PENDING';
+          const isCancelledDelivery =
+            sale.is_delivery_later && sale.delivery_status === 'CANCELLED';
+
+          if (isCancelledDelivery) continue;
+
           const updatedBatch = await tx.inventoryBatch.update({
             where: { id: item.batch_id },
-            data: { quantity: { increment: item.quantity } },
+            data: isPendingDelivery
+              ? { reserved_quantity: { decrement: item.quantity } }
+              : { quantity: { increment: item.quantity } },
           });
+
+          if (isPendingDelivery) continue;
 
           await tx.inventoryAuditLog.create({
             data: {
@@ -1097,14 +1113,29 @@ export class SalesService {
       );
     }
 
+    const isPendingDelivery =
+      sale.is_delivery_later && sale.delivery_status === 'PENDING';
+    const isCancelledDelivery =
+      sale.is_delivery_later && sale.delivery_status === 'CANCELLED';
+
     const batches = await this.prisma.inventoryBatch.findMany({
       where: { id: { in: [...requiredByBatch.keys()] } },
-      select: { id: true, quantity: true, batch_number: true },
+      select: {
+        id: true,
+        quantity: true,
+        reserved_quantity: true,
+        batch_number: true,
+      },
     });
 
-    const missing = batches.filter(
-      (batch) => batch.quantity < (requiredByBatch.get(batch.id) || 0),
-    );
+    const missing = isCancelledDelivery
+      ? []
+      : batches.filter((batch) => {
+          const required = requiredByBatch.get(batch.id) || 0;
+          return isPendingDelivery
+            ? batch.quantity - batch.reserved_quantity < required
+            : batch.quantity < required;
+        });
 
     if (missing.length || batches.length !== requiredByBatch.size) {
       throw new BadRequestException(
@@ -1115,10 +1146,16 @@ export class SalesService {
     try {
       await this.prisma.$transaction(async (tx) => {
         for (const item of batchedItems) {
+          if (isCancelledDelivery) continue;
+
           const updatedBatch = await tx.inventoryBatch.update({
             where: { id: item.batch_id! },
-            data: { quantity: { decrement: item.quantity } },
+            data: isPendingDelivery
+              ? { reserved_quantity: { increment: item.quantity } }
+              : { quantity: { decrement: item.quantity } },
           });
+
+          if (isPendingDelivery) continue;
 
           await tx.inventoryAuditLog.create({
             data: {
@@ -2152,7 +2189,7 @@ export class SalesService {
           }
 
           const selectedBatch = variant.inventory_items
-            .filter((batch) => batch.quantity > 0)
+            .filter((batch) => batch.quantity - batch.reserved_quantity > 0)
             .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())[0];
 
           if (!selectedBatch) {
@@ -2161,7 +2198,8 @@ export class SalesService {
             );
           }
 
-          const availableStock = selectedBatch.quantity;
+          const availableStock =
+            selectedBatch.quantity - selectedBatch.reserved_quantity;
 
           if (availableStock < item.quantity) {
             throw new BadRequestException(
@@ -3019,6 +3057,141 @@ export class SalesService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getPendingDeliveries(consumerId: number, filters: any) {
+    const page = Math.max(1, Number(filters.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(filters.limit) || 20));
+    const where: any = {
+      consumer_id: consumerId,
+      is_delivery_later: true,
+      deleted_at: null,
+    };
+    if (filters.status) where.delivery_status = filters.status;
+    if (filters.branch_id) where.branch_id = Number(filters.branch_id);
+    if (filters.search) {
+      where.OR = [
+        { sale_number: { contains: filters.search, mode: 'insensitive' } },
+        { customer_name: { contains: filters.search, mode: 'insensitive' } },
+        { customer_phone: { contains: filters.search } },
+      ];
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        include: {
+          branch: true,
+          customer: true,
+          items: {
+            include: {
+              variant: { include: { product: true, sale_unit: true } },
+              batch: true,
+            },
+          },
+          payments: true,
+        },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.sale.count({ where }),
+    ]);
+    return {
+      data,
+      meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async completePendingDelivery(
+    id: number,
+    consumerId: number,
+    userId: number,
+  ) {
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+        is_delivery_later: true,
+        delivery_status: 'PENDING',
+        deleted_at: null,
+      },
+      include: { items: true },
+    });
+    if (!sale) throw new NotFoundException('Pending delivery not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of sale.items) {
+        if (!item.batch_id) continue;
+        const batch = await tx.inventoryBatch.findUnique({
+          where: { id: item.batch_id },
+        });
+        if (
+          !batch ||
+          batch.reserved_quantity < item.quantity ||
+          batch.quantity < item.quantity
+        ) {
+          throw new BadRequestException(
+            'Reserved inventory is no longer available for this delivery.',
+          );
+        }
+        const updated = await tx.inventoryBatch.update({
+          where: { id: item.batch_id },
+          data: {
+            quantity: { decrement: item.quantity },
+            reserved_quantity: { decrement: item.quantity },
+          },
+        });
+        await tx.inventoryAuditLog.create({
+          data: {
+            consumer_id: consumerId,
+            branch_id: sale.branch_id,
+            variant_id: item.variant_id,
+            batch_id: item.batch_id,
+            inventoryBatchId: item.batch_id,
+            event_type: 'SALE_OUT',
+            quantity_delta: -item.quantity,
+            quantity_after: updated.quantity,
+            reference_id: item.id,
+            reference_type: 'sale_items',
+            notes: `Delivery completed for sale #${sale.sale_number}`,
+            created_by_user_id: userId,
+          },
+        });
+      }
+      await tx.sale.update({
+        where: { id },
+        data: { delivery_status: 'DELIVERED', delivered_at: new Date() },
+      });
+    });
+    return this.findOne(id, consumerId);
+  }
+
+  async cancelPendingDelivery(id: number, consumerId: number) {
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        consumer_id: consumerId,
+        is_delivery_later: true,
+        delivery_status: 'PENDING',
+        deleted_at: null,
+      },
+      include: { items: true },
+    });
+    if (!sale) throw new NotFoundException('Pending delivery not found');
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of sale.items) {
+        if (!item.batch_id) continue;
+        await tx.inventoryBatch.update({
+          where: { id: item.batch_id },
+          data: { reserved_quantity: { decrement: item.quantity } },
+        });
+      }
+      await tx.sale.update({
+        where: { id },
+        data: { delivery_status: 'CANCELLED' },
+      });
+    });
+    return this.findOne(id, consumerId);
   }
 
   async getDailyTargetReport(

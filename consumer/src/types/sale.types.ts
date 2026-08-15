@@ -120,6 +120,9 @@ export interface Sale {
   }>;
   is_online_order?: boolean;
   online_order_status?: OnlineOrderStatus | string;
+  is_delivery_later?: boolean;
+  delivery_status?: "PENDING" | "DELIVERED" | "CANCELLED";
+  delivered_at?: string;
   items: SaleItem[];
   payments?: SalePayment[]; // New: support for partial payments
   returns?: SaleReturnRecord[];
@@ -152,6 +155,7 @@ export interface SaleFormData {
   payments?: SalePayment[]; // New: support for partial payments
   is_online_order?: boolean;
   online_order_status?: OnlineOrderStatus | string;
+  is_delivery_later?: boolean;
 }
 
 export interface DailyTargetRow {

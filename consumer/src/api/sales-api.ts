@@ -365,4 +365,11 @@ export const salesApi = {
       status,
     });
   },
+
+  getPendingDeliveries: (filters: any): Promise<SaleListResponse> =>
+    get(`${endpoints.getSales}/pending-deliveries/list`, filters),
+  completePendingDelivery: (id: number): Promise<Sale> =>
+    patch(`${endpoints.getSales}/pending-deliveries/${id}/complete`, {}),
+  cancelPendingDelivery: (id: number): Promise<Sale> =>
+    patch(`${endpoints.getSales}/pending-deliveries/${id}/cancel`, {}),
 };

@@ -4,6 +4,8 @@ import { endpoints } from "./endpoints";
 export interface InventorySummary {
   total_batches: number;
   total_quantity: number;
+  physical_quantity: number;
+  reserved_quantity: number;
   low_stock_variants: number;
   expiring_soon: number;
 }
@@ -14,6 +16,7 @@ export interface InventoryBatch {
   branch_id: number;
   batch_number: string;
   quantity: number;
+  reserved_quantity: number;
   cost_price: string;
   vendor_id?: number;
   /** Physical storage location, e.g. "A-3-2" */

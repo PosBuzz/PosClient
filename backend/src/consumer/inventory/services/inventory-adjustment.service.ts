@@ -67,10 +67,11 @@ export class InventoryAdjustmentService {
         // For negative adjustments, check if sufficient quantity exists
         if (
           dto.quantity_change < 0 &&
-          batch.quantity < Math.abs(dto.quantity_change)
+          batch.quantity - batch.reserved_quantity <
+            Math.abs(dto.quantity_change)
         ) {
           throw new BadRequestException(
-            `Insufficient quantity in batch. Available: ${batch.quantity}, Requested: ${Math.abs(dto.quantity_change)}`,
+            `Insufficient available quantity in batch. Available: ${batch.quantity - batch.reserved_quantity}, Requested: ${Math.abs(dto.quantity_change)}`,
           );
         }
 
