@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class InventoryBatchService {
@@ -113,9 +114,10 @@ export class InventoryBatchService {
             location: dto.location?.trim() || null,
             expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
             payment_status: paymentStatus,
-            paid_amount: paymentStatus === 'paid' && !dto.payments?.length
-              ? totalCost
-              : paidAmount,
+            paid_amount:
+              paymentStatus === 'paid' && !dto.payments?.length
+                ? totalCost
+                : paidAmount,
           },
           include: {
             variant: {
@@ -179,7 +181,7 @@ export class InventoryBatchService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating inventory batch for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create inventory batch',
@@ -274,7 +276,7 @@ export class InventoryBatchService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding all inventory batches for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory batches',
@@ -323,7 +325,7 @@ export class InventoryBatchService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding inventory batch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory batch',
@@ -334,7 +336,7 @@ export class InventoryBatchService {
 
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
     try {
-      const batch = await this.findOne(id, consumerId);
+      const _batch = await this.findOne(id, consumerId);
 
       const updatedBatch = await this.prisma.inventoryBatch.update({
         where: { id },
@@ -343,7 +345,9 @@ export class InventoryBatchService {
           branch_id: dto.branch_id,
           vendor_id: dto.vendor_id,
           location:
-            dto.location === undefined ? undefined : dto.location?.trim() || null,
+            dto.location === undefined
+              ? undefined
+              : dto.location?.trim() || null,
           expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
         },
       });
@@ -353,7 +357,7 @@ export class InventoryBatchService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating inventory batch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update inventory batch',
@@ -381,7 +385,7 @@ export class InventoryBatchService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting inventory batch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete inventory batch',

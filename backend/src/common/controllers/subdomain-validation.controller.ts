@@ -21,8 +21,7 @@ export class SubdomainValidationController {
   async validateSubdomain(@Req() req: Request) {
     // Extract subdomain from Origin or Referer header
     const origin = req.headers.origin || req.headers.referer;
-    
-    
+
     if (!origin) {
       return {
         success: false,
@@ -31,9 +30,8 @@ export class SubdomainValidationController {
       };
     }
 
-    const subdomain = this.subdomainValidationService.extractSubdomainFromUrl(
-        origin,
-    );
+    const subdomain =
+      this.subdomainValidationService.extractSubdomainFromUrl(origin);
 
     if (!subdomain) {
       return {
@@ -43,9 +41,8 @@ export class SubdomainValidationController {
       };
     }
 
-    const result = await this.subdomainValidationService.validateSubdomain(
-      subdomain,
-    );
+    const result =
+      await this.subdomainValidationService.validateSubdomain(subdomain);
 
     if (!result.exists) {
       return {

@@ -12,6 +12,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class ProductService {
@@ -177,7 +178,7 @@ export class ProductService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating product for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create product',
@@ -342,7 +343,7 @@ export class ProductService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching products for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch products',
@@ -661,7 +662,7 @@ export class ProductService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding product with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find product',
@@ -768,7 +769,7 @@ export class ProductService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating product with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update product',
@@ -791,7 +792,7 @@ export class ProductService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting product with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete product',

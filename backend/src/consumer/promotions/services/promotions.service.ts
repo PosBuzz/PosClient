@@ -724,10 +724,7 @@ export class PromotionsService {
             return { promotion, exhausted: false };
           }
 
-          const usage = await this.getPromotionUsage(
-            promotion.id,
-            consumerId,
-          );
+          const usage = await this.getPromotionUsage(promotion.id, consumerId);
           const reachedUsageLimit =
             usageLimit !== null && usage.usedUsageCount >= usageLimit;
           const reachedDiscountLimit =

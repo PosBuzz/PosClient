@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Delete,
   Body,
   Param,
@@ -28,6 +27,7 @@ import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 import { Response } from 'express';
 import { ReceiptPdfService } from '../services/receipt-pdf.service';
+import { errorMessage } from '../../../common/utils/error.util';
 
 @Controller('receipt-settings')
 @HasPermissions([ConsumerPermission.receipt_settings])
@@ -108,7 +108,7 @@ export class ReceiptPdfSettingController {
     } catch (error) {
       // If branding fetch fails, continue with pure sample data
       this.logger?.warn?.(
-        `Preview: Could not load branding data, using sample data — ${error.message}`,
+        `Preview: Could not load branding data, using sample data — ${errorMessage(error)}`,
       );
     }
 

@@ -5,7 +5,7 @@ import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
-import { deepMerge, normalizeLineBreaks, humanPaymentMethod, humanPaymentType } from '../helpers/receipt-pdf.helpers';
+import { deepMerge, normalizeLineBreaks } from '../helpers/receipt-pdf.helpers';
 
 @Injectable()
 export class QuotationPdfService {
@@ -25,7 +25,11 @@ export class QuotationPdfService {
     const branchId: number = quotation.branch_id;
 
     const [settings, branding] = await Promise.all([
-      this.receiptPdfSettingService.getActiveSettings(consumerId, 'quotation', branchId),
+      this.receiptPdfSettingService.getActiveSettings(
+        consumerId,
+        'quotation',
+        branchId,
+      ),
       this.receiptPdfSettingService.getBrandingData(consumerId, branchId),
     ]);
 
@@ -64,7 +68,9 @@ export class QuotationPdfService {
       headerText: settings.header?.text || 'QUOTATION',
 
       saleNumber: quotation.sale_number || '',
-      saleDate: quotation.sale_date ? new Date(quotation.sale_date) : new Date(),
+      saleDate: quotation.sale_date
+        ? new Date(quotation.sale_date)
+        : new Date(),
       saleType: 'quotation',
       priceType: quotation.price_type || 'regular',
       paymentStatus: 'unpaid', // Quotations are inherently unpaid
@@ -72,10 +78,13 @@ export class QuotationPdfService {
       servedByName: quotation.served_by?.name || '',
 
       customerName: quotation.customer?.name || quotation.customer_name || '',
-      customerPhone: quotation.customer?.phone || quotation.customer_phone || '',
-      customerEmail: quotation.customer?.email || quotation.customer_email || '',
+      customerPhone:
+        quotation.customer?.phone || quotation.customer_phone || '',
+      customerEmail:
+        quotation.customer?.email || quotation.customer_email || '',
       customerAddress: quotation.customer?.address || '',
-      customerRewardPoints: quotation.customer?.rewards_points?.total_points ?? null,
+      customerRewardPoints:
+        quotation.customer?.rewards_points?.total_points ?? null,
 
       items: (quotation.items || []).map((it: any) => {
         const avg = Number(it.average_discount_amount) || 0;

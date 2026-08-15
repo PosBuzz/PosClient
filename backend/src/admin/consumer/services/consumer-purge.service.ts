@@ -194,9 +194,7 @@ export class ConsumerPurgeService {
 
         for (const table of await this.deleteOrder(tx, tables)) {
           const info = byName.get(table)!;
-          const where = info.hasConsumerId
-            ? `consumer_id = $1`
-            : SCOPE[table];
+          const where = info.hasConsumerId ? `consumer_id = $1` : SCOPE[table];
 
           const count = await tx.$executeRawUnsafe(
             `DELETE FROM "${table}" WHERE ${where}`,
@@ -206,10 +204,7 @@ export class ConsumerPurgeService {
           if (count > 0) deleted[table] = count;
         }
 
-        await tx.$executeRawUnsafe(
-          `DELETE FROM "consumers" WHERE id = $1`,
-          id,
-        );
+        await tx.$executeRawUnsafe(`DELETE FROM "consumers" WHERE id = $1`, id);
       },
       { timeout: 120_000 },
     );

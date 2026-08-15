@@ -6,27 +6,33 @@ import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
-import { CustomerType } from "../../types/customer.types";
+import { Customer, CustomerType } from "../../types/customer.types";
 
 const { TextArea } = Input;
 const { Option } = Select;
 
-// @ts-ignore
+interface DrawerFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmitSuccess: () => void;
+  isEditing: boolean;
+  editedItem: Customer | null;
+}
+
 export default function DrawerForm({
   onClose,
   open,
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
-}) {
+}: DrawerFormProps) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: any) => await post(endpoints.createCustomer, data),
-    onSuccess: (response) => {
+    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createCustomer, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.customers] });
       messageApi?.success("Customer created successfully");
       form.resetFields();
@@ -40,13 +46,13 @@ export default function DrawerForm({
   });
 
   const updateData = useMutation({
-    mutationFn: async (data: any) =>
+    mutationFn: async (data: { id: number } & Record<string, unknown>) =>
       await patch(endpoints.updateCustomer(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.customers] });
       messageApi?.success("Customer updated successfully");
       form.resetFields();
-      onSubmitSuccess(true);
+      onSubmitSuccess();
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -75,7 +81,6 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
     createData.mutate(payload);
   };
 
@@ -155,7 +160,7 @@ export default function DrawerForm({
           rules={[
             { required: false },
             {
-              pattern: /^[\d\s\-\+\(\)]+$/,
+              pattern: /^[\d\s\-+()]+$/,
               message: "Please enter a valid phone number",
             },
           ]}

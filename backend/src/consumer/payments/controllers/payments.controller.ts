@@ -57,10 +57,7 @@ export class PaymentsController {
    */
   @Post('make-payment')
   async makePayment(@Body() paymentData: MakePaymentDto, @Req() req: Request) {
-    return this.paymentsService.makePayment(
-      paymentData,
-      req.user.consumer_id!,
-    );
+    return this.paymentsService.makePayment(paymentData, req.user.consumer_id!);
   }
 
   /**

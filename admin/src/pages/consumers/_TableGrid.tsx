@@ -32,12 +32,11 @@ import { AdminPermission } from "../../constants/adminPermissions";
 import { useMessageStore } from "../../stores/messageStore";
 const { Option } = Select;
 
-export default function _TableGrid({
+export default function TableGrid({
   model,
   onClickEdit,
   planOptions = [],
   hasPermission,
-  ...props
 }) {
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(null);

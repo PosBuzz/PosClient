@@ -11,9 +11,11 @@ import { Type } from 'class-transformer';
 import { UpdateProductVariantDto } from './update-product-variant.dto';
 
 // Use OmitType instead of PartialType to avoid the variants property inheritance
-export class UpdateProductDto extends OmitType(CreateProductDto, ['variants'] as const) {
+export class UpdateProductDto extends OmitType(CreateProductDto, [
+  'variants',
+] as const) {
   // All fields from CreateProductDto are optional through OmitType
-  
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

@@ -18,6 +18,7 @@ import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 import { BackupRestoreService } from './backup-restore.service';
 import * as path from 'path';
 import * as fs from 'fs';
+import { errorMessage } from '../../common/utils/error.util';
 
 @HasPermissions([AdminPermission.backupRestore])
 @UseGuards(AdminAuthGuard, PermissionsGuard)
@@ -37,7 +38,7 @@ export class BackupRestoreController {
       });
     } catch (err) {
       console.error(err);
-      res.status(500).send(`Backup failed: ${err.message}`);
+      res.status(500).send(`Backup failed: ${errorMessage(err)}`);
     }
   }
 
@@ -63,7 +64,7 @@ export class BackupRestoreController {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      return res.status(500).send(`Restore failed: ${err.message}`);
+      return res.status(500).send(`Restore failed: ${errorMessage(err)}`);
     }
   }
 }

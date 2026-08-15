@@ -23,7 +23,7 @@ import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 
-export default function _TableGrid({
+export default function TableGrid({
   onClickEdit,
   roleOptions = [],
   branchOptions = [],

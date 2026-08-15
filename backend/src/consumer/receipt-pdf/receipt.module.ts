@@ -10,8 +10,19 @@ import { QuotationPdfService } from './services/quotation-pdf.service';
 
 @Module({
   imports: [forwardRef(() => SalesModule)],
-  controllers: [ TestReceiptVariationsController, ReceiptPdfSettingController],
-  providers: [SalesPdfService, ReceiptPdfService, ReceiptPdfSettingService, ReturnPdfService, QuotationPdfService],
-  exports: [SalesPdfService, QuotationPdfService, ReturnPdfService, ReceiptPdfSettingService],
+  controllers: [TestReceiptVariationsController, ReceiptPdfSettingController],
+  providers: [
+    SalesPdfService,
+    ReceiptPdfService,
+    ReceiptPdfSettingService,
+    ReturnPdfService,
+    QuotationPdfService,
+  ],
+  exports: [
+    SalesPdfService,
+    QuotationPdfService,
+    ReturnPdfService,
+    ReceiptPdfSettingService,
+  ],
 })
 export class ReceiptModule {}

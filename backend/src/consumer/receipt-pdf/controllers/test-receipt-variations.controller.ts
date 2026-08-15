@@ -1,19 +1,12 @@
 // test-receipt-variations.controller.ts
 
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Res,
-  NotFoundException,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Res, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { SalesService } from '../../sales/services/sales.service';
 import { SalesPdfService } from '../services/sales-pdf.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
+import { errorMessage } from '../../../common/utils/error.util';
 
 @Controller('test-receipts')
 export class TestReceiptVariationsController {
@@ -301,7 +294,7 @@ export class TestReceiptVariationsController {
       res
         .status(500)
         .send(
-          `PDF generation failed: ${err.message}\n\nVariation: ${variation.name}`,
+          `PDF generation failed: ${errorMessage(err)}\n\nVariation: ${variation.name}`,
         );
     }
   }

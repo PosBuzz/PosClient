@@ -430,7 +430,7 @@ export default function InventoryLowStockPage() {
         } else {
           // Show multiple branches if not filtered by specific branch
           const lowStockBranches = Object.entries(record.stock_by_branch)
-            .filter(([_, stock]) => stock <= (record.alert_quantity || 0))
+            .filter(([, stock]) => stock <= (record.alert_quantity || 0))
             .map(([branchName, stock]) => (
               <Tag key={branchName} color="red" style={{ marginBottom: 2 }}>
                 {branchName}: {stock} units

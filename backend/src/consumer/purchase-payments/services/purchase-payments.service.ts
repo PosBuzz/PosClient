@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { MakePurchasePaymentDto } from '../dto/make-purchase-payment.dto';
 import { PurchaseBatchesFiltersDto } from '../dto/purchase-batches-filters.dto';
 import { Prisma } from '@prisma/client';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class PurchasePaymentsService {
@@ -144,7 +145,7 @@ export class PurchasePaymentsService {
     } catch (error) {
       this.logger.error(
         `Error getting purchase payment batches for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get purchase payment batches',
@@ -197,7 +198,7 @@ export class PurchasePaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error getting batch for payment with ID ${batchId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get batch for payment',
@@ -331,7 +332,7 @@ export class PurchasePaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error making purchase payment for batch with ID ${paymentData.batch_id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to make payment',
@@ -369,7 +370,7 @@ export class PurchasePaymentsService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching purchase payments for batch ${batchId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch purchase payments',

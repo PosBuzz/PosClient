@@ -16,7 +16,8 @@ import { AuthService } from './services/auth.service';
         secret: configService.jwtSecret,
         signOptions: {
           expiresIn: configService.jwtExpiration,
-          algorithm: configService.jwtAlgorithm as import('jsonwebtoken').Algorithm,
+          algorithm:
+            configService.jwtAlgorithm as import('jsonwebtoken').Algorithm,
         },
       }),
     }),

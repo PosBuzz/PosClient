@@ -8,22 +8,39 @@ import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
-// @ts-ignore
+
+interface BranchFormValues {
+  id: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  is_main?: boolean;
+  vat_registration_number?: string;
+}
+
+interface DrawerFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmitSuccess: () => void;
+  isEditing: boolean;
+  editedItem: BranchFormValues | null;
+}
+
 export default function DrawerForm({
   onClose,
   open,
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
-}) {
+}: DrawerFormProps) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.createBranch, data),
-    onSuccess: (response) => {
+    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createBranch, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.branchOptions] });
@@ -39,15 +56,15 @@ export default function DrawerForm({
   });
 
   const updateData = useMutation({
-    mutationFn: async (data: any) =>
+    mutationFn: async (data: { id: number } & Record<string, unknown>) =>
       await patch(endpoints.updateBranch(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.branchOptions] });
       messageApi?.success("Branch updated successfully");
       form.resetFields();
-      onSubmitSuccess(true);
+      onSubmitSuccess();
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -73,7 +90,6 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
     createData.mutate(payload);
   };
 
@@ -136,7 +152,7 @@ export default function DrawerForm({
           rules={[
             { required: false },
             {
-              pattern: /^[\d\s\-\+\(\)]+$/,
+              pattern: /^[\d\s\-+()]+$/,
               message: "Please enter a valid phone number",
             },
           ]}

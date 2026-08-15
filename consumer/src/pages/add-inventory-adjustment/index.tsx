@@ -120,20 +120,20 @@ export default function AddInventoryAdjustment() {
     },
   });
 
-  const handleProductChange = (productId: number) => {
+  const handleProductChange = () => {
     form.setFieldsValue({
       variant_id: undefined,
       batch_id: undefined,
     });
   };
 
-  const handleVariantChange = (variantId: number) => {
+  const handleVariantChange = () => {
     form.setFieldsValue({
       batch_id: undefined,
     });
   };
 
-  const handleBranchChange = (branchId: number) => {
+  const handleBranchChange = () => {
     form.setFieldsValue({
       batch_id: undefined,
     });

@@ -15,7 +15,10 @@ export class ProductAuditService {
     return this.buildAuditData(consumerId, dto);
   }
 
-  async generateAuditReport(consumerId: number, dto: GetProductAuditDto): Promise<Buffer> {
+  async generateAuditReport(
+    consumerId: number,
+    dto: GetProductAuditDto,
+  ): Promise<Buffer> {
     const data = await this.buildAuditData(consumerId, dto);
     return this.pdfService.generatePdf(data);
   }
@@ -23,7 +26,7 @@ export class ProductAuditService {
   private async buildAuditData(consumerId: number, dto: GetProductAuditDto) {
     const start = new Date(dto.start_date);
     start.setHours(0, 0, 0, 0);
-    
+
     const end = new Date(dto.end_date);
     end.setHours(23, 59, 59, 999);
 
@@ -51,7 +54,10 @@ export class ProductAuditService {
       orderBy: { created_at: 'asc' },
     });
 
-    const totalCurrentStock = currentBatches.reduce((sum, b) => sum + b.quantity, 0);
+    const totalCurrentStock = currentBatches.reduce(
+      (sum, b) => sum + b.quantity,
+      0,
+    );
 
     const logs = await this.prisma.inventoryAuditLog.findMany({
       where: {
@@ -75,19 +81,30 @@ export class ProductAuditService {
     // --- BRANCH SPECIFIC CALCULATIONS ---
     // Find all unique branches involved (either holding stock now, or had movement in period)
     const branchIds = new Set<number>();
-    currentBatches.forEach(b => b.branch_id && branchIds.add(b.branch_id));
-    logs.forEach(l => l.branch_id && branchIds.add(l.branch_id));
+    currentBatches.forEach((b) => b.branch_id && branchIds.add(b.branch_id));
+    logs.forEach((l) => l.branch_id && branchIds.add(l.branch_id));
 
-    const byBranch = Array.from(branchIds).map(branchId => {
-      const branchBatches = currentBatches.filter(b => b.branch_id === branchId);
-      const branchLogs = logs.filter(l => l.branch_id === branchId);
+    const byBranch = Array.from(branchIds).map((branchId) => {
+      const branchBatches = currentBatches.filter(
+        (b) => b.branch_id === branchId,
+      );
+      const branchLogs = logs.filter((l) => l.branch_id === branchId);
 
-      const branchCurrentStock = branchBatches.reduce((sum, b) => sum + b.quantity, 0);
-      const branchNetChange = branchLogs.reduce((sum, l) => sum + l.quantity_delta, 0);
+      const branchCurrentStock = branchBatches.reduce(
+        (sum, b) => sum + b.quantity,
+        0,
+      );
+      const branchNetChange = branchLogs.reduce(
+        (sum, l) => sum + l.quantity_delta,
+        0,
+      );
       const branchOpeningStock = branchCurrentStock - branchNetChange;
 
       // Safely get branch name from either current batches or logs
-      const branchName = branchBatches[0]?.branch?.name || branchLogs[0]?.branch?.name || `Branch ${branchId}`;
+      const branchName =
+        branchBatches[0]?.branch?.name ||
+        branchLogs[0]?.branch?.name ||
+        `Branch ${branchId}`;
 
       return {
         branch_id: branchId,
@@ -99,11 +116,10 @@ export class ProductAuditService {
       };
     });
 
-
     // --- GROUP LOGS BY BATCH (For Timeline) ---
     const batchGroups = new Map<number, any>();
-    
-    currentBatches.forEach(batch => {
+
+    currentBatches.forEach((batch) => {
       batchGroups.set(batch.id, {
         batchInfo: batch,
         events: [],
@@ -111,13 +127,17 @@ export class ProductAuditService {
       });
     });
 
-    logs.forEach(log => {
+    logs.forEach((log) => {
       const batchId = log.batch_id;
       if (!batchId) return;
 
       if (!batchGroups.has(batchId)) {
         batchGroups.set(batchId, {
-          batchInfo: log.inventoryBatch || { id: batchId, batch_number: 'Historical', branch: log.branch },
+          batchInfo: log.inventoryBatch || {
+            id: batchId,
+            batch_number: 'Historical',
+            branch: log.branch,
+          },
           events: [],
           periodStartQty: 0,
         });
@@ -128,7 +148,10 @@ export class ProductAuditService {
 
     batchGroups.forEach((group) => {
       const currentQty = group.batchInfo.quantity || 0;
-      const periodDelta = group.events.reduce((sum, e) => sum + e.quantity_delta, 0);
+      const periodDelta = group.events.reduce(
+        (sum, e) => sum + e.quantity_delta,
+        0,
+      );
       group.periodStartQty = currentQty - periodDelta;
     });
 
@@ -148,12 +171,11 @@ export class ProductAuditService {
         total_events: logs.length,
         by_branch: byBranch, // <-- NEW FIELD
       },
-      batches: Array.from(batchGroups.values())
-        .sort((a, b) => {
-          const aDate = a.events[0]?.created_at || a.batchInfo.created_at;
-          const bDate = b.events[0]?.created_at || b.batchInfo.created_at;
-          return new Date(aDate).getTime() - new Date(bDate).getTime();
-        })
+      batches: Array.from(batchGroups.values()).sort((a, b) => {
+        const aDate = a.events[0]?.created_at || a.batchInfo.created_at;
+        const bDate = b.events[0]?.created_at || b.batchInfo.created_at;
+        return new Date(aDate).getTime() - new Date(bDate).getTime();
+      }),
     };
   }
 }

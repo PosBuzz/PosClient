@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class CategoryService {
@@ -20,8 +27,14 @@ export class CategoryService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Failed to create category for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to create category', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to create category for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to create category',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -32,8 +45,14 @@ export class CategoryService {
         orderBy: { name: 'asc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch categories for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to fetch categories', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to fetch categories for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to fetch categories',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -51,12 +70,22 @@ export class CategoryService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to fetch category ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to fetch category', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to fetch category ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to fetch category',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto, consumerId: number) {
+  async update(
+    id: number,
+    updateCategoryDto: UpdateCategoryDto,
+    consumerId: number,
+  ) {
     try {
       await this.findOne(id, consumerId); // Ensure category exists
 
@@ -69,8 +98,14 @@ export class CategoryService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to update category ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to update category', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to update category ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to update category',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -84,8 +119,14 @@ export class CategoryService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to delete category ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to delete category', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to delete category ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to delete category',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

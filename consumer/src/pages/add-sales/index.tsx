@@ -552,10 +552,11 @@ const NewSale = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
-      paymentStatus === PaymentStatus.PARTIAL &&
+      if (paymentStatus === PaymentStatus.PARTIAL) {
         queryClient.invalidateQueries({
           queryKey: [queryKeys.partialPayments],
         });
+      }
 
       messageApi?.success("Sale created successfully!");
       navigate(`/sales/view/${createdSale.id}`);

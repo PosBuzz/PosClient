@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsInt, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetProductAuditDto {

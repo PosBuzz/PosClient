@@ -5,6 +5,7 @@ import { CreateRoleDto } from '../dtos/create-role.dto';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +27,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error fetching permission options for plan ${plan_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch permission options',
@@ -49,7 +50,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error fetching roles for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch roles',
@@ -67,7 +68,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error deleting role with ID ${id} for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete role',
@@ -100,7 +101,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error creating role for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create role',
@@ -139,7 +140,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error fetching users for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch users',
@@ -157,7 +158,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error deleting user with ID ${id} for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete user',
@@ -237,7 +238,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error creating user for consumer ${consumer_id}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create user',
@@ -270,14 +271,14 @@ export class UsersService {
       }
 
       // Get consumer_id for cache invalidation
-      const role = await this.prisma.role.findUnique({
+      const _role = await this.prisma.role.findUnique({
         where: { id },
         select: { consumer_id: true },
       });
 
       return updatedRole;
     } catch (error) {
-      this.logger.error(`Error updating role with ID ${id}`, error.stack);
+      this.logger.error(`Error updating role with ID ${id}`, errorStack(error));
       throw new HttpException(
         'Failed to update role',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -374,7 +375,7 @@ export class UsersService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Error updating user with ID ${id}`, error.stack);
+      this.logger.error(`Error updating user with ID ${id}`, errorStack(error));
       throw new HttpException(
         'Failed to update user',
         HttpStatus.INTERNAL_SERVER_ERROR,

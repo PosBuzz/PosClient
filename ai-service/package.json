@@ -7,7 +7,7 @@
     "dev": "python run.py",
     "start": "python run.py",
     "build": "echo \"No build step required for Python service\" && exit 0",
-    "lint": "flake8 .",
+    "lint": "python -m flake8 .",
     "test": "pytest"
   },
   "author": "",

@@ -5,17 +5,17 @@ export const PRINTER_CONFIG = {
   DEFAULT_ENCODING: 'utf8',
   DEFAULT_AUTOCUT: true,
   DEFAULT_BUZZER: false,
-  
+
   // Agent endpoints
   AGENT_ENDPOINTS: {
     PRINT: '/print',
     STATUS: '/status',
     CONFIG: '/config',
   },
-  
+
   // Timeout settings
   AGENT_TIMEOUT: 5000, // 5 seconds
-  
+
   // Default receipt settings
   DEFAULT_RECEIPT_SETTINGS: {
     openCashDrawer: true,

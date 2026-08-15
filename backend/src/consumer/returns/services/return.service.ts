@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { RewardsService } from '../../rewards/services/rewards.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class ReturnService {
@@ -321,7 +322,7 @@ export class ReturnService {
 
           // Create inventory adjustment to add returned items back to stock
           if (itemDto.batch_id) {
-            const adjustment = await prisma.inventoryAdjustment.create({
+            await prisma.inventoryAdjustment.create({
               data: {
                 variant_id: itemDto.variant_id,
                 branch_id: dto.branch_id,
@@ -452,7 +453,7 @@ export class ReturnService {
                 );
               }
 
-              const adjustment = await prisma.inventoryAdjustment.create({
+              await prisma.inventoryAdjustment.create({
                 data: {
                   variant_id: exchangeDto.variant_id,
                   branch_id: dto.branch_id,
@@ -512,7 +513,7 @@ export class ReturnService {
 
       this.logger.error(
         `Error creating return with user ${userId} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create return',
@@ -609,7 +610,7 @@ export class ReturnService {
     } catch (error) {
       this.logger.error(
         `Error fetching returns for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch returns',
@@ -693,7 +694,7 @@ export class ReturnService {
     } catch (error) {
       this.logger.error(
         `Error fetching return with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch return',
@@ -733,7 +734,7 @@ export class ReturnService {
     } catch (error) {
       this.logger.error(
         `Error generating return number for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to generate return number',

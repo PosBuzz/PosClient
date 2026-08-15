@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class InventoryTransferService {
@@ -122,7 +123,7 @@ export class InventoryTransferService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating inventory transfer for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create inventory transfer',
@@ -217,7 +218,7 @@ export class InventoryTransferService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding all inventory transfers for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find all inventory transfers',
@@ -277,7 +278,7 @@ export class InventoryTransferService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error finding inventory transfer ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory transfer',
@@ -488,7 +489,7 @@ export class InventoryTransferService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error completing transfer with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to complete transfer',
@@ -517,7 +518,7 @@ export class InventoryTransferService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error cancelling transfer with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to cancel transfer',

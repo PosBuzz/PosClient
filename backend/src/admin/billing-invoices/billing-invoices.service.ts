@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
-import { Readable } from 'stream';
+import { errorStack } from '../../common/utils/error.util';
 
 interface BillingLog {
   created_at: string | number | Date;
@@ -147,7 +147,7 @@ export class BillingInvoicesService {
     } catch (error) {
       this.logger.error(
         `Failed to generate billing history Excel`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to generate billing history Excel',
@@ -170,7 +170,7 @@ export class BillingInvoicesService {
 
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: Error) => reject(err));
 
       const gray = '#666666';
       const dark = '#333333';
@@ -250,10 +250,6 @@ export class BillingInvoicesService {
       });
 
       // Collect PDF chunks
-      const stream = new Readable({
-        read() {},
-      });
-
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => {
         const result = Buffer.concat(chunks);
@@ -328,7 +324,6 @@ export class BillingInvoicesService {
       },
     ];
 
-    const labelWidth = 120;
     const valueStartX = 180;
 
     doc.font('Helvetica').fontSize(10);

@@ -178,7 +178,7 @@ export class AuthController {
         7 * 24 * 60 * 60 * 1000,
       );
       return res.send({ message: 'Token refreshed' });
-    } catch (error) {
+    } catch {
       this.clearAdminCookies(res);
       return res
         .status(401)
@@ -215,7 +215,7 @@ export class AuthController {
         7 * 24 * 60 * 60 * 1000,
       );
       return res.send({ message: 'Token refreshed' });
-    } catch (error) {
+    } catch {
       this.clearClientCookies(res);
       return res
         .status(401)
