@@ -34,11 +34,14 @@ admin/dist/
 consumer/dist/
 backend/dist/
 backend/build/
+portfolio/.next/
+portfolio/out/
 
-# Dependencies inside frontend and backend
+# Dependencies inside sub-projects
 admin/node_modules/
 consumer/node_modules/
 backend/node_modules/
+portfolio/node_modules/
 
 # Lint and formatting
 eslintcache
