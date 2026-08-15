@@ -193,10 +193,16 @@ export default function InventoryPage() {
             </Col>
 
             <Col span={8}>
-              <Text strong>Quantity:</Text>
+              <Text strong>Available:</Text>
             </Col>
             <Col span={16}>
-              <Text>{batch.quantity} units</Text>
+              <Text>{batch.quantity - batch.reserved_quantity} units</Text>
+            </Col>
+            <Col span={8}>
+              <Text strong>Pending Delivery:</Text>
+            </Col>
+            <Col span={16}>
+              <Text>{batch.reserved_quantity} units</Text>
             </Col>
 
             <Col span={8}>
@@ -325,11 +331,21 @@ export default function InventoryPage() {
         ),
     },
     {
-      title: "Quantity",
-      dataIndex: "quantity",
-      key: "quantity",
+      title: "Available",
+      key: "available_quantity",
       align: "right",
-      render: (quantity) => <Text strong>{quantity} units</Text>,
+      render: (_, record) => (
+        <Text strong>{record.quantity - record.reserved_quantity} units</Text>
+      ),
+    },
+    {
+      title: "Pending Delivery",
+      dataIndex: "reserved_quantity",
+      key: "reserved_quantity",
+      align: "right",
+      render: (quantity) => (
+        <Tag color={quantity > 0 ? "orange" : "default"}>{quantity} units</Tag>
+      ),
     },
     {
       title: "Cost Price",

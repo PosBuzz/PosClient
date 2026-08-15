@@ -354,6 +354,14 @@ export class SalesController {
       limit,
     );
   }
+  @Get('pending-deliveries/list')
+  getPendingDeliveries(@Query() filters: any, @Req() req: Request) {
+    return this.salesService.getPendingDeliveries(
+      req.user.consumer_id!,
+      filters,
+    );
+  }
+
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -432,5 +440,25 @@ export class SalesController {
       updateStatusDto.status,
       req.user.consumer_id!,
     );
+  }
+
+  @Patch('pending-deliveries/:id/complete')
+  completePendingDelivery(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    return this.salesService.completePendingDelivery(
+      id,
+      req.user.consumer_id!,
+      req.user.id,
+    );
+  }
+
+  @Patch('pending-deliveries/:id/cancel')
+  cancelPendingDelivery(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    return this.salesService.cancelPendingDelivery(id, req.user.consumer_id!);
   }
 }

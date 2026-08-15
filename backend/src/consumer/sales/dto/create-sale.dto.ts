@@ -251,6 +251,10 @@ export class CreateSaleDto {
   @IsEnum(OnlineOrderStatus)
   online_order_status?: OnlineOrderStatus;
 
+  @IsOptional()
+  @IsBoolean()
+  is_delivery_later?: boolean;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateSaleItemDto)

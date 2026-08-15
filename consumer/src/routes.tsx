@@ -55,6 +55,7 @@ const ViewUserSalesStats = lazy(
   () => import("./pages/user-sales-stats/view-user-sales-stats"),
 );
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
+const PendingDeliveries = lazy(() => import("./pages/pending-deliveries"));
 const DailyTargetReport = lazy(() => import("./pages/daily-target"));
 const BusinessReport = lazy(() => import("./pages/eod"));
 const OperationalCosts = lazy(() => import("./pages/operational-costs"));
@@ -401,6 +402,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <OnlineOrders />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "pending-deliveries",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <PendingDeliveries />
           </RequirePermission>
         ),
       },
