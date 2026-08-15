@@ -11,6 +11,7 @@ export const Permissions = {
   inventory_transfer: "inventory_transfer",
   inventory_adjustment: "inventory_adjustment",
   sales: "sales",
+  business_insights: "business_insights",
   quotations: "quotations",
   customers: "customers",
   companyProfile: "companyProfile",

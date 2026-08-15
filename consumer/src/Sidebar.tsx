@@ -55,7 +55,7 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Variant Sales Stats">Sales Stats</span>,
           key: "/product-variant-sales-stats",
-          permissions: [Permissions.view_product],
+          permissions: [Permissions.business_insights],
         },
         {
           label: <span title="Product Audit">Product Audit</span>,
@@ -209,18 +209,18 @@ const SideBar: React.FC = () => {
         {
           label: <span title="Daily Sales Target">Sales Target</span>,
           key: "/daily-target",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.business_insights],
         },
 
         {
           label: <span title="User Sales Stats">User Sales Stats</span>,
           key: "/user-sales-stats",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.business_insights],
         },
         {
           label: <span title="Operational Costs">Operational Costs</span>,
           key: "/operational-costs",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.business_insights],
         },
         {
           label: (
@@ -229,7 +229,7 @@ const SideBar: React.FC = () => {
             </span>
           ),
           key: "/business-report",
-          permissions: [Permissions.sales],
+          permissions: [Permissions.business_insights],
         },
       ],
     },

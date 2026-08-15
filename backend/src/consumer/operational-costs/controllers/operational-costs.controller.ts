@@ -24,7 +24,7 @@ import { OperationalCostsService } from '../services/operational-costs.service';
 
 @Controller('consumer/operational-costs')
 @UseGuards(ClientAuthGuard, PermissionsGuard)
-@HasPermissions([ConsumerPermission.sales])
+@HasPermissions([ConsumerPermission.business_insights])
 export class OperationalCostsController {
   constructor(private readonly service: OperationalCostsService) {}
   @Get() findAll(@Query() query: OperationalCostQueryDto, @Req() req: Request) {

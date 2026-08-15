@@ -6,6 +6,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import {
   ReceiptPdfSettings,
@@ -16,10 +17,76 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
-export class ReceiptPdfSettingService {
+export class ReceiptPdfSettingService implements OnModuleInit {
   private readonly logger = new Logger(ReceiptPdfSettingService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.backfillMissingConsumerDefaults();
+  }
+
+  /**
+   * Older tenants predate some document presets. Add only missing consumer-level
+   * defaults on startup; existing and branch-specific customizations are never
+   * changed.
+   */
+  private async backfillMissingConsumerDefaults(): Promise<void> {
+    try {
+      const consumers = await this.prisma.consumer.findMany({
+        where: { deleted_at: null },
+        select: { id: true },
+      });
+
+      for (const consumer of consumers) {
+        await this.ensureConsumerDefaults(consumer.id);
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to backfill missing receipt settings',
+        errorStack(error),
+      );
+    }
+  }
+
+  private async ensureConsumerDefaults(
+    consumerId: number,
+    createdById?: number,
+    client: any = this.prisma,
+  ): Promise<void> {
+    const presets: { name: string; type: ReceiptPresetType }[] = [
+      { name: 'Default Receipt', type: 'receipt' },
+      { name: 'Default Quotation', type: 'quotation' },
+      { name: 'Default Return Receipt', type: 'return' },
+      { name: 'Default Delivery Chalan', type: 'chalan' },
+      { name: 'Default Money Receipt', type: 'money_receipt' },
+      { name: 'Default Delivery Slip', type: 'delivery_slip' },
+    ];
+
+    const existing = await client.receiptPdfSetting.findMany({
+      where: { consumer_id: consumerId, branch_id: null },
+      select: { type: true },
+    });
+    const existingTypes = new Set(
+      existing.map((setting: { type: string }) => setting.type),
+    );
+
+    for (const preset of presets) {
+      if (existingTypes.has(preset.type)) continue;
+
+      await client.receiptPdfSetting.create({
+        data: {
+          consumer_id: consumerId,
+          branch_id: null,
+          name: preset.name,
+          type: preset.type,
+          is_active: true,
+          settings: PRESET_DEFAULTS[preset.type] as any,
+          created_by: createdById,
+        },
+      });
+    }
+  }
 
   /* ================================================================== */
   /*  INITIALIZATION - Called when consumer is created                  */
@@ -32,30 +99,7 @@ export class ReceiptPdfSettingService {
   ): Promise<void> {
     try {
       const client = tx || this.prisma;
-      const presets: { name: string; type: ReceiptPresetType }[] = [
-        { name: 'Default Receipt', type: 'receipt' },
-        { name: 'Default Quotation', type: 'quotation' },
-        { name: 'Default Return Receipt', type: 'return' },
-        { name: 'Default Delivery Chalan', type: 'chalan' },
-        { name: 'Default Money Receipt', type: 'money_receipt' },
-        { name: 'Default Delivery Slip', type: 'delivery_slip' },
-      ];
-
-      for (const preset of presets) {
-        const settings = PRESET_DEFAULTS[preset.type];
-
-        await client.receiptPdfSetting.create({
-          data: {
-            consumer_id: consumerId,
-            branch_id: null,
-            name: preset.name,
-            type: preset.type,
-            is_active: true,
-            settings: settings as any,
-            created_by: adminUserId,
-          },
-        });
-      }
+      await this.ensureConsumerDefaults(consumerId, adminUserId, client);
 
       this.logger.log(
         `Initialized default receipt settings for consumer ${consumerId}`,
