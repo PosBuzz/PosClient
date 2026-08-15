@@ -30,9 +30,9 @@ const Vendors = () => {
   };
 
   const onSubmitSuccess = () => {
-      setOpen(false);
-      setIsEditing(false);
-      setEditedItem(null);
+    setOpen(false);
+    setIsEditing(false);
+    setEditedItem(null);
   };
 
   return (

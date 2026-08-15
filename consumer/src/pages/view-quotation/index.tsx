@@ -407,7 +407,9 @@ const QuotationDetail: React.FC = () => {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Tax:</Text>
-                <Text><Money value={quotation.tax_amount} /></Text>
+                <Text>
+                  <Money value={quotation.tax_amount} />
+                </Text>
               </div>
               {promotionDiscount > 0 && (
                 <div
@@ -424,7 +426,9 @@ const QuotationDetail: React.FC = () => {
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
                   <Text>Average Discount:</Text>
-                  <Text><Money value={averageDiscount} negative /></Text>
+                  <Text>
+                    <Money value={averageDiscount} negative />
+                  </Text>
                 </div>
               )}
               {specialDiscount > 0 && (
@@ -432,7 +436,9 @@ const QuotationDetail: React.FC = () => {
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
                   <Text>Special Discount:</Text>
-                  <Text><Money value={specialDiscount} negative /></Text>
+                  <Text>
+                    <Money value={specialDiscount} negative />
+                  </Text>
                 </div>
               )}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -443,7 +449,9 @@ const QuotationDetail: React.FC = () => {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Text>Shipping:</Text>
-                <Text><Money value={quotation.shipping_cost} /></Text>
+                <Text>
+                  <Money value={quotation.shipping_cost} />
+                </Text>
               </div>
               <Divider style={{ margin: "12px 0" }} />
               <div

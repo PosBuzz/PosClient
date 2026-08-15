@@ -8,6 +8,9 @@ export const endpoints = {
   changePassword: "/consumer/change-password",
   updateConsumerProfile: "/consumer/profile/update",
   planPermissions: "/consumer/users/plan-permissions",
+  operationalCosts: "/consumer/operational-costs",
+  operationalCost: (id: number) => `/consumer/operational-costs/${id}`,
+  businessReportPdf: "/consumer/sales/reports/business/pdf",
 
   user: "/consumer/users",
   updateUser: (id: number) => `/consumer/users/${id}`,
@@ -157,15 +160,13 @@ export const endpoints = {
   getQuotations: "/consumer/sales/quotations/list",
   getQuotation: (id: number) => `/consumer/sales/quotations/${id}`,
   createQuotation: "/consumer/sales",
-  downloadQuotationPdf: (id: number) =>
-    `/consumer/sales/quotations/${id}/pdf`,
+  downloadQuotationPdf: (id: number) => `/consumer/sales/quotations/${id}/pdf`,
 
   // Returns Management
   getReturns: "/consumer/returns",
   getReturn: (id: number) => `/consumer/returns/${id}`,
   createReturn: "/consumer/returns",
-  downloadReturnPdf: (id: number) =>
-    `/consumer/returns/${id}/pdf`,
+  downloadReturnPdf: (id: number) => `/consumer/returns/${id}/pdf`,
 
   // Thermal Printer Management
   prepareReceipt: (saleId: number) =>
@@ -220,7 +221,8 @@ export const endpoints = {
   receiptSettingPreview: "/receipt-settings/preview",
   receiptSettingAction: (id: number) => `/receipt-settings/${id}`,
   receiptSettingActivate: (id: number) => `/receipt-settings/${id}/activate`,
-  receiptSettingDeactivate: (id: number) => `/receipt-settings/${id}/deactivate`,
+  receiptSettingDeactivate: (id: number) =>
+    `/receipt-settings/${id}/deactivate`,
   receiptSettingCopyToBranch: (id: number, branchId: number) =>
     `/receipt-settings/${id}/copy-to-branch/${branchId}`,
 };

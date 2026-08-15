@@ -23,12 +23,10 @@ function AccountSecurity() {
     },
     onError: (err) => {
       messageApi?.error(
-        (err as any)?.response?.data?.message || "An error occurred"
+        (err as any)?.response?.data?.message || "An error occurred",
       );
     },
   });
-  
- 
 
   const handlePasswordChange = (values: {
     old_password: string;
@@ -40,7 +38,7 @@ function AccountSecurity() {
 
   return (
     <>
-     {setPageTitle("Account & Security")}
+      {setPageTitle("Account & Security")}
       <PageTitle
         title={"Account & Security"}
         breadcrumbs={[
@@ -66,8 +64,6 @@ function AccountSecurity() {
           </Text>
         </Space>
       </Card>
-
-      
 
       <Card title="Change Password">
         <Form form={form} layout="vertical" onFinish={handlePasswordChange}>
@@ -107,7 +103,7 @@ function AccountSecurity() {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error("The two passwords do not match!")
+                    new Error("The two passwords do not match!"),
                   );
                 },
               }),

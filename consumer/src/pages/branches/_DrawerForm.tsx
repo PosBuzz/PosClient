@@ -8,7 +8,6 @@ import { queryKeys } from "../../constants/queryKeys";
 
 const { TextArea } = Input;
 
-
 interface BranchFormValues {
   id: number;
   name: string;
@@ -39,7 +38,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createBranch, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createBranch, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.branches] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
@@ -50,7 +50,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create branch"
+        error.response?.data?.message || "Failed to create branch",
       );
     },
   });
@@ -68,7 +68,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update branch"
+        error.response?.data?.message || "Failed to update branch",
       );
     },
   });
@@ -141,7 +141,9 @@ export default function DrawerForm({
         <Form.Item
           label="VAT Registration Number"
           name="vat_registration_number"
-          rules={[{ required: true, message: "VAT registration number is required" }]}
+          rules={[
+            { required: true, message: "VAT registration number is required" },
+          ]}
         >
           <Input placeholder="Enter VAT registration number" />
         </Form.Item>

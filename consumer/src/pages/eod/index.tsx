@@ -1,11 +1,14 @@
 import { Money, takaPrefix } from "../../components/Currency";
+import { DownloadOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Button,
   Card,
   Col,
   DatePicker,
   Row,
   Select,
+  Segmented,
   Spin,
   Statistic,
   Table,
@@ -59,16 +62,19 @@ const EODReport = () => {
   const [selectedBranch, setSelectedBranch] = useState<number | undefined>(
     undefined,
   );
+  const [period, setPeriod] = useState<"day" | "month" | "all">("day");
+  const [downloading, setDownloading] = useState(false);
 
   // Get user's branches
   const userBranches = user?.branches || [];
 
   const { data: eodData, isLoading } = useQuery({
-    queryKey: [queryKeys.eod, selectedDate, selectedBranch],
+    queryKey: [queryKeys.eod, period, selectedDate, selectedBranch],
     queryFn: () =>
       salesApi.getEODReport({
         date: selectedDate,
         branch_id: selectedBranch,
+        period,
       }),
     enabled: !!selectedDate,
     staleTime: queryStaleTimeMap[queryKeys.eod],
@@ -196,17 +202,61 @@ const EODReport = () => {
 
   return (
     <div>
-      {setPageTitle("End of Day Report")}
+      {setPageTitle("Business Report")}
       <PageTitle
-        title="End of Day Report"
-        breadcrumbs={[{ title: "Home", href: "/" }, { title: "EOD Report" }]}
+        title="Business Report"
+        breadcrumbs={[
+          { title: "Home", href: "/" },
+          { title: "Business Report" },
+        ]}
+        rightSection={
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            loading={downloading}
+            onClick={async () => {
+              setDownloading(true);
+              try {
+                await salesApi.downloadBusinessReportPdf({
+                  date: selectedDate,
+                  branch_id: selectedBranch,
+                  period,
+                });
+              } finally {
+                setDownloading(false);
+              }
+            }}
+          >
+            Download PDF
+          </Button>
+        }
       />
 
       {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
-        <Row gutter={16}>
+        <Row gutter={16} align="bottom">
           <Col span={6}>
-            <label>Date:</label>
+            <label>Report period:</label>
+            <br />
+            <Segmented
+              style={{ marginTop: 4 }}
+              value={period}
+              onChange={(value) => setPeriod(value as "day" | "month" | "all")}
+              options={[
+                { label: "Daily", value: "day" },
+                { label: "Monthly", value: "month" },
+                { label: "Till Date", value: "all" },
+              ]}
+            />
+          </Col>
+          <Col span={6}>
+            <label>
+              {period === "day"
+                ? "Date:"
+                : period === "month"
+                  ? "Month:"
+                  : "Through date:"}
+            </label>
             <DatePicker
               style={{ width: "100%", marginTop: 4 }}
               value={dayjs(selectedDate)}
@@ -217,6 +267,7 @@ const EODReport = () => {
               }}
               format="YYYY-MM-DD"
               allowClear={false}
+              picker={period === "month" ? "month" : "date"}
             />
           </Col>
           <Col span={6}>
@@ -242,7 +293,7 @@ const EODReport = () => {
         <Card>
           <div style={{ textAlign: "center", padding: "50px" }}>
             <Spin size="large" />
-            <p style={{ marginTop: 16 }}>Loading EOD report...</p>
+            <p style={{ marginTop: 16 }}>Loading business report...</p>
           </div>
         </Card>
       ) : eodData ? (
@@ -285,6 +336,46 @@ const EODReport = () => {
                   value={eodData.summary.non_cash_sales}
                   prefix={takaPrefix}
                   precision={2}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Gross sales"
+                  value={eodData.summary.total_amount}
+                  prefix={takaPrefix}
+                  precision={2}
+                />
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Operational costs"
+                  value={eodData.summary.operational_costs}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={{ color: "#cf1322" }}
+                />
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card>
+                <Statistic
+                  title="Net operating result"
+                  value={eodData.summary.net_operating_result}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={{
+                    color:
+                      eodData.summary.net_operating_result >= 0
+                        ? "#3f8600"
+                        : "#cf1322",
+                  }}
                 />
               </Card>
             </Col>
@@ -386,7 +477,7 @@ const EODReport = () => {
           </Card>
 
           {/* Hourly Sales Chart */}
-          {hourlyChartData.length > 0 && (
+          {period === "day" && hourlyChartData.length > 0 && (
             <Card
               title="Hourly Sales Distribution"
               style={{ marginBottom: 24 }}
@@ -437,6 +528,32 @@ const EODReport = () => {
                   `${range[0]}-${range[1]} of ${total} products`,
               }}
               scroll={{ x: 800 }}
+            />
+          </Card>
+          <Card title="Operational Costs" style={{ marginTop: 24 }}>
+            <Table
+              dataSource={eodData.operational_costs}
+              rowKey="id"
+              pagination={false}
+              columns={[
+                {
+                  title: "Date",
+                  dataIndex: "incurred_on",
+                  render: (value: string) => dayjs(value).format("DD MMM YYYY"),
+                },
+                { title: "Cost name", dataIndex: "name" },
+                {
+                  title: "Branch",
+                  dataIndex: "branch_name",
+                  render: (value?: string) => value || "All business",
+                },
+                {
+                  title: "Amount",
+                  dataIndex: "amount",
+                  align: "right" as const,
+                  render: (value: number) => <Money value={value} />,
+                },
+              ]}
             />
           </Card>
         </>

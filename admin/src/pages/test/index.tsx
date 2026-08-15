@@ -293,10 +293,23 @@ const ZapForm = () => {
   //   </div>
   // );
 
-  return <iframe src="http://localhost:3000/zapform?source=Website&token=806cb14e60081d3d10defdb4c142a329f733cb759ea63a9566078e04e23dbc3659d58474a9391abe8b42339bb0b56e9c3ea1c0d5f66ddffa351db8ba13481495b0d757ac3e20ed498b8d497f3c8b0c3df23180680f039126a6708a9672e95408dbdcaa35897d504017406edc5ff36e2f5fb8067436ebd2c5" width="100%" height="850px" style={{border: 'none', maxWidth: 500, margin: '0 auto', display: 'block'}} title="Service Lead Form" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" loading="lazy" id="service-form-iframe">
-</iframe>
-
+  return (
+    <iframe
+      src="http://localhost:3000/zapform?source=Website&token=806cb14e60081d3d10defdb4c142a329f733cb759ea63a9566078e04e23dbc3659d58474a9391abe8b42339bb0b56e9c3ea1c0d5f66ddffa351db8ba13481495b0d757ac3e20ed498b8d497f3c8b0c3df23180680f039126a6708a9672e95408dbdcaa35897d504017406edc5ff36e2f5fb8067436ebd2c5"
+      width="100%"
+      height="850px"
+      style={{
+        border: "none",
+        maxWidth: 500,
+        margin: "0 auto",
+        display: "block",
+      }}
+      title="Service Lead Form"
+      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+      loading="lazy"
+      id="service-form-iframe"
+    ></iframe>
+  );
 };
-
 
 export default ZapForm;

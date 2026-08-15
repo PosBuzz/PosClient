@@ -1,25 +1,25 @@
 import { takaPrefix } from "../../components/Currency";
 import { ReloadOutlined, SaveOutlined } from "@ant-design/icons";
 import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    Divider,
-    Form,
-    InputNumber,
-    Row,
-    Space,
-    Switch,
-    Typography
+  Alert,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Form,
+  InputNumber,
+  Row,
+  Space,
+  Switch,
+  Typography,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { rewardsApi } from "../../api/rewards.api";
 import PageTitle from "../../components/PageTitle";
 import { useMessageStore } from "../../stores/messageStore";
 import {
-    CreateRewardsSettingsDto,
-    RewardsSettings,
+  CreateRewardsSettingsDto,
+  RewardsSettings,
 } from "../../types/rewards.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
@@ -169,13 +169,13 @@ const RewardsSettingsPage: React.FC = () => {
                             value === ""
                           ) {
                             return Promise.reject(
-                              new Error("Please enter points per dollar")
+                              new Error("Please enter points per dollar"),
                             );
                           }
                           const numValue = Number(value);
                           if (isNaN(numValue) || numValue < 0) {
                             return Promise.reject(
-                              new Error("Must be a positive number")
+                              new Error("Must be a positive number"),
                             );
                           }
                           return Promise.resolve();
@@ -210,13 +210,13 @@ const RewardsSettingsPage: React.FC = () => {
                             value === ""
                           ) {
                             return Promise.reject(
-                              new Error("Please enter minimum purchase amount")
+                              new Error("Please enter minimum purchase amount"),
                             );
                           }
                           const numValue = Number(value);
                           if (isNaN(numValue) || numValue < 0) {
                             return Promise.reject(
-                              new Error("Must be a positive number")
+                              new Error("Must be a positive number"),
                             );
                           }
                           return Promise.resolve();
@@ -282,13 +282,13 @@ const RewardsSettingsPage: React.FC = () => {
                             value === ""
                           ) {
                             return Promise.reject(
-                              new Error("Please enter redemption value")
+                              new Error("Please enter redemption value"),
                             );
                           }
                           const numValue = Number(value);
                           if (isNaN(numValue) || numValue <= 0) {
                             return Promise.reject(
-                              new Error("Must be greater than 0")
+                              new Error("Must be greater than 0"),
                             );
                           }
                           return Promise.resolve();
@@ -324,7 +324,7 @@ const RewardsSettingsPage: React.FC = () => {
                             value === ""
                           ) {
                             return Promise.reject(
-                              new Error("Please enter minimum redemption")
+                              new Error("Please enter minimum redemption"),
                             );
                           }
                           const numValue = Number(value);
@@ -334,7 +334,7 @@ const RewardsSettingsPage: React.FC = () => {
                             !Number.isInteger(numValue)
                           ) {
                             return Promise.reject(
-                              new Error("Must be a whole number at least 1")
+                              new Error("Must be a whole number at least 1"),
                             );
                           }
                           return Promise.resolve();

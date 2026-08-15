@@ -3,7 +3,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import FullScreenLoader from "./FullScreenLoader";
 
-
 export default function RequireAuth({ children }: { children: JSX.Element }) {
   const { isAuthenticated, isAuthLoading } = useAuthStore();
   const location = useLocation();

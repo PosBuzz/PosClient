@@ -1,4 +1,9 @@
-import { BarcodeOutlined, SettingOutlined, TagOutlined, ShopOutlined } from "@ant-design/icons";
+import {
+  BarcodeOutlined,
+  SettingOutlined,
+  TagOutlined,
+  ShopOutlined,
+} from "@ant-design/icons";
 import { Card, Tabs } from "antd";
 import VariantsTab from "./VariantsTab";
 import SerialsTab from "./SerialsTab";
@@ -14,26 +19,29 @@ interface ProductDetailsTabsProps {
 const ProductDetailsTabs: React.FC<ProductDetailsTabsProps> = ({ product }) => {
   // Collect all serials from all variants
   const allSerials =
-    product.variants?.flatMap((variant) =>
-      variant.serials?.map((serial) => ({
-        ...serial,
-        variant_name: variant.name,
-      })) || []
+    product.variants?.flatMap(
+      (variant) =>
+        variant.serials?.map((serial) => ({
+          ...serial,
+          variant_name: variant.name,
+        })) || [],
     ) || [];
 
   // Collect all attributes from all variants
   const allAttributes =
-    product.variants?.flatMap((variant) =>
-      variant.VariantAttribute?.map((attr) => ({
-        ...attr,
-        variant_name: variant.name,
-      })) || []
+    product.variants?.flatMap(
+      (variant) =>
+        variant.VariantAttribute?.map((attr) => ({
+          ...attr,
+          variant_name: variant.name,
+        })) || [],
     ) || [];
 
   // Count total inventory items
-  const totalInventoryItems = product.variants?.reduce((total, variant) => {
-    return total + (variant.inventory_items?.length || 0);
-  }, 0) || 0;
+  const totalInventoryItems =
+    product.variants?.reduce((total, variant) => {
+      return total + (variant.inventory_items?.length || 0);
+    }, 0) || 0;
 
   return (
     <Tabs defaultActiveKey="variants" style={{ marginTop: 16 }}>

@@ -6,8 +6,10 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 
-
-interface TagFormValues { id: number; name: string }
+interface TagFormValues {
+  id: number;
+  name: string;
+}
 
 interface DrawerFormProps {
   open: boolean;
@@ -29,7 +31,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createTag, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createTag, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.tags] });
       messageApi?.success("Tag created successfully");
@@ -38,7 +41,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create tag"
+        error.response?.data?.message || "Failed to create tag",
       );
     },
   });
@@ -54,7 +57,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update tag"
+        error.response?.data?.message || "Failed to update tag",
       );
     },
   });

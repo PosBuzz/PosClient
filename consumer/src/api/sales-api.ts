@@ -262,7 +262,11 @@ export const salesApi = {
 
   // Get End of Day report
   getEODReport: async (
-    params: { date?: string; branch_id?: number } = {},
+    params: {
+      date?: string;
+      branch_id?: number;
+      period?: "day" | "month" | "all";
+    } = {},
   ): Promise<EODReportResponse> => {
     const queryParams = new URLSearchParams();
 
@@ -273,12 +277,35 @@ export const salesApi = {
     if (params.branch_id) {
       queryParams.append("branch_id", params.branch_id.toString());
     }
+    if (params.period) queryParams.append("period", params.period);
 
     const response = await get(
       `${endpoints.getSales}/reports/eod?${queryParams.toString()}`,
     );
 
     return response;
+  },
+
+  downloadBusinessReportPdf: async (params: {
+    date: string;
+    branch_id?: number;
+    period: "day" | "month" | "all";
+  }): Promise<void> => {
+    const response = await axiosInstance.get(endpoints.businessReportPdf, {
+      params,
+      responseType: "blob",
+    });
+    const url = URL.createObjectURL(
+      new Blob([response.data], { type: "application/pdf" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    const disposition = response.headers["content-disposition"] as
+      string | undefined;
+    link.download =
+      disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? "business-report.pdf";
+    link.click();
+    URL.revokeObjectURL(url);
   },
 
   // ========== QUOTATION METHODS ==========

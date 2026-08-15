@@ -207,8 +207,7 @@ export default function ReceiptSettingsFormPage() {
     form,
   );
   const settingsType = Form.useWatch(["type"], form) as
-    | ReceiptPresetType
-    | undefined;
+    ReceiptPresetType | undefined;
 
   const { data: branches = [] } = useQuery({
     queryKey: [queryKeys.branches],

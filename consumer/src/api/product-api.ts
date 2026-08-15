@@ -56,7 +56,7 @@ export const productApi = {
 
   updateProduct: async (
     id: number,
-    productData: Partial<ProductFormData>
+    productData: Partial<ProductFormData>,
   ): Promise<Product> => {
     return patch(endpoints.updateProduct(id), productData);
   },

@@ -1,8 +1,8 @@
-import { Promotion, PromotionValidationResponse } from "../types/promotion.types";
 import {
-  DiscountType,
-  SaleItem,
-} from "../types/sale.types";
+  Promotion,
+  PromotionValidationResponse,
+} from "../types/promotion.types";
+import { DiscountType, SaleItem } from "../types/sale.types";
 
 const round2 = (value: number) => Number((value || 0).toFixed(2));
 
@@ -224,10 +224,9 @@ export function calculateSaleTotals(params: {
     promotionDiscountMap.set(variantId, choice.discount);
   });
 
-  const promotionDiscountAmount = Array.from(promotionDiscountMap.values()).reduce(
-    (sum, value) => sum + Number(value || 0),
-    0,
-  );
+  const promotionDiscountAmount = Array.from(
+    promotionDiscountMap.values(),
+  ).reduce((sum, value) => sum + Number(value || 0), 0);
 
   const finalDiscount =
     promotionDiscountAmount + averageDiscount + specialDiscount;

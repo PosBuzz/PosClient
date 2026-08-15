@@ -329,7 +329,9 @@ const MakePurchasePayment = () => {
 
         {/* Right Column - Payment Form */}
         <Col xs={24} lg={12}>
-          <Card title={canRecordPayment ? "Record New Payment" : "Payment Details"}>
+          <Card
+            title={canRecordPayment ? "Record New Payment" : "Payment Details"}
+          >
             {canRecordPayment ? (
               <>
                 <PaymentMethodSection
@@ -398,7 +400,8 @@ const MakePurchasePayment = () => {
               </>
             ) : (
               <Text type="secondary">
-                This batch is fully paid. Review the payment history on the left.
+                This batch is fully paid. Review the payment history on the
+                left.
               </Text>
             )}
           </Card>

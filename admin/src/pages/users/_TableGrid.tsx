@@ -31,7 +31,7 @@ export default function TableGrid({ model, onClickEdit, roleOptions = [] }) {
   // Debounced API call function using lodash's debounce
   const debouncedSearch = useCallback(
     debounce((nextValue) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function TableGrid({ model, onClickEdit, roleOptions = [] }) {
         `${endpoints.user}?${new URLSearchParams({
           ...(debouncedSearchText ? { search: debouncedSearchText } : {}),
           ...(selectedRole ? { role_id: String(selectedRole) } : {}),
-        })}`
+        })}`,
       ),
   });
 

@@ -238,7 +238,8 @@ export const validateProductForm = (
           );
         }
 
-        const batchTotal = asNumber(batch.cost_price) * Number(batch.quantity || 0);
+        const batchTotal =
+          asNumber(batch.cost_price) * Number(batch.quantity || 0);
         const validPayments =
           batch.payments?.filter((payment) => Number(payment.amount) > 0) || [];
         const totalPaid = validPayments.reduce(
@@ -285,8 +286,7 @@ export const validateProductForm = (
               firstIndex: batchIndex,
             });
           } else if (seen.expiry !== normalizedExpiry) {
-            const message =
-              "Same batch number must use the same expiry date";
+            const message = "Same batch number must use the same expiry date";
 
             pushError(
               validation,

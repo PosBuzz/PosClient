@@ -310,7 +310,8 @@ const InventoryMovementHistory: React.FC = () => {
                 {variantData?.total_stock || 0}
               </Text>
             </div>
-          </Col>          {variantData?.alert_quantity && (
+          </Col>{" "}
+          {variantData?.alert_quantity && (
             <Col xs={24} sm={12} md={8}>
               <div>
                 <Text strong>Alert Quantity (Per Branch):</Text>
@@ -318,7 +319,8 @@ const InventoryMovementHistory: React.FC = () => {
                 <Text>{variantData.alert_quantity}</Text>
                 <br />
                 <Text type="secondary" style={{ fontSize: "12px" }}>
-                  Low stock alerts are triggered when any branch falls below this threshold
+                  Low stock alerts are triggered when any branch falls below
+                  this threshold
                 </Text>
               </div>
             </Col>

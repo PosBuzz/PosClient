@@ -7,7 +7,10 @@ interface AttributesTabProps {
   product: any;
 }
 
-const AttributesTab: React.FC<AttributesTabProps> = ({ attributes, product }) => {
+const AttributesTab: React.FC<AttributesTabProps> = ({
+  attributes,
+  product,
+}) => {
   const attributeColumns = [
     {
       title: "Attribute",
@@ -26,7 +29,7 @@ const AttributesTab: React.FC<AttributesTabProps> = ({ attributes, product }) =>
       key: "variant",
       render: (_, record) => {
         const variant = product.variants?.find((v) =>
-          v.VariantAttribute?.some((attr) => attr.id === record.id)
+          v.VariantAttribute?.some((attr) => attr.id === record.id),
         );
         return variant ? (
           <Text>{variant.name}</Text>

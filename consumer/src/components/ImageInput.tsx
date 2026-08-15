@@ -28,7 +28,7 @@ const ImageInput: React.FC<ImageInputProps> = ({
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
-  
+
   // Add this to track if we've already processed the value prop
   const [initialValueProcessed, setInitialValueProcessed] = useState(false);
 
@@ -101,13 +101,13 @@ const ImageInput: React.FC<ImageInputProps> = ({
       if (onChange) {
         const urls = info.fileList
           .filter(
-            (file: any) => file.status === "done" && file.response?.success
+            (file: any) => file.status === "done" && file.response?.success,
           )
           .map(
             (file: any) =>
               file.response.data.secure_url ||
               file.response.data.url ||
-              file.url
+              file.url,
           )
           .filter(Boolean);
 
@@ -121,13 +121,13 @@ const ImageInput: React.FC<ImageInputProps> = ({
       if (onChange) {
         const urls = info.fileList
           .filter(
-            (file: any) => file.status === "done" && file.response?.success
+            (file: any) => file.status === "done" && file.response?.success,
           )
           .map(
             (file: any) =>
               file.response.data.secure_url ||
               file.response.data.url ||
-              file.url
+              file.url,
           )
           .filter(Boolean);
 
@@ -155,13 +155,13 @@ const ImageInput: React.FC<ImageInputProps> = ({
         if (onChange) {
           const urls = newFileList
             .filter(
-              (file: any) => file.status === "done" && file.response?.success
+              (file: any) => file.status === "done" && file.response?.success,
             )
             .map(
               (file: any) =>
                 file.response.data.secure_url ||
                 file.response.data.url ||
-                file.url
+                file.url,
             )
             .filter(Boolean);
 

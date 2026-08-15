@@ -291,6 +291,7 @@ model Consumer {
   salary_increments  SalaryIncrement[]
   salary_payments    SalaryPayment[]
   receiptPdfSettings ReceiptPdfSetting[]
+  operational_costs  OperationalCost[]
 
   @@index([email])
   @@index([plan_id])
@@ -403,6 +404,7 @@ model User {
   salary_increments_created SalaryIncrement[]   @relation("SalaryIncrementCreator")
   salary_payments           SalaryPayment[]
   receiptPdfSettings        ReceiptPdfSetting[]
+  operational_costs         OperationalCost[]
 
   @@unique([consumer_id, email])
   @@index([role_id])
@@ -658,6 +660,7 @@ model Branch {
   Returns              Return[]
   inventory_audit_logs InventoryAuditLog[]
   receiptPdfSettings   ReceiptPdfSetting[]
+  operational_costs    OperationalCost[]
 
   @@unique([consumer_id, name])
   @@map("branches")
@@ -1481,6 +1484,27 @@ model Expense {
   @@index([user_id, date])
   @@index([consumer_id, status])
   @@index([consumer_id, include_in_salary, status])
+}
+
+model OperationalCost {
+  id          Int      @id @default(autoincrement())
+  consumer_id Int
+  branch_id   Int?
+  created_by  Int
+  name        String
+  amount      Decimal  @db.Decimal(12, 2)
+  incurred_on DateTime @db.Date
+  notes       String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  consumer Consumer @relation(fields: [consumer_id], references: [id], onDelete: Cascade)
+  branch   Branch?  @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  creator  User     @relation(fields: [created_by], references: [id], onDelete: Restrict)
+
+  @@index([consumer_id, incurred_on])
+  @@index([consumer_id, branch_id, incurred_on])
+  @@map("operational_costs")
 }
 
 model Deduction {

@@ -1,6 +1,6 @@
 export const formatCurrency = (amount: number | null | undefined): string => {
   if (amount === null || amount === undefined) {
-    return 'N/A';
+    return "N/A";
   }
   return `BDT ${Number(amount || 0).toFixed(2)}`;
 };
@@ -16,19 +16,20 @@ export const discountPercentSuffix = (
 ): string => {
   const value = Number(amount) || 0;
   const gross = Number(base) || 0;
-  if (value <= 0 || gross <= 0) return '';
+  if (value <= 0 || gross <= 0) return "";
 
   const pct = (value / gross) * 100;
-  if (pct < 0.01) return '';
+  if (pct < 0.01) return "";
 
   return ` (${Math.round(pct * 100) / 100}%)`;
 };
 
 export const formatDate = (dateString: string | Date): string => {
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  const date =
+    typeof dateString === "string" ? new Date(dateString) : dateString;
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   }).format(date);
 };

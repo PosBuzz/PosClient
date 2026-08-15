@@ -61,10 +61,7 @@ import {
   SaleFormData,
   SaleItem,
 } from "../../types/sale.types";
-import {
-  discountPercentSuffix,
-  formatCurrency,
-} from "../../utils/formatters";
+import { discountPercentSuffix, formatCurrency } from "../../utils/formatters";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
   getVariantPriceForSale as getVariantPriceForSaleByType,
@@ -451,15 +448,15 @@ const NewSale = () => {
           shippingCost: Number(sale?.shipping_cost) || 0,
           tax: Number(sale?.tax_amount) || 0,
           taxAmount: Number(sale?.tax_amount) || 0,
-        total: correctTotal,
-        totalAmount: correctTotal,
-        amountPaid,
-        receivedAmount: amountPaid,
-        change: Math.max(0, amountPaid - correctTotal),
-        changeAmount: Math.max(0, amountPaid - correctTotal),
-        due: Math.max(0, correctTotal - amountPaid),
-        dueAmount: Math.max(0, correctTotal - amountPaid),
-        paymentMethod: paymentMethods,
+          total: correctTotal,
+          totalAmount: correctTotal,
+          amountPaid,
+          receivedAmount: amountPaid,
+          change: Math.max(0, amountPaid - correctTotal),
+          changeAmount: Math.max(0, amountPaid - correctTotal),
+          due: Math.max(0, correctTotal - amountPaid),
+          dueAmount: Math.max(0, correctTotal - amountPaid),
+          paymentMethod: paymentMethods,
           payments:
             sale.payments?.map((payment: any) => ({
               payment_method: getPaymentMethodLabel(payment.payment_method),
@@ -807,7 +804,9 @@ const NewSale = () => {
               size="small"
             />
             {percent && (
-              <div style={{ fontSize: 11, color: "#666" }}>{percent.trim()}</div>
+              <div style={{ fontSize: 11, color: "#666" }}>
+                {percent.trim()}
+              </div>
             )}
           </div>
         );
@@ -1415,7 +1414,8 @@ const NewSale = () => {
                           </div>
                           {variant.locations?.length ? (
                             <div style={{ fontSize: 11, color: "#666" }}>
-                              <EnvironmentOutlined /> {variant.locations.join(", ")}
+                              <EnvironmentOutlined />{" "}
+                              {variant.locations.join(", ")}
                             </div>
                           ) : null}
                           <div style={{ fontSize: 13, fontWeight: 700 }}>

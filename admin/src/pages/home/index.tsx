@@ -13,8 +13,7 @@ function Index() {
 
   const { isLoading, data: fetchData } = useQuery({
     queryKey: [KEY],
-    queryFn: () =>
-      get(endpoints.consumer),
+    queryFn: () => get(endpoints.consumer),
   });
 
   const totalUsers = fetchData?.length || 0;

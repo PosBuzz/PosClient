@@ -31,7 +31,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createCustomer, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createCustomer, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.customers] });
       messageApi?.success("Customer created successfully");
@@ -40,7 +41,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create customer"
+        error.response?.data?.message || "Failed to create customer",
       );
     },
   });
@@ -56,7 +57,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update customer"
+        error.response?.data?.message || "Failed to update customer",
       );
     },
   });
@@ -173,7 +174,9 @@ export default function DrawerForm({
             style={{ width: "100%" }}
             format="YYYY-MM-DD"
             placeholder="Select date of birth (optional)"
-            disabledDate={(current) => current && current > dayjs().endOf("day")}
+            disabledDate={(current) =>
+              current && current > dayjs().endOf("day")
+            }
           />
         </Form.Item>
 

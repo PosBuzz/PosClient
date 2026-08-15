@@ -212,11 +212,20 @@ const SideBar: React.FC = () => {
           key: "/user-sales-stats",
           permissions: [Permissions.sales],
         },
-        // {
-        //   label: <span title="End of Day Report">End of Day Report</span>,
-        //   key: "/eod",
-        //   permissions: [Permissions.sales],
-        // },
+        {
+          label: <span title="Operational Costs">Operational Costs</span>,
+          key: "/operational-costs",
+          permissions: [Permissions.sales],
+        },
+        {
+          label: (
+            <span title="Daily and Monthly Business Report">
+              Business Report
+            </span>
+          ),
+          key: "/business-report",
+          permissions: [Permissions.sales],
+        },
       ],
     },
     {

@@ -1,4 +1,7 @@
-import { PRINTER_CONFIG, AgentReceiptData } from '../constants/printer.constants';
+import {
+  PRINTER_CONFIG,
+  AgentReceiptData,
+} from "../constants/printer.constants";
 
 interface PrintResponse {
   success: boolean;
@@ -50,7 +53,10 @@ class PrintingAgentAPI {
   /**
    * Make a request to the agent with timeout
    */
-  private async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
+  private async makeRequest(
+    url: string,
+    options: RequestInit = {},
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -59,16 +65,16 @@ class PrintingAgentAPI {
         ...options,
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
         },
       });
-      
+
       clearTimeout(timeoutId);
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         throw new Error(`Request timeout after ${this.timeout}ms`);
       }
       throw error;
@@ -80,38 +86,46 @@ class PrintingAgentAPI {
    */
   async printReceipt(receiptData: AgentReceiptData): Promise<PrintResponse> {
     try {
-      console.log('=== SENDING TO PRINTING AGENT ===');
-      console.log('Agent URL:', this.baseUrl);
-      console.log('Receipt Data:', receiptData);
+      console.log("=== SENDING TO PRINTING AGENT ===");
+      console.log("Agent URL:", this.baseUrl);
+      console.log("Receipt Data:", receiptData);
 
-      const response = await this.makeRequest(`${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.PRINT}`, {
-        method: 'POST',
-        body: JSON.stringify(receiptData),
-      });
+      const response = await this.makeRequest(
+        `${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.PRINT}`,
+        {
+          method: "POST",
+          body: JSON.stringify(receiptData),
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Agent responded with status: ${response.status}`);
       }
 
       const result = await response.json();
-      
-      console.log('=== AGENT RESPONSE ===');
-      console.log('Response:', result);
+
+      console.log("=== AGENT RESPONSE ===");
+      console.log("Response:", result);
 
       return {
         success: result.success || false,
-        message: result.message || result.error || 'Unknown response',
+        message: result.message || result.error || "Unknown response",
       };
     } catch (error: any) {
-      console.error('Failed to communicate with printing agent:', error);
-      
-      if (error.message?.includes('fetch') || error.message?.includes('NetworkError') || error.message?.includes('timeout')) {
+      console.error("Failed to communicate with printing agent:", error);
+
+      if (
+        error.message?.includes("fetch") ||
+        error.message?.includes("NetworkError") ||
+        error.message?.includes("timeout")
+      ) {
         return {
           success: false,
-          message: 'Printing agent is not running. Please start the printing agent and try again.',
+          message:
+            "Printing agent is not running. Please start the printing agent and try again.",
         };
       }
-      
+
       return {
         success: false,
         message: `Failed to print: ${error.message}`,
@@ -124,36 +138,44 @@ class PrintingAgentAPI {
    */
   async testConnection(): Promise<PrintResponse> {
     try {
-      console.log('=== TESTING AGENT CONNECTION ===');
-      console.log('Agent URL:', this.baseUrl);
+      console.log("=== TESTING AGENT CONNECTION ===");
+      console.log("Agent URL:", this.baseUrl);
 
-      const response = await this.makeRequest(`${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.STATUS}`, {
-        method: 'GET',
-      });
+      const response = await this.makeRequest(
+        `${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.STATUS}`,
+        {
+          method: "GET",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Agent responded with status: ${response.status}`);
       }
 
       const result: StatusResponse = await response.json();
-      
-      console.log('=== AGENT STATUS ===');
-      console.log('Status:', result);
+
+      console.log("=== AGENT STATUS ===");
+      console.log("Status:", result);
 
       return {
         success: true,
-        message: `Connected to printing agent: ${result.storeName || 'Unknown Store'}`,
+        message: `Connected to printing agent: ${result.storeName || "Unknown Store"}`,
       };
     } catch (error: any) {
-      console.error('Failed to test agent connection:', error);
-      
-      if (error.message?.includes('fetch') || error.message?.includes('NetworkError') || error.message?.includes('timeout')) {
+      console.error("Failed to test agent connection:", error);
+
+      if (
+        error.message?.includes("fetch") ||
+        error.message?.includes("NetworkError") ||
+        error.message?.includes("timeout")
+      ) {
         return {
           success: false,
-          message: 'Printing agent is not running. Please start the printing agent.',
+          message:
+            "Printing agent is not running. Please start the printing agent.",
         };
       }
-      
+
       return {
         success: false,
         message: `Failed to connect: ${error.message}`,
@@ -166,44 +188,45 @@ class PrintingAgentAPI {
    */
   async testPrint(): Promise<PrintResponse> {
     const testData: AgentReceiptData = {
-      orderId: 'TEST-001',
-      sale_number: 'TEST-001',
+      orderId: "TEST-001",
+      sale_number: "TEST-001",
       sale_date: new Date().toISOString(),
-      customer_name: PRINTER_CONFIG.DEFAULT_RECEIPT_SETTINGS.defaultCustomerName,
-      customer_phone: '555-0123',
+      customer_name:
+        PRINTER_CONFIG.DEFAULT_RECEIPT_SETTINGS.defaultCustomerName,
+      customer_phone: "555-0123",
       branch: {
-        name: 'Test Branch',
-        address: '123 Test Street',
-        phone: '555-0100',
-        email: 'test@example.com',
+        name: "Test Branch",
+        address: "123 Test Street",
+        phone: "555-0100",
+        email: "test@example.com",
       },
       user: {
-        name: 'Test Cashier',
-        id: '1',
+        name: "Test Cashier",
+        id: "1",
       },
       items: [
         {
-          name: 'Test Item',
+          name: "Test Item",
           quantity: 1,
-          unit_price: 10.00,
-          line_total: 10.00,
+          unit_price: 10.0,
+          line_total: 10.0,
           discount_amount: 0,
         },
       ],
-      subtotal: 10.00,
-      tax_amount: 0.80,
+      subtotal: 10.0,
+      tax_amount: 0.8,
       discount_amount: 0,
       shipping_cost: 0,
-      total_amount: 10.80,
-      received_amount: 20.00,
-      change_amount: 9.20,
+      total_amount: 10.8,
+      received_amount: 20.0,
+      change_amount: 9.2,
       payments: [
         {
-          payment_method: 'Cash',
-          amount: 20.00,
+          payment_method: "Cash",
+          amount: 20.0,
         },
       ],
-      payment_status: 'PAID',
+      payment_status: "PAID",
       notes: PRINTER_CONFIG.DEFAULT_RECEIPT_SETTINGS.thankYouMessage,
       openCashDrawer: false, // Don't open drawer for test
     };
@@ -216,9 +239,12 @@ class PrintingAgentAPI {
    */
   async getConfig(): Promise<ConfigResponse | null> {
     try {
-      const response = await this.makeRequest(`${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.CONFIG}`, {
-        method: 'GET',
-      });
+      const response = await this.makeRequest(
+        `${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.CONFIG}`,
+        {
+          method: "GET",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Agent responded with status: ${response.status}`);
@@ -226,7 +252,7 @@ class PrintingAgentAPI {
 
       return await response.json();
     } catch (error: any) {
-      console.error('Failed to get agent config:', error);
+      console.error("Failed to get agent config:", error);
       return null;
     }
   }
@@ -236,10 +262,13 @@ class PrintingAgentAPI {
    */
   async updateConfig(config: Partial<ConfigResponse>): Promise<PrintResponse> {
     try {
-      const response = await this.makeRequest(`${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.CONFIG}`, {
-        method: 'POST',
-        body: JSON.stringify(config),
-      });
+      const response = await this.makeRequest(
+        `${this.baseUrl}${PRINTER_CONFIG.AGENT_ENDPOINTS.CONFIG}`,
+        {
+          method: "POST",
+          body: JSON.stringify(config),
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Agent responded with status: ${response.status}`);
@@ -248,10 +277,10 @@ class PrintingAgentAPI {
       const result = await response.json();
       return {
         success: result.success || false,
-        message: result.message || 'Configuration updated successfully',
+        message: result.message || "Configuration updated successfully",
       };
     } catch (error: any) {
-      console.error('Failed to update agent config:', error);
+      console.error("Failed to update agent config:", error);
       return {
         success: false,
         message: `Failed to update configuration: ${error.message}`,

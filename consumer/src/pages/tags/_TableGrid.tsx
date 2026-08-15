@@ -28,7 +28,7 @@ export default function TableGrid({ onClickEdit }) {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete tag"
+        error.response?.data?.message || "Failed to delete tag",
       );
     },
   });
@@ -78,8 +78,7 @@ export default function TableGrid({ onClickEdit }) {
       pagination={{
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total, range) =>
-          `${range[0]}-${range[1]} of ${total} tags`,
+        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tags`,
       }}
     />
   );

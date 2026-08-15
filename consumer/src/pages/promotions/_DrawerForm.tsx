@@ -27,7 +27,8 @@ const discountTypeOptions = [
   { label: "Fixed Amount", value: "fixed_amount" },
 ];
 
-const formatCurrency = (value: number) => `BDT ${Number(value || 0).toFixed(2)}`;
+const formatCurrency = (value: number) =>
+  `BDT ${Number(value || 0).toFixed(2)}`;
 
 export default function DrawerForm({
   onClose,
@@ -61,7 +62,8 @@ export default function DrawerForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: any) => promotionApi.updatePromotion(id, payload),
+    mutationFn: ({ id, payload }: any) =>
+      promotionApi.updatePromotion(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
       messageApi?.success("Promotion updated successfully");
@@ -125,11 +127,13 @@ export default function DrawerForm({
         ? null
         : Number(watchedCapQuantity);
     const capDiscountAmount =
-      watchedCapDiscountAmount === null || watchedCapDiscountAmount === undefined
+      watchedCapDiscountAmount === null ||
+      watchedCapDiscountAmount === undefined
         ? null
         : Number(watchedCapDiscountAmount);
     const maxDiscountAmount =
-      watchedMaxDiscountAmount === null || watchedMaxDiscountAmount === undefined
+      watchedMaxDiscountAmount === null ||
+      watchedMaxDiscountAmount === undefined
         ? null
         : Number(watchedMaxDiscountAmount);
 
@@ -143,8 +147,9 @@ export default function DrawerForm({
     )?.name;
 
     const bundleVariantNames = (watchedVariantIds || [])
-      .map((id: number) =>
-        allVariants.find((variant: any) => variant.id === id)?.name,
+      .map(
+        (id: number) =>
+          allVariants.find((variant: any) => variant.id === id)?.name,
       )
       .filter(Boolean);
 
@@ -179,7 +184,9 @@ export default function DrawerForm({
     lines.push(`${discountText} on ${scopeText}.`);
 
     if (minPurchase > 0) {
-      lines.push(`Requires minimum purchase of ${formatCurrency(minPurchase)}.`);
+      lines.push(
+        `Requires minimum purchase of ${formatCurrency(minPurchase)}.`,
+      );
     }
 
     lines.push(`Requires at least ${minQuantity} matching item(s).`);
@@ -284,7 +291,10 @@ export default function DrawerForm({
             : []
           : values.variant_ids || [];
 
-    if ((values.scope === "SINGLE_PRODUCT" || values.scope === "BUNDLE") && normalizedVariantIds.length === 0) {
+    if (
+      (values.scope === "SINGLE_PRODUCT" || values.scope === "BUNDLE") &&
+      normalizedVariantIds.length === 0
+    ) {
       messageApi?.error("Please select product variant(s)");
       return;
     }
@@ -464,22 +474,34 @@ export default function DrawerForm({
             <InputNumber min={0.01} style={{ width: "100%" }} />
           </Form.Item>
 
-          <Form.Item label="Min Purchase" name="min_purchase" style={{ flex: 1 }}>
+          <Form.Item
+            label="Min Purchase"
+            name="min_purchase"
+            style={{ flex: 1 }}
+          >
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
         </Space>
 
         <Space style={{ width: "100%" }} size={12}>
-          <Form.Item
-            label="Usage Limit"
-            name="usage_limit"
-            style={{ flex: 1 }}
-          >
-            <InputNumber min={1} style={{ width: "100%" }} placeholder="Total times promo can be used" />
+          <Form.Item label="Usage Limit" name="usage_limit" style={{ flex: 1 }}>
+            <InputNumber
+              min={1}
+              style={{ width: "100%" }}
+              placeholder="Total times promo can be used"
+            />
           </Form.Item>
 
-          <Form.Item label="Cap Quantity" name="cap_quantity" style={{ flex: 1 }}>
-            <InputNumber min={1} style={{ width: "100%" }} placeholder="Per-sale qty cap" />
+          <Form.Item
+            label="Cap Quantity"
+            name="cap_quantity"
+            style={{ flex: 1 }}
+          >
+            <InputNumber
+              min={1}
+              style={{ width: "100%" }}
+              placeholder="Per-sale qty cap"
+            />
           </Form.Item>
         </Space>
 
@@ -489,7 +511,11 @@ export default function DrawerForm({
             name="max_discount_amount"
             style={{ flex: 1 }}
           >
-            <InputNumber min={0} style={{ width: "100%" }} placeholder="Global close amount" />
+            <InputNumber
+              min={0}
+              style={{ width: "100%" }}
+              placeholder="Global close amount"
+            />
           </Form.Item>
 
           <Form.Item
@@ -497,7 +523,11 @@ export default function DrawerForm({
             name="cap_discount_amount"
             style={{ flex: 1 }}
           >
-            <InputNumber min={0} style={{ width: "100%" }} placeholder="Per-sale cap" />
+            <InputNumber
+              min={0}
+              style={{ width: "100%" }}
+              placeholder="Per-sale cap"
+            />
           </Form.Item>
         </Space>
 
@@ -544,7 +574,12 @@ export default function DrawerForm({
         ) : null}
 
         <Space style={{ width: "100%" }} size={12}>
-          <Form.Item label="Start Date" name="start_date" style={{ flex: 1 }} rules={[{ required: true }]}> 
+          <Form.Item
+            label="Start Date"
+            name="start_date"
+            style={{ flex: 1 }}
+            rules={[{ required: true }]}
+          >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
 
@@ -554,7 +589,11 @@ export default function DrawerForm({
         </Space>
 
         {selectedScope === "BRAND" ? (
-          <Form.Item label="Brand" name="brand_id" rules={[{ required: true, message: "Select a brand" }]}>
+          <Form.Item
+            label="Brand"
+            name="brand_id"
+            rules={[{ required: true, message: "Select a brand" }]}
+          >
             <Select
               showSearch
               options={(optionsData?.brands || []).map((brand) => ({
@@ -582,17 +621,31 @@ export default function DrawerForm({
         )}
 
         <Space style={{ width: "100%" }} size={12}>
-          <Form.Item label="Min Quantity" name="min_quantity" style={{ flex: 1 }}>
+          <Form.Item
+            label="Min Quantity"
+            name="min_quantity"
+            style={{ flex: 1 }}
+          >
             <InputNumber min={1} style={{ width: "100%" }} />
           </Form.Item>
 
-          <Form.Item label="Auto Apply" name="auto_apply" valuePropName="checked" style={{ flex: 1 }}>
+          <Form.Item
+            label="Auto Apply"
+            name="auto_apply"
+            valuePropName="checked"
+            style={{ flex: 1 }}
+          >
             <Switch />
           </Form.Item>
         </Space>
 
         <Space style={{ width: "100%" }} size={12}>
-          <Form.Item label="Active" name="is_active" valuePropName="checked" style={{ flex: 1 }}>
+          <Form.Item
+            label="Active"
+            name="is_active"
+            valuePropName="checked"
+            style={{ flex: 1 }}
+          >
             <Switch />
           </Form.Item>
 

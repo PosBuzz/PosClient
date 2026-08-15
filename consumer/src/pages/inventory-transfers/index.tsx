@@ -55,7 +55,7 @@ export default function InventoryTransfersPage() {
   // Debounce search
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function InventoryTransfersPage() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to complete transfer"
+        error.response?.data?.message || "Failed to complete transfer",
       );
     },
   });
@@ -135,7 +135,7 @@ export default function InventoryTransfersPage() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to cancel transfer"
+        error.response?.data?.message || "Failed to cancel transfer",
       );
     },
   });
@@ -234,9 +234,7 @@ export default function InventoryTransfersPage() {
                   title: "Total Value",
                   render: (_, item) => (
                     <Money
-                      value={
-                        parseFloat(item.batch.cost_price) * item.quantity
-                      }
+                      value={parseFloat(item.batch.cost_price) * item.quantity}
                     />
                   ),
                   align: "right",

@@ -1,17 +1,19 @@
-import { get, post } from './crud-api';
-import { endpoints } from './endpoints';
-import { 
-  Return, 
-  CreateReturnForm, 
-  ReturnListFilters, 
+import { get, post } from "./crud-api";
+import { endpoints } from "./endpoints";
+import {
+  Return,
+  CreateReturnForm,
+  ReturnListFilters,
   ReturnListResponse,
-  SaleForReturn
-} from '../types/return.types';
-import axiosInstance from './axiosInstance';
+  SaleForReturn,
+} from "../types/return.types";
+import axiosInstance from "./axiosInstance";
 
 export const returnsApi = {
   // Get all returns with filters
-  getReturns: async (filters: ReturnListFilters): Promise<ReturnListResponse> => {
+  getReturns: async (
+    filters: ReturnListFilters,
+  ): Promise<ReturnListResponse> => {
     return await get(endpoints.getReturns, filters);
   },
 
@@ -30,14 +32,11 @@ export const returnsApi = {
     return await get(endpoints.getSale(saleId));
   },
 
-    // Download PDF
+  // Download PDF
   downloadReturnPdf: async (id: number): Promise<Blob> => {
-    const response = await axiosInstance.get(
-      endpoints.downloadReturnPdf(id),
-      {
-        responseType: "blob",
-      },
-    );
+    const response = await axiosInstance.get(endpoints.downloadReturnPdf(id), {
+      responseType: "blob",
+    });
     return response.data;
   },
 };

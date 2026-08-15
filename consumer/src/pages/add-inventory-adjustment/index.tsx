@@ -94,7 +94,7 @@ export default function AddInventoryAdjustment() {
 
   // Get selected batch data
   const selectedBatch = batchesData?.data.find(
-    (batch) => batch.id === selectedBatchId
+    (batch) => batch.id === selectedBatchId,
   );
 
   // Create adjustment mutation
@@ -115,7 +115,7 @@ export default function AddInventoryAdjustment() {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create adjustment"
+        error.response?.data?.message || "Failed to create adjustment",
       );
     },
   });
@@ -175,13 +175,13 @@ export default function AddInventoryAdjustment() {
         ? Math.abs(values.quantity_change)
         : -Math.abs(values.quantity_change);
 
-    // Validate decrease against available stock
+    // Validate removal against available inventory
     if (values.adjustment_type === "decrease") {
       if (Math.abs(finalQuantityChange) > selectedBatch.quantity) {
         messageApi?.error(
-          `Cannot decrease by ${Math.abs(finalQuantityChange)} units. Only ${
+          `Cannot remove ${Math.abs(finalQuantityChange)} units. Only ${
             selectedBatch.quantity
-          } units available.`
+          } units available.`,
         );
         return;
       }
@@ -381,7 +381,7 @@ export default function AddInventoryAdjustment() {
               <Alert
                 message="No batches available"
                 description={`No inventory batches found for this variant in ${getBranchDisplayName(
-                  branches.find((b) => b.id === selectedBranch)
+                  branches.find((b) => b.id === selectedBranch),
                 )}`}
                 type="warning"
                 showIcon
@@ -399,7 +399,7 @@ export default function AddInventoryAdjustment() {
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="adjustment_type"
-                  label="Adjustment Type"
+                  label="Inventory Action"
                   style={{ marginBottom: 8 }}
                   rules={[{ required: true }]}
                 >
@@ -408,13 +408,13 @@ export default function AddInventoryAdjustment() {
                       value="increase"
                       style={{ color: "#52c41a", fontSize: 11 }}
                     >
-                      <PlusOutlined /> Increase
+                      <PlusOutlined /> Add to Inventory
                     </Radio.Button>
                     <Radio.Button
                       value="decrease"
                       style={{ color: "#ff4d4f", fontSize: 11 }}
                     >
-                      <MinusOutlined /> Decrease
+                      <MinusOutlined /> Remove from Inventory
                     </Radio.Button>
                   </Radio.Group>
                 </Form.Item>
@@ -439,8 +439,8 @@ export default function AddInventoryAdjustment() {
                               if (value > selectedBatch.quantity) {
                                 return Promise.reject(
                                   new Error(
-                                    `Cannot exceed available stock of ${selectedBatch.quantity} units`
-                                  )
+                                    `Cannot remove more than the available ${selectedBatch.quantity} units`,
+                                  ),
                                 );
                               }
                               return Promise.resolve();
@@ -504,7 +504,7 @@ export default function AddInventoryAdjustment() {
             {canShowSummary && (
               <Card style={{ marginTop: 8 }} bodyStyle={{ padding: 8 }}>
                 <Text strong style={{ fontSize: 11 }}>
-                  Adjustment Summary:
+                  Inventory Summary:
                 </Text>
                 <Row gutter={8} style={{ marginTop: 4 }}>
                   <Col xs={8} sm={8}>
@@ -514,7 +514,7 @@ export default function AddInventoryAdjustment() {
                   </Col>
                   <Col xs={8} sm={8}>
                     <Text style={{ fontSize: 11 }}>
-                      Change:{" "}
+                      {adjustmentType === "increase" ? "Adding" : "Removing"}:{" "}
                       <Text
                         strong
                         style={{

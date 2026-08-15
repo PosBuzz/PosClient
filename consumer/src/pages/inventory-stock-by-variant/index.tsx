@@ -75,7 +75,7 @@ export default function InventoryStockByVariantPage() {
   // Debounce search
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export default function InventoryStockByVariantPage() {
                   key: branchName,
                   branch_name: branchName,
                   stock,
-                })
+                }),
               )}
               rowKey="key"
               pagination={false}
@@ -252,8 +252,8 @@ export default function InventoryStockByVariantPage() {
               color: record.is_low_stock
                 ? "#ff4d4f"
                 : record.total_stock > 0
-                ? "#52c41a"
-                : "#8c8c8c",
+                  ? "#52c41a"
+                  : "#8c8c8c",
               fontSize: "16px",
             }}
           >
@@ -297,7 +297,11 @@ export default function InventoryStockByVariantPage() {
         record.locations?.length ? (
           <Space wrap size={4}>
             {record.locations.map((location) => (
-              <Tag key={location} color="geekblue" icon={<EnvironmentOutlined />}>
+              <Tag
+                key={location}
+                color="geekblue"
+                icon={<EnvironmentOutlined />}
+              >
                 {location}
               </Tag>
             ))}
@@ -316,15 +320,15 @@ export default function InventoryStockByVariantPage() {
             record.is_low_stock
               ? "red"
               : record.total_stock > 0
-              ? "green"
-              : "default"
+                ? "green"
+                : "default"
           }
         >
           {record.is_low_stock
             ? "Low Stock"
             : record.total_stock > 0
-            ? "In Stock"
-            : "Out of Stock"}
+              ? "In Stock"
+              : "Out of Stock"}
         </Tag>
       ),
     },

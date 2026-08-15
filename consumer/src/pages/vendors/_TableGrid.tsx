@@ -35,7 +35,7 @@ export default function TableGrid({ onClickEdit }) {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete vendor"
+        error.response?.data?.message || "Failed to delete vendor",
       );
     },
   });

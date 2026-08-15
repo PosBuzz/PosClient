@@ -1564,10 +1564,21 @@ export class SalesService {
     try {
       // Parse date or use current date
       const reportDate = eodDto.date ? new Date(eodDto.date) : new Date();
+      const period = eodDto.period ?? 'day';
       const startOfDay = new Date(reportDate);
-      startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(reportDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      if (period === 'all') {
+        startOfDay.setTime(0);
+        endOfDay.setHours(23, 59, 59, 999);
+      } else if (period === 'month') {
+        startOfDay.setDate(1);
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay.setMonth(endOfDay.getMonth() + 1, 0);
+        endOfDay.setHours(23, 59, 59, 999);
+      } else {
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay.setHours(23, 59, 59, 999);
+      }
 
       // Build where clause
       const whereClause: any = {
@@ -1610,6 +1621,20 @@ export class SalesService {
           },
         },
       });
+
+      const operationalCosts = await this.prisma.operationalCost.findMany({
+        where: {
+          consumer_id: consumerId,
+          incurred_on: { gte: startOfDay, lte: endOfDay },
+          ...(eodDto.branch_id ? { branch_id: eodDto.branch_id } : {}),
+        },
+        include: { branch: { select: { name: true } } },
+        orderBy: { incurred_on: 'desc' },
+      });
+      const totalOperationalCosts = operationalCosts.reduce(
+        (sum, cost) => sum + Number(cost.amount),
+        0,
+      );
 
       // Calculate summary statistics
       const totalSales = sales.length;
@@ -1772,16 +1797,28 @@ export class SalesService {
           totalSales > 0 ? totalAmount / totalSales : 0,
         total_items_sold: totalItemsSold,
         unique_products_sold: uniqueProductIds.size,
+        operational_costs: totalOperationalCosts,
+        net_operating_result: totalAmount - totalOperationalCosts,
       };
 
       return {
         date: reportDate.toISOString().split('T')[0],
+        period,
+        period_start: startOfDay.toISOString().split('T')[0],
+        period_end: endOfDay.toISOString().split('T')[0],
         branch_name: branchName,
         summary,
         payment_method_breakdown: paymentMethodBreakdown,
         product_sales: productSales,
         hourly_sales: hourlySales,
         payment_status_breakdown: paymentStatusBreakdown,
+        operational_costs: operationalCosts.map((cost) => ({
+          id: cost.id,
+          name: cost.name,
+          amount: Number(cost.amount),
+          incurred_on: cost.incurred_on.toISOString().split('T')[0],
+          branch_name: cost.branch?.name,
+        })),
       };
     } catch (error) {
       this.logger.error(

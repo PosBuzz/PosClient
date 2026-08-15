@@ -1,27 +1,27 @@
 import { CurrencyIcon } from "../../components/Currency";
 import {
-    ArrowLeftOutlined,
-    DeleteOutlined,
-    PlusOutlined,
-    PrinterOutlined,
+  ArrowLeftOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  PrinterOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Divider,
-    Input,
-    InputNumber,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tag,
-    Tooltip,
-    Typography,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
@@ -341,7 +341,7 @@ const MakePayment = () => {
           <Card title="Record New Payment">
             <div style={{ marginBottom: 16 }}>
               <Text strong>Payment Methods</Text>
-              
+
               <div style={{ marginTop: 8, marginBottom: 8 }}>
                 <Button
                   type="dashed"
@@ -401,7 +401,9 @@ const MakePayment = () => {
                           </Option>
                           <Option value={PaymentMethod.MFS}>MFS</Option>
                           <Option value={PaymentMethod.CREDIT}>Credit</Option>
-                          <Option value={PaymentMethod.EXCHANGE}>Exchange</Option>
+                          <Option value={PaymentMethod.EXCHANGE}>
+                            Exchange
+                          </Option>
                         </Select>
                       </Col>
                       <Col span={6}>

@@ -8,5 +8,5 @@ registerSWUpdateHandler();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Providers />
-  </StrictMode>
+  </StrictMode>,
 );

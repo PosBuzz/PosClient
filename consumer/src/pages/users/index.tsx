@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
@@ -35,9 +34,9 @@ const Users = () => {
   });
 
   const branchOptions: any = branchData?.map((branch) => {
-    return { 
-      label: `${branch.name}${branch.is_main ? ' (Main)' : ''}${branch.is_warehouse ? ' (Warehouse)' : ''}`, 
-      value: branch.id 
+    return {
+      label: `${branch.name}${branch.is_main ? " (Main)" : ""}${branch.is_warehouse ? " (Warehouse)" : ""}`,
+      value: branch.id,
     };
   });
 
@@ -102,7 +101,11 @@ const Users = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid onClickEdit={onClickEdit} roleOptions={roleOptions} branchOptions={branchOptions} />
+          <TableGrid
+            onClickEdit={onClickEdit}
+            roleOptions={roleOptions}
+            branchOptions={branchOptions}
+          />
         </Col>
       </Row>
     </>
