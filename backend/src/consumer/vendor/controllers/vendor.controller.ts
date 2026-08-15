@@ -30,7 +30,10 @@ export class VendorController {
 
   @Post()
   async create(@Body() createVendorDto: CreateVendorDto, @Req() req: Request) {
-    return this.vendorService.create(createVendorDto, Number(req.user.consumer_id));
+    return this.vendorService.create(
+      createVendorDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Get()
@@ -62,7 +65,11 @@ export class VendorController {
     @Body() updateVendorDto: UpdateVendorDto,
     @Req() req: Request,
   ) {
-    return this.vendorService.update(+id, updateVendorDto, Number(req.user.consumer_id));
+    return this.vendorService.update(
+      +id,
+      updateVendorDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Delete(':id')

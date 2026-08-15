@@ -50,7 +50,11 @@ export class TagController {
     @Body() updateTagDto: UpdateTagDto,
     @Req() req: Request,
   ) {
-    return this.tagService.update(+id, updateTagDto, Number(req.user.consumer_id));
+    return this.tagService.update(
+      +id,
+      updateTagDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Delete(':id')

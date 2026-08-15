@@ -70,7 +70,9 @@ export class ImportController {
 
   /** Validate only — never writes, so the UI can show problems before committing */
   @Post(':entity/preview')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async preview(
     @Param('entity') entity: string,
     @UploadedFile() file: UploadedSpreadsheet,
@@ -87,7 +89,9 @@ export class ImportController {
   }
 
   @Post(':entity')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async import(
     @Param('entity') entity: string,
     @UploadedFile() file: UploadedSpreadsheet,

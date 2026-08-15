@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class InventoryAdjustmentService {
@@ -134,7 +135,7 @@ export class InventoryAdjustmentService {
     } catch (error) {
       this.logger.error(
         `Error creating inventory adjustment for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create inventory adjustment',
@@ -209,7 +210,7 @@ export class InventoryAdjustmentService {
     } catch (error) {
       this.logger.error(
         `Error finding all inventory adjustments for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory adjustments',
@@ -254,7 +255,7 @@ export class InventoryAdjustmentService {
     } catch (error) {
       this.logger.error(
         `Error finding inventory adjustment ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find inventory adjustment',

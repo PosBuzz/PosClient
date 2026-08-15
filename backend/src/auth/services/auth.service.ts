@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import * as dayjs from 'dayjs';
 import { createHmac } from 'crypto';
 import { ConfigService } from 'src/config/config.service';
+import { errorStack } from '../../common/utils/error.util';
 
 @Injectable()
 export class AuthService {
@@ -65,7 +66,7 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         `Error occurred while logging in super admin for ${superAdmin.email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to login super admin',
@@ -105,7 +106,7 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         `Error occurred while logging in user for ${user.email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to login user',
@@ -132,7 +133,7 @@ export class AuthService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error occurred while validating super admin for ${email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to validate super admin',
@@ -189,7 +190,7 @@ export class AuthService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error occurred while validating user for ${email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to validate user',
@@ -274,10 +275,9 @@ export class AuthService {
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
         'Error occurred while refreshing client token',
-        errorStack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to refresh client token',
@@ -339,10 +339,9 @@ export class AuthService {
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(
         'Error occurred while refreshing admin token',
-        errorStack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to refresh admin token',
@@ -353,7 +352,7 @@ export class AuthService {
 
   async invalidateAdminRefreshToken(refreshToken: string): Promise<void> {
     try {
-      const payload = this.jwtService.decode(refreshToken) as { sub: number };
+      const payload = this.jwtService.decode(refreshToken);
 
       if (!payload) {
         throw new Error('Invalid refresh token');
@@ -373,7 +372,7 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         'Error occurred while invalidating admin refresh token',
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to invalidate admin refresh token',
@@ -384,7 +383,7 @@ export class AuthService {
 
   async invalidateClientRefreshToken(refreshToken: string): Promise<void> {
     try {
-      const payload = this.jwtService.decode(refreshToken) as { sub: number };
+      const payload = this.jwtService.decode(refreshToken);
 
       if (!payload) {
         throw new Error('Invalid refresh token');
@@ -404,7 +403,7 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         'Error occurred while invalidating client refresh token',
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to invalidate client refresh token',

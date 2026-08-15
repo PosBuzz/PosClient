@@ -41,7 +41,7 @@ export class ProductAuditPdfService {
 
       this.thickLine(doc);
       doc.moveDown(1);
-      
+
       this.addSummaryBox(doc, data);
       this.addBatchTimelineSections(doc, data); // Fixed method below
       this.addFooter(doc, data);

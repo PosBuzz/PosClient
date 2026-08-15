@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/update-brand.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class BrandService {
@@ -22,8 +29,14 @@ export class BrandService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Failed to create brand for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to create brand', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to create brand for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to create brand',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -34,8 +47,14 @@ export class BrandService {
         orderBy: { name: 'asc' },
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch brands for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to fetch brands', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to fetch brands for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to fetch brands',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -53,8 +72,14 @@ export class BrandService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to fetch brand ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to fetch brand', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to fetch brand ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to fetch brand',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -75,8 +100,14 @@ export class BrandService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to update brand ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to update brand', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to update brand ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to update brand',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -90,8 +121,14 @@ export class BrandService {
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
 
-      this.logger.error(`Failed to delete brand ${id} for consumer ${consumerId}`, error.stack);
-      throw new HttpException('Failed to delete brand', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.logger.error(
+        `Failed to delete brand ${id} for consumer ${consumerId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to delete brand',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

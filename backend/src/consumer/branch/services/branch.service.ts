@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class BranchService {
@@ -103,7 +104,7 @@ export class BranchService {
 
       this.logger.error(
         `Error creating branch for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create branch',
@@ -139,7 +140,7 @@ export class BranchService {
     } catch (error) {
       this.logger.error(
         `Error auto-assigning branch ${branchId} to admins for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       console.error('Error auto-assigning branch to admins:', error);
       // Don't throw error as this is not critical for branch creation
@@ -189,7 +190,7 @@ export class BranchService {
     } catch (error) {
       this.logger.error(
         `Error finding branch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find branch',
@@ -257,7 +258,7 @@ export class BranchService {
     } catch (error) {
       this.logger.error(
         `Error updating branch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update branch',
@@ -292,7 +293,7 @@ export class BranchService {
     } catch (error) {
       this.logger.error(
         `Error deleting branch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete branch',
@@ -324,7 +325,7 @@ export class BranchService {
     } catch (error) {
       this.logger.error(
         `Error setting main branch ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to set main branch',

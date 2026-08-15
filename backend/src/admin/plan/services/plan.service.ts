@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
+import { errorMessage, errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class PlanService {
@@ -26,7 +27,7 @@ export class PlanService {
 
       return result;
     } catch (error) {
-      this.logger.error('Plan creation failed', error.stack);
+      this.logger.error('Plan creation failed', errorStack(error));
 
       throw new HttpException(
         'Failed to create plan',
@@ -48,7 +49,7 @@ export class PlanService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error('Fetching plans failed', error.stack);
+      this.logger.error('Fetching plans failed', errorStack(error));
 
       throw new HttpException(
         'Failed to fetch plans',
@@ -76,10 +77,10 @@ export class PlanService {
 
       return plan;
     } catch (error) {
-      this.logger.error(`Fetching plan ${id} failed`, error.stack);
+      this.logger.error(`Fetching plan ${id} failed`, errorStack(error));
 
       throw new HttpException(
-        error.message || 'Failed to fetch plan',
+        errorMessage(error) || 'Failed to fetch plan',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -196,7 +197,7 @@ export class PlanService {
         });
       });
     } catch (error) {
-      this.logger.error(`Updating plan ${planId} failed`, error.stack);
+      this.logger.error(`Updating plan ${planId} failed`, errorStack(error));
 
       throw new HttpException(
         'Failed to update plan',
@@ -210,7 +211,7 @@ export class PlanService {
     try {
       return await this.prisma.permission.findMany({ orderBy: { id: 'asc' } });
     } catch (error) {
-      this.logger.error('Fetching permissions failed', error.stack);
+      this.logger.error('Fetching permissions failed', errorStack(error));
 
       throw new HttpException(
         'Failed to fetch permissions',
@@ -225,7 +226,7 @@ export class PlanService {
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Deleting plan ${id} failed`, error.stack);
+      this.logger.error(`Deleting plan ${id} failed`, errorStack(error));
 
       if (error.code === 'P2025') {
         throw new HttpException('Plan not found', HttpStatus.NOT_FOUND);

@@ -26,8 +26,14 @@ export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post()
-  async create(@Body() createCustomerDto: CreateCustomerDto, @Req() req: Request) {
-    return this.customerService.create(createCustomerDto, Number(req.user.consumer_id));
+  async create(
+    @Body() createCustomerDto: CreateCustomerDto,
+    @Req() req: Request,
+  ) {
+    return this.customerService.create(
+      createCustomerDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Get()
@@ -36,7 +42,7 @@ export class CustomerController {
     @Query('customer_type') customerType: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const filters = {
       search: searchQuery,
@@ -44,8 +50,11 @@ export class CustomerController {
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 20,
     };
-    
-    return this.customerService.findAllWithFilters(filters, Number(req.user.consumer_id));
+
+    return this.customerService.findAllWithFilters(
+      filters,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Get(':id')
@@ -59,7 +68,11 @@ export class CustomerController {
     @Body() updateCustomerDto: UpdateCustomerDto,
     @Req() req: Request,
   ) {
-    return this.customerService.update(+id, updateCustomerDto, Number(req.user.consumer_id));
+    return this.customerService.update(
+      +id,
+      updateCustomerDto,
+      Number(req.user.consumer_id),
+    );
   }
 
   @Delete(':id')

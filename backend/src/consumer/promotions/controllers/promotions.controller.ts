@@ -29,7 +29,11 @@ export class PromotionsController {
 
   @Post()
   async create(@Body() dto: CreatePromotionDto, @Req() req: Request) {
-    return this.promotionsService.create(dto, req.user.consumer_id!, req.user.id);
+    return this.promotionsService.create(
+      dto,
+      req.user.consumer_id!,
+      req.user.id,
+    );
   }
 
   @Get('options')
@@ -38,12 +42,12 @@ export class PromotionsController {
   }
 
   @Get('active/list')
-  async getActive(
-    @Query('branch_id') branchId?: string,
-    @Req() req?: Request,
-  ) {
+  async getActive(@Query('branch_id') branchId?: string, @Req() req?: Request) {
     const parsedBranchId = branchId ? parseInt(branchId, 10) : undefined;
-    return this.promotionsService.findActive(req!.user.consumer_id!, parsedBranchId);
+    return this.promotionsService.findActive(
+      req!.user.consumer_id!,
+      parsedBranchId,
+    );
   }
 
   @Get()

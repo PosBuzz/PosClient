@@ -54,34 +54,35 @@ export class ReturnController {
   }
 
   @Get(':id/pdf')
-    async generateReceiptPdfGet(
-      @Param('id', ParseIntPipe) id: number,
-      @Req() req: Request,
-      @Res() res: Response,
-    ) {
-      const returnData = await this.returnService.findOne(id, req.user.consumer_id!);
-  
-      if (!returnData) {
-        return res.status(404).json({ message: 'Sale not found' });
-      }
-  
-      const pdfBuffer = await this.returnPdfService.generateReturnReceiptPdf(returnData);
-  
-      const returnNumber = (returnData as any).return_number || 'unknown';
-      const filename = `receipt-${returnNumber}.pdf`;
-  
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-  
-      res.send(pdfBuffer);
-    }
-
-  @Get(':id')
-  async findOne(
+  async generateReceiptPdfGet(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
+    @Res() res: Response,
   ) {
+    const returnData = await this.returnService.findOne(
+      id,
+      req.user.consumer_id!,
+    );
+
+    if (!returnData) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    const pdfBuffer =
+      await this.returnPdfService.generateReturnReceiptPdf(returnData);
+
+    const returnNumber = (returnData as any).return_number || 'unknown';
+    const filename = `receipt-${returnNumber}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    res.send(pdfBuffer);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.returnService.findOne(id, req.user.consumer_id!);
   }
 }

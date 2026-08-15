@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class VendorService {
@@ -30,7 +31,7 @@ export class VendorService {
     } catch (error) {
       this.logger.error(
         `Error creating vendor for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create vendor',
@@ -61,7 +62,7 @@ export class VendorService {
     } catch (error) {
       this.logger.error(
         `Error finding vendor with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to find vendor',
@@ -93,7 +94,7 @@ export class VendorService {
     } catch (error) {
       this.logger.error(
         `Error updating vendor with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update vendor',
@@ -126,7 +127,7 @@ export class VendorService {
     } catch (error) {
       this.logger.error(
         `Error deleting vendor with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete vendor',
@@ -233,7 +234,7 @@ export class VendorService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error getting vendor details for ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to get vendor details',

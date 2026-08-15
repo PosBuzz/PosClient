@@ -6,13 +6,7 @@ import { SubdomainValidationController } from './controllers/subdomain-validatio
 @Global()
 @Module({
   controllers: [SubdomainValidationController],
-  providers: [
-    SubdomainValidationService,
-    SubdomainUtilService,
-  ],
-  exports: [
-    SubdomainValidationService,
-    SubdomainUtilService,
-  ],
+  providers: [SubdomainValidationService, SubdomainUtilService],
+  exports: [SubdomainValidationService, SubdomainUtilService],
 })
 export class CommonModule {}

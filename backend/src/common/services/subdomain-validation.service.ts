@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SubdomainUtilService } from './subdomain-util.service';
 import * as dayjs from 'dayjs';
+import { errorMessage } from '../utils/error.util';
 
 export interface SubdomainValidationResult {
   exists: boolean;
@@ -85,7 +86,7 @@ export class SubdomainValidationService {
       };
     } catch (error) {
       this.logger.error(
-        `❌ Subdomain validation error '${normalizedSubdomain}': ${error.message}`,
+        `❌ Subdomain validation error '${normalizedSubdomain}': ${errorMessage(error)}`,
       );
       return {
         exists: false,

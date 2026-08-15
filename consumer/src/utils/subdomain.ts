@@ -142,7 +142,7 @@ export function useSubdomainValidation() {
           setIsValid(true);
           setError(null);
         }
-      } catch (err) {
+      } catch {
         setError("Failed to validate subdomain");
         setIsValid(false);
       } finally {

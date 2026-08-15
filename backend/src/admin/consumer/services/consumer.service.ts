@@ -13,11 +13,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ReceiptPdfSettingService } from 'src/consumer/receipt-pdf/services/receipt-pdf-setting.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class ConsumerService {
   private readonly logger = new Logger(ConsumerService.name);
-  
+
   constructor(
     private prisma: PrismaService,
     private receiptPdfSettingService: ReceiptPdfSettingService,
@@ -139,7 +140,7 @@ export class ConsumerService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating consumer for ${data.email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create consumer',
@@ -217,7 +218,7 @@ export class ConsumerService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating consumer for ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update consumer',
@@ -282,7 +283,7 @@ export class ConsumerService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error('Fetching consumers failed', error.stack);
+      this.logger.error('Fetching consumers failed', errorStack(error));
 
       throw new HttpException(
         'Failed to fetch consumers',
@@ -317,7 +318,7 @@ export class ConsumerService {
 
       return { success: true, soft_deleted: true };
     } catch (error) {
-      this.logger.error(`Deleting consumer ${id} failed`, error.stack);
+      this.logger.error(`Deleting consumer ${id} failed`, errorStack(error));
 
       throw new HttpException(
         'Failed to delete consumer',
@@ -344,7 +345,7 @@ export class ConsumerService {
 
       return { success: true, restored: true };
     } catch (error) {
-      this.logger.error(`Restoring consumer ${id} failed`, error.stack);
+      this.logger.error(`Restoring consumer ${id} failed`, errorStack(error));
 
       throw new HttpException(
         'Failed to restore consumer',
@@ -363,7 +364,7 @@ export class ConsumerService {
     } catch (error) {
       this.logger.error(
         `Error checking subdomain availability for ${value}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to check subdomain availability',

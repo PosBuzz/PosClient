@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 import { RedisCacheService } from 'nest-cache-redis';
-
+import { errorMessage } from './common/utils/error.util';
 
 @Injectable()
 export class AppService {
@@ -49,7 +49,7 @@ export class AppService {
       }
     } catch (error) {
       health.services.database = {
-        status: `unhealthy: ${error.message}`,
+        status: `unhealthy: ${errorMessage(error)}`,
         latency: 0,
         connections: 0,
       };
@@ -67,7 +67,7 @@ export class AppService {
         health.status = 'degraded';
       }
     } catch (error) {
-      health.services.redis = { status: `unhealthy: ${error.message}` };
+      health.services.redis = { status: `unhealthy: ${errorMessage(error)}` };
       health.status = 'degraded';
     }
 
@@ -90,7 +90,7 @@ export class AppService {
       metrics.database = dbMetrics;
     } catch (error) {
       metrics.database = {
-        error: error.message,
+        error: errorMessage(error),
       };
     }
 

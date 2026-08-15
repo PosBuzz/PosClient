@@ -5,6 +5,7 @@ import { CreateSuperAdminUserDto } from '../dtos/create-user.dto';
 import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class UsersService {
@@ -32,7 +33,7 @@ export class UsersService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Error creating super admin role`, error.stack);
+      this.logger.error(`Error creating super admin role`, errorStack(error));
       throw new HttpException(
         'Failed to create super admin role',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -52,7 +53,10 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error(`Error finding all super admin roles`, error.stack);
+      this.logger.error(
+        `Error finding all super admin roles`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to find super admin roles',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -73,7 +77,10 @@ export class UsersService {
         },
       });
     } catch (error) {
-      this.logger.error(`Error finding super admin role ${id}`, error.stack);
+      this.logger.error(
+        `Error finding super admin role ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to find super admin role',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -115,7 +122,10 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error(`Error finding all super admin users`, error.stack);
+      this.logger.error(
+        `Error finding all super admin users`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to find super admin users',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -144,7 +154,10 @@ export class UsersService {
         },
       });
     } catch (error) {
-      this.logger.error(`Error finding super admin user ${id}`, error.stack);
+      this.logger.error(
+        `Error finding super admin user ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to find super admin user',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -173,7 +186,7 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Error creating super admin user for ${dto.email}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create super admin user',
@@ -208,7 +221,10 @@ export class UsersService {
 
       return updatedRole;
     } catch (error) {
-      this.logger.error(`Error updating super admin role ${id}`, error.stack);
+      this.logger.error(
+        `Error updating super admin role ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to update super admin role',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -239,7 +255,10 @@ export class UsersService {
         },
       });
     } catch (error) {
-      this.logger.error(`Error updating super admin user ${id}`, error.stack);
+      this.logger.error(
+        `Error updating super admin user ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to update super admin user',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -282,7 +301,10 @@ export class UsersService {
         select: { id: true, email: true, name: true },
       });
     } catch (error) {
-      this.logger.error(`Error changing password for user ${id}`, error.stack);
+      this.logger.error(
+        `Error changing password for user ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to change password',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -297,7 +319,10 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
-      this.logger.error('Error finding super admin permissions', error.stack);
+      this.logger.error(
+        'Error finding super admin permissions',
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to find permissions',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -311,7 +336,10 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Error deleting super admin user ${id}`, error.stack);
+      this.logger.error(
+        `Error deleting super admin user ${id}`,
+        errorStack(error),
+      );
 
       if (error.code === 'P2025') {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -330,7 +358,10 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
-      this.logger.error(`Error deleting super admin role ${id}`, error.stack);
+      this.logger.error(
+        `Error deleting super admin role ${id}`,
+        errorStack(error),
+      );
 
       if (error.code === 'P2025') {
         throw new HttpException('Role not found', HttpStatus.NOT_FOUND);

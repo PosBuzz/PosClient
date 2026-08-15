@@ -85,7 +85,7 @@ export class ReceiptPdfService {
       y = this.ensureSpace(doc, y, 50, s);
       y = this.drawNotes(doc, data, s, y, usableWidth, lm);
 
-      y = this.drawFooter(doc, data, s, y, usableWidth, lm, barcodeBuffer);
+      this.drawFooter(doc, data, s, y, usableWidth, lm, barcodeBuffer);
 
       doc.end();
     });

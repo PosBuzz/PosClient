@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class TagService {
@@ -27,7 +28,7 @@ export class TagService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error creating tag for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to create tag',
@@ -59,7 +60,7 @@ export class TagService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error fetching tag with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to fetch tag',
@@ -81,7 +82,7 @@ export class TagService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating tag with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to update tag',
@@ -103,7 +104,7 @@ export class TagService {
       if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error deleting tag with ID ${id} for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
       throw new HttpException(
         'Failed to delete tag',

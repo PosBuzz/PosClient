@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcryptjs from 'bcryptjs';
+import { errorStack } from '../../common/utils/error.util';
 
 @Injectable()
 export class ChangePasswordService {
@@ -14,26 +15,29 @@ export class ChangePasswordService {
         where: { id },
         select: { password: true },
       });
-  
+
       if (!user) {
         throw new HttpException(
           { message: 'User not found' },
           HttpStatus.EXPECTATION_FAILED,
         );
       }
-  
+
       // Verify the old password
-      const isPasswordValid = await bcryptjs.compare(old_password, user.password);
+      const isPasswordValid = await bcryptjs.compare(
+        old_password,
+        user.password,
+      );
       if (!isPasswordValid) {
         throw new HttpException(
           { message: 'Old password is incorrect' },
           HttpStatus.EXPECTATION_FAILED,
         );
       }
-  
+
       // Hash the new password
       const hashedNewPassword = await bcryptjs.hash(new_password, 10);
-  
+
       // Update the user's password
       return this.prisma.user.update({
         where: { id },
@@ -42,7 +46,10 @@ export class ChangePasswordService {
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      this.logger.error(`Error changing password with ID ${id}`, error.stack);
+      this.logger.error(
+        `Error changing password with ID ${id}`,
+        errorStack(error),
+      );
       throw new HttpException(
         'Failed to change password',
         HttpStatus.INTERNAL_SERVER_ERROR,

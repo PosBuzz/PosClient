@@ -13,6 +13,7 @@ import {
   PRESET_DEFAULTS,
 } from '../preset/receipt-pdf-settings';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { errorStack } from '../../../common/utils/error.util';
 
 @Injectable()
 export class ReceiptPdfSettingService {
@@ -62,7 +63,7 @@ export class ReceiptPdfSettingService {
     } catch (error) {
       this.logger.error(
         `Failed to initialize receipt settings for consumer ${consumerId}`,
-        error.stack,
+        errorStack(error),
       );
     }
   }
@@ -347,7 +348,7 @@ export class ReceiptPdfSettingService {
       where: { id: settingId },
       data: {
         ...(data.name && { name: data.name }),
-        settings: newSettings as any,
+        settings: newSettings,
       },
     });
   }

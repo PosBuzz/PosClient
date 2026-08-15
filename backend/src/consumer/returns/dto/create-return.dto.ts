@@ -42,15 +42,15 @@ export class CreateReturnPaymentDto {
   @IsString()
   reference?: string;
 
-   @ValidateIf((payment) =>
-      [
-        PaymentMethodEnum.CARD,
-        PaymentMethodEnum.BANK_TRANSFER,
-        PaymentMethodEnum.MFS,
-      ].includes(payment.payment_method),
-    )
-    @IsEnum(PaymentTypeEnum)
-    payment_type?: PaymentTypeEnum;
+  @ValidateIf((payment) =>
+    [
+      PaymentMethodEnum.CARD,
+      PaymentMethodEnum.BANK_TRANSFER,
+      PaymentMethodEnum.MFS,
+    ].includes(payment.payment_method),
+  )
+  @IsEnum(PaymentTypeEnum)
+  payment_type?: PaymentTypeEnum;
 }
 
 export class CreateReturnExchangeDto {

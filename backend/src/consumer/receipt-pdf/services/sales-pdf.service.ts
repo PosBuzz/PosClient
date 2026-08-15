@@ -3,9 +3,17 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
-import { ReceiptPdfSettings, ReceiptPresetType } from '../preset/receipt-pdf-settings';
+import {
+  ReceiptPdfSettings,
+  ReceiptPresetType,
+} from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
-import { deepMerge, normalizeLineBreaks, humanPaymentMethod, humanPaymentType } from '../helpers/receipt-pdf.helpers';
+import {
+  deepMerge,
+  normalizeLineBreaks,
+  humanPaymentMethod,
+  humanPaymentType,
+} from '../helpers/receipt-pdf.helpers';
 
 @Injectable()
 export class SalesPdfService {
@@ -30,7 +38,11 @@ export class SalesPdfService {
     const presetType = presetTypeOverride ?? this.toPresetType(saleType);
 
     const [settings, branding] = await Promise.all([
-      this.receiptPdfSettingService.getActiveSettings(consumerId, presetType, branchId),
+      this.receiptPdfSettingService.getActiveSettings(
+        consumerId,
+        presetType,
+        branchId,
+      ),
       this.receiptPdfSettingService.getBrandingData(consumerId, branchId),
     ]);
 
@@ -53,7 +65,10 @@ export class SalesPdfService {
    * pinned to one SalePayment: its own date, method and reference, with the
    * balance before and after that payment.
    */
-  async generatePaymentReceiptPdf(sale: any, paymentId: number): Promise<Buffer> {
+  async generatePaymentReceiptPdf(
+    sale: any,
+    paymentId: number,
+  ): Promise<Buffer> {
     const payments: any[] = [...(sale.payments || [])].sort(
       (a, b) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
@@ -192,8 +207,14 @@ export class SalesPdfService {
       })),
 
       receivedAmount: Number(sale.received_amount) || 0,
-      changeAmount: Math.max(0, (Number(sale.received_amount) || 0) - (Number(sale.total_amount) || 0)),
-      dueAmount: Math.max(0, (Number(sale.total_amount) || 0) - (Number(sale.received_amount) || 0)),
+      changeAmount: Math.max(
+        0,
+        (Number(sale.received_amount) || 0) - (Number(sale.total_amount) || 0),
+      ),
+      dueAmount: Math.max(
+        0,
+        (Number(sale.total_amount) || 0) - (Number(sale.received_amount) || 0),
+      ),
 
       notes: normalizeLineBreaks(sale.notes || ''),
       isOnlineOrder: sale.is_online_order || false,

@@ -280,11 +280,9 @@ const SideBar: React.FC = () => {
     const currentPath = location.pathname;
     setSelectedKeys([currentPath]);
 
-    // Find parent key with improved logic
-    let parentKey: string | undefined;
-
-    // Check if current path is a child of any parent menu item
-    parentKey = menuItems.find((item) => {
+    // Find parent key with improved logic: the parent whose child matches,
+    // or whose path prefixes the current one
+    const parentKey = menuItems.find((item) => {
       if (!item.children) return false;
 
       // Check if any child matches exactly

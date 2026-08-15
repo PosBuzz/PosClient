@@ -21,7 +21,7 @@ import { deleteApi, get } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-export default function _TableGrid({ model, onClickEdit, roleOptions = [] }) {
+export default function TableGrid({ model, onClickEdit, roleOptions = [] }) {
   const [searchText, setSearchText] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
   const { messageApi } = useMessageStore();

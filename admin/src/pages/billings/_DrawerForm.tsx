@@ -6,9 +6,7 @@ import { patch, post } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 
-// @ts-ignore
 export default function DrawerForm({
-  model,
   onClose,
   open,
   onSubmitSuccess,
@@ -25,7 +23,7 @@ export default function DrawerForm({
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.billing, data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       refetch();
       messageApi?.success("Saved Successfully");
       form.resetFields();
@@ -39,7 +37,7 @@ export default function DrawerForm({
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(`${endpoints.billing}/${data.id}`, data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       refetch();
       messageApi?.success("Updated Successfully");
       form.resetFields();
@@ -73,7 +71,7 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
+    // @ts-expect-error -- the legacy mutation infers a narrower payload type.
     createData.mutate(payload);
   };
 

@@ -284,7 +284,7 @@ const NewSale = () => {
         } else {
           messageApi?.error(`Product not found for barcode: ${barcode}`);
         }
-      } catch (error: any) {
+      } catch {
         messageApi?.error("Failed to scan barcode");
       }
     },

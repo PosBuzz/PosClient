@@ -20,9 +20,8 @@ interface PageTitleProps {
 
 function itemRender(
   route: Partial<BreadcrumbItemType>,
-  _params: any,
+  _params: unknown,
   routes: Partial<BreadcrumbItemType>[],
-  _paths: string[],
 ): ReactNode {
   const isLast = routes.indexOf(route) === routes.length - 1;
 

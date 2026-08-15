@@ -29,16 +29,10 @@ const Categories = () => {
     setOpen(true);
   };
 
-  const onSubmitSuccess = (isEditing: boolean) => {
-    if (isEditing) {
+  const onSubmitSuccess = () => {
       setOpen(false);
       setIsEditing(false);
       setEditedItem(null);
-    } else {
-      setOpen(false);
-      setIsEditing(false);
-      setEditedItem(null);
-    }
   };
 
   return (

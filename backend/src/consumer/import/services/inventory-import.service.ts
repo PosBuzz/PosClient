@@ -163,7 +163,10 @@ export class InventoryImportService {
 
       let variantId: number | undefined;
       if (!sku && !barcode) {
-        validator.add('SKU', 'Fill in either SKU or Barcode to identify the product');
+        validator.add(
+          'SKU',
+          'Fill in either SKU or Barcode to identify the product',
+        );
       } else {
         variantId = sku
           ? variantBySku.get(sku.toLowerCase())

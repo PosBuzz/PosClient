@@ -40,7 +40,12 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
 
     if (!admin) throw new Error('SuperAdmin not found');
 
-    const { password, created_at, updated_at, ...rest } = admin;
+    const {
+      password: _password,
+      created_at: _created_at,
+      updated_at: _updated_at,
+      ...rest
+    } = admin;
 
     // Extract permission actions from role
     const permissions = admin.role.permissions.map(

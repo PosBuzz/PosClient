@@ -8,22 +8,36 @@ import { queryKeys } from "../../constants/queryKeys";
 import ImageInput from "../../components/ImageInput";
 import { getImageUrlForCloudinaryImage } from "../../utils/upload";
 
-// @ts-ignore
+
+interface BrandFormValues {
+  id: number;
+  name: string;
+  website?: string;
+  logo?: string;
+}
+
+interface DrawerFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmitSuccess: () => void;
+  isEditing: boolean;
+  editedItem: BrandFormValues | null;
+}
+
 export default function DrawerForm({
   onClose,
   open,
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
-}) {
+}: DrawerFormProps) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data) => await post(endpoints.createBrand, data),
-    onSuccess: (response) => {
+    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createBrand, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.brands] });
       messageApi?.success("Brand created successfully");
       form.resetFields();
@@ -37,13 +51,13 @@ export default function DrawerForm({
   });
 
   const updateData = useMutation({
-    mutationFn: async (data: any) =>
+    mutationFn: async (data: { id: number } & Record<string, unknown>) =>
       await patch(endpoints.updateBrand(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.brands] });
       messageApi?.success("Brand updated successfully");
       form.resetFields();
-      onSubmitSuccess(true);
+      onSubmitSuccess();
     },
     onError: (error: any) => {
       messageApi?.error(
@@ -65,7 +79,6 @@ export default function DrawerForm({
       });
     }
 
-    // @ts-ignore
     createData.mutate(formValues);
   };
 
