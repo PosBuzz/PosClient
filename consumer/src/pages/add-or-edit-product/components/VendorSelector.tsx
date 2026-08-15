@@ -88,7 +88,8 @@ export default function VendorSelector({
   };
 
   const createMutation = useMutation({
-    mutationFn: (payload: VendorFormValues) => inventoryApi.createVendor(payload),
+    mutationFn: (payload: VendorFormValues) =>
+      inventoryApi.createVendor(payload),
     onSuccess: (created) => {
       invalidate();
       messageApi?.success("Vendor created successfully");
@@ -153,7 +154,10 @@ export default function VendorSelector({
     if (!editingItem) {
       return;
     }
-    updateMutation.mutate({ id: editingItem.id, payload: toVendorPayload(values) });
+    updateMutation.mutate({
+      id: editingItem.id,
+      payload: toVendorPayload(values),
+    });
   };
 
   const formatVendorMeta = (item: VendorOption) => {
@@ -310,7 +314,11 @@ export default function VendorSelector({
             </Form.Item>
 
             <Form.Item name="address" label="Address">
-              <Input.TextArea rows={3} maxLength={300} placeholder="Enter address" />
+              <Input.TextArea
+                rows={3}
+                maxLength={300}
+                placeholder="Enter address"
+              />
             </Form.Item>
           </Form>
         </Modal>
@@ -357,7 +365,11 @@ export default function VendorSelector({
             </Form.Item>
 
             <Form.Item name="address" label="Address">
-              <Input.TextArea rows={3} maxLength={300} placeholder="Enter address" />
+              <Input.TextArea
+                rows={3}
+                maxLength={300}
+                placeholder="Enter address"
+              />
             </Form.Item>
           </Form>
         </Modal>

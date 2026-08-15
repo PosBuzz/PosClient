@@ -8,7 +8,6 @@ import { queryKeys } from "../../constants/queryKeys";
 import ImageInput from "../../components/ImageInput";
 import { getImageUrlForCloudinaryImage } from "../../utils/upload";
 
-
 interface BrandFormValues {
   id: number;
   name: string;
@@ -36,7 +35,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createBrand, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createBrand, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.brands] });
       messageApi?.success("Brand created successfully");
@@ -45,7 +45,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create brand"
+        error.response?.data?.message || "Failed to create brand",
       );
     },
   });
@@ -61,7 +61,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update brand"
+        error.response?.data?.message || "Failed to update brand",
       );
     },
   });

@@ -74,7 +74,7 @@ const ProductsTable = () => {
   // Debounce function to delay API calls
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   // Effect to trigger debounced search when searchText changes
@@ -598,7 +598,7 @@ const ProductsTable = () => {
 
                 {categoryFilter.map((categoryId) => {
                   const category = categories.find(
-                    (c: any) => c.id === categoryId
+                    (c: any) => c.id === categoryId,
                   );
                   return category ? (
                     <Tag
@@ -606,7 +606,7 @@ const ProductsTable = () => {
                       closable
                       onClose={() =>
                         setCategoryFilter((prev) =>
-                          prev.filter((id) => id !== categoryId)
+                          prev.filter((id) => id !== categoryId),
                         )
                       }
                     >
@@ -623,7 +623,7 @@ const ProductsTable = () => {
                       closable
                       onClose={() =>
                         setBrandFilter((prev) =>
-                          prev.filter((id) => id !== brandId)
+                          prev.filter((id) => id !== brandId),
                         )
                       }
                     >
@@ -641,7 +641,7 @@ const ProductsTable = () => {
                       color="blue"
                       onClose={() =>
                         setTagFilter((prev) =>
-                          prev.filter((id) => id !== tagId)
+                          prev.filter((id) => id !== tagId),
                         )
                       }
                     >

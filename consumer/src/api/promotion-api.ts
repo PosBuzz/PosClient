@@ -1,10 +1,10 @@
-import { deleteApi, get, patch, post } from './crud-api';
-import { endpoints } from './endpoints';
+import { deleteApi, get, patch, post } from "./crud-api";
+import { endpoints } from "./endpoints";
 import {
   Promotion,
   PromotionOptionsResponse,
   PromotionPayload,
-} from '../types/promotion.types';
+} from "../types/promotion.types";
 
 export const promotionApi = {
   getPromotions: async (): Promise<Promotion[]> => {

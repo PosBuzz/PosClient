@@ -20,61 +20,61 @@ export const rewardsApi = {
   },
 
   createSettings: async (
-    data: CreateRewardsSettingsDto
+    data: CreateRewardsSettingsDto,
   ): Promise<RewardsSettings> => {
     return post(endpoints.createRewardsSettings, data);
   },
 
   updateSettings: async (
-    data: CreateRewardsSettingsDto
+    data: CreateRewardsSettingsDto,
   ): Promise<RewardsSettings> => {
     return patch(endpoints.updateRewardsSettings, data);
   },
 
   // Customer Points
   getCustomersWithPoints: async (
-    filters?: RewardsFilters
+    filters?: RewardsFilters,
   ): Promise<RewardsListResponse<CustomerRewardsPoints>> => {
     return get(endpoints.getCustomersWithPoints, { params: filters });
   },
 
   getCustomerPoints: async (
-    customerId: number
+    customerId: number,
   ): Promise<CustomerRewardsPoints> => {
     return get(endpoints.getCustomerPoints(customerId));
   },
 
   redeemPoints: async (
     customerId: number,
-    data: RedeemPointsDto
+    data: RedeemPointsDto,
   ): Promise<RewardsPointTransaction> => {
     return post(endpoints.redeemCustomerPoints(customerId), data);
   },
 
   adjustPoints: async (
     customerId: number,
-    data: AdjustPointsDto
+    data: AdjustPointsDto,
   ): Promise<RewardsPointTransaction> => {
     return post(endpoints.adjustCustomerPoints(customerId), data);
   },
 
   canRedeemPoints: async (
     customerId: number,
-    points: number
+    points: number,
   ): Promise<CanRedeemResponse> => {
     return get(endpoints.canRedeemPoints(customerId, points));
   },
 
   // Transactions
   getTransactions: async (
-    filters?: RewardsFilters
+    filters?: RewardsFilters,
   ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
     return get(endpoints.getRewardsTransactions, { params: filters });
   },
 
   getCustomerTransactions: async (
     customerId: number,
-    filters?: RewardsFilters
+    filters?: RewardsFilters,
   ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
     return get(endpoints.getCustomerTransactions(customerId), {
       params: filters,
@@ -87,7 +87,7 @@ export const rewardsApi = {
   },
 
   getRedemptionValue: async (
-    points: number
+    points: number,
   ): Promise<RedemptionValueResponse> => {
     return get(endpoints.getRedemptionValue(points));
   },

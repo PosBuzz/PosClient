@@ -4,7 +4,8 @@ import { useAuthStore } from "../stores/authStore";
 
 const SubscriptionInactive = () => {
   const navigate = useNavigate();
-  const { validateSubdomain, isAuthenticated, subdomainValidation } = useAuthStore();
+  const { validateSubdomain, isAuthenticated, subdomainValidation } =
+    useAuthStore();
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Check if user should even be on this page
@@ -31,10 +32,10 @@ const SubscriptionInactive = () => {
     try {
       // Revalidate subdomain
       await validateSubdomain();
-      
+
       // Get the latest validation state
       const validation = useAuthStore.getState().subdomainValidation;
-      
+
       if (validation.exists && validation.active) {
         // Subscription is now active
         if (isAuthenticated) {
@@ -70,10 +71,12 @@ const SubscriptionInactive = () => {
                 Subscription Inactive
               </h1>
               <p className="my-2 text-gray-800">
-                Your subscription is currently inactive. Please contact support or renew your subscription to continue using our services.
+                Your subscription is currently inactive. Please contact support
+                or renew your subscription to continue using our services.
               </p>
               <p className="my-2 text-gray-600 text-sm">
-                If you believe this is an error, please reach out to our support team.
+                If you believe this is an error, please reach out to our support
+                team.
               </p>
               <div className="flex gap-4">
                 <Link
@@ -93,7 +96,10 @@ const SubscriptionInactive = () => {
             </div>
           </div>
           <div>
-            <img src="https://i.ibb.co/G9DC8S0/404-2.png" alt="Inactive subscription" />
+            <img
+              src="https://i.ibb.co/G9DC8S0/404-2.png"
+              alt="Inactive subscription"
+            />
           </div>
         </div>
       </div>

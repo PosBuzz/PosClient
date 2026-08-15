@@ -31,7 +31,9 @@ const SerialsTab: React.FC<SerialsTabProps> = ({ serials, product }) => {
           defective: "red",
           returned: "orange",
         };
-        return <Tag color={colors[status] || "default"}>{status?.toUpperCase()}</Tag>;
+        return (
+          <Tag color={colors[status] || "default"}>{status?.toUpperCase()}</Tag>
+        );
       },
     },
     {
@@ -39,7 +41,7 @@ const SerialsTab: React.FC<SerialsTabProps> = ({ serials, product }) => {
       key: "variant",
       render: (_, record) => {
         const variant = product.variants?.find((v) =>
-          v.serials?.some((s) => s.id === record.id)
+          v.serials?.some((s) => s.id === record.id),
         );
         return variant ? (
           <Text>{variant.name}</Text>
@@ -58,13 +60,15 @@ const SerialsTab: React.FC<SerialsTabProps> = ({ serials, product }) => {
       title: "Added Date",
       dataIndex: "created_at",
       key: "created_at",
-      render: (date) => (date ? formatDate(date) : <Text type="secondary">-</Text>),
+      render: (date) =>
+        date ? formatDate(date) : <Text type="secondary">-</Text>,
     },
     {
       title: "Last Updated",
       dataIndex: "updated_at",
       key: "updated_at",
-      render: (date) => (date ? formatDate(date) : <Text type="secondary">-</Text>),
+      render: (date) =>
+        date ? formatDate(date) : <Text type="secondary">-</Text>,
     },
   ];
 

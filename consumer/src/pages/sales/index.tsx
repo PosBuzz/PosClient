@@ -199,7 +199,8 @@ const SalesTable = () => {
         cashier: sale.user?.name || sale.user_name || "Staff",
         servedBy: sale.served_by?.name || undefined,
         customer: sale.customer_name || "Walk-in Customer",
-        customerName: sale.customer_name || sale.customer?.name || "Walk-in Customer",
+        customerName:
+          sale.customer_name || sale.customer?.name || "Walk-in Customer",
         customerPhone: sale.customer_phone || sale.customer?.phone || "",
         customerEmail: sale.customer_email || sale.customer?.email || "",
         rewardPoints: customerRewards?.total_points,
@@ -224,17 +225,26 @@ const SalesTable = () => {
             const quantity = Number(item.quantity) || 0;
             const unitPrice = Number(item.unit_price) || 0;
             const grossLineTotal = unitPrice * quantity;
-            const averageDiscountAmount = Number(item.average_discount_amount) || 0;
-            const specialDiscountAmount = Number(item.special_discount_amount) || 0;
-            const promotionDiscountAmount = Number(item.promotion_discount_amount) || 0;
+            const averageDiscountAmount =
+              Number(item.average_discount_amount) || 0;
+            const specialDiscountAmount =
+              Number(item.special_discount_amount) || 0;
+            const promotionDiscountAmount =
+              Number(item.promotion_discount_amount) || 0;
             const discountAmount =
-              averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
+              averageDiscountAmount +
+              specialDiscountAmount +
+              promotionDiscountAmount;
             const taxAmount = Number(item.tax_amount) || 0;
             const taxMethod = item.variant?.product?.tax_method || "exclusive";
-            const isInclusiveTax = String(taxMethod).toLowerCase().startsWith("inc");
+            const isInclusiveTax = String(taxMethod)
+              .toLowerCase()
+              .startsWith("inc");
             const computedLineTotal = Math.max(
               0,
-              grossLineTotal - discountAmount + (isInclusiveTax ? 0 : taxAmount),
+              grossLineTotal -
+                discountAmount +
+                (isInclusiveTax ? 0 : taxAmount),
             );
 
             return {
@@ -448,8 +458,12 @@ const SalesTable = () => {
             title={`${summary.return_count} return(s) · Net after refunds: ${summary.net_amount}`}
           >
             <Space direction="vertical" size={0}>
-              <Tag color={summary.status === "fully_returned" ? "red" : "orange"}>
-                {summary.status === "fully_returned" ? "RETURNED" : "PARTIAL RETURN"}
+              <Tag
+                color={summary.status === "fully_returned" ? "red" : "orange"}
+              >
+                {summary.status === "fully_returned"
+                  ? "RETURNED"
+                  : "PARTIAL RETURN"}
               </Tag>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 Refund: <Money value={summary.total_refund} />

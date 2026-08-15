@@ -8,32 +8,32 @@ import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { saveAs } from "file-saver";
 
-const title = "Database Management"
+const title = "Database Management";
 
 function BackupRestorePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [restoreLoading, setRestoreLoading] = useState<boolean>(false);
- const { messageApi } = useMessageStore();
+  const { messageApi } = useMessageStore();
 
- const handleBackup = async () => {
-  setLoading(true);
-  try {
-    const response = await axiosInstance.get(endpoints.backup, {
-      responseType: "blob", // Ensure the response is treated as a binary blob
-    });
+  const handleBackup = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(endpoints.backup, {
+        responseType: "blob", // Ensure the response is treated as a binary blob
+      });
 
-    // Use saveAs to download the file
-    const fileName = `backup_${Date.now()}.sql`;
-    saveAs(new Blob([response.data]), fileName);
+      // Use saveAs to download the file
+      const fileName = `backup_${Date.now()}.sql`;
+      saveAs(new Blob([response.data]), fileName);
 
-    messageApi?.success("Full database backup completed successfully");
-  } catch (error) {
-    console.error("Backup failed:", error);
-    messageApi?.error("Database backup failed");
-  } finally {
-    setLoading(false);
-  }
-};
+      messageApi?.success("Full database backup completed successfully");
+    } catch (error) {
+      console.error("Backup failed:", error);
+      messageApi?.error("Database backup failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRestore = async (file: File) => {
     setRestoreLoading(true);
@@ -67,7 +67,7 @@ function BackupRestorePage() {
 
   return (
     <>
-    {setPageTitle(title)}
+      {setPageTitle(title)}
       <PageTitle
         title={"Database Management"}
         breadcrumbs={[

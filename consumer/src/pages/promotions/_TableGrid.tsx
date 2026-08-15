@@ -13,7 +13,11 @@ const scopeColors: Record<string, string> = {
   BRAND: "gold",
 };
 
-export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) => void }) {
+export default function TableGrid({
+  onClickEdit,
+}: {
+  onClickEdit: (record: any) => void;
+}) {
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
 
@@ -59,16 +63,21 @@ export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) 
       title: "Discount",
       key: "discount",
       render: (record: any) =>
-        record.discount_type === "percentage"
-          ? `${record.discount_value}%`
-          : <Money value={record.discount_value} />,
+        record.discount_type === "percentage" ? (
+          `${record.discount_value}%`
+        ) : (
+          <Money value={record.discount_value} />
+        ),
     },
     {
       title: "Valid",
       key: "validity",
       render: (record: any) => (
         <span>
-          {dayjs(record.start_date).format("YYYY-MM-DD")} → {record.end_date ? dayjs(record.end_date).format("YYYY-MM-DD") : "No End"}
+          {dayjs(record.start_date).format("YYYY-MM-DD")} →{" "}
+          {record.end_date
+            ? dayjs(record.end_date).format("YYYY-MM-DD")
+            : "No End"}
         </span>
       ),
     },
@@ -130,7 +139,8 @@ export default function TableGrid({ onClickEdit }: { onClickEdit: (record: any) 
       pagination={{
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} promotions`,
+        showTotal: (total, range) =>
+          `${range[0]}-${range[1]} of ${total} promotions`,
       }}
     />
   );

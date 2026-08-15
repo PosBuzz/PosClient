@@ -992,7 +992,10 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#1890ff", fontSize: "16px" }}
                             >
-                              +<Money value={Number(saleData.shipping_cost || 0)} />
+                              +
+                              <Money
+                                value={Number(saleData.shipping_cost || 0)}
+                              />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -1001,7 +1004,9 @@ const CreateReturn = () => {
                               strong
                               style={{ color: "#52c41a", fontSize: "18px" }}
                             >
-                              <Money value={Number(saleData.total_amount || 0)} />
+                              <Money
+                                value={Number(saleData.total_amount || 0)}
+                              />
                             </Text>
                           </Col>
                           <Col span={4}>
@@ -1016,10 +1021,12 @@ const CreateReturn = () => {
                                 borderRadius: "4px",
                               }}
                             >
-                              <Money value={Number(
-                                saleData.return_summary?.available_amount ??
-                                  saleData.total_amount,
-                              )} />
+                              <Money
+                                value={Number(
+                                  saleData.return_summary?.available_amount ??
+                                    saleData.total_amount,
+                                )}
+                              />
                             </Text>
                           </Col>
                         </Row>
@@ -1111,9 +1118,12 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  <Money value={Number(
-                                    saleData.return_summary.total_refunded || 0,
-                                  )} />
+                                  <Money
+                                    value={Number(
+                                      saleData.return_summary.total_refunded ||
+                                        0,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={6}>
@@ -1122,10 +1132,12 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  <Money value={Number(
-                                    saleData.return_summary.total_exchanged ||
-                                      0,
-                                  )} />
+                                  <Money
+                                    value={Number(
+                                      saleData.return_summary.total_exchanged ||
+                                        0,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={6}>
@@ -1134,12 +1146,14 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#722ed1", fontSize: "16px" }}
                                 >
-                                  <Money value={Number(
-                                    (saleData.return_summary.total_refunded ||
-                                      0) +
-                                      (saleData.return_summary
-                                        .total_exchanged || 0),
-                                  )} />
+                                  <Money
+                                    value={Number(
+                                      (saleData.return_summary.total_refunded ||
+                                        0) +
+                                        (saleData.return_summary
+                                          .total_exchanged || 0),
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                             </Row>
@@ -1156,9 +1170,11 @@ const CreateReturn = () => {
                                     (ret) =>
                                       `${ret.return_number} (${new Date(
                                         ret.return_date,
-                                      ).toLocaleDateString()}) - ${formatCurrency(Number(
-                                        ret.total_refund + ret.total_exchange,
-                                      ))}`,
+                                      ).toLocaleDateString()}) - ${formatCurrency(
+                                        Number(
+                                          ret.total_refund + ret.total_exchange,
+                                        ),
+                                      )}`,
                                   )
                                   .join(" | ")}
                               </Text>
@@ -1233,9 +1249,11 @@ const CreateReturn = () => {
                               <Col span={4}>
                                 <Text>Subtotal: </Text>
                                 <Text strong>
-                                  <Money value={Number(
-                                    exchangeSaleQuery.data.subtotal || 0,
-                                  )} />
+                                  <Money
+                                    value={Number(
+                                      exchangeSaleQuery.data.subtotal || 0,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1244,9 +1262,13 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#ff4d4f", fontSize: "16px" }}
                                 >
-                                  -<Money value={Number(
-                                    exchangeSaleQuery.data.discount_amount || 0,
-                                  )} />
+                                  -
+                                  <Money
+                                    value={Number(
+                                      exchangeSaleQuery.data.discount_amount ||
+                                        0,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1264,9 +1286,12 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#1890ff", fontSize: "16px" }}
                                 >
-                                  +<Money value={Number(
-                                    exchangeSaleQuery.data.shipping_cost || 0,
-                                  )} />
+                                  +
+                                  <Money
+                                    value={Number(
+                                      exchangeSaleQuery.data.shipping_cost || 0,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1275,9 +1300,11 @@ const CreateReturn = () => {
                                   strong
                                   style={{ color: "#52c41a", fontSize: "18px" }}
                                 >
-                                  <Money value={Number(
-                                    exchangeSaleQuery.data.total_amount,
-                                  )} />
+                                  <Money
+                                    value={Number(
+                                      exchangeSaleQuery.data.total_amount,
+                                    )}
+                                  />
                                 </Text>
                               </Col>
                               <Col span={4}>
@@ -1487,11 +1514,13 @@ const CreateReturn = () => {
               <Form.Item
                 name="shipping_refund_amount"
                 label="Shipping Refund Amount (Optional)"
-                extra={`Maximum refundable shipping: ${formatCurrency(Number(
-                  saleData?.return_summary?.available_shipping_refund ??
-                    saleData?.shipping_cost ??
-                    0,
-                ))}`}
+                extra={`Maximum refundable shipping: ${formatCurrency(
+                  Number(
+                    saleData?.return_summary?.available_shipping_refund ??
+                      saleData?.shipping_cost ??
+                      0,
+                  ),
+                )}`}
               >
                 <InputNumber
                   min={0}
@@ -1820,7 +1849,7 @@ const PaymentForm = ({
 
   const handleSubmit = async (values: any) => {
     await form.validateFields();
-    
+
     // Clean up: If method doesn't require provider, remove payment_type
     if (!requiresProvider) {
       values.payment_type = undefined;
@@ -1836,7 +1865,8 @@ const PaymentForm = ({
       layout="vertical"
       onFinish={handleSubmit}
       initialValues={{
-        amount: defaultAmount > 0 ? Number(defaultAmount.toFixed(2)) : undefined,
+        amount:
+          defaultAmount > 0 ? Number(defaultAmount.toFixed(2)) : undefined,
       }}
     >
       <Form.Item

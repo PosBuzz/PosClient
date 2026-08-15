@@ -48,9 +48,7 @@ import {
   SaleItem,
   SalePayment,
 } from "../../types/sale.types";
-import {
-  Promotion,
-} from "../../types/promotion.types";
+import { Promotion } from "../../types/promotion.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
   getVariantPriceForSale as getVariantPriceForSaleByType,
@@ -123,8 +121,17 @@ const NewSale = () => {
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const isHydratingFromQuotationRef = useRef(false);
 
-  const upsertFn = (items: SaleItem[], variant: ProductVariantForSale, qty: number) =>
-    upsertSaleItemVariant({ sourceItems: items, variant, quantityToAdd: qty, priceType });
+  const upsertFn = (
+    items: SaleItem[],
+    variant: ProductVariantForSale,
+    qty: number,
+  ) =>
+    upsertSaleItemVariant({
+      sourceItems: items,
+      variant,
+      quantityToAdd: qty,
+      priceType,
+    });
 
   const getVariantPriceFn = (variant: ProductVariantForSale) =>
     getVariantPriceForSaleByType(variant, priceType);

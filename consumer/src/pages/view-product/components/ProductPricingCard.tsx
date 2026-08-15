@@ -17,7 +17,7 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
     if (!product.variants || product.variants.length <= 1) return null;
 
     const regularPrices = product.variants.map((v) =>
-      parseFloat(v.regular_price)
+      parseFloat(v.regular_price),
     );
 
     return {
@@ -58,7 +58,7 @@ const ProductPricingCard: React.FC<ProductPricingCardProps> = ({ product }) => {
                     product.tax_method === "inclusive"
                       ? parseFloat(mainVariant.regular_price)
                       : parseFloat(mainVariant.regular_price) *
-                          (1 + product.tax / 100)
+                          (1 + product.tax / 100),
                   )}
                 </Text>
               </Space>

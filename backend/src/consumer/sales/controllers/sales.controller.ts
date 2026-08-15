@@ -35,6 +35,7 @@ import { UpdateSaleNoteDto } from '../dto/update-sale-note.dto';
 import { DeleteSaleDto } from '../dto/delete-sale.dto';
 import { SalesService } from '../services/sales.service';
 import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
+import { BusinessReportPdfService } from '../services/business-report-pdf.service';
 
 @UseGuards(ClientAuthGuard, PermissionsGuard)
 @HasPermissions([ConsumerPermission.sales])
@@ -44,6 +45,7 @@ export class SalesController {
     private readonly salesService: SalesService,
     private readonly salesPdfService: SalesPdfService,
     private readonly quotationPdfService: QuotationPdfService,
+    private readonly businessReportPdfService: BusinessReportPdfService,
   ) {}
 
   @Post()
@@ -107,6 +109,33 @@ export class SalesController {
   @Get('reports/eod')
   async getEODReport(@Query() eodDto: EODReportDto, @Req() req: Request) {
     return this.salesService.getEODReport(req.user.consumer_id!, eodDto);
+  }
+
+  @Get('reports/business/pdf')
+  async getBusinessReportPdf(
+    @Query() reportDto: EODReportDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const report = await this.salesService.getEODReport(
+      req.user.consumer_id!,
+      reportDto,
+    );
+    const pdf = await this.businessReportPdfService.generate(
+      req.user.consumer_id!,
+      reportDto,
+      report,
+    );
+    const suffix =
+      report.period === 'all'
+        ? `till-${report.period_end}`
+        : `${report.period}-${report.period_start}`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="business-report-${suffix}.pdf"`,
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
   }
 
   @Get('reports/daily-target')

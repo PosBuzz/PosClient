@@ -104,9 +104,8 @@ export default function ReceiptSettingsPage() {
   const previewUrlRef = useRef<string>("");
 
   // ─── Auto Print Thermal state (localStorage-backed) ──────────────
-  const [autoPrintThermal, setAutoPrintThermalState] = useState<boolean>(
-    getAutoPrintThermal,
-  );
+  const [autoPrintThermal, setAutoPrintThermalState] =
+    useState<boolean>(getAutoPrintThermal);
 
   const handleAutoPrintThermalChange = useCallback(
     (checked: boolean) => {

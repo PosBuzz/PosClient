@@ -1,23 +1,23 @@
 import {
-    DeleteOutlined,
-    EditOutlined,
-    SearchOutlined,
-    UserOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  SearchOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-    Button,
-    Card,
-    Col,
-    Input,
-    Popconfirm,
-    Row,
-    Select,
-    Space,
-    Table,
-    Tag,
-    Tooltip,
-    Typography,
+  Button,
+  Card,
+  Col,
+  Input,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
 } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
@@ -27,9 +27,9 @@ import { endpoints } from "../../api/endpoints";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
-    Customer,
-    CustomerListFilters,
-    CustomerType,
+  Customer,
+  CustomerListFilters,
+  CustomerType,
 } from "../../types/customer.types";
 
 const { Option } = Select;
@@ -57,11 +57,11 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
         page: filters.page || 1,
         limit: filters.limit || 20,
       };
-      
+
       if (filters.search) {
         params.search = filters.search;
       }
-      
+
       if (filters.customer_type) {
         params.customer_type = filters.customer_type;
       }
@@ -80,7 +80,7 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete customer"
+        error.response?.data?.message || "Failed to delete customer",
       );
     },
   });
@@ -89,7 +89,7 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
     debounce((value: string) => {
       setFilters((prev) => ({ ...prev, search: value, page: 1 }));
     }, 300),
-    []
+    [],
   );
 
   // Cleanup debounced function on unmount

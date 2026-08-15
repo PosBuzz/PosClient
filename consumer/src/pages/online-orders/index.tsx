@@ -64,8 +64,10 @@ const OnlineOrders = () => {
   const [search, setSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState<number | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>();
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
-  
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(
+    null,
+  );
+
   // Status update modal state
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Sale | null>(null);
@@ -75,8 +77,20 @@ const OnlineOrders = () => {
   const userBranches = user?.branches || [];
 
   // Fetch online orders
-  const { data: ordersData, isLoading, refetch } = useQuery({
-    queryKey: ["online-orders", page, limit, search, selectedBranch, selectedStatus, dateRange],
+  const {
+    data: ordersData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "online-orders",
+      page,
+      limit,
+      search,
+      selectedBranch,
+      selectedStatus,
+      dateRange,
+    ],
     queryFn: () => {
       const filters: any = { page, limit };
       if (search) filters.search = search;
@@ -106,9 +120,9 @@ const OnlineOrders = () => {
     try {
       const values = await form.validateFields();
       setUpdatingStatus(true);
-      
+
       await salesApi.updateOnlineOrderStatus(selectedOrder!.id!, values.status);
-      
+
       messageApi?.success("Order status updated successfully");
       setStatusModalVisible(false);
       setSelectedOrder(null);
@@ -187,9 +201,7 @@ const OnlineOrders = () => {
           due: "red",
         };
         return (
-          <Tag color={colors[status] || "default"}>
-            {status.toUpperCase()}
-          </Tag>
+          <Tag color={colors[status] || "default"}>{status.toUpperCase()}</Tag>
         );
       },
     },
@@ -244,18 +256,20 @@ const OnlineOrders = () => {
               />
             </Card>
           </Col>
-          {Object.entries(statsData.by_status || {}).map(([status, data]: [string, any]) => (
-            <Col span={4} key={status}>
-              <Card>
-                <Statistic
-                  title={statusNames[status.toUpperCase()] || status}
-                  value={data.count || 0}
-                  valueStyle={{ color: statusColors[status.toUpperCase()] }}
-                  suffix={`(BDT ${(data.total || 0).toFixed(2)})`}
-                />
-              </Card>
-            </Col>
-          ))}
+          {Object.entries(statsData.by_status || {}).map(
+            ([status, data]: [string, any]) => (
+              <Col span={4} key={status}>
+                <Card>
+                  <Statistic
+                    title={statusNames[status.toUpperCase()] || status}
+                    value={data.count || 0}
+                    valueStyle={{ color: statusColors[status.toUpperCase()] }}
+                    suffix={`(BDT ${(data.total || 0).toFixed(2)})`}
+                  />
+                </Card>
+              </Col>
+            ),
+          )}
         </Row>
       )}
 
@@ -303,7 +317,9 @@ const OnlineOrders = () => {
           <Col span={6}>
             <RangePicker
               value={dateRange}
-              onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)}
+              onChange={(dates) =>
+                setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)
+              }
               style={{ width: "100%" }}
             />
           </Col>

@@ -181,11 +181,7 @@ const PurchasePayments = () => {
       render: (status: string) => (
         <Tag
           color={
-            status === "paid"
-              ? "green"
-              : status === "due"
-                ? "red"
-                : "orange"
+            status === "paid" ? "green" : status === "due" ? "red" : "orange"
           }
         >
           {status?.toUpperCase()}
@@ -302,7 +298,11 @@ const PurchasePayments = () => {
               placeholder="Payment status"
               style={{ width: "100%" }}
               value={filters.vendorless ? "vendorless" : filters.payment_status}
-              onChange={(value: NonNullable<PurchaseBatchesFilters["payment_status"]> | "vendorless") => {
+              onChange={(
+                value:
+                  | NonNullable<PurchaseBatchesFilters["payment_status"]>
+                  | "vendorless",
+              ) => {
                 if (value === "vendorless") {
                   setFilters((prev) => ({
                     ...prev,

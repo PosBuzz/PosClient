@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";

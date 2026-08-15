@@ -56,7 +56,8 @@ const ViewUserSalesStats = lazy(
 );
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
 const DailyTargetReport = lazy(() => import("./pages/daily-target"));
-// const EODReport = lazy(() => import("./pages/eod"));
+const BusinessReport = lazy(() => import("./pages/eod"));
+const OperationalCosts = lazy(() => import("./pages/operational-costs"));
 const POSPage = lazy(() => import("./pages/pos"));
 const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
 const Returns = lazy(() => import("./pages/returns"));
@@ -462,14 +463,22 @@ export const routes = [
           </RequirePermission>
         ),
       },
-      // {
-      //   path: "eod",
-      //   element: (
-      //     <RequirePermission permission={Permissions.sales}>
-      //       <EODReport />
-      //     </RequirePermission>
-      //   ),
-      // },
+      {
+        path: "business-report",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <BusinessReport />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "operational-costs",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <OperationalCosts />
+          </RequirePermission>
+        ),
+      },
       // Returns Routes
       {
         path: "returns",

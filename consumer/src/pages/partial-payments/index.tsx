@@ -113,7 +113,6 @@ const PartialPayments = () => {
     }
   };
 
-
   const columns = [
     {
       title: "Sale Number",

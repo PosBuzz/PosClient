@@ -22,12 +22,17 @@ export default function DrawerForm({
   const { messageApi } = useMessageStore();
   const queryClient = useQueryClient();
   const [selectAllBranches, setSelectAllBranches] = useState(false);
-  
+
   // Use Form.useWatch to watch role_id changes
-  const selectedRole = Form.useWatch('role_id', form);
+  const selectedRole = Form.useWatch("role_id", form);
 
   // Check if selected role is admin
-  const isAdminRole = selectedRole && roleOptions?.find(role => role.value === selectedRole)?.label?.toLowerCase().includes('admin');
+  const isAdminRole =
+    selectedRole &&
+    roleOptions
+      ?.find((role) => role.value === selectedRole)
+      ?.label?.toLowerCase()
+      .includes("admin");
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.user, data),
@@ -86,7 +91,7 @@ export default function DrawerForm({
 
   useEffect(() => {
     if (isEditing && editedItem) {
-      const branchIds = editedItem.branches?.map(ub => ub.branch.id) || [];
+      const branchIds = editedItem.branches?.map((ub) => ub.branch.id) || [];
       form.setFieldsValue({
         name: editedItem.name,
         email: editedItem.email,
@@ -134,7 +139,7 @@ export default function DrawerForm({
               options={roleOptions}
               onChange={(value) => {
                 // Clear branch selection when role changes
-                form.setFieldValue('branch_ids', []);
+                form.setFieldValue("branch_ids", []);
                 setSelectAllBranches(false);
               }}
             />
@@ -161,37 +166,46 @@ export default function DrawerForm({
           {!isAdminRole && (
             <>
               <Form.Item label=" " colon={false} className="!mb-0">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <span>Select branches this user can access:</span>
-                  <Button 
-                    type="link" 
+                  <Button
+                    type="link"
                     size="small"
                     onClick={() => {
                       if (selectAllBranches) {
                         // If all are selected, clear selection
-                        form.setFieldValue('branch_ids', []);
+                        form.setFieldValue("branch_ids", []);
                         setSelectAllBranches(false);
                       } else {
                         // If not all are selected, select all
-                        const allBranchIds = branchOptions?.map(branch => branch.value) || [];
-                        form.setFieldValue('branch_ids', allBranchIds);
+                        const allBranchIds =
+                          branchOptions?.map((branch) => branch.value) || [];
+                        form.setFieldValue("branch_ids", allBranchIds);
                         setSelectAllBranches(true);
                       }
                     }}
                   >
-                    {selectAllBranches ? 'Deselect All' : 'Select All'}
+                    {selectAllBranches ? "Deselect All" : "Select All"}
                   </Button>
                 </div>
               </Form.Item>
-              
+
               <Form.Item label="Branch Access" name="branch_ids">
                 <Select
                   mode="multiple"
                   placeholder="Select branches"
                   options={branchOptions}
-                  style={{ width: '100%' }}
+                  style={{ width: "100%" }}
                   onChange={(values) => {
-                    setSelectAllBranches(values.length === branchOptions?.length);
+                    setSelectAllBranches(
+                      values.length === branchOptions?.length,
+                    );
                   }}
                 />
               </Form.Item>

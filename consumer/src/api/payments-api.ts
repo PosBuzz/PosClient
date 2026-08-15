@@ -1,16 +1,18 @@
-import { get, post } from './crud-api';
-import { endpoints } from './endpoints';
-import { 
+import { get, post } from "./crud-api";
+import { endpoints } from "./endpoints";
+import {
   MakePaymentForm,
   PartialPaymentFilters,
   PartialPaymentListResponse,
   PaymentResponse,
-  SaleForPayment
-} from '../types/payment.types';
+  SaleForPayment,
+} from "../types/payment.types";
 
 export const paymentsApi = {
   // Get all partially paid sales
-  getPartiallyPaidSales: async (filters: PartialPaymentFilters): Promise<PartialPaymentListResponse> => {
+  getPartiallyPaidSales: async (
+    filters: PartialPaymentFilters,
+  ): Promise<PartialPaymentListResponse> => {
     return await get(endpoints.getPartiallyPaidSales, filters);
   },
 
@@ -20,7 +22,9 @@ export const paymentsApi = {
   },
 
   // Make a payment on a partially paid sale
-  makePayment: async (paymentData: MakePaymentForm): Promise<PaymentResponse> => {
+  makePayment: async (
+    paymentData: MakePaymentForm,
+  ): Promise<PaymentResponse> => {
     return await post(endpoints.makePayment, paymentData);
   },
 

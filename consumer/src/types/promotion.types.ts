@@ -1,5 +1,5 @@
-export type PromotionScope = 'SINGLE_PRODUCT' | 'BUNDLE' | 'BRAND';
-export type PromotionDiscountType = 'percentage' | 'fixed_amount';
+export type PromotionScope = "SINGLE_PRODUCT" | "BUNDLE" | "BRAND";
+export type PromotionDiscountType = "percentage" | "fixed_amount";
 
 export interface PromotionOptionBranch {
   id: number;

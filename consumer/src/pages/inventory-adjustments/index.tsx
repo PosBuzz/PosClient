@@ -50,7 +50,7 @@ export default function InventoryAdjustmentsPage() {
   // Debounce search
   const debouncedSearch = useCallback(
     debounce((nextValue: string) => setDebouncedSearchText(nextValue), 500),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function InventoryAdjustmentsPage() {
               <Text>{adjustment.branch?.name || "Warehouse"}</Text>
             </Col>
             <Col span={12}>
-              <Text strong>Quantity Change:</Text>
+              <Text strong>Inventory Change:</Text>
               <br />
               <Tag
                 color={adjustment.quantity_change > 0 ? "green" : "red"}
@@ -188,7 +188,7 @@ export default function InventoryAdjustmentsPage() {
   };
 
   const getAdjustmentTypeText = (quantityChange: number) => {
-    return quantityChange > 0 ? "Stock In" : "Stock Out";
+    return quantityChange > 0 ? "Quantity Added" : "Quantity Removed";
   };
 
   const columns: ColumnsType<InventoryAdjustment> = [
@@ -223,7 +223,7 @@ export default function InventoryAdjustmentsPage() {
       ),
     },
     {
-      title: "Type",
+      title: "Adjustment",
       key: "type",
       align: "center",
       render: (_, record) => (
@@ -233,7 +233,7 @@ export default function InventoryAdjustmentsPage() {
       ),
     },
     {
-      title: "Quantity Change",
+      title: "Inventory Change",
       dataIndex: "quantity_change",
       key: "quantity_change",
       align: "center",

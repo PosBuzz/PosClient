@@ -14,7 +14,7 @@ import {
   Row,
   Select,
   Space,
-  Switch
+  Switch,
 } from "antd";
 import { useEffect, useState } from "react";
 import Barcode from "react-barcode";

@@ -2,10 +2,7 @@ import {
   Promotion,
   PromotionValidationResponse,
 } from "../types/promotion.types";
-import {
-  ProductVariantForSale,
-  SaleItem,
-} from "../types/sale.types";
+import { ProductVariantForSale, SaleItem } from "../types/sale.types";
 import { evaluatePromotionLocally } from "./promotion-validation";
 
 export function getVariantBrandByIdMap(
@@ -103,7 +100,10 @@ export function enrichCartForPromotion(params: {
     }
   }
 
-  const candidateVariants = getPromotionCandidateVariants(promotion, filteredVariants);
+  const candidateVariants = getPromotionCandidateVariants(
+    promotion,
+    filteredVariants,
+  );
   const highestPriceVariant = [...candidateVariants].sort(
     (a, b) => getVariantPriceFn(b) - getVariantPriceFn(a),
   )[0];
@@ -112,9 +112,7 @@ export function enrichCartForPromotion(params: {
     return { items: nextItems, changed };
   }
 
-  const candidateIds = new Set(
-    candidateVariants.map((variant) => variant.id),
-  );
+  const candidateIds = new Set(candidateVariants.map((variant) => variant.id));
   const currentMatchedQty = nextItems.reduce((sum, item) => {
     return candidateIds.has(item.variant_id)
       ? sum + Number(item.quantity || 0)

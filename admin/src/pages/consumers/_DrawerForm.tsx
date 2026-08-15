@@ -161,12 +161,12 @@ export default function DrawerForm({
                     const availabilty = await checkSubdomain(value);
                     if (!availabilty) {
                       return Promise.reject(
-                        new Error("Subdomain is already taken")
+                        new Error("Subdomain is already taken"),
                       );
                     }
                   } catch (error) {
                     return Promise.reject(
-                      new Error("Failed to validate subdomain")
+                      new Error("Failed to validate subdomain"),
                     );
                   }
                   return Promise.resolve();

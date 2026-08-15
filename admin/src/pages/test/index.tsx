@@ -293,10 +293,23 @@ const ZapForm = () => {
   //   </div>
   // );
 
-  return <iframe src="http://localhost:3000/zapform?source=Website&token=REDACTED_SECRET" width="100%" height="850px" style={{border: 'none', maxWidth: 500, margin: '0 auto', display: 'block'}} title="Service Lead Form" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" loading="lazy" id="service-form-iframe">
-</iframe>
-
+  return (
+    <iframe
+      src="http://localhost:3000/zapform?source=Website&token=REDACTED_SECRET"
+      width="100%"
+      height="850px"
+      style={{
+        border: "none",
+        maxWidth: 500,
+        margin: "0 auto",
+        display: "block",
+      }}
+      title="Service Lead Form"
+      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+      loading="lazy"
+      id="service-form-iframe"
+    ></iframe>
+  );
 };
-
 
 export default ZapForm;

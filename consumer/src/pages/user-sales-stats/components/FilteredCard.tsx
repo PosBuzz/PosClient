@@ -43,7 +43,9 @@ const FilterCard: React.FC<FilterCardProps> = ({
           allowClear={false}
         />
         {/* Added Branch Filter */}
-        <Text strong style={{ marginLeft: 16 }}>Branch:</Text>
+        <Text strong style={{ marginLeft: 16 }}>
+          Branch:
+        </Text>
         <Select
           style={{ minWidth: 200 }}
           placeholder="All Branches"

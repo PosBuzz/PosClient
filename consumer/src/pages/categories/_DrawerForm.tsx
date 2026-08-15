@@ -6,8 +6,10 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 
-
-interface CategoryFormValues { id: number; name: string }
+interface CategoryFormValues {
+  id: number;
+  name: string;
+}
 
 interface DrawerFormProps {
   open: boolean;
@@ -29,7 +31,8 @@ export default function DrawerForm({
   const queryClient = useQueryClient();
 
   const createData = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => await post(endpoints.createCategory, data),
+    mutationFn: async (data: Record<string, unknown>) =>
+      await post(endpoints.createCategory, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.categories] });
       messageApi?.success("Category created successfully");
@@ -38,7 +41,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to create category"
+        error.response?.data?.message || "Failed to create category",
       );
     },
   });
@@ -54,7 +57,7 @@ export default function DrawerForm({
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to update category"
+        error.response?.data?.message || "Failed to update category",
       );
     },
   });

@@ -104,11 +104,11 @@ export default function VariantStockPage() {
   const branchesData = Object.entries(stockData.stock_by_branch).map(
     ([branchName, stock]) => {
       const branchBatches = stockData.batches.filter(
-        (batch) => batch.branch.name === branchName
+        (batch) => batch.branch.name === branchName,
       );
       const branchValue = branchBatches.reduce(
         (sum, batch) => sum + parseFloat(batch.cost_price) * batch.quantity,
-        0
+        0,
       );
 
       return {
@@ -117,13 +117,13 @@ export default function VariantStockPage() {
         value: branchValue,
         batches: branchBatches,
       };
-    }
+    },
   );
 
   // Calculate total value from batches
   const totalValue = stockData.batches.reduce(
     (sum, batch) => sum + parseFloat(batch.cost_price) * batch.quantity,
-    0
+    0,
   );
 
   const getExpiryStatus = (expiryDate: string) => {
@@ -153,8 +153,8 @@ export default function VariantStockPage() {
     return Number(
       Math.min(
         (stockData.total_stock / stockData.variant.alert_quantity) * 100,
-        100
-      ).toPrecision(4)
+        100,
+      ).toPrecision(4),
     );
   };
 
@@ -389,15 +389,15 @@ export default function VariantStockPage() {
                 stockData.is_low_stock
                   ? "Low Stock"
                   : stockData.total_stock > 0
-                  ? "In Stock"
-                  : "Out of Stock"
+                    ? "In Stock"
+                    : "Out of Stock"
               }
               valueStyle={{
                 color: stockData.is_low_stock
                   ? "#ff4d4f"
                   : stockData.total_stock > 0
-                  ? "#52c41a"
-                  : getStockHealthColor(),
+                    ? "#52c41a"
+                    : getStockHealthColor(),
                 fontSize: "16px",
               }}
             />
@@ -435,16 +435,18 @@ export default function VariantStockPage() {
                   >
                     <ShopOutlined />
                     <Text strong>{branch.name}</Text>
-                  </div>                  <div
+                  </div>{" "}
+                  <div
                     style={{
                       fontSize: "20px",
                       fontWeight: "bold",
                       color:
-                        stockData.variant.alert_quantity && branch.stock <= stockData.variant.alert_quantity
+                        stockData.variant.alert_quantity &&
+                        branch.stock <= stockData.variant.alert_quantity
                           ? "#ff4d4f" // Red for low stock alert
-                          : branch.stock > 0 
-                          ? "#52c41a" // Green for normal stock
-                          : getStockHealthColor(), // Gray for out of stock
+                          : branch.stock > 0
+                            ? "#52c41a" // Green for normal stock
+                            : getStockHealthColor(), // Gray for out of stock
                     }}
                   >
                     {branch.stock} units
@@ -503,7 +505,7 @@ export default function VariantStockPage() {
                   <Text strong>
                     {displayBatches.reduce(
                       (sum, batch) => sum + batch.quantity,
-                      0
+                      0,
                     )}{" "}
                     units
                   </Text>
@@ -515,7 +517,7 @@ export default function VariantStockPage() {
                       value={displayBatches.reduce(
                         (sum, batch) =>
                           sum + parseFloat(batch.cost_price) * batch.quantity,
-                        0
+                        0,
                       )}
                     />
                   </Text>

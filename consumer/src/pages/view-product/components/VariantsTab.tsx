@@ -1,5 +1,21 @@
-import { AlertOutlined, BarcodeOutlined, CalendarOutlined, ShopOutlined, EyeOutlined } from "@ant-design/icons";
-import { Badge, Space, Table, Tag, Tooltip, Typography, Image, Collapse, Button } from "antd";
+import {
+  AlertOutlined,
+  BarcodeOutlined,
+  CalendarOutlined,
+  ShopOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
+import {
+  Badge,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  Image,
+  Collapse,
+  Button,
+} from "antd";
 import { formatCurrency, formatDate } from "../../../utils/formatters";
 import { useNavigate } from "react-router-dom";
 
@@ -13,7 +29,8 @@ interface VariantsTabProps {
 const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
   const navigate = useNavigate();
 
-  const variantColumns = [{
+  const variantColumns = [
+    {
       title: "Image",
       dataIndex: "image",
       key: "image",
@@ -68,7 +85,9 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
           {record.wholesale_price && (
             <div>
               <Text type="secondary">Wholesale: </Text>
-              <Text type="secondary">{formatCurrency(parseFloat(record.wholesale_price))}</Text>
+              <Text type="secondary">
+                {formatCurrency(parseFloat(record.wholesale_price))}
+              </Text>
             </div>
           )}
           {record.price_history && record.price_history.length > 0 && (
@@ -99,29 +118,51 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
     },
     {
       title: "Stock & Inventory",
-      key: "stock",      render: (_, record) => {
-        const totalStock = record.inventory_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-          // Calculate branch-based low stock status
-        const stockByBranch = record.inventory_items?.reduce((acc, item) => {
-          const branchName = item.branch?.name || 'Main';
-          acc[branchName] = (acc[branchName] || 0) + item.quantity;
-          return acc;
-        }, {}) || {};
-        
+      key: "stock",
+      render: (_, record) => {
+        const totalStock =
+          record.inventory_items?.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          ) || 0;
+        // Calculate branch-based low stock status
+        const stockByBranch =
+          record.inventory_items?.reduce((acc, item) => {
+            const branchName = item.branch?.name || "Main";
+            acc[branchName] = (acc[branchName] || 0) + item.quantity;
+            return acc;
+          }, {}) || {};
+
         // Check if any individual branch has low stock
-        const branchStockMap = record.inventory_items?.reduce((acc, item) => {
-          const branchId = item.branch?.id || 0;
-          acc[branchId] = (acc[branchId] || 0) + item.quantity;
-          return acc;
-        }, {} as Record<number, number>) || {};
-        
-        const hasLowStockBranch = record.alert_quantity && 
-          Object.values(branchStockMap).some(branchStock => (branchStock as number) <= (record.alert_quantity || 0));
+        const branchStockMap =
+          record.inventory_items?.reduce(
+            (acc, item) => {
+              const branchId = item.branch?.id || 0;
+              acc[branchId] = (acc[branchId] || 0) + item.quantity;
+              return acc;
+            },
+            {} as Record<number, number>,
+          ) || {};
+
+        const hasLowStockBranch =
+          record.alert_quantity &&
+          Object.values(branchStockMap).some(
+            (branchStock) =>
+              (branchStock as number) <= (record.alert_quantity || 0),
+          );
 
         return (
           <Space direction="vertical" size="small">
             <Space>
-              <Text style={{ color: hasLowStockBranch ? "#ff4d4f" : totalStock > 0 ? "#52c41a" : "#8c8c8c" }}>
+              <Text
+                style={{
+                  color: hasLowStockBranch
+                    ? "#ff4d4f"
+                    : totalStock > 0
+                      ? "#52c41a"
+                      : "#8c8c8c",
+                }}
+              >
                 {totalStock} units
               </Text>
               {!hasLowStockBranch || (
@@ -136,15 +177,23 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               </Text>
             )}
             {Object.keys(stockByBranch).length > 1 && (
-              <Tooltip 
+              <Tooltip
                 title={
                   <div>
                     {Object.entries(stockByBranch).map(([branch, qty]) => {
                       const branchQty = qty as number;
-                      const isLowForBranch = record.alert_quantity && branchQty <= record.alert_quantity;
+                      const isLowForBranch =
+                        record.alert_quantity &&
+                        branchQty <= record.alert_quantity;
                       return (
-                        <div key={branch} style={{ color: isLowForBranch ? "#ff4d4f" : "inherit" }}>
-                          {branch}: {branchQty} units {isLowForBranch && "(Low Stock)"}
+                        <div
+                          key={branch}
+                          style={{
+                            color: isLowForBranch ? "#ff4d4f" : "inherit",
+                          }}
+                        >
+                          {branch}: {branchQty} units{" "}
+                          {isLowForBranch && "(Low Stock)"}
                         </div>
                       );
                     })}
@@ -164,10 +213,14 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
       title: "Serials",
       key: "serials",
       render: (_, record) => {
-        const availableSerials = record.serials?.filter((s) => s.status === "available").length || 0;
-        const soldSerials = record.serials?.filter((s) => s.status === "sold").length || 0;
-        const defectiveSerials = record.serials?.filter((s) => s.status === "defective").length || 0;
-        const returnedSerials = record.serials?.filter((s) => s.status === "returned").length || 0;
+        const availableSerials =
+          record.serials?.filter((s) => s.status === "available").length || 0;
+        const soldSerials =
+          record.serials?.filter((s) => s.status === "sold").length || 0;
+        const defectiveSerials =
+          record.serials?.filter((s) => s.status === "defective").length || 0;
+        const returnedSerials =
+          record.serials?.filter((s) => s.status === "returned").length || 0;
         const totalSerials = record.serials?.length || 0;
 
         if (totalSerials === 0) {
@@ -176,17 +229,25 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
 
         return (
           <Space direction="vertical" size="small">
-            <Tooltip 
+            <Tooltip
               title={
                 <div>
                   <div>Available: {availableSerials}</div>
                   <div>Sold: {soldSerials}</div>
-                  {defectiveSerials > 0 && <div>Defective: {defectiveSerials}</div>}
-                  {returnedSerials > 0 && <div>Returned: {returnedSerials}</div>}
+                  {defectiveSerials > 0 && (
+                    <div>Defective: {defectiveSerials}</div>
+                  )}
+                  {returnedSerials > 0 && (
+                    <div>Returned: {returnedSerials}</div>
+                  )}
                 </div>
               }
             >
-              <Badge count={totalSerials} showZero color={availableSerials > 0 ? "green" : "red"}>
+              <Badge
+                count={totalSerials}
+                showZero
+                color={availableSerials > 0 ? "green" : "red"}
+              >
                 <BarcodeOutlined />
               </Badge>
             </Tooltip>
@@ -206,20 +267,24 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
         }
 
         return (
-          <Tooltip 
+          <Tooltip
             title={
               <div>
                 {record.VariantAttribute.map((attr, index) => (
-                  <div key={index}>{attr.name}: {attr.value}</div>
+                  <div key={index}>
+                    {attr.name}: {attr.value}
+                  </div>
                 ))}
               </div>
             }
           >
             <Tag color="purple">
-              {record.VariantAttribute.length} attribute{record.VariantAttribute.length > 1 ? 's' : ''}
+              {record.VariantAttribute.length} attribute
+              {record.VariantAttribute.length > 1 ? "s" : ""}
             </Tag>
           </Tooltip>
-        );      },
+        );
+      },
     },
     {
       title: "Actions",
@@ -239,24 +304,34 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
   ];
   // Expandable row render function
   const expandedRowRender = (record: any) => {
-    const stockByBranch = record.inventory_items?.reduce((acc: Record<string, number>, item: any) => {
-      const branchName = item.branch?.name || 'Main';
-      acc[branchName] = (acc[branchName] || 0) + item.quantity;
-      return acc;
-    }, {}) || {};
+    const stockByBranch =
+      record.inventory_items?.reduce(
+        (acc: Record<string, number>, item: any) => {
+          const branchName = item.branch?.name || "Main";
+          acc[branchName] = (acc[branchName] || 0) + item.quantity;
+          return acc;
+        },
+        {},
+      ) || {};
 
-    const expiringItems = record.inventory_items?.filter((item: any) => {
-      if (!item.expiry_date) return false;
-      const expiryDate = new Date(item.expiry_date);
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      return expiryDate <= thirtyDaysFromNow;
-    }) || [];
+    const expiringItems =
+      record.inventory_items?.filter((item: any) => {
+        if (!item.expiry_date) return false;
+        const expiryDate = new Date(item.expiry_date);
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        return expiryDate <= thirtyDaysFromNow;
+      }) || [];
 
     return (
       <Collapse size="small" ghost>
         {Object.keys(stockByBranch).length > 0 && (
-          <Panel header={`Stock by Branch (${Object.keys(stockByBranch).length})`} key="stock">            <Space wrap>
+          <Panel
+            header={`Stock by Branch (${Object.keys(stockByBranch).length})`}
+            key="stock"
+          >
+            {" "}
+            <Space wrap>
               {Object.entries(stockByBranch).map(([branch, qty]) => (
                 <Tag key={branch} icon={<ShopOutlined />}>
                   {branch}: {qty as number} units
@@ -267,7 +342,10 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
         )}
 
         {record.VariantAttribute && record.VariantAttribute.length > 0 && (
-          <Panel header={`Attributes (${record.VariantAttribute.length})`} key="attributes">
+          <Panel
+            header={`Attributes (${record.VariantAttribute.length})`}
+            key="attributes"
+          >
             <Space wrap>
               {record.VariantAttribute.map((attr, index) => (
                 <Tag key={index} color="blue">
@@ -284,8 +362,9 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
               {record.price_history.slice(0, 3).map((priceRecord, index) => (
                 <div key={index}>
                   <Text style={{ fontSize: "12px" }}>
-                    <CalendarOutlined /> {formatDate(priceRecord.effective_date)} - 
-                    Regular: {formatCurrency(parseFloat(priceRecord.regular_price))}, 
+                    <CalendarOutlined />{" "}
+                    {formatDate(priceRecord.effective_date)} - Regular:{" "}
+                    {formatCurrency(parseFloat(priceRecord.regular_price))},
                   </Text>
                 </div>
               ))}
@@ -294,11 +373,14 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
         )}
 
         {expiringItems.length > 0 && (
-          <Panel header={`Expiring Stock (${expiringItems.length})`} key="expiring">
+          <Panel
+            header={`Expiring Stock (${expiringItems.length})`}
+            key="expiring"
+          >
             <Space direction="vertical" size="small">
               {expiringItems.map((item, index) => (
                 <Tag key={index} color="orange">
-                  {item.branch?.name || 'Main'}: {item.quantity} units - 
+                  {item.branch?.name || "Main"}: {item.quantity} units -
                   Expires: {formatDate(item.expiry_date)}
                   {item.batch_number && ` (Batch: ${item.batch_number})`}
                 </Tag>
@@ -324,7 +406,7 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
       scroll={{ x: 1200 }}
       expandable={{
         expandedRowRender,
-        rowExpandable: (record) => 
+        rowExpandable: (record) =>
           (record.inventory_items && record.inventory_items.length > 0) ||
           (record.VariantAttribute && record.VariantAttribute.length > 0) ||
           (record.price_history && record.price_history.length > 0),

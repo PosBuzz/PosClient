@@ -1,16 +1,15 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 
 export const AuthLoader = () => {
-  const { 
-    getCsrfToken, 
-    checkAuth, 
+  const {
+    getCsrfToken,
+    checkAuth,
     isAuthenticated,
     csrfToken,
     validateSubdomain,
-    subdomainValidation 
+    subdomainValidation,
   } = useAuthStore();
   const navigate = useNavigate();
 
@@ -29,13 +28,13 @@ export const AuthLoader = () => {
     // Subdomain validation complete - check results
     if (!subdomainValidation.exists) {
       // Subdomain doesn't exist in database - 404
-      navigate('/404', { replace: true });
+      navigate("/404", { replace: true });
       return;
     }
 
     if (subdomainValidation.exists && !subdomainValidation.active) {
       // Subdomain exists but subscription inactive
-      navigate('/inactive', { replace: true });
+      navigate("/inactive", { replace: true });
       return;
     }
   }, [subdomainValidation, navigate]);
@@ -49,7 +48,11 @@ export const AuthLoader = () => {
 
   // Fourth: Check authentication only after CSRF token is ready
   useEffect(() => {
-    if (subdomainValidation.checked && subdomainValidation.active && csrfToken) {
+    if (
+      subdomainValidation.checked &&
+      subdomainValidation.active &&
+      csrfToken
+    ) {
       checkAuth();
     }
   }, [isAuthenticated, subdomainValidation, csrfToken, checkAuth]);

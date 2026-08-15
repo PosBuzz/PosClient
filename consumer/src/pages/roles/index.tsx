@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import { useState } from "react";
@@ -73,9 +72,7 @@ const Roles = () => {
 
       <Row gutter={16}>
         <Col className="gutter-row" span={24}>
-          <TableGrid
-            onClickEdit={onClickEdit}
-          />
+          <TableGrid onClickEdit={onClickEdit} />
         </Col>
       </Row>
     </>

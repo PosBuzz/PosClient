@@ -1,9 +1,5 @@
 import { CurrencyIcon } from "../../../components/Currency";
-import {
-  ProductOutlined,
-  SyncOutlined,
-  TagsOutlined,
-} from "@ant-design/icons";
+import { ProductOutlined, SyncOutlined, TagsOutlined } from "@ant-design/icons";
 import {
   Button,
   Card,

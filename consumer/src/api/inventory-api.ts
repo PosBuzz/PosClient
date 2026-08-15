@@ -236,7 +236,7 @@ export const inventoryApi = {
 
   updateBatch: async (
     id: number,
-    data: Partial<CreateBatchData>
+    data: Partial<CreateBatchData>,
   ): Promise<InventoryBatch> => {
     return patch(endpoints.updateInventoryBatch(id), data);
   },
@@ -273,7 +273,7 @@ export const inventoryApi = {
       phone?: string;
       email?: string;
       address?: string;
-    }
+    },
   ): Promise<Vendor> => {
     return patch(endpoints.updateVendor(id), data);
   },
@@ -297,7 +297,7 @@ export const inventoryApi = {
   },
 
   createTransfer: async (
-    data: CreateTransferData
+    data: CreateTransferData,
   ): Promise<InventoryTransfer> => {
     return post(endpoints.createInventoryTransfer, data);
   },
@@ -317,7 +317,7 @@ export const inventoryApi = {
       page?: number;
       limit?: number;
       search?: string;
-    }
+    },
   ): Promise<PaginatedResponse<InventoryBatch>> => {
     return get(endpoints.branchBatches(branchId), params);
   },
@@ -335,7 +335,7 @@ export const inventoryApi = {
     return get(endpoints.inventoryAdjustment(id));
   },
   createAdjustment: async (
-    data: CreateAdjustmentData
+    data: CreateAdjustmentData,
   ): Promise<InventoryAdjustment> => {
     return post(endpoints.createInventoryAdjustment, data);
   },
@@ -363,7 +363,7 @@ export const inventoryApi = {
     variantId: number,
     params?: {
       branch_id?: number;
-    }
+    },
   ): Promise<any> => {
     return get(endpoints.inventoryVariantStock(variantId), params);
   },
@@ -382,7 +382,7 @@ export const inventoryApi = {
       page?: number;
       limit?: number;
       branch_id?: number;
-    }
+    },
   ): Promise<PaginatedResponse<any>> => {
     return get(endpoints.inventoryMovementHistory(variantId), params);
   },

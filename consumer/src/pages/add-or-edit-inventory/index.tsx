@@ -160,7 +160,10 @@ export default function AddEditInventory() {
       });
 
       // Populate payments from existing batch
-      if (existingBatch.purchasePayments && existingBatch.purchasePayments.length > 0) {
+      if (
+        existingBatch.purchasePayments &&
+        existingBatch.purchasePayments.length > 0
+      ) {
         setBatchPayments(
           existingBatch.purchasePayments.map((p: any) => ({
             payment_method: p.payment_method as PaymentMethod,
@@ -171,9 +174,14 @@ export default function AddEditInventory() {
         );
       } else {
         // Default to full payment
-        const totalCost = Number(existingBatch.cost_price) * existingBatch.quantity;
+        const totalCost =
+          Number(existingBatch.cost_price) * existingBatch.quantity;
         setBatchPayments([
-          { payment_method: PaymentMethod.CASH, amount: totalCost, reference: "" },
+          {
+            payment_method: PaymentMethod.CASH,
+            amount: totalCost,
+            reference: "",
+          },
         ]);
       }
     }
@@ -575,7 +583,8 @@ export default function AddEditInventory() {
                         batchPayments.reduce(
                           (s, p) => s + (Number(p.amount) || 0),
                           0,
-                        ) >= costPrice * quantity
+                        ) >=
+                        costPrice * quantity
                           ? "#52c41a"
                           : "#ff4d4f",
                     }}
@@ -583,7 +592,8 @@ export default function AddEditInventory() {
                     {batchPayments.reduce(
                       (s, p) => s + (Number(p.amount) || 0),
                       0,
-                    ) >= costPrice * quantity
+                    ) >=
+                    costPrice * quantity
                       ? "Paid"
                       : batchPayments.reduce(
                             (s, p) => s + (Number(p.amount) || 0),

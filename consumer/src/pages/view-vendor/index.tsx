@@ -225,9 +225,7 @@ const ViewVendor: React.FC = () => {
           {/* Vendor Information */}
           <Card title="Vendor Information" style={{ marginBottom: 16 }}>
             <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="Name">
-                {vendor.name}
-              </Descriptions.Item>
+              <Descriptions.Item label="Name">{vendor.name}</Descriptions.Item>
               <Descriptions.Item label="Contact">
                 {vendor.contact || "-"}
               </Descriptions.Item>
@@ -304,7 +302,9 @@ const ViewVendor: React.FC = () => {
               title="Total Owed"
               value={summary.totalOwed}
               precision={2}
-              valueStyle={{ color: summary.totalOwed > 0 ? "#ff4d4f" : "#52c41a" }}
+              valueStyle={{
+                color: summary.totalOwed > 0 ? "#ff4d4f" : "#52c41a",
+              }}
               prefix={takaPrefix}
             />
           </Card>

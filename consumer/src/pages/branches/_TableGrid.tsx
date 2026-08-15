@@ -36,7 +36,7 @@ export default function TableGrid({ onClickEdit }) {
     },
     onError: (error: any) => {
       messageApi?.error(
-        error.response?.data?.message || "Failed to delete branch"
+        error.response?.data?.message || "Failed to delete branch",
       );
     },
   });
@@ -93,7 +93,9 @@ export default function TableGrid({ onClickEdit }) {
       dataIndex: "vat_registration_number",
       key: "vat_registration_number",
       render: (vat_registration_number: string) =>
-        vat_registration_number || <span style={{ color: "#999" }}>No VAT Registration Number</span>,
+        vat_registration_number || (
+          <span style={{ color: "#999" }}>No VAT Registration Number</span>
+        ),
     },
     {
       title: "Created Date",

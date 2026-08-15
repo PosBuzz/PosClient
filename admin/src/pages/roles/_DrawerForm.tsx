@@ -48,7 +48,10 @@ export default function DrawerForm({
     },
   });
 
-  const permissionOptions: any = useModelOptions(endpoints.adminPermission, "action");
+  const permissionOptions: any = useModelOptions(
+    endpoints.adminPermission,
+    "action",
+  );
 
   const onFinish = async (formValues: any) => {
     const payload = {
@@ -76,7 +79,7 @@ export default function DrawerForm({
       form.setFieldsValue({
         name: editedItem.name,
         permission_ids: editedItem.permissions?.map(
-          (p: any) => p.permission_id
+          (p: any) => p.permission_id,
         ),
       });
     } else {
@@ -129,7 +132,7 @@ export default function DrawerForm({
               optionFilterProp="label"
               filterSort={(
                 optionA: { label?: string },
-                optionB: { label?: string }
+                optionB: { label?: string },
               ) =>
                 (optionA?.label ?? "")
                   .toLowerCase()

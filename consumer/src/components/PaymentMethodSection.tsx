@@ -19,7 +19,10 @@ interface PaymentMethodSectionProps {
   size?: "small" | "middle" | "large";
   validationState?: Record<
     string,
-    { status: "success" | "warning" | "error" | "validating" | ""; help: string }
+    {
+      status: "success" | "warning" | "error" | "validating" | "";
+      help: string;
+    }
   >;
   validationPrefix?: string;
 }
@@ -33,7 +36,10 @@ export default function PaymentMethodSection({
   validationState,
   validationPrefix,
 }: PaymentMethodSectionProps) {
-  const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalPaid = payments.reduce(
+    (sum, p) => sum + (Number(p.amount) || 0),
+    0,
+  );
   const remaining = Math.max(0, maxAmount - totalPaid);
 
   const getValidation = (index: number, field: string) => {
@@ -41,7 +47,8 @@ export default function PaymentMethodSection({
       return { status: undefined, help: undefined };
     }
 
-    const item = validationState[`${validationPrefix}_payment_${index}_${field}`];
+    const item =
+      validationState[`${validationPrefix}_payment_${index}_${field}`];
     const status =
       item?.status === "error" || item?.status === "warning"
         ? item.status
@@ -188,9 +195,7 @@ export default function PaymentMethodSection({
 
               {/* Reference text input */}
               <Col
-                span={
-                  requiresProvider ? (compact ? 4 : 5) : compact ? 5 : 6
-                }
+                span={requiresProvider ? (compact ? 4 : 5) : compact ? 5 : 6}
               >
                 <Input
                   size={size}
@@ -248,7 +253,10 @@ export default function PaymentMethodSection({
               Remaining
             </Text>
             <br />
-            <Text strong style={{ color: remaining > 0 ? "#ff4d4f" : "#52c41a" }}>
+            <Text
+              strong
+              style={{ color: remaining > 0 ? "#ff4d4f" : "#52c41a" }}
+            >
               {remaining.toFixed(2)}
             </Text>
           </Col>

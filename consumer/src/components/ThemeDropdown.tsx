@@ -15,10 +15,7 @@ const ThemeDropdown = () => {
   // Load preference from localStorage once
   useEffect(() => {
     const savedTheme = localStorage.getItem("themeSettings") as
-      | "dark"
-      | "light"
-      | "system"
-      | null;
+      "dark" | "light" | "system" | null;
     if (["dark", "light", "system"].includes(savedTheme || "")) {
       setSelectedOption(savedTheme as "dark" | "light" | "system");
     }
