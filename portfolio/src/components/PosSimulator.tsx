@@ -479,7 +479,7 @@ export function PosSimulator({ products }: { products: DemoProduct[] }) {
             <div className="text-center space-y-1 border-b border-dashed border-slate-400 pb-3">
               <div className="text-base font-black tracking-widest text-slate-900">POSBUZZ STORE</div>
               <div className="text-[10px] text-slate-600">Downtown Flagship Store - Branch #01</div>
-              <div className="text-[10px] text-slate-600">Tel: +880 1700-000000 | www.posbuzz.io</div>
+              <div className="text-[10px] text-slate-600">Tel: +880-1829-898981 | www.posbuzz.com</div>
               <div className="text-[10px] text-slate-500">Invoice: {printedReceipt.id} | {printedReceipt.date}</div>
             </div>
 

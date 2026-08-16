@@ -53,5 +53,5 @@ dependency overrides in place, with the reasoning for each.
 
 ## Support
 
-For support, email istiaktashrif@gmail.com 
+For support, email info@posbuzz.com 
 

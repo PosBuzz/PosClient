@@ -125,7 +125,7 @@ export function ContactClient({ site }: { site: SiteConfig }) {
                   <input
                     type="email"
                     required
-                    placeholder="istiak@posbuzz.io"
+                    placeholder="you@yourstore.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
@@ -151,7 +151,7 @@ export function ContactClient({ site }: { site: SiteConfig }) {
                   <input
                     type="tel"
                     required
-                    placeholder="+1 (555) 019-2834"
+                    placeholder="+880 1XXX-XXXXXX"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"

@@ -140,7 +140,7 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
                     <input
                       type="email"
                       required
-                      placeholder="istiak@posbuzz.io"
+                      placeholder="you@yourstore.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full rounded-xl border border-slate-700 bg-slate-950/80 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -155,7 +155,7 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
                     <input
                       type="tel"
                       required
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+880 1XXX-XXXXXX"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full rounded-xl border border-slate-700 bg-slate-950/80 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
