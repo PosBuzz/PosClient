@@ -1,9 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { Zap, Mail, Phone, MapPin, ShieldCheck, CheckCircle2, Heart } from "lucide-react";
-import { SITE_CONFIG } from "@/lib/constants";
+import { SiteConfig } from "@/lib/constants";
 
-export function Footer() {
+export function Footer({ site }: { site: SiteConfig }) {
   return (
     <footer className="relative border-t border-slate-800/80 bg-slate-950 text-slate-400 text-xs overflow-hidden">
       {/* Background glow */}
@@ -80,13 +80,13 @@ export function Footer() {
             <div className="space-y-2.5 text-slate-400 text-xs">
               <div className="flex items-start gap-2">
                 <Mail className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <a href={`mailto:${SITE_CONFIG.contactEmail}`} className="hover:text-white transition">
-                  {SITE_CONFIG.contactEmail}
+                <a href={`mailto:${site.contactEmail}`} className="hover:text-white transition">
+                  {site.contactEmail}
                 </a>
               </div>
               <div className="flex items-start gap-2">
                 <Phone className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>{SITE_CONFIG.phone}</span>
+                <span>{site.phone}</span>
               </div>
               <div className="flex items-start gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

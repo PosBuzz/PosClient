@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { DEMO_PRODUCTS } from "@/lib/constants";
+import { DemoProduct } from "@/lib/constants";
 import { 
   ShoppingCart, 
   Trash2, 
@@ -30,11 +30,12 @@ interface CartItem {
   serial?: string | null;
 }
 
-export function PosSimulator() {
-  const [cart, setCart] = useState<CartItem[]>([
-    { id: 1, name: "Premium Slim-Fit Denim Jeans (Blue / 32)", sku: "APP-DNM-32", price: 48.00, wholesalePrice: 38.00, qty: 1, tax: 0.05, serial: "SN-882910" },
-    { id: 3, name: "Artisan Caramel Iced Latte (Large)", sku: "FNB-COF-04", price: 4.50, wholesalePrice: 3.50, qty: 2, tax: 0.08, serial: null }
-  ]);
+export function PosSimulator({ products }: { products: DemoProduct[] }) {
+  // Pre-fill the demo cart from the first two published products so the
+  // simulator always opens with a realistic basket.
+  const [cart, setCart] = useState<CartItem[]>(() =>
+    products.slice(0, 2).map((product, index) => ({ ...product, qty: index === 1 ? 2 : 1 }))
+  );
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [priceType, setPriceType] = useState<"retail" | "wholesale">("retail");
   const [discountPercent, setDiscountPercent] = useState<number>(0);
@@ -59,9 +60,9 @@ export function PosSimulator() {
     date: string;
   } | null>(null);
 
-  const categories = ["All", "Apparel", "Food & Beverage", "Beverages", "Grocery", "Electronics", "Supplies"];
+  const categories = ["All", ...Array.from(new Set(products.map((p) => p.category)))];
 
-  const filteredProducts = DEMO_PRODUCTS.filter((p) => {
+  const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,7 +70,7 @@ export function PosSimulator() {
     return matchesCat && matchesSearch;
   });
 
-  const addToCart = (product: typeof DEMO_PRODUCTS[0]) => {
+  const addToCart = (product: DemoProduct) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {

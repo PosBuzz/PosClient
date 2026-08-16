@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { FAQ_ITEMS, FaqItem } from "@/lib/constants";
+import { FaqItem } from "@/lib/constants";
 import { ChevronDown, Search, HelpCircle, Sparkles, CheckCircle2 } from "lucide-react";
 
-export function FaqSection() {
+export function FaqSection({ faqs }: { faqs: FaqItem[] }) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const categories = ["All", "General", "Offline & Sync", "Hardware", "Multi-Branch", "Security", "Pricing & Migration"];
+  // Categories come from the published FAQs themselves, so the filter chips
+  // always match the content managed in the admin dashboard.
+  const categories = ["All", ...Array.from(new Set(faqs.map((faq) => faq.category)))];
 
-  const filteredFaqs = FAQ_ITEMS.filter((faq) => {
+  const filteredFaqs = faqs.filter((faq) => {
     const matchesCat = activeCategory === "All" || faq.category === activeCategory;
     const matchesSearch =
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||

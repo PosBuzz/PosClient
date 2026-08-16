@@ -9,4 +9,5 @@ export const AdminPermission = {
   backupRestore: "backup&restore",
   profile: "profile",
   support: "support",
+  portfolio: "portfolio",
 };

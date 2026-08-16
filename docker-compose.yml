@@ -160,6 +160,10 @@ services:
     restart: unless-stopped
     ports:
       - "${PORTFOLIO_PORT:-3002}:3000"
+    environment:
+      # CMS content + lead submissions are read from the backend API.
+      - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
+      - CMS_REVALIDATE_SECONDS=${CMS_REVALIDATE_SECONDS:-300}
     networks:
       - posbuzz-network
     healthcheck:

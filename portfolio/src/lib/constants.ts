@@ -42,7 +42,42 @@ export interface PricingPlan {
   cta: string;
 }
 
-export const SITE_CONFIG = {
+export interface Testimonial {
+  quote: string;
+  author: string;
+  role: string;
+  company: string;
+  rating: number;
+  metrics: string;
+}
+
+export interface DemoProduct {
+  id: number;
+  name: string;
+  sku: string;
+  price: number;
+  wholesalePrice: number;
+  category: string;
+  image: string;
+  tax: number;
+  serial: string | null;
+}
+
+export interface SiteConfig {
+  name: string;
+  title: string;
+  description: string;
+  url: string;
+  ogImage: string;
+  author: string;
+  contactEmail: string;
+  salesEmail: string;
+  phone: string;
+  address?: string;
+  keywords: string[];
+}
+
+export const SITE_CONFIG: SiteConfig = {
   name: "PosBuzz",
   title: "PosBuzz - Cloud POS, Multi-Branch Inventory & Store Management Platform",
   description: "High-speed Cloud Point of Sale (POS), real-time multi-branch inventory, batch & serial tracking, customer rewards, quotation conversion, and local thermal printer agent designed for retail, apparel, and multi-outlet stores.",
@@ -360,7 +395,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   }
 ];
 
-export const TESTIMONIALS = [
+export const TESTIMONIALS: Testimonial[] = [
   {
     quote: "PosBuzz handles our 5 fashion outlets effortlessly. The variant matrix, thermal barcode printing, and instant quotation-to-sale conversion saved our sales reps hundreds of hours.",
     author: "Karim Rahman",
@@ -387,7 +422,7 @@ export const TESTIMONIALS = [
   }
 ];
 
-export const DEMO_PRODUCTS = [
+export const DEMO_PRODUCTS: DemoProduct[] = [
   { id: 1, name: "Premium Slim-Fit Denim Jeans (Blue / 32)", sku: "APP-DNM-32", price: 48.00, wholesalePrice: 38.00, category: "Apparel", image: "👖", tax: 0.05, serial: "SN-882910" },
   { id: 2, name: "Gourmet Angus Burger Combo (Medium)", sku: "FNB-BGR-01", price: 11.50, wholesalePrice: 9.50, category: "Food & Beverage", image: "🍔", tax: 0.08, serial: null },
   { id: 3, name: "Artisan Caramel Iced Latte (Large)", sku: "FNB-COF-04", price: 4.50, wholesalePrice: 3.50, category: "Beverages", image: "☕", tax: 0.08, serial: null },

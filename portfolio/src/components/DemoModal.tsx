@@ -10,6 +10,8 @@ interface DemoModalProps {
 
 export function DemoModal({ isOpen, onClose }: DemoModalProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,13 +19,44 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
     businessName: "",
     industry: "retail",
     locations: "1",
+    // Honeypot: hidden from real users, filled in by bots.
+    companyWebsite: "",
   });
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "DEMO",
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          business_name: formData.businessName,
+          industry: formData.industry,
+          locations: formData.locations,
+          source_page: typeof window === "undefined" ? undefined : window.location.pathname,
+          company_website: formData.companyWebsite,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+
+      setSubmitted(true);
+    } catch {
+      setError("We could not book your demo. Please try again or email us directly.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -184,12 +217,29 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
                 </div>
               </div>
 
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={formData.companyWebsite}
+                onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
+                className="hidden"
+              />
+
+              {error && (
+                <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/25 hover:from-emerald-400 hover:to-teal-300 transition active:scale-[0.99]"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/25 hover:from-emerald-400 hover:to-teal-300 transition active:scale-[0.99] disabled:opacity-60"
               >
                 <Send className="h-4 w-4" />
-                Book VIP Demo & Start Free Trial
+                {submitting ? "Booking..." : "Book VIP Demo & Start Free Trial"}
               </button>
 
               <p className="text-[11px] text-center text-slate-500">
