@@ -17,4 +17,5 @@ export const Permissions = {
   companyProfile: "companyProfile",
   product_audit: "product_audit",
   receipt_settings: "receipt_settings",
+  support: "support",
 };

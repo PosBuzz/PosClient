@@ -1,4 +1,5 @@
 import {
+  CustomerServiceOutlined,
   DashboardOutlined,
   ProductOutlined,
   SettingOutlined,
@@ -287,6 +288,12 @@ const SideBar: React.FC = () => {
         },
       ],
       permissions: [Permissions.users],
+    },
+    {
+      key: "/support",
+      icon: <CustomerServiceOutlined />,
+      label: <span title="Support">Support</span>,
+      permissions: [Permissions.support],
     },
   ];
 

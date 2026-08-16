@@ -59,6 +59,7 @@ const PendingDeliveries = lazy(() => import("./pages/pending-deliveries"));
 const DailyTargetReport = lazy(() => import("./pages/daily-target"));
 const BusinessReport = lazy(() => import("./pages/eod"));
 const OperationalCosts = lazy(() => import("./pages/operational-costs"));
+const Support = lazy(() => import("./pages/support"));
 const POSPage = lazy(() => import("./pages/pos"));
 const BarcodePrinting = lazy(() => import("./pages/barcode-printing"));
 const Returns = lazy(() => import("./pages/returns"));
@@ -136,6 +137,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.companyProfile}>
             <Profile />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "support",
+        element: (
+          <RequirePermission permission={Permissions.support}>
+            <Support />
           </RequirePermission>
         ),
       },
