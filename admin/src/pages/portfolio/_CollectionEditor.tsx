@@ -1,6 +1,7 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Drawer,
   Form,
@@ -17,6 +18,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useState } from "react";
 import { deleteApi, get, patch, post } from "../../api/http";
 import { useMessageStore } from "../../stores/messageStore";
+import { describeError } from "./_errors";
 
 export type FieldType = "text" | "textarea" | "number" | "switch" | "list";
 
@@ -60,7 +62,13 @@ export default function CollectionEditor<T extends { id: number }>({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<T>();
 
-  const { data = [], isLoading } = useQuery<T[]>({
+  const {
+    data = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<T[]>({
     queryKey: [queryKey],
     queryFn: () => get(endpoint),
   });
@@ -150,6 +158,21 @@ export default function CollectionEditor<T extends { id: number }>({
 
   return (
     <>
+      {isError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`Could not load ${itemLabel.toLowerCase()} content`}
+          description={describeError(error)}
+          action={
+            <Button size="small" onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
       <div style={{ marginBottom: 16, textAlign: "right" }}>
         <Button
           type="primary"
@@ -221,11 +244,20 @@ export default function CollectionEditor<T extends { id: number }>({
           <Form.Item name="sort_order" label="Sort order">
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="is_published" label="Published" valuePropName="checked">
+          <Form.Item
+            name="is_published"
+            label="Published"
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" block loading={save.isPending}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            loading={save.isPending}
+          >
             Save {itemLabel}
           </Button>
         </Form>
