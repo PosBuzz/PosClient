@@ -22,6 +22,7 @@ import { ProductAuditModule } from 'src/product-audit/product-audit.module';
 import { ReceiptModule } from './receipt-pdf/receipt.module';
 import { ImportModule } from './import/import.module';
 import { OperationalCostsModule } from './operational-costs/operational-costs.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { OperationalCostsModule } from './operational-costs/operational-costs.mo
     ProductAuditModule,
     ReceiptModule,
     OperationalCostsModule,
+    SupportModule,
   ],
 })
 export class ConsumerModule {}

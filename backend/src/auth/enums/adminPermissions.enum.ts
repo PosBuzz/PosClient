@@ -9,4 +9,5 @@ export enum AdminPermission {
   delete_consumers = 'delete_consumers',
   roles = 'roles',
   users = 'users',
+  support = 'support',
 }

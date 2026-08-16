@@ -12,6 +12,14 @@ export const endpoints = {
   operationalCost: (id: number) => `/consumer/operational-costs/${id}`,
   businessReportPdf: "/consumer/sales/reports/business/pdf",
 
+  // Support tickets
+  supportTickets: "/consumer/support/tickets",
+  supportTicket: (id: number) => `/consumer/support/tickets/${id}`,
+  supportTicketMessages: (id: number) =>
+    `/consumer/support/tickets/${id}/messages`,
+  closeSupportTicket: (id: number) => `/consumer/support/tickets/${id}/close`,
+  reopenSupportTicket: (id: number) => `/consumer/support/tickets/${id}/reopen`,
+
   user: "/consumer/users",
   updateUser: (id: number) => `/consumer/users/${id}`,
   deleteUser: (id: number) => `/consumer/users/${id}`,

@@ -48,6 +48,8 @@ export const queryKeys = {
   purchasePaymentBatches: "purchase-payment-batches",
   batchForPayment: "batch-for-payment",
   batchPayments: "batch-payments",
+  supportTickets: "support-tickets",
+  supportTicket: "support-ticket",
 };
 
 // Stale time configurations for different data types
@@ -104,6 +106,8 @@ export const queryStaleTimeMap = {
   [queryKeys.batchForPayment]: staleTimeConfig.dynamic,
   [queryKeys.batchPayments]: staleTimeConfig.dynamic,
   [queryKeys.receiptSettings]: staleTimeConfig.dynamic,
+  [queryKeys.supportTickets]: staleTimeConfig.dynamic,
+  [queryKeys.supportTicket]: staleTimeConfig.dynamic,
 
   // Real-time data
   [queryKeys.inventorySummary]: staleTimeConfig.realTime,

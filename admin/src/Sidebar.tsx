@@ -1,4 +1,8 @@
-import { DashboardOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  CustomerServiceOutlined,
+  DashboardOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
 import { GrUserAdmin } from "react-icons/gr";
@@ -70,6 +74,12 @@ const SideBar: React.FC = () => {
         <span title="Billing and Subscription">Billing & Subscriptions</span>
       ),
       permissions: [AdminPermission.billing],
+    },
+    {
+      key: "/support",
+      icon: <CustomerServiceOutlined />,
+      label: <span title="Support Tickets">Support</span>,
+      permissions: [AdminPermission.support],
     },
     {
       label: <span title="Settings">Settings</span>,
