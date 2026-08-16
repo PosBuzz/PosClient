@@ -84,9 +84,10 @@ export const SITE_CONFIG: SiteConfig = {
   url: "https://posbuzz.io",
   ogImage: "https://posbuzz.io/og-image.png",
   author: "PosBuzz Technologies",
-  contactEmail: "istiaktashrif@gmail.com",
-  salesEmail: "sales@posbuzz.io",
-  phone: "+880 1700-000000 / +1 (800) 555-POSB",
+  contactEmail: "info@posbuzz.com",
+  salesEmail: "info@posbuzz.com",
+  phone: "+880-1829-898981",
+  address: "Dhaka, Bangladesh",
   keywords: [
     "PosBuzz",
     "cloud POS system",

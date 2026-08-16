@@ -17,7 +17,6 @@ export function JsonLd({ site, plans, faqs }: JsonLdProps) {
     "description": site.description,
     "email": site.contactEmail,
     "sameAs": [
-      "https://github.com/PosBuzz",
       "https://twitter.com/PosBuzzApp",
       "https://linkedin.com/company/posbuzz"
     ],
