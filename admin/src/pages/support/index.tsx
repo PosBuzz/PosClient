@@ -29,11 +29,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 const { Text, Paragraph } = Typography;
 
 type TicketStatus =
-  | "OPEN"
-  | "IN_PROGRESS"
-  | "WAITING_ON_CUSTOMER"
-  | "RESOLVED"
-  | "CLOSED";
+  "OPEN" | "IN_PROGRESS" | "WAITING_ON_CUSTOMER" | "RESOLVED" | "CLOSED";
 
 interface TicketMessage {
   id: number;
@@ -90,6 +86,9 @@ const priorityOptions = ["LOW", "MEDIUM", "HIGH", "URGENT"].map((value) => ({
   label: value,
   value,
 }));
+
+const isClosed = (status: TicketStatus) =>
+  status === "RESOLVED" || status === "CLOSED";
 
 const categoryLabels: Record<string, string> = {
   BILLING: "Billing & Subscription",
@@ -358,23 +357,33 @@ const Support = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            <Space wrap style={{ margin: "16px 0" }}>
-              <Select
-                style={{ minWidth: 200 }}
-                value={ticket.status}
-                options={statusOptions}
-                onChange={(value) =>
-                  update.mutate({ id: ticket.id, status: value })
-                }
-              />
-              <Select
-                style={{ minWidth: 140 }}
-                value={ticket.priority}
-                options={priorityOptions}
-                onChange={(value) =>
-                  update.mutate({ id: ticket.id, priority: value })
-                }
-              />
+            <Space wrap align="end" style={{ margin: "16px 0" }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Status
+                </Text>
+                <Select
+                  style={{ minWidth: 200, display: "block" }}
+                  value={ticket.status}
+                  options={statusOptions}
+                  onChange={(value) =>
+                    update.mutate({ id: ticket.id, status: value })
+                  }
+                />
+              </div>
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Priority
+                </Text>
+                <Select
+                  style={{ minWidth: 140, display: "block" }}
+                  value={ticket.priority}
+                  options={priorityOptions}
+                  onChange={(value) =>
+                    update.mutate({ id: ticket.id, priority: value })
+                  }
+                />
+              </div>
               {ticket.assigned_to?.id === user?.id ? (
                 <Button
                   onClick={() =>
@@ -436,7 +445,6 @@ const Support = () => {
               form={replyForm}
               layout="vertical"
               style={{ marginTop: 16 }}
-              initialValues={{ status: "WAITING_ON_CUSTOMER" }}
               onFinish={(values) => reply.mutate(values)}
             >
               <Form.Item
@@ -450,9 +458,6 @@ const Support = () => {
                 />
               </Form.Item>
               <Space wrap>
-                <Form.Item name="status" label="Set status after reply" noStyle>
-                  <Select style={{ minWidth: 220 }} options={statusOptions} />
-                </Form.Item>
                 <Button
                   type="primary"
                   htmlType="submit"
@@ -460,6 +465,11 @@ const Support = () => {
                 >
                   Send reply
                 </Button>
+                <Text type="secondary">
+                  {isClosed(ticket.status)
+                    ? `Replying leaves the ticket ${statusMeta[ticket.status].label}.`
+                    : "Replying moves the ticket to Waiting on Customer. Use the status control above for anything else."}
+                </Text>
               </Space>
             </Form>
           </>
