@@ -7,3 +7,8 @@ README.md
 .git
 .gitignore
 .env*.local
+# Env files are supplied at runtime (compose env_file) and must not be baked
+# into the image — .env.docker holds the publish-hook secret.
+.env
+.env.*
+!.env.example

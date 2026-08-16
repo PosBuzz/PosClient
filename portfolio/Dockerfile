@@ -15,6 +15,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Optional: when the backend is reachable during the build, pages prerender
+# against live CMS content. Otherwise the build falls back to the bundled
+# copy in src/lib/constants.ts and refreshes on the first revalidation.
+ARG BACKEND_API_URL
+ENV BACKEND_API_URL=$BACKEND_API_URL
+
 RUN npm run build
 
 # Stage 3: Runner

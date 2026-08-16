@@ -5,18 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
     container_name: posbuzz-portfolio
     restart: unless-stopped
     ports:
       - "${PORTFOLIO_PORT:-3002}:3000"
+    env_file:
+      - .env.docker
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # CMS content + lead submissions are read from the backend API.
-      - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
-      - CMS_REVALIDATE_SECONDS=${CMS_REVALIDATE_SECONDS:-300}
-      # Shared secret for the backend's publish hook; unset disables it.
-      - REVALIDATE_SECRET=${PORTFOLIO_REVALIDATE_SECRET:-}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
