@@ -12,14 +12,16 @@ import {
   HeartHandshake,
   Cpu
 } from "lucide-react";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getPortfolioContent } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "About PosBuzz | Next-Gen Cloud POS & Retail Cloud ERP",
   description: "PosBuzz is on a mission to modernize brick-and-mortar retail and hospitality with offline-native cloud POS, multi-branch automation, and open hardware ecosystems.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { site } = await getPortfolioContent();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
       {/* Header */}
@@ -93,11 +95,11 @@ export default function AboutPage() {
             <div className="space-y-3 text-xs text-slate-300">
               <div>
                 <strong className="text-white block">Email Support:</strong>
-                <a href={`mailto:${SITE_CONFIG.contactEmail}`} className="text-emerald-400 hover:underline">{SITE_CONFIG.contactEmail}</a>
+                <a href={`mailto:${site.contactEmail}`} className="text-emerald-400 hover:underline">{site.contactEmail}</a>
               </div>
               <div>
                 <strong className="text-white block">Sales & Enterprise Partnerships:</strong>
-                <a href={`mailto:${SITE_CONFIG.salesEmail}`} className="text-emerald-400 hover:underline">{SITE_CONFIG.salesEmail}</a>
+                <a href={`mailto:${site.salesEmail}`} className="text-emerald-400 hover:underline">{site.salesEmail}</a>
               </div>
               <div>
                 <strong className="text-white block">Developer & GitHub Repository:</strong>

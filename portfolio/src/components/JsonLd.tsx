@@ -1,15 +1,21 @@
 import React from "react";
-import { FAQ_ITEMS, SITE_CONFIG, PRICING_PLANS } from "@/lib/constants";
+import { FaqItem, PricingPlan, SiteConfig } from "@/lib/constants";
 
-export function JsonLd() {
+interface JsonLdProps {
+  site: SiteConfig;
+  plans: PricingPlan[];
+  faqs: FaqItem[];
+}
+
+export function JsonLd({ site, plans, faqs }: JsonLdProps) {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": SITE_CONFIG.name,
-    "url": SITE_CONFIG.url,
-    "logo": `${SITE_CONFIG.url}/logo.png`,
-    "description": SITE_CONFIG.description,
-    "email": SITE_CONFIG.contactEmail,
+    "name": site.name,
+    "url": site.url,
+    "logo": `${site.url}/logo.png`,
+    "description": site.description,
+    "email": site.contactEmail,
     "sameAs": [
       "https://github.com/PosBuzz",
       "https://twitter.com/PosBuzzApp",
@@ -17,7 +23,7 @@ export function JsonLd() {
     ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": SITE_CONFIG.phone,
+      "telephone": site.phone,
       "contactType": "customer service",
       "availableLanguage": ["English", "Bengali"]
     }
@@ -29,7 +35,7 @@ export function JsonLd() {
     "name": "PosBuzz POS & Retail Cloud",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web, Windows, macOS, Linux, Android, iOS",
-    "offers": PRICING_PLANS.map((plan) => ({
+    "offers": plans.map((plan) => ({
       "@type": "Offer",
       "name": plan.name,
       "price": plan.priceMonthly.toString(),
@@ -58,7 +64,7 @@ export function JsonLd() {
   const faqPageSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": FAQ_ITEMS.map((faq) => ({
+    "mainEntity": faqs.map((faq) => ({
       "@type": "Question",
       "name": faq.question,
       "acceptedAnswer": {
@@ -71,13 +77,13 @@ export function JsonLd() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": SITE_CONFIG.name,
-    "url": SITE_CONFIG.url,
+    "name": site.name,
+    "url": site.url,
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `${SITE_CONFIG.url}/search?q={search_term_string}`
+        "urlTemplate": `${site.url}/search?q={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     }

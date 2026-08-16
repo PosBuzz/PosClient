@@ -10,4 +10,5 @@ export enum AdminPermission {
   roles = 'roles',
   users = 'users',
   support = 'support',
+  portfolio = 'portfolio',
 }

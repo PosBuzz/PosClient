@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SOLUTIONS } from "@/lib/constants";
+import { getPortfolioContent } from "@/lib/api";
 import { 
   ShoppingBag, 
   Utensils, 
@@ -20,7 +20,9 @@ export const metadata: Metadata = {
   description: "Explore tailored Point of Sale and ERP solutions engineered for apparel boutiques, restaurants, cafes, supermarkets, pharmacies, and enterprise retail chains.",
 };
 
-export default function SolutionsPage() {
+export default async function SolutionsPage() {
+  const { solutions } = await getPortfolioContent();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
       {/* Header */}
@@ -38,7 +40,7 @@ export default function SolutionsPage() {
 
       {/* Solutions Detailed List */}
       <div className="space-y-16">
-        {SOLUTIONS.map((sol, index) => {
+        {solutions.map((sol, index) => {
           const isEven = index % 2 === 0;
           return (
             <div

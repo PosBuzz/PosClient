@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CORE_FEATURES } from "@/lib/constants";
+import { getPortfolioContent } from "@/lib/api";
 import { 
   Zap, 
   Boxes, 
@@ -22,7 +22,9 @@ export const metadata: Metadata = {
   description: "Complete overview of PosBuzz active modules: High-speed POS billing, multi-branch stock transfers, batch expiry & serial numbers, quotations, customer loyalty rewards, and thermal printer bridge.",
 };
 
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const { features } = await getPortfolioContent();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
       {/* Header */}
@@ -40,7 +42,7 @@ export default function FeaturesPage() {
 
       {/* Feature Deep Dive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {CORE_FEATURES.map((feat) => (
+        {features.map((feat) => (
           <div
             key={feat.id}
             id={feat.id}

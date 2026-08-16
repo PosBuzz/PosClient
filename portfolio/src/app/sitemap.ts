@@ -1,7 +1,9 @@
 import { MetadataRoute } from "next";
+import { getPortfolioContent } from "@/lib/api";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://posbuzz.io";
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { site } = await getPortfolioContent();
+  const baseUrl = site.url.replace(/\/+$/, "");
   const lastModified = new Date();
 
   return [
