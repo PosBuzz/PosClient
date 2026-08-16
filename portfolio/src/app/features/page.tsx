@@ -116,7 +116,7 @@ export default async function FeaturesPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
               <Lock className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Role-Based RBAC & SOC2</h3>
+            <h3 className="text-sm font-bold text-white">Role-Based Access Control</h3>
             <p className="text-xs text-slate-400">Granular permissions protecting sensitive financial data, discounts, and managerial overrides.</p>
           </div>
         </div>

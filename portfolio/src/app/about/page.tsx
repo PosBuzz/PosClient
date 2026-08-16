@@ -84,9 +84,9 @@ export default async function AboutPage() {
               PosBuzz is engineered with end-to-end TLS 1.3 encryption, role-based access control (RBAC), and automated database snapshots. Your sales ledgers, customer numbers, and cash reconciliation totals are safeguarded at every step.
             </p>
             <div className="pt-2 flex flex-wrap gap-3 text-xs">
-              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ SOC2 Type II Certified Data Centers</span>
-              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ PCI-DSS Level 1 Compliant Payments</span>
-              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ 99.99% Guaranteed Cloud Uptime</span>
+              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ TLS 1.3 Encryption In Transit</span>
+              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ Role-Based Access Control</span>
+              <span className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-1.5 text-slate-300">✓ Automated Database Snapshots</span>
             </div>
           </div>
 
@@ -98,12 +98,12 @@ export default async function AboutPage() {
                 <a href={`mailto:${site.contactEmail}`} className="text-emerald-400 hover:underline">{site.contactEmail}</a>
               </div>
               <div>
-                <strong className="text-white block">Sales & Enterprise Partnerships:</strong>
-                <a href={`mailto:${site.salesEmail}`} className="text-emerald-400 hover:underline">{site.salesEmail}</a>
+                <strong className="text-white block">Phone / WhatsApp:</strong>
+                <span className="text-emerald-400">{site.phone}</span>
               </div>
               <div>
-                <strong className="text-white block">Developer & GitHub Repository:</strong>
-                <a href="https://github.com/PosBuzz" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">https://github.com/PosBuzz</a>
+                <strong className="text-white block">Office:</strong>
+                <span className="text-emerald-400">{site.address}</span>
               </div>
             </div>
           </div>

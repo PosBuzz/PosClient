@@ -20,9 +20,10 @@ export async function seedPortfolio(prisma: PrismaClient) {
       url: 'https://posbuzz.io',
       og_image: 'https://posbuzz.io/og-image.png',
       author: 'PosBuzz Technologies',
-      contact_email: 'istiaktashrif@gmail.com',
-      sales_email: 'sales@posbuzz.io',
-      phone: '+880 1700-000000 / +1 (800) 555-POSB',
+      contact_email: 'info@posbuzz.com',
+      sales_email: 'info@posbuzz.com',
+      phone: '+880-1829-898981',
+      address: 'Dhaka, Bangladesh',
       keywords: [
         'PosBuzz',
         'cloud POS system',
