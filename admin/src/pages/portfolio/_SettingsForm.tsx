@@ -62,10 +62,10 @@ export default function SettingsForm() {
               <Input />
             </Form.Item>
             <Form.Item name="url" label="Canonical URL" rules={[{ required: true }]}>
-              <Input placeholder="https://posbuzz.io" />
+              <Input placeholder="https://posbuzz.com" />
             </Form.Item>
             <Form.Item name="og_image" label="OG image URL" rules={[{ required: true }]}>
-              <Input placeholder="https://posbuzz.io/og-image.png" />
+              <Input placeholder="https://posbuzz.com/og-image.png" />
             </Form.Item>
           </Card>
 

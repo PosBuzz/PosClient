@@ -17,8 +17,8 @@ export async function seedPortfolio(prisma: PrismaClient) {
         'PosBuzz - Cloud POS, Multi-Branch Inventory & Store Management Platform',
       description:
         'High-speed Cloud Point of Sale (POS), real-time multi-branch inventory, batch & serial tracking, customer rewards, quotation conversion, and local thermal printer agent designed for retail, apparel, and multi-outlet stores.',
-      url: 'https://posbuzz.io',
-      og_image: 'https://posbuzz.io/og-image.png',
+      url: 'https://posbuzz.com',
+      og_image: 'https://posbuzz.com/og-image.png',
       author: 'PosBuzz Technologies',
       contact_email: 'info@posbuzz.com',
       sales_email: 'info@posbuzz.com',
