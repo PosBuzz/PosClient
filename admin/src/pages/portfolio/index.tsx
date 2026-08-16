@@ -1,6 +1,10 @@
-import { Tabs, Tag, Typography } from "antd";
+import { CloudUploadOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, Tabs, Tag, Tooltip, Typography } from "antd";
 import { endpoints } from "../../api/endpoints";
+import { get, post } from "../../api/http";
 import PageTitle from "../../components/PageTitle";
+import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 import CollectionEditor, { FieldDef } from "./_CollectionEditor";
 import Leads from "./_Leads";
@@ -79,12 +83,54 @@ const demoProductFields: FieldDef[] = [
 
 const money = (value: string | number) => `$${Number(value).toFixed(2)}`;
 
+const PublishButton = () => {
+  const { messageApi } = useMessageStore();
+
+  const { data: publishStatus } = useQuery({
+    queryKey: ["portfolio-publish-status"],
+    queryFn: () => get(endpoints.portfolioPublishStatus),
+  });
+
+  const publish = useMutation({
+    mutationFn: () => post(endpoints.portfolioRevalidate, {}),
+    onSuccess: (result: { revalidated: boolean; reason?: string }) =>
+      result?.revalidated
+        ? messageApi?.success("Site refreshed — edits are live now")
+        : messageApi?.warning(
+            "Could not reach the site; it will pick up the changes on its next refresh",
+          ),
+    onError: () => messageApi?.error("Publish failed"),
+  });
+
+  const configured = publishStatus?.configured;
+
+  return (
+    <Tooltip
+      title={
+        configured
+          ? "Content edits publish automatically. Use this to force an immediate refresh."
+          : "Publish hook is not configured; the site refreshes on its own schedule."
+      }
+    >
+      <Button
+        icon={<CloudUploadOutlined />}
+        loading={publish.isPending}
+        disabled={!configured}
+        onClick={() => publish.mutate()}
+      >
+        Publish now
+      </Button>
+    </Tooltip>
+  );
+};
+
 const Portfolio = () => (
   <>
     {setPageTitle(title)}
     <PageTitle
       title={title}
       breadcrumbs={[{ title: "Dashboard", href: "/" }, { title }]}
+      rightSection={<PublishButton />}
     />
 
     <Tabs
