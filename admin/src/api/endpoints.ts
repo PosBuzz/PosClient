@@ -26,6 +26,8 @@ export const endpoints = {
   portfolioFaqs: "/admin/portfolio/faqs",
   portfolioTestimonials: "/admin/portfolio/testimonials",
   portfolioDemoProducts: "/admin/portfolio/demo-products",
+  portfolioRevalidate: "/admin/portfolio/revalidate",
+  portfolioPublishStatus: "/admin/portfolio/publish-status",
   portfolioLeads: "/admin/portfolio/leads",
   portfolioLeadStats: "/admin/portfolio/leads/stats",
   supportTickets: "/admin/support/tickets",

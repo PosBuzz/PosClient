@@ -47,6 +47,10 @@ export const configValidationSchema = Joi.object({
   // FastAPI Service
   FASTAPI_URL: Joi.string().required(),
 
+  // Portfolio publish hook (optional; falls back to the site's ISR schedule)
+  PORTFOLIO_REVALIDATE_URL: Joi.string().optional(),
+  PORTFOLIO_REVALIDATE_SECRET: Joi.string().optional(),
+
   // PostgreSQL binaries paths (optional)
   PG_DUMP_PATH: Joi.string(),
   PSQL_PATH: Joi.string(),

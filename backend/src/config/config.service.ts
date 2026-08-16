@@ -143,4 +143,14 @@ export class ConfigService {
     // In local dev: Full path to DBngin binary
     return this.configService.get<string>('PSQL_PATH') || 'psql';
   }
+
+  // Portfolio publish hook. Both values are optional: when either is missing,
+  // the marketing site simply refreshes on its own ISR schedule instead.
+  get portfolioRevalidateUrl(): string | undefined {
+    return this.configService.get<string>('PORTFOLIO_REVALIDATE_URL');
+  }
+
+  get portfolioRevalidateSecret(): string | undefined {
+    return this.configService.get<string>('PORTFOLIO_REVALIDATE_SECRET');
+  }
 }

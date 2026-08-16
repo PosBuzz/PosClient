@@ -23,10 +23,12 @@ import {
  * than going blank.
  */
 
+// Local dev default matches the backend's own PORT=8000; deployments set
+// BACKEND_API_URL explicitly (http://backend:8000/api/v1 under compose).
 const API_BASE_URL = (
   process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://localhost:3000/api/v1"
+  "http://localhost:8000/api/v1"
 ).replace(/\/+$/, "");
 
 // How long a rendered page may serve cached CMS content before revalidating.

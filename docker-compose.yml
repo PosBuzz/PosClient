@@ -100,6 +100,9 @@ services:
       REDIS_HOST: redis
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:${DB_PORT:-5432}/${DB_NAME:-posbuzz}?schema=public
+      # Publish hook: fired after a super admin edits portfolio CMS content.
+      PORTFOLIO_REVALIDATE_URL: ${PORTFOLIO_REVALIDATE_URL:-http://portfolio:3000/api/revalidate}
+      PORTFOLIO_REVALIDATE_SECRET: ${PORTFOLIO_REVALIDATE_SECRET:-}
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/receipts:/app/receipts
@@ -164,6 +167,8 @@ services:
       # CMS content + lead submissions are read from the backend API.
       - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
       - CMS_REVALIDATE_SECONDS=${CMS_REVALIDATE_SECONDS:-300}
+      # Shared secret for the backend's publish hook; unset disables it.
+      - REVALIDATE_SECRET=${PORTFOLIO_REVALIDATE_SECRET:-}
     networks:
       - posbuzz-network
     healthcheck:
