@@ -10,6 +10,7 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AdminPermission } from 'src/auth/enums/adminPermissions.enum';
 import { AdminAuthGuard } from 'src/auth/guards/admin.auth.guard';
@@ -28,17 +29,34 @@ import {
   PortfolioLeadQueryDto,
   UpdatePortfolioLeadDto,
 } from '../dto/portfolio-lead.dto';
+import { PortfolioRevalidateInterceptor } from '../interceptors/portfolio-revalidate.interceptor';
 import { PortfolioContentService } from '../services/portfolio-content.service';
 import { PortfolioLeadService } from '../services/portfolio-lead.service';
+import { PortfolioRevalidationService } from '../services/portfolio-revalidation.service';
 
 @HasPermissions([AdminPermission.portfolio])
 @UseGuards(AdminAuthGuard, PermissionsGuard)
+@UseInterceptors(PortfolioRevalidateInterceptor)
 @Controller('admin/portfolio')
 export class AdminPortfolioController {
   constructor(
     private readonly content: PortfolioContentService,
     private readonly leads: PortfolioLeadService,
+    private readonly revalidation: PortfolioRevalidationService,
   ) {}
+
+  // ---------- Publishing ----------
+
+  /** Manual "Publish now", for cache-busting without editing anything. */
+  @Post('revalidate')
+  revalidate() {
+    return this.revalidation.trigger();
+  }
+
+  @Get('publish-status')
+  publishStatus() {
+    return { configured: this.revalidation.isConfigured };
+  }
 
   // ---------- Settings ----------
 
