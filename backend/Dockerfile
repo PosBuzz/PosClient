@@ -51,4 +51,7 @@ USER nestjs
 
 EXPOSE 8000
 
-CMD ["node", "dist/main"]
+# TEMPORARY: seed the portfolio CMS content on boot. Remove once the content
+# has been loaded into the production database. Non-fatal on purpose — a
+# seeding hiccup must not stop the API from starting.
+CMD ["sh", "-c", "npm run seed:portfolio || echo '[startup] portfolio seed failed; the site will serve its bundled fallback content'; node dist/main"]
