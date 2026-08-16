@@ -100,9 +100,6 @@ services:
       REDIS_HOST: redis
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:${DB_PORT:-5432}/${DB_NAME:-posbuzz}?schema=public
-      # Publish hook: fired after a super admin edits portfolio CMS content.
-      PORTFOLIO_REVALIDATE_URL: ${PORTFOLIO_REVALIDATE_URL:-http://portfolio:3000/api/revalidate}
-      PORTFOLIO_REVALIDATE_SECRET: ${PORTFOLIO_REVALIDATE_SECRET:-}
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/receipts:/app/receipts
@@ -159,16 +156,17 @@ services:
     build:
       context: ./portfolio
       dockerfile: Dockerfile
+      args:
+        # Lets pages prerender against live CMS content when the backend is
+        # reachable at build time; otherwise they fall back to bundled copy and
+        # refresh on first revalidation.
+        - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
     container_name: posbuzz-portfolio
     restart: unless-stopped
     ports:
       - "${PORTFOLIO_PORT:-3002}:3000"
-    environment:
-      # CMS content + lead submissions are read from the backend API.
-      - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000/api/v1}
-      - CMS_REVALIDATE_SECONDS=${CMS_REVALIDATE_SECONDS:-300}
-      # Shared secret for the backend's publish hook; unset disables it.
-      - REVALIDATE_SECRET=${PORTFOLIO_REVALIDATE_SECRET:-}
+    env_file:
+      - ./portfolio/.env.docker
     networks:
       - posbuzz-network
     healthcheck:
