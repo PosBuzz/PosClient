@@ -17,12 +17,30 @@ const title = "Portfolio Site";
 const listHelp = "Press Enter after each entry.";
 
 const solutionFields: FieldDef[] = [
-  { name: "slug", label: "Slug", type: "text", required: true, help: "Stable id, e.g. retail-apparel" },
+  {
+    name: "slug",
+    label: "Slug",
+    type: "text",
+    required: true,
+    help: "Stable id, e.g. retail-apparel",
+  },
   { name: "title", label: "Title", type: "text", required: true },
   { name: "subtitle", label: "Subtitle", type: "text", required: true },
-  { name: "icon_name", label: "Icon", type: "text", required: true, help: "lucide-react icon name, e.g. ShoppingBag" },
+  {
+    name: "icon_name",
+    label: "Icon",
+    type: "text",
+    required: true,
+    help: "lucide-react icon name, e.g. ShoppingBag",
+  },
   { name: "badge", label: "Badge", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea", required: true, rows: 4 },
+  {
+    name: "description",
+    label: "Description",
+    type: "textarea",
+    required: true,
+    rows: 4,
+  },
   { name: "features", label: "Features", type: "list", help: listHelp },
   { name: "benefits", label: "Benefits", type: "list", help: listHelp },
   { name: "metric_label", label: "Metric label", type: "text", required: true },
@@ -32,12 +50,30 @@ const solutionFields: FieldDef[] = [
 
 const featureFields: FieldDef[] = [
   { name: "slug", label: "Slug", type: "text", required: true },
-  { name: "category", label: "Category", type: "text", required: true, help: "pos, inventory, multi-branch, loyalty, quotation-orders, hardware" },
+  {
+    name: "category",
+    label: "Category",
+    type: "text",
+    required: true,
+    help: "pos, inventory, multi-branch, loyalty, quotation-orders, hardware",
+  },
   { name: "title", label: "Title", type: "text", required: true },
   { name: "tagline", label: "Tagline", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea", required: true, rows: 4 },
+  {
+    name: "description",
+    label: "Description",
+    type: "textarea",
+    required: true,
+    rows: 4,
+  },
   { name: "highlights", label: "Highlights", type: "list", help: listHelp },
-  { name: "icon", label: "Icon", type: "text", required: true, help: "lucide-react icon name, e.g. Zap" },
+  {
+    name: "icon",
+    label: "Icon",
+    type: "text",
+    required: true,
+    help: "lucide-react icon name, e.g. Zap",
+  },
   { name: "badge", label: "Badge", type: "text" },
 ];
 
@@ -45,19 +81,61 @@ const pricingFields: FieldDef[] = [
   { name: "slug", label: "Slug", type: "text", required: true },
   { name: "name", label: "Plan name", type: "text", required: true },
   { name: "badge", label: "Badge", type: "text" },
-  { name: "description", label: "Description", type: "textarea", required: true, rows: 3 },
-  { name: "price_monthly", label: "Monthly price", type: "number", required: true, precision: 2 },
-  { name: "price_annual_monthly", label: "Annual price (per month)", type: "number", required: true, precision: 2 },
+  {
+    name: "description",
+    label: "Description",
+    type: "textarea",
+    required: true,
+    rows: 3,
+  },
+  {
+    name: "price_monthly",
+    label: "Monthly price",
+    type: "number",
+    required: true,
+    precision: 2,
+  },
+  {
+    name: "price_annual_monthly",
+    label: "Annual price (per month)",
+    type: "number",
+    required: true,
+    precision: 2,
+  },
   { name: "is_popular", label: "Highlight as most popular", type: "switch" },
-  { name: "features", label: "Included features", type: "list", help: listHelp },
+  {
+    name: "features",
+    label: "Included features",
+    type: "list",
+    help: listHelp,
+  },
   { name: "not_included", label: "Not included", type: "list", help: listHelp },
   { name: "cta", label: "Call to action", type: "text", required: true },
 ];
 
 const faqFields: FieldDef[] = [
-  { name: "question", label: "Question", type: "textarea", required: true, rows: 2 },
-  { name: "answer", label: "Answer", type: "textarea", required: true, rows: 6 },
-  { name: "aeo_summary", label: "AEO summary", type: "textarea", required: true, rows: 3, help: "One-sentence answer used for AI/answer-engine snippets and FAQ schema." },
+  {
+    name: "question",
+    label: "Question",
+    type: "textarea",
+    required: true,
+    rows: 2,
+  },
+  {
+    name: "answer",
+    label: "Answer",
+    type: "textarea",
+    required: true,
+    rows: 6,
+  },
+  {
+    name: "aeo_summary",
+    label: "AEO summary",
+    type: "textarea",
+    required: true,
+    rows: 3,
+    help: "One-sentence answer used for AI/answer-engine snippets and FAQ schema.",
+  },
   { name: "category", label: "Category", type: "text", required: true },
 ];
 
@@ -73,11 +151,37 @@ const testimonialFields: FieldDef[] = [
 const demoProductFields: FieldDef[] = [
   { name: "name", label: "Product name", type: "text", required: true },
   { name: "sku", label: "SKU", type: "text", required: true },
-  { name: "price", label: "Retail price", type: "number", required: true, precision: 2 },
-  { name: "wholesale_price", label: "Wholesale price", type: "number", required: true, precision: 2 },
+  {
+    name: "price",
+    label: "Retail price",
+    type: "number",
+    required: true,
+    precision: 2,
+  },
+  {
+    name: "wholesale_price",
+    label: "Wholesale price",
+    type: "number",
+    required: true,
+    precision: 2,
+  },
   { name: "category", label: "Category", type: "text", required: true },
-  { name: "image", label: "Emoji", type: "text", required: true, help: "Shown as the product tile in the live POS simulator." },
-  { name: "tax", label: "Tax rate", type: "number", required: true, step: 0.01, precision: 4, help: "Fraction, e.g. 0.05 for 5%." },
+  {
+    name: "image",
+    label: "Emoji",
+    type: "text",
+    required: true,
+    help: "Shown as the product tile in the live POS simulator.",
+  },
+  {
+    name: "tax",
+    label: "Tax rate",
+    type: "number",
+    required: true,
+    step: 0.01,
+    precision: 4,
+    help: "Fraction, e.g. 0.05 for 5%.",
+  },
   { name: "serial", label: "Serial / batch", type: "text" },
 ];
 
