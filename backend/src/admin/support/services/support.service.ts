@@ -104,7 +104,14 @@ export class AdminSupportService {
 
   async reply(id: number, superAdminId: number, dto: AdminSupportReplyDto) {
     const ticket = await this.assertExists(id);
-    const status = dto.status ?? SupportTicketStatus.WAITING_ON_CUSTOMER;
+    // Replying hands the ticket back to the customer, unless the agent asked
+    // for a specific status or the ticket is already resolved/closed — adding a
+    // closing note must not silently reopen it.
+    const status =
+      dto.status ??
+      (CLOSED_STATUSES.includes(ticket.status)
+        ? ticket.status
+        : SupportTicketStatus.WAITING_ON_CUSTOMER);
 
     await this.prisma.$transaction([
       this.prisma.supportTicketMessage.create({
@@ -164,7 +171,7 @@ export class AdminSupportService {
   private async assertExists(id: number) {
     const ticket = await this.prisma.supportTicket.findUnique({
       where: { id },
-      select: { id: true, assigned_to_id: true },
+      select: { id: true, assigned_to_id: true, status: true },
     });
     if (!ticket) throw new NotFoundException('Support ticket not found');
     return ticket;
