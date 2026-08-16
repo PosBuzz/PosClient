@@ -129,6 +129,12 @@ const permissionGuide = {
       "Lets users configure receipt templates and printer/PDF receipt settings.",
     gives: ["Printer settings", "Receipt settings"],
   },
+  [Permissions.support]: {
+    title: "Support",
+    summary:
+      "Lets users raise support tickets with PosBuzz and follow the conversation.",
+    gives: ["Support page", "Create tickets", "Reply to and close tickets"],
+  },
 };
 
 const formatPermissionLabel = (permission: string) =>

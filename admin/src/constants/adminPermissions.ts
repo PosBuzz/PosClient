@@ -8,4 +8,5 @@ export const AdminPermission = {
   users: "users",
   backupRestore: "backup&restore",
   profile: "profile",
+  support: "support",
 };

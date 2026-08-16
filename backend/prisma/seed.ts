@@ -250,6 +250,7 @@ async function main() {
     'users',
     'backup&restore',
     'profile',
+    'support',
   ];
   const createdPermissions = await Promise.all(
     adminPermissions.map((action) =>
@@ -342,6 +343,7 @@ async function main() {
     'quotations',
     'companyProfile',
     'receipt_settings',
+    'support',
   ];
   const permissions = await Promise.all(
     consumerPermissions.map((action) =>
