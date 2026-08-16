@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
+import { seedPortfolio } from './portfolio-seed';
 
 const prisma = new PrismaClient();
 
@@ -251,6 +252,7 @@ async function main() {
     'backup&restore',
     'profile',
     'support',
+    'portfolio',
   ];
   const createdPermissions = await Promise.all(
     adminPermissions.map((action) =>
@@ -551,6 +553,8 @@ async function main() {
       billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
     },
   });
+
+  await seedPortfolio(prisma);
 
   console.log('🌱 Seeding complete!');
 }

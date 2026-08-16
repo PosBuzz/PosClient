@@ -1,6 +1,10 @@
 import { MetadataRoute } from "next";
+import { getPortfolioContent } from "@/lib/api";
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const { site } = await getPortfolioContent();
+  const baseUrl = site.url.replace(/\/+$/, "");
+
   return {
     rules: [
       {
@@ -13,6 +17,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://posbuzz.io/sitemap.xml",
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

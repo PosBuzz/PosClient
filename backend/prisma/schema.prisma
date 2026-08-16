@@ -1753,3 +1753,174 @@ model SupportTicketMessage {
   @@index([super_admin_id])
   @@map("support_ticket_messages")
 }
+
+// ============================================
+// Portfolio (marketing site CMS)
+// ============================================
+
+enum PortfolioLeadType {
+  CONTACT
+  DEMO
+}
+
+enum PortfolioLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+}
+
+model PortfolioSetting {
+  // Single-row table; the app always reads/writes id = 1.
+  id            Int      @id @default(1)
+  site_name     String
+  title         String
+  description   String
+  url           String
+  og_image      String
+  author        String
+  contact_email String
+  sales_email   String
+  phone         String
+  address       String?
+  keywords      String[]
+  updated_at    DateTime @updatedAt
+
+  @@map("portfolio_settings")
+}
+
+model PortfolioSolution {
+  id           Int      @id @default(autoincrement())
+  slug         String   @unique
+  title        String
+  subtitle     String
+  icon_name    String
+  badge        String
+  description  String
+  features     String[]
+  benefits     String[]
+  metric_label String
+  metric_value String
+  image_key    String
+  sort_order   Int      @default(0)
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_solutions")
+}
+
+model PortfolioFeature {
+  id           Int      @id @default(autoincrement())
+  slug         String   @unique
+  category     String
+  title        String
+  tagline      String
+  description  String
+  highlights   String[]
+  icon         String
+  badge        String?
+  sort_order   Int      @default(0)
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_features")
+}
+
+model PortfolioPricingPlan {
+  id                   Int      @id @default(autoincrement())
+  slug                 String   @unique
+  name                 String
+  badge                String?
+  description          String
+  price_monthly        Decimal  @db.Decimal(10, 2)
+  price_annual_monthly Decimal  @db.Decimal(10, 2)
+  is_popular           Boolean  @default(false)
+  features             String[]
+  not_included         String[]
+  cta                  String
+  sort_order           Int      @default(0)
+  is_published         Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_pricing_plans")
+}
+
+model PortfolioFaq {
+  id           Int      @id @default(autoincrement())
+  question     String
+  answer       String
+  aeo_summary  String
+  category     String
+  sort_order   Int      @default(0)
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_faqs")
+}
+
+model PortfolioTestimonial {
+  id           Int      @id @default(autoincrement())
+  quote        String
+  author       String
+  role         String
+  company      String
+  rating       Int      @default(5)
+  metrics      String?
+  sort_order   Int      @default(0)
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_testimonials")
+}
+
+model PortfolioDemoProduct {
+  id              Int      @id @default(autoincrement())
+  name            String
+  sku             String   @unique
+  price           Decimal  @db.Decimal(10, 2)
+  wholesale_price Decimal  @db.Decimal(10, 2)
+  category        String
+  image           String
+  tax             Decimal  @default(0) @db.Decimal(5, 4)
+  serial          String?
+  sort_order      Int      @default(0)
+  is_published    Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([is_published, sort_order])
+  @@map("portfolio_demo_products")
+}
+
+model PortfolioLead {
+  id            Int                 @id @default(autoincrement())
+  type          PortfolioLeadType
+  status        PortfolioLeadStatus @default(NEW)
+  name          String
+  email         String
+  phone         String?
+  business_name String?
+  industry      String?
+  locations     String?
+  message       String?
+  source_page   String?
+  notes         String?
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @updatedAt
+
+  @@index([status, created_at])
+  @@index([type, created_at])
+  @@index([email])
+  @@map("portfolio_leads")
+}

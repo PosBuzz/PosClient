@@ -1,6 +1,7 @@
 import {
   CustomerServiceOutlined,
   DashboardOutlined,
+  GlobalOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Menu } from "antd";
@@ -74,6 +75,12 @@ const SideBar: React.FC = () => {
         <span title="Billing and Subscription">Billing & Subscriptions</span>
       ),
       permissions: [AdminPermission.billing],
+    },
+    {
+      key: "/portfolio",
+      icon: <GlobalOutlined />,
+      label: <span title="Portfolio Site & Leads">Portfolio Site</span>,
+      permissions: [AdminPermission.portfolio],
     },
     {
       key: "/support",

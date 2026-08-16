@@ -14,6 +14,7 @@ const Roles = lazy(() => import("./pages/roles"));
 const Users = lazy(() => import("./pages/users"));
 const BackupRestore = lazy(() => import("./pages/backup&restore"));
 const Support = lazy(() => import("./pages/support"));
+const Portfolio = lazy(() => import("./pages/portfolio"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
 const Test = lazy(() => import("./pages/test"));
 
@@ -56,6 +57,14 @@ export const routes = [
         element: (
           <RequirePermission permission={AdminPermission.billing}>
             <Billings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "portfolio",
+        element: (
+          <RequirePermission permission={AdminPermission.portfolio}>
+            <Portfolio />
           </RequirePermission>
         ),
       },
