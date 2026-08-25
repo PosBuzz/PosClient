@@ -42,6 +42,8 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
     });
   };
 
+  // No column sorters here: the server owns the page and the ordering (by net
+  // amount), so a client-side comparator would silently sort one page only.
   const columns = [
     {
       title: "Product",
@@ -70,7 +72,6 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
       render: (count: number) => (
         <Tag color={count > 0 ? "green" : "default"}>{count}</Tag>
       ),
-      sorter: (a: any, b: any) => a.total_sales - b.total_sales,
     },
     {
       title: "Total Qty",
@@ -89,7 +90,32 @@ const VariantSalesTable: React.FC<VariantSalesTableProps> = ({
           <Money value={v} />
         </Text>
       ),
-      sorter: (a: any, b: any) => a.total_amount - b.total_amount,
+    },
+    {
+      title: "Returned",
+      dataIndex: "returned_qty",
+      key: "returned_qty",
+      align: "right" as const,
+      render: (qty: number, record: any) =>
+        qty ? (
+          <Text type="danger">
+            {Number(qty).toLocaleString()} (
+            <Money value={record.returned_amount ?? 0} />)
+          </Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
+    {
+      title: "Net Amount",
+      dataIndex: "net_amount",
+      key: "net_amount",
+      align: "right" as const,
+      render: (v: number) => (
+        <Text strong>
+          <Money value={v ?? 0} />
+        </Text>
+      ),
     },
     {
       title: "Actions",

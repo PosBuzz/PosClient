@@ -19,12 +19,13 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { returnsApi } from "../../api/returns-api";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import type { Return, ReturnListFilters } from "../../types/return.types";
 import { setPageTitle } from "../../utils/setPageTitle";
-import saveAs from "file-saver";
-import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -32,7 +33,7 @@ const { RangePicker } = DatePicker;
 
 const ReturnsTable = () => {
   const { user } = useAuthStore();
-  const { messageApi } = useMessageStore();
+  const { preview, previewProps } = usePdfPreview();
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState<ReturnListFilters>({
@@ -64,23 +65,11 @@ const ReturnsTable = () => {
     });
   };
 
-  const handleDownloadPdf = async (id: number, saleNumber: string) => {
-    try {
-      // Call the API to generate and download PDF (similar to admin billing approach)
-      const pdfBlob = await returnsApi.downloadReturnPdf(id);
-
-      // Get the filename - you could also get this from response headers if backend sets it
-      const filename = `${saleNumber}.pdf`;
-
-      // Use file-saver to download the PDF
-      saveAs(pdfBlob, filename);
-
-      messageApi?.success("PDF receipt downloaded successfully!");
-    } catch (error: any) {
-      console.error("PDF download error:", error);
-      messageApi?.error("Failed to download PDF receipt");
-    }
-  };
+  const handlePreviewPdf = (id: number, returnNumber: string) =>
+    preview(() => returnsApi.downloadReturnPdf(id), {
+      title: `Return ${returnNumber}`,
+      fileName: `return-${returnNumber}.pdf`,
+    });
 
   const columns = [
     {
@@ -157,12 +146,12 @@ const ReturnsTable = () => {
       key: "actions",
       render: (record: Return) => (
         <Space>
-          <Tooltip title="Download PDF Receipt">
+          <Tooltip title="Preview PDF Receipt">
             <Button
               type="text"
               icon={<FilePdfOutlined />}
               onClick={() =>
-                handleDownloadPdf(record.id!, record.return_number!)
+                handlePreviewPdf(record.id!, record.return_number!)
               }
             />
           </Tooltip>
@@ -327,6 +316,8 @@ const ReturnsTable = () => {
           scroll={{ x: 1200 }}
         />
       </Card>
+
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 };

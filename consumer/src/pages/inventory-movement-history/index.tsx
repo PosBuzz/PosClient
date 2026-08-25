@@ -153,7 +153,6 @@ const InventoryMovementHistory: React.FC = () => {
       dataIndex: "date",
       key: "date",
       render: (date) => new Date(date).toLocaleString(),
-      sorter: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     },
     {
       title: "Type",
@@ -190,7 +189,6 @@ const InventoryMovementHistory: React.FC = () => {
           {quantity}
         </Text>
       ),
-      sorter: (a, b) => a.quantity_change - b.quantity_change,
     },
     {
       title: "Batch",

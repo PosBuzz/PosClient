@@ -286,26 +286,26 @@ export const salesApi = {
     return response;
   },
 
-  downloadBusinessReportPdf: async (params: {
+  // Returns the document rather than saving it, so it can be previewed first;
+  // the filename the backend chose is carried along for the download button.
+  getBusinessReportPdf: async (params: {
     date: string;
     branch_id?: number;
     period: "day" | "month" | "all";
-  }): Promise<void> => {
+  }): Promise<{ blob: Blob; fileName: string }> => {
     const response = await axiosInstance.get(endpoints.businessReportPdf, {
       params,
       responseType: "blob",
     });
-    const url = URL.createObjectURL(
-      new Blob([response.data], { type: "application/pdf" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
     const disposition = response.headers["content-disposition"] as
       string | undefined;
-    link.download =
-      disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? "business-report.pdf";
-    link.click();
-    URL.revokeObjectURL(url);
+
+    return {
+      blob: new Blob([response.data], { type: "application/pdf" }),
+      fileName:
+        disposition?.match(/filename="?([^";]+)"?/)?.[1] ??
+        "business-report.pdf",
+    };
   },
 
   // ========== QUOTATION METHODS ==========

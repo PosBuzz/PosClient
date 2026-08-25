@@ -1,7 +1,7 @@
 import {
   ArrowLeftOutlined,
   CopyOutlined,
-  DownloadOutlined,
+  FilePdfOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
@@ -19,12 +19,14 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import saveAs from "file-saver";
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
@@ -35,6 +37,7 @@ const QuotationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { messageApi } = useMessageStore();
+  const { preview, previewProps } = usePdfPreview();
 
   const quotationQuery = useQuery({
     queryKey: [queryKeys.quotation, parseInt(id || "0")],
@@ -91,25 +94,13 @@ const QuotationDetail: React.FC = () => {
     navigate(`/sales/new?quotation_id=${quotation.id}`);
   };
 
-  const handleDownloadPdf = async () => {
+  const handlePreviewPdf = () => {
     if (!quotation) return;
 
-    try {
-      const pdfBlob = await salesApi.downloadQuotationPdf(Number(quotation.id));
-
-      const filename = `quotation-${quotation.sale_number}.pdf`;
-
-      saveAs(pdfBlob, filename);
-
-      messageApi?.success({
-        content: "PDF downloaded successfully!",
-      });
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-      messageApi?.error({
-        content: "Failed to download PDF",
-      });
-    }
+    preview(() => salesApi.downloadQuotationPdf(Number(quotation.id)), {
+      title: `Quotation ${quotation.sale_number}`,
+      fileName: `quotation-${quotation.sale_number}.pdf`,
+    });
   };
 
   const getItemPromotionLabel = (record: any) => {
@@ -271,8 +262,8 @@ const QuotationDetail: React.FC = () => {
             >
               Copy Quotation
             </Button>
-            <Button icon={<DownloadOutlined />} onClick={handleDownloadPdf}>
-              Download PDF
+            <Button icon={<FilePdfOutlined />} onClick={handlePreviewPdf}>
+              Preview PDF
             </Button>
             <Button
               type="primary"
@@ -486,6 +477,8 @@ const QuotationDetail: React.FC = () => {
           )}
         </Col>
       </Row>
+
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 };

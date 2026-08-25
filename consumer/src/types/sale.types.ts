@@ -165,6 +165,9 @@ export interface DailyTargetRow {
   variant_name: string;
   sku?: string;
   daily_target: number;
+  // Units sold, units handed back, and what is left of them
+  gross_sold: number;
+  returned: number;
   actual_sold: number;
   achievement_pct: number;
   gap: number;
@@ -185,6 +188,8 @@ export interface DailyTargetReportResponse {
   };
   summary: {
     total_target: number;
+    total_gross_sold: number;
+    total_returned: number;
     total_sold: number;
     overall_achievement_pct: number;
     targeted_amount?: number; // NEW
@@ -268,6 +273,10 @@ export interface SaleListResponse {
     total_sales: number;
     total_amount: number;
     average_sale: number;
+    // Refunds booked against the sales in scope; the sale rows stay gross
+    total_refund: number;
+    return_count: number;
+    net_amount: number;
   };
 }
 
@@ -419,6 +428,9 @@ export interface ProductSalesStats {
   quantity_sold: number;
   total_amount: number;
   average_unit_price: number;
+  quantity_returned: number;
+  refund_amount: number;
+  net_amount: number;
 }
 
 export interface EODSummary {
@@ -431,6 +443,13 @@ export interface EODSummary {
   total_items_sold: number;
   unique_products_sold: number;
   operational_costs: number;
+  // Returns booked in the period; sales above stay gross
+  total_returns: number;
+  total_refund: number;
+  total_items_returned: number;
+  net_sale_amount: number;
+  cash_refunds: number;
+  net_cash_sales: number;
   net_operating_result: number;
 }
 
@@ -442,6 +461,7 @@ export interface EODReportResponse {
   branch_name?: string;
   summary: EODSummary;
   payment_method_breakdown: PaymentMethodBreakdown[];
+  return_payment_breakdown: PaymentMethodBreakdown[];
   product_sales: ProductSalesStats[];
   hourly_sales: {
     hour: number;
