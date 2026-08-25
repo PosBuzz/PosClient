@@ -1573,13 +1573,39 @@ export class SalesService {
         }),
       );
 
+      const [todayRefunds, weekRefunds, monthRefunds] = await Promise.all(
+        [todayStart, weekStart, monthStart].map((from) =>
+          this.prisma.return.aggregate({
+            where: {
+              consumer_id: consumerId,
+              ...(branchId ? { branch_id: branchId } : {}),
+              return_date: { gte: from },
+            },
+            _sum: { total_refund: true },
+          }),
+        ),
+      );
+
+      const todayAmount = Number(todayStats._sum.total_amount || 0);
+      const weekAmount = Number(weekStats._sum.total_amount || 0);
+      const monthAmount = Number(monthStats._sum.total_amount || 0);
+      const todayRefund = Number(todayRefunds._sum.total_refund || 0);
+      const weekRefund = Number(weekRefunds._sum.total_refund || 0);
+      const monthRefund = Number(monthRefunds._sum.total_refund || 0);
+
       return {
         today_sales: todayStats._count || 0,
-        today_amount: todayStats._sum.total_amount || 0,
+        today_amount: todayAmount,
+        today_refund: todayRefund,
+        today_net_amount: todayAmount - todayRefund,
         week_sales: weekStats._count || 0,
-        week_amount: weekStats._sum.total_amount || 0,
+        week_amount: weekAmount,
+        week_refund: weekRefund,
+        week_net_amount: weekAmount - weekRefund,
         month_sales: monthStats._count || 0,
-        month_amount: monthStats._sum.total_amount || 0,
+        month_amount: monthAmount,
+        month_refund: monthRefund,
+        month_net_amount: monthAmount - monthRefund,
         top_products: topProductsWithDetails,
       };
     } catch (error) {
@@ -1659,6 +1685,28 @@ export class SalesService {
         },
       });
 
+      // Returns are counted in the period they were refunded in — the original
+      // sale may be older. A day-end report has to match the drawer, and the
+      // drawer was emptied by today's refunds, not by today's sales alone.
+      const returns = await this.prisma.return.findMany({
+        where: {
+          consumer_id: consumerId,
+          return_date: { gte: startOfDay, lte: endOfDay },
+          ...(eodDto.branch_id ? { branch_id: eodDto.branch_id } : {}),
+        },
+        include: {
+          payments: true,
+          items: {
+            include: {
+              sale_item: {
+                select: { id: true, quantity: true, line_total: true },
+              },
+              variant: { include: { product: { select: { name: true } } } },
+            },
+          },
+        },
+      });
+
       const operationalCosts = await this.prisma.operationalCost.findMany({
         where: {
           consumer_id: consumerId,
@@ -1683,6 +1731,17 @@ export class SalesService {
         (sum, sale) =>
           sum +
           sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+        0,
+      );
+
+      const totalReturns = returns.length;
+      const totalRefund = returns.reduce(
+        (sum, record) => sum + Number(record.total_refund),
+        0,
+      );
+      const totalItemsReturned = returns.reduce(
+        (sum, record) =>
+          sum + record.items.reduce((qty, item) => qty + item.quantity, 0),
         0,
       );
 
@@ -1724,6 +1783,67 @@ export class SalesService {
         transaction_count: data.transaction_count,
       }));
 
+      const returnPaymentMap = new Map<
+        string,
+        { total_amount: number; transaction_count: number }
+      >();
+
+      returns.forEach((record) => {
+        record.payments.forEach((payment) => {
+          const method = payment.payment_method;
+          const existing = returnPaymentMap.get(method) || {
+            total_amount: 0,
+            transaction_count: 0,
+          };
+          returnPaymentMap.set(method, {
+            total_amount: existing.total_amount + Number(payment.amount),
+            transaction_count: existing.transaction_count + 1,
+          });
+        });
+      });
+
+      const returnPaymentBreakdown: PaymentMethodBreakdown[] = Array.from(
+        returnPaymentMap.entries(),
+      ).map(([method, data]) => ({
+        payment_method: method,
+        total_amount: data.total_amount,
+        transaction_count: data.transaction_count,
+      }));
+
+      // Returned units per variant. ReturnItem carries no money of its own, so
+      // the refunded value is the returned share of the original line total.
+      const returnsByVariant = new Map<
+        number,
+        {
+          quantity: number;
+          amount: number;
+          variant_name: string;
+          product_name: string;
+          sku?: string;
+        }
+      >();
+
+      returns.forEach((record) => {
+        record.items.forEach((item) => {
+          const originalQty = Number(item.sale_item?.quantity) || 0;
+          const ratio = originalQty > 0 ? item.quantity / originalQty : 0;
+          const amount = Number(item.sale_item?.line_total || 0) * ratio;
+
+          const existing = returnsByVariant.get(item.variant_id) || {
+            quantity: 0,
+            amount: 0,
+            variant_name: item.variant.name,
+            product_name: item.variant.product.name,
+            sku: item.variant.sku || undefined,
+          };
+          returnsByVariant.set(item.variant_id, {
+            ...existing,
+            quantity: existing.quantity + item.quantity,
+            amount: existing.amount + amount,
+          });
+        });
+      });
+
       // Product sales statistics
       const productSalesMap = new Map<
         number,
@@ -1754,18 +1874,41 @@ export class SalesService {
         });
       });
 
-      const productSales: ProductSalesStats[] = Array.from(
-        productSalesMap.entries(),
-      )
-        .map(([variantId, data]) => ({
-          variant_id: variantId,
+      // A product returned today may have been sold in an earlier period, so it
+      // needs a row of its own rather than being dropped from the report.
+      returnsByVariant.forEach((data, variantId) => {
+        if (productSalesMap.has(variantId)) return;
+        productSalesMap.set(variantId, {
           variant_name: data.variant_name,
           product_name: data.product_name,
           sku: data.sku,
-          quantity_sold: data.quantity_sold,
-          total_amount: data.total_amount,
-          average_unit_price: data.total_amount / data.quantity_sold,
-        }))
+          quantity_sold: 0,
+          total_amount: 0,
+        });
+      });
+
+      const productSales: ProductSalesStats[] = Array.from(
+        productSalesMap.entries(),
+      )
+        .map(([variantId, data]) => {
+          const returned = returnsByVariant.get(variantId);
+          const refundAmount = returned?.amount ?? 0;
+
+          return {
+            variant_id: variantId,
+            variant_name: data.variant_name,
+            product_name: data.product_name,
+            sku: data.sku,
+            quantity_sold: data.quantity_sold,
+            total_amount: data.total_amount,
+            average_unit_price: data.quantity_sold
+              ? data.total_amount / data.quantity_sold
+              : 0,
+            quantity_returned: returned?.quantity ?? 0,
+            refund_amount: refundAmount,
+            net_amount: data.total_amount - refundAmount,
+          };
+        })
         .sort((a, b) => b.total_amount - a.total_amount); // Sort by total amount descending
 
       // Hourly sales breakdown
@@ -1823,6 +1966,9 @@ export class SalesService {
         paymentMethodBreakdown.find((p) => p.payment_method === 'CASH')
           ?.total_amount || 0;
       const nonCashSales = totalAmount - cashSales;
+      const cashRefunds =
+        returnPaymentBreakdown.find((p) => p.payment_method === 'CASH')
+          ?.total_amount || 0;
 
       const summary: EODSummary = {
         total_sales: totalSales,
@@ -1835,7 +1981,14 @@ export class SalesService {
         total_items_sold: totalItemsSold,
         unique_products_sold: uniqueProductIds.size,
         operational_costs: totalOperationalCosts,
-        net_operating_result: totalAmount - totalOperationalCosts,
+        total_returns: totalReturns,
+        total_refund: totalRefund,
+        total_items_returned: totalItemsReturned,
+        net_sale_amount: totalAmount - totalRefund,
+        cash_refunds: cashRefunds,
+        net_cash_sales: cashSales - cashRefunds,
+        // Refunds are money that left the business, same as an operating cost
+        net_operating_result: totalAmount - totalRefund - totalOperationalCosts,
       };
 
       return {
@@ -1846,6 +1999,7 @@ export class SalesService {
         branch_name: branchName,
         summary,
         payment_method_breakdown: paymentMethodBreakdown,
+        return_payment_breakdown: returnPaymentBreakdown,
         product_sales: productSales,
         hourly_sales: hourlySales,
         payment_status_breakdown: paymentStatusBreakdown,
@@ -1945,19 +2099,37 @@ export class SalesService {
     }
   }
 
+  /**
+   * Sale rows are never rewritten when a return happens, so the gross totals
+   * alone never move after a refund. Refunds booked against the sales in scope
+   * are aggregated alongside them and reported as total_refund / net_amount.
+   */
   private async calculateSummaryStats(where: any) {
     try {
-      const stats = await this.prisma.sale.aggregate({
-        where,
-        _count: true,
-        _sum: { total_amount: true },
-        _avg: { total_amount: true },
-      });
+      const [stats, refunds] = await Promise.all([
+        this.prisma.sale.aggregate({
+          where,
+          _count: true,
+          _sum: { total_amount: true },
+          _avg: { total_amount: true },
+        }),
+        this.prisma.return.aggregate({
+          where: { original_sale: where },
+          _count: true,
+          _sum: { total_refund: true },
+        }),
+      ]);
+
+      const totalAmount = Number(stats._sum.total_amount || 0);
+      const totalRefund = Number(refunds._sum.total_refund || 0);
 
       return {
         total_sales: stats._count || 0,
-        total_amount: stats._sum.total_amount || 0,
-        average_sale: stats._avg.total_amount || 0,
+        total_amount: totalAmount,
+        average_sale: Number(stats._avg.total_amount || 0),
+        total_refund: totalRefund,
+        return_count: refunds._count || 0,
+        net_amount: totalAmount - totalRefund,
       };
     } catch (error) {
       this.logger.error(`Error calculating summary stats`, errorStack(error));
@@ -2357,40 +2529,45 @@ export class SalesService {
         total_qty: number | bigint;
         total_sales: number | bigint;
         total_amount: string | number;
+        returned_qty: number | bigint;
+        returned_amount: string | number;
       };
 
       const branchFilter = branchId
         ? Prisma.sql`AND s.branch_id = ${branchId}`
         : Prisma.empty;
 
+      const returnBranchFilter = branchId
+        ? Prisma.sql`AND r.branch_id = ${branchId}`
+        : Prisma.empty;
+
+      // Sold and returned are each pre-aggregated to one row per variant before
+      // being joined — joining both detail tables at once would fan out and
+      // multiply the sold quantities by the number of return rows.
       const rows = await this.prisma.$queryRaw<VariantStatsRow[]>`
         SELECT
           pv.id          AS variant_id,
           p.name         AS product_name,
           pv.name        AS variant_name,
           pv.sku         AS sku,
-          COALESCE(SUM(fsi.quantity), 0)   AS total_qty,
-          COUNT(DISTINCT fsi.sale_id)      AS total_sales,
-          COALESCE(
-            SUM(
-              fsi.line_total
-              - COALESCE(fsi.average_discount_amount, 0)
-              - COALESCE(fsi.special_discount_amount, 0)
-              - COALESCE(fsi.promotion_discount_amount, 0)
-            ),
-            0
-          ) AS total_amount
+          COALESCE(sold.total_qty, 0)        AS total_qty,
+          COALESCE(sold.total_sales, 0)      AS total_sales,
+          COALESCE(sold.total_amount, 0)     AS total_amount,
+          COALESCE(ret.returned_qty, 0)      AS returned_qty,
+          COALESCE(ret.returned_amount, 0)   AS returned_amount
         FROM product_variants pv
         JOIN products p ON pv.product_id = p.id
         LEFT JOIN (
           SELECT
-            si.variant_id,
-            si.sale_id,
-            si.quantity,
-            si.line_total,
-            si.average_discount_amount,
-            si.special_discount_amount,
-            si.promotion_discount_amount
+            si.variant_id                 AS variant_id,
+            SUM(si.quantity)              AS total_qty,
+            COUNT(DISTINCT si.sale_id)    AS total_sales,
+            SUM(
+              si.line_total
+              - COALESCE(si.average_discount_amount, 0)
+              - COALESCE(si.special_discount_amount, 0)
+              - COALESCE(si.promotion_discount_amount, 0)
+            )                             AS total_amount
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           WHERE s.consumer_id = ${consumerId}
@@ -2400,22 +2577,55 @@ export class SalesService {
             AND s.sale_date >= ${start}
             AND s.sale_date <= ${end}
             ${branchFilter}
-        ) fsi ON fsi.variant_id = pv.id
+          GROUP BY si.variant_id
+        ) sold ON sold.variant_id = pv.id
+        LEFT JOIN (
+          SELECT
+            ri.variant_id      AS variant_id,
+            SUM(ri.quantity)   AS returned_qty,
+            -- return_items carry no money, so the refunded value is the
+            -- returned share of the original discounted line
+            SUM(
+              (
+                si.line_total
+                - COALESCE(si.average_discount_amount, 0)
+                - COALESCE(si.special_discount_amount, 0)
+                - COALESCE(si.promotion_discount_amount, 0)
+              ) * ri.quantity / NULLIF(si.quantity, 0)
+            ) AS returned_amount
+          FROM return_items ri
+          JOIN returns r ON ri.return_id = r.id
+          JOIN sale_items si ON ri.sale_item_id = si.id
+          WHERE r.consumer_id = ${consumerId}
+            AND r.return_date >= ${start}
+            AND r.return_date <= ${end}
+            ${returnBranchFilter}
+          GROUP BY ri.variant_id
+        ) ret ON ret.variant_id = pv.id
         WHERE p.consumer_id = ${consumerId}
-        GROUP BY pv.id, p.name, pv.name, pv.sku
-        ORDER BY total_amount DESC, total_sales DESC, product_name ASC, variant_name ASC
+        ORDER BY
+          (COALESCE(sold.total_amount, 0) - COALESCE(ret.returned_amount, 0)) DESC,
+          total_sales DESC, product_name ASC, variant_name ASC
         LIMIT ${limit} OFFSET ${skip}
       `;
 
-      const data = rows.map((row) => ({
-        variant_id: Number(row.variant_id),
-        product_name: row.product_name,
-        variant_name: row.variant_name,
-        sku: row.sku ?? null,
-        total_qty: Number(row.total_qty),
-        total_sales: Number(row.total_sales),
-        total_amount: Number(row.total_amount),
-      }));
+      const data = rows.map((row) => {
+        const totalAmount = Number(row.total_amount);
+        const returnedAmount = Number(row.returned_amount);
+
+        return {
+          variant_id: Number(row.variant_id),
+          product_name: row.product_name,
+          variant_name: row.variant_name,
+          sku: row.sku ?? null,
+          total_qty: Number(row.total_qty),
+          total_sales: Number(row.total_sales),
+          total_amount: totalAmount,
+          returned_qty: Number(row.returned_qty),
+          returned_amount: returnedAmount,
+          net_amount: totalAmount - returnedAmount,
+        };
+      });
 
       return {
         data,
@@ -2568,6 +2778,45 @@ export class SalesService {
         Number(totals._sum.promotion_discount_amount ?? 0);
       const salesCount = new Set(allItems.map((item) => item.sale_id)).size;
 
+      // Returns booked against these exact sale lines, so a variant that was
+      // sold and handed straight back does not read as a strong seller.
+      const returnedRows = await this.prisma.returnItem.groupBy({
+        by: ['sale_item_id'],
+        where: { sale_item: where },
+        _sum: { quantity: true },
+      });
+
+      const returnedBySaleItem = new Map(
+        returnedRows.map((row) => [row.sale_item_id, row._sum.quantity ?? 0]),
+      );
+
+      const returnedLines = await this.prisma.saleItem.findMany({
+        where: { ...where, id: { in: Array.from(returnedBySaleItem.keys()) } },
+        select: {
+          id: true,
+          quantity: true,
+          line_total: true,
+          average_discount_amount: true,
+          special_discount_amount: true,
+          promotion_discount_amount: true,
+        },
+      });
+
+      let returnedQty = 0;
+      let returnedAmount = 0;
+      for (const line of returnedLines) {
+        const qty = returnedBySaleItem.get(line.id) ?? 0;
+        const originalQty = Number(line.quantity) || 0;
+        const netLine =
+          Number(line.line_total) -
+          Number(line.average_discount_amount || 0) -
+          Number(line.special_discount_amount || 0) -
+          Number(line.promotion_discount_amount || 0);
+
+        returnedQty += qty;
+        returnedAmount += originalQty > 0 ? (netLine * qty) / originalQty : 0;
+      }
+
       return {
         variant: {
           id: variant.id,
@@ -2580,6 +2829,10 @@ export class SalesService {
           total_amount: totalAmount,
           avg_qty: salesCount > 0 ? totalQty / salesCount : 0,
           avg_amount: salesCount > 0 ? totalAmount / salesCount : 0,
+          returned_qty: returnedQty,
+          returned_amount: returnedAmount,
+          net_qty: totalQty - returnedQty,
+          net_amount: totalAmount - returnedAmount,
         },
         chart_data: Array.from(dailyMap.values()),
         data: items.map((item) => ({
@@ -2591,6 +2844,7 @@ export class SalesService {
             item.sale.customer?.name ?? item.sale.customer_name ?? null,
           branch_name: item.sale.branch?.name ?? null,
           qty: Number(item.quantity),
+          returned_qty: returnedBySaleItem.get(item.id) ?? 0,
           line_total:
             Number(item.line_total) -
             Number(item.average_discount_amount || 0) -
@@ -2681,15 +2935,43 @@ export class SalesService {
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
+    // Refunds are attributed to whoever served the original sale, over the same
+    // period as the sales themselves — otherwise a salesperson keeps credit for
+    // revenue the business gave back.
+    const refundRows = await this.prisma.return.findMany({
+      where: { consumer_id: consumerId, original_sale: where },
+      select: {
+        total_refund: true,
+        original_sale: { select: { served_by_id: true } },
+      },
+    });
+
+    const refundsByUser = new Map<number, { amount: number; count: number }>();
+    for (const row of refundRows) {
+      const userId = row.original_sale?.served_by_id;
+      if (!userId) continue;
+
+      const existing = refundsByUser.get(userId) ?? { amount: 0, count: 0 };
+      refundsByUser.set(userId, {
+        amount: existing.amount + Number(row.total_refund),
+        count: existing.count + 1,
+      });
+    }
+
     return grouped.map((g) => {
       const userId = g.served_by_id as number;
+      const totalSales = Number(g._sum.total_amount ?? 0);
+      const refunds = refundsByUser.get(userId) ?? { amount: 0, count: 0 };
 
       return {
         id: userId,
         name: userMap.get(userId)?.name ?? 'Unknown',
         email: userMap.get(userId)?.email ?? null,
-        totalSales: Number(g._sum.total_amount ?? 0),
+        totalSales,
         salesCount: g._count.id,
+        totalRefunds: refunds.amount,
+        returnsCount: refunds.count,
+        netSales: totalSales - refunds.amount,
       };
     });
   }
@@ -2773,12 +3055,41 @@ export class SalesService {
       }),
     ]);
 
+    // Refunds booked against this salesperson's sales in the same period, plus
+    // a per-row refund so an individual line explains itself.
+    const refunds = await this.prisma.return.findMany({
+      where: { consumer_id: consumerId, original_sale: where },
+      select: { total_refund: true, original_sale_id: true },
+    });
+
+    const refundBySaleId = new Map<number, number>();
+    let totalRefund = 0;
+    for (const refund of refunds) {
+      const amount = Number(refund.total_refund);
+      totalRefund += amount;
+      refundBySaleId.set(
+        refund.original_sale_id,
+        (refundBySaleId.get(refund.original_sale_id) ?? 0) + amount,
+      );
+    }
+
+    const totalAmount = Number(totals._sum.total_amount ?? 0);
+
     return {
       user: servedByUser,
-      data: sales,
+      data: sales.map((sale) => {
+        const refunded = refundBySaleId.get(sale.id) ?? 0;
+        return {
+          ...sale,
+          total_refund: refunded,
+          net_amount: Number(sale.total_amount) - refunded,
+        };
+      }),
       meta: {
         total,
-        total_amount: Number(totals._sum.total_amount ?? 0),
+        total_amount: totalAmount,
+        total_refund: totalRefund,
+        net_amount: totalAmount - totalRefund,
         page,
         limit,
         total_pages: Math.ceil(total / limit),
@@ -3040,11 +3351,28 @@ export class SalesService {
         _sum: { total_amount: true },
       });
 
+      // by_status stays gross: those buckets describe where orders sit in the
+      // pipeline, not revenue. Today's money figure does net out refunds.
+      const todayRefunds = await this.prisma.return.aggregate({
+        where: {
+          consumer_id: consumerId,
+          ...(branchId ? { branch_id: branchId } : {}),
+          return_date: { gte: todayStart },
+          original_sale: { is_online_order: true },
+        },
+        _sum: { total_refund: true },
+      });
+
+      const todayTotal = Number(todayStats._sum.total_amount) || 0;
+      const todayRefund = Number(todayRefunds._sum.total_refund) || 0;
+
       return {
         by_status: stats,
         today: {
           count: todayStats._count || 0,
-          total: Number(todayStats._sum.total_amount) || 0,
+          total: todayTotal,
+          refund: todayRefund,
+          net_total: todayTotal - todayRefund,
         },
       };
     } catch (error) {
@@ -3262,6 +3590,20 @@ export class SalesService {
       _sum: { quantity: true, line_total: true },
     });
 
+    // Units handed back in the same period. A sale that was returned did not
+    // move stock, so it cannot count towards the day's target.
+    const returnedGrouped = await this.prisma.returnItem.groupBy({
+      by: ['variant_id'],
+      where: {
+        return_record: {
+          consumer_id: consumerId,
+          return_date: { gte: startOfDay, lte: endOfDay },
+          ...(branchId ? { branch_id: branchId } : {}),
+        },
+      },
+      _sum: { quantity: true },
+    });
+
     // PIVOT MERGE
     const actualMap = new Map<number, { qty: number; amount: number }>(
       soldGrouped.map((row) => [
@@ -3273,11 +3615,19 @@ export class SalesService {
       ]),
     );
 
+    const returnedMap = new Map<number, number>(
+      returnedGrouped.map((row) => [row.variant_id, row._sum.quantity ?? 0]),
+    );
+
     const rows: DailyTargetRow[] = variantsWithTarget.map((variant) => {
       const daily_target = variant.daily_sale_objective ?? 0;
 
       const actual = actualMap.get(variant.id) ?? { qty: 0, amount: 0 };
-      const actual_sold = actual.qty;
+      const gross_sold = actual.qty;
+      const returned = returnedMap.get(variant.id) ?? 0;
+      // Returns of older sales can outrun today's sales; a negative target
+      // reading is noise, so the floor is zero.
+      const actual_sold = Math.max(0, gross_sold - returned);
 
       const achievement_pct =
         daily_target > 0
@@ -3292,6 +3642,8 @@ export class SalesService {
         variant_name: variant.name,
         sku: variant.sku ?? undefined,
         daily_target,
+        gross_sold,
+        returned,
         actual_sold,
         achievement_pct,
         gap,
@@ -3299,6 +3651,8 @@ export class SalesService {
     });
 
     const total_target = rows.reduce((s, r) => s + r.daily_target, 0);
+    const total_gross_sold = rows.reduce((s, r) => s + r.gross_sold, 0);
+    const total_returned = rows.reduce((s, r) => s + r.returned, 0);
     const total_sold = rows.reduce((s, r) => s + r.actual_sold, 0);
 
     const overall_achievement_pct =
@@ -3322,6 +3676,8 @@ export class SalesService {
       },
       summary: {
         total_target,
+        total_gross_sold,
+        total_returned,
         total_sold,
         overall_achievement_pct,
         // targeted_amount,

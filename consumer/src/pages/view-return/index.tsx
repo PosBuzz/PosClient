@@ -12,12 +12,13 @@ import {
   Tag,
   Typography,
 } from "antd";
-import saveAs from "file-saver";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { returnsApi } from "../../api/returns-api";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
-import { useMessageStore } from "../../stores/messageStore";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import type { ReturnExchange, ReturnItem } from "../../types/return.types";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 
@@ -26,7 +27,7 @@ const { Text } = Typography;
 export default function ViewReturn() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { messageApi } = useMessageStore();
+  const { preview, previewProps } = usePdfPreview();
 
   const {
     data: returnData,
@@ -145,23 +146,11 @@ export default function ViewReturn() {
     },
   ];
 
-  const handleDownloadPdf = async (id: number, saleNumber: string) => {
-    try {
-      // Call the API to generate and download PDF (similar to admin billing approach)
-      const pdfBlob = await returnsApi.downloadReturnPdf(id);
-
-      // Get the filename - you could also get this from response headers if backend sets it
-      const filename = `${saleNumber}.pdf`;
-
-      // Use file-saver to download the PDF
-      saveAs(pdfBlob, filename);
-
-      messageApi?.success("PDF receipt downloaded successfully!");
-    } catch (error: any) {
-      console.error("PDF download error:", error);
-      messageApi?.error("Failed to download PDF receipt");
-    }
-  };
+  const handlePreviewPdf = (id: number, returnNumber: string) =>
+    preview(() => returnsApi.downloadReturnPdf(id), {
+      title: `Return ${returnNumber}`,
+      fileName: `return-${returnNumber}.pdf`,
+    });
   return (
     <div>
       <PageTitle
@@ -183,10 +172,10 @@ export default function ViewReturn() {
           type="primary"
           icon={<FilePdfOutlined />}
           onClick={() =>
-            handleDownloadPdf(returnDetail.id, returnDetail.return_number)
+            handlePreviewPdf(returnDetail.id, returnDetail.return_number)
           }
         >
-          Download Return Receipt
+          Preview Return Receipt
         </Button>
       </Space>
 
@@ -354,6 +343,8 @@ export default function ViewReturn() {
             </Col>
           </Row>
         )}
+
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 }

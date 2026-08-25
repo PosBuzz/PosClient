@@ -46,6 +46,7 @@ import type {
   SaleListFilters,
 } from "../../types/sale.types";
 import { PaymentStatus } from "../../types/sale.types";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -86,7 +87,7 @@ const SalesTable = () => {
       showMessage("Sale deleted and stock restored", "success");
       setDeleteTarget(null);
       setDeleteReason("");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+      invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
       showMessage(
@@ -100,7 +101,7 @@ const SalesTable = () => {
     mutationFn: (id: number) => salesApi.restoreSale(id),
     onSuccess: () => {
       showMessage("Sale restored", "success");
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
+      invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
       showMessage(
@@ -653,7 +654,7 @@ const SalesTable = () => {
       {/* Sales Summary Cards */}
       {salesQuery.data?.summary && (
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Card>
               <Statistic
                 title="Total Sales"
@@ -662,7 +663,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Card>
               <Statistic
                 title="Total Amount"
@@ -672,7 +673,43 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
+            <Card>
+              <Statistic
+                title="Refunds"
+                value={salesQuery.data.summary.total_refund || 0}
+                prefix={takaPrefix}
+                precision={2}
+                valueStyle={
+                  salesQuery.data.summary.total_refund
+                    ? { color: "#cf1322" }
+                    : undefined
+                }
+                suffix={
+                  salesQuery.data.summary.return_count ? (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {salesQuery.data.summary.return_count} return
+                      {salesQuery.data.summary.return_count > 1 ? "s" : ""}
+                    </Text>
+                  ) : undefined
+                }
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Card>
+              <Statistic
+                title="Net Amount"
+                value={
+                  salesQuery.data.summary.net_amount ??
+                  salesQuery.data.summary.total_amount
+                }
+                prefix={takaPrefix}
+                precision={2}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
             <Card>
               <Statistic
                 title="Average Sale"
@@ -682,7 +719,7 @@ const SalesTable = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <Card>
               <Statistic
                 title="Period"
@@ -976,21 +1013,27 @@ const SalesTable = () => {
           dataSource={salesQuery.data?.data || []}
           loading={salesQuery.isLoading}
           rowKey="id"
-          onChange={(pagination, _filters, sorter) => {
-            // Handle pagination
-            const newPage = pagination.current || 1;
-            const newLimit = pagination.pageSize || 20;
+          onChange={(pagination, _filters, sorter, extra) => {
+            // antd fires onChange for every table interaction, so branch on the
+            // action: sorting used to run on page changes too and knock the
+            // page back to 1, making "next page" a no-op.
+            if (extra.action === "paginate") {
+              const newPage = pagination.current || 1;
+              const newLimit = pagination.pageSize || 20;
 
-            if (newPage !== filters.page || newLimit !== filters.limit) {
-              setFilters((prev) => ({
-                ...prev,
-                page: newPage,
-                limit: newLimit,
-              }));
+              if (newPage !== filters.page || newLimit !== filters.limit) {
+                setFilters((prev) => ({
+                  ...prev,
+                  page: newPage,
+                  // Changing page size re-anchors the list at the first page
+                  limit: newLimit,
+                  ...(newLimit !== prev.limit ? { page: 1 } : {}),
+                }));
+              }
+              return;
             }
 
-            // Handle sorting
-            if (sorter && !Array.isArray(sorter)) {
+            if (extra.action === "sort" && sorter && !Array.isArray(sorter)) {
               const sortField = sorter.field as string;
               const sortOrder =
                 sorter.order === "ascend"

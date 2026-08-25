@@ -30,6 +30,10 @@ export interface ProductSalesStats {
   quantity_sold: number;
   total_amount: number;
   average_unit_price: number;
+  // Units handed back and what they were worth, for returns booked in the period
+  quantity_returned: number;
+  refund_amount: number;
+  net_amount: number;
 }
 
 export interface EODSummary {
@@ -42,6 +46,15 @@ export interface EODSummary {
   total_items_sold: number;
   unique_products_sold: number;
   operational_costs: number;
+  // Returns booked in this period. Sales stay gross so they reconcile with the
+  // sales list; the refunds are reported next to them and netted out below.
+  total_returns: number;
+  total_refund: number;
+  total_items_returned: number;
+  net_sale_amount: number;
+  // Cash actually paid back out of the drawer, so the drawer can be counted
+  cash_refunds: number;
+  net_cash_sales: number;
   net_operating_result: number;
 }
 
@@ -53,6 +66,7 @@ export interface EODReportResponse {
   branch_name?: string;
   summary: EODSummary;
   payment_method_breakdown: PaymentMethodBreakdown[];
+  return_payment_breakdown: PaymentMethodBreakdown[];
   product_sales: ProductSalesStats[];
   hourly_sales: {
     hour: number;

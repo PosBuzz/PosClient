@@ -31,6 +31,10 @@ export interface DailyTargetRow {
   variant_name: string;
   sku?: string;
   daily_target: number;
+  // Units sold, units handed back in the period, and the difference — a target
+  // is only met by units that stayed sold
+  gross_sold: number;
+  returned: number;
   actual_sold: number;
   achievement_pct: number;
   gap: number;
@@ -51,6 +55,8 @@ export interface DailyTargetReportResponse {
   };
   summary: {
     total_target: number;
+    total_gross_sold: number;
+    total_returned: number;
     total_sold: number;
     overall_achievement_pct: number;
     // targeted_amount: number;

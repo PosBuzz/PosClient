@@ -505,6 +505,17 @@ export class ReturnService {
         };
       });
 
+      await this.reverseRewardPointsForRefund({
+        consumerId,
+        userId,
+        saleId: originalSale.id,
+        saleNumber: originalSale.sale_number,
+        customerId: originalSale.customer_id,
+        saleTotal: parseFloat(originalSale.total_amount.toString()),
+        refundAmount: totalRefund,
+        returnNumber: result.return_number,
+      });
+
       return result;
     } catch (error) {
       if (error instanceof HttpException) {
@@ -518,6 +529,82 @@ export class ReturnService {
       throw new HttpException(
         'Failed to create return',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Points are earned on money the customer spent, so a refund has to take back
+   * the matching share — otherwise a buy-and-return cycle mints points. Mirrors
+   * what sale deletion does: an offsetting ADJUSTMENT, never a rewrite of the
+   * original EARN, so the customer's history stays intact.
+   */
+  private async reverseRewardPointsForRefund(context: {
+    consumerId: number;
+    userId: number;
+    saleId: number;
+    saleNumber: string;
+    customerId: number | null;
+    saleTotal: number;
+    refundAmount: number;
+    returnNumber: string;
+  }) {
+    const {
+      consumerId,
+      userId,
+      saleId,
+      saleNumber,
+      customerId,
+      saleTotal,
+      refundAmount,
+      returnNumber,
+    } = context;
+
+    if (!customerId || refundAmount <= 0 || saleTotal <= 0) return;
+
+    try {
+      const transactions = await this.prisma.rewardsPointTransaction.findMany({
+        where: {
+          sale_id: saleId,
+          consumer_id: consumerId,
+          customer_id: customerId,
+          type: { in: ['EARN', 'ADJUSTMENT'] },
+        },
+        select: { points: true, type: true },
+      });
+
+      // The share is taken off what the sale originally earned, so a second
+      // partial return reverses its own share rather than a share of what is
+      // left. What still stands caps it, so repeated returns cannot overdraw.
+      const earned = transactions
+        .filter((transaction) => transaction.type === 'EARN')
+        .reduce((sum, transaction) => sum + transaction.points, 0);
+      const remaining = transactions.reduce(
+        (sum, transaction) => sum + transaction.points,
+        0,
+      );
+
+      if (earned <= 0 || remaining <= 0) return;
+
+      const ratio = Math.min(1, refundAmount / saleTotal);
+      const points = Math.min(Math.round(earned * ratio), remaining);
+
+      if (points <= 0) return;
+
+      await this.rewardsService.adjustPoints(
+        consumerId,
+        {
+          customer_id: customerId,
+          points: -points,
+          description: `Points reversed - return #${returnNumber} against sale #${saleNumber}`,
+        } as any,
+        userId,
+      );
+    } catch (error) {
+      // Rewards bookkeeping must never invalidate a refund that already happened
+      this.logger.error(
+        `Failed to reverse rewards points for return against sale ${saleId}`,
+        errorStack(error),
       );
     }
   }

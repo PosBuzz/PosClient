@@ -131,9 +131,26 @@ const DailyTargetReport = () => {
       key: "daily_target",
     },
     {
+      title: "Sold",
+      dataIndex: "gross_sold",
+      key: "gross_sold",
+    },
+    {
+      title: "Returned",
+      dataIndex: "returned",
+      key: "returned",
+      render: (returned: number) =>
+        returned ? (
+          <Text type="danger">{returned}</Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
+    {
       title: "Actual Sold",
       dataIndex: "actual_sold",
       key: "actual_sold",
+      render: (actual: number) => <Text strong>{actual}</Text>,
     },
     {
       title: "Gap",

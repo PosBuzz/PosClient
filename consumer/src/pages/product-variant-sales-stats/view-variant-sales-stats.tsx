@@ -179,7 +179,14 @@ const ViewVariantSalesStats = () => {
           <Money value={v} />
         </Text>
       ),
-      sorter: (a: any, b: any) => a.line_total - b.line_total,
+    },
+    {
+      title: "Returned",
+      dataIndex: "returned_qty",
+      key: "returned_qty",
+      align: "right" as const,
+      render: (v: number) =>
+        v ? <Text type="danger">{v}</Text> : <Text type="secondary">—</Text>,
     },
     {
       title: "Status",
@@ -285,6 +292,34 @@ const ViewVariantSalesStats = () => {
             <Statistic
               title="Total Amount"
               value={summary.total_amount ?? 0}
+              prefix={takaPrefix}
+              precision={2}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card>
+            <Statistic
+              title="Returned"
+              value={summary.returned_qty ?? 0}
+              suffix={
+                summary.returned_amount ? (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    (<Money value={summary.returned_amount} />)
+                  </Text>
+                ) : undefined
+              }
+              valueStyle={
+                summary.returned_qty ? { color: "#cf1322" } : undefined
+              }
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8} lg={6}>
+          <Card>
+            <Statistic
+              title="Net Amount"
+              value={summary.net_amount ?? summary.total_amount ?? 0}
               prefix={takaPrefix}
               precision={2}
             />
