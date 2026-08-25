@@ -36,6 +36,7 @@ import CustomerModal from "../../components/CustomerModal";
 import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import {
@@ -556,11 +557,8 @@ const NewSale = () => {
         queryKey: [queryKeys.productsForInventory],
       });
       queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
+      invalidateSalesReports(queryClient);
       if (paymentStatus === PaymentStatus.PARTIAL) {
         queryClient.invalidateQueries({
           queryKey: [queryKeys.partialPayments],

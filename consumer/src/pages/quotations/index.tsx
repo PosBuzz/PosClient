@@ -29,12 +29,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import type { Sale, SaleListFilters } from "../../types/sale.types";
-import saveAs from "file-saver";
 import { setPageTitle } from "../../utils/setPageTitle";
-import { useMessageStore } from "../../stores/messageStore";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -43,7 +44,7 @@ const { RangePicker } = DatePicker;
 const QuotationsTable = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const { messageApi } = useMessageStore();
+  const { preview, previewProps } = usePdfPreview();
 
   const [filters, setFilters] = useState<SaleListFilters>({
     page: 1,
@@ -95,23 +96,11 @@ const QuotationsTable = () => {
     });
   };
 
-  const handleDownloadPdf = async (id: number, saleNumber: string) => {
-    try {
-      // Call the API to generate and download PDF (similar to admin billing approach)
-      const pdfBlob = await salesApi.downloadQuotationPdf(id);
-
-      // Get the filename - you could also get this from response headers if backend sets it
-      const filename = `${saleNumber}.pdf`;
-
-      // Use file-saver to download the PDF
-      saveAs(pdfBlob, filename);
-
-      messageApi?.success("PDF receipt downloaded successfully!");
-    } catch (error: any) {
-      console.error("PDF download error:", error);
-      messageApi?.error("Failed to download PDF receipt");
-    }
-  };
+  const handlePreviewPdf = (id: number, saleNumber: string) =>
+    preview(() => salesApi.downloadQuotationPdf(id), {
+      title: `Quotation ${saleNumber}`,
+      fileName: `quotation-${saleNumber}.pdf`,
+    });
 
   const columns = [
     {
@@ -210,11 +199,11 @@ const QuotationsTable = () => {
               onClick={() => navigate(`/add-quotation?copy_from=${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Download PDF Receipt">
+          <Tooltip title="Preview PDF Quotation">
             <Button
               type="text"
               icon={<FilePdfOutlined />}
-              onClick={() => handleDownloadPdf(record.id!, record.sale_number)}
+              onClick={() => handlePreviewPdf(record.id!, record.sale_number)}
             />
           </Tooltip>
         </Space>
@@ -368,6 +357,8 @@ const QuotationsTable = () => {
           }}
         />
       </Card>
+
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 };

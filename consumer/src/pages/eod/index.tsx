@@ -1,5 +1,5 @@
 import { Money, takaPrefix } from "../../components/Currency";
-import { DownloadOutlined } from "@ant-design/icons";
+import { FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -32,6 +32,9 @@ import {
 } from "recharts";
 import { salesApi } from "../../api/sales-api";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import {
@@ -63,7 +66,7 @@ const EODReport = () => {
     undefined,
   );
   const [period, setPeriod] = useState<"day" | "month" | "all">("day");
-  const [downloading, setDownloading] = useState(false);
+  const { preview, previewProps } = usePdfPreview();
 
   // Get user's branches
   const userBranches = user?.branches || [];
@@ -191,6 +194,27 @@ const EODReport = () => {
         a.total_amount - b.total_amount,
     },
     {
+      title: "Qty Returned",
+      dataIndex: "quantity_returned",
+      key: "quantity_returned",
+      render: (qty: number) =>
+        qty ? (
+          <Text type="danger">{qty}</Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+      sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
+        a.quantity_returned - b.quantity_returned,
+    },
+    {
+      title: "Net Amount",
+      dataIndex: "net_amount",
+      key: "net_amount",
+      render: (amount: number) => <Money value={amount} />,
+      sorter: (a: ProductSalesStats, b: ProductSalesStats) =>
+        a.net_amount - b.net_amount,
+    },
+    {
       title: "Avg Unit Price",
       dataIndex: "average_unit_price",
       key: "average_unit_price",
@@ -212,22 +236,23 @@ const EODReport = () => {
         rightSection={
           <Button
             type="primary"
-            icon={<DownloadOutlined />}
-            loading={downloading}
-            onClick={async () => {
-              setDownloading(true);
-              try {
-                await salesApi.downloadBusinessReportPdf({
-                  date: selectedDate,
-                  branch_id: selectedBranch,
-                  period,
-                });
-              } finally {
-                setDownloading(false);
-              }
-            }}
+            icon={<FilePdfOutlined />}
+            onClick={() =>
+              preview(
+                () =>
+                  salesApi.getBusinessReportPdf({
+                    date: selectedDate,
+                    branch_id: selectedBranch,
+                    period,
+                  }),
+                {
+                  title: "Business Report",
+                  fileName: `business-report-${selectedDate}.pdf`,
+                },
+              )
+            }
           >
-            Download PDF
+            Preview PDF
           </Button>
         }
       />
@@ -322,8 +347,71 @@ const EODReport = () => {
             <Col span={6}>
               <Card>
                 <Statistic
+                  title="Refunds"
+                  value={eodData.summary.total_refund}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={
+                    eodData.summary.total_refund
+                      ? { color: "#cf1322" }
+                      : undefined
+                  }
+                />
+                {eodData.summary.total_returns > 0 && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {eodData.summary.total_returns} return
+                    {eodData.summary.total_returns > 1 ? "s" : ""} ·{" "}
+                    {eodData.summary.total_items_returned} item
+                    {eodData.summary.total_items_returned > 1 ? "s" : ""}
+                  </Text>
+                )}
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Net Sales"
+                  value={eodData.summary.net_sale_amount}
+                  prefix={takaPrefix}
+                  precision={2}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Cash position: the drawer is emptied by refunds as well as filled
+              by sales, so both sides are shown for the count-up */}
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col span={6}>
+              <Card>
+                <Statistic
                   title="Cash Sales"
                   value={eodData.summary.cash_sales}
+                  prefix={takaPrefix}
+                  precision={2}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Cash Refunds"
+                  value={eodData.summary.cash_refunds}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={
+                    eodData.summary.cash_refunds
+                      ? { color: "#cf1322" }
+                      : undefined
+                  }
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="Net Cash"
+                  value={eodData.summary.net_cash_sales}
                   prefix={takaPrefix}
                   precision={2}
                 />
@@ -377,6 +465,9 @@ const EODReport = () => {
                         : "#cf1322",
                   }}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  After refunds and operational costs
+                </Text>
               </Card>
             </Col>
           </Row>
@@ -476,6 +567,19 @@ const EODReport = () => {
             </Row>
           </Card>
 
+          {/* Refund Method Breakdown */}
+          {eodData.return_payment_breakdown.length > 0 && (
+            <Card title="Refund Method Breakdown" style={{ marginBottom: 24 }}>
+              <Table
+                columns={paymentMethodColumns}
+                dataSource={eodData.return_payment_breakdown}
+                rowKey="payment_method"
+                pagination={false}
+                size="small"
+              />
+            </Card>
+          )}
+
           {/* Hourly Sales Chart */}
           {period === "day" && hourlyChartData.length > 0 && (
             <Card
@@ -566,6 +670,8 @@ const EODReport = () => {
           </div>
         </Card>
       )}
+
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 };

@@ -39,6 +39,7 @@ import type {
   CreateReturnPaymentForm,
 } from "../../types/return.types";
 import { PaymentMethod } from "../../types/sale.types";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { useMessageStore } from "../../stores/messageStore";
 import {
@@ -108,6 +109,10 @@ const CreateReturn = () => {
     onSuccess: (data) => {
       messageApi?.success("Return created successfully!");
       queryClient.invalidateQueries({ queryKey: [queryKeys.returns] });
+      // A refund changes what the sale and every roll-up over it are worth, so
+      // drop those caches too — otherwise the totals stay at pre-return values
+      // until the entries go stale on their own.
+      invalidateSalesReports(queryClient);
       navigate(`/returns/view/${data.id}`);
     },
     onError: (error: any) => {

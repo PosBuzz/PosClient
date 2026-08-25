@@ -56,6 +56,34 @@ const UserSalesTable: React.FC<UserSalesTableProps> = ({
       sorter: (a: any, b: any) => a.totalSales - b.totalSales,
     },
     {
+      title: "Refunds",
+      dataIndex: "totalRefunds",
+      key: "totalRefunds",
+      align: "right" as const,
+      render: (value: number, record: any) =>
+        value ? (
+          <Text type="danger">
+            <Money value={value} />
+            {record.returnsCount ? ` (${record.returnsCount})` : ""}
+          </Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+      sorter: (a: any, b: any) => (a.totalRefunds ?? 0) - (b.totalRefunds ?? 0),
+    },
+    {
+      title: "Net Sales",
+      dataIndex: "netSales",
+      key: "netSales",
+      align: "right" as const,
+      render: (value: number) => (
+        <Text strong>
+          <Money value={value ?? 0} />
+        </Text>
+      ),
+      sorter: (a: any, b: any) => (a.netSales ?? 0) - (b.netSales ?? 0),
+    },
+    {
       title: "Transactions",
       dataIndex: "salesCount",
       key: "salesCount",

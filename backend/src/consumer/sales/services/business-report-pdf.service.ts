@@ -54,6 +54,7 @@ export class BusinessReportPdfService {
       });
       this.summary(doc, report);
       this.paymentTable(doc, report);
+      this.refundTable(doc, report);
       this.costTable(doc, report);
       this.productTable(doc, report);
 
@@ -123,11 +124,14 @@ export class BusinessReportPdfService {
   private summary(doc: PDFKit.PDFDocument, report: EODReportResponse) {
     const items: [string, string][] = [
       ['GROSS SALES', this.money(report.summary.total_amount)],
+      ['REFUNDS', this.money(report.summary.total_refund)],
+      ['NET SALES', this.money(report.summary.net_sale_amount)],
       ['OPERATIONAL COSTS', this.money(report.summary.operational_costs)],
       ['NET OPERATING RESULT', this.money(report.summary.net_operating_result)],
       ['TRANSACTIONS', String(report.summary.total_transactions)],
       ['ITEMS SOLD', String(report.summary.total_items_sold)],
       ['AVERAGE SALE', this.money(report.summary.average_transaction_value)],
+      ['CASH IN DRAWER', this.money(report.summary.net_cash_sales)],
     ];
     const boxWidth = (this.width - 12) / 3;
     const startY = doc.y;
@@ -148,13 +152,15 @@ export class BusinessReportPdfService {
         .font('Helvetica-Bold')
         .fontSize(12)
         .fillColor(
-          index === 2 && report.summary.net_operating_result < 0
+          (index === 1 && report.summary.total_refund > 0) ||
+            (index === 4 && report.summary.net_operating_result < 0)
             ? '#b91c1c'
             : '#111827',
         )
         .text(value, x + 9, y + 27, { width: boxWidth - 18 });
     });
-    doc.y = startY + 116;
+    const rowCount = Math.ceil(items.length / 3);
+    doc.y = startY + rowCount * 62 - 6;
   }
 
   private paymentTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
@@ -167,6 +173,24 @@ export class BusinessReportPdfService {
     this.table(
       doc,
       ['Method', 'Transactions', 'Amount'],
+      rows,
+      [245, 100, 160],
+      [0, 1, 2],
+    );
+  }
+
+  private refundTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
+    if (!report.return_payment_breakdown.length) return;
+
+    this.section(doc, 'REFUNDS PAID');
+    const rows = report.return_payment_breakdown.map((item) => [
+      this.human(item.payment_method),
+      String(item.transaction_count),
+      this.money(item.total_amount),
+    ]);
+    this.table(
+      doc,
+      ['Method', 'Refunds', 'Amount'],
       rows,
       [245, 100, 160],
       [0, 1, 2],
@@ -197,14 +221,15 @@ export class BusinessReportPdfService {
       product.product_name,
       product.variant_name,
       String(product.quantity_sold),
-      this.money(product.total_amount),
+      product.quantity_returned ? String(product.quantity_returned) : '-',
+      this.money(product.net_amount),
     ]);
     this.table(
       doc,
-      ['Product', 'Variant', 'Qty', 'Sales'],
+      ['Product', 'Variant', 'Qty', 'Ret', 'Net sales'],
       rows,
-      [190, 150, 55, 110],
-      [0, 0, 1, 2],
+      [170, 130, 45, 40, 120],
+      [0, 0, 1, 1, 2],
     );
     if (!rows.length) this.empty(doc, 'No product sales in this period.');
   }

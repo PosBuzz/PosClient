@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
  * Permanently erases a tenant and everything belonging to it.
  *
  * A plain `consumer.delete()` cannot do this: the cascade from `consumers`
- * reaches 52 tables, and 20 of the foreign keys along the way are declared
+ * reaches 55 tables, and 20 of the foreign keys along the way are declared
  * RESTRICT (for example `inventory_batches_branch_id_fkey`), which aborts the
  * delete. Those RESTRICTs are deliberate — they stop a branch delete from
  * silently erasing its stock ledger — so this service works around them by
@@ -22,7 +22,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
  * predicate that selects the rows belonging to consumer `$1`, reached through
  * the table's owning parent.
  */
-const SCOPE: Record<string, string> = {
+export const SCOPE: Record<string, string> = {
   product_variants: `product_id IN (SELECT id FROM products WHERE consumer_id = $1)`,
   price_history: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
   product_serials: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
@@ -45,6 +45,7 @@ const SCOPE: Record<string, string> = {
   deduction_payments: `deduction_id IN (SELECT id FROM deductions WHERE consumer_id = $1)`,
   expense_payments: `expense_id IN (SELECT id FROM "Expense" WHERE consumer_id = $1)`,
   overtime_payments: `overtime_id IN (SELECT id FROM overtimes WHERE consumer_id = $1)`,
+  support_ticket_messages: `ticket_id IN (SELECT id FROM support_tickets WHERE consumer_id = $1)`,
 };
 
 interface TableInfo {

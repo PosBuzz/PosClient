@@ -61,6 +61,8 @@ const ViewUserSalesStats = () => {
 
   const sales: Sale[] = data?.data ?? [];
   const totalAmount = data?.meta?.total_amount ?? 0;
+  const totalRefund = data?.meta?.total_refund ?? 0;
+  const netAmount = data?.meta?.net_amount ?? totalAmount;
   const totalTransactions = data?.meta?.total ?? 0;
   const averageAmount =
     totalTransactions > 0 ? totalAmount / totalTransactions : 0;
@@ -102,6 +104,20 @@ const ViewUserSalesStats = () => {
           <Money value={v} />
         </Text>
       ),
+    },
+    {
+      title: "Refunded",
+      dataIndex: "total_refund",
+      key: "total_refund",
+      align: "right" as const,
+      render: (v: number) =>
+        v ? (
+          <Text type="danger">
+            <Money value={v} />
+          </Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     {
       title: "Status",
@@ -162,6 +178,25 @@ const ViewUserSalesStats = () => {
             <Statistic
               title="Total Sales Amount"
               value={totalAmount}
+              precision={2}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Card>
+            <Statistic
+              title="Refunds"
+              value={totalRefund}
+              precision={2}
+              valueStyle={totalRefund ? { color: "#cf1322" } : undefined}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Card>
+            <Statistic
+              title="Net Sales Amount"
+              value={netAmount}
               precision={2}
             />
           </Card>
