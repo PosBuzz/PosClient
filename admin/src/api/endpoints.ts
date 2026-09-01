@@ -12,6 +12,8 @@ export const endpoints = {
   logout: "/auth/admin-logout",
   refreshToken: "/auth/admin-refresh-token",
   consumer: "/admin/consumers",
+  consumerDataImports: "/admin/consumers/data-imports",
+  consumerDataImportPreview: "/admin/consumers/data-imports/preview",
   checkSubdomain: "/admin/consumers/check-subdomain",
   plan: "/admin/plans",
   user: "/admin/users",
@@ -33,7 +35,8 @@ export const endpoints = {
   supportTickets: "/admin/support/tickets",
   supportTicketStats: "/admin/support/tickets/stats",
   supportTicket: (id: number) => `/admin/support/tickets/${id}`,
-  supportTicketMessages: (id: number) => `/admin/support/tickets/${id}/messages`,
+  supportTicketMessages: (id: number) =>
+    `/admin/support/tickets/${id}/messages`,
   backup: "/admin/backup",
   restore: "/admin/restore",
   downloadBillingInvoice: `${baseUrlWithPrefix}/admin/billing/invoice/pdf`,

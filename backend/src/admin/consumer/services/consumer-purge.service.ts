@@ -46,6 +46,8 @@ export const SCOPE: Record<string, string> = {
   expense_payments: `expense_id IN (SELECT id FROM "Expense" WHERE consumer_id = $1)`,
   overtime_payments: `overtime_id IN (SELECT id FROM overtimes WHERE consumer_id = $1)`,
   support_ticket_messages: `ticket_id IN (SELECT id FROM support_tickets WHERE consumer_id = $1)`,
+  consumer_data_imports: `source_consumer_id = $1 OR target_consumer_id = $1`,
+  consumer_import_mappings: `source_consumer_id = $1 OR target_consumer_id = $1`,
 };
 
 interface TableInfo {
