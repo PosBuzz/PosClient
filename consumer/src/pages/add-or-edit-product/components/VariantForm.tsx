@@ -20,9 +20,7 @@ import { FormAttribute, FormSerial } from "../../../types/product.types";
 import ImageInput from "../../../components/ImageInput";
 import { ProductFormState, ValidationState, VariantBatchInput } from "../types";
 import MasterDataSelector from "./MasterDataSelector";
-import VariantAttributesSection from "./VariantAttributesSection";
 import VariantBatchSection from "./VariantBatchSection";
-import VariantSerialsSection from "./VariantSerialsSection";
 
 // Full form for a single variant: identity, pricing, units, media, and nested tabs.
 
