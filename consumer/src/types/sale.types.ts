@@ -286,6 +286,8 @@ export interface ProductVariantForSale {
   sku?: string;
   barcode?: string;
   brand_id?: number;
+  category_id?: number;
+  category_name?: string;
   regular_price: number;
   wholesale_price?: number;
   image?: string;

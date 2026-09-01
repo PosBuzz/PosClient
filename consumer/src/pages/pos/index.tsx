@@ -83,6 +83,8 @@ import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useModalStore } from "../../stores/modalStore";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
+import { getPosLayout } from "../../constants/pos-layout";
+import RestaurantPosLayout from "./RestaurantPosLayout";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -95,6 +97,7 @@ const NewSale = () => {
   const { messageApi } = useMessageStore();
   const { modal } = useModalStore();
   const isDarkMode = useDarkMode();
+  const posLayout = getPosLayout();
 
   // Watch form values for real-time calculations
   const averageDiscountAmount =
@@ -875,6 +878,192 @@ const NewSale = () => {
       ),
     },
   ];
+  if (posLayout === "restaurant") {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+      <CustomerModal
+        open={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        onCreateCustomer={async (customer) => {
+          try {
+            const newCustomer = await post(endpoints.createCustomer, customer);
+            setSelectedCustomer(newCustomer);
+            setCustomers([...customers, newCustomer]);
+            form.setFieldsValue({ customer_id: newCustomer.id });
+            queryClient.invalidateQueries({
+              queryKey: [queryKeys.customers],
+            });
+            messageApi?.success("Customer created successfully");
+          } catch (error) {
+            console.error("Error creating customer:", error);
+            messageApi?.error("Failed to create customer");
+          }
+        }}
+      />
+
+      <Drawer
+        title="Available Promotions"
+        open={promotionDrawerOpen}
+        onClose={() => setPromotionDrawerOpen(false)}
+        width={460}
+      >
+        <List
+          loading={activePromotionsQuery.isLoading}
+          locale={{ emptyText: "No active promotions found" }}
+          dataSource={activePromotionsQuery.data || []}
+          renderItem={(promotion) => {
+            const eligibility = promotionEligibilityMap[promotion.id];
+            const isAvailableNow = Boolean(eligibility?.is_eligible);
+            const isApplied = appliedPromotions.some(
+              (item) => item.id === promotion.id,
+            );
+
+            return (
+              <List.Item
+                actions={[
+                  <Button
+                    key={`apply-${promotion.id}`}
+                    type={isApplied ? "default" : "primary"}
+                    size="small"
+                    loading={applyingPromotionId === promotion.id}
+                    onClick={() => {
+                      if (isApplied) {
+                        removeAppliedPromotion(promotion.id);
+                        return;
+                      }
+                      applyPromotionToCurrentSale(promotion);
+                    }}
+                  >
+                    {isApplied ? "Remove" : "Apply"}
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <span>{promotion.name}</span>
+                      <Tag
+                        color={
+                          promotion.scope === "BRAND"
+                            ? "blue"
+                            : promotion.scope === "BUNDLE"
+                              ? "purple"
+                              : "green"
+                        }
+                      >
+                        {promotion.scope}
+                      </Tag>
+                      {isApplied ? <Tag color="green">Applied</Tag> : null}
+                      {isAvailableNow ? (
+                        <Tag color="success">Available</Tag>
+                      ) : null}
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical" size={2}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {promotion.discount_type === "percentage"
+                          ? `${promotion.discount_value}% discount`
+                          : `${formatCurrency(
+                              Number(promotion.discount_value),
+                            )} discount`}
+                      </Text>
+                      {promotion.description ? (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {promotion.description}
+                        </Text>
+                      ) : null}
+                      {selectedItems.length > 0 &&
+                      eligibility &&
+                      !eligibility.is_eligible ? (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {eligibility.reason ||
+                            "Not eligible for current cart"}
+                        </Text>
+                      ) : null}
+                    </Space>
+                  }
+                />
+              </List.Item>
+            );
+          }}
+        />
+      </Drawer>
+
+        <Form
+          form={form}
+          onFinish={onFinish}
+          layout="vertical"
+          style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+        >
+          <RestaurantPosLayout
+            companyName={user?.company_name}
+            userName={user?.name}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement
+                  .requestFullscreen()
+                  .then(() => setIsFullscreen(true))
+                  .catch(() => setIsFullscreen(false));
+              } else {
+                document.exitFullscreen().then(() => setIsFullscreen(false));
+              }
+            }}
+            onBack={() => navigate("/")}
+            onOpenLayoutSettings={() => navigate("/pos-layout-settings")}
+            onOpenPromotions={() => setPromotionDrawerOpen(true)}
+            promotionCount={(activePromotionsQuery.data || []).length}
+            selectedBranch={selectedBranch}
+            userBranches={userBranches}
+            onBranchChange={handleBranchChange}
+            customers={customers}
+            selectedCustomer={selectedCustomer}
+            onCustomerChange={(value) => {
+              const customer = customers.find((item) => item.id === value);
+              setSelectedCustomer(customer || null);
+              form.setFieldsValue({ customer_id: value });
+            }}
+            onAddCustomer={() => setCustomerModalOpen(true)}
+            servedByUsers={servedByUsers}
+            selectedServedByUser={selectedServedByUser}
+            onServedByChange={(value) => {
+              const staff = servedByUsers.find((item) => item.id === value);
+              setSelectedServedByUser(staff || null);
+              form.setFieldsValue({ served_by_id: value });
+            }}
+            priceType={priceType}
+            onPriceTypeChange={setPriceType}
+            averageDiscountType={averageDiscountType}
+            onAverageDiscountTypeChange={setAverageDiscountType}
+            products={filteredVariants}
+            productsLoading={productsForSaleQuery.isLoading}
+            onProductSearch={setProductSearch}
+            onAddProduct={addToSale}
+            selectedItems={selectedItems}
+            onUpdateQuantity={updateItemQuantity}
+            onRemoveItem={removeItem}
+            appliedPromotions={appliedPromotions}
+            onRemovePromotion={removeAppliedPromotion}
+            onClearPromotions={clearAppliedPromotion}
+            salePayments={salePayments}
+            onSalePaymentsChange={setSalePayments}
+            totals={totals}
+            loading={loading}
+            onCancel={handleCancel}
+          />
+        </Form>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
