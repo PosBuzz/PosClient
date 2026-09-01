@@ -19,6 +19,11 @@ import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ConsumerService } from '../services/consumer.service';
 import { ConsumerPurgeService } from '../services/consumer-purge.service';
+import { ConsumerDataImportService } from '../services/consumer-data-import.service';
+import {
+  PreviewConsumerDataImportDto,
+  RunConsumerDataImportDto,
+} from '../dto/consumer-data-import.dto';
 
 @UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/consumers')
@@ -26,6 +31,7 @@ export class ConsumerController {
   constructor(
     private readonly consumerService: ConsumerService,
     private readonly consumerPurgeService: ConsumerPurgeService,
+    private readonly consumerDataImportService: ConsumerDataImportService,
   ) {}
 
   @HasPermissions([AdminPermission.show_consumers])
@@ -48,6 +54,26 @@ export class ConsumerController {
   @Post()
   create(@Body() dto: CreateConsumerDto) {
     return this.consumerService.create(dto);
+  }
+
+  @HasPermissions([AdminPermission.modify_consumers])
+  @Get('data-imports')
+  importHistory(@Query('limit') limit?: string) {
+    return this.consumerDataImportService.history(
+      limit ? Number(limit) : undefined,
+    );
+  }
+
+  @HasPermissions([AdminPermission.modify_consumers])
+  @Post('data-imports/preview')
+  previewImport(@Body() dto: PreviewConsumerDataImportDto) {
+    return this.consumerDataImportService.preview(dto);
+  }
+
+  @HasPermissions([AdminPermission.modify_consumers])
+  @Post('data-imports')
+  runImport(@Body() dto: RunConsumerDataImportDto, @Req() req: any) {
+    return this.consumerDataImportService.run(dto, req?.user?.id);
   }
 
   @HasPermissions([AdminPermission.delete_consumers])
