@@ -4,6 +4,7 @@ import {
   EditOutlined,
   FileExcelOutlined,
   SearchOutlined,
+  SwapOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ import { deleteApi, get, post } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { AdminPermission } from "../../constants/adminPermissions";
 import { useMessageStore } from "../../stores/messageStore";
+import ImportDataModal from "./_ImportDataModal";
 const { Option } = Select;
 
 export default function TableGrid({
@@ -52,6 +54,7 @@ export default function TableGrid({
   // wrong row cannot destroy a tenant.
   const [purgeTarget, setPurgeTarget] = useState<any>(null);
   const [purgeConfirm, setPurgeConfirm] = useState("");
+  const [importSource, setImportSource] = useState<any>(null);
 
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText);
 
@@ -341,6 +344,16 @@ export default function TableGrid({
                 <EditOutlined />
               </Button>
             )}
+            {hasPermission(AdminPermission.modify_consumers) &&
+              !showingDeleted && (
+                <Button
+                  onClick={() => setImportSource(record)}
+                  type="link"
+                  title="Import this account's data into another account"
+                >
+                  <SwapOutlined /> Import data
+                </Button>
+              )}
             {hasPermission(AdminPermission.delete_consumers) &&
               !showingDeleted && (
                 <Popconfirm
@@ -395,6 +408,14 @@ export default function TableGrid({
 
   return (
     <>
+      {importSource && (
+        <ImportDataModal
+          open={!!importSource}
+          source={importSource}
+          onClose={() => setImportSource(null)}
+          onImported={() => refetch()}
+        />
+      )}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24}>
           <Segmented

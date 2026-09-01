@@ -187,19 +187,20 @@ enum InventoryEventType {
 // ============================================
 
 model SuperAdmin {
-  id                Int            @id @default(autoincrement())
-  role_id           Int
-  email             String         @unique
-  name              String
-  password          String
-  refresh_token     String?
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  created_by_id     Int?
-  created_by        SuperAdmin?    @relation("CreatedBy", fields: [created_by_id], references: [id])
-  created           SuperAdmin[]   @relation("CreatedBy")
-  role              SuperAdminRole @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  deleted_consumers Consumer[]     @relation("ConsumerDeletedBy")
+  id                     Int                  @id @default(autoincrement())
+  role_id                Int
+  email                  String               @unique
+  name                   String
+  password               String
+  refresh_token          String?
+  created_at             DateTime             @default(now())
+  updated_at             DateTime             @updatedAt
+  created_by_id          Int?
+  created_by             SuperAdmin?          @relation("CreatedBy", fields: [created_by_id], references: [id])
+  created                SuperAdmin[]         @relation("CreatedBy")
+  role                   SuperAdminRole       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  deleted_consumers      Consumer[]           @relation("ConsumerDeletedBy")
+  requested_data_imports ConsumerDataImport[] @relation("ConsumerDataImportRequestedBy")
 
   assigned_support_tickets SupportTicket[]        @relation("SupportTicketAssignee")
   support_ticket_messages  SupportTicketMessage[] @relation("SupportMessageAdminAuthor")
@@ -283,19 +284,23 @@ model Consumer {
   inventory_audit_logs     InventoryAuditLog[]
 
   // ERP
-  erp_settings       ERPSettings?
-  salary_structures  SalaryStructure[]
-  attendances        Attendance[]
-  leaves             Leave[]
-  overtimes          Overtime[]
-  expenses           Expense[]
-  deductions         Deduction[]
-  advances           Advance[]
-  salary_increments  SalaryIncrement[]
-  salary_payments    SalaryPayment[]
-  receiptPdfSettings ReceiptPdfSetting[]
-  operational_costs  OperationalCost[]
-  support_tickets    SupportTicket[]
+  erp_settings              ERPSettings?
+  salary_structures         SalaryStructure[]
+  attendances               Attendance[]
+  leaves                    Leave[]
+  overtimes                 Overtime[]
+  expenses                  Expense[]
+  deductions                Deduction[]
+  advances                  Advance[]
+  salary_increments         SalaryIncrement[]
+  salary_payments           SalaryPayment[]
+  receiptPdfSettings        ReceiptPdfSetting[]
+  operational_costs         OperationalCost[]
+  support_tickets           SupportTicket[]
+  data_imports_as_source    ConsumerDataImport[]    @relation("ConsumerDataImportSource")
+  data_imports_as_target    ConsumerDataImport[]    @relation("ConsumerDataImportTarget")
+  import_mappings_as_source ConsumerImportMapping[] @relation("ConsumerImportMappingSource")
+  import_mappings_as_target ConsumerImportMapping[] @relation("ConsumerImportMappingTarget")
 
   @@index([email])
   @@index([plan_id])
@@ -967,7 +972,7 @@ model Customer {
   consumer_id   Int
   name          String
   email         String?
-  phone         String    @unique
+  phone         String
   address       String?
   // Date only; the time part is never meaningful here
   birthday      DateTime? @db.Date
@@ -980,10 +985,56 @@ model Customer {
   rewards_points     CustomerRewardsPoints?
   point_transactions RewardsPointTransaction[]
 
+  @@unique([consumer_id, phone])
   @@index([consumer_id, name]) // Customer search within tenant
   @@index([consumer_id, email]) // Email lookup within tenant
-  // phone has @unique — already indexed
   @@map("customers")
+}
+
+// ============================================
+// Admin-managed, repeatable tenant data imports
+// ============================================
+
+model ConsumerDataImport {
+  id                 Int       @id @default(autoincrement())
+  source_consumer_id Int
+  target_consumer_id Int
+  requested_by_id    Int?
+  sections           Json
+  duplicate_strategy String
+  status             String    @default("RUNNING")
+  summary            Json?
+  error_message      String?
+  started_at         DateTime  @default(now())
+  completed_at       DateTime?
+  created_at         DateTime  @default(now())
+
+  source       Consumer    @relation("ConsumerDataImportSource", fields: [source_consumer_id], references: [id], onDelete: Cascade)
+  target       Consumer    @relation("ConsumerDataImportTarget", fields: [target_consumer_id], references: [id], onDelete: Cascade)
+  requested_by SuperAdmin? @relation("ConsumerDataImportRequestedBy", fields: [requested_by_id], references: [id], onDelete: SetNull)
+
+  @@index([source_consumer_id, target_consumer_id, created_at])
+  @@index([target_consumer_id, status])
+  @@index([requested_by_id])
+  @@map("consumer_data_imports")
+}
+
+model ConsumerImportMapping {
+  id                 Int      @id @default(autoincrement())
+  source_consumer_id Int
+  target_consumer_id Int
+  entity_type        String
+  source_record_id   Int
+  target_record_id   Int
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  source Consumer @relation("ConsumerImportMappingSource", fields: [source_consumer_id], references: [id], onDelete: Cascade)
+  target Consumer @relation("ConsumerImportMappingTarget", fields: [target_consumer_id], references: [id], onDelete: Cascade)
+
+  @@unique([source_consumer_id, target_consumer_id, entity_type, source_record_id], map: "consumer_import_source_record_key")
+  @@unique([source_consumer_id, target_consumer_id, entity_type, target_record_id], map: "consumer_import_target_record_key")
+  @@map("consumer_import_mappings")
 }
 
 // ============================================
