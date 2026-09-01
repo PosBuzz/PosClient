@@ -8,7 +8,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
-import * as dayjs from 'dayjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
@@ -240,16 +239,16 @@ export class ConsumerService {
   }) {
     const { search, planId, status, deleted } = params;
 
-    // "Active" means billed within the last month.
+    const now = new Date();
+
+    // Active billing is based on the explicit inclusive coverage period.
     const billingWindow = {
-      billing_date: {
-        gte: dayjs().subtract(1, 'month').toDate(),
-        lte: dayjs().toDate(),
-      },
+      billing_from: { lte: now },
+      billing_till: { gte: now },
     };
 
     try {
-      return await this.prisma.consumer.findMany({
+      const consumers = await this.prisma.consumer.findMany({
         where: {
           deleted_at: deleted ? { not: null } : null,
           ...(planId ? { plan_id: planId } : {}),
@@ -281,6 +280,22 @@ export class ConsumerService {
           _count: { select: { Product: true } },
         },
         orderBy: { id: 'asc' },
+      });
+
+      return consumers.map((consumer) => {
+        const billingLogs = [...consumer.billing_logs].sort(
+          (a, b) => b.billing_till.getTime() - a.billing_till.getTime(),
+        );
+        const activeBilling = billingLogs.find(
+          (log) => log.billing_from <= now && log.billing_till >= now,
+        );
+
+        return {
+          ...consumer,
+          has_active_billing: Boolean(activeBilling),
+          billing_active_until: activeBilling?.billing_till ?? null,
+          latest_billing_till: billingLogs[0]?.billing_till ?? null,
+        };
       });
     } catch (error) {
       this.logger.error('Fetching consumers failed', errorStack(error));

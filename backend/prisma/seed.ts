@@ -533,24 +533,33 @@ async function main() {
   }
 
   // Create billing history
+  const seedBillingFrom = new Date(new Date().setUTCHours(0, 0, 0, 0));
+  const seedBillingTill = new Date(seedBillingFrom);
+  seedBillingTill.setUTCMonth(seedBillingTill.getUTCMonth() + 1);
+  seedBillingTill.setUTCMilliseconds(seedBillingTill.getUTCMilliseconds() - 1);
+
   await prisma.billingHistory.upsert({
     where: {
       consumer_id_billing_date: {
         consumer_id: consumer1.id,
-        billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
+        billing_date: seedBillingFrom,
       },
     },
     update: {
       amount: 100.0,
       plan_id: enterprisePlan.id,
-      billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
+      billing_date: seedBillingFrom,
+      billing_from: seedBillingFrom,
+      billing_till: seedBillingTill,
     },
     create: {
       consumer_id: consumer1.id,
       plan_id: enterprisePlan.id,
       amount: 100.0,
       reference: 'Invoice #12345',
-      billing_date: new Date(new Date().setUTCHours(0, 0, 0, 0)),
+      billing_date: seedBillingFrom,
+      billing_from: seedBillingFrom,
+      billing_till: seedBillingTill,
     },
   });
 

@@ -4,6 +4,8 @@ import {
   SaleItem,
 } from "../types/sale.types";
 
+const roundMoney = (value: number) => Number((Number(value) || 0).toFixed(2));
+
 // Calculates line total, tax amount, and taxable base amount for either inclusive or exclusive tax methods.
 export const calculateTaxAndTotal = (
   price: number,
@@ -24,7 +26,10 @@ export const calculateTaxAndTotal = (
 
   if (isInclusiveTax) {
     lineTotal = baseAmount;
-    taxAmount = (baseAmount * validTaxPercentage) / 100;
+    taxAmount =
+      validTaxPercentage > 0
+        ? (baseAmount * validTaxPercentage) / (100 + validTaxPercentage)
+        : 0;
     taxableAmount = baseAmount - taxAmount;
   } else {
     taxAmount = (baseAmount * validTaxPercentage) / 100;
@@ -33,9 +38,9 @@ export const calculateTaxAndTotal = (
   }
 
   return {
-    line_total: Number(lineTotal) || 0,
-    tax_amount: Number(taxAmount) || 0,
-    taxable_amount: Number(taxableAmount) || 0,
+    line_total: roundMoney(lineTotal),
+    tax_amount: roundMoney(taxAmount),
+    taxable_amount: roundMoney(taxableAmount),
   };
 };
 

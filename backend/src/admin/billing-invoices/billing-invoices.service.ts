@@ -10,6 +10,8 @@ interface BillingLog {
   amount: number;
   reference: string | null;
   billing_date: Date;
+  billing_from: Date;
+  billing_till: Date;
   plan: Plan;
 }
 
@@ -55,6 +57,8 @@ interface Billing {
   amount: number;
   reference: string | null;
   billing_date: Date;
+  billing_from: Date;
+  billing_till: Date;
   created_at: Date;
   updated_at: Date;
   consumer: Partial<Consumer>;
@@ -85,6 +89,8 @@ export class BillingInvoicesService {
         'No.',
         'Created On',
         'Billing Date',
+        'Billing From',
+        'Billing Till',
         'Reference',
         'Plan Name',
         'Amount',
@@ -104,6 +110,16 @@ export class BillingInvoicesService {
             month: 'long',
             day: 'numeric',
           }),
+          new Date(log.billing_from).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          new Date(log.billing_till).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
           log.reference || 'N/A',
           log.plan?.name || 'N/A',
           log.amount,
@@ -111,7 +127,7 @@ export class BillingInvoicesService {
       });
 
       // Add total row
-      billingSheet.addRow(['', '', '', '', 'Total', totalAmount]);
+      billingSheet.addRow(['', '', '', '', '', '', 'Total', totalAmount]);
 
       // Create "Company Info" sheet
       const infoSheet = workbook.addWorksheet('Company Info');
@@ -212,6 +228,9 @@ export class BillingInvoicesService {
         .fillColor(gray)
         .text(`Reference: ${billing.reference || 'N/A'}`)
         .text(`Billing Date: ${formatDate(billing.billing_date)}`)
+        .text(
+          `Billing Period: ${formatDate(billing.billing_from)} to ${formatDate(billing.billing_till)}`,
+        )
         .text(`Created At: ${formatDate(billing.created_at)}`)
         .text(`Plan: ${billing.plan.name}`)
         .text(`Plan Price: $${billing.plan.price}`)
@@ -370,16 +389,16 @@ export class BillingInvoicesService {
     const tableTop = doc.y;
     const tableLeft = 50;
     const tableRight = doc.page.width - 50;
-    const rowHeight = 30;
+    const rowHeight = 40;
 
     // Column widths
     const colWidths = {
-      id: 40,
-      createdOn: 100,
-      date: 100,
-      reference: 120,
-      plan: 80,
-      amount: 60,
+      id: 30,
+      date: 75,
+      period: 140,
+      reference: 95,
+      plan: 90,
+      amount: 65,
     };
 
     // Draw table header
@@ -389,7 +408,7 @@ export class BillingInvoicesService {
       tableLeft,
       tableTop,
       colWidths,
-      ['No.', 'Created On', 'Billing Date', 'Reference', 'Plan Name', 'Amount'],
+      ['No.', 'Bill Date', 'Billing Period', 'Reference', 'Plan', 'Amount'],
       rowHeight,
       true,
     );
@@ -419,14 +438,7 @@ export class BillingInvoicesService {
           tableLeft,
           currentY,
           colWidths,
-          [
-            '#',
-            'Created On',
-            'Billing Date',
-            'Reference',
-            'Plan Name',
-            'Amount',
-          ],
+          ['#', 'Bill Date', 'Billing Period', 'Reference', 'Plan', 'Amount'],
           rowHeight,
           true,
         );
@@ -434,16 +446,18 @@ export class BillingInvoicesService {
       }
 
       const date = new Date(log.billing_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+        year: '2-digit',
+        month: 'short',
+        day: '2-digit',
       });
 
-      const createdOn = new Date(log.created_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      const formatPeriodDate = (value: Date) =>
+        new Date(value).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+        });
+      const period = `${formatPeriodDate(log.billing_from)} - ${formatPeriodDate(log.billing_till)}`;
 
       const amount = `$${log.amount.toFixed(2)}`;
 
@@ -454,8 +468,8 @@ export class BillingInvoicesService {
         colWidths,
         [
           (i + 1).toString(),
-          createdOn, // Add Created On
           date,
+          period,
           log.reference || 'N/A',
           log.plan?.name || 'N/A',
           amount,
@@ -488,13 +502,7 @@ export class BillingInvoicesService {
     doc: PDFKit.PDFDocument,
     x: number,
     y: number,
-    colWidths: {
-      id: number;
-      date: number;
-      reference: number;
-      plan: number;
-      amount: number;
-    },
+    colWidths: Record<string, number>,
     texts: string[],
     height: number,
     isHeader: boolean = false,

@@ -57,6 +57,56 @@ export class CustomerController {
     );
   }
 
+  @Get(':id/summary')
+  async getSummary(@Param('id') id: string, @Req() req: Request) {
+    return this.customerService.getSummary(+id, Number(req.user.consumer_id));
+  }
+
+  @Get(':id/sales')
+  async getSalesHistory(
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req() req: Request,
+  ) {
+    return this.customerService.getSalesHistory(
+      +id,
+      Number(req.user.consumer_id),
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
+  }
+
+  @Get(':id/returns')
+  async getReturnsHistory(
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req() req: Request,
+  ) {
+    return this.customerService.getReturnsHistory(
+      +id,
+      Number(req.user.consumer_id),
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
+  }
+
+  @Get(':id/rewards')
+  async getRewardsHistory(
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req() req: Request,
+  ) {
+    return this.customerService.getRewardsHistory(
+      +id,
+      Number(req.user.consumer_id),
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req: Request) {
     return this.customerService.findOne(+id, Number(req.user.consumer_id));

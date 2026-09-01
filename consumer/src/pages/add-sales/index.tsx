@@ -52,6 +52,7 @@ import {
 import { Promotion } from "../../types/promotion.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
+  calculateTaxAndTotal,
   getVariantPriceForSale as getVariantPriceForSaleByType,
   removeSaleItem,
   updateSaleItemQuantity,
@@ -240,15 +241,15 @@ const NewSale = () => {
               item.variant?.product?.tax_method ||
               "EXCLUSIVE",
           ).toUpperCase();
-          const baseAmount = quantity * (Number(baseUnitPrice) || 0);
-          const recalculatedTaxAmount =
-            taxMethod === "INCLUSIVE"
-              ? (baseAmount * taxPercentage) / 100
-              : (baseAmount * taxPercentage) / 100;
-          const recalculatedLineTotal =
-            taxMethod === "INCLUSIVE"
-              ? baseAmount
-              : baseAmount + recalculatedTaxAmount;
+          const {
+            tax_amount: recalculatedTaxAmount,
+            line_total: recalculatedLineTotal,
+          } = calculateTaxAndTotal(
+            Number(baseUnitPrice) || 0,
+            quantity,
+            taxPercentage,
+            taxMethod,
+          );
 
           return {
             variant_id: item.variant_id,

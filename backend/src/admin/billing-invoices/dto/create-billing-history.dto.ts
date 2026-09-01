@@ -22,4 +22,10 @@ export class CreateBillingHistoryDto {
 
   @IsDateString()
   billing_date: string;
+
+  @IsDateString()
+  billing_from: string;
+
+  @IsDateString()
+  billing_till: string;
 }

@@ -91,6 +91,18 @@ export default function _TableGrid({
       key: "billing_date",
     },
     {
+      title: "Billing From",
+      dataIndex: "billing_from",
+      render: (billing_from) => dayjs(billing_from).format("DD-MM-YYYY"),
+      key: "billing_from",
+    },
+    {
+      title: "Billing Till",
+      dataIndex: "billing_till",
+      render: (billing_till) => dayjs(billing_till).format("DD-MM-YYYY"),
+      key: "billing_till",
+    },
+    {
       title: "Reference",
       dataIndex: "reference",
       key: "reference",

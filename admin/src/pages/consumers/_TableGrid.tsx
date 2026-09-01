@@ -268,21 +268,25 @@ export default function TableGrid({
       key: "max_branch",
     },
     {
-      title: "Status",
+      title: "Billing Status",
       render: (record: any) => {
-        const isActive = record.billing_logs?.some((log: any) =>
-          dayjs(log.billing_date).isBetween(
-            dayjs().subtract(1, "month"),
-            dayjs(),
-            null,
-            "[]",
-          ),
-        );
+        const isActive = Boolean(record.has_active_billing);
+        const activeUntil = record.billing_active_until;
+        const latestBillingTill = record.latest_billing_till;
 
         return (
-          <Tag color={isActive ? "success" : "error"}>
-            {isActive ? "Active" : "Inactive"}
-          </Tag>
+          <Space direction="vertical" size={0}>
+            <Tag color={isActive ? "success" : "error"}>
+              {isActive ? "Active" : "Inactive"}
+            </Tag>
+            <span style={{ color: "#888", fontSize: 12 }}>
+              {isActive && activeUntil
+                ? `Active until ${dayjs(activeUntil).format("DD MMM YYYY")}`
+                : latestBillingTill
+                  ? `Last covered until ${dayjs(latestBillingTill).format("DD MMM YYYY")}`
+                  : "No billing period"}
+            </span>
+          </Space>
         );
       },
       key: "status",
