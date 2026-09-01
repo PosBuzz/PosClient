@@ -52,8 +52,7 @@ const VariantsTab: React.FC<VariantsTabProps> = ({ variants }) => {
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <Space>
-            {record.is_default && <Badge status="success" text="Default" />}
-            <Text strong={record.is_default}>{record.name}</Text>
+            <Text>{record.name}</Text>
           </Space>
           {record.sku && (
             <Text type="secondary" style={{ fontSize: "12px" }}>

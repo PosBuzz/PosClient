@@ -1,7 +1,6 @@
 import { UserOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { Card, Col, Row, Statistic } from "antd";
-import dayjs from "dayjs";
 import { get } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
@@ -9,7 +8,6 @@ import { setPageTitle } from "../../utils/setPageTitle";
 
 function Index() {
   const KEY = `all-${"Consumer"}`;
-  const currentMonth = dayjs().format("YYYY-MM");
 
   const { isLoading, data: fetchData } = useQuery({
     queryKey: [KEY],
@@ -24,9 +22,7 @@ function Index() {
 
   if (fetchData) {
     fetchData?.forEach((consumer: any) => {
-      const hasActiveBill = consumer?.billing_logs?.some(
-        (log: any) => log?.billing_month === currentMonth,
-      );
+      const hasActiveBill = Boolean(consumer?.has_active_billing);
       if (hasActiveBill) {
         const planName = consumer?.plan?.name || "Unknown";
         activeUsersByPlan[planName] = (activeUsersByPlan[planName] || 0) + 1;

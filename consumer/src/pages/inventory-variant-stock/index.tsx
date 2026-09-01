@@ -287,7 +287,7 @@ export default function VariantStockPage() {
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
           { title: "Inventory", href: "/inventory" },
-          { title: "Stock by Variant", href: "/inventory/stock-by-variant" },
+          { title: "Stock Overview", href: "/inventory/stock-by-variant" },
           { title: "Variant Stock" },
         ]}
         rightSection={
@@ -306,7 +306,7 @@ export default function VariantStockPage() {
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate("/inventory/stock-by-variant")}
             >
-              Back to Stock by Variant
+              Back to Stock Overview
             </Button>
           </Space>
         }

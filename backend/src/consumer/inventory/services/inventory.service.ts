@@ -193,6 +193,10 @@ export class InventoryService {
             (sum, item) => sum + item.quantity - item.reserved_quantity,
             0,
           );
+          const pendingDelivery = variant.inventory_items.reduce(
+            (sum, item) => sum + item.reserved_quantity,
+            0,
+          );
 
           let isLowStock = false;
 
@@ -228,6 +232,7 @@ export class InventoryService {
           return {
             ...variant,
             total_stock: totalStock,
+            pending_delivery: pendingDelivery,
             is_low_stock: isLowStock,
             // Surfaced on the list itself so no drill-down is needed
             locations: collectBatchLocations(variant.inventory_items),

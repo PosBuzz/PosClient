@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import * as dayjs from 'dayjs';
 import { createHmac } from 'crypto';
 import { ConfigService } from 'src/config/config.service';
 import { errorStack } from '../../common/utils/error.util';
@@ -148,6 +147,7 @@ export class AuthService {
     subdomain: string,
   ): Promise<any> {
     try {
+      const now = new Date();
       const user = await this.prisma.user.findFirst({
         where: {
           email,
@@ -163,10 +163,8 @@ export class AuthService {
               subdomain: true,
               billing_logs: {
                 where: {
-                  billing_date: {
-                    gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
-                    lte: dayjs().endOf('day').toDate(),
-                  },
+                  billing_from: { lte: now },
+                  billing_till: { gte: now },
                 },
               },
             },

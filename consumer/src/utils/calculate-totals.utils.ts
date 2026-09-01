@@ -96,32 +96,38 @@ export function calculateSaleTotals(params: {
     evaluatePromotionFn,
   } = params;
 
-  const subtotal = selectedItems.reduce(
-    (sum, item) => sum + getItemBaseAmount(item),
-    0,
+  const subtotal = round2(
+    selectedItems.reduce((sum, item) => sum + getItemBaseAmount(item), 0),
   );
 
-  const averageDiscountBaseSubtotal = selectedItems.reduce(
-    (sum, item) => sum + Number(item.unit_price) * Number(item.quantity || 0),
-    0,
+  const averageDiscountBaseSubtotal = round2(
+    selectedItems.reduce(
+      (sum, item) => sum + Number(item.unit_price) * Number(item.quantity || 0),
+      0,
+    ),
   );
 
-  const totalTax = selectedItems.reduce(
-    (sum, item) => sum + (Number(item.tax_amount) || 0),
-    0,
+  const totalTax = round2(
+    selectedItems.reduce(
+      (sum, item) => sum + (Number(item.tax_amount) || 0),
+      0,
+    ),
   );
 
   const averageDiscountAmountNum = Number(averageDiscountAmount) || 0;
   const shippingCostNum = Number(shippingCost) || 0;
 
-  const averageDiscount =
+  const averageDiscount = round2(
     averageDiscountType === DiscountType.PERCENTAGE
       ? (averageDiscountBaseSubtotal * averageDiscountAmountNum) / 100
-      : averageDiscountAmountNum;
+      : averageDiscountAmountNum,
+  );
 
-  const specialDiscount = selectedItems.reduce(
-    (sum, item) => sum + (Number(item.special_discount_amount) || 0),
-    0,
+  const specialDiscount = round2(
+    selectedItems.reduce(
+      (sum, item) => sum + round2(Number(item.special_discount_amount) || 0),
+      0,
+    ),
   );
 
   const variantBaseMap = new Map<number, number>();
@@ -224,14 +230,20 @@ export function calculateSaleTotals(params: {
     promotionDiscountMap.set(variantId, choice.discount);
   });
 
-  const promotionDiscountAmount = Array.from(
-    promotionDiscountMap.values(),
-  ).reduce((sum, value) => sum + Number(value || 0), 0);
+  const promotionDiscountAmount = round2(
+    Array.from(promotionDiscountMap.values()).reduce(
+      (sum, value) => sum + Number(value || 0),
+      0,
+    ),
+  );
 
-  const finalDiscount =
-    promotionDiscountAmount + averageDiscount + specialDiscount;
+  const finalDiscount = round2(
+    promotionDiscountAmount + averageDiscount + specialDiscount,
+  );
 
-  const total = subtotal - finalDiscount + totalTax + shippingCostNum;
+  const total = round2(
+    subtotal - finalDiscount + totalTax + round2(shippingCostNum),
+  );
 
   const discountBreakdownByVariant: Record<number, DiscountBreakdown> = {};
 
@@ -240,7 +252,7 @@ export function calculateSaleTotals(params: {
     const promotionShare = Number(
       promotionDiscountMap.get(item.variant_id) || 0,
     );
-    const specialShare = Number(item.special_discount_amount || 0);
+    const specialShare = round2(Number(item.special_discount_amount || 0));
 
     const choice = promotionChoiceByVariant.get(item.variant_id);
 
@@ -260,7 +272,9 @@ export function calculateSaleTotals(params: {
       promotionName: appliedPromotion?.name,
     };
 
-    const totalItemDiscount = averageShare + specialShare + promotionShare;
+    const totalItemDiscount = round2(
+      averageShare + specialShare + promotionShare,
+    );
     const netLineTotal = round2(Number(item.line_total) - totalItemDiscount);
     const soldUnitPrice = round2(netLineTotal / Number(item.quantity || 1));
 
@@ -285,7 +299,7 @@ export function calculateSaleTotals(params: {
     finalDiscount: Number(finalDiscount),
     discountBreakdownByVariant,
     discountedItems,
-    shippingCost: Number(shippingCostNum),
+    shippingCost: round2(shippingCostNum),
     total: Number(total),
   };
 }

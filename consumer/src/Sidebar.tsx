@@ -1,10 +1,12 @@
 import {
   CustomerServiceOutlined,
   DashboardOutlined,
+  DollarOutlined,
   ProductOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
   UserOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { Menu } from "antd";
 import React, { useEffect, useState } from "react";
@@ -126,7 +128,7 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.inventory_adjustment],
         },
         {
-          label: <span title="Stock by Variant">Stock by Variant</span>,
+          label: <span title="Stock Overview">Stock Overview</span>,
           key: "/inventory/stock-by-variant",
           permissions: [Permissions.inventory_batches],
         },
@@ -218,21 +220,21 @@ const SideBar: React.FC = () => {
           key: "/user-sales-stats",
           permissions: [Permissions.business_insights],
         },
-        {
-          label: <span title="Operational Costs">Operational Costs</span>,
-          key: "/operational-costs",
-          permissions: [Permissions.business_insights],
-        },
-        {
-          label: (
-            <span title="Daily and Monthly Business Report">
-              Business Report
-            </span>
-          ),
-          key: "/business-report",
-          permissions: [Permissions.business_insights],
-        },
       ],
+    },
+    {
+      label: <span title="Operational Costs">Operational Costs</span>,
+      key: "/operational-costs",
+      icon: <DollarOutlined />,
+      permissions: [Permissions.business_insights],
+    },
+    {
+      label: (
+        <span title="Daily and Monthly Business Report">Business Report</span>
+      ),
+      key: "/business-report",
+      icon: <FileTextOutlined />,
+      permissions: [Permissions.business_insights],
     },
     {
       label: <span title="Customers">Customers</span>,

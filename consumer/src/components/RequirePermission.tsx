@@ -17,7 +17,7 @@ export default function RequirePermission({
   }
   // Check if the user has the required permission
   if (permission && !user?.permissions?.includes(permission)) {
-    return <Navigate to="/403" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

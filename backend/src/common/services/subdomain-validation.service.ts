@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SubdomainUtilService } from './subdomain-util.service';
-import * as dayjs from 'dayjs';
 import { errorMessage } from '../utils/error.util';
 
 export interface SubdomainValidationResult {
@@ -38,6 +37,7 @@ export class SubdomainValidationService {
     const normalizedSubdomain = subdomain.toLowerCase().trim();
 
     try {
+      const now = new Date();
       const consumer = await this.prisma.consumer.findUnique({
         where: { subdomain: normalizedSubdomain },
         select: {
@@ -46,14 +46,12 @@ export class SubdomainValidationService {
           deleted_at: true,
           billing_logs: {
             where: {
-              billing_date: {
-                gte: dayjs().subtract(1, 'month').startOf('day').toDate(),
-                lte: dayjs().endOf('day').toDate(),
-              },
+              billing_from: { lte: now },
+              billing_till: { gte: now },
             },
             select: { id: true },
             take: 1,
-            orderBy: { billing_date: 'desc' },
+            orderBy: { billing_till: 'desc' },
           },
         },
       });

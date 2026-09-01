@@ -355,41 +355,14 @@ export default function VariantForm({
             {
               key: "attributes",
               label: `Attributes (${variant.attributes.length})`,
-              children: (
-                <VariantAttributesSection
-                  variantId={variantId}
-                  attributes={variant.attributes}
-                  validationState={validationState}
-                  onAdd={() =>
-                    onAddAttribute(variantId, { name: "", value: "" })
-                  }
-                  onUpdate={(index, updates) =>
-                    onUpdateAttribute(variantId, index, updates)
-                  }
-                  onDelete={(index) => onDeleteAttribute(variantId, index)}
-                />
-              ),
+              children: null,
+              style: { display: "none" },
             },
             {
               key: "serials",
               label: `Serials (${variant.serials.length})`,
-              children: (
-                <VariantSerialsSection
-                  variantId={variantId}
-                  serials={variant.serials}
-                  validationState={validationState}
-                  onAdd={() =>
-                    onAddSerial(variantId, {
-                      serial_number: "",
-                      status: "available",
-                    })
-                  }
-                  onUpdate={(index, updates) =>
-                    onUpdateSerial(variantId, index, updates)
-                  }
-                  onDelete={(index) => onDeleteSerial(variantId, index)}
-                />
-              ),
+              children: null,
+              style: { display: "none" },
             },
           ]}
         />

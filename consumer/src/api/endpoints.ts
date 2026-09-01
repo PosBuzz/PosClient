@@ -75,6 +75,10 @@ export const endpoints = {
   // Customer management
   getCustomers: "/consumer/customers",
   getCustomer: (id: number) => `/consumer/customers/${id}`,
+  getCustomerSummary: (id: number) => `/consumer/customers/${id}/summary`,
+  getCustomerSales: (id: number) => `/consumer/customers/${id}/sales`,
+  getCustomerReturns: (id: number) => `/consumer/customers/${id}/returns`,
+  getCustomerRewards: (id: number) => `/consumer/customers/${id}/rewards`,
   createCustomer: "/consumer/customers",
   updateCustomer: (id: number) => `/consumer/customers/${id}`,
   deleteCustomer: (id: number) => `/consumer/customers/${id}`,
