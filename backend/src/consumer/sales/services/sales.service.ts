@@ -1391,7 +1391,9 @@ export class SalesService {
       const variants = await this.prisma.productVariant.findMany({
         where,
         include: {
-          product: true,
+          product: {
+            include: { category: true },
+          },
           sale_unit: true,
           inventory_items: {
             where: {
@@ -1410,6 +1412,8 @@ export class SalesService {
         sku: variant.sku,
         barcode: variant.barcode,
         brand_id: variant.product.brand_id,
+        category_id: variant.product.category_id,
+        category_name: variant.product.category?.name,
         regular_price: variant.regular_price,
         wholesale_price: variant.wholesale_price,
         image: variant.image,

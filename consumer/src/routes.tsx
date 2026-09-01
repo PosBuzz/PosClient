@@ -67,6 +67,7 @@ const Returns = lazy(() => import("./pages/returns"));
 const CreateReturn = lazy(() => import("./pages/returns/create"));
 const ViewReturn = lazy(() => import("./pages/view-return"));
 const RewardsSettings = lazy(() => import("./pages/rewards-settings"));
+const PosLayoutSettings = lazy(() => import("./pages/pos-layout-settings"));
 const RewardPoints = lazy(() => import("./pages/customer-rewards"));
 const Quotations = lazy(() => import("./pages/quotations"));
 const AddQuotation = lazy(() => import("./pages/add-quotation"));
@@ -570,6 +571,14 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <RewardsSettings />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "pos-layout-settings",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <PosLayoutSettings />
           </RequirePermission>
         ),
       },

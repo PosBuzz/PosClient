@@ -279,6 +279,11 @@ const SideBar: React.FC = () => {
           permissions: [Permissions.sales],
         },
         {
+          label: <span title="POS Layout">POS Layout</span>,
+          key: "/pos-layout-settings",
+          permissions: [Permissions.sales],
+        },
+        {
           label: <span title="Roles">Roles</span>,
           key: "/roles",
           permissions: [Permissions.users],
