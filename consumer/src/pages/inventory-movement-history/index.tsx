@@ -238,7 +238,7 @@ const InventoryMovementHistory: React.FC = () => {
       href: "/inventory/batches",
     },
     {
-      title: "Stock by Variant",
+      title: "Stock Overview",
       href: "/inventory/stock-by-variant",
     },
     {

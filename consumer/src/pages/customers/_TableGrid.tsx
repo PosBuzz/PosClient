@@ -1,6 +1,7 @@
 import {
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -22,6 +23,7 @@ import {
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -180,6 +182,11 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
       key: "actions",
       render: (record: Customer) => (
         <Space size="small">
+          <Tooltip title="View Customer History">
+            <Link to={`/customers/${record.id}`}>
+              <Button type="text" icon={<EyeOutlined />} />
+            </Link>
+          </Tooltip>
           <Tooltip title="Edit Customer">
             <Button
               type="text"

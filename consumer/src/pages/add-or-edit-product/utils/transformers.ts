@@ -168,7 +168,6 @@ export const mapProductToCopyFormState = (
       acc[key] = {
         ...variant,
         id: undefined,
-        name: "",
         sku: copiedState.has_variants
           ? buildVariantSku(variant.name || "SKU")
           : buildSimpleProductSku(),

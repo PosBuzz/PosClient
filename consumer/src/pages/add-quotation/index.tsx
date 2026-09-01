@@ -45,6 +45,7 @@ import {
 } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 import {
+  calculateTaxAndTotal,
   getVariantPriceForSale,
   removeSaleItem,
   updateSaleItemQuantity,
@@ -253,15 +254,13 @@ const NewQuotation = () => {
             "EXCLUSIVE",
         ).toUpperCase();
 
-        // Use the shared calculateTaxAndTotal via upsert to get tax values
-        // But since we need exact quantities, compute inline
-        const baseAmount = quantity * (Number(baseUnitPrice) || 0);
-        const taxAmount =
-          taxMethod === "INCLUSIVE"
-            ? (baseAmount * taxPercentage) / 100
-            : (baseAmount * taxPercentage) / 100;
-        const lineTotal =
-          taxMethod === "INCLUSIVE" ? baseAmount : baseAmount + taxAmount;
+        const { tax_amount: taxAmount, line_total: lineTotal } =
+          calculateTaxAndTotal(
+            Number(baseUnitPrice) || 0,
+            quantity,
+            taxPercentage,
+            taxMethod,
+          );
 
         return {
           variant_id: item.variant_id,

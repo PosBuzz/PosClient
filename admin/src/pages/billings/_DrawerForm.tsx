@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, DatePicker, Drawer, Form, Input, Select } from "antd";
 import dayjs from "dayjs";
 import { useEffect } from "react";
@@ -20,17 +20,21 @@ export default function DrawerForm({
   const selectedConsumer = consumers?.find((i) => i.id === consumer_id);
 
   const { messageApi } = useMessageStore();
+  const queryClient = useQueryClient();
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.billing, data),
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["all-Consumer"] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error: any) => {
+      messageApi?.error(
+        error?.response?.data?.message || "Something went wrong",
+      );
     },
   });
 
@@ -39,12 +43,15 @@ export default function DrawerForm({
       await patch(`${endpoints.billing}/${data.id}`, data),
     onSuccess: () => {
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["all-Consumer"] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error: any) => {
+      messageApi?.error(
+        error?.response?.data?.message || "Something went wrong",
+      );
     },
   });
 
@@ -60,7 +67,9 @@ export default function DrawerForm({
       consumer_id: formValues.consumer_id,
       plan_id: selectedConsumer?.plan.id,
       amount: +formValues.amount,
-      billing_date: dayjs(formValues.billing_date).toISOString(),
+      billing_date: dayjs(formValues.billing_date).startOf("day").toISOString(),
+      billing_from: dayjs(formValues.billing_from).startOf("day").toISOString(),
+      billing_till: dayjs(formValues.billing_till).endOf("day").toISOString(),
       reference,
     };
 
@@ -85,6 +94,8 @@ export default function DrawerForm({
         consumer_id: editedItem.consumer_id,
         amount: editedItem.amount,
         billing_date: dayjs(editedItem.billing_date),
+        billing_from: dayjs(editedItem.billing_from),
+        billing_till: dayjs(editedItem.billing_till),
         reference: editedItem.reference,
       });
     } else {
@@ -94,9 +105,26 @@ export default function DrawerForm({
 
   useEffect(() => {
     if (selectedConsumer && !isEditing) {
-      form.setFieldValue("amount", selectedConsumer?.plan.price);
+      const latestBillingTill = selectedConsumer.billing_logs?.reduce(
+        (latest: any, log: any) => {
+          if (!log.billing_till) return latest;
+          const candidate = dayjs(log.billing_till);
+          return !latest || candidate.isAfter(latest) ? candidate : latest;
+        },
+        null,
+      );
+      const billingFrom = latestBillingTill
+        ? latestBillingTill.add(1, "millisecond").startOf("day")
+        : dayjs().startOf("day");
+
+      form.setFieldsValue({
+        amount: selectedConsumer?.plan.price,
+        billing_date: dayjs(),
+        billing_from: billingFrom,
+        billing_till: billingFrom.add(1, "month").subtract(1, "day"),
+      });
     }
-  }, [consumer_id]);
+  }, [form, isEditing, selectedConsumer]);
 
   return (
     <>
@@ -117,7 +145,11 @@ export default function DrawerForm({
           onFinishFailed={onFinishFailed}
           autoComplete="off"
         >
-          <Form.Item label="Consumer" name="consumer_id">
+          <Form.Item
+            label="Consumer"
+            name="consumer_id"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
             <Select
               placeholder="Select Consumer"
               size="middle"
@@ -145,6 +177,51 @@ export default function DrawerForm({
               // disabledDate={isMonthDisabled}
               disabled={!consumer_id}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Billing From"
+            name="billing_from"
+            rules={[{ required: true, message: "This field is required" }]}
+          >
+            <DatePicker
+              style={{ width: "100%" }}
+              disabled={!consumer_id}
+              onChange={(value) => {
+                if (value) {
+                  form.setFieldValue(
+                    "billing_till",
+                    value.add(1, "month").subtract(1, "day"),
+                  );
+                }
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Billing Till"
+            name="billing_till"
+            dependencies={["billing_from"]}
+            rules={[
+              { required: true, message: "This field is required" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const billingFrom = getFieldValue("billing_from");
+                  if (
+                    !value ||
+                    !billingFrom ||
+                    !dayjs(value).isBefore(dayjs(billingFrom), "day")
+                  ) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Billing Till cannot be before Billing From"),
+                  );
+                },
+              }),
+            ]}
+          >
+            <DatePicker style={{ width: "100%" }} disabled={!consumer_id} />
           </Form.Item>
 
           <Form.Item

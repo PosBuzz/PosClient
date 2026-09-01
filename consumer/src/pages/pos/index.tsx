@@ -338,7 +338,7 @@ const NewSale = () => {
       try {
         const customerRewards = sale.customer?.rewards_points;
         const amountPaid = Number(sale?.received_amount) || 0;
-        const correctTotal = Number(sale.total) || 0; // Fallback safely
+        const correctTotal = Number(sale.total_amount) || 0;
 
         const getPaymentMethodLabel = (method: string) => {
           const map: Record<string, string> = {
@@ -1940,10 +1940,7 @@ const NewSale = () => {
                     letterSpacing: "-1px",
                   }}
                 >
-                  <Money
-                    value={Math.ceil(Number(totals.total) || 0)}
-                    decimals={0}
-                  />
+                  <Money value={totals.total} />
                 </Text>
               </div>
             </Card>
@@ -2096,12 +2093,7 @@ const NewSale = () => {
                     {dueAmount > 0 ? "Due" : "Change"}
                   </Text>
                   <Text strong style={{ fontSize: 18, fontWeight: 700 }}>
-                    <Money
-                      value={Math.floor(
-                        dueAmount > 0 ? dueAmount : changeAmount,
-                      )}
-                      decimals={0}
-                    />
+                    <Money value={dueAmount > 0 ? dueAmount : changeAmount} />
                   </Text>
                 </div>
               </div>

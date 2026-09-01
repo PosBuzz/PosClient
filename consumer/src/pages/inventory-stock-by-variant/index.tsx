@@ -46,12 +46,14 @@ interface StockByVariantItem {
     name: string;
   };
   total_stock: number;
+  pending_delivery: number;
   is_low_stock: boolean;
   stock_by_branch: Record<string, number>;
   locations: string[];
   locations_by_branch: Record<string, string[]>;
   inventory_items: Array<{
     quantity: number;
+    reserved_quantity: number;
     branch_id: number;
     location?: string | null;
     branch: {
@@ -140,7 +142,7 @@ export default function InventoryStockByVariantPage() {
               </Col>
             )}
             <Col span={12}>
-              <Text strong>Total Stock:</Text>
+              <Text strong>Available Stock:</Text>
               <br />
               <Text
                 strong
@@ -151,6 +153,13 @@ export default function InventoryStockByVariantPage() {
               >
                 {record.total_stock} units
               </Text>
+            </Col>
+            <Col span={12}>
+              <Text strong>Pending Delivery:</Text>
+              <br />
+              <Tag color={record.pending_delivery > 0 ? "orange" : "default"}>
+                {record.pending_delivery} units
+              </Tag>
             </Col>
             {record.alert_quantity && (
               <Col span={12}>
@@ -241,7 +250,7 @@ export default function InventoryStockByVariantPage() {
       ),
     },
     {
-      title: "Total Stock",
+      title: "Available Stock",
       key: "total_stock",
       align: "right",
       render: (_, record) => (
@@ -266,6 +275,15 @@ export default function InventoryStockByVariantPage() {
             </Tooltip>
           )}
         </Space>
+      ),
+    },
+    {
+      title: "Pending Delivery",
+      dataIndex: "pending_delivery",
+      key: "pending_delivery",
+      align: "right",
+      render: (quantity: number) => (
+        <Tag color={quantity > 0 ? "orange" : "default"}>{quantity} units</Tag>
       ),
     },
     {
@@ -378,12 +396,12 @@ export default function InventoryStockByVariantPage() {
 
   return (
     <>
-      {setPageTitle("Stock by Variant")}
+      {setPageTitle("Stock Overview")}
       <PageTitle
-        title="Stock by Variant"
+        title="Stock Overview"
         breadcrumbs={[
           { title: "Dashboard", href: "/" },
-          { title: "Stock by Variant" },
+          { title: "Stock Overview" },
         ]}
       />
 

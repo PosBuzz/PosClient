@@ -339,6 +339,8 @@ model BillingHistory {
   amount       Float
   reference    String?
   billing_date DateTime
+  billing_from DateTime
+  billing_till DateTime
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
@@ -347,6 +349,8 @@ model BillingHistory {
 
   @@unique([consumer_id, billing_date])
   @@index([billing_date])
+  @@index([consumer_id, billing_from, billing_till])
+  @@index([billing_till])
   @@map("billing_histories")
 }
 
