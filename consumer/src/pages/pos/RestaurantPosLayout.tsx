@@ -1,5 +1,4 @@
 import {
-  AppstoreOutlined,
   ArrowLeftOutlined,
   CalculatorOutlined,
   CreditCardOutlined,
@@ -43,6 +42,7 @@ import {
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
 import "./RestaurantPosLayout.css";
+import CompanyLogo from "../../components/CompanyLogo";
 
 type StaffUser = { id: number; name: string };
 type BranchOption = { id: number; name?: string };
@@ -187,9 +187,7 @@ const RestaurantPosLayout = ({
       <section className="restaurant-pos__catalog">
         <header className="restaurant-pos__topbar">
           <div className="restaurant-pos__brand">
-            <div className="restaurant-pos__brand-mark">
-              <AppstoreOutlined />
-            </div>
+            <CompanyLogo size={42} />
             <div className="restaurant-pos__brand-copy">
               <div className="restaurant-pos__brand-name">
                 {companyName || "PosBuzz"}
@@ -666,7 +664,7 @@ const RestaurantPosLayout = ({
                   style={{
                     padding: 10,
                     borderRadius: 10,
-                    background: "#f6f7f9",
+                    background: "transparent",
                   }}
                 >
                   <Row gutter={[8, 8]}>

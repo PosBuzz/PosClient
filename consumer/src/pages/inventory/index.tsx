@@ -29,6 +29,7 @@ import dayjs from "dayjs";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { productApi } from "../../api/product-api";
 import { inventoryApi, InventoryBatch } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
@@ -51,6 +52,13 @@ export default function InventoryPage() {
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
 
+  const [selectedCategory, setSelectedCategory] = useState<
+    number | undefined
+  >();
+  const { data: categories = [] } = useQuery({
+    queryKey: [queryKeys.categories],
+    queryFn: productApi.getCategories,
+  });
   const [selectedBranch, setSelectedBranch] = useState<number | undefined>();
   const [selectedVariant, setSelectedVariant] = useState<number | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,7 +81,7 @@ export default function InventoryPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchText, selectedBranch, selectedVariant]);
+  }, [debouncedSearchText, selectedBranch, selectedVariant, selectedCategory]);
 
   // Queries
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
@@ -84,6 +92,7 @@ export default function InventoryPage() {
       debouncedSearchText,
       selectedBranch,
       selectedVariant,
+      selectedCategory,
     ],
     queryFn: () =>
       inventoryApi.getBatches({
@@ -92,6 +101,7 @@ export default function InventoryPage() {
         search: debouncedSearchText || undefined,
         branch_id: selectedBranch,
         variant_id: selectedVariant,
+        category_id: selectedCategory,
       }),
     staleTime: queryStaleTimeMap[queryKeys.batches],
   });
@@ -150,6 +160,7 @@ export default function InventoryPage() {
     setDebouncedSearchText("");
     setSelectedBranch(undefined);
     setSelectedVariant(undefined);
+    setSelectedCategory(undefined);
     setCurrentPage(1);
   };
 
@@ -158,7 +169,8 @@ export default function InventoryPage() {
     return (
       debouncedSearchText ||
       selectedBranch !== undefined ||
-      selectedVariant !== undefined
+      selectedVariant !== undefined ||
+      selectedCategory !== undefined
     );
   };
 
@@ -586,6 +598,21 @@ export default function InventoryPage() {
                 </Option>
               ))}
             </Select>
+          </Col>
+          <Col xs={24} sm={12} md={6} lg={5}>
+            <Select
+              placeholder="All Categories"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              style={{ width: "100%" }}
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              options={categories.map((category) => ({
+                value: category.id,
+                label: category.name,
+              }))}
+            />
           </Col>
           <Col xs={24} sm={12} md={4} lg={3}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

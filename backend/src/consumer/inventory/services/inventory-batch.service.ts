@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { validatePurchase } from '../utils/validate-purchase.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
@@ -22,6 +23,7 @@ export class InventoryBatchService {
     dto: CreateInventoryBatchDto,
   ) {
     try {
+      validatePurchase(dto.quantity, dto.cost_price, dto.payments);
       // Verify variant belongs to consumer
       const variant = await this.prisma.productVariant.findFirst({
         where: {
@@ -198,10 +200,18 @@ export class InventoryBatchService {
       search?: string;
       branch_id?: number;
       variant_id?: number;
+      category_id?: number;
     } = {},
   ) {
     try {
-      const { page = 1, limit, search, branch_id, variant_id } = options;
+      const {
+        page = 1,
+        limit,
+        search,
+        branch_id,
+        variant_id,
+        category_id,
+      } = options;
 
       // Only apply pagination if limit is specified
       const skip = limit ? (page - 1) * limit : undefined;
@@ -213,6 +223,8 @@ export class InventoryBatchService {
           },
         },
       };
+
+      if (category_id) whereClause.variant.product.category_id = category_id;
 
       if (search) {
         whereClause.OR = [

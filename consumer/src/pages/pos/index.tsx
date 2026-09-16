@@ -84,6 +84,7 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useModalStore } from "../../stores/modalStore";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
+import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
 
 const { Option } = Select;
@@ -1194,6 +1195,7 @@ const NewSale = () => {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <CompanyLogo size={32} />
           <Typography.Title
             level={5}
             style={{ margin: 0, whiteSpace: "nowrap" }}

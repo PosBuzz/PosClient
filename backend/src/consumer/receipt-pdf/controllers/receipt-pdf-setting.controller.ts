@@ -359,6 +359,10 @@ export class ReceiptPdfSettingController {
       base.dueAmount = 67.62;
       base.notes =
         'SAMPLE PREVIEW ONLY - This fake money receipt is used to preview layout.';
+    } else if (type === 'online_delivery_slip') {
+      base.headerText = 'SAMPLE ONLINE DELIVERY SLIP';
+      base.notes = 'Delivery partner: Demo Courier\nCall before delivery.';
+      base.isOnlineOrder = true;
     } else if (type === 'delivery_slip') {
       base.headerText = 'SAMPLE DELIVERY SLIP';
       base.saleNumber = 'SAMPLE-DS-000123';

@@ -14,6 +14,7 @@ export interface VariantBatchInput {
   quantity: number;
   cost_price: number | string;
   vendor_id?: number;
+  location?: string;
   expiry_date?: string;
   payments?: PurchasePayment[];
 }
@@ -89,6 +90,7 @@ export interface ProductPayloadVariant {
     quantity: number;
     cost_price: string;
     vendor_id?: number;
+    location?: string;
     expiry_date?: string;
     payments?: PurchasePayment[];
   }[];

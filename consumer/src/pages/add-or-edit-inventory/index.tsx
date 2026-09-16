@@ -249,7 +249,7 @@ export default function AddEditInventory() {
       quantity: values.quantity,
       cost_price: values.cost_price.toString(),
       vendor_id: values.vendor_id,
-      location: values.location?.trim() || undefined,
+      location: values.location?.trim() || "",
       expiry_date: values.expiry_date
         ? values.expiry_date.format("YYYY-MM-DD")
         : null,

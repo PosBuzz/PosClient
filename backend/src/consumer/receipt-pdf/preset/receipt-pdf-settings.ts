@@ -7,6 +7,7 @@ export const RECEIPT_PRESET_TYPES = [
   'chalan',
   'money_receipt',
   'delivery_slip',
+  'online_delivery_slip',
 ] as const;
 
 export type ReceiptPresetType = (typeof RECEIPT_PRESET_TYPES)[number];
@@ -613,6 +614,19 @@ export const DEFAULT_DELIVERY_SLIP_SETTINGS: ReceiptPdfSettings = {
 /*  Preset type to default settings mapping                           */
 /* ------------------------------------------------------------------ */
 
+export const DEFAULT_ONLINE_DELIVERY_SLIP_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_DELIVERY_SLIP_SETTINGS,
+  header: {
+    ...DEFAULT_DELIVERY_SLIP_SETTINGS.header,
+    text: 'ONLINE DELIVERY SLIP',
+  },
+  payment: {
+    ...DEFAULT_DELIVERY_SLIP_SETTINGS.payment,
+    show: true,
+    showDueAmount: true,
+  },
+};
+
 export const PRESET_DEFAULTS: Record<ReceiptPresetType, ReceiptPdfSettings> = {
   receipt: DEFAULT_RECEIPT_SETTINGS,
   quotation: DEFAULT_QUOTATION_SETTINGS,
@@ -620,6 +634,7 @@ export const PRESET_DEFAULTS: Record<ReceiptPresetType, ReceiptPdfSettings> = {
   chalan: DEFAULT_CHALAN_SETTINGS,
   money_receipt: DEFAULT_MONEY_RECEIPT_SETTINGS,
   delivery_slip: DEFAULT_DELIVERY_SLIP_SETTINGS,
+  online_delivery_slip: DEFAULT_ONLINE_DELIVERY_SLIP_SETTINGS,
 };
 
 /* ------------------------------------------------------------------ */
