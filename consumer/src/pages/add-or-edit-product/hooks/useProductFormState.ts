@@ -36,6 +36,7 @@ export const useProductFormState = () => {
   const {
     updateVariant,
     addVariant,
+    copyVariant,
     deleteVariant,
     toggleProductType,
     addVariantAttribute,
@@ -116,6 +117,7 @@ export const useProductFormState = () => {
     updateField,
     updateVariant,
     addVariant,
+    copyVariant,
     deleteVariant,
     toggleProductType,
     addVariantAttribute,

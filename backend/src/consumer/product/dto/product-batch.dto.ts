@@ -58,6 +58,10 @@ export class CreateProductBatchDto {
   vendor_id?: number;
 
   @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
   @IsDateString()
   expiry_date?: string;
 

@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { validatePurchase } from '../../inventory/utils/validate-purchase.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
@@ -24,6 +25,9 @@ export class ProductVariantService {
     returnHydrated = true,
   ) {
     try {
+      dto.batches?.forEach((batch) =>
+        validatePurchase(batch.quantity, batch.cost_price, batch.payments),
+      );
       // Create the variant
       const variant = await prisma.productVariant.create({
         data: {
@@ -113,6 +117,7 @@ export class ProductVariantService {
                 branch_id: batchDto.branch_id,
                 batch_number: batchDto.batch_number,
                 quantity: batchDto.quantity,
+                location: batchDto.location?.trim() || null,
                 cost_price: batchDto.cost_price,
                 vendor_id: batchDto.vendor_id,
                 expiry_date: batchDto.expiry_date

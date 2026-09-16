@@ -8,6 +8,7 @@ import {
 import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import CompanyLogo from "./components/CompanyLogo";
 import CacheInvalidationButton from "./components/CacheInvalidationButton";
 import ThemeDropdown from "./components/ThemeDropdown";
 import useDarkMode from "./hooks/useDarkMode";
@@ -62,15 +63,31 @@ const AppLayout = () => {
         }}
       >
         {/* Logo Area - Fixed at top, won't scroll away */}
-        <div className="text-center py-4 flex-shrink-0">
-          <h1
-            className={`transition-all duration-300 ${
-              collapsed ? "text-lg" : "text-xl"
-            }`}
-            style={{ color: isDarkMode ? "#fff" : "#000" }}
-          >
-            {collapsed ? "PB" : "PosBuzz"}
-          </h1>
+        <div
+          style={{
+            height: 65,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            padding: "0 12px",
+          }}
+        >
+          <CompanyLogo size={36} />
+          {!collapsed && (
+            <span
+              title={user?.company_name || "PosBuzz"}
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontWeight: 600,
+              }}
+            >
+              {user?.company_name || "PosBuzz"}
+            </span>
+          )}
         </div>
 
         {/* Scrollable Menu Wrapper - Add this custom class */}
@@ -91,14 +108,15 @@ const AppLayout = () => {
           }}
           className="shadow-sm flex items-center justify-between"
         >
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 gap-2">
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <h2 className="m-0 text-lg hidden md:block">
+            <CompanyLogo size={32} />
+            <h2 className="m-0 text-lg hidden md:block truncate">
               {user?.company_name}
             </h2>
           </div>{" "}

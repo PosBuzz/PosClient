@@ -61,6 +61,7 @@ export class ReceiptPdfSettingService implements OnModuleInit {
       { name: 'Default Delivery Chalan', type: 'chalan' },
       { name: 'Default Money Receipt', type: 'money_receipt' },
       { name: 'Default Delivery Slip', type: 'delivery_slip' },
+      { name: 'Default Online Delivery Slip', type: 'online_delivery_slip' },
     ];
 
     const existing = await client.receiptPdfSetting.findMany({

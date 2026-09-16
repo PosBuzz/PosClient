@@ -1070,6 +1070,7 @@ model Sale {
   converted_at         DateTime?
   is_online_order      Boolean   @default(false)
   online_order_status  String?   @default("PENDING")
+  delivery_partner     String?
   is_delivery_later    Boolean   @default(false)
   delivery_status      String?
   delivered_at         DateTime?

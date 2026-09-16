@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export enum OnlineOrderStatus {
   PENDING = 'PENDING',
@@ -15,4 +21,9 @@ export class UpdateOnlineOrderStatusDto {
   @IsNotEmpty()
   @IsEnum(OnlineOrderStatus)
   status: OnlineOrderStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  delivery_partner?: string | null;
 }

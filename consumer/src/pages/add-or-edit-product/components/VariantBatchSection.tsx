@@ -306,6 +306,16 @@ export default function VariantBatchSection({
                 />
               </Col>
 
+              <Col xs={24} md={6}>
+                <Text strong>Product Location (optional)</Text>
+                <Input
+                  value={batch.location}
+                  placeholder="e.g. Aisle A, Shelf 3"
+                  onChange={(event) =>
+                    updateBatch(index, "location", event.target.value)
+                  }
+                />
+              </Col>
               <Col xs={24} md={3} style={{ minWidth: 0 }}>
                 <Text strong>
                   <Space size={4}>

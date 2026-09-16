@@ -446,6 +446,7 @@ export class SalesController {
       id,
       updateStatusDto.status,
       req.user.consumer_id!,
+      updateStatusDto.delivery_partner,
     );
   }
 
