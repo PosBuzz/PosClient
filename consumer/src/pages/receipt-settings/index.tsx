@@ -72,6 +72,11 @@ const TYPE_OPTIONS: {
   { label: "Return", value: "return", color: "orange" },
   { label: "Chalan", value: "chalan", color: "cyan" },
   { label: "Money Receipt", value: "money_receipt", color: "gold" },
+  {
+    label: "Online Delivery Slip",
+    value: "online_delivery_slip",
+    color: "purple",
+  },
   { label: "Delivery Slip", value: "delivery_slip", color: "magenta" },
 ];
 
@@ -82,6 +87,7 @@ const TYPE_LABELS: Record<ReceiptPresetType, string> = {
   chalan: "Delivery Chalan",
   money_receipt: "Money Receipt",
   delivery_slip: "Delivery Slip / Sticker",
+  online_delivery_slip: "Online Delivery Slip",
 };
 
 export default function ReceiptSettingsPage() {

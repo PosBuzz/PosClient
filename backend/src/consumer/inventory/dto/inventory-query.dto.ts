@@ -27,6 +27,11 @@ export class InventoryQueryDto {
   variant_id?: number;
 
   @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  category_id?: number;
+
+  @IsOptional()
   @IsString()
   status?: string;
 }

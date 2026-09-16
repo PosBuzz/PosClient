@@ -360,9 +360,11 @@ export const salesApi = {
   updateOnlineOrderStatus: async (
     id: number,
     status: OnlineOrderStatus,
+    delivery_partner?: string | null,
   ): Promise<Sale> => {
     return await patch(`${endpoints.getSales}/online-orders/${id}/status`, {
       status,
+      delivery_partner,
     });
   },
 

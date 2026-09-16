@@ -195,11 +195,21 @@ const PurchasePayments = () => {
       render: (_: any, record: any) => (
         <Link to={`/purchase-payments/${record.id}`}>
           <Button
-            type={record.payment_status === "paid" ? "default" : "primary"}
+            type={
+              record.payment_status === "paid" ||
+              record.quantity <= 0 ||
+              record.remaining_amount <= 0
+                ? "default"
+                : "primary"
+            }
             icon={<CurrencyIcon />}
             size="small"
           >
-            {record.payment_status === "paid" ? "View" : "Pay"}
+            {record.payment_status === "paid" ||
+            record.quantity <= 0 ||
+            record.remaining_amount <= 0
+              ? "View"
+              : "Pay"}
           </Button>
         </Link>
       ),

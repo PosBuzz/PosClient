@@ -85,7 +85,7 @@ function ProfilePage() {
             <Input.TextArea rows={3} />
           </Form.Item>
 
-          <ImageInput name="logo" label="logo" />
+          <ImageInput name="logo" label="Company Logo" />
 
           <Form.Item>
             <Button

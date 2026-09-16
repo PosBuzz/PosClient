@@ -225,6 +225,7 @@ export const inventoryApi = {
     search?: string;
     branch_id?: number;
     variant_id?: number;
+    category_id?: number;
   }): Promise<PaginatedResponse<InventoryBatch>> => {
     return get(endpoints.inventoryBatches, params);
   },

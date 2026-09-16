@@ -64,6 +64,7 @@ const mapVariantsForPayload = (
           quantity: Number(batch.quantity),
           cost_price: toDecimalString(batch.cost_price),
           vendor_id: batch.vendor_id,
+          location: batch.location?.trim() || undefined,
           expiry_date: batch.expiry_date,
           payments: mapBatchPaymentsForPayload(batch.payments),
         })),

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   Tag,
@@ -13,9 +13,11 @@ import {
   Statistic,
   Modal,
   Form,
+  AutoComplete,
 } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { inventoryApi } from "../../api/inventory-api";
 import { salesApi } from "../../api/sales-api";
 import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
@@ -55,6 +57,31 @@ const statusNames: Record<string, string> = {
 
 const OnlineOrders = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: vendors = [] } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: inventoryApi.getVendors,
+  });
+  const [printingOrderId, setPrintingOrderId] = useState<number | null>(null);
+  const printDeliverySlip = async (order: Sale) => {
+    setPrintingOrderId(order.id!);
+    try {
+      const blob = await salesApi.generateReceipt(
+        order.id!,
+        "online_delivery_slip",
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `online-delivery-slip-${order.sale_number}.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      messageApi?.error("Failed to generate online delivery slip");
+    } finally {
+      setPrintingOrderId(null);
+    }
+  };
   const { user } = useAuthStore();
   const { messageApi } = useMessageStore();
 
@@ -112,7 +139,10 @@ const OnlineOrders = () => {
 
   const handleStatusUpdate = (order: Sale) => {
     setSelectedOrder(order);
-    form.setFieldsValue({ status: order.online_order_status });
+    form.setFieldsValue({
+      status: order.online_order_status || "PENDING",
+      delivery_partner: order.delivery_partner || "",
+    });
     setStatusModalVisible(true);
   };
 
@@ -121,9 +151,14 @@ const OnlineOrders = () => {
       const values = await form.validateFields();
       setUpdatingStatus(true);
 
-      await salesApi.updateOnlineOrderStatus(selectedOrder!.id!, values.status);
+      await salesApi.updateOnlineOrderStatus(
+        selectedOrder!.id!,
+        values.status,
+        values.delivery_partner?.trim() || null,
+      );
+      queryClient.invalidateQueries({ queryKey: ["online-order-stats"] });
 
-      messageApi?.success("Order status updated successfully");
+      messageApi?.success("Order updated successfully");
       setStatusModalVisible(false);
       setSelectedOrder(null);
       form.resetFields();
@@ -183,6 +218,12 @@ const OnlineOrders = () => {
       ),
     },
     {
+      title: "Delivery Partner",
+      dataIndex: "delivery_partner",
+      key: "delivery_partner",
+      render: (value: string) => value || "—",
+    },
+    {
       title: "Total",
       dataIndex: "total_amount",
       key: "total_amount",
@@ -225,7 +266,15 @@ const OnlineOrders = () => {
             onClick={() => handleStatusUpdate(record)}
             size="small"
           >
-            Update Status
+            Edit Order
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            loading={printingOrderId === record.id}
+            onClick={() => printDeliverySlip(record)}
+          >
+            Online Delivery Slip
           </Button>
         </Space>
       ),
@@ -349,7 +398,7 @@ const OnlineOrders = () => {
 
       {/* Status Update Modal */}
       <Modal
-        title={`Update Order Status - ${selectedOrder?.sale_number}`}
+        title={`Edit Online Order - ${selectedOrder?.sale_number}`}
         open={statusModalVisible}
         onOk={handleStatusSubmit}
         onCancel={() => {
@@ -372,6 +421,23 @@ const OnlineOrders = () => {
                 </Option>
               ))}
             </Select>
+          </Form.Item>
+          <Form.Item
+            label="Delivery Partner / Pickup Vendor"
+            name="delivery_partner"
+            rules={[{ max: 200, message: "Use at most 200 characters" }]}
+          >
+            <AutoComplete
+              options={vendors.map((vendor) => ({ value: vendor.name }))}
+              filterOption={(input, option) =>
+                (option?.value || "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              placeholder="Select a vendor or enter a delivery partner"
+              allowClear
+              maxLength={200}
+            />
           </Form.Item>
         </Form>
       </Modal>

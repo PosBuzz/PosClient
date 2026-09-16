@@ -14,7 +14,8 @@ export type ReceiptPresetType =
   | "return"
   | "chalan"
   | "money_receipt"
-  | "delivery_slip";
+  | "delivery_slip"
+  | "online_delivery_slip";
 
 /**
  * Extra documents that can be printed off an existing sale. Same sale data,
@@ -25,6 +26,11 @@ export const SALE_DOCUMENT_PRESETS: {
   type: ReceiptPresetType;
   filePrefix: string;
 }[] = [
+  {
+    label: "Online Delivery Slip",
+    type: "online_delivery_slip",
+    filePrefix: "online-delivery-slip",
+  },
   { label: "Chalan Slip", type: "chalan", filePrefix: "chalan" },
   {
     label: "Money Receipt",

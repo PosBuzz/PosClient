@@ -34,6 +34,7 @@ export default function AddOrEditProductPage() {
     updateField,
     updateVariant,
     addVariant,
+    copyVariant,
     deleteVariant,
     toggleProductType,
     addVariantAttribute,
@@ -139,6 +140,7 @@ export default function AddOrEditProductPage() {
             isEditMode={isEditMode}
             branches={branches}
             onAddVariant={addVariant}
+            onCopyVariant={copyVariant}
             onDeleteVariant={deleteVariant}
             onVariantUpdate={updateVariant}
             onGenerateSKU={generateSKU}
@@ -156,6 +158,7 @@ export default function AddOrEditProductPage() {
     ],
     [
       addVariant,
+      copyVariant,
       addVariantAttribute,
       addVariantSerial,
       branches,

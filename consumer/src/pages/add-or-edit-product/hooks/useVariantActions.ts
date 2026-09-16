@@ -87,6 +87,38 @@ export const useVariantActions = ({
     messageApi?.success("New variant added");
   }, [messageApi, setFormState]);
 
+  const copyVariant = useCallback(
+    (variantKey: string) => {
+      const keys = Object.keys(formState.variants);
+      const nextKey = String(Math.max(...keys.map(Number)) + 1);
+      const source = formState.variants[variantKey];
+      if (!source) return;
+      setFormState((prev) => ({
+        ...prev,
+        has_variants: true,
+        variants: {
+          ...prev.variants,
+          [nextKey]: {
+            ...structuredClone(source),
+            id: undefined,
+            name: "",
+            is_default: false,
+            sku: buildVariantSku(prev.name.trim() || "VAR"),
+            barcode: makeBarcode(),
+            attributes: source.attributes.map(({ name, value }) => ({
+              name,
+              value,
+            })),
+            serials: [],
+            batches: source.id ? [] : structuredClone(source.batches),
+          },
+        },
+      }));
+      return nextKey;
+    },
+    [formState.variants, setFormState],
+  );
+
   const deleteVariant = useCallback(
     (variantKey: string) => {
       setFormState((prev) => {
@@ -258,6 +290,7 @@ export const useVariantActions = ({
   return {
     updateVariant,
     addVariant,
+    copyVariant,
     deleteVariant,
     toggleProductType,
     addVariantAttribute,

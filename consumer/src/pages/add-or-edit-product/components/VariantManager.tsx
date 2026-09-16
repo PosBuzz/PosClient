@@ -1,4 +1,5 @@
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { useState } from "react";
+import { CopyOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { Alert, Button, Popconfirm, Space, Tabs, Typography } from "antd";
 import { ProductFormState, ValidationState, VariantBatchInput } from "../types";
 import VariantForm from "./VariantForm";
@@ -19,6 +20,7 @@ interface VariantManagerProps {
   isEditMode: boolean;
   branches: Option[];
   onAddVariant: () => void;
+  onCopyVariant: (key: string) => string | undefined;
   onDeleteVariant: (variantKey: string) => void;
   onVariantUpdate: (
     variantKey: string,
@@ -49,6 +51,7 @@ export default function VariantManager({
   isEditMode,
   branches,
   onAddVariant,
+  onCopyVariant,
   onDeleteVariant,
   onVariantUpdate,
   onGenerateSKU,
@@ -63,15 +66,34 @@ export default function VariantManager({
 }: VariantManagerProps) {
   // Tab order follows object keys from current form state.
   const variantKeys = Object.keys(formState.variants);
+  const [selectedKey, setSelectedKey] = useState(variantKeys[0]);
+  const activeKey = variantKeys.includes(selectedKey)
+    ? selectedKey
+    : variantKeys[0];
 
   return (
     <Space direction="vertical" style={{ width: "100%" }} size={12}>
       {formState.has_variants && (
         <Space style={{ justifyContent: "space-between", width: "100%" }}>
           <Text strong>Variants ({variantKeys.length})</Text>
-          <Button type="dashed" icon={<PlusOutlined />} onClick={onAddVariant}>
-            Add Variant
-          </Button>
+          <Space>
+            <Button
+              icon={<CopyOutlined />}
+              onClick={() => {
+                const key = onCopyVariant(activeKey);
+                if (key) setSelectedKey(key);
+              }}
+            >
+              Copy & Add Variant
+            </Button>
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={onAddVariant}
+            >
+              Add Variant
+            </Button>
+          </Space>
         </Space>
       )}
 
@@ -85,6 +107,8 @@ export default function VariantManager({
       )}
 
       <Tabs
+        activeKey={activeKey}
+        onChange={setSelectedKey}
         type={
           formState.has_variants && variantKeys.length > 1 ? "card" : "line"
         }

@@ -119,6 +119,7 @@ export interface Sale {
     created_at: string;
   }>;
   is_online_order?: boolean;
+  delivery_partner?: string | null;
   online_order_status?: OnlineOrderStatus | string;
   is_delivery_later?: boolean;
   delivery_status?: "PENDING" | "DELIVERED" | "CANCELLED";

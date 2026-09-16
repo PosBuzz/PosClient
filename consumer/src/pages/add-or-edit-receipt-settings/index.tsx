@@ -425,6 +425,9 @@ export default function ReceiptSettingsFormPage() {
                   <Select.Option value="money_receipt">
                     Money Receipt
                   </Select.Option>
+                  <Select.Option value="online_delivery_slip">
+                    Online Delivery Slip
+                  </Select.Option>
                   <Select.Option value="delivery_slip">
                     Delivery Slip / Sticker
                   </Select.Option>

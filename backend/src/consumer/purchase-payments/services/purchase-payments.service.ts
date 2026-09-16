@@ -227,7 +227,14 @@ export class PurchasePaymentsService {
         0,
       );
 
-      if (totalPaymentAmount <= 0) {
+      if (
+        !Number.isFinite(totalPaymentAmount) ||
+        payments.some(
+          (payment) =>
+            !Number.isFinite(Number(payment.amount)) ||
+            Number(payment.amount) <= 0,
+        )
+      ) {
         throw new BadRequestException(
           'Total payment amount must be greater than 0',
         );
@@ -247,6 +254,11 @@ export class PurchasePaymentsService {
         throw new NotFoundException('Batch not found');
       }
 
+      if (batch.quantity <= 0) {
+        throw new BadRequestException(
+          'Cannot make a vendor payment for a batch with zero quantity',
+        );
+      }
       // Validate payment status
       if (batch.payment_status === 'paid') {
         throw new BadRequestException('Batch is already fully paid');
@@ -266,6 +278,22 @@ export class PurchasePaymentsService {
 
       // Use transaction to ensure data consistency
       const result = await this.prisma.$transaction(async (prisma) => {
+        // Claim the observed balance before writing payments. A concurrent
+        // stock or payment change must not allow a stale payment through.
+        const claimed = await prisma.inventoryBatch.updateMany({
+          where: {
+            id: batch_id,
+            quantity: batch.quantity,
+            paid_amount: batch.paid_amount,
+            cost_price: batch.cost_price,
+          },
+          data: { paid_amount: paidAmount + totalPaymentAmount },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException(
+            'Batch changed. Refresh and try the payment again.',
+          );
+        }
         // Create all payment records
         const createdPayments = await Promise.all(
           payments.map((payment) =>

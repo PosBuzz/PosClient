@@ -3256,6 +3256,7 @@ export class SalesService {
     id: number,
     status: string,
     consumerId: number,
+    deliveryPartner?: string | null,
   ) {
     try {
       // Verify the sale exists and is an online order
@@ -3269,13 +3270,19 @@ export class SalesService {
       });
 
       if (!sale) {
-        throw new Error('Online order not found');
+        throw new NotFoundException('Online order not found');
       }
 
       // Update the order status
       const updatedSale = await this.prisma.sale.update({
         where: { id },
-        data: { online_order_status: status },
+        data: {
+          online_order_status: status,
+          delivery_partner:
+            deliveryPartner === undefined
+              ? undefined
+              : deliveryPartner?.trim() || null,
+        },
         include: {
           customer: true,
           branch: true,
@@ -3297,6 +3304,7 @@ export class SalesService {
 
       return updatedSale;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(
         `Error updating online order status for consumer ${consumerId} and order ${id}`,
         errorStack(error),

@@ -327,44 +327,34 @@ export default function VariantForm({
         </Row>
       </Card>
 
-      <Card>
-        <Tabs
-          items={[
-            ...(!isEditMode
-              ? [
-                  {
-                    key: "batches",
-                    label: `Add Inventory (${variant.batches.length})`,
-                    children: (
-                      <VariantBatchSection
-                        variantId={variantId}
-                        variantName={variant.name}
-                        branches={branches}
-                        batches={variant.batches}
-                        validationState={validationState}
-                        onChange={(batches) =>
-                          onUpdateBatches(variantId, batches)
-                        }
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            {
-              key: "attributes",
-              label: `Attributes (${variant.attributes.length})`,
-              children: null,
-              style: { display: "none" },
-            },
-            {
-              key: "serials",
-              label: `Serials (${variant.serials.length})`,
-              children: null,
-              style: { display: "none" },
-            },
-          ]}
-        />
-      </Card>
+      {!isEditMode && (
+        <Card>
+          <Tabs
+            items={[
+              ...(!isEditMode
+                ? [
+                    {
+                      key: "batches",
+                      label: `Add Inventory (${variant.batches.length})`,
+                      children: (
+                        <VariantBatchSection
+                          variantId={variantId}
+                          variantName={variant.name}
+                          branches={branches}
+                          batches={variant.batches}
+                          validationState={validationState}
+                          onChange={(batches) =>
+                            onUpdateBatches(variantId, batches)
+                          }
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </Card>
+      )}
     </Space>
   );
 }

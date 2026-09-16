@@ -52,6 +52,14 @@ export class SalesPdfService {
 
     let data = this.mapSaleToPdfData(sale, mergedSettings, branding);
 
+    if (presetType === 'online_delivery_slip') {
+      data.notes = [
+        `Delivery partner: ${sale.delivery_partner || 'Not assigned'}`,
+        data.notes,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
     if (dataOverrides) {
       data = { ...data, ...dataOverrides };
     }
