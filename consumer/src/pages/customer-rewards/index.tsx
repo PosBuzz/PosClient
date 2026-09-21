@@ -19,6 +19,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import type { TablePaginationConfig } from "antd";
 import React, { useEffect, useState } from "react";
 import { rewardsApi } from "../../api/rewards.api";
 import PageTitle from "../../components/PageTitle";
@@ -60,27 +61,38 @@ const CustomerRewardsPage: React.FC = () => {
     [],
   );
   const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionPagination, setTransactionPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const [redeemForm] = Form.useForm();
   const [adjustForm] = Form.useForm();
 
-  const loadCustomers = async (newFilters?: RewardsFilters, page?: number) => {
+  const loadCustomers = async (
+    newFilters?: RewardsFilters,
+    page?: number,
+    pageSize?: number,
+  ) => {
     setLoading(true);
     try {
+      const requestedPage = page || pagination.current;
+      const requestedLimit = pageSize || pagination.pageSize;
       const searchFilters = {
         ...filters,
         ...newFilters,
-        page: page || pagination.current,
-        limit: pagination.pageSize,
+        page: requestedPage,
+        limit: requestedLimit,
       };
 
       const response = await rewardsApi.getCustomersWithPoints(searchFilters);
 
       setCustomers(response.data);
       setPagination({
-        current: response.meta.page,
-        pageSize: response.meta.limit,
-        total: response.meta.total,
+        current: response.meta?.page ?? requestedPage,
+        pageSize: response.meta?.limit ?? requestedLimit,
+        total: response.meta?.total ?? 0,
       });
     } catch (error) {
       messageApi?.error("Failed to load customer rewards data");
@@ -96,8 +108,13 @@ const CustomerRewardsPage: React.FC = () => {
     loadCustomers(newFilters, 1);
   };
 
-  const handleTableChange = (newPagination: any) => {
-    loadCustomers(filters, newPagination.current);
+  const handleTableChange = (newPagination: TablePaginationConfig) => {
+    const nextPageSize = newPagination.pageSize ?? pagination.pageSize;
+    // Reset to the first page when the page size changes, otherwise the
+    // requested page may no longer exist.
+    const nextPage =
+      nextPageSize !== pagination.pageSize ? 1 : (newPagination.current ?? 1);
+    loadCustomers(filters, nextPage, nextPageSize);
   };
 
   const handleRedeem = async (values: RedeemPointsDto) => {
@@ -151,20 +168,49 @@ const CustomerRewardsPage: React.FC = () => {
   const openTransactionHistory = async (customer: CustomerRewardsPoints) => {
     setSelectedCustomer(customer);
     setTransactionHistoryVisible(true);
-    await loadTransactions(customer.customer_id);
+    await loadTransactions(
+      customer.customer_id,
+      1,
+      transactionPagination.pageSize,
+    );
   };
 
-  const loadTransactions = async (customerId: number) => {
+  const loadTransactions = async (
+    customerId: number,
+    page = transactionPagination.current,
+    pageSize = transactionPagination.pageSize,
+  ) => {
     setTransactionLoading(true);
     try {
-      const response = await rewardsApi.getCustomerTransactions(customerId);
+      const response = await rewardsApi.getCustomerTransactions(customerId, {
+        page,
+        limit: pageSize,
+      });
       setTransactions(response.data);
+      setTransactionPagination({
+        current: response.meta?.page ?? page,
+        pageSize: response.meta?.limit ?? pageSize,
+        total: response.meta?.total ?? 0,
+      });
     } catch (error) {
       messageApi?.error("Failed to load transaction history");
       console.error("Error loading transactions:", error);
     } finally {
       setTransactionLoading(false);
     }
+  };
+
+  const handleTransactionTableChange = (
+    newPagination: TablePaginationConfig,
+  ) => {
+    if (!selectedCustomer) return;
+    const nextPageSize =
+      newPagination.pageSize ?? transactionPagination.pageSize;
+    const nextPage =
+      nextPageSize !== transactionPagination.pageSize
+        ? 1
+        : (newPagination.current ?? 1);
+    loadTransactions(selectedCustomer.customer_id, nextPage, nextPageSize);
   };
 
   useEffect(() => {
@@ -502,6 +548,11 @@ const CustomerRewardsPage: React.FC = () => {
         onCancel={() => {
           setTransactionHistoryVisible(false);
           setTransactions([]);
+          setTransactionPagination((prev) => ({
+            ...prev,
+            current: 1,
+            total: 0,
+          }));
         }}
         footer={null}
         width={800}
@@ -619,9 +670,15 @@ const CustomerRewardsPage: React.FC = () => {
               rowKey="id"
               loading={transactionLoading}
               pagination={{
-                pageSize: 7,
-                showSizeChanger: false,
+                current: transactionPagination.current,
+                pageSize: transactionPagination.pageSize,
+                total: transactionPagination.total,
+                showSizeChanger: true,
+                pageSizeOptions: [10, 20, 50],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} transactions`,
               }}
+              onChange={handleTransactionTableChange}
               size="small"
             />
           </>
