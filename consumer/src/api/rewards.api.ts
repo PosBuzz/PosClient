@@ -35,7 +35,7 @@ export const rewardsApi = {
   getCustomersWithPoints: async (
     filters?: RewardsFilters,
   ): Promise<RewardsListResponse<CustomerRewardsPoints>> => {
-    return get(endpoints.getCustomersWithPoints, { params: filters });
+    return get(endpoints.getCustomersWithPoints, filters);
   },
 
   getCustomerPoints: async (
@@ -69,16 +69,14 @@ export const rewardsApi = {
   getTransactions: async (
     filters?: RewardsFilters,
   ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
-    return get(endpoints.getRewardsTransactions, { params: filters });
+    return get(endpoints.getRewardsTransactions, filters);
   },
 
   getCustomerTransactions: async (
     customerId: number,
     filters?: RewardsFilters,
   ): Promise<RewardsListResponse<RewardsPointTransaction>> => {
-    return get(endpoints.getCustomerTransactions(customerId), {
-      params: filters,
-    });
+    return get(endpoints.getCustomerTransactions(customerId), filters);
   },
 
   // Utilities
