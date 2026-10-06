@@ -122,9 +122,9 @@ const NewSale = () => {
 
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const [isDeliveryLater, setIsDeliveryLater] = useState(false);
-  const [specialDiscountMode, setSpecialDiscountMode] = useState<
-    "overall" | "quantity"
-  >("overall");
+  const [specialDiscountModes, setSpecialDiscountModes] = useState<
+    Record<number, "overall" | "quantity">
+  >({});
   const isHydratingFromQuotationRef = useRef(false);
 
   const upsertFn = (
@@ -441,7 +441,7 @@ const NewSale = () => {
     setSelectedItems((items) => {
       const currentItem = items.find((item) => item.variant_id === variantId);
       const perQuantity =
-        specialDiscountMode === "quantity" && currentItem
+        specialDiscountModes[variantId] === "quantity" && currentItem
           ? (Number(currentItem.special_discount_amount) || 0) /
             Math.max(1, Number(currentItem.quantity) || 1)
           : undefined;
@@ -467,7 +467,7 @@ const NewSale = () => {
       updateSaleItemSpecialDiscount(
         items,
         variantId,
-        specialDiscountMode === "quantity"
+        specialDiscountModes[variantId] === "quantity"
           ? discount *
               (items.find((item) => item.variant_id === variantId)?.quantity ||
                 0)
@@ -766,21 +766,44 @@ const NewSale = () => {
       key: "special_discount",
       render: (record: SaleItem) => {
         const totalDiscount = Number(record.special_discount_amount) || 0;
+        const mode = specialDiscountModes[record.variant_id] || "overall";
         const value =
-          specialDiscountMode === "quantity"
+          mode === "quantity"
             ? totalDiscount / Math.max(1, Number(record.quantity) || 1)
             : totalDiscount;
         return (
-          <InputNumber
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <Radio.Group
+            size="small"
+            optionType="button"
+            buttonStyle="solid"
+            value={mode}
+            onChange={(event) =>
+              setSpecialDiscountModes((modes) => ({
+                ...modes,
+                [record.variant_id]: event.target.value,
+              }))
+            }
+            options={[
+              { label: "Overall", value: "overall" },
+              { label: "Per qty", value: "quantity" },
+            ]}
+            />
+            <InputNumber
             min={0}
             precision={2}
             value={value}
             onChange={(nextValue) =>
-              updateItemSpecialDiscount(record.variant_id, Number(nextValue) || 0)
+              updateItemSpecialDiscount(
+                record.variant_id,
+                Number(nextValue) || 0,
+              )
             }
             style={{ width: 100 }}
             size="small"
-          />
+            />
+            <Money value={totalDiscount} negative />
+          </div>
         );
       },
     },
@@ -1147,25 +1170,6 @@ const NewSale = () => {
             }}
           >
             <h3 style={{ margin: 0 }}>Sale Items</h3>
-            <Space size={8}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Special discount
-              </Text>
-              <Radio.Group
-                size="small"
-                optionType="button"
-                buttonStyle="solid"
-                value={specialDiscountMode}
-                onChange={(event) => setSpecialDiscountMode(event.target.value)}
-                options={[
-                  { label: "Overall", value: "overall" },
-                  { label: "Per quantity", value: "quantity" },
-                ]}
-              />
-              <Text strong style={{ fontSize: 12 }}>
-                Total <Money value={totals.specialDiscount} negative />
-              </Text>
-            </Space>
           </div>
           <Table
             columns={saleItemColumns}

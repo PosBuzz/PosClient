@@ -78,8 +78,11 @@ type RestaurantPosLayoutProps = {
   selectedItems: SaleItem[];
   onUpdateQuantity: (variantId: number, quantity: number) => void;
   onUpdateSpecialDiscount: (variantId: number, amount: number) => void;
-  specialDiscountMode: "overall" | "quantity";
-  onSpecialDiscountModeChange: (mode: "overall" | "quantity") => void;
+  specialDiscountModes: Record<number, "overall" | "quantity">;
+  onSpecialDiscountModeChange: (
+    variantId: number,
+    mode: "overall" | "quantity",
+  ) => void;
   onRemoveItem: (variantId: number) => void;
   appliedPromotions: Array<{ id: number; name: string }>;
   onRemovePromotion: (promotionId: number) => void;
@@ -141,7 +144,7 @@ const RestaurantPosLayout = ({
   selectedItems,
   onUpdateQuantity,
   onUpdateSpecialDiscount,
-  specialDiscountMode,
+  specialDiscountModes,
   onSpecialDiscountModeChange,
   onRemoveItem,
   appliedPromotions,
@@ -458,7 +461,8 @@ const RestaurantPosLayout = ({
                       size="small"
                       addonBefore="Disc"
                       value={
-                        specialDiscountMode === "quantity"
+                        (specialDiscountModes[item.variant_id] || "overall") ===
+                        "quantity"
                           ? (Number(item.special_discount_amount) || 0) /
                             Math.max(1, Number(item.quantity) || 1)
                           : Number(item.special_discount_amount) || 0
@@ -471,6 +475,31 @@ const RestaurantPosLayout = ({
                       }
                       style={{ width: 150, marginTop: 6 }}
                     />
+                    <Radio.Group
+                      size="small"
+                      optionType="button"
+                      buttonStyle="solid"
+                      value={
+                        specialDiscountModes[item.variant_id] || "overall"
+                      }
+                      onChange={(event) =>
+                        onSpecialDiscountModeChange(
+                          item.variant_id,
+                          event.target.value,
+                        )
+                      }
+                      options={[
+                        { label: "Overall", value: "overall" },
+                        { label: "Per qty", value: "quantity" },
+                      ]}
+                    />
+                    <div style={{ fontSize: 11, marginTop: 2 }}>
+                      Total:{" "}
+                      <Money
+                        value={Number(item.special_discount_amount) || 0}
+                        negative
+                      />
+                    </div>
                   </div>
                   <div className="restaurant-pos__line-total">
                     <Money value={lineTotal} />
@@ -614,25 +643,6 @@ const RestaurantPosLayout = ({
           <div className="restaurant-pos__drawer-title">
             Discounts & charges
           </div>
-          <Space size={8} style={{ marginBottom: 12 }}>
-            <span style={{ fontSize: 12 }}>Special discount</span>
-            <Radio.Group
-              size="small"
-              optionType="button"
-              buttonStyle="solid"
-              value={specialDiscountMode}
-              onChange={(event) =>
-                onSpecialDiscountModeChange(event.target.value)
-              }
-              options={[
-                { label: "Overall", value: "overall" },
-                { label: "Per quantity", value: "quantity" },
-              ]}
-            />
-            <strong style={{ fontSize: 12 }}>
-              Total: <Money value={totals.specialDiscount} negative />
-            </strong>
-          </Space>
           {appliedPromotions.length > 0 && (
             <Space wrap style={{ marginBottom: 12 }}>
               {appliedPromotions.map((promotion) => (
