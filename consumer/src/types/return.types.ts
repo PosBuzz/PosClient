@@ -108,6 +108,10 @@ export interface Return {
       image?: string;
     }>;
   };
+  exchange_sale?: {
+    id: number;
+    sale_number: string;
+  };
   items: ReturnItem[];
   payments: ReturnPayment[];
   exchanges: ReturnExchange[];

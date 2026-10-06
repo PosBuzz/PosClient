@@ -342,6 +342,11 @@ export default function VariantForm({
                           variantName={variant.name}
                           branches={branches}
                           batches={variant.batches}
+                          regularPrice={variant.regular_price}
+                          wholesalePrice={variant.wholesale_price}
+                          onPriceChange={(prices) =>
+                            onVariantUpdate(variantId, prices)
+                          }
                           validationState={validationState}
                           onChange={(batches) =>
                             onUpdateBatches(variantId, batches)

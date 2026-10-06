@@ -53,7 +53,7 @@ const AppLayout = () => {
         collapsed={collapsed}
         breakpoint="md"
         theme={isDarkMode ? "dark" : "light"}
-        className={`h-screen fixed left-0 top-0 bottom-0 ${
+        className={`h-screen fixed left-0 top-0 bottom-0 flex flex-col ${
           isMobile && !collapsed ? "z-50 shadow-lg!" : ""
         }`}
         style={{
@@ -74,25 +74,13 @@ const AppLayout = () => {
           }}
         >
           <CompanyLogo size={36} />
-          {!collapsed && (
-            <span
-              title={user?.company_name || "PosBuzz"}
-              style={{
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontWeight: 600,
-              }}
-            >
-              {user?.company_name || "PosBuzz"}
-            </span>
-          )}
         </div>
 
-        {/* Scrollable Menu Wrapper - Add this custom class */}
         <div className="sidebar-scroll-container">
           <SideBar />
+        </div>
+        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70">
+          Powered by PosBuzz
         </div>
       </Sider>
 
@@ -115,7 +103,6 @@ const AppLayout = () => {
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <CompanyLogo size={32} />
             <h2 className="m-0 text-lg hidden md:block truncate">
               {user?.company_name}
             </h2>

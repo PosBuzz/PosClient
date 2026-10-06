@@ -56,8 +56,8 @@ a {
 }
 
 .sidebar-scroll-container {
-  /* Fill the remaining height of the sidebar under the logo */
-  height: calc(100vh - 65px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 
   /* Hide scrollbar by default */

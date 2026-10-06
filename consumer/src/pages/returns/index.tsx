@@ -106,6 +106,12 @@ const ReturnsTable = () => {
         record.branch?.name || record.branch_name || "N/A",
     },
     {
+      title: "Exchange Sale",
+      key: "exchange_sale",
+      render: (record: Return) =>
+        record.exchange_sale?.sale_number || "-",
+    },
+    {
       title: "Return Date",
       dataIndex: "return_date",
       key: "return_date",

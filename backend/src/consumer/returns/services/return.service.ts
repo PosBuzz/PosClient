@@ -646,6 +646,12 @@ export class ReturnService {
                 customer_name: true,
               },
             },
+            exchange_sale: {
+              select: {
+                id: true,
+                sale_number: true,
+              },
+            },
             branch: {
               select: {
                 id: true,
@@ -726,6 +732,12 @@ export class ReturnService {
                 },
               },
               payments: true,
+            },
+          },
+          exchange_sale: {
+            select: {
+              id: true,
+              sale_number: true,
             },
           },
           branch: {

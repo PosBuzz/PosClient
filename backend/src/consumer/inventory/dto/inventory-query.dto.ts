@@ -10,7 +10,7 @@ export class InventoryQueryDto {
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  limit?: number = 10;
+  limit?: number;
 
   @IsOptional()
   @IsString()

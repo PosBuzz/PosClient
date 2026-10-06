@@ -38,6 +38,12 @@ interface VariantBatchSectionProps {
   variantName: string;
   batches: VariantBatchInput[];
   branches: Option[];
+  regularPrice: number | string | null;
+  wholesalePrice?: number | string | null;
+  onPriceChange: (prices: {
+    regular_price?: number;
+    wholesale_price?: number;
+  }) => void;
   validationState: ValidationState;
   onChange: (batches: VariantBatchInput[]) => void;
 }
@@ -68,6 +74,9 @@ export default function VariantBatchSection({
   variantId,
   batches,
   branches,
+  regularPrice,
+  wholesalePrice,
+  onPriceChange,
   validationState,
   onChange,
 }: VariantBatchSectionProps) {
@@ -155,6 +164,28 @@ export default function VariantBatchSection({
       {batches.map((batch, index) => {
         const batchTotal =
           (Number(batch.cost_price) || 0) * (batch.quantity || 0);
+        const cost = Number(batch.cost_price);
+        const regular = Number(regularPrice);
+        const wholesale = Number(wholesalePrice);
+        const regularProfit =
+          cost > 0 && Number.isFinite(regular)
+            ? ((regular - cost) / cost) * 100
+            : undefined;
+        const wholesaleProfit =
+          cost > 0 &&
+          wholesalePrice !== null &&
+          wholesalePrice !== undefined &&
+          wholesalePrice !== "" &&
+          Number.isFinite(wholesale)
+            ? ((wholesale - cost) / cost) * 100
+            : undefined;
+        const updatePriceFromProfit = (
+          field: "regular_price" | "wholesale_price",
+          value: number | null,
+        ) => {
+          if (cost <= 0 || value === null || !Number.isFinite(value)) return;
+          onPriceChange({ [field]: cost * (1 + value / 100) });
+        };
 
         return (
           <Card key={`${variantId}-batch-${index}`} size="small">
@@ -292,6 +323,36 @@ export default function VariantBatchSection({
                     }
                   </Text>
                 )}
+              </Col>
+
+              <Col xs={24} md={3} style={{ minWidth: 0 }}>
+                <Text strong>Profit % (Regular)</Text>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={-100}
+                  precision={2}
+                  suffix="%"
+                  disabled={cost <= 0}
+                  value={regularProfit}
+                  onChange={(value) =>
+                    updatePriceFromProfit("regular_price", value)
+                  }
+                />
+              </Col>
+
+              <Col xs={24} md={3} style={{ minWidth: 0 }}>
+                <Text strong>Profit % (Wholesale)</Text>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={-100}
+                  precision={2}
+                  suffix="%"
+                  disabled={cost <= 0}
+                  value={wholesaleProfit}
+                  onChange={(value) =>
+                    updatePriceFromProfit("wholesale_price", value)
+                  }
+                />
               </Col>
 
               <Col xs={24} md={4} style={{ minWidth: 0 }}>

@@ -106,12 +106,16 @@ const NewSale = () => {
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
   // State to track if we're in fullscreen mode
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [specialDiscountMode, setSpecialDiscountMode] = useState<
+    "overall" | "quantity"
+  >("overall");
 
   const {
     selectedItems,
     setSelectedItems,
     customers,
     setCustomers,
+    setCustomerSearch,
     servedByUsers,
     filteredVariants,
     setProductSearch,
@@ -209,6 +213,7 @@ const NewSale = () => {
     setSelectedCustomer(null);
     setPriceType(PriceType.REGULAR);
     setAverageDiscountType(DiscountType.FLAT);
+    setSpecialDiscountMode("overall");
     setAppliedPromotions([]);
     setDismissedAutoPromotionIds([]);
     setSalePayments([
@@ -235,6 +240,7 @@ const NewSale = () => {
     messageApi,
     setAppliedPromotions,
     setAverageDiscountType,
+    setSpecialDiscountMode,
     setDismissedAutoPromotionIds,
     setPriceType,
     setSalePayments,
@@ -303,13 +309,30 @@ const NewSale = () => {
       removeItem(variantId);
       return;
     }
+    const currentItem = selectedItems.find(
+      (item) => item.variant_id === variantId,
+    );
+    const specialDiscountPerQuantity =
+      specialDiscountMode === "quantity" && currentItem
+        ? (Number(currentItem.special_discount_amount) || 0) /
+          Math.max(1, Number(currentItem.quantity) || 1)
+        : undefined;
     setSelectedItems((items) =>
       updateSaleItemQuantity({
         sourceItems: items,
         variantId,
         quantity,
         variants: productsForSaleQuery.data || [],
-      }),
+      }).map((item) =>
+        item.variant_id === variantId &&
+        specialDiscountPerQuantity !== undefined
+          ? {
+              ...item,
+              special_discount_amount:
+                specialDiscountPerQuantity * quantity,
+            }
+          : item,
+      ),
     );
   };
 
@@ -319,7 +342,15 @@ const NewSale = () => {
 
   const updateItemSpecialDiscount = (variantId: number, amount: number) => {
     setSelectedItems((items) =>
-      updateSaleItemSpecialDiscount(items, variantId, amount),
+      updateSaleItemSpecialDiscount(
+        items,
+        variantId,
+        specialDiscountMode === "quantity"
+          ? amount *
+              (items.find((item) => item.variant_id === variantId)?.quantity ||
+                0)
+          : amount,
+      ),
     );
   };
 
@@ -609,6 +640,7 @@ const NewSale = () => {
       setSelectedServedByUser(null);
       setPriceType(PriceType.REGULAR);
       setAverageDiscountType(DiscountType.FLAT);
+      setSpecialDiscountMode("overall");
       setAppliedPromotions([]);
       setDismissedAutoPromotionIds([]);
       setSalePayments([
@@ -790,9 +822,14 @@ const NewSale = () => {
       title: "Special Disc",
       key: "special_discount",
       render: (record: SaleItem) => {
-        const specialDiscount = Number(record.special_discount_amount) || 0;
+        const totalSpecialDiscount =
+          Number(record.special_discount_amount) || 0;
+        const displayedSpecialDiscount =
+          specialDiscountMode === "quantity"
+            ? totalSpecialDiscount / Math.max(1, Number(record.quantity) || 1)
+            : totalSpecialDiscount;
         const percent = discountPercentSuffix(
-          specialDiscount,
+          totalSpecialDiscount,
           record.line_total,
         );
         return (
@@ -800,7 +837,7 @@ const NewSale = () => {
             <InputNumber
               min={0}
               precision={2}
-              value={specialDiscount}
+              value={displayedSpecialDiscount}
               onChange={(value) =>
                 updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
               }
@@ -1027,6 +1064,7 @@ const NewSale = () => {
             onBranchChange={handleBranchChange}
             customers={customers}
             selectedCustomer={selectedCustomer}
+            onCustomerSearch={setCustomerSearch}
             onCustomerChange={(value) => {
               const customer = customers.find((item) => item.id === value);
               setSelectedCustomer(customer || null);
@@ -1050,6 +1088,9 @@ const NewSale = () => {
             onAddProduct={addToSale}
             selectedItems={selectedItems}
             onUpdateQuantity={updateItemQuantity}
+            onUpdateSpecialDiscount={updateItemSpecialDiscount}
+            specialDiscountMode={specialDiscountMode}
+            onSpecialDiscountModeChange={setSpecialDiscountMode}
             onRemoveItem={removeItem}
             appliedPromotions={appliedPromotions}
             onRemovePromotion={removeAppliedPromotion}
@@ -2078,6 +2119,37 @@ const NewSale = () => {
                         </div>
                       </div>
                     ) : (
+                      <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Special discount:
+                        </Text>
+                        <Radio.Group
+                          size="small"
+                          optionType="button"
+                          buttonStyle="solid"
+                          value={specialDiscountMode}
+                          onChange={(event) =>
+                            setSpecialDiscountMode(event.target.value)
+                          }
+                          options={[
+                            { label: "Overall", value: "overall" },
+                            { label: "Per quantity", value: "quantity" },
+                          ]}
+                        />
+                        <Text strong style={{ fontSize: 12 }}>
+                          Total{" "}
+                          <Money value={totals.specialDiscount} negative />
+                        </Text>
+                      </div>
                       <Table
                         columns={saleItemColumns}
                         dataSource={selectedItems}
@@ -2089,6 +2161,7 @@ const NewSale = () => {
                         bordered={false}
                         style={{ background: "transparent" }}
                       />
+                      </>
                     )}
                   </div>
                 </Card>
