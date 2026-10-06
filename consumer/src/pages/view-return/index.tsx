@@ -211,6 +211,15 @@ export default function ViewReturn() {
                       {saleData?.sale_number || returnDetail.original_sale_id}
                     </Link>
                   </Descriptions.Item>
+                  {returnDetail.exchange_sale?.sale_number && (
+                    <Descriptions.Item label="Exchange Sale">
+                      <Link
+                        to={`/sales/view/${returnDetail.exchange_sale.id}`}
+                      >
+                        {returnDetail.exchange_sale.sale_number}
+                      </Link>
+                    </Descriptions.Item>
+                  )}
                   <Descriptions.Item label="Customer">
                     {saleData?.customer?.name || "Walk-in Customer"}
                   </Descriptions.Item>

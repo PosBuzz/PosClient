@@ -11,6 +11,7 @@ export enum ConsumerImportSection {
   BRANCHES = 'BRANCHES',
   VENDORS = 'VENDORS',
   PRODUCTS = 'PRODUCTS',
+  INVENTORY = 'INVENTORY',
   CUSTOMERS = 'CUSTOMERS',
 }
 

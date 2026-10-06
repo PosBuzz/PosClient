@@ -375,6 +375,8 @@ export class InventoryService {
         select: {
           id: true,
           name: true,
+          regular_price: true,
+          wholesale_price: true,
         },
         orderBy: {
           name: 'asc',

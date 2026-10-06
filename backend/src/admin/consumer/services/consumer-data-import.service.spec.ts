@@ -109,7 +109,7 @@ describe('ConsumerDataImportService', () => {
     };
     const targetCustomer = { ...sourceCustomer, id: 20, consumer_id: 2 };
     const tx = {
-      $queryRaw: jest.fn(),
+      $executeRaw: jest.fn(),
       consumerImportMapping: {
         findMany: jest.fn().mockResolvedValue([]),
         upsert: jest.fn().mockResolvedValue({}),

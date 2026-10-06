@@ -40,6 +40,8 @@ export interface ReceiptPdfData {
   headerText: string;
 
   saleNumber: string;
+  /** The sale that fulfilled an exchange return, when applicable. */
+  exchangeSaleNumber?: string;
   saleDate: Date;
   saleType: string;
   priceType: string;

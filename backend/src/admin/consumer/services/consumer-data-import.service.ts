@@ -109,6 +109,15 @@ export class ConsumerDataImportService {
             }),
           )
         : Promise.resolve(),
+      selected.has(ConsumerImportSection.INVENTORY)
+        ? this.prisma.inventoryBatch
+            .count({
+              where: {
+                branch: { consumer_id: source.id },
+              },
+            })
+            .then((count) => (counts.inventory_batches = count))
+        : Promise.resolve(),
     ]);
 
     return {
@@ -121,6 +130,8 @@ export class ConsumerDataImportService {
         repeated_imports: 'Previously mapped records are reused',
         products:
           'Includes catalog dependencies, variants, tags and attributes; excludes stock and transaction history',
+        inventory:
+          'Includes inventory batches and current stock; requires Products and Branches to be selected in the same import',
         customers:
           'Includes customer profiles; excludes sales and rewards history',
         branches:
@@ -219,7 +230,7 @@ export class ConsumerDataImportService {
 
     // Serialize imports into one destination. This closes the race between
     // duplicate checks, plan-limit checks, and inserts.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(${targetId})`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${targetId})`;
 
     const mappings = await tx.consumerImportMapping.findMany({
       where: {
@@ -497,7 +508,124 @@ export class ConsumerDataImportService {
       });
     }
 
+    if (selected.has(ConsumerImportSection.INVENTORY)) {
+      if (
+        !selected.has(ConsumerImportSection.PRODUCTS) ||
+        !selected.has(ConsumerImportSection.BRANCHES)
+      ) {
+        throw new BadRequestException(
+          'Inventory import requires Products and Branches to be selected',
+        );
+      }
+      await this.importInventory({
+        tx,
+        sourceId,
+        targetId,
+        strategy,
+        mappedId,
+        saveMapping,
+        count,
+      });
+    }
+
     return summary;
+  }
+
+  private async importInventory(context: {
+    tx: Prisma.TransactionClient;
+    sourceId: number;
+    targetId: number;
+    strategy: ConsumerImportDuplicateStrategy;
+    mappedId: (entity: string, sourceRecordId: number) => number | undefined;
+    saveMapping: (
+      entity: string,
+      sourceRecordId: number,
+      targetRecordId: number,
+    ) => Promise<void>;
+    count: (entity: string, action: ImportAction) => void;
+  }) {
+    const { tx, sourceId, targetId, strategy, mappedId, saveMapping, count } =
+      context;
+    const sourceBatches = await tx.inventoryBatch.findMany({
+      where: { branch: { consumer_id: sourceId } },
+      orderBy: { id: 'asc' },
+    });
+    const targetBatches = await tx.inventoryBatch.findMany({
+      where: { branch: { consumer_id: targetId } },
+    });
+
+    for (const source of sourceBatches) {
+      const targetVariantId = mappedId('product_variant', source.variant_id);
+      const targetBranchId = mappedId('branch', source.branch_id);
+      const targetVendorId = source.vendor_id
+        ? mappedId('vendor', source.vendor_id)
+        : undefined;
+
+      if (!targetVariantId || !targetBranchId) {
+        throw new BadRequestException(
+          `Inventory batch '${source.batch_number}' is missing its imported product variant or branch relationship`,
+        );
+      }
+      if (source.vendor_id && !targetVendorId) {
+        throw new BadRequestException(
+          `Inventory batch '${source.batch_number}' is missing its imported vendor relationship`,
+        );
+      }
+
+      const mapped = mappedId('inventory_batch', source.id);
+      let target = mapped
+        ? targetBatches.find((row) => row.id === mapped)
+        : undefined;
+      const naturalTarget = targetBatches.find(
+        (row) =>
+          row.batch_number === source.batch_number &&
+          row.variant_id === targetVariantId &&
+          row.branch_id === targetBranchId,
+      );
+
+      if (target && naturalTarget && naturalTarget.id !== target.id) {
+        count('inventory_batches', 'conflicts');
+        continue;
+      }
+      target ??= naturalTarget;
+
+      const batchData = {
+        variant_id: targetVariantId,
+        branch_id: targetBranchId,
+        batch_number: source.batch_number,
+        quantity: source.quantity,
+        reserved_quantity: source.reserved_quantity,
+        cost_price: source.cost_price,
+        vendor_id: targetVendorId ?? null,
+        location: source.location,
+        expiry_date: source.expiry_date,
+        payment_status: source.payment_status,
+        paid_amount: source.paid_amount,
+      };
+
+      if (target) {
+        await saveMapping('inventory_batch', source.id, target.id);
+        if (strategy === ConsumerImportDuplicateStrategy.UPDATE) {
+          target = await tx.inventoryBatch.update({
+            where: { id: target.id },
+            data: batchData,
+          });
+          count('inventory_batches', 'updated');
+        } else {
+          count('inventory_batches', 'skipped');
+        }
+      } else {
+        target = await tx.inventoryBatch.create({
+          data: {
+            ...batchData,
+            created_at: source.created_at,
+          },
+        });
+        await saveMapping('inventory_batch', source.id, target.id);
+        targetBatches.push(target);
+        count('inventory_batches', 'created');
+      }
+    }
   }
 
   private async importProducts(context: {

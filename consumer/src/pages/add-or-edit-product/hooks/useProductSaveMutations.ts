@@ -9,6 +9,22 @@ import {
   mapStateToUpdateProductPayload,
 } from "../utils/payload-mappers";
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const responseMessage = (
+    error as {
+      response?: { data?: { message?: string | string[] } };
+    }
+  )?.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage.join(", ");
+  }
+
+  return (
+    responseMessage || (error instanceof Error && error.message) || fallback
+  );
+};
+
 interface UseProductSaveMutationsParams {
   formState: ProductFormState;
   isEditMode: boolean;
@@ -71,11 +87,7 @@ export const useProductSaveMutations = ({
       navigate("/products");
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Failed to create product";
-      messageApi?.error(message);
+      messageApi?.error(getErrorMessage(error, "Failed to create product"));
     },
   });
 
@@ -95,11 +107,7 @@ export const useProductSaveMutations = ({
       navigate("/products");
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Failed to update product";
-      messageApi?.error(message);
+      messageApi?.error(getErrorMessage(error, "Failed to update product"));
     },
   });
 

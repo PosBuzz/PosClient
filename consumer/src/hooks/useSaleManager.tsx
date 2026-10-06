@@ -33,6 +33,7 @@ interface UseSaleManagerArgs {
 export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   const [selectedItems, setSelectedItems] = useState<SaleItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [servedByUsers, setServedByUsers] = useState<
     { id: number; name: string }[]
   >([]);
@@ -65,9 +66,12 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
   const userBranches = user?.branches || [];
 
   const customersQuery = useQuery({
-    queryKey: [queryKeys.customers],
+    queryKey: [queryKeys.customers, customerSearch],
     queryFn: async () => {
-      const data = await get(endpoints.getCustomers);
+      const data = await get(endpoints.getCustomers, {
+        ...(customerSearch ? { search: customerSearch } : {}),
+        limit: 100,
+      });
       return data.data || data;
     },
     staleTime: queryStaleTimeMap[queryKeys.customers],
@@ -117,9 +121,16 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
 
   useEffect(() => {
     if (customersQuery.data) {
-      setCustomers(customersQuery.data);
+      setCustomers(
+        selectedCustomer &&
+          !customersQuery.data.some(
+            (customer: Customer) => customer.id === selectedCustomer.id,
+          )
+          ? [selectedCustomer, ...customersQuery.data]
+          : customersQuery.data,
+      );
     }
-  }, [customersQuery.data]);
+  }, [customersQuery.data, selectedCustomer]);
 
   useEffect(() => {
     if (servedByUsersQuery.data) {
@@ -146,6 +157,7 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     setSelectedItems,
     customers,
     setCustomers,
+    setCustomerSearch,
     servedByUsers,
     setServedByUsers,
     filteredVariants,

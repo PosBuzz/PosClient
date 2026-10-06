@@ -64,6 +64,17 @@ export default function AddEditInventory() {
   // Watch form values for real-time summary updates
   const quantity = Form.useWatch("quantity", form) || 0;
   const costPrice = Form.useWatch("cost_price", form) || 0;
+  const regularPrice = Form.useWatch("regular_price", form);
+  const wholesalePrice = Form.useWatch("wholesale_price", form);
+  const cost = Number(costPrice);
+  const regularProfit =
+    cost > 0 && regularPrice != null
+      ? ((Number(regularPrice) - cost) / cost) * 100
+      : undefined;
+  const wholesaleProfit =
+    cost > 0 && wholesalePrice != null && wholesalePrice !== ""
+      ? ((Number(wholesalePrice) - cost) / cost) * 100
+      : undefined;
 
   // Queries
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -145,6 +156,11 @@ export default function AddEditInventory() {
         batch_number: existingBatch.batch_number,
         quantity: existingBatch.quantity,
         cost_price: parseFloat(existingBatch.cost_price),
+        regular_price: Number(existingBatch.variant.regular_price),
+        wholesale_price:
+          existingBatch.variant.wholesale_price == null
+            ? null
+            : Number(existingBatch.variant.wholesale_price),
         vendor_id: existingBatch.vendor_id,
         location: existingBatch.location,
         expiry_date: existingBatch.expiry_date
@@ -157,6 +173,8 @@ export default function AddEditInventory() {
       setSelectedVariant({
         id: existingBatch.variant.id,
         name: existingBatch.variant.name,
+        regular_price: existingBatch.variant.regular_price,
+        wholesale_price: existingBatch.variant.wholesale_price,
       });
 
       // Populate payments from existing batch
@@ -214,6 +232,8 @@ export default function AddEditInventory() {
     // Explicitly set the form field value to ensure it's captured
     form.setFieldsValue({
       variant_id: variantId,
+      regular_price: variant.regular_price,
+      wholesale_price: variant.wholesale_price ?? null,
     });
 
     // Auto-generate batch number
@@ -248,6 +268,11 @@ export default function AddEditInventory() {
       batch_number: values.batch_number,
       quantity: values.quantity,
       cost_price: values.cost_price.toString(),
+      regular_price: values.regular_price?.toString(),
+      wholesale_price:
+        values.wholesale_price == null
+          ? undefined
+          : values.wholesale_price.toString(),
       vendor_id: values.vendor_id,
       location: values.location?.trim() || "",
       expiry_date: values.expiry_date
@@ -435,6 +460,72 @@ export default function AddEditInventory() {
                       disabled={!selectedVariant || isEdit}
                     />
                   }
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={6}>
+              <Form.Item name="regular_price" label="Regular Price">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={2}
+                  prefix={takaPrefix}
+                  disabled={cost <= 0}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={6}>
+              <Form.Item label="Profit % (Regular)">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={-100}
+                  precision={2}
+                  suffix="%"
+                  disabled={cost <= 0}
+                  value={regularProfit}
+                  onChange={(value) => {
+                    if (cost > 0 && value != null) {
+                      form.setFieldValue(
+                        "regular_price",
+                        cost * (1 + value / 100),
+                      );
+                    }
+                  }}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={6}>
+              <Form.Item name="wholesale_price" label="Wholesale Price">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0}
+                  precision={2}
+                  prefix={takaPrefix}
+                  disabled={cost <= 0}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={6}>
+              <Form.Item label="Profit % (Wholesale)">
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={-100}
+                  precision={2}
+                  suffix="%"
+                  disabled={cost <= 0}
+                  value={wholesaleProfit}
+                  onChange={(value) => {
+                    if (cost > 0 && value != null) {
+                      form.setFieldValue(
+                        "wholesale_price",
+                        cost * (1 + value / 100),
+                      );
+                    }
+                  }}
                 />
               </Form.Item>
             </Col>

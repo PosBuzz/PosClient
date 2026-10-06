@@ -31,6 +31,8 @@ export interface InventoryBatch {
     id: number;
     name: string;
     sku?: string;
+    regular_price: string;
+    wholesale_price?: string | null;
     product: {
       id: number;
       name: string;
@@ -60,6 +62,8 @@ export interface CreateBatchData {
   batch_number: string;
   quantity: number;
   cost_price: string;
+  regular_price?: string;
+  wholesale_price?: string;
   vendor_id?: number;
   location?: string;
   expiry_date?: string;
@@ -79,6 +83,8 @@ export interface ProductForInventory {
 export interface ProductVariant {
   id: number;
   name: string;
+  regular_price: string;
+  wholesale_price?: string | null;
 }
 
 export interface Branch {

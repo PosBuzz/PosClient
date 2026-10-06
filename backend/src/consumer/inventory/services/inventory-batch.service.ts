@@ -85,6 +85,39 @@ export class InventoryBatchService {
 
       // Create batch and audit log in transaction
       const batch = await this.prisma.$transaction(async (prisma) => {
+        if (
+          dto.regular_price !== undefined ||
+          dto.wholesale_price !== undefined
+        ) {
+          const regularChanged =
+            dto.regular_price !== undefined &&
+            dto.regular_price !== variant.regular_price.toString();
+          const wholesaleChanged =
+            dto.wholesale_price !== undefined &&
+            dto.wholesale_price !==
+              (variant.wholesale_price?.toString() ?? undefined);
+
+          await prisma.productVariant.update({
+            where: { id: dto.variant_id },
+            data: {
+              regular_price: dto.regular_price,
+              wholesale_price: dto.wholesale_price,
+            },
+          });
+
+          if (regularChanged || wholesaleChanged) {
+            await prisma.priceHistory.create({
+              data: {
+                variant_id: dto.variant_id,
+                regular_price:
+                  dto.regular_price ?? variant.regular_price.toString(),
+                wholesale_price:
+                  dto.wholesale_price ?? variant.wholesale_price?.toString(),
+              },
+            });
+          }
+        }
+
         // Determine payment status and paid amount
         const totalCost = Number(dto.cost_price) * dto.quantity;
         let paidAmount = 0;
@@ -363,6 +396,45 @@ export class InventoryBatchService {
           expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
         },
       });
+
+      if (
+        dto.regular_price !== undefined ||
+        dto.wholesale_price !== undefined
+      ) {
+        const currentVariant =
+          await this.prisma.productVariant.findUniqueOrThrow({
+            where: { id: _batch.variant_id },
+            select: { regular_price: true, wholesale_price: true },
+          });
+        const regularChanged =
+          dto.regular_price !== undefined &&
+          dto.regular_price !== currentVariant.regular_price.toString();
+        const wholesaleChanged =
+          dto.wholesale_price !== undefined &&
+          dto.wholesale_price !==
+            (currentVariant.wholesale_price?.toString() ?? undefined);
+
+        await this.prisma.productVariant.update({
+          where: { id: _batch.variant_id },
+          data: {
+            regular_price: dto.regular_price,
+            wholesale_price: dto.wholesale_price,
+          },
+        });
+
+        if (regularChanged || wholesaleChanged) {
+          await this.prisma.priceHistory.create({
+            data: {
+              variant_id: _batch.variant_id,
+              regular_price:
+                dto.regular_price ?? currentVariant.regular_price.toString(),
+              wholesale_price:
+                dto.wholesale_price ??
+                currentVariant.wholesale_price?.toString(),
+            },
+          });
+        }
+      }
 
       return updatedBatch;
     } catch (error) {

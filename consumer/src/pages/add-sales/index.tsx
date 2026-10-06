@@ -122,6 +122,9 @@ const NewSale = () => {
 
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const [isDeliveryLater, setIsDeliveryLater] = useState(false);
+  const [specialDiscountMode, setSpecialDiscountMode] = useState<
+    "overall" | "quantity"
+  >("overall");
   const isHydratingFromQuotationRef = useRef(false);
 
   const upsertFn = (
@@ -435,14 +438,24 @@ const NewSale = () => {
       return;
     }
 
-    setSelectedItems((items) =>
-      updateSaleItemQuantity({
+    setSelectedItems((items) => {
+      const currentItem = items.find((item) => item.variant_id === variantId);
+      const perQuantity =
+        specialDiscountMode === "quantity" && currentItem
+          ? (Number(currentItem.special_discount_amount) || 0) /
+            Math.max(1, Number(currentItem.quantity) || 1)
+          : undefined;
+      return updateSaleItemQuantity({
         sourceItems: items,
         variantId,
         quantity,
         variants: productsForSaleQuery.data || [],
-      }),
-    );
+      }).map((item) =>
+        item.variant_id === variantId && perQuantity !== undefined
+          ? { ...item, special_discount_amount: perQuantity * quantity }
+          : item,
+      );
+    });
   };
 
   const removeItem = (variantId: number) => {
@@ -451,7 +464,15 @@ const NewSale = () => {
 
   const updateItemSpecialDiscount = (variantId: number, discount: number) => {
     setSelectedItems((items) =>
-      updateSaleItemSpecialDiscount(items, variantId, discount),
+      updateSaleItemSpecialDiscount(
+        items,
+        variantId,
+        specialDiscountMode === "quantity"
+          ? discount *
+              (items.find((item) => item.variant_id === variantId)?.quantity ||
+                0)
+          : discount,
+      ),
     );
   };
 
@@ -743,18 +764,25 @@ const NewSale = () => {
     {
       title: "Special Disc",
       key: "special_discount",
-      render: (record: SaleItem) => (
-        <InputNumber
-          min={0}
-          precision={2}
-          value={Number(record.special_discount_amount) || 0}
-          onChange={(value) =>
-            updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
-          }
-          style={{ width: 100 }}
-          size="small"
-        />
-      ),
+      render: (record: SaleItem) => {
+        const totalDiscount = Number(record.special_discount_amount) || 0;
+        const value =
+          specialDiscountMode === "quantity"
+            ? totalDiscount / Math.max(1, Number(record.quantity) || 1)
+            : totalDiscount;
+        return (
+          <InputNumber
+            min={0}
+            precision={2}
+            value={value}
+            onChange={(nextValue) =>
+              updateItemSpecialDiscount(record.variant_id, Number(nextValue) || 0)
+            }
+            style={{ width: 100 }}
+            size="small"
+          />
+        );
+      },
     },
     {
       title: "Total",
@@ -1110,7 +1138,35 @@ const NewSale = () => {
         </div>
 
         <div style={{ borderRadius: 8, marginBottom: 16 }}>
-          <h3 style={{ marginBottom: 12 }}>Sale Items</h3>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <h3 style={{ margin: 0 }}>Sale Items</h3>
+            <Space size={8}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Special discount
+              </Text>
+              <Radio.Group
+                size="small"
+                optionType="button"
+                buttonStyle="solid"
+                value={specialDiscountMode}
+                onChange={(event) => setSpecialDiscountMode(event.target.value)}
+                options={[
+                  { label: "Overall", value: "overall" },
+                  { label: "Per quantity", value: "quantity" },
+                ]}
+              />
+              <Text strong style={{ fontSize: 12 }}>
+                Total <Money value={totals.specialDiscount} negative />
+              </Text>
+            </Space>
+          </div>
           <Table
             columns={saleItemColumns}
             dataSource={selectedItems}
