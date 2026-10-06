@@ -138,6 +138,7 @@ export class ReturnPdfService {
       headerText: settings.header?.text || 'RETURN RECEIPT',
 
       saleNumber: returnRecord.return_number || '',
+      exchangeSaleNumber: returnRecord.exchange_sale?.sale_number || '',
       saleDate: returnRecord.return_date
         ? new Date(returnRecord.return_date)
         : new Date(),

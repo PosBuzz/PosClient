@@ -62,6 +62,7 @@ type RestaurantPosLayoutProps = {
   customers: Customer[];
   selectedCustomer: Customer | null;
   onCustomerChange: (customerId?: number) => void;
+  onCustomerSearch: (value: string) => void;
   onAddCustomer: () => void;
   servedByUsers: StaffUser[];
   selectedServedByUser: StaffUser | null;
@@ -76,6 +77,9 @@ type RestaurantPosLayoutProps = {
   onAddProduct: (variant: ProductVariantForSale) => void;
   selectedItems: SaleItem[];
   onUpdateQuantity: (variantId: number, quantity: number) => void;
+  onUpdateSpecialDiscount: (variantId: number, amount: number) => void;
+  specialDiscountMode: "overall" | "quantity";
+  onSpecialDiscountModeChange: (mode: "overall" | "quantity") => void;
   onRemoveItem: (variantId: number) => void;
   appliedPromotions: Array<{ id: number; name: string }>;
   onRemovePromotion: (promotionId: number) => void;
@@ -86,6 +90,7 @@ type RestaurantPosLayoutProps = {
     subtotal: number;
     totalTax: number;
     finalDiscount: number;
+    specialDiscount: number;
     shippingCost: number;
     total: number;
     discountBreakdownByVariant?: Record<number, { total?: number }>;
@@ -120,6 +125,7 @@ const RestaurantPosLayout = ({
   customers,
   selectedCustomer,
   onCustomerChange,
+  onCustomerSearch,
   onAddCustomer,
   servedByUsers,
   selectedServedByUser,
@@ -134,6 +140,9 @@ const RestaurantPosLayout = ({
   onAddProduct,
   selectedItems,
   onUpdateQuantity,
+  onUpdateSpecialDiscount,
+  specialDiscountMode,
+  onSpecialDiscountModeChange,
   onRemoveItem,
   appliedPromotions,
   onRemovePromotion,
@@ -443,6 +452,25 @@ const RestaurantPosLayout = ({
                         onClick={() => onRemoveItem(item.variant_id)}
                       />
                     </div>
+                    <InputNumber
+                      min={0}
+                      precision={2}
+                      size="small"
+                      addonBefore="Disc"
+                      value={
+                        specialDiscountMode === "quantity"
+                          ? (Number(item.special_discount_amount) || 0) /
+                            Math.max(1, Number(item.quantity) || 1)
+                          : Number(item.special_discount_amount) || 0
+                      }
+                      onChange={(value) =>
+                        onUpdateSpecialDiscount(
+                          item.variant_id,
+                          Number(value) || 0,
+                        )
+                      }
+                      style={{ width: 150, marginTop: 6 }}
+                    />
                   </div>
                   <div className="restaurant-pos__line-total">
                     <Money value={lineTotal} />
@@ -538,7 +566,9 @@ const RestaurantPosLayout = ({
                 placeholder="Walk-in customer"
                 value={selectedCustomer?.id}
                 onChange={onCustomerChange}
-                optionFilterProp="label"
+                onSearch={onCustomerSearch}
+                onClear={() => onCustomerSearch("")}
+                filterOption={false}
                 style={{ width: "calc(100% - 42px)" }}
                 options={customers.map((customer) => ({
                   value: customer.id,
@@ -584,6 +614,25 @@ const RestaurantPosLayout = ({
           <div className="restaurant-pos__drawer-title">
             Discounts & charges
           </div>
+          <Space size={8} style={{ marginBottom: 12 }}>
+            <span style={{ fontSize: 12 }}>Special discount</span>
+            <Radio.Group
+              size="small"
+              optionType="button"
+              buttonStyle="solid"
+              value={specialDiscountMode}
+              onChange={(event) =>
+                onSpecialDiscountModeChange(event.target.value)
+              }
+              options={[
+                { label: "Overall", value: "overall" },
+                { label: "Per quantity", value: "quantity" },
+              ]}
+            />
+            <strong style={{ fontSize: 12 }}>
+              Total: <Money value={totals.specialDiscount} negative />
+            </strong>
+          </Space>
           {appliedPromotions.length > 0 && (
             <Space wrap style={{ marginBottom: 12 }}>
               {appliedPromotions.map((promotion) => (

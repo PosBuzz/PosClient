@@ -28,6 +28,12 @@ const sectionOptions = [
       "Catalog, units, categories, brands, tags, variants and attributes. Stock and sales are not included.",
   },
   {
+    value: "INVENTORY",
+    label: "Inventory",
+    description:
+      "Current stock batches and quantities. Requires Products and Branches to be selected.",
+  },
+  {
     value: "CUSTOMERS",
     label: "Customers",
     description:
@@ -202,7 +208,16 @@ export default function ImportDataModal({
           <Text strong>Information to import</Text>
           <Checkbox.Group
             value={sections}
-            onChange={(values) => setSections(values as string[])}
+            onChange={(values) => {
+              const nextSections = values as string[];
+              if (nextSections.includes("INVENTORY")) {
+                setSections([
+                  ...new Set([...nextSections, "PRODUCTS", "BRANCHES"]),
+                ]);
+              } else {
+                setSections(nextSections);
+              }
+            }}
             style={{ display: "grid", gap: 12, marginTop: 10 }}
           >
             {sectionOptions.map((option) => (

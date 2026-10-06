@@ -57,6 +57,14 @@ export class CreateInventoryBatchDto {
   cost_price: string;
 
   @IsOptional()
+  @IsString()
+  regular_price?: string;
+
+  @IsOptional()
+  @IsString()
+  wholesale_price?: string;
+
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
   vendor_id?: number;

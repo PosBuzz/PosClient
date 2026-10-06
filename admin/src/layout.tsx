@@ -50,7 +50,7 @@ const AppLayout = () => {
         collapsed={collapsed}
         breakpoint="md"
         theme={isDarkMode ? "dark" : "light"}
-        className={`h-screen fixed left-0 top-0 bottom-0 overflow-auto ${
+        className={`h-screen fixed left-0 top-0 bottom-0 flex flex-col ${
           isMobile && !collapsed ? "z-50 shadow-lg!" : ""
         }`}
         style={{
@@ -58,18 +58,20 @@ const AppLayout = () => {
           display: isMobile && collapsed ? "none" : "block",
         }}
       >
-        <div className="text-center py-4">
-          <h1
-            className={`transition-all duration-300 ${
-              collapsed ? "text-lg" : "text-xl"
-            }`}
-            style={{ color: isDarkMode ? "#fff" : "#000" }}
-          >
-            {collapsed ? "PB" : "PosBuzz"}
-          </h1>
+        <div className="flex h-[65px] shrink-0 items-center justify-center px-3">
+          <img
+            src="/favicon.ico"
+            alt="PosBuzz logo"
+            className="h-9 w-9 object-contain"
+          />
         </div>
 
-        <SideBar />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <SideBar />
+        </div>
+        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70">
+          Powered by PosBuzz
+        </div>
       </Sider>
 
       {/* Main Content Area - Adjusted for sidebar */}

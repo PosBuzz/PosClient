@@ -749,6 +749,16 @@ export class ReceiptPdfService {
       y += lh;
     }
 
+    if (s.orderInfo.showSaleNumber && data.exchangeSaleNumber) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text('Exchange Sale No:', leftX, y, { continued: true, width: halfW })
+        .font('Helvetica')
+        .text(' ' + data.exchangeSaleNumber);
+      y += lh;
+    }
+
     if (s.orderInfo.showDate) {
       const dateStr = this.formatDate(data.saleDate);
       doc
