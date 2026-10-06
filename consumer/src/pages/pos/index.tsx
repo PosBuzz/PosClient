@@ -106,9 +106,9 @@ const NewSale = () => {
   const shippingCost = Form.useWatch("shipping_cost", form) || 0;
   // State to track if we're in fullscreen mode
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [specialDiscountMode, setSpecialDiscountMode] = useState<
-    "overall" | "quantity"
-  >("overall");
+  const [specialDiscountModes, setSpecialDiscountModes] = useState<
+    Record<number, "overall" | "quantity">
+  >({});
 
   const {
     selectedItems,
@@ -213,7 +213,7 @@ const NewSale = () => {
     setSelectedCustomer(null);
     setPriceType(PriceType.REGULAR);
     setAverageDiscountType(DiscountType.FLAT);
-    setSpecialDiscountMode("overall");
+    setSpecialDiscountModes({});
     setAppliedPromotions([]);
     setDismissedAutoPromotionIds([]);
     setSalePayments([
@@ -240,7 +240,7 @@ const NewSale = () => {
     messageApi,
     setAppliedPromotions,
     setAverageDiscountType,
-    setSpecialDiscountMode,
+    setSpecialDiscountModes,
     setDismissedAutoPromotionIds,
     setPriceType,
     setSalePayments,
@@ -313,7 +313,7 @@ const NewSale = () => {
       (item) => item.variant_id === variantId,
     );
     const specialDiscountPerQuantity =
-      specialDiscountMode === "quantity" && currentItem
+      specialDiscountModes[variantId] === "quantity" && currentItem
         ? (Number(currentItem.special_discount_amount) || 0) /
           Math.max(1, Number(currentItem.quantity) || 1)
         : undefined;
@@ -345,7 +345,7 @@ const NewSale = () => {
       updateSaleItemSpecialDiscount(
         items,
         variantId,
-        specialDiscountMode === "quantity"
+        specialDiscountModes[variantId] === "quantity"
           ? amount *
               (items.find((item) => item.variant_id === variantId)?.quantity ||
                 0)
@@ -640,7 +640,7 @@ const NewSale = () => {
       setSelectedServedByUser(null);
       setPriceType(PriceType.REGULAR);
       setAverageDiscountType(DiscountType.FLAT);
-      setSpecialDiscountMode("overall");
+      setSpecialDiscountModes({});
       setAppliedPromotions([]);
       setDismissedAutoPromotionIds([]);
       setSalePayments([
@@ -825,15 +825,32 @@ const NewSale = () => {
         const totalSpecialDiscount =
           Number(record.special_discount_amount) || 0;
         const displayedSpecialDiscount =
-          specialDiscountMode === "quantity"
+          specialDiscountModes[record.variant_id] === "quantity"
             ? totalSpecialDiscount / Math.max(1, Number(record.quantity) || 1)
             : totalSpecialDiscount;
         const percent = discountPercentSuffix(
           totalSpecialDiscount,
           record.line_total,
         );
+        const mode = specialDiscountModes[record.variant_id] || "overall";
         return (
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <Radio.Group
+              size="small"
+              optionType="button"
+              buttonStyle="solid"
+              value={mode}
+              onChange={(event) =>
+                setSpecialDiscountModes((modes) => ({
+                  ...modes,
+                  [record.variant_id]: event.target.value,
+                }))
+              }
+              options={[
+                { label: "Overall", value: "overall" },
+                { label: "Per qty", value: "quantity" },
+              ]}
+            />
             <InputNumber
               min={0}
               precision={2}
@@ -849,6 +866,7 @@ const NewSale = () => {
                 {percent.trim()}
               </div>
             )}
+            <Money value={totalSpecialDiscount} negative />
           </div>
         );
       },
@@ -1089,8 +1107,13 @@ const NewSale = () => {
             selectedItems={selectedItems}
             onUpdateQuantity={updateItemQuantity}
             onUpdateSpecialDiscount={updateItemSpecialDiscount}
-            specialDiscountMode={specialDiscountMode}
-            onSpecialDiscountModeChange={setSpecialDiscountMode}
+            specialDiscountModes={specialDiscountModes}
+            onSpecialDiscountModeChange={(variantId, mode) =>
+              setSpecialDiscountModes((modes) => ({
+                ...modes,
+                [variantId]: mode,
+              }))
+            }
             onRemoveItem={removeItem}
             appliedPromotions={appliedPromotions}
             onRemovePromotion={removeAppliedPromotion}
@@ -2119,37 +2142,6 @@ const NewSale = () => {
                         </div>
                       </div>
                     ) : (
-                      <>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          gap: 8,
-                          marginBottom: 6,
-                        }}
-                      >
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          Special discount:
-                        </Text>
-                        <Radio.Group
-                          size="small"
-                          optionType="button"
-                          buttonStyle="solid"
-                          value={specialDiscountMode}
-                          onChange={(event) =>
-                            setSpecialDiscountMode(event.target.value)
-                          }
-                          options={[
-                            { label: "Overall", value: "overall" },
-                            { label: "Per quantity", value: "quantity" },
-                          ]}
-                        />
-                        <Text strong style={{ fontSize: 12 }}>
-                          Total{" "}
-                          <Money value={totals.specialDiscount} negative />
-                        </Text>
-                      </div>
                       <Table
                         columns={saleItemColumns}
                         dataSource={selectedItems}
@@ -2161,7 +2153,6 @@ const NewSale = () => {
                         bordered={false}
                         style={{ background: "transparent" }}
                       />
-                      </>
                     )}
                   </div>
                 </Card>
