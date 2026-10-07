@@ -224,13 +224,13 @@ export class DashboardService {
         this.prisma.return.aggregate({
           where: weeklyReturnWhere,
           _count: { id: true },
-          _sum: { total_refund: true },
+          _sum: { total_refund: true, total_exchange: true },
         }),
 
         this.prisma.return.aggregate({
           where: todayReturnWhere,
           _count: { id: true },
-          _sum: { total_refund: true },
+          _sum: { total_refund: true, total_exchange: true },
         }),
 
         this.prisma.$queryRaw<
@@ -448,6 +448,10 @@ export class DashboardService {
       const todayDue = Math.max(0, todayGross - todayReceived);
       const weeklyRefunds = Number(weeklyReturnAgg._sum.total_refund ?? 0);
       const todayRefunds = Number(todayReturnAgg._sum.total_refund ?? 0);
+      const weeklyExchanges = Number(weeklyReturnAgg._sum.total_exchange ?? 0);
+      const todayExchanges = Number(todayReturnAgg._sum.total_exchange ?? 0);
+      const weeklyReturnsTotal = weeklyRefunds + weeklyExchanges;
+      const todayReturnsTotal = todayRefunds + todayExchanges;
 
       return {
         summary: {
@@ -457,14 +461,18 @@ export class DashboardService {
           weekly_collected: weeklyReceived,
           weekly_due: weeklyDue,
           weekly_transactions: weeklyAgg._count.id ?? 0,
-          weekly_returns_total: weeklyRefunds,
+          weekly_returns_total: weeklyReturnsTotal,
+          weekly_refunds_total: weeklyRefunds,
+          weekly_exchanges_total: weeklyExchanges,
           weekly_returns_count: weeklyReturnAgg._count.id ?? 0,
           weekly_net_sale: weeklyGross - weeklyRefunds,
           today_total_sale: todayGross,
           today_collected: todayReceived,
           today_due: todayDue,
           today_transactions: todayAgg._count.id ?? 0,
-          today_returns_total: todayRefunds,
+          today_returns_total: todayReturnsTotal,
+          today_refunds_total: todayRefunds,
+          today_exchanges_total: todayExchanges,
           today_returns_count: todayReturnAgg._count.id ?? 0,
           today_net_sale: todayGross - todayRefunds,
         },

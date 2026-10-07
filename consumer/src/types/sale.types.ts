@@ -512,6 +512,8 @@ export interface DashboardAnalyticsSummary {
   weekly_due?: number;
   weekly_transactions: number;
   weekly_returns_total: number;
+  weekly_refunds_total?: number;
+  weekly_exchanges_total?: number;
   weekly_returns_count: number;
   weekly_net_sale: number;
   today_total_sale: number;
@@ -519,6 +521,8 @@ export interface DashboardAnalyticsSummary {
   today_due?: number;
   today_transactions: number;
   today_returns_total: number;
+  today_refunds_total?: number;
+  today_exchanges_total?: number;
   today_returns_count: number;
   today_net_sale: number;
 }
