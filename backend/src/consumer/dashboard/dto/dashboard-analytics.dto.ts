@@ -31,11 +31,15 @@ export class DashboardAnalyticsDto {
 export interface DashboardSummary {
   // Gross figures — sale rows are never rewritten when a return happens
   weekly_total_sale: number;
+  weekly_collected?: number;
+  weekly_due?: number;
   weekly_transactions: number;
   weekly_returns_total: number;
   weekly_returns_count: number;
   weekly_net_sale: number;
   today_total_sale: number;
+  today_collected?: number;
+  today_due?: number;
   today_transactions: number;
   today_returns_total: number;
   today_returns_count: number;

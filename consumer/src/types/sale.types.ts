@@ -273,6 +273,8 @@ export interface SaleListResponse {
   summary?: {
     total_sales: number;
     total_amount: number;
+    total_received?: number;
+    total_due?: number;
     average_sale: number;
     // Refunds booked against the sales in scope; the sale rows stay gross
     total_refund: number;
@@ -439,8 +441,23 @@ export interface ProductSalesStats {
 export interface EODSummary {
   total_sales: number;
   total_amount: number;
+  gross_subtotal?: number;
+  total_discount?: number;
+  total_tax?: number;
+  total_shipping?: number;
   total_transactions: number;
+  total_collected?: number;
+  real_money_collected?: number;
+  period_sales_collected?: number;
+  due_collected?: number;
+  total_due?: number;
+  due_sales_count?: number;
   cash_sales: number;
+  digital_sales?: number;
+  reward_point_sales?: number;
+  exchange_sales?: number;
+  total_exchange_return?: number;
+  unique_exchanges?: number;
   non_cash_sales: number;
   average_transaction_value: number;
   total_items_sold: number;
@@ -452,8 +469,11 @@ export interface EODSummary {
   total_items_returned: number;
   net_sale_amount: number;
   cash_refunds: number;
+  digital_refunds?: number;
   net_cash_sales: number;
+  net_money_collected?: number;
   net_operating_result: number;
+  net_operating_cash_flow?: number;
 }
 
 export interface EODReportResponse {
@@ -488,11 +508,15 @@ export interface EODReportResponse {
 export interface DashboardAnalyticsSummary {
   // Gross totals: sale rows are never rewritten when a return happens
   weekly_total_sale: number;
+  weekly_collected?: number;
+  weekly_due?: number;
   weekly_transactions: number;
   weekly_returns_total: number;
   weekly_returns_count: number;
   weekly_net_sale: number;
   today_total_sale: number;
+  today_collected?: number;
+  today_due?: number;
   today_transactions: number;
   today_returns_total: number;
   today_returns_count: number;

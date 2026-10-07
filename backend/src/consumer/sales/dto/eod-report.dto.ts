@@ -39,23 +39,38 @@ export interface ProductSalesStats {
 export interface EODSummary {
   total_sales: number;
   total_amount: number;
+  gross_subtotal?: number;
+  total_discount?: number;
+  total_tax?: number;
+  total_shipping?: number;
   total_transactions: number;
+  total_collected: number;
+  real_money_collected: number;
+  period_sales_collected?: number;
+  due_collected?: number;
+  total_due: number;
+  due_sales_count: number;
   cash_sales: number;
+  digital_sales: number;
+  reward_point_sales: number;
+  exchange_sales: number;
+  total_exchange_return: number;
+  unique_exchanges: number;
   non_cash_sales: number;
   average_transaction_value: number;
   total_items_sold: number;
   unique_products_sold: number;
   operational_costs: number;
-  // Returns booked in this period. Sales stay gross so they reconcile with the
-  // sales list; the refunds are reported next to them and netted out below.
   total_returns: number;
   total_refund: number;
   total_items_returned: number;
   net_sale_amount: number;
-  // Cash actually paid back out of the drawer, so the drawer can be counted
   cash_refunds: number;
+  digital_refunds: number;
   net_cash_sales: number;
+  net_money_collected: number;
   net_operating_result: number;
+  net_operating_cash_flow?: number;
 }
 
 export interface EODReportResponse {

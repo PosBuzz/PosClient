@@ -133,10 +133,56 @@ function Dashboard() {
     });
   }, [data?.top_products]);
 
+const getPaymentMethodDisplay = (method: string) => {
+  switch (method?.toUpperCase()) {
+    case "CASH":
+      return "Cash";
+    case "CARD":
+      return "Card";
+    case "MFS":
+      return "MFS (bKash/Nagad/Rocket)";
+    case "CREDIT":
+      return "Reward Points / Credit";
+    case "EXCHANGE":
+      return "Product Exchange";
+    case "CHEQUE":
+      return "Cheque";
+    case "BANK_TRANSFER":
+      return "Bank Transfer";
+    case "MOBILE_MONEY":
+      return "Mobile Money";
+    default:
+      return method ? method.replace(/_/g, " ") : "Unknown";
+  }
+};
+
+const getPaymentMethodColor = (method: string) => {
+  switch (method?.toUpperCase()) {
+    case "CASH":
+      return "green";
+    case "CARD":
+      return "blue";
+    case "MFS":
+    case "MOBILE_MONEY":
+      return "cyan";
+    case "CREDIT":
+      return "orange";
+    case "EXCHANGE":
+      return "purple";
+    case "CHEQUE":
+    case "BANK_TRANSFER":
+      return "geekblue";
+    default:
+      return "default";
+  }
+};
+
   const PaymentMethodsData = useMemo(() => {
     if (!data?.payment_method_breakdown) return [];
     return data.payment_method_breakdown.map((item) => ({
-      name: item.payment_method || "Unknown",
+      rawName: item.payment_method,
+      name: getPaymentMethodDisplay(item.payment_method),
+      color: getPaymentMethodColor(item.payment_method),
       amount: item.total_amount || 0,
     }));
   }, [data?.payment_method_breakdown]);
@@ -144,7 +190,9 @@ function Dashboard() {
   const ReturnPaymentMethodsData = useMemo(() => {
     if (!data?.return_payment_breakdown) return [];
     return data.return_payment_breakdown.map((item) => ({
-      name: item.payment_method || "Unknown",
+      rawName: item.payment_method,
+      name: getPaymentMethodDisplay(item.payment_method),
+      color: getPaymentMethodColor(item.payment_method),
       amount: item.total_amount || 0,
     }));
   }, [data?.return_payment_breakdown]);
@@ -303,6 +351,36 @@ function Dashboard() {
                   precision={2}
                   valueStyle={{ color: "#1890ff" }}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  <span>
+                    Collected:{" "}
+                    <span style={{ color: "#52c41a", fontWeight: 600 }}>
+                      <Money
+                        value={
+                          data?.summary?.today_collected ??
+                          data?.summary?.today_total_sale ??
+                          0
+                        }
+                      />
+                    </span>
+                  </span>
+                  {(data?.summary?.today_due ?? 0) > 0 && (
+                    <span>
+                      Due:{" "}
+                      <span style={{ color: "#cf1322", fontWeight: 600 }}>
+                        <Money value={data?.summary?.today_due || 0} />
+                      </span>
+                    </span>
+                  )}
+                </div>
               </Card>
             </Col>
 
@@ -314,6 +392,15 @@ function Dashboard() {
                   valueStyle={{ color: "#52c41a" }}
                   prefix={<CheckCircleOutlined />}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  Completed invoices
+                </div>
               </Card>
             </Col>
 
@@ -331,6 +418,15 @@ function Dashboard() {
                     </span>
                   }
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  Refunds & exchanges
+                </div>
               </Card>
             </Col>
 
@@ -343,6 +439,15 @@ function Dashboard() {
                   precision={2}
                   valueStyle={{ color: "#389e0d" }}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  Gross Sale - Returns
+                </div>
               </Card>
             </Col>
 
@@ -534,7 +639,7 @@ function Dashboard() {
                             </div>
                           </div>
                           <Tag
-                            color="blue"
+                            color={method.color || "blue"}
                             style={{
                               margin: 0,
                               fontWeight: 700,
@@ -697,7 +802,7 @@ function Dashboard() {
                             </div>
                           </div>
                           <Tag
-                            color="orange"
+                            color={method.color || "orange"}
                             style={{
                               margin: 0,
                               fontWeight: 700,

@@ -616,10 +616,21 @@ export class ReturnService {
       limit?: number;
       branch_id?: number;
       original_sale_id?: number;
+      date_from?: string;
+      date_to?: string;
+      search?: string;
     } = {},
   ) {
     try {
-      const { page = 1, limit = 10, branch_id, original_sale_id } = options;
+      const {
+        page = 1,
+        limit = 10,
+        branch_id,
+        original_sale_id,
+        date_from,
+        date_to,
+        search,
+      } = options;
 
       const skip = (page - 1) * limit;
 
@@ -635,7 +646,30 @@ export class ReturnService {
         whereClause.original_sale_id = original_sale_id;
       }
 
-      const [returns, total] = await Promise.all([
+      if (date_from || date_to) {
+        whereClause.return_date = {};
+        if (date_from) {
+          whereClause.return_date.gte = new Date(date_from);
+        }
+        if (date_to) {
+          const to = new Date(date_to);
+          to.setHours(23, 59, 59, 999);
+          whereClause.return_date.lte = to;
+        }
+      }
+
+      if (search) {
+        whereClause.OR = [
+          { return_number: { contains: search, mode: 'insensitive' } },
+          { original_sale: { sale_number: { contains: search, mode: 'insensitive' } } },
+          { original_sale: { customer_name: { contains: search, mode: 'insensitive' } } },
+        ];
+      }
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+
+      const [returns, total, summaryStats, thisMonthCount] = await Promise.all([
         this.prisma.return.findMany({
           where: whereClause,
           include: {
@@ -691,6 +725,19 @@ export class ReturnService {
         this.prisma.return.count({
           where: whereClause,
         }),
+        this.prisma.return.aggregate({
+          where: whereClause,
+          _sum: {
+            total_refund: true,
+            total_exchange: true,
+          },
+        }),
+        this.prisma.return.count({
+          where: {
+            ...whereClause,
+            return_date: { gte: monthStart },
+          },
+        }),
       ]);
 
       return {
@@ -699,6 +746,12 @@ export class ReturnService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+        summary: {
+          total_returns: total,
+          total_refund: Number(summaryStats._sum.total_refund || 0),
+          total_exchange: Number(summaryStats._sum.total_exchange || 0),
+          this_month_count: thisMonthCount,
+        },
       };
     } catch (error) {
       this.logger.error(

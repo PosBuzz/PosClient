@@ -46,7 +46,7 @@ const AppLayout = () => {
   };
 
   return (
-    <Layout className="max-h-screen">
+    <Layout className="h-screen max-h-screen overflow-hidden">
       <Sider
         trigger={null}
         collapsible
@@ -59,7 +59,6 @@ const AppLayout = () => {
         style={{
           zIndex: 999,
           display: isMobile && collapsed ? "none" : "block",
-          // Removed overflow-auto from here
         }}
       >
         {/* Logo Area - Fixed at top, won't scroll away */}
@@ -71,6 +70,7 @@ const AppLayout = () => {
             justifyContent: "center",
             gap: 10,
             padding: "0 12px",
+            flexShrink: 0,
           }}
         >
           <CompanyLogo size={36} />
@@ -79,8 +79,8 @@ const AppLayout = () => {
         <div className="sidebar-scroll-container">
           <SideBar />
         </div>
-        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70">
-          Powered by PosBuzz
+        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70 truncate select-none border-t border-white/5">
+          {collapsed ? "PB" : "Powered by PosBuzz"}
         </div>
       </Sider>
 
