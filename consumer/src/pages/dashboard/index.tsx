@@ -342,8 +342,18 @@ const getPaymentMethodColor = (method: string) => {
           {/* KPI Summary Cards Row */}
           {/* Sales and Return metrics */}
           <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-            <Col xs={24} sm={12} md={12} lg={4}>
-              <Card>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
+              <Card
+                style={{ height: "100%", width: "100%" }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
+              >
                 <Statistic
                   title="Today's Sale Amount"
                   value={data?.summary?.today_total_sale || 0}
@@ -384,8 +394,18 @@ const getPaymentMethodColor = (method: string) => {
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={4}>
-              <Card>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
+              <Card
+                style={{ height: "100%", width: "100%" }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
+              >
                 <Statistic
                   title="Today's Sale Count"
                   value={data?.summary?.today_transactions || 0}
@@ -404,8 +424,18 @@ const getPaymentMethodColor = (method: string) => {
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={4}>
-              <Card>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
+              <Card
+                style={{ height: "100%", width: "100%" }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
+              >
                 <Statistic
                   title="Today's Returns"
                   value={data?.summary?.today_returns_total || 0}
@@ -422,16 +452,41 @@ const getPaymentMethodColor = (method: string) => {
                   style={{
                     marginTop: "6px",
                     fontSize: "11px",
+                    display: "flex",
+                    justifyContent: "space-between",
                     color: isDarkMode ? "#94a3b8" : "#8c8c8c",
                   }}
                 >
-                  Refunds & exchanges
+                  <span>
+                    Refund:{" "}
+                    <span style={{ color: "#cf1322", fontWeight: 600 }}>
+                      <Money value={data?.summary?.today_refunds_total || 0} />
+                    </span>
+                  </span>
+                  <span>
+                    Exchange:{" "}
+                    <span style={{ color: "#1677ff", fontWeight: 600 }}>
+                      <Money
+                        value={data?.summary?.today_exchanges_total || 0}
+                      />
+                    </span>
+                  </span>
                 </div>
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={4}>
-              <Card>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
+              <Card
+                style={{ height: "100%", width: "100%" }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
+              >
                 <Statistic
                   title="Today's Net Sale"
                   value={data?.summary?.today_net_sale || 0}
@@ -446,15 +501,27 @@ const getPaymentMethodColor = (method: string) => {
                     color: isDarkMode ? "#94a3b8" : "#8c8c8c",
                   }}
                 >
-                  Gross Sale - Returns
+                  Gross Sale - Refunds
                 </div>
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={4}>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
               <Card
                 hoverable
-                style={{ borderBottom: `3px solid #EF4444` }}
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  borderBottom: `3px solid #EF4444`,
+                }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
                 onClick={() => navigate("/inventory/low-stock")}
               >
                 <Statistic
@@ -476,13 +543,34 @@ const getPaymentMethodColor = (method: string) => {
                   suffix="Items"
                   valueStyle={{ color: "#EF4444" }}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  Critical threshold
+                </div>
               </Card>
             </Col>
 
-            <Col xs={24} sm={12} md={12} lg={4}>
+            <Col xs={24} sm={12} md={12} lg={4} style={{ display: "flex" }}>
               <Card
                 hoverable
-                style={{ borderBottom: `3px solid #F59E0B` }}
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  borderBottom: `3px solid #F59E0B`,
+                }}
+                styles={{
+                  body: {
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  },
+                }}
                 onClick={() => navigate("/inventory/expiring")}
               >
                 <Statistic
@@ -504,6 +592,15 @@ const getPaymentMethodColor = (method: string) => {
                   suffix="Items"
                   valueStyle={{ color: "#F59E0B" }}
                 />
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    color: isDarkMode ? "#94a3b8" : "#8c8c8c",
+                  }}
+                >
+                  Expiring in 30 days
+                </div>
               </Card>
             </Col>
           </Row>
