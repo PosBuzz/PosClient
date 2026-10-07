@@ -44,12 +44,18 @@ export class ReturnController {
     @Query('limit') limit: string = '10',
     @Query('branch_id') branchId?: string,
     @Query('original_sale_id') originalSaleId?: string,
+    @Query('date_from') dateFrom?: string,
+    @Query('date_to') dateTo?: string,
+    @Query('search') search?: string,
   ) {
     return this.returnService.findAll(req.user.consumer_id!, {
       page: parseInt(page),
       limit: parseInt(limit),
       branch_id: branchId ? parseInt(branchId) : undefined,
       original_sale_id: originalSaleId ? parseInt(originalSaleId) : undefined,
+      date_from: dateFrom,
+      date_to: dateTo,
+      search,
     });
   }
 

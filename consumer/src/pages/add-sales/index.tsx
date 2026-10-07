@@ -977,18 +977,6 @@ const NewSale = () => {
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item
-                name="is_delivery_later"
-                valuePropName="checked"
-                style={{ marginTop: 8, marginBottom: 0 }}
-              >
-                <Checkbox
-                  checked={isDeliveryLater}
-                  onChange={(event) => setIsDeliveryLater(event.target.checked)}
-                >
-                  Deliver products later (reserve inventory)
-                </Checkbox>
-              </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="Customer" name="customer_id">
@@ -1585,18 +1573,41 @@ const NewSale = () => {
                   placeholder="Optional notes about this sale"
                 />
               </Form.Item>
-              <Form.Item
-                name="is_online_order"
-                valuePropName="checked"
-                style={{ marginTop: 12, marginBottom: 0 }}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 24,
+                  marginTop: 12,
+                }}
               >
-                <Checkbox
-                  checked={isOnlineOrder}
-                  onChange={(e) => setIsOnlineOrder(e.target.checked)}
+                <Form.Item
+                  name="is_online_order"
+                  valuePropName="checked"
+                  style={{ marginBottom: 0 }}
                 >
-                  This is an Online Order
-                </Checkbox>
-              </Form.Item>
+                  <Checkbox
+                    checked={isOnlineOrder}
+                    onChange={(e) => setIsOnlineOrder(e.target.checked)}
+                  >
+                    This is an Online Order
+                  </Checkbox>
+                </Form.Item>
+                <Form.Item
+                  name="is_delivery_later"
+                  valuePropName="checked"
+                  style={{ marginBottom: 0 }}
+                >
+                  <Checkbox
+                    checked={isDeliveryLater}
+                    onChange={(event) =>
+                      setIsDeliveryLater(event.target.checked)
+                    }
+                  >
+                    Deliver products later (reserve inventory)
+                  </Checkbox>
+                </Form.Item>
+              </div>
             </Col>
             <Col span={6}>
               <div

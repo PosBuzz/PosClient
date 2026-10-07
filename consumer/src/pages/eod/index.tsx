@@ -1,5 +1,5 @@
 import { Money, takaPrefix } from "../../components/Currency";
-import { FilePdfOutlined } from "@ant-design/icons";
+import { AuditOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
@@ -36,6 +36,7 @@ import PdfPreviewModal, {
   usePdfPreview,
 } from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import {
   PaymentMethodBreakdown,
@@ -58,6 +59,7 @@ const COLORS = [
 ];
 
 const EODReport = () => {
+  const isDarkMode = useDarkMode();
   const { user } = useAuthStore();
   const [selectedDate, setSelectedDate] = useState<string>(
     dayjs().format("YYYY-MM-DD"),
@@ -90,8 +92,9 @@ const EODReport = () => {
       BANK_TRANSFER: "Bank Transfer",
       CHEQUE: "Cheque",
       MOBILE_MONEY: "Mobile Money",
-      MFS: "MFS",
-      CREDIT: "Credit",
+      MFS: "MFS (bKash/Nagad)",
+      CREDIT: "Reward Points / Store Credit",
+      EXCHANGE: "Product Exchange",
     };
     return displays[method] || method;
   };
@@ -104,10 +107,45 @@ const EODReport = () => {
       CHEQUE: "orange",
       MOBILE_MONEY: "cyan",
       MFS: "magenta",
-      CREDIT: "red",
+      CREDIT: "gold",
+      EXCHANGE: "geekblue",
     };
     return colors[method] || "default";
   };
+
+  // Payment status columns
+  const paymentStatusColumns = [
+    {
+      title: "Payment Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => {
+        const s = status?.toLowerCase();
+        const color =
+          s === "paid" ? "green" : s === "partial" ? "orange" : "red";
+        const label =
+          s === "paid"
+            ? "Fully Paid"
+            : s === "partial"
+              ? "Partially Paid"
+              : "Full Due / Unpaid";
+        return <Tag color={color}>{label}</Tag>;
+      },
+    },
+    {
+      title: "Sales Count",
+      dataIndex: "count",
+      key: "count",
+      sorter: (a: any, b: any) => a.count - b.count,
+    },
+    {
+      title: "Invoiced Amount",
+      dataIndex: "total_amount",
+      key: "total_amount",
+      render: (amount: number) => <Money value={amount} />,
+      sorter: (a: any, b: any) => a.total_amount - b.total_amount,
+    },
+  ];
 
   // Prepare chart data
   const paymentMethodChartData =
@@ -323,51 +361,61 @@ const EODReport = () => {
         </Card>
       ) : eodData ? (
         <>
-          {/* Summary Statistics */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
-            <Col span={6}>
+          {/* Sales & Collection Overview */}
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Total Sales"
-                  value={eodData.summary.total_sales}
-                  suffix="transactions"
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Total Amount"
+                  title="Gross Sales"
                   value={eodData.summary.total_amount}
                   prefix={takaPrefix}
                   precision={2}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {eodData.summary.total_sales} transactions
+                  {eodData.summary.total_discount ? (
+                    <> · Disc: <Money value={eodData.summary.total_discount} /></>
+                  ) : null}
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Refunds"
-                  value={eodData.summary.total_refund}
+                  title="Real Money Collected"
+                  value={
+                    eodData.summary.real_money_collected ??
+                    eodData.summary.cash_sales + (eodData.summary.digital_sales || 0)
+                  }
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={{ color: "#3f8600" }}
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Physical Cash & Digital Banking
+                  {eodData.summary.due_collected ? (
+                    <> · Due paid: <Money value={eodData.summary.due_collected} /></>
+                  ) : null}
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="Due / Receivables"
+                  value={eodData.summary.total_due || 0}
                   prefix={takaPrefix}
                   precision={2}
                   valueStyle={
-                    eodData.summary.total_refund
-                      ? { color: "#cf1322" }
-                      : undefined
+                    eodData.summary.total_due ? { color: "#cf1322" } : undefined
                   }
                 />
-                {eodData.summary.total_returns > 0 && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {eodData.summary.total_returns} return
-                    {eodData.summary.total_returns > 1 ? "s" : ""} ·{" "}
-                    {eodData.summary.total_items_returned} item
-                    {eodData.summary.total_items_returned > 1 ? "s" : ""}
-                  </Text>
-                )}
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {eodData.summary.due_sales_count || 0} invoice(s) with due
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
                   title="Net Sales"
@@ -375,14 +423,16 @@ const EODReport = () => {
                   prefix={takaPrefix}
                   precision={2}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Gross sales minus refunds
+                </Text>
               </Card>
             </Col>
           </Row>
 
-          {/* Cash position: the drawer is emptied by refunds as well as filled
-              by sales, so both sides are shown for the count-up */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
-            <Col span={6}>
+          {/* Settlement Channels */}
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
                   title="Cash Sales"
@@ -390,9 +440,72 @@ const EODReport = () => {
                   prefix={takaPrefix}
                   precision={2}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Net Cash in Drawer: <Money value={eodData.summary.net_cash_sales} />
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="Digital Sales (Card/MFS)"
+                  value={eodData.summary.digital_sales || 0}
+                  prefix={takaPrefix}
+                  precision={2}
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Card, bKash, Nagad, Bank
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="Reward Points Redeemed"
+                  value={eodData.summary.reward_point_sales || 0}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={
+                    eodData.summary.reward_point_sales
+                      ? { color: "#d48806" }
+                      : undefined
+                  }
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Store credit / customer loyalty
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="Product Exchanges"
+                  value={
+                    eodData.summary.unique_exchanges ??
+                    eodData.summary.exchange_sales ??
+                    eodData.summary.total_exchange_return ??
+                    0
+                  }
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={
+                    (eodData.summary.unique_exchanges ||
+                      eodData.summary.exchange_sales ||
+                      eodData.summary.total_exchange_return)
+                      ? { color: "#1677ff" }
+                      : undefined
+                  }
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Deduplicated exchange value
+                </Text>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Cash Drawer & Operational Costs */}
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
                   title="Cash Refunds"
@@ -405,56 +518,42 @@ const EODReport = () => {
                       : undefined
                   }
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Cash paid out from drawer
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Net Cash"
+                  title="Net Cash in Drawer"
                   value={eodData.summary.net_cash_sales}
                   prefix={takaPrefix}
                   precision={2}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Cash sales minus cash refunds
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Non-Cash Sales"
-                  value={eodData.summary.non_cash_sales}
-                  prefix={takaPrefix}
-                  precision={2}
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Row gutter={16} style={{ marginBottom: 24 }}>
-            <Col span={8}>
-              <Card>
-                <Statistic
-                  title="Gross sales"
-                  value={eodData.summary.total_amount}
-                  prefix={takaPrefix}
-                  precision={2}
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <Statistic
-                  title="Operational costs"
+                  title="Operational Costs"
                   value={eodData.summary.operational_costs}
                   prefix={takaPrefix}
                   precision={2}
                   valueStyle={{ color: "#cf1322" }}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Business daily expenses
+                </Text>
               </Card>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Net operating result"
+                  title="Net Operating Result"
                   value={eodData.summary.net_operating_result}
                   prefix={takaPrefix}
                   precision={2}
@@ -466,14 +565,34 @@ const EODReport = () => {
                   }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  After refunds and operational costs
+                  After refunds & operational costs
                 </Text>
               </Card>
             </Col>
           </Row>
 
+          {/* Operational Volume & Metadata */}
           <Row gutter={16} style={{ marginBottom: 24 }}>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="Total Refunds"
+                  value={eodData.summary.total_refund}
+                  prefix={takaPrefix}
+                  precision={2}
+                  valueStyle={
+                    eodData.summary.total_refund
+                      ? { color: "#cf1322" }
+                      : undefined
+                  }
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {eodData.summary.total_returns} return(s) ·{" "}
+                  {eodData.summary.total_items_returned} item(s)
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
                   title="Average Transaction"
@@ -481,30 +600,27 @@ const EODReport = () => {
                   prefix={takaPrefix}
                   precision={2}
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Average ticket size
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
                   title="Items Sold"
                   value={eodData.summary.total_items_sold}
                   suffix="items"
                 />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {eodData.summary.unique_products_sold} unique products
+                </Text>
               </Card>
             </Col>
-            <Col span={6}>
+            <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Unique Products"
-                  value={eodData.summary.unique_products_sold}
-                  suffix="products"
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Date"
+                  title="Report Date"
                   value={dayjs(eodData.date).format("MMM DD, YYYY")}
                 />
                 {eodData.branch_name && (
@@ -566,6 +682,23 @@ const EODReport = () => {
               </Col>
             </Row>
           </Card>
+
+          {/* Sales by Payment Status */}
+          {eodData.payment_status_breakdown &&
+            eodData.payment_status_breakdown.length > 0 && (
+              <Card
+                title="Sales by Payment Status"
+                style={{ marginBottom: 24 }}
+              >
+                <Table
+                  columns={paymentStatusColumns}
+                  dataSource={eodData.payment_status_breakdown}
+                  rowKey="status"
+                  pagination={false}
+                  size="small"
+                />
+              </Card>
+            )}
 
           {/* Refund Method Breakdown */}
           {eodData.return_payment_breakdown.length > 0 && (
@@ -659,6 +792,181 @@ const EODReport = () => {
                 },
               ]}
             />
+          </Card>
+
+          {/* Accounting Definitions & Report Closure */}
+          <Card
+            style={{
+              marginTop: 24,
+              border: isDarkMode ? "1px solid #303030" : "1px solid #e2e8f0",
+              background: isDarkMode ? "#141414" : "#f8fafc",
+              borderRadius: "8px",
+            }}
+            styles={{
+              body: { padding: "20px 24px" },
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "16px",
+                paddingBottom: "12px",
+                borderBottom: `1px solid ${isDarkMode ? "#303030" : "#e2e8f0"}`,
+              }}
+            >
+              <AuditOutlined style={{ color: "#1677ff", fontSize: "16px" }} />
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  color: isDarkMode ? "#f1f5f9" : "#0f172a",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                ACCOUNTING DEFINITIONS & REPORT CLOSURE
+              </span>
+            </div>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} md={12}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#93c5fd" : "#1d4ed8" }}
+                    >
+                      • Gross Sales:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Invoiced subtotal less line & promotional discounts, plus tax & shipping.
+                    </Text>
+                  </div>
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#86efac" : "#15803d" }}
+                    >
+                      • Real Money Collected:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Liquid currency received via Cash and verified Digital accounts (Cards/MFS).
+                    </Text>
+                  </div>
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#5eead4" : "#0f766e" }}
+                    >
+                      • Net Cash in Drawer:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Total physical cash received (sales + due collections) less cash refunds paid.
+                    </Text>
+                  </div>
+                </div>
+              </Col>
+
+              <Col xs={24} md={12}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#fca5a5" : "#b91c1c" }}
+                    >
+                      • Due / Receivables:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Remaining unpaid balance on sales invoices finalized during this period.
+                    </Text>
+                  </div>
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#c084fc" : "#7e22ce" }}
+                    >
+                      • Product Exchanges:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Deduplicated barter value of exchanged goods; counted once across linked records.
+                    </Text>
+                  </div>
+                  <div>
+                    <Text
+                      strong
+                      style={{ color: isDarkMode ? "#fdba74" : "#c2410c" }}
+                    >
+                      • Net Operating Result:{" "}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: isDarkMode ? "#cbd5e1" : "#475569",
+                      }}
+                    >
+                      Gross Sales minus Returns/Refunds and Operational Expenses.
+                    </Text>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <div
+              style={{
+                marginTop: "16px",
+                paddingTop: "12px",
+                borderTop: `1px dashed ${isDarkMode ? "#303030" : "#cbd5e1"}`,
+                textAlign: "center",
+              }}
+            >
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: "12px",
+                  fontStyle: "italic",
+                }}
+              >
+                Official computer-generated financial report. Prepared in accordance with standard retail cash & accrual accounting principles.
+              </Text>
+            </div>
           </Card>
         </>
       ) : (

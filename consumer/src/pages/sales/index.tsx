@@ -654,26 +654,52 @@ const SalesTable = () => {
       {/* Sales Summary Cards */}
       {salesQuery.data?.summary && (
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="Total Sales"
                 value={salesQuery.data.summary.total_sales}
-                suffix="transactions"
+                suffix="sales"
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
-                title="Total Amount"
+                title="Gross Invoiced"
                 value={salesQuery.data.summary.total_amount}
                 prefix={takaPrefix}
                 precision={2}
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={8} lg={4}>
+            <Card>
+              <Statistic
+                title="Total Received"
+                value={salesQuery.data.summary.total_received ?? salesQuery.data.summary.total_amount}
+                prefix={takaPrefix}
+                precision={2}
+                valueStyle={{ color: "#389e0d" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={4}>
+            <Card>
+              <Statistic
+                title="Total Due"
+                value={salesQuery.data.summary.total_due || 0}
+                prefix={takaPrefix}
+                precision={2}
+                valueStyle={
+                  (salesQuery.data.summary.total_due || 0) > 0
+                    ? { color: "#cf1322" }
+                    : undefined
+                }
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="Refunds"
@@ -688,49 +714,24 @@ const SalesTable = () => {
                 suffix={
                   salesQuery.data.summary.return_count ? (
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {salesQuery.data.summary.return_count} return
-                      {salesQuery.data.summary.return_count > 1 ? "s" : ""}
+                      ({salesQuery.data.summary.return_count})
                     </Text>
                   ) : undefined
                 }
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
-                title="Net Amount"
+                title="Net Sales"
                 value={
                   salesQuery.data.summary.net_amount ??
                   salesQuery.data.summary.total_amount
                 }
                 prefix={takaPrefix}
                 precision={2}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card>
-              <Statistic
-                title="Average Sale"
-                value={salesQuery.data.summary.average_sale}
-                prefix={takaPrefix}
-                precision={2}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Card>
-              <Statistic
-                title="Period"
-                value={
-                  filters.date_from && filters.date_to
-                    ? `${dayjs(filters.date_from).format("MMM DD")} - ${dayjs(
-                        filters.date_to,
-                      ).format("MMM DD")}`
-                    : "All Time"
-                }
-                style={{ fontSize: 12 }}
+                valueStyle={{ color: "#1890ff" }}
               />
             </Card>
           </Col>
