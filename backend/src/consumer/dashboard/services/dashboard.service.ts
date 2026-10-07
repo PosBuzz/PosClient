@@ -212,13 +212,13 @@ export class DashboardService {
         this.prisma.sale.aggregate({
           where: weeklyWhere,
           _count: { id: true },
-          _sum: { total_amount: true },
+          _sum: { total_amount: true, received_amount: true },
         }),
 
         this.prisma.sale.aggregate({
           where: todayWhere,
           _count: { id: true },
-          _sum: { total_amount: true },
+          _sum: { total_amount: true, received_amount: true },
         }),
 
         this.prisma.return.aggregate({
@@ -262,7 +262,19 @@ export class DashboardService {
 
         this.prisma.salePayment.groupBy({
           by: ['payment_method'],
-          where: { sale: paymentWhere },
+          where: {
+            created_at: {
+              gte: paymentDateRange.start,
+              lte: paymentDateRange.end,
+            },
+            sale: {
+              consumer_id: consumerId,
+              sale_type: 'sale',
+              payment_status: { not: 'cancelled' },
+              deleted_at: null,
+              ...branchFilter,
+            },
+          },
           _sum: { amount: true },
           _count: { _all: true },
           orderBy: { _sum: { amount: 'desc' } },
@@ -270,7 +282,16 @@ export class DashboardService {
 
         this.prisma.returnPayment.groupBy({
           by: ['payment_method'],
-          where: { return_record: returnPaymentWhere },
+          where: {
+            created_at: {
+              gte: returnPaymentDateRange.start,
+              lte: returnPaymentDateRange.end,
+            },
+            return_record: {
+              consumer_id: consumerId,
+              ...branchFilter,
+            },
+          },
           _sum: { amount: true },
           _count: { _all: true },
           orderBy: { _sum: { amount: 'desc' } },
@@ -421,19 +442,27 @@ export class DashboardService {
 
       const weeklyGross = Number(weeklyAgg._sum.total_amount ?? 0);
       const todayGross = Number(todayAgg._sum.total_amount ?? 0);
+      const weeklyReceived = Number(weeklyAgg._sum.received_amount ?? 0);
+      const todayReceived = Number(todayAgg._sum.received_amount ?? 0);
+      const weeklyDue = Math.max(0, weeklyGross - weeklyReceived);
+      const todayDue = Math.max(0, todayGross - todayReceived);
       const weeklyRefunds = Number(weeklyReturnAgg._sum.total_refund ?? 0);
       const todayRefunds = Number(todayReturnAgg._sum.total_refund ?? 0);
 
       return {
         summary: {
           // weekly_total_sale / today_total_sale stay GROSS so they reconcile
-          // with the sales list; returns and net are reported alongside.
+          // with the sales list; returns, collections, and net are reported alongside.
           weekly_total_sale: weeklyGross,
+          weekly_collected: weeklyReceived,
+          weekly_due: weeklyDue,
           weekly_transactions: weeklyAgg._count.id ?? 0,
           weekly_returns_total: weeklyRefunds,
           weekly_returns_count: weeklyReturnAgg._count.id ?? 0,
           weekly_net_sale: weeklyGross - weeklyRefunds,
           today_total_sale: todayGross,
+          today_collected: todayReceived,
+          today_due: todayDue,
           today_transactions: todayAgg._count.id ?? 0,
           today_returns_total: todayRefunds,
           today_returns_count: todayReturnAgg._count.id ?? 0,

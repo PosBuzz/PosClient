@@ -1630,21 +1630,66 @@ export class SalesService {
   ): Promise<EODReportResponse> {
     try {
       // Parse date or use current date
-      const reportDate = eodDto.date ? new Date(eodDto.date) : new Date();
-      const period = eodDto.period ?? 'day';
-      const startOfDay = new Date(reportDate);
-      const endOfDay = new Date(reportDate);
-      if (period === 'all') {
-        startOfDay.setTime(0);
-        endOfDay.setHours(23, 59, 59, 999);
-      } else if (period === 'month') {
-        startOfDay.setDate(1);
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay.setMonth(endOfDay.getMonth() + 1, 0);
-        endOfDay.setHours(23, 59, 59, 999);
+      let reportDate: Date;
+      if (eodDto.date) {
+        const [y, m, d] = eodDto.date.split('-').map(Number);
+        reportDate = new Date(y, m - 1, d || 1);
       } else {
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay.setHours(23, 59, 59, 999);
+        reportDate = new Date();
+      }
+
+      const period = eodDto.period ?? 'day';
+      let startOfDay: Date;
+      let endOfDay: Date;
+      if (period === 'all') {
+        startOfDay = new Date(0);
+        endOfDay = new Date(
+          reportDate.getFullYear(),
+          reportDate.getMonth(),
+          reportDate.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
+      } else if (period === 'month') {
+        startOfDay = new Date(
+          reportDate.getFullYear(),
+          reportDate.getMonth(),
+          1,
+          0,
+          0,
+          0,
+          0,
+        );
+        endOfDay = new Date(
+          reportDate.getFullYear(),
+          reportDate.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+      } else {
+        startOfDay = new Date(
+          reportDate.getFullYear(),
+          reportDate.getMonth(),
+          reportDate.getDate(),
+          0,
+          0,
+          0,
+          0,
+        );
+        endOfDay = new Date(
+          reportDate.getFullYear(),
+          reportDate.getMonth(),
+          reportDate.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
       }
 
       // Build where clause
@@ -1725,10 +1770,81 @@ export class SalesService {
         0,
       );
 
-      // Calculate summary statistics
+      // Get all payments recorded in this period (checkout payments on today's sales
+      // plus customer partial/due payments collected today on older sales)
+      const periodPayments = await this.prisma.salePayment.findMany({
+        where: {
+          created_at: { gte: startOfDay, lte: endOfDay },
+          sale: {
+            consumer_id: consumerId,
+            deleted_at: null,
+            sale_type: SaleType.SALE,
+            ...(eodDto.branch_id ? { branch_id: eodDto.branch_id } : {}),
+          },
+        },
+        include: {
+          sale: {
+            select: {
+              id: true,
+              sale_number: true,
+              sale_date: true,
+              total_amount: true,
+            },
+          },
+        },
+      });
+
+      // Merge payments: combine periodPayments with any payments in sales.payments
+      const allPeriodPaymentsMap = new Map<number, any>();
+      periodPayments.forEach((p) => allPeriodPaymentsMap.set(p.id, p));
+
+      sales.forEach((s) => {
+        if (s.payments && s.payments.length > 0) {
+          s.payments.forEach((p) => {
+            const pCreated = new Date(p.created_at);
+            if (pCreated >= startOfDay && pCreated <= endOfDay) {
+              if (!allPeriodPaymentsMap.has(p.id)) {
+                allPeriodPaymentsMap.set(p.id, {
+                  ...p,
+                  sale: {
+                    id: s.id,
+                    sale_number: s.sale_number,
+                    sale_date: s.sale_date,
+                    total_amount: s.total_amount,
+                  },
+                });
+              }
+            }
+          });
+        }
+      });
+
+      const collectedPaymentsList = Array.from(allPeriodPaymentsMap.values());
+      const periodSaleIds = new Set(sales.map((s) => s.id));
+
+      // Calculate sales summary statistics (Accrual / Invoiced basis)
       const totalSales = sales.length;
       const totalAmount = sales.reduce(
         (sum, sale) => sum + Number(sale.total_amount),
+        0,
+      );
+      const grossSubtotal = sales.reduce(
+        (sum, sale) => sum + Number(sale.subtotal || 0),
+        0,
+      );
+      const totalDiscount = sales.reduce(
+        (sum, sale) =>
+          sum +
+          Number(sale.discount_amount || 0) +
+          Number(sale.promotion_discount || 0),
+        0,
+      );
+      const totalTax = sales.reduce(
+        (sum, sale) => sum + Number(sale.tax_amount || 0),
+        0,
+      );
+      const totalShipping = sales.reduce(
+        (sum, sale) => sum + Number(sale.shipping_cost || 0),
         0,
       );
       const totalItemsSold = sales.reduce(
@@ -1757,25 +1873,46 @@ export class SalesService {
         });
       });
 
-      // Payment method breakdown
+      // Payment method breakdown for all payments collected in this period
       const paymentMethodMap = new Map<
         string,
         { total_amount: number; transaction_count: number }
       >();
 
-      sales.forEach((sale) => {
-        if (sale.payments && sale.payments.length > 0) {
-          sale.payments.forEach((payment) => {
-            const method = payment.payment_method;
-            const existing = paymentMethodMap.get(method) || {
-              total_amount: 0,
-              transaction_count: 0,
-            };
-            paymentMethodMap.set(method, {
-              total_amount: existing.total_amount + Number(payment.amount),
-              transaction_count: existing.transaction_count + 1,
-            });
-          });
+      let cashSales = 0;
+      let digitalSales = 0;
+      let rewardPointSales = 0;
+      let exchangeSales = 0;
+      let periodSalesCollected = 0;
+      let dueCollected = 0;
+
+      collectedPaymentsList.forEach((payment) => {
+        const method = payment.payment_method;
+        const amt = Number(payment.amount);
+
+        const existing = paymentMethodMap.get(method) || {
+          total_amount: 0,
+          transaction_count: 0,
+        };
+        paymentMethodMap.set(method, {
+          total_amount: existing.total_amount + amt,
+          transaction_count: existing.transaction_count + 1,
+        });
+
+        if (method === 'CASH') {
+          cashSales += amt;
+        } else if (method === 'CREDIT') {
+          rewardPointSales += amt;
+        } else if (method === 'EXCHANGE') {
+          exchangeSales += amt;
+        } else {
+          digitalSales += amt;
+        }
+
+        if (periodSaleIds.has(payment.sale_id)) {
+          periodSalesCollected += amt;
+        } else {
+          dueCollected += amt;
         }
       });
 
@@ -1907,7 +2044,9 @@ export class SalesService {
             total_amount: data.total_amount,
             average_unit_price: data.quantity_sold
               ? data.total_amount / data.quantity_sold
-              : 0,
+              : returned?.quantity
+                ? refundAmount / returned.quantity
+                : 0,
             quantity_returned: returned?.quantity ?? 0,
             refund_amount: refundAmount,
             net_amount: data.total_amount - refundAmount,
@@ -1965,20 +2104,81 @@ export class SalesService {
         }),
       );
 
-      // Calculate cash vs non-cash sales
-      const cashSales =
-        paymentMethodBreakdown.find((p) => p.payment_method === 'CASH')
-          ?.total_amount || 0;
+      // Calculate due amounts on sales created in this period
+      let totalDue = 0;
+      let dueSalesCount = 0;
+
+      sales.forEach((sale) => {
+        const total = Number(sale.total_amount);
+        // Payments made on this sale on or before end of this reporting period
+        const paidOnSale = sale.payments
+          ? sale.payments
+              .filter((p) => new Date(p.created_at) <= endOfDay)
+              .reduce((sum, p) => sum + Number(p.amount), 0)
+          : 0;
+        const remaining = Math.max(0, total - paidOnSale);
+        if (
+          remaining > 0.001 ||
+          sale.payment_status === 'due' ||
+          sale.payment_status === 'partial'
+        ) {
+          totalDue += remaining;
+          dueSalesCount += 1;
+        }
+      });
+
+      // Liquid money received (Physical Cash + Digital Card/MFS/Bank)
+      const realMoneyCollected = cashSales + digitalSales;
+      const totalCollected =
+        realMoneyCollected + rewardPointSales + exchangeSales;
+
+      // Standalone return exchanges that were not already counted as an exchange payment on a sale in this period
+      let standaloneReturnExchanges = 0;
+      const totalExchangeReturn = returns.reduce((sum, ret) => {
+        const val = Number(ret.total_exchange || 0);
+        if (val > 0) {
+          if (ret.exchange_sale_id && periodSaleIds.has(ret.exchange_sale_id)) {
+            // Already counted as exchangeSales on the exchange sale in this period!
+          } else {
+            standaloneReturnExchanges += val;
+          }
+        }
+        return sum + val;
+      }, 0);
+
+      // Unique exchanges across the business in this period (Deduplicated!)
+      const uniqueExchanges = exchangeSales + standaloneReturnExchanges;
+
       const nonCashSales = totalAmount - cashSales;
       const cashRefunds =
         returnPaymentBreakdown.find((p) => p.payment_method === 'CASH')
           ?.total_amount || 0;
+      const digitalRefunds = totalRefund - cashRefunds;
+
+      const netCashSales = cashSales - cashRefunds;
+      const netMoneyCollected = realMoneyCollected - totalRefund;
+      const netOperatingCashFlow = netMoneyCollected - totalOperationalCosts;
 
       const summary: EODSummary = {
         total_sales: totalSales,
         total_amount: totalAmount,
+        gross_subtotal: grossSubtotal,
+        total_discount: totalDiscount,
+        total_tax: totalTax,
+        total_shipping: totalShipping,
         total_transactions: totalSales,
+        total_collected: totalCollected,
+        real_money_collected: realMoneyCollected,
+        period_sales_collected: periodSalesCollected,
+        due_collected: dueCollected,
+        total_due: totalDue,
+        due_sales_count: dueSalesCount,
         cash_sales: cashSales,
+        digital_sales: digitalSales,
+        reward_point_sales: rewardPointSales,
+        exchange_sales: exchangeSales,
+        total_exchange_return: totalExchangeReturn,
+        unique_exchanges: uniqueExchanges,
         non_cash_sales: nonCashSales,
         average_transaction_value:
           totalSales > 0 ? totalAmount / totalSales : 0,
@@ -1990,9 +2190,11 @@ export class SalesService {
         total_items_returned: totalItemsReturned,
         net_sale_amount: totalAmount - totalRefund,
         cash_refunds: cashRefunds,
-        net_cash_sales: cashSales - cashRefunds,
-        // Refunds are money that left the business, same as an operating cost
+        digital_refunds: digitalRefunds,
+        net_cash_sales: netCashSales,
+        net_money_collected: netMoneyCollected,
         net_operating_result: totalAmount - totalRefund - totalOperationalCosts,
+        net_operating_cash_flow: netOperatingCashFlow,
       };
 
       return {
@@ -2114,7 +2316,7 @@ export class SalesService {
         this.prisma.sale.aggregate({
           where,
           _count: true,
-          _sum: { total_amount: true },
+          _sum: { total_amount: true, received_amount: true },
           _avg: { total_amount: true },
         }),
         this.prisma.return.aggregate({
@@ -2125,11 +2327,15 @@ export class SalesService {
       ]);
 
       const totalAmount = Number(stats._sum.total_amount || 0);
+      const totalReceived = Number(stats._sum.received_amount || 0);
+      const totalDue = Math.max(0, totalAmount - totalReceived);
       const totalRefund = Number(refunds._sum.total_refund || 0);
 
       return {
         total_sales: stats._count || 0,
         total_amount: totalAmount,
+        total_received: totalReceived,
+        total_due: totalDue,
         average_sale: Number(stats._avg.total_amount || 0),
         total_refund: totalRefund,
         return_count: refunds._count || 0,

@@ -170,6 +170,14 @@ export interface ReturnListFilters {
   original_sale_id?: number;
   date_from?: string;
   date_to?: string;
+  search?: string;
+}
+
+export interface ReturnSummary {
+  total_returns: number;
+  total_refund: number;
+  total_exchange: number;
+  this_month_count: number;
 }
 
 export interface ReturnListResponse {
@@ -178,6 +186,7 @@ export interface ReturnListResponse {
   page: number;
   limit: number;
   totalPages: number;
+  summary?: ReturnSummary;
 }
 
 export interface SaleForReturn {

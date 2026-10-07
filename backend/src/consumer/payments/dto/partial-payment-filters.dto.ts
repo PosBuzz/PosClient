@@ -39,6 +39,10 @@ export class PartialPaymentFiltersDto {
 
   @IsOptional()
   @IsString()
+  payment_status?: string;
+
+  @IsOptional()
+  @IsString()
   sort_by?: string = 'sale_date';
 
   @IsOptional()

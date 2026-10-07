@@ -32,6 +32,7 @@ export class PaymentsService {
         branch_id,
         date_from,
         date_to,
+        payment_status,
         sort_by = 'sale_date',
         sort_order = 'desc',
       } = filters;
@@ -41,7 +42,10 @@ export class PaymentsService {
       // Build where clause
       const where: Prisma.SaleWhereInput = {
         consumer_id: consumerId,
-        payment_status: 'partial', // Only partially paid sales
+        payment_status:
+          payment_status && payment_status !== 'all'
+            ? payment_status
+            : { in: ['partial', 'due'] },
         sale_type: 'sale', // Exclude quotations
         deleted_at: null, // Exclude soft-deleted sales
       };

@@ -1,11 +1,17 @@
 import { Money, takaPrefix } from "../../components/Currency";
-import { EyeOutlined, FilePdfOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  FilePdfOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
   DatePicker,
+  Input,
   Row,
   Select,
   Space,
@@ -15,7 +21,8 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
+import debounce from "lodash/debounce";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { returnsApi } from "../../api/returns-api";
 import PageTitle from "../../components/PageTitle";
@@ -41,6 +48,23 @@ const ReturnsTable = () => {
     limit: 20,
   });
 
+  const debouncedSearch = useCallback(
+    debounce((value: string) => {
+      setFilters((prev) => ({ ...prev, search: value || undefined, page: 1 }));
+    }, 300),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  const handleSearch = (value: string) => {
+    debouncedSearch(value);
+  };
+
   // Use real API query with optimized caching
   const returnsQuery = useQuery({
     queryKey: [queryKeys.returns, filters],
@@ -51,6 +75,7 @@ const ReturnsTable = () => {
 
   const hasActiveFilters = () => {
     return (
+      filters.search ||
       filters.date_from ||
       filters.date_to ||
       filters.branch_id ||
@@ -187,7 +212,11 @@ const ReturnsTable = () => {
           <Card size="small">
             <Statistic
               title="Total Returns"
-              value={returnsQuery.data?.total || 0}
+              value={
+                returnsQuery.data?.summary?.total_returns ??
+                returnsQuery.data?.total ??
+                0
+              }
               loading={returnsQuery.isLoading}
             />
           </Card>
@@ -197,13 +226,20 @@ const ReturnsTable = () => {
             <Statistic
               title="Total Refunded"
               value={
+                returnsQuery.data?.summary?.total_refund ??
                 returnsQuery.data?.data?.reduce(
                   (sum, ret) => sum + Number(ret.total_refund || 0),
                   0,
-                ) || 0
+                ) ??
+                0
               }
               precision={2}
               prefix={takaPrefix}
+              valueStyle={
+                (returnsQuery.data?.summary?.total_refund || 0) > 0
+                  ? { color: "#cf1322" }
+                  : undefined
+              }
               loading={returnsQuery.isLoading}
             />
           </Card>
@@ -213,13 +249,20 @@ const ReturnsTable = () => {
             <Statistic
               title="Total Exchanged"
               value={
+                returnsQuery.data?.summary?.total_exchange ??
                 returnsQuery.data?.data?.reduce(
                   (sum, ret) => sum + Number(ret.total_exchange || 0),
                   0,
-                ) || 0
+                ) ??
+                0
               }
               precision={2}
               prefix={takaPrefix}
+              valueStyle={
+                (returnsQuery.data?.summary?.total_exchange || 0) > 0
+                  ? { color: "#1677ff" }
+                  : undefined
+              }
               loading={returnsQuery.isLoading}
             />
           </Card>
@@ -229,9 +272,11 @@ const ReturnsTable = () => {
             <Statistic
               title="This Month"
               value={
+                returnsQuery.data?.summary?.this_month_count ??
                 returnsQuery.data?.data?.filter((ret) =>
                   dayjs(ret.return_date).isAfter(dayjs().startOf("month")),
-                ).length || 0
+                ).length ??
+                0
               }
               loading={returnsQuery.isLoading}
             />
@@ -243,6 +288,14 @@ const ReturnsTable = () => {
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col xs={24} sm={12} md={8} lg={6}>
+            <Input
+              placeholder="Search by return # or sale #..."
+              prefix={<SearchOutlined />}
+              onChange={(e) => handleSearch(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={5}>
             <Select
               placeholder="Select branch"
               style={{ width: "100%" }}
@@ -259,7 +312,7 @@ const ReturnsTable = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={5}>
             <RangePicker
               style={{ width: "100%" }}
               value={
@@ -286,20 +339,23 @@ const ReturnsTable = () => {
               }}
             />
           </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => navigate("/returns/new")}
+              style={{ width: "100%" }}
             >
               Create Return
             </Button>
           </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            {hasActiveFilters() && (
-              <Button onClick={clearFilters}>Clear Filters</Button>
-            )}
-          </Col>
+          {hasActiveFilters() && (
+            <Col xs={24} sm={12} md={8} lg={4}>
+              <Button onClick={clearFilters} style={{ width: "100%" }}>
+                Clear Filters
+              </Button>
+            </Col>
+          )}
         </Row>
 
         {/* Table */}

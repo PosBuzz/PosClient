@@ -36,6 +36,7 @@ export interface PartialPaymentFilters {
   branch_id?: number;
   date_from?: string;
   date_to?: string;
+  payment_status?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
 }

@@ -1,4 +1,4 @@
-import { CurrencyIcon, takaPrefix } from "../../components/Currency";
+import { CurrencyIcon } from "../../components/Currency";
 import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -75,7 +75,8 @@ const PartialPayments = () => {
       filters.search ||
       filters.date_from ||
       filters.date_to ||
-      filters.branch_id
+      filters.branch_id ||
+      filters.payment_status
     );
   };
 
@@ -190,7 +191,14 @@ const PartialPayments = () => {
       dataIndex: "payment_status",
       key: "payment_status",
       width: 100,
-      render: () => <Tag color="orange">PARTIAL</Tag>,
+      render: (status: string) => {
+        const isDue = status?.toLowerCase() === "due";
+        return (
+          <Tag color={isDue ? "red" : "orange"}>
+            {status ? status.toUpperCase() : "PARTIAL"}
+          </Tag>
+        );
+      },
     },
     {
       title: "Actions",
@@ -229,6 +237,8 @@ const PartialPayments = () => {
     0,
   );
 
+  const hasMultipleBranches = user?.branches && user.branches.length > 1;
+
   return (
     <div>
       {setPageTitle("Due Payments")}
@@ -244,7 +254,6 @@ const PartialPayments = () => {
             <Statistic
               title="Sales With Due Payments"
               value={meta?.total || 0}
-              prefix={takaPrefix}
             />
           </Card>
         </Col>
@@ -284,7 +293,7 @@ const PartialPayments = () => {
       >
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={hasMultipleBranches ? 6 : 8}>
             <Input
               placeholder="Search by sale number, customer"
               prefix={<SearchOutlined />}
@@ -292,7 +301,7 @@ const PartialPayments = () => {
               allowClear
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={hasMultipleBranches ? 6 : 8}>
             <RangePicker
               style={{ width: "100%" }}
               onChange={handleDateRangeChange}
@@ -304,8 +313,8 @@ const PartialPayments = () => {
               }
             />
           </Col>
-          {user?.branches && user.branches.length > 1 && (
-            <Col xs={24} sm={12} md={8}>
+          {hasMultipleBranches && (
+            <Col xs={24} sm={12} md={6}>
               <Select
                 placeholder="Filter by branch"
                 style={{ width: "100%" }}
@@ -323,6 +332,24 @@ const PartialPayments = () => {
               </Select>
             </Col>
           )}
+          <Col xs={24} sm={12} md={hasMultipleBranches ? 6 : 8}>
+            <Select
+              placeholder="Payment Status"
+              style={{ width: "100%" }}
+              value={filters.payment_status || "all"}
+              onChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  payment_status: value === "all" ? undefined : value,
+                  page: 1,
+                }))
+              }
+            >
+              <Option value="all">All (Due & Partial)</Option>
+              <Option value="due">Due Only</Option>
+              <Option value="partial">Partial Only</Option>
+            </Select>
+          </Col>
         </Row>
 
         {/* Table */}
