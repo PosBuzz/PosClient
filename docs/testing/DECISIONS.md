@@ -340,3 +340,8 @@ Seams (pre-approved, behavior unchanged): `queryClientOptions` moved to `src/que
 Notes: `RequirePermission` gained list support (any one permission) so a route can mirror the menu's rule. `contracts/unused-routes.json` records the four tenant routes the app never calls; the two credit routes are a QUESTION (a customers-permission user can burn or add points through them without a sale or refund). The route-permission snapshot `src/__snapshots__/route-permissions.json` makes any permission change visible in review.
 Verification: lint, typecheck pass; 421 consumer tests pass twice.
 Follow-up: C3 cache invalidation, hooks and coverage floors.
+
+## D-047 C3 cache invalidation, hooks and coverage floors (2026-10-13)
+Decision: a static test (CO-CACHE-002) lists the exact pages that create, delete, restore, refund, settle or change the status of a sale and requires each to call `invalidateSalesReports`; adding a new such page fails the test until it is added to the list. Hook tests (CO-HOOK-001..005) cover sale manager, promotion manager, barcode scanner and confirm-delete. vitest now enforces src/api ≥90%, src/stores ≥90%, src/hooks ≥80% lines and 100% for RequireAuth/RequirePermission.
+Verification: lint, typecheck pass; 447 consumer tests pass with coverage floors.
+
