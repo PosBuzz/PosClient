@@ -253,3 +253,9 @@ Chosen: Pin every sale-item, totals, promotion-validation, promotion-helpers, fo
 Coverage: per-file floors from the phase doc are enforced in vitest.config.ts. The unreachable redundant fallback in enrichCartForPromotion (`!changed && currentSubtotal < minPurchase`, already handled by the earlier min-purchase branch) is excluded with a v8 ignore and comment rather than testing dead code.
 Verification: lint 0/0, typecheck and build clean, `npm run test:cov` passes three times.
 Follow-up: record CI result; X1 turns the subdomain and sale-totals tables into shared fixtures.
+
+
+### D-037 C2 checkpoint verified on GitHub (2026-10-13)
+Type: DECISION
+Verification: C2 commit 51c9b02 passed all 20 jobs in https://github.com/PosBuzz/PosClient/actions/runs/38303007404, including the consumer coverage floors. Phase and master trackers updated. No merge or deployment performed.
+Follow-up: X1 cross-layer contracts (sections 1-3) next.
