@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { isIPv4Host } from "./host.utils";
 import { get } from "../api/crud-api";
 import { endpoints } from "../api/endpoints";
 
@@ -30,7 +31,7 @@ export function getSubdomain(): string | null {
   // Handle localhost development (tenant.localhost)
   // NOTE: browsers resolve *.localhost to 127.0.0.1; this block must run
   // before the generic "parts.length < 3" check.
-  if (host === "localhost") {
+  if (host === "localhost" || isIPv4Host(host)) {
     // plain localhost (no subdomain)
     return null;
   }

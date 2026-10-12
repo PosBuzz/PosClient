@@ -162,6 +162,8 @@ export function enrichCartForPromotion(params: {
     changed = true;
   }
 
+  /* v8 ignore start -- Dead redundant fallback, see D-036. When unchanged,
+   * recalculatedSubtotal equals currentSubtotal and needsMinPurchase already handled it. */
   if (!changed && currentSubtotal < minPurchase) {
     const unitPrice = Math.max(0.01, getVariantPriceFn(highestPriceVariant));
     const qtyToAdd = Math.max(
@@ -172,5 +174,6 @@ export function enrichCartForPromotion(params: {
     changed = true;
   }
 
+  /* v8 ignore stop */
   return { items: nextItems, changed };
 }
