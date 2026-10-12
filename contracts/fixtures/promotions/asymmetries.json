@@ -1,0 +1,72 @@
+{
+  "defaults": {
+    "now": "2026-03-14T10:00:00.000Z",
+    "variants": {
+      "P1": {
+        "brand": "B1"
+      },
+      "P2": {
+        "brand": "B1"
+      },
+      "P3": {
+        "brand": "B2"
+      }
+    },
+    "promotion": {
+      "scope": "SINGLE_PRODUCT",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "is_active": true,
+      "start_date": "2026-01-01T00:00:00.000Z",
+      "end_date": "2040-01-01T00:00:00.000Z",
+      "branch_specific": false,
+      "branches": [],
+      "products": [
+        "P1"
+      ],
+      "brand": null,
+      "min_purchase": null,
+      "min_quantity": 1,
+      "cap_quantity": null,
+      "cap_discount_amount": null,
+      "max_discount_amount": null,
+      "usage_limit": null,
+      "member_only": false,
+      "limit_per_customer": false,
+      "customer_usage_limit": null,
+      "sales_count": 0,
+      "total_discount_given": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "X-PROMO-040",
+      "description": "per-customer usage limit is enforced by the server only",
+      "promotion": {
+        "limit_per_customer": true,
+        "customer_usage_limit": 1
+      },
+      "branch": "main",
+      "customer": true,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "customerSales": 1,
+      "expected_frontend": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      },
+      "expected_backend": {
+        "eligible": false,
+        "reason_code": "CUSTOMER_LIMIT"
+      }
+    }
+  ]
+}

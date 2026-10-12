@@ -1,0 +1,41 @@
+{
+  "id": "X-TOT-004",
+  "description": "10% of price x qty (115+100=215) = 21.50; base subtotal 100+100, tax 15",
+  "variants": [
+    {
+      "key": "P",
+      "price": 115,
+      "taxPct": 15,
+      "method": "INCLUSIVE"
+    },
+    {
+      "key": "Q",
+      "price": 100,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P",
+      "qty": 1
+    },
+    {
+      "variant": "Q",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "PERCENTAGE",
+    "amount": 10
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [],
+  "expected": {
+    "subtotal": "200.00",
+    "tax_amount": "15.00",
+    "discount_amount": "21.50",
+    "total_amount": "193.50"
+  }
+}

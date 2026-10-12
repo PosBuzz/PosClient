@@ -1,0 +1,448 @@
+{
+  "defaults": {
+    "now": "2026-03-14T10:00:00.000Z",
+    "variants": {
+      "P1": {
+        "brand": "B1"
+      },
+      "P2": {
+        "brand": "B1"
+      },
+      "P3": {
+        "brand": "B2"
+      }
+    },
+    "promotion": {
+      "scope": "SINGLE_PRODUCT",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "is_active": true,
+      "start_date": "2026-01-01T00:00:00.000Z",
+      "end_date": "2040-01-01T00:00:00.000Z",
+      "branch_specific": false,
+      "branches": [],
+      "products": [
+        "P1"
+      ],
+      "brand": null,
+      "min_purchase": null,
+      "min_quantity": 1,
+      "cap_quantity": null,
+      "cap_discount_amount": null,
+      "max_discount_amount": null,
+      "usage_limit": null,
+      "member_only": false,
+      "limit_per_customer": false,
+      "customer_usage_limit": null,
+      "sales_count": 0,
+      "total_discount_given": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "X-PROMO-001",
+      "description": "inactive",
+      "promotion": {
+        "is_active": false
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "INACTIVE"
+      }
+    },
+    {
+      "id": "X-PROMO-002",
+      "description": "not started",
+      "promotion": {
+        "start_date": "2026-03-15T00:00:00.000Z"
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "NOT_STARTED"
+      }
+    },
+    {
+      "id": "X-PROMO-003",
+      "description": "expired",
+      "promotion": {
+        "end_date": "2026-03-13T00:00:00.000Z"
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "EXPIRED"
+      }
+    },
+    {
+      "id": "X-PROMO-004",
+      "description": "start == now is eligible",
+      "promotion": {
+        "start_date": "2026-03-14T10:00:00.000Z"
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-005",
+      "description": "end == now is eligible",
+      "promotion": {
+        "end_date": "2026-03-14T10:00:00.000Z"
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-006",
+      "description": "branch-specific, other branch",
+      "promotion": {
+        "branch_specific": true,
+        "branches": [
+          "main"
+        ]
+      },
+      "branch": "other",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "BRANCH"
+      }
+    },
+    {
+      "id": "X-PROMO-007",
+      "description": "branch-specific, listed branch",
+      "promotion": {
+        "branch_specific": true,
+        "branches": [
+          "main"
+        ]
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-008",
+      "description": "usage limit reached",
+      "promotion": {
+        "usage_limit": 2,
+        "sales_count": 2
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "USAGE_LIMIT"
+      }
+    },
+    {
+      "id": "X-PROMO-009",
+      "description": "max discount reached",
+      "promotion": {
+        "max_discount_amount": 50,
+        "total_discount_given": 50
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "MAX_DISCOUNT"
+      }
+    },
+    {
+      "id": "X-PROMO-010",
+      "description": "member only without customer",
+      "promotion": {
+        "member_only": true
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "MEMBER_ONLY"
+      }
+    },
+    {
+      "id": "X-PROMO-011",
+      "description": "member only with customer",
+      "promotion": {
+        "member_only": true
+      },
+      "branch": "main",
+      "customer": true,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-012",
+      "description": "limit per customer without customer",
+      "promotion": {
+        "limit_per_customer": true
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "CUSTOMER_REQUIRED"
+      }
+    },
+    {
+      "id": "X-PROMO-013",
+      "description": "below min purchase",
+      "promotion": {
+        "min_purchase": 500
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "MIN_PURCHASE"
+      }
+    },
+    {
+      "id": "X-PROMO-014",
+      "description": "single product with none configured",
+      "promotion": {
+        "products": []
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "NO_PRODUCTS"
+      }
+    },
+    {
+      "id": "X-PROMO-015",
+      "description": "required product missing",
+      "promotion": {},
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P2",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "PRODUCT_MISSING"
+      }
+    },
+    {
+      "id": "X-PROMO-016",
+      "description": "below min quantity",
+      "promotion": {
+        "min_quantity": 3
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 2,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "MIN_QUANTITY"
+      }
+    },
+    {
+      "id": "X-PROMO-017",
+      "description": "bundle missing a product",
+      "promotion": {
+        "scope": "BUNDLE",
+        "products": [
+          "P1",
+          "P2"
+        ]
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "BUNDLE"
+      }
+    },
+    {
+      "id": "X-PROMO-018",
+      "description": "brand scope without brand",
+      "promotion": {
+        "scope": "BRAND",
+        "products": []
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "BRAND_CONFIG"
+      }
+    },
+    {
+      "id": "X-PROMO-019",
+      "description": "brand with no matching cart line",
+      "promotion": {
+        "scope": "BRAND",
+        "brand": "B2",
+        "products": []
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": false,
+        "reason_code": "BRAND_NONE"
+      }
+    }
+  ]
+}
