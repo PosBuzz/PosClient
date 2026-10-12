@@ -23,6 +23,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RabbitMQService.name);
   private pendingRequests: Map<string, PendingRequest> = new Map();
   private cleanupInterval: NodeJS.Timeout;
+  private reconnectTimer?: NodeJS.Timeout;
+  private closing = false;
 
   constructor(private configService: ConfigService) {}
 
@@ -231,6 +233,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   async close() {
+    this.closing = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
     if (this.channel) {
       await this.channel.close();
     }
@@ -240,7 +247,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   private reconnect() {
-    setTimeout(async () => {
+    if (this.closing || this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = undefined;
+      if (this.closing) return;
       try {
         this.logger.debug('Attempting to reconnect to RabbitMQ...');
         await this.connect();
