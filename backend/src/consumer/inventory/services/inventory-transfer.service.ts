@@ -56,6 +56,27 @@ export class InventoryTransferService {
         );
       }
 
+      // A zero or negative quantity would reverse the transfer's direction
+      if (
+        !dto.items?.length ||
+        dto.items.some(
+          (item) => !Number.isInteger(item.quantity) || item.quantity < 1,
+        )
+      ) {
+        throw new BadRequestException(
+          'A transfer needs at least one item and every quantity must be a positive whole number',
+        );
+      }
+
+      // The same batch listed twice must still fit in what is available
+      const requestedByBatch = new Map<number, number>();
+      for (const item of dto.items) {
+        requestedByBatch.set(
+          item.batch_id,
+          (requestedByBatch.get(item.batch_id) || 0) + item.quantity,
+        );
+      }
+
       // Verify all batches exist and have sufficient quantity
       for (const item of dto.items) {
         const batch = await this.prisma.inventoryBatch.findFirst({
@@ -76,7 +97,7 @@ export class InventoryTransferService {
         }
 
         const availableQuantity = batch.quantity - batch.reserved_quantity;
-        if (availableQuantity < item.quantity) {
+        if (availableQuantity < (requestedByBatch.get(item.batch_id) ?? 0)) {
           throw new BadRequestException(
             `Insufficient available quantity in batch ${item.batch_id}. Available: ${availableQuantity}, Requested: ${item.quantity}`,
           );

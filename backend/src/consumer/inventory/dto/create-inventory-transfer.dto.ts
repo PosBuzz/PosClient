@@ -1,8 +1,10 @@
 import {
+  ArrayMinSize,
   IsInt,
   IsString,
   IsOptional,
   IsArray,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -13,6 +15,7 @@ export class TransferItemDto {
   batch_id: number;
 
   @IsInt()
+  @Min(1)
   @Type(() => Number)
   quantity: number;
 }
@@ -31,6 +34,7 @@ export class CreateInventoryTransferDto {
   notes?: string;
 
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => TransferItemDto)
   items: TransferItemDto[];
