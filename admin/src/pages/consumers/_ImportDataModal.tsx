@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 
@@ -158,9 +159,9 @@ export default function ImportDataModal({
   });
 
   const error = previewMutation.error || importMutation.error;
-  const errorMessage =
-    (error as any)?.response?.data?.message ||
-    ((error as Error | null)?.message ?? null);
+  const errorMessage = error
+    ? getErrorMessage(error, "The import could not be completed.")
+    : null;
   const canImport =
     preview && confirmation === target?.subdomain && !importMutation.isPending;
 

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -6,6 +12,15 @@ import * as bcrypt from 'bcryptjs';
 import { createHmac } from 'crypto';
 import { ConfigService } from 'src/config/config.service';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
+
+// One message for "no such account" and "wrong password", so the login form
+// cannot be used to find out which emails are registered.
+const INVALID_CREDENTIALS = 'Invalid email or password';
+
+// Compared against when the account does not exist, so an unknown email takes
+// as long as a wrong password (cost matches the hashes the app stores).
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('posbuzz-timing-equalizer', 10);
 
 @Injectable()
 export class AuthService {
@@ -63,6 +78,9 @@ export class AuthService {
         refresh_token: refreshToken,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error occurred while logging in super admin for ${superAdmin.email}`,
         errorStack(error),
@@ -103,6 +121,9 @@ export class AuthService {
         refresh_token: refreshToken,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error occurred while logging in user for ${user.email}`,
         errorStack(error),
@@ -120,16 +141,16 @@ export class AuthService {
         where: { email },
       });
 
-      if (!superAdmin) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-
-      if (!(await bcrypt.compare(pass, superAdmin.password))) {
-        throw new HttpException("Password doesn't match", HttpStatus.FORBIDDEN);
+      const passwordMatches = await bcrypt.compare(
+        pass,
+        superAdmin?.password ?? DUMMY_PASSWORD_HASH,
+      );
+      if (!superAdmin || !passwordMatches) {
+        throw new UnauthorizedException(INVALID_CREDENTIALS);
       }
       return superAdmin;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error occurred while validating super admin for ${email}`,
         errorStack(error),
@@ -172,20 +193,26 @@ export class AuthService {
         },
       });
 
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      const passwordMatches = await bcrypt.compare(
+        pass,
+        user?.password ?? DUMMY_PASSWORD_HASH,
+      );
+      if (!user || !passwordMatches) {
+        throw new UnauthorizedException(INVALID_CREDENTIALS);
       }
 
+      // Checked only after the password, so subscription state is never
+      // revealed to someone without valid credentials
       if (!user.consumer.billing_logs.length) {
-        throw new HttpException('Billing cycle failed', HttpStatus.FORBIDDEN);
-      }
-      if (!(await bcrypt.compare(pass, user.password))) {
-        throw new HttpException("Password doesn't match", HttpStatus.FORBIDDEN);
+        throw new HttpException(
+          'Your subscription is not active. Please renew it or contact support to continue.',
+          HttpStatus.FORBIDDEN,
+        );
       }
 
       return user;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error occurred while validating user for ${email}`,
         errorStack(error),
@@ -272,7 +299,7 @@ export class AuthService {
 
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         'Error occurred while refreshing client token',
         errorStack(error),
@@ -336,7 +363,7 @@ export class AuthService {
 
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         'Error occurred while refreshing admin token',
         errorStack(error),
@@ -368,6 +395,9 @@ export class AuthService {
         data: { refresh_token: null },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         'Error occurred while invalidating admin refresh token',
         errorStack(error),
@@ -399,6 +429,9 @@ export class AuthService {
         data: { refresh_token: null },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         'Error occurred while invalidating client refresh token',
         errorStack(error),

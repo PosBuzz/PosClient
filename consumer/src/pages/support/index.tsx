@@ -26,6 +26,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 
@@ -98,7 +99,7 @@ export default function Support() {
       setOpenTicketId(created.id);
       messageApi?.success("Support ticket created");
     },
-    onError: () => messageApi?.error("Could not create the ticket"),
+    onError: (error) => messageApi?.error(getErrorMessage(error, "Could not create the ticket")),
   });
 
   const reply = useMutation({
@@ -108,7 +109,7 @@ export default function Support() {
       invalidate();
       replyForm.resetFields();
     },
-    onError: () => messageApi?.error("Could not send the reply"),
+    onError: (error) => messageApi?.error(getErrorMessage(error, "Could not send the reply")),
   });
 
   const close = useMutation({

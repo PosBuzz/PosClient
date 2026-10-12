@@ -9,6 +9,7 @@ import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { getImageUrlForCloudinaryImage } from "../../utils/upload";
+import { getErrorMessage } from "../../utils/api-error";
 
 function ProfilePage() {
   const [form] = Form.useForm();
@@ -24,9 +25,7 @@ function ProfilePage() {
       navigation(0); // Refresh the page to reflect changes
     },
     onError: (err) => {
-      messageApi?.error(
-        (err as any)?.response?.data?.message || "An error occurred",
-      );
+      messageApi?.error(getErrorMessage(err, "An error occurred"));
     },
   });
 

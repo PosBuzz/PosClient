@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { patch, post } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function DrawerForm({
   onClose,
@@ -32,9 +33,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error?.response?.data?.message || "Something went wrong",
-      );
+      messageApi?.error(getErrorMessage(error));
     },
   });
 
@@ -49,9 +48,7 @@ export default function DrawerForm({
       onSubmitSuccess(true);
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error?.response?.data?.message || "Something went wrong",
-      );
+      messageApi?.error(getErrorMessage(error));
     },
   });
 

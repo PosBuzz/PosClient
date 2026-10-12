@@ -37,6 +37,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { PaymentMethod, PaymentStatus } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -86,9 +87,7 @@ const SaleDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
     },
     onError: (error: any) => {
-      message.error(
-        error?.response?.data?.message || "Failed to update the note",
-      );
+      message.error(getErrorMessage(error, "Failed to update the note"));
     },
   });
   const promotionDiscount =
@@ -116,7 +115,9 @@ const SaleDetail: React.FC = () => {
 
   useEffect(() => {
     if (saleQuery.isError) {
-      message.error("Failed to load sale details");
+      message.error(
+        getErrorMessage(saleQuery.error, "Failed to load sale details"),
+      );
       navigate("/sales");
     }
   }, [saleQuery.isError, navigate]);
@@ -388,9 +389,12 @@ const SaleDetail: React.FC = () => {
       const url = URL.createObjectURL(blob);
       previewUrlRef.current = url;
       setPreviewUrl(url);
-    } catch {
+    } catch (error) {
       message.error(
-        `Failed to generate ${preset ? preset.label : "A4 receipt"} preview`,
+        getErrorMessage(
+          error,
+          `Failed to generate ${preset ? preset.label : "A4 receipt"} preview`,
+        ),
       );
       setPreviewVisible(false);
     } finally {

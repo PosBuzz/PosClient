@@ -6,6 +6,7 @@ import { promotionApi } from "../../api/promotion-api";
 import { Money } from "../../components/Currency";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 const scopeColors: Record<string, string> = {
   SINGLE_PRODUCT: "blue",
@@ -34,9 +35,7 @@ export default function TableGrid({
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to delete promotion",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to delete promotion"));
     },
   });
 

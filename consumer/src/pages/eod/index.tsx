@@ -663,7 +663,7 @@ const EODReport = () => {
                         fill="#8884d8"
                         dataKey="amount"
                       >
-                        {paymentMethodChartData.map((entry, index) => (
+                        {paymentMethodChartData.map((_entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}

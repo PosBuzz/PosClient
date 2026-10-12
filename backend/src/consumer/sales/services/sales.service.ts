@@ -9,7 +9,13 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { collectBatchLocations } from '../../inventory/utils/batch-location.util';
 import { Prisma } from '@prisma/client';
-import { CreateSaleDto, PaymentStatus, SaleType } from '../dto/create-sale.dto';
+import {
+  CreateSaleDto,
+  PaymentStatus,
+  PriceType,
+  SaleType,
+} from '../dto/create-sale.dto';
+import { assertSaleLineMatchesCatalog } from '../utils/sale-pricing.util';
 import {
   SaleListFiltersDto,
   SaleRecordStatus,
@@ -32,6 +38,14 @@ import { RewardsService } from '../../../consumer/rewards/services/rewards.servi
 import { PromotionsService } from '../../promotions/services/promotions.service';
 import { QuotationPdfService } from 'src/consumer/receipt-pdf/services/quotation-pdf.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { toLocalDateString } from '../../../common/utils/business-time.util';
+import { lockDocumentNumbering } from '../../../common/utils/document-number-lock.util';
+import {
+  reserveAvailableStock,
+  takeAvailableStock,
+  takeReservedStock,
+} from '../../inventory/utils/stock-mutation.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class SalesService {
@@ -39,7 +53,7 @@ export class SalesService {
   constructor(
     private prisma: PrismaService,
     private rewardsService: RewardsService,
-    private quotationPdfService: QuotationPdfService,
+    _quotationPdfService: QuotationPdfService,
     private promotionsService: PromotionsService,
   ) {}
   private async attachAppliedPromotions<T extends { items?: any[] }>(
@@ -281,6 +295,7 @@ export class SalesService {
               inventory_items: {
                 where: { branch_id: createSaleDto.branch_id },
               },
+              product: { select: { tax: true, tax_method: true } },
             },
           });
 
@@ -289,6 +304,14 @@ export class SalesService {
               `Product variant ${item.variant_id} not found`,
             );
           }
+
+          // Prices and totals come from the client; make sure they are the
+          // catalog's and not edited
+          assertSaleLineMatchesCatalog(
+            item,
+            variant,
+            createSaleDto.price_type === PriceType.WHOLESALE,
+          );
 
           // Skip stock validation for quotations
           if (isQuotation) {
@@ -337,12 +360,6 @@ export class SalesService {
         }),
       );
 
-      // Generate sale or quotation number based on sale_type
-      const saleNumber =
-        createSaleDto.sale_type === SaleType.QUOTATION
-          ? await this.generateQuotationNumber(consumerId)
-          : await this.generateSaleNumber(consumerId);
-
       // Calculate totals using frontend-calculated values
       let subtotal = 0;
       let totalTax = 0;
@@ -373,6 +390,10 @@ export class SalesService {
         (sum, item) => sum + (Number(item.promotion_discount_amount) || 0),
         0,
       );
+
+      // Each promotion's discount spread over the lines may not exceed what the
+      // server itself calculates for that promotion on this cart
+      await this.assertItemPromotionDiscounts(createSaleDto, consumerId);
 
       let promotionDiscountAmount = 0;
       let promotionId: number | null = null;
@@ -433,6 +454,14 @@ export class SalesService {
 
       // Create sale with items in transaction
       const result = await this.prisma.$transaction(async (tx) => {
+        // Number generation happens under a per-tenant lock so concurrent
+        // sales cannot read the same latest number
+        await lockDocumentNumbering(tx, 'sale', consumerId);
+        const saleNumber =
+          createSaleDto.sale_type === SaleType.QUOTATION
+            ? await this.generateQuotationNumber(consumerId, tx)
+            : await this.generateSaleNumber(consumerId, tx);
+
         // Create sale
         const sale = await tx.sale.create({
           data: {
@@ -468,13 +497,22 @@ export class SalesService {
 
         // If converting from quotation, mark the quotation as converted
         if (createSaleDto.quotation_id) {
-          await tx.sale.update({
-            where: { id: createSaleDto.quotation_id },
+          // Conditional so two concurrent conversions cannot both succeed
+          const marked = await tx.sale.updateMany({
+            where: {
+              id: createSaleDto.quotation_id,
+              converted_to_sale_id: null,
+            },
             data: {
               converted_to_sale_id: sale.id,
               converted_at: new Date(),
             },
           });
+          if (marked.count !== 1) {
+            throw new BadRequestException(
+              'Quotation has already been converted to a sale',
+            );
+          }
         }
 
         // Create sale payments if using new system
@@ -494,57 +532,86 @@ export class SalesService {
           );
         }
 
-        // Create sale items and update inventory with audit logs
-        await Promise.all(
-          validationResults.map(async (item) => {
-            // Create sale item
-            const saleItem = await tx.saleItem.create({
-              data: {
-                sale_id: sale.id,
-                variant_id: item.variant_id,
-                batch_id: item.selectedBatch?.id || null,
-                quantity: item.quantity,
-                unit_price: item.unit_price,
-                sold_unit_price: item.sold_unit_price ?? null,
-                average_discount_amount: item.average_discount_amount || 0,
-                special_discount_amount: item.special_discount_amount || 0,
-                promotion_discount_amount: item.promotion_discount_amount || 0,
-                applied_promotion_id: item.applied_promotion_id || null,
-                tax_amount: item.tax_amount || 0,
-                line_total: item.line_total,
-              },
-            });
+        // Redeem CREDIT (reward points) in the same transaction, so a sale is
+        // never recorded as paid by points the customer was not charged
+        if (createSaleDto.customer_id && createSaleDto.payments) {
+          for (const payment of createSaleDto.payments) {
+            if (payment.payment_method !== 'CREDIT') continue;
+            await this.rewardsService.processCreditPayment(
+              consumerId,
+              createSaleDto.customer_id,
+              Number(payment.amount),
+              sale.id,
+              payment.reference,
+              tx,
+            );
+          }
+        }
 
-            // Only update inventory for actual sales, not quotations
-            if (!isQuotation && item.selectedBatch) {
-              const updatedBatch = await tx.inventoryBatch.update({
-                where: { id: item.selectedBatch.id },
-                data: createSaleDto.is_delivery_later
-                  ? { reserved_quantity: { increment: item.quantity } }
-                  : { quantity: { decrement: item.quantity } },
-              });
+        // Create sale items and update inventory with audit logs. Sequential so
+        // a failed stock check aborts the transaction before later writes run.
+        for (const item of validationResults) {
+          // Create sale item
+          const saleItem = await tx.saleItem.create({
+            data: {
+              sale_id: sale.id,
+              variant_id: item.variant_id,
+              batch_id: item.selectedBatch?.id || null,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              sold_unit_price: item.sold_unit_price ?? null,
+              average_discount_amount: item.average_discount_amount || 0,
+              special_discount_amount: item.special_discount_amount || 0,
+              promotion_discount_amount: item.promotion_discount_amount || 0,
+              applied_promotion_id: item.applied_promotion_id || null,
+              tax_amount: item.tax_amount || 0,
+              line_total: item.line_total,
+            },
+          });
 
-              if (!createSaleDto.is_delivery_later) {
-                await tx.inventoryAuditLog.create({
-                  data: {
-                    consumer_id: consumerId,
-                    branch_id: createSaleDto.branch_id,
-                    variant_id: item.variant_id,
-                    batch_id: item.selectedBatch.id,
-                    inventoryBatchId: item.selectedBatch.id,
-                    event_type: 'SALE_OUT',
-                    quantity_delta: -item.quantity,
-                    quantity_after: updatedBatch.quantity,
-                    reference_id: saleItem.id,
-                    reference_type: 'sale_items',
-                    notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
-                    created_by_user_id: userId,
-                  },
-                });
-              }
+          // Only update inventory for actual sales, not quotations
+          if (!isQuotation && item.selectedBatch) {
+            // Atomic check-and-update: the availability check above ran
+            // outside this transaction, so a concurrent sale may have taken
+            // the stock since then
+            const updatedBatch = createSaleDto.is_delivery_later
+              ? await reserveAvailableStock(
+                  tx,
+                  item.selectedBatch.id,
+                  item.quantity,
+                )
+              : await takeAvailableStock(
+                  tx,
+                  item.selectedBatch.id,
+                  item.quantity,
+                );
+
+            if (!updatedBatch) {
+              throw new BadRequestException(
+                `Insufficient stock for variant ${item.variant_id}. Stock changed while the sale was being saved; please try again.`,
+              );
             }
-          }),
-        );
+
+            if (!createSaleDto.is_delivery_later) {
+              await tx.inventoryAuditLog.create({
+                data: {
+                  consumer_id: consumerId,
+                  branch_id: createSaleDto.branch_id,
+                  variant_id: item.variant_id,
+                  batch_id: item.selectedBatch.id,
+                  inventoryBatchId: item.selectedBatch.id,
+                  event_type: 'SALE_OUT',
+                  quantity_delta: -item.quantity,
+                  quantity_after: updatedBatch.quantity,
+                  reference_id: saleItem.id,
+                  reference_type: 'sale_items',
+                  notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
+                  created_by_user_id: userId,
+                },
+              });
+            }
+          }
+        }
 
         return sale;
       });
@@ -554,28 +621,6 @@ export class SalesService {
           promotionId,
           consumerId,
         );
-      }
-
-      // Process CREDIT payments after sale is committed
-      if (createSaleDto.payments && createSaleDto.payments.length > 0) {
-        const creditPayments = createSaleDto.payments.filter(
-          (payment) =>
-            payment.payment_method === 'CREDIT' && result.customer_id,
-        );
-
-        for (const payment of creditPayments) {
-          try {
-            await this.rewardsService.processCreditPayment(
-              consumerId,
-              result.customer_id!,
-              Number(payment.amount),
-              result.id,
-              payment.reference,
-            );
-          } catch (error) {
-            console.error('Failed to process CREDIT payment:', error);
-          }
-        }
       }
 
       // Award rewards points if sale is completed and customer is provided
@@ -608,12 +653,12 @@ export class SalesService {
 
       // Return created sale/quotation with full details
       if (isQuotation) {
-        return this.findOneQuotation(result.id, consumerId);
+        return await this.findOneQuotation(result.id, consumerId);
       } else {
-        return this.findOne(result.id, consumerId);
+        return await this.findOne(result.id, consumerId);
       }
     } catch (error) {
-      if (error instanceof HttpException) {
+      if (isClientError(error)) {
         throw error;
       }
 
@@ -756,6 +801,9 @@ export class SalesService {
         data: await this.attachReturnSummaries(salesWithPromotions),
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching sales for consumer ${consumerId} with filters`,
         errorStack(error),
@@ -831,7 +879,7 @@ export class SalesService {
 
       return withReturns;
     } catch (error) {
-      if (error instanceof HttpException) {
+      if (isClientError(error)) {
         throw error;
       }
 
@@ -875,8 +923,11 @@ export class SalesService {
         `Note updated on sale ${sale.sale_number} by user ${userId}`,
       );
 
-      return this.findOne(id, consumerId);
+      return await this.findOne(id, consumerId);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating note on sale ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -1011,6 +1062,20 @@ export class SalesService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
+        // Claim the delete first: a concurrent delete of the same sale must not
+        // restock twice
+        const claimed = await tx.sale.updateMany({
+          where: { id: sale.id, deleted_at: null },
+          data: {
+            deleted_at: new Date(),
+            deleted_by_id: userId,
+            delete_reason: dto?.reason?.trim() || null,
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException('Sale has already been deleted');
+        }
+
         for (const item of sale.items) {
           if (!item.batch_id) continue;
 
@@ -1047,15 +1112,6 @@ export class SalesService {
             },
           });
         }
-
-        await tx.sale.update({
-          where: { id: sale.id },
-          data: {
-            deleted_at: new Date(),
-            deleted_by_id: userId,
-            delete_reason: dto?.reason?.trim() || null,
-          },
-        });
       });
 
       // Reverse any rewards points the sale earned, as an auditable adjustment
@@ -1073,6 +1129,9 @@ export class SalesService {
         sale_id: sale.id,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting sale ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -1145,15 +1204,32 @@ export class SalesService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
+        // Claim the restore first: a concurrent restore must not deduct twice
+        const claimed = await tx.sale.updateMany({
+          where: { id: sale.id, deleted_at: { not: null } },
+          data: {
+            deleted_at: null,
+            deleted_by_id: null,
+            delete_reason: null,
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException('Sale has already been restored');
+        }
+
         for (const item of batchedItems) {
           if (isCancelledDelivery) continue;
 
-          const updatedBatch = await tx.inventoryBatch.update({
-            where: { id: item.batch_id! },
-            data: isPendingDelivery
-              ? { reserved_quantity: { increment: item.quantity } }
-              : { quantity: { decrement: item.quantity } },
-          });
+          // Atomic check-and-update; the availability check above ran outside
+          // this transaction
+          const updatedBatch = isPendingDelivery
+            ? await reserveAvailableStock(tx, item.batch_id!, item.quantity)
+            : await takeAvailableStock(tx, item.batch_id!, item.quantity);
+          if (!updatedBatch) {
+            throw new BadRequestException(
+              'Cannot restore this sale: the stock it consumed is no longer available in the original batch(es).',
+            );
+          }
 
           if (isPendingDelivery) continue;
 
@@ -1174,15 +1250,6 @@ export class SalesService {
             },
           });
         }
-
-        await tx.sale.update({
-          where: { id: sale.id },
-          data: {
-            deleted_at: null,
-            deleted_by_id: null,
-            delete_reason: null,
-          },
-        });
       });
 
       await this.reverseSaleRewardPoints(sale.id, consumerId, userId, {
@@ -1192,8 +1259,11 @@ export class SalesService {
 
       this.logger.log(`Sale ${sale.sale_number} restored by user ${userId}`);
 
-      return this.findOne(id, consumerId);
+      return await this.findOne(id, consumerId);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error restoring sale ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -1349,8 +1419,14 @@ export class SalesService {
         return_summary: returnSummary,
       };
 
-      return this.attachAppliedPromotions(saleWithReturnSummary, consumerId);
+      return await this.attachAppliedPromotions(
+        saleWithReturnSummary,
+        consumerId,
+      );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching sale by sale number ${saleNumber} for consumer ${consumerId}`,
         errorStack(error),
@@ -1428,6 +1504,9 @@ export class SalesService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching products for sale for consumer ${consumerId} and branch ${branchId}`,
         errorStack(error),
@@ -1492,6 +1571,9 @@ export class SalesService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching product by barcode for consumer ${consumerId} and branch ${branchId} and barcode ${barcode}`,
         errorStack(error),
@@ -1613,6 +1695,9 @@ export class SalesService {
         top_products: topProductsWithDetails,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching sales stats for consumer ${consumerId} and branch ${branchId}`,
         errorStack(error),
@@ -2198,10 +2283,10 @@ export class SalesService {
       };
 
       return {
-        date: reportDate.toISOString().split('T')[0],
+        date: toLocalDateString(reportDate),
         period,
-        period_start: startOfDay.toISOString().split('T')[0],
-        period_end: endOfDay.toISOString().split('T')[0],
+        period_start: toLocalDateString(startOfDay),
+        period_end: toLocalDateString(endOfDay),
         branch_name: branchName,
         summary,
         payment_method_breakdown: paymentMethodBreakdown,
@@ -2218,6 +2303,9 @@ export class SalesService {
         })),
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error generating EOD report for consumer ${consumerId} and branch ${eodDto.branch_id} and date ${eodDto.date}`,
         errorStack(error),
@@ -2229,7 +2317,59 @@ export class SalesService {
     }
   }
 
-  private async generateSaleNumber(consumerId: number): Promise<string> {
+  private async assertItemPromotionDiscounts(
+    createSaleDto: CreateSaleDto,
+    consumerId: number,
+  ): Promise<void> {
+    const discountByPromotion = new Map<number, number>();
+    for (const item of createSaleDto.items) {
+      const discount = Number(item.promotion_discount_amount) || 0;
+      if (discount <= 0) continue;
+
+      const promotionId =
+        item.applied_promotion_id ?? createSaleDto.applied_promotion_id;
+      if (!promotionId) {
+        throw new BadRequestException(
+          `Promotion discount on variant ${item.variant_id} has no promotion`,
+        );
+      }
+      discountByPromotion.set(
+        promotionId,
+        (discountByPromotion.get(promotionId) || 0) + discount,
+      );
+    }
+
+    // Same base the POS evaluates promotions on: catalog price × quantity,
+    // before tax and discounts (the sent line_total is already discounted)
+    const cart = createSaleDto.items.map((item) => ({
+      variant_id: item.variant_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      line_total: Number(item.unit_price) * Number(item.quantity),
+    }));
+
+    for (const [promotionId, claimed] of discountByPromotion) {
+      const evaluation =
+        await this.promotionsService.assertAndCalculateDiscount(
+          promotionId,
+          consumerId,
+          createSaleDto.branch_id,
+          createSaleDto.customer_id,
+          cart,
+        );
+      const allowed = Number(evaluation.discount_amount) || 0;
+      if (claimed > allowed + 0.02) {
+        throw new BadRequestException(
+          `Promotion discount (${claimed.toFixed(2)}) exceeds what the promotion allows (${allowed.toFixed(2)})`,
+        );
+      }
+    }
+  }
+
+  private async generateSaleNumber(
+    consumerId: number,
+    client: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
     try {
       const today = new Date();
       const year = today.getFullYear();
@@ -2239,7 +2379,7 @@ export class SalesService {
       const prefix = `SAL-${year}${month}${day}`;
 
       // Find the latest sale number for today
-      const latestSale = await this.prisma.sale.findFirst({
+      const latestSale = await client.sale.findFirst({
         where: {
           consumer_id: consumerId,
           sale_number: { startsWith: prefix },
@@ -2256,6 +2396,9 @@ export class SalesService {
 
       return `${prefix}-${String(sequenceNumber).padStart(4, '0')}`;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error generating sale number for consumer ${consumerId}`,
         errorStack(error),
@@ -2267,7 +2410,10 @@ export class SalesService {
     }
   }
 
-  private async generateQuotationNumber(consumerId: number): Promise<string> {
+  private async generateQuotationNumber(
+    consumerId: number,
+    client: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
     try {
       const today = new Date();
       const year = today.getFullYear();
@@ -2277,7 +2423,7 @@ export class SalesService {
       const prefix = `QUO-${year}${month}${day}`;
 
       // Find the latest quotation number for today
-      const latestQuotation = await this.prisma.sale.findFirst({
+      const latestQuotation = await client.sale.findFirst({
         where: {
           consumer_id: consumerId,
           sale_number: { startsWith: prefix },
@@ -2294,6 +2440,9 @@ export class SalesService {
 
       return `${prefix}-${String(sequenceNumber).padStart(4, '0')}`;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error generating quotation number for consumer ${consumerId}`,
         errorStack(error),
@@ -2342,6 +2491,9 @@ export class SalesService {
         net_amount: totalAmount - totalRefund,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Error calculating summary stats`, errorStack(error));
       throw new HttpException(
         'Error calculating summary stats',
@@ -2461,6 +2613,9 @@ export class SalesService {
         summary,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding all quotations for consumer ${consumerId}`,
         errorStack(error),
@@ -2513,8 +2668,11 @@ export class SalesService {
         throw new NotFoundException('Quotation not found');
       }
 
-      return this.attachAppliedPromotions(quotation, consumerId);
+      return await this.attachAppliedPromotions(quotation, consumerId);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding quotation ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -2546,8 +2704,6 @@ export class SalesService {
           `Quotation has already been converted to sale #${quotation.converted_to_sale_id}`,
         );
       }
-
-      const saleNumber = await this.generateSaleNumber(consumerId);
 
       // Validate stock availability for all items
       const validationResults = await Promise.all(
@@ -2595,6 +2751,9 @@ export class SalesService {
 
       // Create the sale in a transaction
       const result = await this.prisma.$transaction(async (tx) => {
+        await lockDocumentNumbering(tx, 'sale', consumerId);
+        const saleNumber = await this.generateSaleNumber(consumerId, tx);
+
         const sale = await tx.sale.create({
           data: {
             sale_number: saleNumber,
@@ -2622,62 +2781,69 @@ export class SalesService {
         });
 
         // Create sale items and update inventory with audit logs
-        await Promise.all(
-          validationResults.map(async (item) => {
-            const saleItem = await tx.saleItem.create({
-              data: {
-                sale_id: sale.id,
-                variant_id: item.variant_id,
-                batch_id: item.selectedBatch.id,
-                quantity: item.quantity,
-                unit_price: item.unit_price,
-                sold_unit_price: item.sold_unit_price ?? null,
-                average_discount_amount: item.average_discount_amount || 0,
-                special_discount_amount: item.special_discount_amount || 0,
-                promotion_discount_amount: item.promotion_discount_amount || 0,
-                applied_promotion_id: item.applied_promotion_id || null,
-                tax_amount: item.tax_amount || 0,
-                line_total: item.line_total,
-              },
-            });
+        for (const item of validationResults) {
+          const saleItem = await tx.saleItem.create({
+            data: {
+              sale_id: sale.id,
+              variant_id: item.variant_id,
+              batch_id: item.selectedBatch.id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              sold_unit_price: item.sold_unit_price ?? null,
+              average_discount_amount: item.average_discount_amount || 0,
+              special_discount_amount: item.special_discount_amount || 0,
+              promotion_discount_amount: item.promotion_discount_amount || 0,
+              applied_promotion_id: item.applied_promotion_id || null,
+              tax_amount: item.tax_amount || 0,
+              line_total: item.line_total,
+            },
+          });
 
-            // Update batch quantity
-            const updatedBatch = await tx.inventoryBatch.update({
-              where: { id: item.selectedBatch.id },
-              data: {
-                quantity: {
-                  decrement: item.quantity,
-                },
-              },
-            });
+          // Atomic check-and-update (the availability check ran outside
+          // this transaction)
+          const updatedBatch = await takeAvailableStock(
+            tx,
+            item.selectedBatch.id,
+            item.quantity,
+          );
+          if (!updatedBatch) {
+            throw new BadRequestException(
+              `Insufficient stock for variant ${item.variant_id}. Stock changed while the sale was being saved; please try again.`,
+            );
+          }
 
-            // Create SALE_OUT audit log
-            await tx.inventoryAuditLog.create({
-              data: {
-                consumer_id: consumerId,
-                branch_id: quotation.branch_id,
-                variant_id: item.variant_id,
-                batch_id: item.selectedBatch.id,
-                inventoryBatchId: item.selectedBatch.id,
-                event_type: 'SALE_OUT',
-                quantity_delta: -item.quantity,
-                quantity_after: updatedBatch.quantity,
-                reference_id: saleItem.id,
-                reference_type: 'sale_items',
-                notes: `Sale #${saleNumber} (converted from quotation #${quotation.sale_number})`,
-                created_by_user_id: userId,
-              },
-            });
-          }),
-        );
+          // Create SALE_OUT audit log
+          await tx.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: quotation.branch_id,
+              variant_id: item.variant_id,
+              batch_id: item.selectedBatch.id,
+              inventoryBatchId: item.selectedBatch.id,
+              event_type: 'SALE_OUT',
+              quantity_delta: -item.quantity,
+              quantity_after: updatedBatch.quantity,
+              reference_id: saleItem.id,
+              reference_type: 'sale_items',
+              notes: `Sale #${saleNumber} (converted from quotation #${quotation.sale_number})`,
+              created_by_user_id: userId,
+            },
+          });
+        }
 
-        // Mark quotation as converted
-        await tx.sale.update({
-          where: { id: quotationId },
+        // Mark quotation as converted, only if no concurrent request already did
+        const marked = await tx.sale.updateMany({
+          where: { id: quotationId, converted_to_sale_id: null },
           data: {
             converted_to_sale_id: sale.id,
+            converted_at: new Date(),
           },
         });
+        if (marked.count !== 1) {
+          throw new BadRequestException(
+            'Quotation has already been converted to a sale',
+          );
+        }
 
         return sale;
       });
@@ -2691,7 +2857,7 @@ export class SalesService {
 
       return result;
     } catch (error) {
-      if (error instanceof HttpException) {
+      if (isClientError(error)) {
         throw error;
       }
 
@@ -2847,6 +3013,9 @@ export class SalesService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching variant sales stats for consumer ${consumerId}`,
         errorStack(error),
@@ -2961,7 +3130,7 @@ export class SalesService {
         { date: string; total_amount: number; qty: number }
       >();
       for (const item of allItems) {
-        const dateStr = item.sale.sale_date.toISOString().split('T')[0];
+        const dateStr = toLocalDateString(item.sale.sale_date);
         const netLineTotal =
           Number(item.line_total) -
           Number(item.average_discount_amount || 0) -
@@ -3070,6 +3239,9 @@ export class SalesService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching variant sales detail for variant ${variantId} and consumer ${consumerId}`,
         errorStack(error),
@@ -3447,6 +3619,9 @@ export class SalesService {
         summary,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching online orders for consumer ${consumerId}`,
         errorStack(error),
@@ -3510,7 +3685,7 @@ export class SalesService {
 
       return updatedSale;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating online order status for consumer ${consumerId} and order ${id}`,
         errorStack(error),
@@ -3594,6 +3769,9 @@ export class SalesService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching online order stats for consumer ${consumerId} and branch ${branchId}`,
         errorStack(error),
@@ -3666,27 +3844,28 @@ export class SalesService {
     if (!sale) throw new NotFoundException('Pending delivery not found');
 
     await this.prisma.$transaction(async (tx) => {
+      // Claim the transition first so a concurrent complete/cancel cannot also
+      // move the reserved stock
+      const claimed = await tx.sale.updateMany({
+        where: { id, delivery_status: 'PENDING' },
+        data: { delivery_status: 'DELIVERED', delivered_at: new Date() },
+      });
+      if (claimed.count !== 1) {
+        throw new BadRequestException('Delivery is no longer pending.');
+      }
+
       for (const item of sale.items) {
         if (!item.batch_id) continue;
-        const batch = await tx.inventoryBatch.findUnique({
-          where: { id: item.batch_id },
-        });
-        if (
-          !batch ||
-          batch.reserved_quantity < item.quantity ||
-          batch.quantity < item.quantity
-        ) {
+        const updated = await takeReservedStock(
+          tx,
+          item.batch_id,
+          item.quantity,
+        );
+        if (!updated) {
           throw new BadRequestException(
             'Reserved inventory is no longer available for this delivery.',
           );
         }
-        const updated = await tx.inventoryBatch.update({
-          where: { id: item.batch_id },
-          data: {
-            quantity: { decrement: item.quantity },
-            reserved_quantity: { decrement: item.quantity },
-          },
-        });
         await tx.inventoryAuditLog.create({
           data: {
             consumer_id: consumerId,
@@ -3704,10 +3883,6 @@ export class SalesService {
           },
         });
       }
-      await tx.sale.update({
-        where: { id },
-        data: { delivery_status: 'DELIVERED', delivered_at: new Date() },
-      });
     });
     return this.findOne(id, consumerId);
   }
@@ -3725,6 +3900,15 @@ export class SalesService {
     });
     if (!sale) throw new NotFoundException('Pending delivery not found');
     await this.prisma.$transaction(async (tx) => {
+      // Claim the transition first so the reservation is released only once
+      const claimed = await tx.sale.updateMany({
+        where: { id, delivery_status: 'PENDING' },
+        data: { delivery_status: 'CANCELLED' },
+      });
+      if (claimed.count !== 1) {
+        throw new BadRequestException('Delivery is no longer pending.');
+      }
+
       for (const item of sale.items) {
         if (!item.batch_id) continue;
         await tx.inventoryBatch.update({
@@ -3732,10 +3916,6 @@ export class SalesService {
           data: { reserved_quantity: { decrement: item.quantity } },
         });
       }
-      await tx.sale.update({
-        where: { id },
-        data: { delivery_status: 'CANCELLED' },
-      });
     });
     return this.findOne(id, consumerId);
   }
@@ -3882,7 +4062,7 @@ export class SalesService {
     const paginatedRows = rows.slice(skip, skip + limit);
 
     return {
-      date: reportDate.toISOString().split('T')[0],
+      date: toLocalDateString(reportDate),
       branch_id: branchId,
       branch_name: branchName,
       rows: paginatedRows,

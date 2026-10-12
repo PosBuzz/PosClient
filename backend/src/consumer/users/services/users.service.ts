@@ -6,6 +6,7 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class UsersService {
@@ -25,6 +26,9 @@ export class UsersService {
         return { label: p.permission.action, value: p.permission.id };
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching permission options for plan ${plan_id}`,
         errorStack(error),
@@ -48,6 +52,9 @@ export class UsersService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching roles for consumer ${consumer_id}`,
         errorStack(error),
@@ -66,6 +73,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting role with ID ${id} for consumer ${consumer_id}`,
         errorStack(error),
@@ -99,6 +109,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating role for consumer ${consumer_id}`,
         errorStack(error),
@@ -138,6 +151,9 @@ export class UsersService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching users for consumer ${consumer_id}`,
         errorStack(error),
@@ -156,6 +172,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting user with ID ${id} for consumer ${consumer_id}`,
         errorStack(error),
@@ -236,6 +255,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating user for consumer ${consumer_id}`,
         errorStack(error),
@@ -271,13 +293,16 @@ export class UsersService {
       }
 
       // Get consumer_id for cache invalidation
-      const _role = await this.prisma.role.findUnique({
+      await this.prisma.role.findUnique({
         where: { id },
         select: { consumer_id: true },
       });
 
       return updatedRole;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Error updating role with ID ${id}`, errorStack(error));
       throw new HttpException(
         'Failed to update role',
@@ -375,6 +400,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Error updating user with ID ${id}`, errorStack(error));
       throw new HttpException(
         'Failed to update user',

@@ -6,6 +6,7 @@ import { Button, Popconfirm, Space, Table, Tag } from "antd";
 import { deleteApi, get } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function _TableGrid({ model, onClickEdit }) {
   const { messageApi } = useMessageStore();
@@ -27,8 +28,8 @@ export default function _TableGrid({ model, onClickEdit }) {
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

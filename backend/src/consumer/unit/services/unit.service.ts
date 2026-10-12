@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUnitDto } from '../dto/create-unit.dto';
 import { UpdateUnitDto } from '../dto/update-unit.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class UnitService {
@@ -40,7 +41,7 @@ export class UnitService {
 
       return result;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating unit for consumer ${consumerId}`,
         errorStack(error),
@@ -72,7 +73,7 @@ export class UnitService {
 
       return unit;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching unit with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -110,7 +111,7 @@ export class UnitService {
 
       return result;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating unit with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -131,7 +132,7 @@ export class UnitService {
 
       return { success: true };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting unit with ID ${id} for consumer ${consumerId}`,
         errorStack(error),

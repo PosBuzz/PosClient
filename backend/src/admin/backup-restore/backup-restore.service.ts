@@ -6,6 +6,7 @@ import * as path from 'path';
 import { promisify } from 'util';
 import { ConfigService } from '../../config/config.service';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 
 const exec = promisify(execCb);
 
@@ -43,6 +44,9 @@ export class BackupRestoreService {
 
       return filePath;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Failed to create backup`, errorStack(error));
       throw new HttpException(
         'Failed to create backup',
@@ -72,6 +76,9 @@ export class BackupRestoreService {
         fs.unlinkSync(filePath);
       }
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Failed to restore backup`, errorStack(error));
       throw new HttpException(
         'Failed to restore backup',

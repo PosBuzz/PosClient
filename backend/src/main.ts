@@ -1,3 +1,4 @@
+import './timezone';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -8,6 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PrismaClientExceptionFilter } from 'prisma-client-exception/prisma-client-exception.filter';
 import { PrismaClientValidationExceptionFilter } from 'prisma-client-exception/prisma-client-validation-exception.filter';
 import { AppModule } from './app.module';
+import { validationExceptionFactory } from './common/errors/validation-exception.factory';
 import { ConfigService } from './config/config.service';
 
 const CSRF_COOKIE_NAME = 'csrf_signature';
@@ -161,6 +163,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+      // One readable message (plus per-field `errors`) instead of a raw array
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

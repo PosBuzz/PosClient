@@ -9,6 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class CategoryService {
@@ -27,6 +28,9 @@ export class CategoryService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to create category for consumer ${consumerId}`,
         errorStack(error),
@@ -45,6 +49,9 @@ export class CategoryService {
         orderBy: { name: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to fetch categories for consumer ${consumerId}`,
         errorStack(error),
@@ -68,6 +75,9 @@ export class CategoryService {
 
       return category;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(
@@ -96,6 +106,9 @@ export class CategoryService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(
@@ -117,6 +130,9 @@ export class CategoryService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(

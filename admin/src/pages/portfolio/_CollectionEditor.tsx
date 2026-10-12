@@ -19,6 +19,7 @@ import { useState } from "react";
 import { deleteApi, get, patch, post } from "../../api/http";
 import { useMessageStore } from "../../stores/messageStore";
 import { describeError } from "./_errors";
+import { getErrorMessage } from "../../utils/api-error";
 
 export type FieldType = "text" | "textarea" | "number" | "switch" | "list";
 
@@ -87,7 +88,10 @@ export default function CollectionEditor<T extends { id: number }>({
       form.resetFields();
       messageApi?.success(`${itemLabel} saved`);
     },
-    onError: () => messageApi?.error(`Could not save the ${itemLabel}`),
+    onError: (error) =>
+      messageApi?.error(
+        getErrorMessage(error, `Could not save the ${itemLabel}`),
+      ),
   });
 
   const remove = useMutation({
@@ -96,7 +100,10 @@ export default function CollectionEditor<T extends { id: number }>({
       invalidate();
       messageApi?.success(`${itemLabel} deleted`);
     },
-    onError: () => messageApi?.error(`Could not delete the ${itemLabel}`),
+    onError: (error) =>
+      messageApi?.error(
+        getErrorMessage(error, `Could not delete the ${itemLabel}`),
+      ),
   });
 
   const showForm = (record?: T) => {

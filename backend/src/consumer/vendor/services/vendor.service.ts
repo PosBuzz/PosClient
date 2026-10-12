@@ -9,6 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class VendorService {
@@ -29,6 +30,9 @@ export class VendorService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating vendor for consumer ${consumerId}`,
         errorStack(error),
@@ -60,6 +64,9 @@ export class VendorService {
 
       return vendor;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -92,6 +99,9 @@ export class VendorService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -125,6 +135,9 @@ export class VendorService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -231,7 +244,7 @@ export class VendorService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error getting vendor details for ID ${id} for consumer ${consumerId}`,
         errorStack(error),

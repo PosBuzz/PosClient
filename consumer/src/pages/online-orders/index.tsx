@@ -27,6 +27,7 @@ import { Sale } from "../../types/sale.types";
 import { EyeOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -76,8 +77,10 @@ const OnlineOrders = () => {
       link.download = `online-delivery-slip-${order.sale_number}.pdf`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch {
-      messageApi?.error("Failed to generate online delivery slip");
+    } catch (error) {
+      messageApi?.error(
+        getErrorMessage(error, "Failed to generate online delivery slip"),
+      );
     } finally {
       setPrintingOrderId(null);
     }

@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryHelperService {
@@ -18,6 +19,9 @@ export class InventoryHelperService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding warehouse branch for consumer ${consumerId}`,
         errorStack(error),

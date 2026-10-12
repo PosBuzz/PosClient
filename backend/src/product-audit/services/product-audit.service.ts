@@ -1,11 +1,12 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { GetProductAuditDto } from '../dto/get-product-audit.dto';
 import { ProductAuditPdfService } from './product-audit-pdf.service';
+import { InventoryAuditLog } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ProductAuditService {
-  private readonly logger = new Logger(ProductAuditService.name);
+  // private readonly logger = new Logger(ProductAuditService.name);
   constructor(
     private prisma: PrismaService,
     private pdfService: ProductAuditPdfService,
@@ -149,7 +150,8 @@ export class ProductAuditService {
     batchGroups.forEach((group) => {
       const currentQty = group.batchInfo.quantity || 0;
       const periodDelta = group.events.reduce(
-        (sum, e) => sum + e.quantity_delta,
+        (sum: number, e: Pick<InventoryAuditLog, 'quantity_delta'>) =>
+          sum + e.quantity_delta,
         0,
       );
       group.periodStartQty = currentQty - periodDelta;

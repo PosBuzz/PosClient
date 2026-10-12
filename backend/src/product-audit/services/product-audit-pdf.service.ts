@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { InventoryAuditLog, User } from '@prisma/client';
 import * as PDFDocument from 'pdfkit';
 
 @Injectable()
@@ -351,7 +352,9 @@ export class ProductAuditPdfService {
       this.ensureSpace(doc, 60);
 
       const batch = batchGroup.batchInfo;
-      const events = batchGroup.events;
+      const events: (InventoryAuditLog & {
+        created_by: Pick<User, 'name'> | null;
+      })[] = batchGroup.events;
 
       // --- Batch Section Header ---
       doc.moveDown(0.8);

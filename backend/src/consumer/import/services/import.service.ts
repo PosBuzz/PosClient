@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   ImportColumn,
@@ -19,7 +19,7 @@ export const IMPORT_ENTITIES: ImportEntity[] = [
 
 @Injectable()
 export class ImportService {
-  private readonly logger = new Logger(ImportService.name);
+  // private readonly logger = new Logger(ImportService.name);
 
   constructor(
     private readonly prisma: PrismaService,

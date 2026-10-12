@@ -39,6 +39,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 import { PurchasePayment } from "../../types/purchase-payment.types";
 import { PaymentMethod } from "../../types/sale.types";
 import { PAYMENT_METHODS_REQUIRING_PROVIDER } from "../../utils/payment-provider.utils";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -115,9 +116,7 @@ export default function AddEditInventory() {
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to add inventory",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to add inventory"));
     },
   });
 
@@ -140,9 +139,7 @@ export default function AddEditInventory() {
       navigate("/inventory/batches");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update inventory",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update inventory"));
     },
   });
 

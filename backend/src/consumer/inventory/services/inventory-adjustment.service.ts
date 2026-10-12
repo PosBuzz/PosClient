@@ -9,6 +9,8 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryAdjustmentDto } from '../dto/inventory-adjustment.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { takeAvailableStock } from '../utils/stock-mutation.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryAdjustmentService {
@@ -101,15 +103,28 @@ export class InventoryAdjustmentService {
           },
         });
 
-        // Update batch quantity
-        const updatedBatch = await prisma.inventoryBatch.update({
-          where: { id: dto.batch_id },
-          data: {
-            quantity: {
-              increment: dto.quantity_change,
-            },
-          },
-        });
+        // Update batch quantity. Removals use an atomic check-and-update: the
+        // availability check above can be outdated by a concurrent sale
+        const updatedBatch =
+          dto.quantity_change < 0
+            ? await takeAvailableStock(
+                prisma,
+                dto.batch_id,
+                Math.abs(dto.quantity_change),
+              )
+            : await prisma.inventoryBatch.update({
+                where: { id: dto.batch_id },
+                data: {
+                  quantity: {
+                    increment: dto.quantity_change,
+                  },
+                },
+              });
+        if (!updatedBatch) {
+          throw new BadRequestException(
+            `Insufficient available quantity in batch. Requested: ${Math.abs(dto.quantity_change)}`,
+          );
+        }
 
         // Create audit log entry
         await prisma.inventoryAuditLog.create({
@@ -134,6 +149,9 @@ export class InventoryAdjustmentService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating inventory adjustment for consumer ${consumerId}`,
         errorStack(error),
@@ -209,6 +227,9 @@ export class InventoryAdjustmentService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding all inventory adjustments for ${consumerId}`,
         errorStack(error),
@@ -254,6 +275,9 @@ export class InventoryAdjustmentService {
 
       return adjustment;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding inventory adjustment ${id} for consumer ${consumerId}`,
         errorStack(error),

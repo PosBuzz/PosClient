@@ -16,7 +16,9 @@ class Settings:
     )
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 
-    # RabbitMQ settings
+    # RabbitMQ settings. Optional and off by default: without it the backend calls
+    # POST /generate-description over HTTP. Set RABBITMQ_ENABLED=True to consume the queue.
+    RABBITMQ_ENABLED: bool = os.getenv("RABBITMQ_ENABLED", "False") == "True"
     RABBITMQ_URL: str = os.getenv(
         "RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"
     )
@@ -26,8 +28,9 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     CACHE_TTL: int = int(os.getenv("CACHE_TTL", 86400))  # Default: 1 day
+    # Off by default: the in-memory cache is used unless Redis is switched on
     CACHE_REDIS_ENABLED: bool = os.getenv(
-        "CACHE_REDIS_ENABLED", "True") == "True"
+        "CACHE_REDIS_ENABLED", "False") == "True"
 
     # Search settings - default to DuckDuckGo
     SEARCH_ENGINE: str = os.getenv("SEARCH_ENGINE", "duckduckgo")

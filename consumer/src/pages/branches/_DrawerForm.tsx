@@ -5,6 +5,7 @@ import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { TextArea } = Input;
 
@@ -49,9 +50,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create branch",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create branch"));
     },
   });
 
@@ -67,9 +66,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update branch",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update branch"));
     },
   });
 

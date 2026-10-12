@@ -9,6 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBrandDto } from '../dto/create-brand.dto';
 import { UpdateBrandDto } from '../dto/update-brand.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class BrandService {
@@ -29,6 +30,9 @@ export class BrandService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to create brand for consumer ${consumerId}`,
         errorStack(error),
@@ -47,6 +51,9 @@ export class BrandService {
         orderBy: { name: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to fetch brands for consumer ${consumerId}`,
         errorStack(error),
@@ -70,6 +77,9 @@ export class BrandService {
 
       return brand;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(
@@ -98,6 +108,9 @@ export class BrandService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(
@@ -119,6 +132,9 @@ export class BrandService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof NotFoundException) throw error;
 
       this.logger.error(
