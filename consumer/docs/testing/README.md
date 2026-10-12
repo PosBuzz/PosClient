@@ -28,3 +28,7 @@ Master plan, conventions and the decision playbook live in `../../../docs/testin
 | `npm run test:watch` | `vitest` |
 | `npm run test:cov` | with coverage + thresholds |
 | `npm run test:mutation` | Stryker on `src/utils/**` |
+
+
+## C1 local checkpoint (2026-10-13)
+The Vitest/jsdom/Testing Library/MSW harness is implemented. Seven smoke and isolation checks pass three times; test-aware typecheck, production build and zero full audit pass. Publication/CI verification is pending. See phase-1-test-harness.md and D-033.

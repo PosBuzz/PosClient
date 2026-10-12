@@ -224,3 +224,18 @@ Type: DECISION
 Context: Owner-authorized extraction 2cb5bce and B2 implementation a9b82b8 were pushed to draft PR https://github.com/PosBuzz/PosClient/pull/40.
 Verification: https://github.com/PosBuzz/PosClient/actions/runs/38299671151 passed all 19 jobs. Unit CI enforces the coverage floors; real Postgres/HTTP, optional Redis/RabbitMQ, all app static checks/builds, Docker builds and dependency gates remain green. B2 exit criteria are satisfied; phase and master trackers are updated.
 Follow-up: C1 consumer test harness is next in the master execution order. PR #40 remains draft; no merge or deployment performed.
+
+
+### D-033 Consumer test harness and compatibility fallback (2026-10-13, C1)
+Type: FALLBACK / DOC-DRIFT / DECISION
+Context: MSW 3.0.3 peer resolution requires TypeScript >=5.9 while consumer is on 5.7. Vitest 5 removed describe.sequential; antd modal visibility stays in CSS animation styles because jsdom does not finish CSS animations.
+Chosen: Use the documented MSW 2 fallback (2.15.0, TypeScript >=4.8), keep Vitest/coverage 5.0.4 and jsdom 30.1.2, use `{ concurrent: false }`, and disable motion only in renderWithProviders. Preserve real controls/interactions, visibility assertions and strict unhandled-request errors. Keep test noUnusedLocals/noUnusedParameters enabled, include Vitest config in node typechecks, and mirror the actual provider order including HelmetProvider.
+Isolation: reset auth/message/modal stores, clear owned query clients and browser storage, reset MSW handlers, unmount React roots. Temporary typed auth/CSRF/subdomain contracts use endpoint constants and remain marked for replacement in B5/C4. Production QueryClient options extraction is deferred to C3, where it is needed.
+Verification: seven smoke/isolation tests pass three times with coverage reporting; fresh npm ci preserves the lockfile hash and passes the exact CI command. Consumer build/test-aware typecheck/lint pass, all-app typechecks pass, and full audit is zero. No production source changes. Ignore generated coverage assets in ESLint (their bundled directives otherwise produce warnings); source lint rules remain unchanged.
+Follow-up: GitHub CI verification and phase tracker update; C2 introduces calculation coverage floors.
+
+### D-034 Sequential checkpoint publication and overlap (2026-10-13, owner instruction)
+Type: DECISION
+Context: Owner authorized committing completed phases and starting the next phase while checking CI for the preceding checkpoint.
+Chosen: Publish locally verified C1 to draft PR #40, start C2 during its CI run, and record completion only when CI is green. This authorization also covers subsequent verified phase commits/pushes. Never defer a CI/test failure; repair it immediately under D-018. Keep each phase's implementation separately committed and maintain the master execution order.
+Follow-up: record the actual C1 CI result while progressing C2.
