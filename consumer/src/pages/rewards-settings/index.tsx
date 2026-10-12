@@ -230,7 +230,7 @@ const RewardsSettingsPage: React.FC = () => {
                       precision={2}
                       style={{ width: "100%" }}
                       placeholder="e.g., 10.00"
-                      addonBefore={takaPrefix}
+                      prefix={takaPrefix}
                     />
                   </Form.Item>
                 </Col>
@@ -302,7 +302,7 @@ const RewardsSettingsPage: React.FC = () => {
                       precision={4}
                       style={{ width: "100%" }}
                       placeholder="e.g., 0.01"
-                      addonBefore={takaPrefix}
+                      prefix={takaPrefix}
                     />
                   </Form.Item>
                 </Col>

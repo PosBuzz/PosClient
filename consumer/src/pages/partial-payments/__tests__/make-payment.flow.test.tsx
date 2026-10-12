@@ -23,6 +23,51 @@ const mount = () =>
     path: "/partial-payments/make-payment/:id",
   });
 
+it("[CO-FLOW-PAY-004] empty and zero payment entries cannot send a payment", async () => {
+  const captured = captureRequests("post", endpoints.makePayment);
+  const { user } = mount();
+  const input = (await screen.findByPlaceholderText(
+    "0.00",
+  )) as HTMLInputElement;
+  await user.type(input, "0", {
+    initialSelectionStart: 0,
+    initialSelectionEnd: input.value.length,
+  });
+  await user.click(screen.getByRole("button", { name: /Record Payment/ }));
+  await screen.findByText("Total payment amount must be greater than 0");
+  await user.click(
+    screen.getByRole("img", { name: "delete" }).closest("button")!,
+  );
+  await user.click(screen.getByRole("button", { name: /Record Payment/ }));
+  await screen.findByText("Please add at least one payment method");
+  expect(captured.calls).toHaveLength(0);
+});
+
+it("[CO-FLOW-PAY-005] splitting the remaining balance preserves method and reference on each payment", async () => {
+  const captured = captureRequests("post", endpoints.makePayment);
+  const { user } = mount();
+  const first = (await screen.findByPlaceholderText(
+    "0.00",
+  )) as HTMLInputElement;
+  await user.type(first, "5", {
+    initialSelectionStart: 0,
+    initialSelectionEnd: first.value.length,
+  });
+  await user.click(screen.getByRole("button", { name: /Add Payment Method/ }));
+  const amounts = screen.getAllByPlaceholderText("0.00");
+  expect(amounts[1]).toHaveValue("15.00");
+  await user.click(screen.getAllByRole("combobox")[1]);
+  await user.click(await screen.findByTitle("Card"));
+  await user.type(screen.getAllByPlaceholderText("Reference")[1], "CARD-5");
+  await user.click(screen.getByRole("button", { name: /Record Payment/ }));
+  await screen.findByText("Payment recorded successfully!");
+  expect(captured.calls).toHaveLength(1);
+  expect(captured.calls[0].body.payments).toEqual([
+    { payment_method: "CASH", amount: 5, reference: "" },
+    { payment_method: "CARD", amount: 15, reference: "CARD-5" },
+  ]);
+});
+
 it("[CO-FLOW-PAY-001] pays the remaining balance with the recorded request", async () => {
   const captured = captureRequests("post", endpoints.makePayment);
   const { user } = mount();

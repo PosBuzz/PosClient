@@ -15,6 +15,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       thresholds: {
+        lines: 50,
+        "src/pages/returns/**": { lines: 70 },
+        "src/pages/partial-payments/**": { lines: 70 },
         "src/utils/calculate-totals.utils.ts": {
           lines: 100,
           branches: 100,

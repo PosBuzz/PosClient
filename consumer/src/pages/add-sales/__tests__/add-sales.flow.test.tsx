@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { endpoints } from "../../../api/endpoints";
 import { responseContract } from "../../../test/contracts/load";
 import { requestContract } from "../../../test/contracts/record";
-import { API, ok } from "../../../test/msw/api";
+import { API, fail, ok } from "../../../test/msw/api";
 import { captureRequests } from "../../../test/msw/capture";
 import { server } from "../../../test/msw/server";
 import { renderWithProviders } from "../../../test/render";
@@ -69,6 +69,48 @@ const row = (label: string) =>
     ) as HTMLElement;
 
 describe("Add sale", () => {
+  it("[CO-FLOW-SALE-003] split cash and MFS payments match the POS recording", async () => {
+    const created = captureRequests("post", endpoints.createSale, { id: 3 });
+    const { user } = mount();
+    await addProduct(user, "Product 12 - Default");
+    await user.click(
+      screen.getByRole("button", { name: /Add Payment Method/ }),
+    );
+    const amounts = screen.getAllByPlaceholderText("0.00");
+    await setNumber(user, amounts[0], "100");
+    await setNumber(user, amounts[1], "150");
+    const methods = screen
+      .getAllByRole("combobox")
+      .filter((c) => c.closest(".ant-select")?.textContent?.includes("Cash"));
+    await user.click(methods[methods.length - 1]);
+    const mfs = await screen.findAllByText("MFS");
+    await user.click(mfs[mfs.length - 1]);
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText(/MFS payment must have a payment type selected/);
+    expect(created.calls).toHaveLength(0);
+    const provider = screen.getByText("Select MFS").closest(".ant-select")!;
+    await user.click(within(provider as HTMLElement).getByRole("combobox"));
+    await user.click(await screen.findByTitle(/bKash/i));
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(withoutScreenOnly(created.calls[0].body)).toEqual(
+      requestContract("pos-split-payment").body,
+    );
+  });
+
+  it("[CO-FLOW-SALE-004] a server rejection preserves the cart and permits another attempt", async () => {
+    const created = captureRequests("post", endpoints.createSale, () =>
+      fail(400, "Insufficient stock"),
+    );
+    const { user } = mount();
+    await addProduct(user, "Product 5 - Default");
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText("Insufficient stock");
+    expect(created.calls).toHaveLength(1);
+    expect(row("Product 5")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Create Sale/ })).toBeEnabled();
+  });
   it("[CO-FLOW-SALE-001] the same cart as the POS cash sale sends the same payload", async () => {
     const created = captureRequests("post", endpoints.createSale, { id: 1 });
     const { user } = mount();

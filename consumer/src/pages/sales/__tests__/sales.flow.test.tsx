@@ -16,8 +16,9 @@ beforeEach(() =>
 
 it("[CO-FLOW-SL-001] renders the sales rows and all financial summary tiles", async () => {
   renderWithProviders(<Sales />);
-  for (const sale of sales.data)
-    {expect(await screen.findByText(sale.sale_number)).toBeInTheDocument();}
+  for (const sale of sales.data) {
+    expect(await screen.findByText(sale.sale_number)).toBeInTheDocument();
+  }
   for (const [label, key] of [
     ["Gross Invoiced", "total_amount"],
     ["Total Received", "total_received"],

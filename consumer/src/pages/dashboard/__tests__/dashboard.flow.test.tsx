@@ -92,7 +92,9 @@ it("[CO-FLOW-DASH-002] period selectors send independent daily, weekly and month
       ),
     );
   }
-  expect(Object.fromEntries(requests[requests.length - 1].searchParams)).toEqual({
+  expect(
+    Object.fromEntries(requests[requests.length - 1].searchParams),
+  ).toEqual({
     payment_period: "weekly",
     return_payment_period: "monthly",
     top_products_period: "weekly",
