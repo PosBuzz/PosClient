@@ -5,6 +5,8 @@ rendering without crashing, and a `renderWithProviders` helper mirroring `src/Pr
 
 **Depends on:** P0.
 
+**Status (2026-10-13): locally verified; publication/CI checkpoint pending.**
+
 ---
 
 ## Step 1: Install
@@ -12,9 +14,9 @@ rendering without crashing, and a `renderWithProviders` helper mirroring `src/Pr
 cd consumer
 npm i -D vitest@^5 @vitest/coverage-v8@^5 jsdom@^30 \
   @testing-library/react@^16 @testing-library/dom@^10 @testing-library/user-event@^14 @testing-library/jest-dom@^7 \
-  msw@^3 fast-check@^4
+  msw@^2 fast-check@^4
 ```
-Verified 2026-10-12: vitest 5.0.4 peer `vite ^6.4.0 || ^7 || ^8` (installed vite is 6.4.3 ); MSW 3
+Version check 2026-10-13: vitest 5.0.4 peer `vite ^6.4.0 || ^7 || ^8` (installed vite is 6.4.3 ); MSW 2.15.0
 exports `http`, `HttpResponse`, `delay` from `msw` and `setupServer` from `msw/node`;
 jest-dom 7 has the `@testing-library/jest-dom/vitest` entry. **If npm reports a peer conflict for vite**:
 bump `vite` in package.json to `^6.4.0` (it is already resolved at 6.4.3 in the lockfile). If that
@@ -63,7 +65,7 @@ Scripts:
      "compilerOptions": {
        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
        "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
-       "noUnusedLocals": false
+       "noUnusedLocals": true
      },
      "include": ["src"],
      "exclude": []
@@ -136,7 +138,7 @@ Use the paths from `src/api/endpoints.ts`. **Never hardcode a path string in a t
 paths outside the project root in Vitest. If it doesn't, add
 `server: { fs: { allow: [".."] } }` to `vitest.config.ts` `test` options, or read with
 `fs.readFileSync` (tests run in Node). Until B5 lands, `contracts.ts` exports hand-written
-fixtures marked `// TEMP until contracts/responses exists`. C4 replaces them.
+fixtures marked `// TEMP until B5 contracts/responses exists`. C4 replaces them.
 
 ## Step 6: `src/test/render.tsx`
 ```tsx
@@ -147,9 +149,8 @@ export function renderWithProviders(ui: React.ReactElement, opts?: {
   permissions?: string[];        // shorthand for user.permissions
 }) { ... }
 ```
-It wraps with: `QueryClientProvider` (a **new** `QueryClient` per test with
-`{ queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } }`), `ConfigProvider`
-(antd), `MemoryRouter` + `Routes`/`Route`, `MessageProvider`, `ModalProvider` (same order as
+It wraps with: outer `ConfigProvider`, then `QueryClientProvider` (a **new** `QueryClient` per test with
+`{ queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } }`), `HelmetProvider`, `MemoryRouter` + `Routes`/`Route`, `MessageProvider`, `ModalProvider` (same order as
 `src/Providers.tsx`; read that file and mirror it). Return `{ user: userEvent.setup(), queryClient, ...renderResult }`.
 
 > Note: the test QueryClient disables mutation retries, so it does **not** reproduce the
@@ -180,4 +181,14 @@ It wraps with: `QueryClientProvider` (a **new** `QueryClient` per test with
 ```
 
 ## Exit criteria
-- [ ] CO-HARN-001…004 green 3× in a row; `npm run build` still succeeds; `npm run typecheck` covers test files.
+- [x] CO-HARN-001…006 green 3× in a row; build succeeds; typecheck covers test files.
+- [ ] Consumer CI job is green on the published checkpoint.
+
+
+## Implementation and verification (2026-10-13)
+- Installed Vitest/coverage 5.0.4, jsdom 30.1.2, Testing Library and fast-check 4.10.2. MSW 3.0.3 requires TypeScript >=5.9, so use the documented MSW 2 fallback (2.15.0 supports the existing TypeScript 5.7). No forced peer resolution or compiler upgrade.
+- Vitest 5 uses suite options `{ concurrent: false }` rather than `describe.sequential`; the auth reset checks remain ordered. All test files and Vitest config are typechecked; noUnusedLocals/noUnusedParameters remain enabled.
+- The helper follows the real provider order: ConfigProvider → QueryClientProvider → HelmetProvider → MemoryRouter → MessageProvider → ModalProvider. It disables motion in tests because jsdom doesn't finish CSS animations; visibility assertions and real control interaction remain intact. No production provider behavior changes. QueryClient option extraction remains a permitted C3 seam, not needed for C1.
+- Cleanup resets auth/message/modal stores, clears every owned QueryClient and browser storage, unmounts React trees, and resets handlers. Unknown MSW requests fail instead of reaching real services. Default handlers use endpoint constants and temporary typed auth/CSRF/subdomain fixtures; B5/C4 replace fixtures with contracts.
+- Seven tests cover CO-HARN-001…006 (003 has paired reset checks); all pass three times with coverage reporting. Consumer build and test-aware typecheck pass; full dependency audit is zero. Fresh npm ci preserves the lockfile hash and passes test:cov; all-app typechecks pass. Generated coverage assets are excluded from lint, preserving all source rules.
+- Added consumer-tests CI with immutable lockfile verification and test:cov; root test:all includes consumer tests. Coverage floors begin in C2.
