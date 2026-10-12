@@ -1,7 +1,7 @@
 import { AdminPermission } from '../../../src/auth/enums/adminPermissions.enum';
 import { ConsumerPermission } from '../../../src/auth/enums/consumerPermissions.enum';
 import { createTestApp } from '../../helpers/app';
-import { RouteEntry, buildManifest, routeKey } from './manifest';
+import { NEVER_EXECUTE, RouteEntry, buildManifest, routeKey } from './manifest';
 import {
   AUTH_ONLY_ROUTES,
   KNOWN_VIOLATIONS,
@@ -150,6 +150,14 @@ describe('route security policy', () => {
     const byKey = new Map(manifest.map((e) => [routeKey(e), e]));
     const stale = Object.keys(KNOWN_VIOLATIONS).filter((k) => !byKey.has(k));
     expect(stale).toEqual([]);
+  });
+
+  it('[BE-ROUTE-019] the never-execute list matches the real backup and restore routes', () => {
+    const dangerous = manifest.filter(NEVER_EXECUTE).map(routeKey).sort();
+    expect(dangerous).toEqual([
+      'GET /api/v1/admin/backup',
+      'POST /api/v1/admin/restore',
+    ]);
   });
 
   it('[BE-ROUTE-017] only the test-receipts routes are dev-only, and they are not public', () => {

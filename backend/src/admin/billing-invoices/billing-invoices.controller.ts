@@ -1,4 +1,5 @@
 import {
+  Logger,
   Body,
   Controller,
   Delete,
@@ -15,6 +16,8 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 import { BillingInvoicesService } from './billing-invoices.service';
 import { BillingHistoryService } from './billing-history.service';
 import { CreateBillingHistoryDto } from './dto/create-billing-history.dto';
@@ -29,6 +32,8 @@ import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 @UseGuards(AdminAuthGuard, PermissionsGuard)
 @Controller('admin/billing')
 export class BillingInvoicesController {
+  private readonly logger = new Logger(BillingInvoicesController.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly billingInvoicesService: BillingInvoicesService,
@@ -118,13 +123,7 @@ export class BillingInvoicesController {
       // Send the PDF
       res.send(pdfBuffer);
     } catch (error) {
-      throw new HttpException(
-        {
-          message: 'Failed to generate billing history PDF',
-          error,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(error, 'Failed to generate billing history PDF');
     }
   }
 
@@ -166,13 +165,7 @@ export class BillingInvoicesController {
 
       res.send(pdfBuffer);
     } catch (error) {
-      throw new HttpException(
-        {
-          message: 'Failed to generate invoice PDF',
-          error,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(error, 'Failed to generate invoice PDF');
     }
   }
 
@@ -223,14 +216,14 @@ export class BillingInvoicesController {
       res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
       res.send(buffer);
     } catch (error) {
-      console.error(error);
-
-      throw new HttpException(
-        {
-          message: 'Failed to generate billing history Excel',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(error, 'Failed to generate billing history Excel');
     }
+  }
+
+  /** Known problems (not found, bad input) keep their status; anything else is a logged 500 with no internals in the body. */
+  private fail(error: unknown, message: string): never {
+    if (isClientError(error)) throw error;
+    this.logger.error(message, errorStack(error));
+    throw new HttpException({ message }, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

@@ -5,7 +5,7 @@ import { getPrisma, resetDb, disconnect } from '../../helpers/db';
 import { createAdmin } from '../../factories';
 import { api, dispatch } from '../../helpers/http';
 import { seedTenant, SeededTenant } from '../tenancy/seed';
-import type { RouteEntry } from './manifest';
+import { NEVER_EXECUTE, type RouteEntry } from './manifest';
 
 const manifest: RouteEntry[] = JSON.parse(
   readFileSync(resolve(__dirname, '../../../../contracts/routes.json'), 'utf8'),
@@ -14,8 +14,6 @@ const authed = manifest.filter(
   (e) =>
     e.guards.includes('ClientAuthGuard') || e.guards.includes('AdminAuthGuard'),
 );
-// Never executed: they would start a real database dump or restore. Reason recorded per route.
-const NEVER_RUN = (e: RouteEntry) => e.path.includes('/backup-restore');
 // Routes that return a server error on bad input today; each has a KI. The test fails if one starts passing.
 const KNOWN_5XX: Record<string, string> = {};
 
@@ -57,7 +55,7 @@ describe('robustness: bad input never produces a server error', () => {
     a = await seedTenant(db, boot, 'AAAAAA');
     admin = await createAdmin(db);
     for (const e of authed) {
-      if (NEVER_RUN(e)) continue;
+      if (NEVER_EXECUTE(e)) continue;
       const key = `${e.method} ${e.path}`;
       visited++;
       const path = e.path.replace('/api/v1', '');

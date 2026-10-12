@@ -1,0 +1,106 @@
+{
+  "expiring_items": {
+    "items": [],
+    "total_expiring_items": 0
+  },
+  "low_stock": {
+    "items": [
+      {
+        "affected_branch_name": "Branch 1",
+        "alert_quantity": 98,
+        "product_name": "Product 12",
+        "shortage": 0,
+        "sku": "SKU15",
+        "total_stock": 98,
+        "variant_id": 2,
+        "variant_name": "Default"
+      }
+    ],
+    "total_critical_items": 1
+  },
+  "payment_method_breakdown": [
+    {
+      "payment_method": "CASH",
+      "total_amount": 625,
+      "transaction_count": 5
+    },
+    {
+      "payment_method": "CARD",
+      "total_amount": 240,
+      "transaction_count": 1
+    },
+    {
+      "payment_method": "MFS",
+      "total_amount": 230,
+      "transaction_count": 1
+    }
+  ],
+  "return_payment_breakdown": [
+    {
+      "payment_method": "CASH",
+      "total_amount": 80,
+      "transaction_count": 2
+    },
+    {
+      "payment_method": "EXCHANGE",
+      "total_amount": 72,
+      "transaction_count": 1
+    }
+  ],
+  "summary": {
+    "today_collected": 1045,
+    "today_due": 20,
+    "today_exchanges_total": 72,
+    "today_net_sale": 985,
+    "today_refunds_total": 80,
+    "today_returns_count": 3,
+    "today_returns_total": 152,
+    "today_total_sale": 1065,
+    "today_transactions": 5,
+    "weekly_collected": 1045,
+    "weekly_due": 20,
+    "weekly_exchanges_total": 72,
+    "weekly_net_sale": 985,
+    "weekly_refunds_total": 80,
+    "weekly_returns_count": 3,
+    "weekly_returns_total": 152,
+    "weekly_total_sale": 1065,
+    "weekly_transactions": 5
+  },
+  "top_products": [
+    {
+      "product_name": "Product 19",
+      "sku": "SKU22",
+      "total_amount": 220,
+      "total_quantity": 6,
+      "variant_id": 3,
+      "variant_name": "Default"
+    },
+    {
+      "product_name": "Product 5",
+      "sku": "SKU8",
+      "total_amount": 305,
+      "total_quantity": 3,
+      "variant_id": 1,
+      "variant_name": "Default"
+    },
+    {
+      "product_name": "Product 12",
+      "sku": "SKU15",
+      "total_amount": 480,
+      "total_quantity": 2,
+      "variant_id": 2,
+      "variant_name": "Default"
+    }
+  ],
+  "weekly_sales_trend": [
+    {
+      "date": "2026-03-14",
+      "net_amount": 985,
+      "returns_amount": 80,
+      "returns_count": 3,
+      "sales_count": 5,
+      "total_amount": 1065
+    }
+  ]
+}

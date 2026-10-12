@@ -30,15 +30,17 @@ export async function createTenant(
   } = {},
 ): Promise<Tenant> {
   const suffix = seq();
-  const permissions = await Promise.all(
-    (opts.permissions ?? Object.values(ConsumerPermission)).map((action) =>
-      db.permission.upsert({
+  // One at a time, so permission ids are the same on every run (response contracts show them)
+  const permissions = [];
+  for (const action of opts.permissions ?? Object.values(ConsumerPermission)) {
+    permissions.push(
+      await db.permission.upsert({
         where: { action },
         update: {},
         create: { action },
       }),
-    ),
-  );
+    );
+  }
   const plan = await db.plan.create({
     data: {
       name: `Plan ${suffix}`,
@@ -120,15 +122,16 @@ export async function createUserWithPermissions(
   overrides: Partial<Prisma.UserUncheckedCreateInput> = {},
 ) {
   const suffix = seq();
-  const rows = await Promise.all(
-    permissions.map((action) =>
-      db.permission.upsert({
+  const rows = [];
+  for (const action of permissions) {
+    rows.push(
+      await db.permission.upsert({
         where: { action },
         update: {},
         create: { action },
       }),
-    ),
-  );
+    );
+  }
   const role = await db.role.create({
     data: {
       consumer_id: tenant.consumer.id,
