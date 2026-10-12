@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBillingHistoryDto } from './dto/create-billing-history.dto';
 import { UpdateBillingHistoryDto } from './dto/update-billing-history.dto';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 
 /**
  * CRUD for billing records. Replaces the generic /crud endpoint, so the query
@@ -62,6 +63,9 @@ export class BillingHistoryService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching billing history failed', errorStack(error));
 
       throw new HttpException(
@@ -94,7 +98,7 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error('Creating billing record failed', errorStack(error));
 
       // @@unique([consumer_id, billing_date])
@@ -164,7 +168,7 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Updating billing record ${id} failed`,
         errorStack(error),
@@ -197,6 +201,9 @@ export class BillingHistoryService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Deleting billing record ${id} failed`,
         errorStack(error),

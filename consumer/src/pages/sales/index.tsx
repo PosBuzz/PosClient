@@ -48,6 +48,7 @@ import type {
 import { PaymentStatus } from "../../types/sale.types";
 import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -91,7 +92,7 @@ const SalesTable = () => {
     },
     onError: (error: any) => {
       showMessage(
-        error?.response?.data?.message || "Failed to delete sale",
+        getErrorMessage(error, "Failed to delete sale"),
         "error",
       );
     },
@@ -105,7 +106,7 @@ const SalesTable = () => {
     },
     onError: (error: any) => {
       showMessage(
-        error?.response?.data?.message || "Failed to restore sale",
+        getErrorMessage(error, "Failed to restore sale"),
         "error",
       );
     },
@@ -438,7 +439,7 @@ const SalesTable = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       sorter: true,
-      render: (amount: number, record: Sale) => {
+      render: (_amount: number, record: Sale) => {
         // Use corrected total calculation instead of backend total
         const correctTotal = getCorrectTotal(record);
         return <Money value={correctTotal} />;

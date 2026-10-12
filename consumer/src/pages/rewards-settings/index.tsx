@@ -22,6 +22,7 @@ import {
   RewardsSettings,
 } from "../../types/rewards.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -51,7 +52,9 @@ const RewardsSettingsPage: React.FC = () => {
         earn_on_sale_only: data.earn_on_sale_only,
       });
     } catch (error) {
-      messageApi?.error("Failed to load rewards settings");
+      messageApi?.error(
+        getErrorMessage(error, "Failed to load rewards settings"),
+      );
       console.error("Error loading settings:", error);
     } finally {
       setLoading(false);
@@ -86,12 +89,9 @@ const RewardsSettingsPage: React.FC = () => {
       setSettings(data);
       messageApi?.success("Rewards settings saved successfully");
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        (Array.isArray(error.response?.data?.message)
-          ? error.response.data.messageApi?.join(", ")
-          : "Failed to save rewards settings");
-      messageApi?.error(errorMessage);
+      messageApi?.error(
+        getErrorMessage(error, "Failed to save rewards settings"),
+      );
       console.error("Error saving settings:", error);
     } finally {
       setSaving(false);

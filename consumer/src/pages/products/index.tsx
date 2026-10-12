@@ -42,6 +42,7 @@ import type {
   ProductListResponse,
 } from "../../types/product.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -210,7 +211,7 @@ const ProductsTable = () => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
     },
     onError: (error) => {
-      messageApi?.error("Failed to delete product");
+      messageApi?.error(getErrorMessage(error, "Failed to delete product"));
       console.error(error);
     },
   });

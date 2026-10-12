@@ -8,6 +8,7 @@ import saveAs from "file-saver";
 import { useCallback, useEffect, useState } from "react";
 
 import { useMessageStore } from "../stores/messageStore";
+import { getErrorMessage } from "../utils/api-error";
 
 const { Text } = Typography;
 
@@ -59,7 +60,7 @@ export const usePdfPreview = () => {
         setState((prev) => ({ ...prev, loading: false, blob, fileName }));
       } catch (error) {
         console.error("Error loading PDF:", error);
-        messageApi?.error("Failed to load the PDF");
+        messageApi?.error(getErrorMessage(error, "Failed to load the PDF"));
         setState(emptyState);
       }
     },

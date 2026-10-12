@@ -30,6 +30,7 @@ import { queryKeys } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const key = "operational-costs";
 
@@ -61,7 +62,10 @@ export default function OperationalCosts() {
       form.resetFields();
       messageApi?.success("Operational cost saved");
     },
-    onError: () => messageApi?.error("Could not save operational cost"),
+    onError: (error) =>
+      messageApi?.error(
+        getErrorMessage(error, "Could not save operational cost"),
+      ),
   });
   const remove = useMutation({
     mutationFn: operationalCostsApi.remove,

@@ -7,6 +7,7 @@ import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 import ImageInput from "../../components/ImageInput";
 import { getImageUrlForCloudinaryImage } from "../../utils/upload";
+import { getErrorMessage } from "../../utils/api-error";
 
 interface BrandFormValues {
   id: number;
@@ -44,9 +45,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create brand",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create brand"));
     },
   });
 
@@ -60,9 +59,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update brand",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update brand"));
     },
   });
 

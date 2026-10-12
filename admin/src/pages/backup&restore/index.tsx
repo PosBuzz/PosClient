@@ -7,6 +7,7 @@ import PageTitle from "../../components/PageTitle"; // Assuming this is still be
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { saveAs } from "file-saver";
+import { getErrorMessage } from "../../utils/api-error";
 
 const title = "Database Management";
 
@@ -29,7 +30,7 @@ function BackupRestorePage() {
       messageApi?.success("Full database backup completed successfully");
     } catch (error) {
       console.error("Backup failed:", error);
-      messageApi?.error("Database backup failed");
+      messageApi?.error(getErrorMessage(error, "Database backup failed"));
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ function BackupRestorePage() {
       messageApi?.success("Database restored successfully");
     } catch (error) {
       console.error("Restore failed:", error);
-      messageApi?.error("Database restore failed");
+      messageApi?.error(getErrorMessage(error, "Database restore failed"));
     } finally {
       setRestoreLoading(false);
     }

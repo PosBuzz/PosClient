@@ -5,6 +5,7 @@ import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -21,9 +22,7 @@ function AccountSecurity() {
       form.resetFields();
     },
     onError: (err) => {
-      messageApi?.error(
-        (err as any)?.response?.data?.message || "An error occurred",
-      );
+      messageApi?.error(getErrorMessage(err, "An error occurred"));
     },
   });
 

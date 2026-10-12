@@ -9,6 +9,7 @@ import { setPageTitle } from "../../utils/setPageTitle";
 import CollectionEditor, { FieldDef } from "./_CollectionEditor";
 import Leads from "./_Leads";
 import SettingsForm from "./_SettingsForm";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -203,7 +204,8 @@ const PublishButton = () => {
         : messageApi?.warning(
             "Could not reach the site; it will pick up the changes on its next refresh",
           ),
-    onError: () => messageApi?.error("Publish failed"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Publish failed")),
   });
 
   const configured = publishStatus?.configured;

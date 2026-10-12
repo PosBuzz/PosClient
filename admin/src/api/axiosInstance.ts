@@ -119,7 +119,14 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    if (err.response?.status === 401 && !originalRequest._retry) {
+    // A 401 from the login request means wrong credentials, not an expired
+    // session: let the login form show the server's message instead of refreshing.
+    const isLoginRequest = originalRequest?.url === endpoints.login;
+    if (
+      err.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isLoginRequest
+    ) {
       // Another refresh is already in-flight — queue this request.
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

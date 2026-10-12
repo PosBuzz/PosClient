@@ -22,6 +22,7 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { useAuthStore } from "../../stores/authStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function TableGrid({
   onClickEdit,
@@ -78,8 +79,8 @@ export default function TableGrid({
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

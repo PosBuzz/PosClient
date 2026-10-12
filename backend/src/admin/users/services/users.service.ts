@@ -6,6 +6,7 @@ import * as bcryptjs from 'bcryptjs';
 import { UpdateSuperAdminUserDto } from '../dtos/update-user.dto';
 import { UpdateSuperAdminRoleDto } from '../dtos/update-role.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class UsersService {
@@ -33,6 +34,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Error creating super admin role`, errorStack(error));
       throw new HttpException(
         'Failed to create super admin role',
@@ -53,6 +57,9 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding all super admin roles`,
         errorStack(error),
@@ -77,6 +84,9 @@ export class UsersService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding super admin role ${id}`,
         errorStack(error),
@@ -122,6 +132,9 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding all super admin users`,
         errorStack(error),
@@ -154,6 +167,9 @@ export class UsersService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding super admin user ${id}`,
         errorStack(error),
@@ -184,6 +200,9 @@ export class UsersService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating super admin user for ${dto.email}`,
         errorStack(error),
@@ -221,6 +240,9 @@ export class UsersService {
 
       return updatedRole;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating super admin role ${id}`,
         errorStack(error),
@@ -239,7 +261,7 @@ export class UsersService {
         hashedPassword = await bcryptjs.hash(dto.password, 10);
       }
 
-      return this.prisma.superAdmin.update({
+      return await this.prisma.superAdmin.update({
         where: { id },
         data: {
           email: dto.email,
@@ -255,6 +277,9 @@ export class UsersService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating super admin user ${id}`,
         errorStack(error),
@@ -295,12 +320,15 @@ export class UsersService {
       const hashedNewPassword = await bcryptjs.hash(new_password, 10);
 
       // Update the user's password
-      return this.prisma.superAdmin.update({
+      return await this.prisma.superAdmin.update({
         where: { id },
         data: { password: hashedNewPassword },
         select: { id: true, email: true, name: true },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error changing password for user ${id}`,
         errorStack(error),
@@ -319,6 +347,9 @@ export class UsersService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         'Error finding super admin permissions',
         errorStack(error),
@@ -336,6 +367,9 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting super admin user ${id}`,
         errorStack(error),
@@ -358,6 +392,9 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting super admin role ${id}`,
         errorStack(error),

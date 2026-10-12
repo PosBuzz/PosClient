@@ -119,8 +119,9 @@ export const usePromotionManager = ({
         if (
           alreadyAppliedIds.has(promotion.id) ||
           dismissedIds.has(promotion.id)
-        )
+        ) {
           continue;
+        }
         if (evaluatePromotionForItems(promotion, selectedItems).is_eligible) {
           promotionsToAdd.push(promotion);
         }

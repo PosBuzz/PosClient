@@ -78,6 +78,7 @@ import {
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
 import { useSaleManager } from "../../hooks/useSaleManager";
+import { getErrorMessage } from "../../utils/api-error";
 import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
@@ -86,6 +87,7 @@ import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -291,8 +293,8 @@ const NewSale = () => {
         } else {
           messageApi?.error(`Product not found for barcode: ${barcode}`);
         }
-      } catch {
-        messageApi?.error("Failed to scan barcode");
+      } catch (error) {
+        messageApi?.error(getErrorMessage(error, "Failed to scan barcode"));
       }
     },
     [addToSale, messageApi, selectedBranch],
@@ -618,11 +620,9 @@ const NewSale = () => {
         queryKey: [queryKeys.productsForInventory],
       });
       queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
+      // Dashboard, EOD, sales stats, daily target, user/variant stats
+      invalidateSalesReports(queryClient);
 
       messageApi?.success("Sale created successfully!");
 
@@ -661,7 +661,7 @@ const NewSale = () => {
     } catch (error: any) {
       console.error("Error creating sale:", error);
       messageApi?.error(
-        error.response?.data?.message || "Failed to create sale",
+        getErrorMessage(error, "Failed to create sale"),
       );
     } finally {
       setLoading(false);
@@ -959,7 +959,7 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
           }
         }}
       />
@@ -1153,7 +1153,7 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
           }
         }}
       />
@@ -1415,8 +1415,9 @@ const NewSale = () => {
                       setTimeout(() => {
                         const activeElement =
                           document.activeElement as HTMLElement;
-                        if (activeElement && activeElement.blur)
+                        if (activeElement && activeElement.blur) {
                           activeElement.blur();
+                        }
                       }, 0);
                     }}
                     loading={loading}
@@ -1459,8 +1460,9 @@ const NewSale = () => {
                         setTimeout(() => {
                           const activeElement =
                             document.activeElement as HTMLElement;
-                          if (activeElement && activeElement.blur)
+                          if (activeElement && activeElement.blur) {
                             activeElement.blur();
+                          }
                         }, 0);
                       }}
                       style={{ flex: 1, minWidth: 0 }}
@@ -1512,8 +1514,9 @@ const NewSale = () => {
                           setTimeout(() => {
                             const activeElement =
                               document.activeElement as HTMLElement;
-                            if (activeElement && activeElement.blur)
+                            if (activeElement && activeElement.blur) {
                               activeElement.blur();
+                            }
                           }, 0);
                         }}
                       >
@@ -1609,8 +1612,9 @@ const NewSale = () => {
                     setTimeout(() => {
                       const activeElement =
                         document.activeElement as HTMLElement;
-                      if (activeElement && activeElement.blur)
+                      if (activeElement && activeElement.blur) {
                         activeElement.blur();
+                      }
                     }, 0);
                   }}
                   filterOption={false}

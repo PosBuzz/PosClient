@@ -32,6 +32,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -271,9 +272,7 @@ export default function ReceiptSettingsFormPage() {
       navigate("/printer-settings");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create setting"));
     },
   });
 
@@ -286,9 +285,7 @@ export default function ReceiptSettingsFormPage() {
       navigate("/printer-settings");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update setting"));
     },
   });
 
@@ -313,7 +310,7 @@ export default function ReceiptSettingsFormPage() {
         messageApi?.error("Please fix form errors before previewing");
         setPreviewVisible(false);
       } else {
-        messageApi?.error("Failed to generate preview");
+        messageApi?.error(getErrorMessage(error, "Failed to generate preview"));
         setPreviewVisible(false);
       }
     } finally {

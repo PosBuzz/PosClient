@@ -34,6 +34,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -126,9 +127,7 @@ export default function AddInventoryTransfer() {
       navigate("/inventory/transfers");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create transfer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create transfer"));
     },
   });
 

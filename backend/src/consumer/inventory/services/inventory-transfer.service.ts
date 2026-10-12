@@ -10,6 +10,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryHelperService } from './inventory-helper.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { takeAvailableStock } from '../utils/stock-mutation.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryTransferService {
@@ -121,7 +123,7 @@ export class InventoryTransferService {
 
       return transfer;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating inventory transfer for consumer ${consumerId}`,
         errorStack(error),
@@ -216,7 +218,7 @@ export class InventoryTransferService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding all inventory transfers for consumer ${consumerId}`,
         errorStack(error),
@@ -276,7 +278,7 @@ export class InventoryTransferService {
 
       return transfer;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding inventory transfer ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -341,17 +343,30 @@ export class InventoryTransferService {
 
       // Start transaction to move inventory
       const result = await this.prisma.$transaction(async (prisma) => {
+        // Claim the transition first so a concurrent complete/cancel of the
+        // same transfer cannot move the stock again
+        const claimed = await prisma.inventoryTransfer.updateMany({
+          where: { id, status: 'pending' },
+          data: { status: 'completed', completed_date: new Date() },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException('Transfer is not in pending status');
+        }
+
         // Update each batch
         for (const item of transfer.items) {
-          // Reduce quantity from source batch
-          const updatedSourceBatch = await prisma.inventoryBatch.update({
-            where: { id: item.batch_id },
-            data: {
-              quantity: {
-                decrement: item.quantity,
-              },
-            },
-          });
+          // Reduce quantity from source batch. Stock may have been sold since
+          // the transfer was created, so take it only if it is still available
+          const updatedSourceBatch = await takeAvailableStock(
+            prisma,
+            item.batch_id,
+            item.quantity,
+          );
+          if (!updatedSourceBatch) {
+            throw new BadRequestException(
+              `Insufficient stock in source batch ${item.batch.batch_number} to complete this transfer`,
+            );
+          }
 
           // Create TRANSFER_OUT audit log for source batch
           await prisma.inventoryAuditLog.create({
@@ -453,13 +468,8 @@ export class InventoryTransferService {
           });
         }
 
-        // Update transfer status
-        return await prisma.inventoryTransfer.update({
+        return prisma.inventoryTransfer.findUniqueOrThrow({
           where: { id },
-          data: {
-            status: 'completed',
-            completed_date: new Date(),
-          },
           include: {
             source_branch: {
               select: { id: true, name: true, is_warehouse: true },
@@ -487,7 +497,7 @@ export class InventoryTransferService {
 
       return result;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error completing transfer with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -507,16 +517,22 @@ export class InventoryTransferService {
         throw new BadRequestException('Transfer is not in pending status');
       }
 
-      const updatedTransfer = await this.prisma.inventoryTransfer.update({
-        where: { id },
+      // Conditional so a transfer completed in the meantime is not cancelled
+      const cancelled = await this.prisma.inventoryTransfer.updateMany({
+        where: { id, status: 'pending' },
         data: {
           status: 'cancelled',
         },
       });
+      if (cancelled.count !== 1) {
+        throw new BadRequestException('Transfer is not in pending status');
+      }
 
-      return updatedTransfer;
+      return await this.prisma.inventoryTransfer.findUniqueOrThrow({
+        where: { id },
+      });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error cancelling transfer with ID ${id} for consumer ${consumerId}`,
         errorStack(error),

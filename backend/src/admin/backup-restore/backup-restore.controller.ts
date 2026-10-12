@@ -47,7 +47,7 @@ export class BackupRestoreController {
     FileInterceptor('file', {
       storage: multer.diskStorage({
         destination: './uploads',
-        filename: (_, file, cb) => cb(null, `restore_${Date.now()}.sql`),
+        filename: (_, _file, cb) => cb(null, `restore_${Date.now()}.sql`),
       }),
     }),
   )

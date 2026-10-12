@@ -26,6 +26,8 @@ import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { Sale } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function PendingDeliveries() {
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ export default function PendingDeliveries() {
     queryClient.invalidateQueries({ queryKey: [queryKeys.batches] });
     queryClient.invalidateQueries({ queryKey: [queryKeys.inventorySummary] });
     queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
+    invalidateSalesReports(queryClient);
   };
   const complete = useMutation({
     mutationFn: salesApi.completePendingDelivery,
@@ -50,7 +53,8 @@ export default function PendingDeliveries() {
       refresh();
       messageApi?.success("Delivery completed and inventory updated");
     },
-    onError: () => messageApi?.error("Could not complete delivery"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not complete delivery")),
   });
   const cancel = useMutation({
     mutationFn: salesApi.cancelPendingDelivery,

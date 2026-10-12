@@ -33,6 +33,7 @@ import type {
   CustomerListFilters,
   CustomerType,
 } from "../../types/customer.types";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -81,9 +82,7 @@ const TableGrid = ({ onClickEdit }: TableGridProps) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.customers] });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to delete customer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to delete customer"));
     },
   });
 

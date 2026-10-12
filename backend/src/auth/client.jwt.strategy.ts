@@ -13,7 +13,7 @@ export class JwtClientStrategy extends PassportStrategy(
 ) {
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>

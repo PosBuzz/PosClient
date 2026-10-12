@@ -10,7 +10,7 @@ import { JwtPayload } from './jwt-payload.interface';
 export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>

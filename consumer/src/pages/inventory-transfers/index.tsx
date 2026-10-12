@@ -34,6 +34,7 @@ import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -112,9 +113,7 @@ export default function InventoryTransfersPage() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to complete transfer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to complete transfer"));
     },
   });
 
@@ -134,9 +133,7 @@ export default function InventoryTransfersPage() {
       queryClient.invalidateQueries({ queryKey: [queryKeys.transfers] });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to cancel transfer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to cancel transfer"));
     },
   });
 

@@ -25,27 +25,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: posbuzz-redis
-    restart: unless-stopped
-    env_file:
-      - .env.docker
-    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - posbuzz-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # RabbitMQ Message Broker
+  # RabbitMQ Message Broker (AI description queue; backend and ai-service enable it via RABBITMQ_ENABLED below)
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: posbuzz-rabbitmq
@@ -83,7 +63,8 @@ services:
     environment:
       # Override with Docker network hostnames
       DB_HOST: postgres
-      REDIS_HOST: redis
+      REDIS_ENABLED: "false"
+      RABBITMQ_ENABLED: "true"
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       FASTAPI_URL: http://ai-service:8001/api/v1
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:${DB_PORT:-5432}/${DB_NAME:-posbuzz}?schema=public
@@ -95,8 +76,6 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -165,8 +144,9 @@ services:
       - ./ai-service/.env.docker
     environment:
       # Override with Docker network hostnames
+      RABBITMQ_ENABLED: "True"
+      CACHE_REDIS_ENABLED: "False"
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/
-      REDIS_HOST: redis
       OLLAMA_BASE_URL: http://ollama:11434
     volumes:
       - ai_service_data:/app/data
@@ -174,8 +154,6 @@ services:
     ports:
       - "${AI_SERVICE_PORT:-8001}:8001"
     depends_on:
-      redis:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       ollama:
@@ -217,8 +195,6 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
   rabbitmq_data:
     driver: local

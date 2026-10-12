@@ -18,6 +18,11 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
     },
     rules: {
+      eqeqeq: ['error', 'smart'],
+      curly: ['error', 'multi-line'],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'no-debugger': 'error',
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'off',
       'react-hooks/exhaustive-deps': 'off',

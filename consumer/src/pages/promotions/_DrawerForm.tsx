@@ -15,6 +15,7 @@ import { useEffect, useMemo } from "react";
 import { promotionApi } from "../../api/promotion-api";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 const scopeOptions = [
   { label: "Single Product", value: "SINGLE_PRODUCT" },
@@ -55,9 +56,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create promotion",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create promotion"));
     },
   });
 
@@ -71,9 +70,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update promotion",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update promotion"));
     },
   });
 

@@ -11,6 +11,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryBatchService {
@@ -213,7 +214,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating inventory batch for consumer ${consumerId}`,
         errorStack(error),
@@ -318,7 +319,7 @@ export class InventoryBatchService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding all inventory batches for ${consumerId}`,
         errorStack(error),
@@ -367,7 +368,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -438,7 +439,7 @@ export class InventoryBatchService {
 
       return updatedBatch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -466,7 +467,7 @@ export class InventoryBatchService {
 
       return { success: true, message: 'Inventory batch deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),

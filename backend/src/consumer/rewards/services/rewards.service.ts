@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   CreateRewardsSettingsDto,
@@ -20,6 +21,7 @@ import {
 import { RewardsFiltersDto } from '../dto/rewards-filters.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class RewardsService {
@@ -52,6 +54,9 @@ export class RewardsService {
 
       return settings;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching rewards settings for consumer ${consumerId}`,
         errorStack(error),
@@ -80,6 +85,9 @@ export class RewardsService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating or updating rewards settings for consumer ${consumerId}`,
         errorStack(error),
@@ -141,6 +149,9 @@ export class RewardsService {
 
       return customerPoints;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching customer points for customer ${customerId} for consumer ${consumerId}`,
         errorStack(error),
@@ -207,6 +218,9 @@ export class RewardsService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching customers with points for consumer ${consumerId}`,
         errorStack(error),
@@ -273,6 +287,9 @@ export class RewardsService {
         expiryDate,
       );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error earning points with customer ${customerId} sale ${saleId} amount ${purchaseAmount} for consumer ${consumerId}`,
         errorStack(error),
@@ -334,6 +351,9 @@ export class RewardsService {
         userId,
       );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error redeeming points with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -360,6 +380,9 @@ export class RewardsService {
         userId,
       );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error adjusting points with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -371,80 +394,93 @@ export class RewardsService {
     }
   }
 
+  /**
+   * Pass `client` to make the points change part of a caller's transaction
+   * (e.g. the sale it pays for), so both commit or neither does.
+   */
   private async createPointTransaction(
     dto: CreateRewardsPointTransactionDto,
     consumerId: number,
     expiryDate?: Date | null,
     userId?: number,
+    client?: Prisma.TransactionClient,
   ) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Get current customer points
-        let customerPoints = await tx.customerRewardsPoints.findUnique({
-          where: { customer_id: dto.customer_id },
-        });
-
-        if (!customerPoints) {
-          // Create initial points record
-          customerPoints = await tx.customerRewardsPoints.create({
-            data: {
-              customer_id: dto.customer_id,
-              consumer_id: consumerId,
-              total_points: 0,
-              lifetime_earned: 0,
-              lifetime_redeemed: 0,
-            },
-          });
-        }
-
-        const balanceBefore = customerPoints.total_points;
-        const balanceAfter = balanceBefore + dto.points;
-
-        if (balanceAfter < 0) {
-          throw new BadRequestException('Insufficient points balance');
-        }
-
-        // Create transaction record
-        const transaction = await tx.rewardsPointTransaction.create({
-          data: {
-            customer_id: dto.customer_id,
-            consumer_id: consumerId,
-            type: dto.type,
-            points: dto.points,
-            balance_before: balanceBefore,
-            balance_after: balanceAfter,
-            sale_id: dto.sale_id,
-            description: dto.description,
-            reference: dto.reference,
-            expiry_date: expiryDate,
-            created_by_user_id: userId,
-            notes: dto.notes,
-          },
-        });
-
-        // Update customer points
-        const updateData: any = {
-          total_points: balanceAfter,
-        };
-
-        if (dto.type === RewardsTransactionType.EARN) {
-          updateData.lifetime_earned =
-            customerPoints.lifetime_earned + dto.points;
-          updateData.last_earned_at = new Date();
-        } else if (dto.type === RewardsTransactionType.REDEEM) {
-          updateData.lifetime_redeemed =
-            customerPoints.lifetime_redeemed + Math.abs(dto.points);
-          updateData.last_redeemed_at = new Date();
-        }
-
-        await tx.customerRewardsPoints.update({
-          where: { customer_id: dto.customer_id },
-          data: updateData,
-        });
-
-        return transaction;
+    const run = async (tx: Prisma.TransactionClient) => {
+      // Ensure the balance row exists, then lock it: concurrent redemptions
+      // must not both read the same balance and both spend it
+      await tx.customerRewardsPoints.upsert({
+        where: { customer_id: dto.customer_id },
+        update: {},
+        create: {
+          customer_id: dto.customer_id,
+          consumer_id: consumerId,
+          total_points: 0,
+          lifetime_earned: 0,
+          lifetime_redeemed: 0,
+        },
       });
+      await tx.$queryRaw`
+          SELECT "id" FROM "customer_rewards_points"
+          WHERE "customer_id" = ${dto.customer_id}
+          FOR UPDATE`;
+      const customerPoints = await tx.customerRewardsPoints.findUniqueOrThrow({
+        where: { customer_id: dto.customer_id },
+      });
+
+      const balanceBefore = customerPoints.total_points;
+      const balanceAfter = balanceBefore + dto.points;
+
+      if (balanceAfter < 0) {
+        throw new BadRequestException('Insufficient points balance');
+      }
+
+      // Create transaction record
+      const transaction = await tx.rewardsPointTransaction.create({
+        data: {
+          customer_id: dto.customer_id,
+          consumer_id: consumerId,
+          type: dto.type,
+          points: dto.points,
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          sale_id: dto.sale_id,
+          description: dto.description,
+          reference: dto.reference,
+          expiry_date: expiryDate,
+          created_by_user_id: userId,
+          notes: dto.notes,
+        },
+      });
+
+      // Update customer points
+      const updateData: any = {
+        total_points: balanceAfter,
+      };
+
+      if (dto.type === RewardsTransactionType.EARN) {
+        updateData.lifetime_earned =
+          customerPoints.lifetime_earned + dto.points;
+        updateData.last_earned_at = new Date();
+      } else if (dto.type === RewardsTransactionType.REDEEM) {
+        updateData.lifetime_redeemed =
+          customerPoints.lifetime_redeemed + Math.abs(dto.points);
+        updateData.last_redeemed_at = new Date();
+      }
+
+      await tx.customerRewardsPoints.update({
+        where: { customer_id: dto.customer_id },
+        data: updateData,
+      });
+
+      return transaction;
+    };
+
+    try {
+      return client ? await run(client) : await this.prisma.$transaction(run);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating point transaction with user ${userId} customer ${dto.customer_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -547,6 +583,9 @@ export class RewardsService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching point transactions for consumer ${consumerId}`,
         errorStack(error),
@@ -611,6 +650,9 @@ export class RewardsService {
 
           totalExpired += transaction.points;
         } catch (error) {
+          if (isClientError(error)) {
+            throw error;
+          }
           console.error(
             `Failed to expire points for transaction ${transaction.id}:`,
             error,
@@ -620,6 +662,9 @@ export class RewardsService {
 
       return { expired: totalExpired };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error expiring points for consumer ${consumerId}`,
         errorStack(error),
@@ -677,6 +722,9 @@ export class RewardsService {
 
       return { canRedeem: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error validating point redemption with customer ${customerId} points ${points} for consumer ${consumerId}`,
         errorStack(error),
@@ -746,6 +794,9 @@ export class RewardsService {
 
       return { isValid: true, maxCreditAmount };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error validating credit payment with customer ${customerId} amount ${creditAmount} for consumer ${consumerId}`,
         errorStack(error),
@@ -764,6 +815,7 @@ export class RewardsService {
     creditAmount: number,
     saleId: number,
     reference?: string,
+    client?: Prisma.TransactionClient,
   ) {
     try {
       const validation = await this.validateCreditPayment(
@@ -791,8 +843,14 @@ export class RewardsService {
           reference: reference || `CREDIT-SALE-${saleId}`,
         },
         consumerId,
+        undefined,
+        undefined,
+        client,
       );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error processing credit payment with customer ${customerId} amount ${creditAmount} for consumer ${consumerId}`,
         errorStack(error),
@@ -812,6 +870,7 @@ export class RewardsService {
     originalSaleId?: number,
     returnId?: number,
     reference?: string,
+    client?: Prisma.TransactionClient,
   ) {
     try {
       const settings = await this.getSettings(consumerId);
@@ -838,8 +897,14 @@ export class RewardsService {
             : `Original Sale ID: ${originalSaleId}`,
         },
         consumerId,
+        undefined,
+        undefined,
+        client,
       );
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error processing credit refund with customer ${customerId} amount ${refundAmount} for consumer ${consumerId}`,
         errorStack(error),

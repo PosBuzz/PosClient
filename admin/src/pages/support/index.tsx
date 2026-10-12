@@ -25,6 +25,7 @@ import { AdminPermission } from "../../constants/adminPermissions";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 
@@ -164,7 +165,8 @@ const Support = () => {
       replyForm.resetFields();
       messageApi?.success("Reply sent");
     },
-    onError: () => messageApi?.error("Could not send the reply"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not send the reply")),
   });
 
   const update = useMutation({
@@ -181,7 +183,8 @@ const Support = () => {
       invalidate();
       messageApi?.success("Ticket updated");
     },
-    onError: () => messageApi?.error("Could not update the ticket"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not update the ticket")),
   });
 
   return (

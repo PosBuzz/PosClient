@@ -29,8 +29,10 @@ const queryClient = new QueryClient({
       refetchOnMount: true,
     },
     mutations: {
-      // Retry failed mutations once
-      retry: 1,
+      // Never auto-retry: mutations create sales, returns, payments and stock
+      // movements. A request that failed client-side (timeout, 5xx after
+      // commit) may already be saved, and a silent resend would duplicate it.
+      retry: 0,
     },
   },
 });

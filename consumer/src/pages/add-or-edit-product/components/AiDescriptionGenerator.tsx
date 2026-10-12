@@ -8,6 +8,7 @@ import { Button, Tooltip } from "antd";
 import { useRef } from "react";
 import { aiApi } from "../../../api/ai-api";
 import { useMessageStore } from "../../../stores/messageStore";
+import { getErrorMessage } from "../../../utils/api-error";
 
 // Small action button that generates description text from AI for the current product name.
 
@@ -39,8 +40,10 @@ export default function AiDescriptionGenerator({
       onDescriptionGenerated(response.description || "");
       messageApi?.success("Description generated");
     },
-    onError: () => {
-      messageApi?.error("Failed to generate description");
+    onError: (error) => {
+      messageApi?.error(
+        getErrorMessage(error, "Failed to generate description"),
+      );
     },
   });
 

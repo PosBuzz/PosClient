@@ -25,49 +25,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: posbuzz-redis
-    restart: unless-stopped
-    env_file:
-      - .env.docker
-    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - posbuzz-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # RabbitMQ Message Broker
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: posbuzz-rabbitmq
-    restart: unless-stopped
-    env_file:
-      - .env.docker
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"  # Management UI
-    networks:
-      - posbuzz-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   # Adminer - Database Management UI
   adminer:
     image: adminer:latest
@@ -97,8 +54,6 @@ services:
       - ./backend/.env.docker
     environment:
       DB_HOST: postgres
-      REDIS_HOST: redis
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:${DB_PORT:-5432}/${DB_NAME:-posbuzz}?schema=public
     volumes:
       - ./backend/uploads:/app/uploads
@@ -108,10 +63,6 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     networks:
       - posbuzz-network
@@ -182,8 +133,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  rabbitmq_data:
     driver: local

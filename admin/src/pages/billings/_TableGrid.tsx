@@ -13,9 +13,10 @@ import axiosInstance from "../../api/axiosInstance";
 import { deleteApi } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function _TableGrid({
-  model,
+  model: _model,
   onClickEdit,
   isLoading,
   isError,
@@ -31,8 +32,8 @@ export default function _TableGrid({
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
