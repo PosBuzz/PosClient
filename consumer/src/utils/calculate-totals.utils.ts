@@ -6,48 +6,62 @@ import { DiscountType, SaleItem } from "../types/sale.types";
 
 const round2 = (value: number) => Number((value || 0).toFixed(2));
 
-const getItemBaseAmount = (item: SaleItem) => {
-  const taxMethod = String(item.tax_method || "EXCLUSIVE").toUpperCase();
-  if (taxMethod === "INCLUSIVE") {
-    return Math.max(0, Number(item.line_total) - Number(item.tax_amount || 0));
-  }
-  return Number(item.unit_price) * Number(item.quantity);
-};
+// Reconstruct the same rounded base as sales.service.ts#create. Independently
+// rounded tax/gross can differ from raw price × qty by a cent.
+const getItemBaseAmount = (item: SaleItem) =>
+  Math.max(0, Number(item.line_total) - Number(item.tax_amount || 0));
 
 function distributeDiscount(
   totalDiscount: number,
   selectedItems: SaleItem[],
-  baseMap?: Map<number, number>,
+  baseMap: Map<number, number>,
+  capacityMap: Map<number, number>,
 ): Map<number, number> {
   const distributed = new Map<number, number>();
   selectedItems.forEach((item) => distributed.set(item.variant_id, 0));
-
-  const targetItems = selectedItems.filter(
-    (item) => (baseMap?.get(item.variant_id) || 0) > 0,
+  const capacities = new Map(
+    selectedItems.map((item) => [
+      item.variant_id,
+      Math.max(0, Math.round(capacityMap.get(item.variant_id)! * 100)),
+    ]),
   );
-  const totalBase = targetItems.reduce(
-    (sum, item) => sum + (baseMap?.get(item.variant_id) || 0),
-    0,
+  const targets = selectedItems.filter(
+    (item) => (baseMap.get(item.variant_id) || 0) > 0,
   );
-
-  if (totalDiscount <= 0 || targetItems.length === 0 || totalBase <= 0) {
-    return distributed;
+  let remaining = Math.min(
+    Math.max(0, Math.round(totalDiscount * 100)),
+    targets.reduce((sum, item) => sum + capacities.get(item.variant_id)!, 0),
+  );
+  // Work in integer cents: never assign a negative rounding remainder. When
+  // one line reaches its capacity, distribute the rest among available lines.
+  while (remaining > 0) {
+    const eligible = targets.filter(
+      (item) => capacities.get(item.variant_id)! > 0,
+    );
+    const budget = remaining;
+    const totalBase = eligible.reduce(
+      (sum, item) => sum + baseMap.get(item.variant_id)!,
+      0,
+    );
+    eligible.forEach((item, index) => {
+      const wanted =
+        index === eligible.length - 1
+          ? remaining
+          : Math.round((budget * baseMap.get(item.variant_id)!) / totalBase);
+      const share = Math.min(
+        wanted,
+        remaining,
+        capacities.get(item.variant_id)!,
+      );
+      distributed.set(
+        item.variant_id,
+        distributed.get(item.variant_id)! + share,
+      );
+      capacities.set(item.variant_id, capacities.get(item.variant_id)! - share);
+      remaining -= share;
+    });
   }
-
-  let assigned = 0;
-  targetItems.forEach((item, index) => {
-    const isLast = index === targetItems.length - 1;
-    if (isLast) {
-      distributed.set(item.variant_id, round2(totalDiscount - assigned));
-      return;
-    }
-
-    const base = baseMap?.get(item.variant_id) || 0;
-    const share = round2((totalDiscount * base) / totalBase);
-    distributed.set(item.variant_id, share);
-    assigned += share;
-  });
-
+  distributed.forEach((cents, id) => distributed.set(id, cents / 100));
   return distributed;
 }
 
@@ -117,17 +131,19 @@ export function calculateSaleTotals(params: {
   const averageDiscountAmountNum = Number(averageDiscountAmount) || 0;
   const shippingCostNum = Number(shippingCost) || 0;
 
-  const averageDiscount = round2(
-    averageDiscountType === DiscountType.PERCENTAGE
-      ? (averageDiscountBaseSubtotal * averageDiscountAmountNum) / 100
-      : averageDiscountAmountNum,
-  );
-
-  const specialDiscount = round2(
-    selectedItems.reduce(
-      (sum, item) => sum + round2(Number(item.special_discount_amount) || 0),
-      0,
+  const requestedAverageDiscount = Math.max(
+    0,
+    round2(
+      averageDiscountType === DiscountType.PERCENTAGE
+        ? (averageDiscountBaseSubtotal * averageDiscountAmountNum) / 100
+        : averageDiscountAmountNum,
     ),
+  );
+  const lineCapacityMap = new Map(
+    selectedItems.map((item) => [
+      item.variant_id,
+      Math.max(0, round2(Number(item.line_total))),
+    ]),
   );
 
   const variantBaseMap = new Map<number, number>();
@@ -137,12 +153,6 @@ export function calculateSaleTotals(params: {
     variantBaseMap.set(item.variant_id, Number(rawBase) || 0);
     variantQuantityMap.set(item.variant_id, Number(item.quantity || 0));
   });
-
-  const averageDiscountMap = distributeDiscount(
-    Number(averageDiscount) || 0,
-    selectedItems,
-    variantBaseMap,
-  );
 
   // Per-variant best promotion selection (5-tier conflict resolution)
   const promotionChoiceByVariant = new Map<
@@ -184,6 +194,7 @@ export function calculateSaleTotals(params: {
       promotionDiscount,
       selectedItems,
       eligibleBaseMap,
+      lineCapacityMap,
     );
 
     selectedItems.forEach((item) => {
@@ -192,7 +203,7 @@ export function calculateSaleTotals(params: {
       const itemDiscount = promoDistMap.get(item.variant_id) || 0;
       if (itemDiscount <= 0) return;
 
-      const matchedItemQty = Number(item.quantity || 0);
+      const matchedItemQty = Number(item.quantity);
       const current = promotionChoiceByVariant.get(item.variant_id);
 
       if (!current) {
@@ -230,9 +241,47 @@ export function calculateSaleTotals(params: {
     promotionDiscountMap.set(variantId, choice.discount);
   });
 
+  // Apply confirmed promotion choices first, then each requested special
+  // discount, then the average discount within the remaining line capacities.
+  const specialDiscountMap = new Map<number, number>();
+  const averageCapacityMap = new Map<number, number>();
+  selectedItems.forEach((item) => {
+    const remaining = Math.max(
+      0,
+      round2(
+        lineCapacityMap.get(item.variant_id)! -
+          (promotionDiscountMap.get(item.variant_id) || 0),
+      ),
+    );
+    const special = Math.min(
+      remaining,
+      Math.max(0, round2(Number(item.special_discount_amount) || 0)),
+    );
+    specialDiscountMap.set(item.variant_id, special);
+    averageCapacityMap.set(item.variant_id, round2(remaining - special));
+  });
+  const averageDiscountMap = distributeDiscount(
+    requestedAverageDiscount,
+    selectedItems,
+    variantBaseMap,
+    averageCapacityMap,
+  );
+  const averageDiscount = round2(
+    Array.from(averageDiscountMap.values()).reduce(
+      (sum, value) => sum + value,
+      0,
+    ),
+  );
+  const specialDiscount = round2(
+    Array.from(specialDiscountMap.values()).reduce(
+      (sum, value) => sum + value,
+      0,
+    ),
+  );
+
   const promotionDiscountAmount = round2(
     Array.from(promotionDiscountMap.values()).reduce(
-      (sum, value) => sum + Number(value || 0),
+      (sum, value) => sum + value,
       0,
     ),
   );
@@ -252,7 +301,7 @@ export function calculateSaleTotals(params: {
     const promotionShare = Number(
       promotionDiscountMap.get(item.variant_id) || 0,
     );
-    const specialShare = round2(Number(item.special_discount_amount || 0));
+    const specialShare = specialDiscountMap.get(item.variant_id)!;
 
     const choice = promotionChoiceByVariant.get(item.variant_id);
 
