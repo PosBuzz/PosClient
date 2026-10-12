@@ -1,0 +1,31 @@
+{
+  "id": "X-TOT-006",
+  "description": "single 100 line plus shipping 60",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 60,
+  "promotions": [],
+  "expected": {
+    "subtotal": "100.00",
+    "tax_amount": "0.00",
+    "discount_amount": "0.00",
+    "total_amount": "160.00"
+  }
+}

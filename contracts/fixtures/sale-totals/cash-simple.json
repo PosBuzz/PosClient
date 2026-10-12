@@ -1,0 +1,41 @@
+{
+  "id": "X-TOT-001",
+  "description": "P1 x2 (5% EXCL) + P3 x1: subtotal 200+40, tax 10",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 5,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "P3",
+      "price": 40,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 2
+    },
+    {
+      "variant": "P3",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [],
+  "expected": {
+    "subtotal": "240.00",
+    "tax_amount": "10.00",
+    "discount_amount": "0.00",
+    "total_amount": "250.00"
+  }
+}

@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { formatCurrency } from "../../utils/formatters";
 import {
   CalculatorOutlined,
@@ -534,19 +535,7 @@ const NewSale = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-        // Remove batch_id to let backend use FIFO automatically
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       applied_promotion_id: undefined,
@@ -592,9 +581,7 @@ const NewSale = () => {
       navigate(`/sales/view/${createdSale.id}`);
     } catch (error: any) {
       console.error("Error creating sale:", error);
-      messageApi?.error(
-        getErrorMessage(error, "Failed to create sale"),
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create sale"));
     } finally {
       setLoading(false);
     }
@@ -775,33 +762,33 @@ const NewSale = () => {
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <Radio.Group
-            size="small"
-            optionType="button"
-            buttonStyle="solid"
-            value={mode}
-            onChange={(event) =>
-              setSpecialDiscountModes((modes) => ({
-                ...modes,
-                [record.variant_id]: event.target.value,
-              }))
-            }
-            options={[
-              { label: "Overall", value: "overall" },
-              { label: "Per qty", value: "quantity" },
-            ]}
+              size="small"
+              optionType="button"
+              buttonStyle="solid"
+              value={mode}
+              onChange={(event) =>
+                setSpecialDiscountModes((modes) => ({
+                  ...modes,
+                  [record.variant_id]: event.target.value,
+                }))
+              }
+              options={[
+                { label: "Overall", value: "overall" },
+                { label: "Per qty", value: "quantity" },
+              ]}
             />
             <InputNumber
-            min={0}
-            precision={2}
-            value={value}
-            onChange={(nextValue) =>
-              updateItemSpecialDiscount(
-                record.variant_id,
-                Number(nextValue) || 0,
-              )
-            }
-            style={{ width: 100 }}
-            size="small"
+              min={0}
+              precision={2}
+              value={value}
+              onChange={(nextValue) =>
+                updateItemSpecialDiscount(
+                  record.variant_id,
+                  Number(nextValue) || 0,
+                )
+              }
+              style={{ width: 100 }}
+              size="small"
             />
             <Money value={totalDiscount} negative />
           </div>
@@ -863,7 +850,9 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />

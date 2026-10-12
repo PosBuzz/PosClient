@@ -233,3 +233,14 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npm run test:cov
+
+  contracts:
+    name: Cross-layer contracts (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/contracts/check-permissions.mjs
+      - run: node scripts/contracts/check-inline-paths.mjs

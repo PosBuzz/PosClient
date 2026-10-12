@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { Money, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
@@ -330,8 +331,7 @@ const NewSale = () => {
         specialDiscountPerQuantity !== undefined
           ? {
               ...item,
-              special_discount_amount:
-                specialDiscountPerQuantity * quantity,
+              special_discount_amount: specialDiscountPerQuantity * quantity,
             }
           : item,
       ),
@@ -580,18 +580,7 @@ const NewSale = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,
@@ -660,9 +649,7 @@ const NewSale = () => {
       });
     } catch (error: any) {
       console.error("Error creating sale:", error);
-      messageApi?.error(
-        getErrorMessage(error, "Failed to create sale"),
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create sale"));
     } finally {
       setLoading(false);
     }
@@ -944,114 +931,119 @@ const NewSale = () => {
           overflow: "hidden",
         }}
       >
-      <CustomerModal
-        open={customerModalOpen}
-        onClose={() => setCustomerModalOpen(false)}
-        onCreateCustomer={async (customer) => {
-          try {
-            const newCustomer = await post(endpoints.createCustomer, customer);
-            setSelectedCustomer(newCustomer);
-            setCustomers([...customers, newCustomer]);
-            form.setFieldsValue({ customer_id: newCustomer.id });
-            queryClient.invalidateQueries({
-              queryKey: [queryKeys.customers],
-            });
-            messageApi?.success("Customer created successfully");
-          } catch (error) {
-            console.error("Error creating customer:", error);
-            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
-          }
-        }}
-      />
-
-      <Drawer
-        title="Available Promotions"
-        open={promotionDrawerOpen}
-        onClose={() => setPromotionDrawerOpen(false)}
-        width={460}
-      >
-        <List
-          loading={activePromotionsQuery.isLoading}
-          locale={{ emptyText: "No active promotions found" }}
-          dataSource={activePromotionsQuery.data || []}
-          renderItem={(promotion) => {
-            const eligibility = promotionEligibilityMap[promotion.id];
-            const isAvailableNow = Boolean(eligibility?.is_eligible);
-            const isApplied = appliedPromotions.some(
-              (item) => item.id === promotion.id,
-            );
-
-            return (
-              <List.Item
-                actions={[
-                  <Button
-                    key={`apply-${promotion.id}`}
-                    type={isApplied ? "default" : "primary"}
-                    size="small"
-                    loading={applyingPromotionId === promotion.id}
-                    onClick={() => {
-                      if (isApplied) {
-                        removeAppliedPromotion(promotion.id);
-                        return;
-                      }
-                      applyPromotionToCurrentSale(promotion);
-                    }}
-                  >
-                    {isApplied ? "Remove" : "Apply"}
-                  </Button>,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <Space>
-                      <span>{promotion.name}</span>
-                      <Tag
-                        color={
-                          promotion.scope === "BRAND"
-                            ? "blue"
-                            : promotion.scope === "BUNDLE"
-                              ? "purple"
-                              : "green"
-                        }
-                      >
-                        {promotion.scope}
-                      </Tag>
-                      {isApplied ? <Tag color="green">Applied</Tag> : null}
-                      {isAvailableNow ? (
-                        <Tag color="success">Available</Tag>
-                      ) : null}
-                    </Space>
-                  }
-                  description={
-                    <Space direction="vertical" size={2}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {promotion.discount_type === "percentage"
-                          ? `${promotion.discount_value}% discount`
-                          : `${formatCurrency(
-                              Number(promotion.discount_value),
-                            )} discount`}
-                      </Text>
-                      {promotion.description ? (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {promotion.description}
-                        </Text>
-                      ) : null}
-                      {selectedItems.length > 0 &&
-                      eligibility &&
-                      !eligibility.is_eligible ? (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {eligibility.reason ||
-                            "Not eligible for current cart"}
-                        </Text>
-                      ) : null}
-                    </Space>
-                  }
-                />
-              </List.Item>
-            );
+        <CustomerModal
+          open={customerModalOpen}
+          onClose={() => setCustomerModalOpen(false)}
+          onCreateCustomer={async (customer) => {
+            try {
+              const newCustomer = await post(
+                endpoints.createCustomer,
+                customer,
+              );
+              setSelectedCustomer(newCustomer);
+              setCustomers([...customers, newCustomer]);
+              form.setFieldsValue({ customer_id: newCustomer.id });
+              queryClient.invalidateQueries({
+                queryKey: [queryKeys.customers],
+              });
+              messageApi?.success("Customer created successfully");
+            } catch (error) {
+              console.error("Error creating customer:", error);
+              messageApi?.error(
+                getErrorMessage(error, "Failed to create customer"),
+              );
+            }
           }}
         />
-      </Drawer>
+
+        <Drawer
+          title="Available Promotions"
+          open={promotionDrawerOpen}
+          onClose={() => setPromotionDrawerOpen(false)}
+          width={460}
+        >
+          <List
+            loading={activePromotionsQuery.isLoading}
+            locale={{ emptyText: "No active promotions found" }}
+            dataSource={activePromotionsQuery.data || []}
+            renderItem={(promotion) => {
+              const eligibility = promotionEligibilityMap[promotion.id];
+              const isAvailableNow = Boolean(eligibility?.is_eligible);
+              const isApplied = appliedPromotions.some(
+                (item) => item.id === promotion.id,
+              );
+
+              return (
+                <List.Item
+                  actions={[
+                    <Button
+                      key={`apply-${promotion.id}`}
+                      type={isApplied ? "default" : "primary"}
+                      size="small"
+                      loading={applyingPromotionId === promotion.id}
+                      onClick={() => {
+                        if (isApplied) {
+                          removeAppliedPromotion(promotion.id);
+                          return;
+                        }
+                        applyPromotionToCurrentSale(promotion);
+                      }}
+                    >
+                      {isApplied ? "Remove" : "Apply"}
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space>
+                        <span>{promotion.name}</span>
+                        <Tag
+                          color={
+                            promotion.scope === "BRAND"
+                              ? "blue"
+                              : promotion.scope === "BUNDLE"
+                                ? "purple"
+                                : "green"
+                          }
+                        >
+                          {promotion.scope}
+                        </Tag>
+                        {isApplied ? <Tag color="green">Applied</Tag> : null}
+                        {isAvailableNow ? (
+                          <Tag color="success">Available</Tag>
+                        ) : null}
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size={2}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {promotion.discount_type === "percentage"
+                            ? `${promotion.discount_value}% discount`
+                            : `${formatCurrency(
+                                Number(promotion.discount_value),
+                              )} discount`}
+                        </Text>
+                        {promotion.description ? (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {promotion.description}
+                          </Text>
+                        ) : null}
+                        {selectedItems.length > 0 &&
+                        eligibility &&
+                        !eligibility.is_eligible ? (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {eligibility.reason ||
+                              "Not eligible for current cart"}
+                          </Text>
+                        ) : null}
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+        </Drawer>
 
         <Form
           form={form}
@@ -1153,7 +1145,9 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />
