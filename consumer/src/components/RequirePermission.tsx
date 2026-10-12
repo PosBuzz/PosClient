@@ -8,7 +8,8 @@ export default function RequirePermission({
   permission,
 }: {
   children: JSX.Element;
-  permission?: string;
+  /** One permission, or several of which the user needs ANY one (like the sidebar menu) */
+  permission?: string | string[];
 }) {
   const { user } = useAuthStore();
 
@@ -16,7 +17,11 @@ export default function RequirePermission({
     return <CenterLoader />;
   }
   // Check if the user has the required permission
-  if (permission && !user?.permissions?.includes(permission)) {
+  const wanted = permission === undefined ? [] : [permission].flat();
+  if (
+    wanted.length > 0 &&
+    !wanted.some((perm) => user?.permissions?.includes(perm))
+  ) {
     return <Navigate to="/" replace />;
   }
 

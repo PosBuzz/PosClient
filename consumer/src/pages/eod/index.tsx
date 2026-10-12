@@ -374,7 +374,10 @@ const EODReport = () => {
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   {eodData.summary.total_sales} transactions
                   {eodData.summary.total_discount ? (
-                    <> · Disc: <Money value={eodData.summary.total_discount} /></>
+                    <>
+                      {" "}
+                      · Disc: <Money value={eodData.summary.total_discount} />
+                    </>
                   ) : null}
                 </Text>
               </Card>
@@ -385,7 +388,8 @@ const EODReport = () => {
                   title="Real Money Collected"
                   value={
                     eodData.summary.real_money_collected ??
-                    eodData.summary.cash_sales + (eodData.summary.digital_sales || 0)
+                    eodData.summary.cash_sales +
+                      (eodData.summary.digital_sales || 0)
                   }
                   prefix={takaPrefix}
                   precision={2}
@@ -394,7 +398,11 @@ const EODReport = () => {
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   Physical Cash & Digital Banking
                   {eodData.summary.due_collected ? (
-                    <> · Due paid: <Money value={eodData.summary.due_collected} /></>
+                    <>
+                      {" "}
+                      · Due paid:{" "}
+                      <Money value={eodData.summary.due_collected} />
+                    </>
                   ) : null}
                 </Text>
               </Card>
@@ -441,7 +449,8 @@ const EODReport = () => {
                   precision={2}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Net Cash in Drawer: <Money value={eodData.summary.net_cash_sales} />
+                  Net Cash in Drawer:{" "}
+                  <Money value={eodData.summary.net_cash_sales} />
                 </Text>
               </Card>
             </Col>
@@ -489,9 +498,9 @@ const EODReport = () => {
                   prefix={takaPrefix}
                   precision={2}
                   valueStyle={
-                    (eodData.summary.unique_exchanges ||
-                      eodData.summary.exchange_sales ||
-                      eodData.summary.total_exchange_return)
+                    eodData.summary.unique_exchanges ||
+                    eodData.summary.exchange_sales ||
+                    eodData.summary.total_exchange_return
                       ? { color: "#1677ff" }
                       : undefined
                   }
@@ -851,7 +860,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Invoiced subtotal less line & promotional discounts, plus tax & shipping.
+                      Invoiced subtotal less line & promotional discounts, plus
+                      tax & shipping.
                     </Text>
                   </div>
                   <div>
@@ -867,7 +877,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Liquid currency received via Cash and verified Digital accounts (Cards/MFS).
+                      Liquid currency received via Cash and verified Digital
+                      accounts (Cards/MFS).
                     </Text>
                   </div>
                   <div>
@@ -883,7 +894,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Total physical cash received (sales + due collections) less cash refunds paid.
+                      Total physical cash received (sales + due collections)
+                      less cash refunds paid.
                     </Text>
                   </div>
                 </div>
@@ -910,7 +922,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Remaining unpaid balance on sales invoices finalized during this period.
+                      Remaining unpaid balance on sales invoices finalized
+                      during this period.
                     </Text>
                   </div>
                   <div>
@@ -926,7 +939,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Deduplicated barter value of exchanged goods; counted once across linked records.
+                      Deduplicated barter value of exchanged goods; counted once
+                      across linked records.
                     </Text>
                   </div>
                   <div>
@@ -942,7 +956,8 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Gross Sales minus Returns/Refunds and Operational Expenses.
+                      Gross Sales minus Returns/Refunds and Operational
+                      Expenses.
                     </Text>
                   </div>
                 </div>
@@ -964,7 +979,9 @@ const EODReport = () => {
                   fontStyle: "italic",
                 }}
               >
-                Official computer-generated financial report. Prepared in accordance with standard retail cash & accrual accounting principles.
+                Official computer-generated financial report. Prepared in
+                accordance with standard retail cash & accrual accounting
+                principles.
               </Text>
             </div>
           </Card>

@@ -202,8 +202,9 @@ describe("sale totals examples", () => {
       { averageDiscountAmount: 20 },
     );
     expect(Object.keys(r.discountBreakdownByVariant)).toEqual(["1", "2"]);
-    for (const b of Object.values(r.discountBreakdownByVariant))
-      {expect(b.total).toBe(round(b.average + b.special + b.promotion));}
+    for (const b of Object.values(r.discountBreakdownByVariant)) {
+      expect(b.total).toBe(round(b.average + b.special + b.promotion));
+    }
   });
   it("[CO-TOT-012] tax remains based on the pre-discount price (characterization: confirm intent)", () =>
     expect(

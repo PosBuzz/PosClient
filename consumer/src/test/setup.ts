@@ -32,6 +32,18 @@ globalThis.ResizeObserver = TestResizeObserver;
 const realGetComputedStyle = window.getComputedStyle;
 window.getComputedStyle = (element) => realGetComputedStyle(element);
 window.scrollTo = () => {};
+// jsdom's Blob has no stream(); MSW's XHR interception needs it to answer `responseType: "blob"` requests
+if (typeof Blob.prototype.stream !== "function") {
+  Blob.prototype.stream = function stream(this: Blob) {
+    const read = () => this.arrayBuffer();
+    return new ReadableStream<Uint8Array>({
+      async start(controller) {
+        controller.enqueue(new Uint8Array(await read()));
+        controller.close();
+      },
+    });
+  };
+}
 Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
   writable: true,
   value: () => null,

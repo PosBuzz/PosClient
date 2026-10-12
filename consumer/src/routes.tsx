@@ -193,7 +193,9 @@ export const routes = [
       {
         path: "tags",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission
+            permission={[Permissions.edit_product, Permissions.add_product]}
+          >
             <Tags />
           </RequirePermission>
         ),
@@ -201,7 +203,9 @@ export const routes = [
       {
         path: "categories",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission
+            permission={[Permissions.edit_product, Permissions.add_product]}
+          >
             <Categories />
           </RequirePermission>
         ),
@@ -209,7 +213,9 @@ export const routes = [
       {
         path: "brands",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission
+            permission={[Permissions.edit_product, Permissions.add_product]}
+          >
             <Brands />
           </RequirePermission>
         ),
@@ -217,7 +223,9 @@ export const routes = [
       {
         path: "units",
         element: (
-          <RequirePermission permission={Permissions.branches}>
+          <RequirePermission
+            permission={[Permissions.edit_product, Permissions.add_product]}
+          >
             <Units />
           </RequirePermission>
         ),
@@ -274,7 +282,7 @@ export const routes = [
       {
         path: "inventory/batches",
         element: (
-          <RequirePermission permission={Permissions.add_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <Inventory />
           </RequirePermission>
         ),
@@ -282,7 +290,7 @@ export const routes = [
       {
         path: "inventory/batches/add",
         element: (
-          <RequirePermission permission={Permissions.add_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <AddEditBatch />
           </RequirePermission>
         ),
@@ -290,7 +298,7 @@ export const routes = [
       {
         path: "inventory/batches/edit/:id",
         element: (
-          <RequirePermission permission={Permissions.edit_product}>
+          <RequirePermission permission={Permissions.inventory_batches}>
             <AddEditBatch />
           </RequirePermission>
         ),
@@ -298,7 +306,7 @@ export const routes = [
       {
         path: "inventory/transfers",
         element: (
-          <RequirePermission permission={Permissions.edit_product}>
+          <RequirePermission permission={Permissions.inventory_transfer}>
             <InventoryTransfers />
           </RequirePermission>
         ),
@@ -306,7 +314,7 @@ export const routes = [
       {
         path: "inventory/transfers/add",
         element: (
-          <RequirePermission permission={Permissions.edit_product}>
+          <RequirePermission permission={Permissions.inventory_transfer}>
             <AddInventoryTransfers />
           </RequirePermission>
         ),
@@ -314,7 +322,7 @@ export const routes = [
       {
         path: "inventory/adjustments",
         element: (
-          <RequirePermission permission={Permissions.edit_product}>
+          <RequirePermission permission={Permissions.inventory_adjustment}>
             <InventoryAdjustments />
           </RequirePermission>
         ),
@@ -322,7 +330,7 @@ export const routes = [
       {
         path: "inventory/adjustments/add",
         element: (
-          <RequirePermission permission={Permissions.edit_product}>
+          <RequirePermission permission={Permissions.inventory_adjustment}>
             <AddInventoryAdjustments />
           </RequirePermission>
         ),
