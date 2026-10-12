@@ -132,6 +132,52 @@ const CALLS: Call[] = [
   { name: 'auth-admin', as: 'admin', path: () => '/auth/admin' },
   { name: 'admin-consumers', as: 'admin', path: () => '/admin/consumers' },
   { name: 'admin-plans', as: 'admin', path: () => '/admin/plans' },
+  {
+    name: 'inventory-stock-by-variant',
+    as: 'tenant',
+    path: () => '/consumer/inventory/stock-by-variant',
+  },
+  {
+    name: 'purchase-payment-batches',
+    as: 'tenant',
+    path: () => '/consumer/purchase-payments/batches',
+  },
+  {
+    name: 'quotations-list',
+    as: 'tenant',
+    path: () => '/consumer/sales/quotations/list',
+  },
+  {
+    name: 'daily-target',
+    as: 'tenant',
+    path: () => '/consumer/sales/reports/daily-target?date=2026-03-14',
+  },
+  {
+    name: 'online-orders-list',
+    as: 'tenant',
+    path: () => '/consumer/sales/online-orders/list',
+  },
+  { name: 'products-list', as: 'tenant', path: () => '/consumer/products' },
+  {
+    name: 'product-detail',
+    as: 'tenant',
+    path: (s) => `/consumer/products/${s.p1.variant.product_id}`,
+  },
+  {
+    name: 'customer-summary',
+    as: 'tenant',
+    path: (s) => `/consumer/customers/${s.c1.id}/summary`,
+  },
+  {
+    name: 'online-orders-stats',
+    as: 'tenant',
+    path: () => '/consumer/sales/online-orders/stats',
+  },
+  {
+    name: 'pending-deliveries',
+    as: 'tenant',
+    path: () => '/consumer/sales/pending-deliveries/list',
+  },
 ];
 
 describe('response contracts for the canonical business day', () => {
@@ -146,6 +192,18 @@ describe('response contracts for the canonical business day', () => {
     const admin = await createAdmin(db);
     const out: Record<string, unknown> = {};
     for (const call of CALLS) {
+      if (call.name === 'daily-target') {
+        await db.productVariant.update({
+          where: { id: scenario.p1.variant.id },
+          data: { daily_sale_objective: 5 },
+        });
+      }
+      if (call.name === 'online-orders-list') {
+        await db.sale.update({
+          where: { id: scenario.sales.s6.id },
+          data: { is_online_order: true, online_order_status: 'PENDING' },
+        });
+      }
       const session =
         call.as === 'admin'
           ? api(boot.app).asAdmin(admin)

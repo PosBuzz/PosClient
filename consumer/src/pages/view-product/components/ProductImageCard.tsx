@@ -12,7 +12,7 @@ const ProductImageCard: React.FC<ProductImageCardProps> = ({ product }) => {
     product.variants?.find((v) => v.is_default) || product.variants?.[0];
 
   return (
-    <Card bodyStyle={{ padding: 0 }} className="product-image-card">
+    <Card styles={{ body: { padding: 0 } }} className="product-image-card">
       {mainVariant?.image ? (
         <Image
           src={mainVariant.image}

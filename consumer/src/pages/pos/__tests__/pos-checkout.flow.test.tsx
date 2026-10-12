@@ -128,6 +128,50 @@ function expectedCart(
 const money = (n: number) => n.toFixed(2);
 
 describe("POS checkout", () => {
+  it("[CO-FLOW-POS-014] restaurant menu checkout records the same sale and clears the order", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    const created = captureRequests("post", endpoints.createSale, { id: 101 });
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByRole("button", { name: /Checkout/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.items).toMatchObject([
+      { variant_id: 1, quantity: 1, unit_price: 100 },
+    ]);
+    expect(screen.getByRole("button", { name: /Checkout/ })).toBeDisabled();
+  });
+
+  it("[CO-FLOW-POS-015] restaurant order options change payments and notes before checkout", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    const created = captureRequests("post", endpoints.createSale, { id: 102 });
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByRole("button", { name: /Options/ }));
+    await user.type(
+      screen.getByPlaceholderText("Kitchen or sale notes..."),
+      "Takeaway order",
+    );
+    await user.click(screen.getByRole("button", { name: /Add split payment/ }));
+    const amounts = within(screen.getByRole("dialog")).getAllByRole(
+      "spinbutton",
+    );
+    await setNumber(user, amounts[amounts.length - 2], "50");
+    await setNumber(user, amounts[amounts.length - 1], "55");
+    await user.type(
+      screen.getAllByPlaceholderText("Reference")[0],
+      "Cash desk",
+    );
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }),
+    );
+    await user.click(screen.getByRole("button", { name: /Checkout/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.notes).toBe("Takeaway order");
+    expect(created.calls[0].body.payments[0].reference).toBe("Cash desk");
+  });
+
   it("[CO-FLOW-POS-001] a cash sale sends the cart, totals and payment the screen shows", async () => {
     const created = captureRequests("post", endpoints.createSale, {
       id: 1,

@@ -33,10 +33,12 @@ it("[CO-FLOW-VS-001] renders net line totals, discounts, payments and return his
       expect(row.textContent).toContain(Number(item[key]).toFixed(2));
     }
   }
-  for (const payment of sale.payments)
-    {expect(screen.getAllByText(payment.payment_method).length).toBeGreaterThan(
+  for (const payment of sale.payments) {
+    expect(screen.getAllByText(payment.payment_method).length).toBeGreaterThan(
       0,
-    );}
-  for (const ret of sale.returns)
-    {expect(screen.getByText(ret.return_number)).toBeInTheDocument();}
+    );
+  }
+  for (const ret of sale.returns) {
+    expect(screen.getByText(ret.return_number)).toBeInTheDocument();
+  }
 });
