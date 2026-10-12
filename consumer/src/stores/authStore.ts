@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import axiosInstance from "../api/axiosInstance";
 import { endpoints } from "../api/endpoints";
+import { isIPv4Host } from "../utils/host.utils";
 
 type User = {
   id: number;
@@ -119,7 +120,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       let currentSubdomain: string | null = null;
 
       // Handle localhost development (tenant.localhost)
-      if (host === "localhost") {
+      if (host === "localhost" || isIPv4Host(host)) {
         needsValidation = false;
       } else if (parts.length === 2 && parts[1].toLowerCase() === "localhost") {
         const candidate = parts[0];

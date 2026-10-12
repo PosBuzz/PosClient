@@ -32,3 +32,6 @@ Master plan, conventions and the decision playbook live in `../../../docs/testin
 
 ## C1 verified checkpoint (2026-10-13)
 The Vitest/jsdom/Testing Library/MSW harness is implemented. Seven smoke and isolation checks pass three times; test-aware typecheck, production build and zero full audit pass. All 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165) on commit `634c2ee`. See phase-1-test-harness.md and D-033.
+
+## C2 local checkpoint (2026-10-13)
+Calculation, promotion, formatter, payment-provider, search and subdomain tests (with seeded properties) pass three times with per-file coverage floors enforced. KI-025/026 repaired. See D-036.

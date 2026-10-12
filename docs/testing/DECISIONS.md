@@ -245,3 +245,11 @@ Follow-up: record the actual C1 CI result while progressing C2.
 Type: DECISION
 Verification: C1 implementation 634c2ee passed all 20 jobs in https://github.com/PosBuzz/PosClient/actions/runs/38301291165, including consumer coverage reporting, all-app static/build/image checks and the existing backend/dependency gates. Phase and master trackers are updated.
 Follow-up: C2 calculation tests began while C1 CI ran, as authorized in D-034. No merge or deployment performed.
+
+
+### D-036 C2 calculation tests and immediate repairs (2026-10-13)
+Type: DECISION / REFACTOR
+Chosen: Pin every sale-item, totals, promotion-validation, promotion-helpers, formatter, payment-provider, search and subdomain behavior with ID-tagged tests and seeded fast-check properties. Repair KI-025 (negative/over-capacity discounts, rounded INCLUSIVE base) and KI-026 (IPv4 hosts) immediately under D-018; the regression tests pass normally. CO-CART-008 and CO-TOT-030 therefore assert clamping rather than `it.fails`. CO-TOT-012 (tax before discount) stays a characterization pending owner intent.
+Coverage: per-file floors from the phase doc are enforced in vitest.config.ts. The unreachable redundant fallback in enrichCartForPromotion (`!changed && currentSubtotal < minPurchase`, already handled by the earlier min-purchase branch) is excluded with a v8 ignore and comment rather than testing dead code.
+Verification: lint 0/0, typecheck and build clean, `npm run test:cov` passes three times.
+Follow-up: record CI result; X1 turns the subdomain and sale-totals tables into shared fixtures.
