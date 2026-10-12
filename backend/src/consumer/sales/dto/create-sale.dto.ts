@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsEnum,
@@ -256,6 +257,7 @@ export class CreateSaleDto {
   is_delivery_later?: boolean;
 
   @IsArray()
+  @ArrayMinSize(1, { message: 'A sale must contain at least one item' })
   @ValidateNested({ each: true })
   @Type(() => CreateSaleItemDto)
   items: CreateSaleItemDto[];

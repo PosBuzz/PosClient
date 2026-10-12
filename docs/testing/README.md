@@ -16,7 +16,7 @@ This folder holds the cross-project plan. Each app keeps its own phases in its o
 |---|---|
 | `docs/testing/README.md` | This file: execution order, conventions, impact map, Definition of Done |
 | `docs/testing/DECISION-PLAYBOOK.md` | **Read before starting.** What to do when anything goes wrong or is unclear |
-| `docs/testing/KNOWN-ISSUES.md` | Real defects found during exploration. Tests for these use `it.failing` |
+| `docs/testing/KNOWN-ISSUES.md` | Confirmed defects and immediate repairs with normal passing regression tests |
 | `docs/testing/DECISIONS.md` | Log of decisions made during implementation (append-only) |
 | `docs/testing/phase-00-baseline-guardrails.md` | Repo-wide first phase: green lint, CI skeleton |
 | `docs/testing/phase-X1-cross-layer-contracts.md` | Shared fixtures that backend AND consumer must both satisfy |
@@ -171,7 +171,7 @@ fails. The target for critical modules is a mutation score of at least 80%.
 
 ## 4. Definition of Done (per phase)
 A phase is done only when **all** of the following are true:
-- [ ] Every test ID listed in the phase doc exists (`grep`) and passes, or is `failing`-marked with a KI.
+- [ ] Every applicable phase test ID exists and passes normally; retired DOC-DRIFT IDs are recorded.
 - [ ] The phase's CI job is in `.github/workflows/ci.yml` and green on the PR.
 - [ ] The run is deterministic: `npm run <script>` passes 3 times in a row locally (`for i in 1 2 3; do … || break; done`).
 - [ ] Production changes are limited to §3.3 seams and confirmed defects repaired under §3.4, with passing regression evidence.
@@ -181,7 +181,7 @@ A phase is done only when **all** of the following are true:
 ## 5. Progress tracker
 - [x] P0 Baseline & guardrails — local checks and all 17 CI jobs passed 2026-10-13 on [draft PR #40](https://github.com/PosBuzz/PosClient/pull/40)
 - [x] B1 Backend harness — verified 2026-10-13; all 19 jobs passed in [CI run 38297463078](https://github.com/PosBuzz/PosClient/actions/runs/38297463078)
-- [ ] B2 Backend unit
+- [ ] B2 Backend unit — locally verified 2026-10-13; publication/CI checkpoint pending
 - [ ] C1 Consumer harness
 - [ ] C2 Consumer calculations
 - [ ] X1 Cross-layer contracts
