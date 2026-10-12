@@ -406,6 +406,16 @@ export class RewardsService {
     client?: Prisma.TransactionClient,
   ) {
     const run = async (tx: Prisma.TransactionClient) => {
+      // The customer id comes from the caller: it must belong to this tenant,
+      // or one shop could change another shop's customer balances
+      const owner = await tx.customer.findFirst({
+        where: { id: dto.customer_id, consumer_id: consumerId },
+        select: { id: true },
+      });
+      if (!owner) {
+        throw new NotFoundException('Customer not found');
+      }
+
       // Ensure the balance row exists, then lock it: concurrent redemptions
       // must not both read the same balance and both spend it
       await tx.customerRewardsPoints.upsert({
@@ -605,50 +615,60 @@ export class RewardsService {
         return { expired: 0 };
       }
 
-      // Find expired point transactions that haven't been processed
-      const expiredTransactions =
-        await this.prisma.rewardsPointTransaction.findMany({
+      // Earnings past their expiry date that no EXPIRE row references yet.
+      // Each EXPIRE row carries EXPIRE-<earning id>, so one customer's earlier
+      // expiry never hides their later earnings.
+      const [expiredEarnings, processed] = await Promise.all([
+        this.prisma.rewardsPointTransaction.findMany({
           where: {
             consumer_id: consumerId,
             type: RewardsTransactionType.EARN,
-            expiry_date: {
-              lte: new Date(),
-            },
-            // Only get transactions where the points haven't been expired yet
-            NOT: {
-              customer: {
-                point_transactions: {
-                  some: {
-                    type: RewardsTransactionType.EXPIRE,
-                    reference: {
-                      startsWith: 'EXPIRE-',
-                    },
-                  },
-                },
-              },
-            },
+            expiry_date: { lte: new Date() },
           },
-          include: {
-            customer: true,
+          orderBy: { id: 'asc' },
+        }),
+        this.prisma.rewardsPointTransaction.findMany({
+          where: {
+            consumer_id: consumerId,
+            type: RewardsTransactionType.EXPIRE,
+            reference: { startsWith: 'EXPIRE-' },
           },
-        });
+          select: { reference: true },
+        }),
+      ]);
+      const done = new Set(processed.map((row) => row.reference));
+      const pending = expiredEarnings.filter(
+        (transaction) => !done.has(`EXPIRE-${transaction.id}`),
+      );
 
       let totalExpired = 0;
 
-      for (const transaction of expiredTransactions) {
+      for (const transaction of pending) {
         try {
+          // Points the customer already spent cannot expire: take at most
+          // what is still on the balance, and still record the run so the
+          // earning is not looked at again
+          const current = await this.prisma.customerRewardsPoints.findUnique({
+            where: { customer_id: transaction.customer_id },
+            select: { total_points: true },
+          });
+          const expiring = Math.min(
+            transaction.points,
+            Math.max(0, current?.total_points ?? 0),
+          );
+
           await this.createPointTransaction(
             {
               customer_id: transaction.customer_id,
               type: RewardsTransactionType.EXPIRE,
-              points: -transaction.points,
-              description: `Expired ${transaction.points} points`,
+              points: -expiring,
+              description: `Expired ${expiring} points`,
               reference: `EXPIRE-${transaction.id}`,
             },
             consumerId,
           );
 
-          totalExpired += transaction.points;
+          totalExpired += expiring;
         } catch (error) {
           if (isClientError(error)) {
             throw error;

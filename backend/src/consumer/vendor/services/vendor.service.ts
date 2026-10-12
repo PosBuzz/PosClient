@@ -10,6 +10,7 @@ import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
 import { errorStack } from '../../../common/utils/error.util';
 import { isClientError } from '../../../common/errors/client-error';
+import { purchasedQuantities } from '../../inventory/utils/purchased-quantity.util';
 
 @Injectable()
 export class VendorService {
@@ -197,9 +198,10 @@ export class VendorService {
         this.prismaService.inventoryBatch.count({ where: whereClause }),
       ]);
 
-      // 4. Compute aggregates
+      // 4. Compute aggregates (owed on the quantity bought, not what is left)
+      const purchased = await purchasedQuantities(this.prismaService, batches);
       const totalCost = batches.reduce(
-        (sum, b) => sum + Number(b.cost_price) * b.quantity,
+        (sum, b) => sum + Number(b.cost_price) * purchased.get(b.id)!,
         0,
       );
       const totalPaid = batches.reduce(
@@ -222,9 +224,10 @@ export class VendorService {
       // 6. Add computed fields to batches
       const batchesWithTotals = batches.map((batch) => ({
         ...batch,
-        total_cost: Number(batch.cost_price) * batch.quantity,
+        total_cost: Number(batch.cost_price) * purchased.get(batch.id)!,
         remaining_amount:
-          Number(batch.cost_price) * batch.quantity - Number(batch.paid_amount),
+          Number(batch.cost_price) * purchased.get(batch.id)! -
+          Number(batch.paid_amount),
       }));
 
       return {
