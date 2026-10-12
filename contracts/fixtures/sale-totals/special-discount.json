@@ -1,0 +1,43 @@
+{
+  "id": "X-TOT-005",
+  "description": "special 20 on A (2x100, 5% EXCL): subtotal 200+40, tax 10, total 240-20+10",
+  "variants": [
+    {
+      "key": "A",
+      "price": 100,
+      "taxPct": 5,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "B",
+      "price": 40,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "A",
+      "qty": 2
+    },
+    {
+      "variant": "B",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {
+    "A": 20
+  },
+  "shipping": 0,
+  "promotions": [],
+  "expected": {
+    "subtotal": "240.00",
+    "tax_amount": "10.00",
+    "discount_amount": "20.00",
+    "total_amount": "230.00"
+  }
+}

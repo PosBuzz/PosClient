@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { formatCurrency } from "../../utils/formatters";
 import {
   DeleteOutlined,
@@ -390,18 +391,7 @@ const NewQuotation = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,

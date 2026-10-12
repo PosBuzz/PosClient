@@ -1,0 +1,77 @@
+[
+  {
+    "id": "X-SUBD-001",
+    "host": "acme.localhost",
+    "expected": "acme"
+  },
+  {
+    "id": "X-SUBD-002",
+    "host": "acme.localhost:3000",
+    "expected": "acme"
+  },
+  {
+    "id": "X-SUBD-003",
+    "host": "ACME.example.com",
+    "expected": "acme"
+  },
+  {
+    "id": "X-SUBD-004",
+    "host": "example.com",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-005",
+    "host": "localhost",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-006",
+    "host": "www.example.com",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-007",
+    "host": "api.example.com",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-008",
+    "host": "admin.example.com",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-009",
+    "host": "app.example.com",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-010",
+    "host": "www.localhost",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-011",
+    "host": "a.b.example.com",
+    "expected": "a"
+  },
+  {
+    "id": "X-SUBD-012",
+    "host": "127.0.0.1",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-013",
+    "host": "127.0.0.1:3000",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-014",
+    "host": "::1",
+    "expected": null
+  },
+  {
+    "id": "X-SUBD-015",
+    "host": "[::1]:3000",
+    "expected": null
+  }
+]

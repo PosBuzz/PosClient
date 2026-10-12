@@ -432,8 +432,11 @@ export class SalesService {
         averageDiscountAmount + specialDiscountAmount + promotionDiscountAmount;
       const shippingCost = Number(createSaleDto.shipping_cost) || 0;
 
-      const totalAmount =
-        subtotal - totalDiscountAmount + totalTax + shippingCost;
+      // Round to cents like the stored Decimal(10,2) and the POS display; the
+      // unrounded float sum made fully paid sales compare as partially paid.
+      const totalAmount = Number(
+        (subtotal - totalDiscountAmount + totalTax + shippingCost).toFixed(2),
+      );
 
       // Calculate payment totals and determine payment status
       let totalPaymentAmount = 0;

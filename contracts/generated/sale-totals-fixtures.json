@@ -1,0 +1,696 @@
+[
+  {
+    "id": "X-TOT-003",
+    "variants": [
+      {
+        "id": 1,
+        "price": 10,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 10,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 3,
+        "price": 10,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 1,
+          "unit_price": 10,
+          "sold_unit_price": 6.67,
+          "average_discount_amount": 3.33,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 6.67
+        },
+        {
+          "variant_id": 2,
+          "quantity": 1,
+          "unit_price": 10,
+          "sold_unit_price": 6.67,
+          "average_discount_amount": 3.33,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 6.67
+        },
+        {
+          "variant_id": 3,
+          "quantity": 1,
+          "unit_price": 10,
+          "sold_unit_price": 6.66,
+          "average_discount_amount": 3.34,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 6.66
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "30.00",
+      "tax_amount": "0.00",
+      "discount_amount": "10.00",
+      "total_amount": "20.00"
+    }
+  },
+  {
+    "id": "X-TOT-004",
+    "variants": [
+      {
+        "id": 1,
+        "price": 115,
+        "taxPct": 15,
+        "method": "INCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 100,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 1,
+          "unit_price": 115,
+          "sold_unit_price": 103.5,
+          "average_discount_amount": 11.5,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 15,
+          "line_total": 103.5
+        },
+        {
+          "variant_id": 2,
+          "quantity": 1,
+          "unit_price": 100,
+          "sold_unit_price": 90,
+          "average_discount_amount": 10,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 90
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "200.00",
+      "tax_amount": "15.00",
+      "discount_amount": "21.50",
+      "total_amount": "193.50"
+    }
+  },
+  {
+    "id": "X-TOT-001",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 5,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 40,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 2,
+          "unit_price": 100,
+          "sold_unit_price": 105,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 10,
+          "line_total": 210
+        },
+        {
+          "variant_id": 2,
+          "quantity": 1,
+          "unit_price": 40,
+          "sold_unit_price": 40,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 40
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "240.00",
+      "tax_amount": "10.00",
+      "discount_amount": "0.00",
+      "total_amount": "250.00"
+    }
+  },
+  {
+    "id": "X-TOT-011",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 10,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 50,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "percentage",
+        "discount_value": 10,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": null,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 1,
+        "variant_ids": [
+          1
+        ]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 2,
+          "unit_price": 100,
+          "sold_unit_price": 95,
+          "average_discount_amount": 10,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 20,
+          "applied_promotion_id": 1,
+          "tax_amount": 20,
+          "line_total": 190
+        },
+        {
+          "variant_id": 2,
+          "quantity": 2,
+          "unit_price": 50,
+          "sold_unit_price": 42.5,
+          "average_discount_amount": 5,
+          "special_discount_amount": 10,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 85
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "300.00",
+      "tax_amount": "20.00",
+      "discount_amount": "45.00",
+      "total_amount": "275.00"
+    }
+  },
+  {
+    "id": "X-TOT-002",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 10,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 115,
+        "taxPct": 15,
+        "method": "INCLUSIVE"
+      },
+      {
+        "id": 3,
+        "price": 50,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 1,
+          "unit_price": 100,
+          "sold_unit_price": 110,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 10,
+          "line_total": 110
+        },
+        {
+          "variant_id": 2,
+          "quantity": 1,
+          "unit_price": 115,
+          "sold_unit_price": 115,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 15,
+          "line_total": 115
+        },
+        {
+          "variant_id": 3,
+          "quantity": 2,
+          "unit_price": 50,
+          "sold_unit_price": 50,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 100
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "300.00",
+      "tax_amount": "25.00",
+      "discount_amount": "0.00",
+      "total_amount": "325.00"
+    }
+  },
+  {
+    "id": "X-TOT-008",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "fixed_amount",
+        "discount_value": 5,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": null,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 1,
+        "variant_ids": [
+          1
+        ]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 3,
+          "unit_price": 100,
+          "sold_unit_price": 95,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 15,
+          "applied_promotion_id": 1,
+          "tax_amount": 0,
+          "line_total": 285
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "300.00",
+      "tax_amount": "0.00",
+      "discount_amount": "15.00",
+      "total_amount": "285.00"
+    }
+  },
+  {
+    "id": "X-TOT-007",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 5,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "percentage",
+        "discount_value": 10,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": null,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 1,
+        "variant_ids": [
+          1
+        ]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 3,
+          "unit_price": 100,
+          "sold_unit_price": 95,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 30,
+          "applied_promotion_id": 1,
+          "tax_amount": 15,
+          "line_total": 285
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "300.00",
+      "tax_amount": "15.00",
+      "discount_amount": "30.00",
+      "total_amount": "285.00"
+    }
+  },
+  {
+    "id": "X-TOT-009",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "percentage",
+        "discount_value": 10,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": 2,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 1,
+        "variant_ids": [
+          1
+        ]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 5,
+          "unit_price": 100,
+          "sold_unit_price": 96,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 20,
+          "applied_promotion_id": 1,
+          "tax_amount": 0,
+          "line_total": 480
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "500.00",
+      "tax_amount": "0.00",
+      "discount_amount": "20.00",
+      "total_amount": "480.00"
+    }
+  },
+  {
+    "id": "X-TOT-010",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "fixed_amount",
+        "discount_value": 10,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": null,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 2,
+        "variant_ids": [
+          1
+        ]
+      },
+      {
+        "scope": "SINGLE_PRODUCT",
+        "discount_type": "percentage",
+        "discount_value": 10,
+        "is_active": true,
+        "start_date": "2026-01-01T00:00:00.000Z",
+        "end_date": "2040-01-01T00:00:00.000Z",
+        "branch_specific": false,
+        "branches": [],
+        "products": [
+          "P1"
+        ],
+        "brand": null,
+        "min_purchase": null,
+        "min_quantity": 1,
+        "cap_quantity": null,
+        "cap_discount_amount": null,
+        "max_discount_amount": null,
+        "usage_limit": null,
+        "member_only": false,
+        "limit_per_customer": false,
+        "customer_usage_limit": null,
+        "sales_count": 0,
+        "total_discount_given": 0,
+        "id": 1,
+        "variant_ids": [
+          1
+        ]
+      }
+    ],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 1,
+          "unit_price": 100,
+          "sold_unit_price": 90,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 10,
+          "applied_promotion_id": 1,
+          "tax_amount": 0,
+          "line_total": 90
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "100.00",
+      "tax_amount": "0.00",
+      "discount_amount": "10.00",
+      "total_amount": "90.00"
+    }
+  },
+  {
+    "id": "X-TOT-006",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 1,
+          "unit_price": 100,
+          "sold_unit_price": 100,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 100
+        }
+      ],
+      "shipping_cost": 60
+    },
+    "expected": {
+      "subtotal": "100.00",
+      "tax_amount": "0.00",
+      "discount_amount": "0.00",
+      "total_amount": "160.00"
+    }
+  },
+  {
+    "id": "X-TOT-005",
+    "variants": [
+      {
+        "id": 1,
+        "price": 100,
+        "taxPct": 5,
+        "method": "EXCLUSIVE"
+      },
+      {
+        "id": 2,
+        "price": 40,
+        "taxPct": 0,
+        "method": "EXCLUSIVE"
+      }
+    ],
+    "promotions": [],
+    "payload": {
+      "items": [
+        {
+          "variant_id": 1,
+          "quantity": 2,
+          "unit_price": 100,
+          "sold_unit_price": 95,
+          "average_discount_amount": 0,
+          "special_discount_amount": 20,
+          "promotion_discount_amount": 0,
+          "tax_amount": 10,
+          "line_total": 190
+        },
+        {
+          "variant_id": 2,
+          "quantity": 1,
+          "unit_price": 40,
+          "sold_unit_price": 40,
+          "average_discount_amount": 0,
+          "special_discount_amount": 0,
+          "promotion_discount_amount": 0,
+          "tax_amount": 0,
+          "line_total": 40
+        }
+      ],
+      "shipping_cost": 0
+    },
+    "expected": {
+      "subtotal": "240.00",
+      "tax_amount": "10.00",
+      "discount_amount": "20.00",
+      "total_amount": "230.00"
+    }
+  }
+]

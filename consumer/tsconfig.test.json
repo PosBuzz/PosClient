@@ -5,7 +5,8 @@
     "types": [
       "vitest/globals",
       "@testing-library/jest-dom/vitest",
-      "vite/client"
+      "vite/client",
+      "node"
     ]
   },
   "include": ["src"],

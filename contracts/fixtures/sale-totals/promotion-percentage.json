@@ -1,0 +1,39 @@
+{
+  "id": "X-TOT-007",
+  "description": "10% promotion on 3x100 (5% EXCL): discount 30 on base 300",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 5,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 3
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [
+    {
+      "id": 1,
+      "scope": "SINGLE_PRODUCT",
+      "products": [
+        "P1"
+      ]
+    }
+  ],
+  "expected": {
+    "subtotal": "300.00",
+    "tax_amount": "15.00",
+    "discount_amount": "30.00",
+    "total_amount": "285.00"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "X-TOT-010",
+  "description": "10% and fixed 10 give the same discount; lower id wins",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [
+    {
+      "id": 2,
+      "scope": "SINGLE_PRODUCT",
+      "products": [
+        "P1"
+      ],
+      "discount_type": "fixed_amount",
+      "discount_value": 10
+    },
+    {
+      "id": 1,
+      "scope": "SINGLE_PRODUCT",
+      "products": [
+        "P1"
+      ]
+    }
+  ],
+  "expected": {
+    "subtotal": "100.00",
+    "tax_amount": "0.00",
+    "discount_amount": "10.00",
+    "total_amount": "90.00"
+  }
+}

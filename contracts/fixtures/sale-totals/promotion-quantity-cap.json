@@ -1,0 +1,40 @@
+{
+  "id": "X-TOT-009",
+  "description": "10% capped to 2 of 5 units",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 5
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [
+    {
+      "id": 1,
+      "scope": "SINGLE_PRODUCT",
+      "products": [
+        "P1"
+      ],
+      "cap_quantity": 2
+    }
+  ],
+  "expected": {
+    "subtotal": "500.00",
+    "tax_amount": "0.00",
+    "discount_amount": "20.00",
+    "total_amount": "480.00"
+  }
+}
