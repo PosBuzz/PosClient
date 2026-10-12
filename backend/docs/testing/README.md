@@ -40,5 +40,5 @@ Master plan, conventions, and the decision playbook live in `../../../docs/testi
 Real Postgres harness, shared configureApp, auth/CSRF/HTTP helpers and fixtures are implemented. Eighteen self-tests pass three times, including separate real Redis/RabbitMQ opt-in tests. Original 35 unit tests remain green; all 19 jobs passed in [CI run 38297463078](https://github.com/PosBuzz/PosClient/actions/runs/38297463078) on implementation commit `3f94838`. See phase-1-test-harness.md for commands and fixes.
 
 
-## B2 local checkpoint (2026-10-13)
-261 unit tests pass in 20 suites, three consecutive times; scoped line/branch coverage is 100%. CI now enforces the coverage gates. Real HTTP regressions and all B1 suites remain green. Publication/CI verification is pending; see phase-2-unit-pure-logic.md and D-029/D-030.
+## B2 verified checkpoint (2026-10-13)
+261 unit tests pass in 20 suites, three consecutive times; scoped line/branch coverage is 100%. CI now enforces the coverage gates. Real HTTP regressions and all B1 suites remain green. All 19 jobs passed in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151) on implementation commit `a9b82b8`; see phase-2-unit-pure-logic.md and D-029…032.

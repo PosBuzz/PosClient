@@ -217,3 +217,10 @@ Type: DECISION
 Context: Owner explicitly authorized “Commit and push B2 checkpoint” to draft PR #40 after local verification.
 Chosen: Commit the verbatim promotion extraction separately, then commit/push the remaining tests, immediate repairs, coverage gates and phase records. Verify all GitHub jobs before marking B2 complete; repair any failure immediately under D-018.
 Follow-up: record the actual GitHub CI run and advance the sequential tracker only after it is green.
+
+
+### D-032 B2 checkpoint verified on GitHub (2026-10-13)
+Type: DECISION
+Context: Owner-authorized extraction 2cb5bce and B2 implementation a9b82b8 were pushed to draft PR https://github.com/PosBuzz/PosClient/pull/40.
+Verification: https://github.com/PosBuzz/PosClient/actions/runs/38299671151 passed all 19 jobs. Unit CI enforces the coverage floors; real Postgres/HTTP, optional Redis/RabbitMQ, all app static checks/builds, Docker builds and dependency gates remain green. B2 exit criteria are satisfied; phase and master trackers are updated.
+Follow-up: C1 consumer test harness is next in the master execution order. PR #40 remains draft; no merge or deployment performed.
