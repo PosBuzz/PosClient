@@ -424,7 +424,11 @@ const CreateReturn = () => {
           : undefined,
     };
 
-    await createReturnMutation.mutateAsync(returnData);
+    try {
+      await createReturnMutation.mutateAsync(returnData);
+    } catch {
+      // onError already shows the message; swallowing here avoids an unhandled rejection from the form handler
+    }
   };
 
   const getTotalPayments = () => {
