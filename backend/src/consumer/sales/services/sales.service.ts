@@ -347,7 +347,7 @@ export class SalesService {
 
             if (!selectedBatch) {
               throw new BadRequestException(
-                `No stock available for variant ${item.variant_id}`,
+                `Insufficient stock for variant ${item.variant_id}. Available: 0, Requested: ${item.quantity}`,
               );
             }
             availableStock =
@@ -2739,7 +2739,7 @@ export class SalesService {
 
           if (!selectedBatch) {
             throw new BadRequestException(
-              `No stock available for variant ${item.variant_id}`,
+              `Insufficient stock for variant ${item.variant_id}. Available: 0, Requested: ${item.quantity}`,
             );
           }
 

@@ -31,3 +31,10 @@ export function expectRequestContract(name: string, contract: RequestContract) {
   ).toBe(true);
   expect(JSON.parse(text)).toEqual(JSON.parse(readFileSync(file, "utf8")));
 }
+
+/** Reads a recorded request contract so another screen can be compared against it. */
+export function requestContract(name: string): RequestContract {
+  return JSON.parse(
+    readFileSync(resolve(REQUESTS_DIR, `${name}.json`), "utf8"),
+  );
+}

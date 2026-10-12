@@ -190,7 +190,7 @@ A phase is done only when **all** of the following are true:
 - [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] B6 Schema & migrations — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
-- [ ] C4 Consumer page flows
+- [ ] C4 Consumer page flows — in progress: POS 001–012, SALE 001–002, QUO 001–002, RET 001–007 and PAY 001–003 implemented; remaining page flows, smoke coverage and page floors pending.
 - [ ] A1/A2 Admin
 - [ ] X2 Full-stack E2E
 - [ ] B7/C5 Mutation testing
