@@ -2,6 +2,12 @@
 
 set -e  # stop on error
 
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js 22.22.1 or newer in the Node 22 series is required. Run nvm install 22 first."
+  exit 1
+fi
+node -e 'const [major, minor, patch] = process.versions.node.split(".").map(Number); if (major !== 22 || minor < 22 || (minor === 22 && patch < 1)) { console.error("Use Node.js >=22.22.1 <23 (nvm install 22 && nvm use 22)."); process.exit(1); }'
+
 echo "Installing root dependencies..."
 npm install
 echo "Root dependencies installed."

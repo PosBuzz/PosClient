@@ -10,7 +10,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "preview": "vite preview",
     "tsc": "tsc -b",
-    "generate-pwa-assets": "pwa-assets-generator --preset minimal public/posbuzz.svg"
+    "generate-pwa-assets": "pwa-assets-generator --preset minimal public/posbuzz.svg",
+    "lint:check": "eslint . --max-warnings=0",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
@@ -51,6 +53,9 @@
     "vite-plugin-pwa": "^1.0.2"
   },
   "overrides": {
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.5"
+  },
+  "engines": {
+    "node": ">=22.22.1 <23"
   }
 }

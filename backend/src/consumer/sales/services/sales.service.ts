@@ -983,7 +983,7 @@ export class SalesService {
               context.direction === 'delete'
                 ? `Points reversed - sale #${context.saleNumber} deleted`
                 : `Points re-applied - sale #${context.saleNumber} restored`,
-          } as any,
+          },
           userId,
         );
       }
