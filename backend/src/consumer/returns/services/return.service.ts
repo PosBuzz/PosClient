@@ -632,7 +632,7 @@ export class ReturnService {
           customer_id: customerId,
           points: -points,
           description: `Points reversed - return #${returnNumber} against sale #${saleNumber}`,
-        } as any,
+        },
         userId,
       );
     } catch (error) {

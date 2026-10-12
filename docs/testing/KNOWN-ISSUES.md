@@ -1,8 +1,7 @@
 # Known Issues
 
 Defects found while planning and implementing tests. Each one has, or will get, a test that asserts the
-**correct** behavior. While an issue is open, the test is marked `it.failing` / `it.fails` (see
-`DECISION-PLAYBOOK.md` §1). Once it is fixed, the test is a normal passing regression test.
+**correct** behavior. Owner instruction (2026-10-13): confirmed defects encountered during testing must be fixed immediately, with normal passing regression tests. Do not introduce `it.failing`/`it.fails`/skip markers to postpone a repair; see DECISION-PLAYBOOK §1.
 
 Status values: `SUSPECTED` (found by reading code, test not yet written) → `CONFIRMED` (failing
 test exists) → `FIXED` (fix merged; regression test is a normal test) | `WONTFIX` (owner decision, link to D-###).
@@ -69,3 +68,11 @@ Disposable Postgres 17; all 22 migrations applied and seed completed; backend bu
 | Unknown return PDF | 404 `Return not found` |
 
 All six checked error bodies contained no Prisma text, constraint text or database table names. This is a scenario check, not an exhaustive route sweep. Backend unit tests: **8 suites / 35 tests passed**. KI-014 frontend fixes were statically verified; toast rendering and permanent X4 regression tests remain planned. The temporary backend and database were stopped after verification. Changes remain uncommitted on `fix/known-issues`.
+
+
+## Phase P0 findings (2026-10-13)
+| ID | Severity | Status | Cause and resolution | Verification |
+|---|---|---|---|---|
+| KI-017 | Medium | FIXED (container verified) | Backend Docker default command was dist/main instead of emitted dist/src/main. Corrected immediately; added backend dockerignore so host native dependencies and local env/data do not enter the image. | Node 22 image builds and starts with default command; six authenticated HTTP checks pass. |
+| KI-018 | High | OPEN (development dependencies) | Backend full audit reports 29 high and 5 moderate package entries after compatible npm audit fix; production audit is zero. These are unchanged from the prior PR baseline and trace to braces GHSA-vfj7-8cjw-p6xm and sprintf-js GHSA-hp3w-g68c-fv3c; neither has a patched leaf release listed as of 2026-10-13. Scoped graph replacement/migration is required beyond compatible updates. | PR dependency-delta gate includes dev dependencies and passes for unchanged versions; any newly introduced high/critical finding is blocked. This is a recorded audit baseline, not a suppressed failing test. |
+| KI-019 | Critical | FIXED (build/HTTP verified) | Current portfolio audit found Next 15.5.23, Sharp 0.35.3 and source-map-js 1.2.1 vulnerable; the old zero-audit/Next-16-only claim was stale. Owner authorized patching to 15.5.27/0.35.5/1.2.2, preserving the PostCSS override. | Full audit 0; production build passed; home/pricing/health HTTP 200; Sharp image-processing check passed. |
