@@ -187,3 +187,10 @@ Type: DECISION
 Context: Owner explicitly authorized “Commit and push B1 checkpoint” to draft PR #40.
 Chosen: Commit and push the locally verified harness, two immediate runtime repairs, CI jobs and phase documentation. Keep B1 completion pending until GitHub CI passes, and repair any CI failures immediately under D-018.
 Follow-up: record the CI run and update phase completion after verification.
+
+
+### D-028 B1 checkpoint verified on GitHub (2026-10-13)
+Type: DECISION
+Context: Owner-authorized B1 implementation commit 3f94838 was pushed to draft PR https://github.com/PosBuzz/PosClient/pull/40.
+Verification: https://github.com/PosBuzz/PosClient/actions/runs/38297463078 passed all 19 jobs, including real Postgres integration/HTTP and optional Redis/RabbitMQ suites. Original unit tests, static checks, builds, Docker builds, audits and dependency reviews remain green. B1 exit criteria are satisfied; phase and master trackers are updated.
+Follow-up: B2 pure-logic unit tests are the next sequential phase. Keep PR #40 draft; no merge or deployment performed.
