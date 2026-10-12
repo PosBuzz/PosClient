@@ -30,5 +30,5 @@ Master plan, conventions and the decision playbook live in `../../../docs/testin
 | `npm run test:mutation` | Stryker on `src/utils/**` |
 
 
-## C1 local checkpoint (2026-10-13)
-The Vitest/jsdom/Testing Library/MSW harness is implemented. Seven smoke and isolation checks pass three times; test-aware typecheck, production build and zero full audit pass. Publication/CI verification is pending. See phase-1-test-harness.md and D-033.
+## C1 verified checkpoint (2026-10-13)
+The Vitest/jsdom/Testing Library/MSW harness is implemented. Seven smoke and isolation checks pass three times; test-aware typecheck, production build and zero full audit pass. All 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165) on commit `634c2ee`. See phase-1-test-harness.md and D-033.

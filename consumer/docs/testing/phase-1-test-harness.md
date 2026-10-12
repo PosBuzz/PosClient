@@ -5,7 +5,7 @@ rendering without crashing, and a `renderWithProviders` helper mirroring `src/Pr
 
 **Depends on:** P0.
 
-**Status (2026-10-13): locally verified; publication/CI checkpoint pending.**
+**Status (2026-10-13): complete; all 20 GitHub CI jobs passed.**
 
 ---
 
@@ -182,7 +182,7 @@ It wraps with: outer `ConfigProvider`, then `QueryClientProvider` (a **new** `Qu
 
 ## Exit criteria
 - [x] CO-HARN-001…006 green 3× in a row; build succeeds; typecheck covers test files.
-- [ ] Consumer CI job is green on the published checkpoint.
+- [x] Consumer CI job is green on implementation `634c2ee`: [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165) passed all 20 jobs.
 
 
 ## Implementation and verification (2026-10-13)
