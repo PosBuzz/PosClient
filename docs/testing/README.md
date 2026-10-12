@@ -182,7 +182,7 @@ A phase is done only when **all** of the following are true:
 - [x] P0 Baseline & guardrails — local checks and all 17 CI jobs passed 2026-10-13 on [draft PR #40](https://github.com/PosBuzz/PosClient/pull/40)
 - [x] B1 Backend harness — verified 2026-10-13; all 19 jobs passed in [CI run 38297463078](https://github.com/PosBuzz/PosClient/actions/runs/38297463078)
 - [x] B2 Backend unit — verified 2026-10-13; all 19 jobs passed in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151)
-- [ ] C1 Consumer harness — locally verified 2026-10-13; publication/CI checkpoint pending
+- [x] C1 Consumer harness — verified 2026-10-13; all 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165)
 - [ ] C2 Consumer calculations
 - [ ] X1 Cross-layer contracts
 - [ ] B3 Domain integration
