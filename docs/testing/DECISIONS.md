@@ -323,3 +323,10 @@ Safety: the backup and restore routes (`GET /admin/backup`, `POST /admin/restore
 DOC-DRIFT: the path names in the phase doc differ from the code (`/consumer/sales/reports/eod`, `/consumer/dashboard/analytics`, `/consumer/promotions/active/list`, `/consumer/payments/partial-sales`, `/consumer/users/plan-permissions`); the contracts use the real ones.
 Verification: 323 unit, 306 integration (33 in Dhaka) and 851 e2e tests pass (three e2e runs); lint, build and coverage floors pass.
 Follow-up: CI for this commit; X1 sections 4-5 (request replay and type contracts) can now be built on routes.json and responses/.
+
+
+### D-045 B6 schema and migration safety (2026-10-13)
+Type: DECISION
+Chosen: `test/integration/schema.int-spec.ts` asserts the migrated database has an empty `prisma migrate diff` against `schema.prisma` (BE-SCHEMA-002, with BE-SCHEMA-008 proving the check reports a deliberate difference), migration folder names and files, the PostgreSQL lock, that the real `prisma/seed.ts` runs on a migrated database and the seeded super admin and tenant admin can log in, and that every tenant table leads an index with `consumer_id` (the exceptions list starts empty because none are missing today). `scripts/check-destructive-migrations.mjs` (with regression tests in the guardrail job) fails a branch that adds DROP TABLE, DROP COLUMN, ALTER COLUMN ... TYPE or TRUNCATE without an `ALLOW_DESTRUCTIVE.md`; the `backend-integration` job now checks out full history for it. SQL comments are ignored so a note cannot trip the guard.
+Verification: 7 schema tests pass; 3 guard tests pass; the guard sees this branch's one added migration (an index rename, not destructive).
+Follow-up: CI result; C3 consumer API, stores and hooks next.
