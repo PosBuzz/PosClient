@@ -239,3 +239,9 @@ Type: DECISION
 Context: Owner authorized committing completed phases and starting the next phase while checking CI for the preceding checkpoint.
 Chosen: Publish locally verified C1 to draft PR #40, start C2 during its CI run, and record completion only when CI is green. This authorization also covers subsequent verified phase commits/pushes. Never defer a CI/test failure; repair it immediately under D-018. Keep each phase's implementation separately committed and maintain the master execution order.
 Follow-up: record the actual C1 CI result while progressing C2.
+
+
+### D-035 C1 checkpoint verified while C2 progresses (2026-10-13)
+Type: DECISION
+Verification: C1 implementation 634c2ee passed all 20 jobs in https://github.com/PosBuzz/PosClient/actions/runs/38301291165, including consumer coverage reporting, all-app static/build/image checks and the existing backend/dependency gates. Phase and master trackers are updated.
+Follow-up: C2 calculation tests began while C1 CI ran, as authorized in D-034. No merge or deployment performed.
