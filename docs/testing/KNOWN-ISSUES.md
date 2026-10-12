@@ -83,3 +83,11 @@ All six checked error bodies contained no Prisma text, constraint text or databa
 |---|---|---|---|---|
 | KI-020 | Medium | FIXED (real queue verified) | RabbitMQ intentional close fired its reconnect handler and left recurring timers after app shutdown. Track/cancel retry timers and suppress retries while closing. | BE-HARN-014 publishes/receives the real message, closes the app, asserts no 5-second retry scheduling, and exits normally across three runs. |
 | KI-021 | Medium | FIXED (HTTP verified) | Bare IPv4 API host 127.0.0.1 was parsed as tenant subdomain 127, causing valid-cookie requests to return 401. Recognize IP hosts before splitting domain labels. | BE-HARN-018 failed with 401 before the fix and passes with 200 after; explicit cross-tenant Origin remains rejected by BE-HARN-015. |
+
+
+## Phase B2 defects (2026-10-13)
+| ID | Severity | Status | Cause and fix | Verification |
+|---|---|---|---|---|
+| KI-022 | Low | FIXED (unit verified) | errorMessage(undefined) returned undefined despite its string contract. Fall back to String(error) when JSON serialization has no result. | BE-UTIL-001 covers Error, string, object, null, undefined, BigInt and circular data. |
+| KI-023 | Medium | FIXED (HTTP/Postgres verified) | Empty sales passed DTO validation and had no service guard. Add ArrayMinSize(1) and reject before service I/O. | BE-DTO-005 and BE-DTO-010 reject empty sales; no sale/item/payment/audit rows are written. |
+| KI-024 | Low | FIXED (unit verified) | Prisma duplicate messages said “An user/unit”. Correct the article for these nouns. | BE-PEF-008 checks user/unit/invoice/product labels; BE-PEF-009 confirms specific safe duplicate-product HTTP behavior. |

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -86,13 +87,31 @@ describe('consumer purge SCOPE', () => {
   const models = parseModels();
   const reachable = reachableFromConsumer(models);
 
-  it('parses the schema', () => {
+  it('[BE-UTIL-003] every generated tenant model participates in the purge graph', () => {
+    const generated = Prisma.dmmf.datamodel.models.filter((model) =>
+      model.fields.some((field) => field.name === 'consumer_id'),
+    );
+    expect(generated.length).toBeGreaterThan(20);
+    expect(
+      generated
+        .filter((model) => !reachable.some((row) => row.name === model.name))
+        .map((model) => model.name),
+    ).toEqual([]);
+    expect(generated.map((model) => model.dbName ?? model.name).sort()).toEqual(
+      reachable
+        .filter((model) => model.hasConsumerId)
+        .map((model) => model.table)
+        .sort(),
+    );
+  });
+
+  it('[BE-UTIL-003] parses the schema', () => {
     expect(models.length).toBeGreaterThan(50);
     expect(reachable.length).toBeGreaterThan(50);
     expect(reachable.map((m) => m.table)).toContain('support_ticket_messages');
   });
 
-  it('scopes every tenant-owned table that has no consumer_id', () => {
+  it('[BE-UTIL-003] scopes every tenant-owned table that has no consumer_id', () => {
     const unmapped = reachable
       .filter((model) => !model.hasConsumerId && !SCOPE[model.table])
       .map((model) => model.table);
@@ -100,7 +119,7 @@ describe('consumer purge SCOPE', () => {
     expect(unmapped).toEqual([]);
   });
 
-  it('has no SCOPE entries for tables that are already scoped or gone', () => {
+  it('[BE-UTIL-003] has no SCOPE entries for tables that are already scoped or gone', () => {
     const needsScope = new Set(
       reachable.filter((m) => !m.hasConsumerId).map((m) => m.table),
     );
