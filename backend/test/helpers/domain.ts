@@ -53,10 +53,14 @@ export function saleDto(
  * A clean database with the tenant under test plus a bystander tenant that owns stock and a
  * sale. `check()` must run in afterEach: it asserts INV-01..12 and that the bystander is untouched.
  */
-export async function newWorld(db: PrismaClient, boot: Boot) {
+export async function newWorld(
+  db: PrismaClient,
+  boot: Boot,
+  opts: { branches?: number } = {},
+) {
   await resetDb();
   const sales = boot.get(SalesService);
-  const tenant = await createTenant(db);
+  const tenant = await createTenant(db, { branches: opts.branches });
   const bystander = await createTenant(db);
   const theirs = await createStockedVariant(db, bystander, {
     price: 50,

@@ -51,6 +51,8 @@ export class InventoryBatchService {
         }
       }
 
+      await this.assertVendorOwned(dto.vendor_id, consumerId);
+
       // Check if batch number already exists for this variant
       const existingBatch = await this.prisma.inventoryBatch.findFirst({
         where: {
@@ -226,6 +228,20 @@ export class InventoryBatchService {
     }
   }
 
+  private async assertVendorOwned(
+    vendorId: number | null | undefined,
+    consumerId: number,
+  ) {
+    if (vendorId === undefined || vendorId === null) return;
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id: vendorId, consumer_id: consumerId },
+      select: { id: true },
+    });
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+  }
+
   async findAll(
     consumerId: number,
     options: {
@@ -383,6 +399,19 @@ export class InventoryBatchService {
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
     try {
       const _batch = await this.findOne(id, consumerId);
+
+      // Branch and vendor ids come from the client: they must belong to this
+      // tenant, or a batch could be moved into someone else's branch
+      if (dto.branch_id !== undefined) {
+        const branch = await this.prisma.branch.findFirst({
+          where: { id: dto.branch_id, consumer_id: consumerId },
+          select: { id: true },
+        });
+        if (!branch) {
+          throw new NotFoundException('Branch not found');
+        }
+      }
+      await this.assertVendorOwned(dto.vendor_id, consumerId);
 
       const updatedBatch = await this.prisma.inventoryBatch.update({
         where: { id },
