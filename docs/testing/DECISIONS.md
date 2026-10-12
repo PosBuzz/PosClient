@@ -288,3 +288,17 @@ Doc-drift: several `HttpException` branches in plans, billing and product-name h
 QUESTION: vendor summary totals only cover the page of batches requested (findOneWithDetails paginates before totalling); promotion sales report sums sale discount, not promotion discount. Both belong to B4 reconciliation.
 Verification: lint and build clean; 307 unit tests pass with coverage thresholds; 277 integration tests pass three runs; 9 e2e tests pass.
 Follow-up: CI result for the B3 commit; then B4.
+
+
+### D-041 B3 checkpoint verified on GitHub (2026-10-13)
+Type: DECISION
+Verification: commit 57bee35 passed all jobs in https://github.com/PosBuzz/PosClient/actions/runs/38308437854. B3 exit criteria are satisfied; trackers updated.
+
+### D-042 B4 report reconciliation (2026-10-13)
+Type: DECISION / DOC-DRIFT / FALLBACK
+Chosen: The canonical business day is built through the services (`test/integration/reports/scenario.ts`). Prisma stamps `sale_date`/`created_at` from the database clock, so JS `Date` is faked only while a service runs (sale numbers, reward expiry) and the stored timestamps are then pinned with SQL. Every expected value is a literal with its arithmetic beside it. The suite runs under TZ=UTC (`test:int`) and TZ=Asia/Dhaka (`test:int:tz`, added to the `backend-integration` job). Tests read the zone through `Intl` because jest's `process.env` is a copy.
+Scenario extensions to the phase doc: S0 is only part-paid (30 of 80) and the customer pays the other 50 on the day, so `due_collected` is exercised (a payment on a same-day sale counts as period-sales collected, not due collected: DOC-DRIFT for the doc's "due_collected (S3 rest)"); E9 pays 25 of S3's remaining 45 so a due balance remains (20); all sales name the admin as `served_by_id` so user stats cover them (sales without a server are skipped by design).
+Defects fixed under D-018: KI-046 (promotion counted twice in EOD total discount), KI-047 (variant stats subtracted discounts from an already net line total).
+Pinned intentional differences: the dashboard counts refunds when paid (R0 included), the sales list attributes them to the original sale (R0 excluded): the difference equals R0's refund (BE-RPT-106). EOD `total_collected` counts payments created in the period, the dashboard `today_collected` sums `received_amount` of the day's sales: they differ by the collections on older sales (50). Dashboard weeks run Saturday to Friday.
+QUESTION: EOD `non_cash_sales` is total sales minus cash collected (includes unpaid balance), pinned as-is; `net_sale_amount` subtracts refunds of older sales from today's sales (refund-date attribution) by design.
+Verification: 33 report tests pass under Asia/Dhaka and 30 under UTC.

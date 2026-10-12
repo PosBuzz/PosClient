@@ -185,8 +185,8 @@ A phase is done only when **all** of the following are true:
 - [x] C1 Consumer harness — verified 2026-10-13; all 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165)
 - [x] C2 Consumer calculations — verified 2026-10-13; all 20 jobs passed in [CI run 38303007404](https://github.com/PosBuzz/PosClient/actions/runs/38303007404)
 - [ ] X1 Cross-layer contracts — sections 1-3 implemented 2026-10-13 (pricing, subdomains, promotions, sale totals, permissions, inline paths); endpoint/request/type contracts wait for B5/C4/A2
-- [ ] B3 Domain integration — implemented and verified locally 2026-10-13 (INV-01…13 net, 277 integration tests); awaiting CI
-- [ ] B4 Report reconciliation
+- [x] B3 Domain integration — verified 2026-10-13; all jobs passed in [CI run 38308437854](https://github.com/PosBuzz/PosClient/actions/runs/38308437854)
+- [ ] B4 Report reconciliation — implemented and verified locally 2026-10-13; awaiting CI
 - [ ] B5 API security & tenancy
 - [ ] B6 Schema & migrations
 - [ ] C3 Consumer API/stores/hooks
