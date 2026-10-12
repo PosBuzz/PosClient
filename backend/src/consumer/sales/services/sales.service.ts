@@ -1924,11 +1924,11 @@ export class SalesService {
         (sum, sale) => sum + Number(sale.subtotal || 0),
         0,
       );
+      // discount_amount already includes the promotion discount
+      // (average + special + promotion), so adding promotion_discount again
+      // counted every promotion twice
       const totalDiscount = sales.reduce(
-        (sum, sale) =>
-          sum +
-          Number(sale.discount_amount || 0) +
-          Number(sale.promotion_discount || 0),
+        (sum, sale) => sum + Number(sale.discount_amount || 0),
         0,
       );
       const totalTax = sales.reduce(
@@ -2945,12 +2945,9 @@ export class SalesService {
             si.variant_id                 AS variant_id,
             SUM(si.quantity)              AS total_qty,
             COUNT(DISTINCT si.sale_id)    AS total_sales,
-            SUM(
-              si.line_total
-              - COALESCE(si.average_discount_amount, 0)
-              - COALESCE(si.special_discount_amount, 0)
-              - COALESCE(si.promotion_discount_amount, 0)
-            )                             AS total_amount
+            -- line_total is already net of the line's discounts (the POS sends it
+            -- after discounts), exactly as the EOD report and dashboard use it
+            SUM(si.line_total)            AS total_amount
           FROM sale_items si
           JOIN sales s ON si.sale_id = s.id
           WHERE s.consumer_id = ${consumerId}
@@ -2967,15 +2964,9 @@ export class SalesService {
             ri.variant_id      AS variant_id,
             SUM(ri.quantity)   AS returned_qty,
             -- return_items carry no money, so the refunded value is the
-            -- returned share of the original discounted line
-            SUM(
-              (
-                si.line_total
-                - COALESCE(si.average_discount_amount, 0)
-                - COALESCE(si.special_discount_amount, 0)
-                - COALESCE(si.promotion_discount_amount, 0)
-              ) * ri.quantity / NULLIF(si.quantity, 0)
-            ) AS returned_amount
+            -- returned share of the original (already net) line
+            SUM(si.line_total * ri.quantity / NULLIF(si.quantity, 0))
+                                 AS returned_amount
           FROM return_items ri
           JOIN returns r ON ri.return_id = r.id
           JOIN sale_items si ON ri.sale_item_id = si.id
@@ -3138,11 +3129,8 @@ export class SalesService {
       >();
       for (const item of allItems) {
         const dateStr = toLocalDateString(item.sale.sale_date);
-        const netLineTotal =
-          Number(item.line_total) -
-          Number(item.average_discount_amount || 0) -
-          Number(item.special_discount_amount || 0) -
-          Number(item.promotion_discount_amount || 0);
+        // line_total is already net of the line's discounts
+        const netLineTotal = Number(item.line_total);
         const existing = dailyMap.get(dateStr);
         if (existing) {
           existing.qty += Number(item.quantity);
@@ -3157,11 +3145,7 @@ export class SalesService {
       }
 
       const totalQty = Number(totals._sum.quantity ?? 0);
-      const totalAmount =
-        Number(totals._sum.line_total ?? 0) -
-        Number(totals._sum.average_discount_amount ?? 0) -
-        Number(totals._sum.special_discount_amount ?? 0) -
-        Number(totals._sum.promotion_discount_amount ?? 0);
+      const totalAmount = Number(totals._sum.line_total ?? 0);
       const salesCount = new Set(allItems.map((item) => item.sale_id)).size;
 
       // Returns booked against these exact sale lines, so a variant that was
@@ -3193,11 +3177,7 @@ export class SalesService {
       for (const line of returnedLines) {
         const qty = returnedBySaleItem.get(line.id) ?? 0;
         const originalQty = Number(line.quantity) || 0;
-        const netLine =
-          Number(line.line_total) -
-          Number(line.average_discount_amount || 0) -
-          Number(line.special_discount_amount || 0) -
-          Number(line.promotion_discount_amount || 0);
+        const netLine = Number(line.line_total);
 
         returnedQty += qty;
         returnedAmount += originalQty > 0 ? (netLine * qty) / originalQty : 0;
@@ -3231,11 +3211,7 @@ export class SalesService {
           branch_name: item.sale.branch?.name ?? null,
           qty: Number(item.quantity),
           returned_qty: returnedBySaleItem.get(item.id) ?? 0,
-          line_total:
-            Number(item.line_total) -
-            Number(item.average_discount_amount || 0) -
-            Number(item.special_discount_amount || 0) -
-            Number(item.promotion_discount_amount || 0),
+          line_total: Number(item.line_total),
           payment_status: item.sale.payment_status,
         })),
         meta: {
