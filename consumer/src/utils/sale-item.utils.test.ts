@@ -17,6 +17,22 @@ const qty = fc.integer({ min: 0, max: 50 });
 const tax = fc.integer({ min: 0, max: 2500 }).map((n) => n / 100);
 const round = (n: number) => Number(n.toFixed(2));
 const cents = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+it("[CO-SALE-REPRICE-002] a zero-priced variant with absent tax metadata stays a zero total", () => {
+  const zero = variant({
+    regular_price: 0,
+    wholesale_price: 0,
+    tax_percentage: undefined,
+    tax_method: undefined,
+  });
+  const source = item({ variant_id: zero.id, quantity: 2, unit_price: 99 });
+  expect(
+    repriceSaleItems({
+      sourceItems: [source],
+      variants: [zero],
+      priceType: PriceType.REGULAR,
+    })[0],
+  ).toMatchObject({ unit_price: 0, line_total: 0, tax_amount: 0 });
+});
 describe("line tax", () => {
   it.each([
     ["CO-CALC-001", 100, 2, 0, "EXCLUSIVE", 200, 0, 200],
