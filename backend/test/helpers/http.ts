@@ -64,3 +64,27 @@ export function api(app: NestExpressApplication) {
     anonymous: (opts?: Options) => session(undefined, opts),
   };
 }
+
+type Session = ReturnType<ReturnType<typeof api>['anonymous']>;
+/** Calls `session.<method>(path, body)` for a method name taken from the route manifest. */
+export function dispatch(
+  session: Session,
+  method: string,
+  path: string,
+  body?: object,
+) {
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return session.get(path);
+    case 'POST':
+      return session.post(path, body);
+    case 'PATCH':
+      return session.patch(path, body);
+    case 'PUT':
+      return session.put(path, body);
+    case 'DELETE':
+      return session.delete(path);
+    default:
+      throw new Error(`Unsupported method ${method}`);
+  }
+}

@@ -1,6 +1,7 @@
 // receipt-pdf-setting.controller.ts
 
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -56,6 +57,21 @@ export class ReceiptPdfSettingController {
     @Res() res: Response,
   ) {
     const consumerId = req.user.consumer_id;
+
+    // The body is untyped JSON: refuse shapes the PDF code cannot work with
+    if (
+      !body ||
+      typeof body.settings !== 'object' ||
+      body.settings === null ||
+      Array.isArray(body.settings)
+    ) {
+      throw new BadRequestException('settings must be an object');
+    }
+    if (!Object.prototype.hasOwnProperty.call(PRESET_DEFAULTS, body.type)) {
+      throw new BadRequestException(
+        `type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
+      );
+    }
 
     // 1. Always merge with defaults so missing fields don't crash PDF generation
     const defaults = PRESET_DEFAULTS[body.type] || PRESET_DEFAULTS.receipt;

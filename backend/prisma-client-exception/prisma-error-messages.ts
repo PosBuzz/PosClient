@@ -82,7 +82,19 @@ export function describePrismaError(
         status: HttpStatus.BAD_REQUEST,
         message: `Some of the items linked to this ${model} don't exist anymore. Refresh and try again.`,
       };
+    case 'P2020':
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'A number in the request is too large or too small.',
+      };
     default:
       return null;
   }
+}
+
+/** Database complaints that mean "the client sent a value that cannot exist" (for example an id beyond 32 bits). */
+export function isOutOfRangeMessage(message: string): boolean {
+  return /out of range|unable to fit integer|numeric field overflow|invalid input syntax for type/i.test(
+    message,
+  );
 }

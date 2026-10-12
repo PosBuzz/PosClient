@@ -1,4 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateRoleDto } from '../dtos/create-role.dto';
@@ -7,6 +14,14 @@ import { UpdateRoleDto } from '../dtos/update-role.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { errorStack } from '../../../common/utils/error.util';
 import { isClientError } from '../../../common/errors/client-error';
+
+/** Password and refresh-token hashes must never leave the server. */
+function withoutSecrets<
+  T extends { password?: unknown; refresh_token?: unknown },
+>(user: T): Omit<T, 'password' | 'refresh_token'> {
+  const { password: _password, refresh_token: _refreshToken, ...safe } = user;
+  return safe;
+}
 
 @Injectable()
 export class UsersService {
@@ -39,6 +54,53 @@ export class UsersService {
       );
     }
   }
+  /** A role id sent by the client must be one of this shop's roles. */
+  private async assertRoleOwned(
+    roleId: number | undefined,
+    consumerId: number,
+  ) {
+    if (roleId === undefined || roleId === null) return;
+    const role = await this.prisma.role.findFirst({
+      where: { id: roleId, consumer_id: consumerId },
+      select: { id: true },
+    });
+    if (!role) throw new NotFoundException('Role not found');
+  }
+
+  /** Branch ids sent by the client must be this shop's branches. */
+  private async assertBranchesOwned(
+    branchIds: number[] | undefined,
+    consumerId: number,
+  ) {
+    const ids = [...new Set(branchIds ?? [])];
+    if (!ids.length) return;
+    const found = await this.prisma.branch.count({
+      where: { id: { in: ids }, consumer_id: consumerId },
+    });
+    if (found !== ids.length) throw new NotFoundException('Branch not found');
+  }
+
+  /** A role may only grant what the shop's plan includes. */
+  private async assertWithinPlan(
+    permissionIds: number[] | undefined,
+    consumerId: number,
+  ) {
+    const ids = [...new Set(permissionIds ?? [])];
+    if (!ids.length) return;
+    const consumer = await this.prisma.consumer.findUnique({
+      where: { id: consumerId },
+      select: { plan_id: true },
+    });
+    const allowed = await this.prisma.planPermission.count({
+      where: { plan_id: consumer?.plan_id, permission_id: { in: ids } },
+    });
+    if (allowed !== ids.length) {
+      throw new BadRequestException(
+        'One or more permissions are not included in your plan',
+      );
+    }
+  }
+
   async getRoles(consumer_id: number) {
     try {
       return await this.prisma.role.findMany({
@@ -88,6 +150,7 @@ export class UsersService {
   }
   async createRole(dto: CreateRoleDto, consumer_id: number) {
     try {
+      await this.assertWithinPlan(dto.permission_ids, consumer_id);
       const result = await this.prisma.role.create({
         data: {
           consumer_id,
@@ -129,7 +192,7 @@ export class UsersService {
     branch_id?: number,
   ) {
     try {
-      return await this.prisma.user.findMany({
+      const users = await this.prisma.user.findMany({
         where: {
           consumer_id,
           ...(search_text && {
@@ -150,6 +213,7 @@ export class UsersService {
           },
         },
       });
+      return users.map(withoutSecrets);
     } catch (error) {
       if (isClientError(error)) {
         throw error;
@@ -187,6 +251,8 @@ export class UsersService {
   }
   async createUser(dto: CreateUserDto, consumer_id: number) {
     try {
+      await this.assertRoleOwned(dto.role_id, consumer_id);
+      await this.assertBranchesOwned(dto.branch_ids, consumer_id);
       const hashedPassword = await bcryptjs.hash(dto.password, 10);
 
       // Use transaction to create user and assign branches
@@ -250,7 +316,7 @@ export class UsersService {
           },
         });
 
-        return userWithBranches;
+        return userWithBranches ? withoutSecrets(userWithBranches) : null;
       });
 
       return result;
@@ -268,8 +334,10 @@ export class UsersService {
       );
     }
   }
-  async updateRole(id: number, dto: UpdateRoleDto) {
+  async updateRole(id: number, dto: UpdateRoleDto, consumer_id: number) {
     try {
+      await this.assertRoleOwned(id, consumer_id);
+      await this.assertWithinPlan(dto.permission_ids, consumer_id);
       const updatedRole = await this.prisma.role.update({
         where: { id },
         data: {
@@ -310,8 +378,15 @@ export class UsersService {
       );
     }
   }
-  async updateUser(id: number, dto: UpdateUserDto) {
+  async updateUser(id: number, dto: UpdateUserDto, consumer_id: number) {
     try {
+      const target = await this.prisma.user.findFirst({
+        where: { id, consumer_id },
+        select: { id: true },
+      });
+      if (!target) throw new NotFoundException('User not found');
+      await this.assertRoleOwned(dto.role_id, consumer_id);
+      await this.assertBranchesOwned(dto.branch_ids, consumer_id);
       let hashedPassword: string | undefined = undefined;
       if (dto.password) {
         hashedPassword = await bcryptjs.hash(dto.password, 10);
@@ -395,7 +470,7 @@ export class UsersService {
           },
         });
 
-        return userWithBranches;
+        return userWithBranches ? withoutSecrets(userWithBranches) : null;
       });
 
       return result;
