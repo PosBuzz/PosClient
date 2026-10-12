@@ -58,6 +58,7 @@ export class JwtClientStrategy extends PassportStrategy(
 
     const {
       password: _password,
+      refresh_token: _refreshToken,
       created_at: _created_at,
       updated_at: _updated_at,
       consumer: _consumer,

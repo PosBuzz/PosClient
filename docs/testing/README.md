@@ -187,7 +187,7 @@ A phase is done only when **all** of the following are true:
 - [ ] X1 Cross-layer contracts — sections 1-3 implemented 2026-10-13 (pricing, subdomains, promotions, sale totals, permissions, inline paths); endpoint/request/type contracts wait for B5/C4/A2
 - [x] B3 Domain integration — verified 2026-10-13; all jobs passed in [CI run 38308437854](https://github.com/PosBuzz/PosClient/actions/runs/38308437854)
 - [x] B4 Report reconciliation — verified 2026-10-13; all jobs passed in [CI run 38309445550](https://github.com/PosBuzz/PosClient/actions/runs/38309445550)
-- [ ] B5 API security & tenancy — route manifest, auth/CSRF/CORS, permission matrix, tenancy and robustness sweeps implemented 2026-10-13; §6 response contracts pending
+- [ ] B5 API security & tenancy — implemented and verified locally 2026-10-13 (manifest, auth/CSRF/CORS, 712-case permission matrix, tenancy and robustness sweeps, 18 response contracts); awaiting CI
 - [ ] B6 Schema & migrations
 - [ ] C3 Consumer API/stores/hooks
 - [ ] C4 Consumer page flows

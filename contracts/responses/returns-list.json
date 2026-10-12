@@ -1,0 +1,271 @@
+{
+  "data": [
+    {
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "exchange_sale": null,
+      "exchange_sale_id": null,
+      "exchanges": [
+        {
+          "batch_id": 1,
+          "id": 1,
+          "line_total": "105",
+          "quantity": 1,
+          "return_id": 3,
+          "unit_price": "100",
+          "variant": {
+            "alert_quantity": 0,
+            "barcode": "BAR9",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "daily_sale_objective": 0,
+            "id": 1,
+            "image": null,
+            "is_default": true,
+            "name": "Default",
+            "product": {
+              "id": 1,
+              "name": "Product 5"
+            },
+            "product_id": 1,
+            "purchase_unit_id": 1,
+            "regular_price": "100",
+            "sale_unit_id": 1,
+            "sku": "SKU8",
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "warranty_period": null,
+            "wholesale_price": null
+          },
+          "variant_id": 1
+        }
+      ],
+      "id": 3,
+      "items": [
+        {
+          "batch_id": 5,
+          "id": 3,
+          "quantity": 2,
+          "return_id": 3,
+          "sale_item_id": 6,
+          "variant": {
+            "alert_quantity": 0,
+            "barcode": "BAR23",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "daily_sale_objective": 0,
+            "id": 3,
+            "image": null,
+            "is_default": true,
+            "name": "Default",
+            "product": {
+              "id": 3,
+              "name": "Product 19"
+            },
+            "product_id": 3,
+            "purchase_unit_id": 3,
+            "regular_price": "40",
+            "sale_unit_id": 3,
+            "sku": "SKU22",
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "warranty_period": null,
+            "wholesale_price": null
+          },
+          "variant_id": 3
+        }
+      ],
+      "notes": null,
+      "original_sale": {
+        "customer_name": null,
+        "id": 5,
+        "sale_number": "SAL-20260314-0004"
+      },
+      "original_sale_id": 5,
+      "payments": [
+        {
+          "amount": "72",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "id": 3,
+          "payment_method": "EXCHANGE",
+          "payment_type": null,
+          "reference": null,
+          "return_id": 3,
+          "updated_at": "2026-03-14T12:00:00.000Z"
+        }
+      ],
+      "reason": null,
+      "return_date": "2026-03-14T12:00:00.000Z",
+      "return_number": "RET-20260314-0003",
+      "total_exchange": "72",
+      "total_refund": "0",
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "user_id": 1
+    },
+    {
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "exchange_sale": null,
+      "exchange_sale_id": null,
+      "exchanges": [],
+      "id": 1,
+      "items": [
+        {
+          "batch_id": 5,
+          "id": 1,
+          "quantity": 1,
+          "return_id": 1,
+          "sale_item_id": 3,
+          "variant": {
+            "alert_quantity": 0,
+            "barcode": "BAR23",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "daily_sale_objective": 0,
+            "id": 3,
+            "image": null,
+            "is_default": true,
+            "name": "Default",
+            "product": {
+              "id": 3,
+              "name": "Product 19"
+            },
+            "product_id": 3,
+            "purchase_unit_id": 3,
+            "regular_price": "40",
+            "sale_unit_id": 3,
+            "sku": "SKU22",
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "warranty_period": null,
+            "wholesale_price": null
+          },
+          "variant_id": 3
+        }
+      ],
+      "notes": null,
+      "original_sale": {
+        "customer_name": null,
+        "id": 2,
+        "sale_number": "SAL-20260314-0001"
+      },
+      "original_sale_id": 2,
+      "payments": [
+        {
+          "amount": "40",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "id": 1,
+          "payment_method": "CASH",
+          "payment_type": null,
+          "reference": null,
+          "return_id": 1,
+          "updated_at": "2026-03-14T12:00:00.000Z"
+        }
+      ],
+      "reason": null,
+      "return_date": "2026-03-14T12:00:00.000Z",
+      "return_number": "RET-20260314-0001",
+      "total_exchange": "0",
+      "total_refund": "40",
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "user_id": 1
+    },
+    {
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "exchange_sale": null,
+      "exchange_sale_id": null,
+      "exchanges": [],
+      "id": 2,
+      "items": [
+        {
+          "batch_id": 5,
+          "id": 2,
+          "quantity": 1,
+          "return_id": 2,
+          "sale_item_id": 1,
+          "variant": {
+            "alert_quantity": 0,
+            "barcode": "BAR23",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "daily_sale_objective": 0,
+            "id": 3,
+            "image": null,
+            "is_default": true,
+            "name": "Default",
+            "product": {
+              "id": 3,
+              "name": "Product 19"
+            },
+            "product_id": 3,
+            "purchase_unit_id": 3,
+            "regular_price": "40",
+            "sale_unit_id": 3,
+            "sku": "SKU22",
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "warranty_period": null,
+            "wholesale_price": null
+          },
+          "variant_id": 3
+        }
+      ],
+      "notes": null,
+      "original_sale": {
+        "customer_name": null,
+        "id": 1,
+        "sale_number": "SAL-20260313-0001"
+      },
+      "original_sale_id": 1,
+      "payments": [
+        {
+          "amount": "40",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "id": 2,
+          "payment_method": "CASH",
+          "payment_type": null,
+          "reference": null,
+          "return_id": 2,
+          "updated_at": "2026-03-14T12:00:00.000Z"
+        }
+      ],
+      "reason": null,
+      "return_date": "2026-03-14T12:00:00.000Z",
+      "return_number": "RET-20260314-0002",
+      "total_exchange": "0",
+      "total_refund": "40",
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "user_id": 1
+    }
+  ],
+  "limit": 10,
+  "page": 1,
+  "summary": {
+    "this_month_count": 0,
+    "total_exchange": 72,
+    "total_refund": 80,
+    "total_returns": 3
+  },
+  "total": 3,
+  "totalPages": 1
+}

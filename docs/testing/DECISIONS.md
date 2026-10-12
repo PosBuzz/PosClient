@@ -313,3 +313,13 @@ QUESTION (owner decides): `GET /api/v1/metrics` is public and exposes database-p
 DOC-DRIFT: BE-ROB-001/002 originally expected per-route KI + `it.failing`; every failing route was fixed instead (D-018). `due_collected`, `KNOWN_5XX` and `KNOWN_VIOLATIONS` stay as empty, enforced lists.
 Pending in B5: §6 response-shape contracts (`contracts/responses/*.json`, BE-CONTRACT-*), admin-side tenancy/secret sweep, and the CI step guarding `git diff contracts/`.
 Verification: lint, build and coverage floors pass; 323 unit, 306 integration (33 under Asia/Dhaka) and 828 e2e tests pass (e2e twice).
+
+
+### D-044 B5 response contracts and final sweeps (2026-10-13)
+Type: DECISION / DOC-DRIFT
+B5 checkpoint 83ed86f passed all jobs in https://github.com/PosBuzz/PosClient/actions/runs/38311388603.
+Chosen: `contracts/responses/*.json` (18 files) are the normalized HTTP bodies of the canonical business day, compared in `test/e2e/contracts/responses.e2e-spec.ts`. Ids stay numbers, decimals stay strings, full ISO datetimes collapse to one instant, unordered lists sort by id (or content when they have no id). BE-CONTRACT-000 proves two builds are identical; that needed `resetSequence()` and sequential permission upserts in the factories, because concurrent upserts numbered permissions differently each run. Contracts must be generated through `npm run test:e2e` (it sets TZ=UTC): generating them with a bare `npx jest` in another zone wrote a different EOD. The backend-integration job now fails if the tests leave `contracts/` dirty.
+Safety: the backup and restore routes (`GET /admin/backup`, `POST /admin/restore`) are excluded from every sweep through one tested list (`NEVER_EXECUTE`, BE-ROUTE-019). An early version of the exclusion used the wrong path and the sweeps did call them against the throwaway database; corrected before any commit. Defects: KI-058, KI-059.
+DOC-DRIFT: the path names in the phase doc differ from the code (`/consumer/sales/reports/eod`, `/consumer/dashboard/analytics`, `/consumer/promotions/active/list`, `/consumer/payments/partial-sales`, `/consumer/users/plan-permissions`); the contracts use the real ones.
+Verification: 323 unit, 306 integration (33 in Dhaka) and 851 e2e tests pass (three e2e runs); lint, build and coverage floors pass.
+Follow-up: CI for this commit; X1 sections 4-5 (request replay and type contracts) can now be built on routes.json and responses/.

@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Boot, bootDomain } from '../../helpers/domain';
 import { getPrisma, resetDb, disconnect } from '../../helpers/db';
+import { createAdmin } from '../../factories';
 import { api } from '../../helpers/http';
-import type { RouteEntry } from '../security/manifest';
+import { NEVER_EXECUTE, type RouteEntry } from '../security/manifest';
 import { LEAK, SeededTenant, seedTenant } from './seed';
 import { QUERY_DEFAULTS, resolvePath } from './param-resolver';
 
@@ -15,6 +16,13 @@ const clientGets = manifest.filter(
 );
 // Routes the sweep cannot visit, each with the reason
 const SKIPPED: Record<string, string> = {};
+const adminGets = manifest.filter(
+  (e) =>
+    e.method === 'GET' &&
+    e.guards.includes('AdminAuthGuard') &&
+    !e.path.includes(':') &&
+    !NEVER_EXECUTE(e),
+);
 
 const SECRET_KEYS = new Set(['password', 'refresh_token']);
 const BCRYPT = /^\$2[aby]\$\d{2}\$/;
@@ -44,6 +52,8 @@ describe('tenant isolation: leak sweep over every client GET route', () => {
   const leaks: string[] = [];
   const secretHits: string[] = [];
   const serverErrors: string[] = [];
+  const adminSecretHits: string[] = [];
+  const adminErrors: string[] = [];
 
   beforeAll(async () => {
     await resetDb();
@@ -69,6 +79,20 @@ describe('tenant isolation: leak sweep over every client GET route', () => {
         serverErrors.push(`${key} -> ${response.status}`);
       }
       secretHits.push(...secrets(response.body).map((hit) => `${key}: ${hit}`));
+    }
+
+    // Super-admin lists must not expose password or refresh-token hashes either
+    const admin = await createAdmin(db);
+    for (const route of adminGets) {
+      const response = await api(boot.app)
+        .asAdmin(admin)
+        .get(route.path.replace('/api/v1', ''));
+      if (response.status >= 500) {
+        adminErrors.push(`${route.path} -> ${response.status}`);
+      }
+      adminSecretHits.push(
+        ...secrets(response.body).map((hit) => `${route.path}: ${hit}`),
+      );
     }
   });
   afterAll(async () => {
@@ -104,5 +128,11 @@ describe('tenant isolation: leak sweep over every client GET route', () => {
 
   it('[BE-ROB-004] no response exposes a password, a refresh token or a bcrypt hash', () => {
     expect(secretHits).toEqual([]);
+  });
+
+  it('[BE-ROB-004] the super-admin lists expose no password, refresh token or bcrypt hash either', () => {
+    expect(adminGets.length).toBeGreaterThan(15);
+    expect(adminSecretHits).toEqual([]);
+    expect(adminErrors).toEqual([]);
   });
 });
