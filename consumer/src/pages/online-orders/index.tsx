@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import {
   Table,
   Tag,
@@ -160,6 +161,7 @@ const OnlineOrders = () => {
         values.delivery_partner?.trim() || null,
       );
       queryClient.invalidateQueries({ queryKey: ["online-order-stats"] });
+      invalidateSalesReports(queryClient);
 
       messageApi?.success("Order updated successfully");
       setStatusModalVisible(false);

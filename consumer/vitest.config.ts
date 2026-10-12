@@ -35,6 +35,15 @@ export default defineConfig({
         },
         "src/utils/promotion-helpers.utils.ts": { lines: 95, branches: 90 },
         "src/utils/formatters.ts": { lines: 100, branches: 100 },
+        "src/api/**": { lines: 90, functions: 90 },
+        "src/stores/**": { lines: 90, functions: 90 },
+        "src/hooks/**": { lines: 80 },
+        "src/components/Require*.tsx": {
+          lines: 100,
+          branches: 100,
+          functions: 100,
+          statements: 100,
+        },
       },
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
