@@ -11,6 +11,7 @@ import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { Prisma } from '@prisma/client';
 import { errorStack } from '../../../common/utils/error.util';
+import { priceChanged as pricesDiffer } from '../utils/price.util';
 import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
@@ -313,13 +314,8 @@ export class ProductVariantService {
       });
 
       const priceChanged =
-        (dto.regular_price &&
-          dto.regular_price !== currentVariant.regular_price.toString()) ||
-        (dto.wholesale_price &&
-          dto.wholesale_price !==
-            (currentVariant.wholesale_price
-              ? currentVariant.wholesale_price.toString()
-              : undefined));
+        pricesDiffer(dto.regular_price, currentVariant.regular_price) ||
+        pricesDiffer(dto.wholesale_price, currentVariant.wholesale_price);
 
       if (priceChanged) {
         await this.prisma.priceHistory.create({
@@ -378,8 +374,9 @@ export class ProductVariantService {
           if (serialsWithId.length > 0) {
             await Promise.all(
               serialsWithId.map((serialDto) =>
-                this.prisma.productSerial.update({
-                  where: { id: serialDto.id },
+                this.prisma.productSerial.updateMany({
+                  // Only this variant's own serials may be rewritten
+                  where: { id: serialDto.id, variant_id: id },
                   data: {
                     serial_number: serialDto.serial_number,
                     status: serialDto.status || 'available',

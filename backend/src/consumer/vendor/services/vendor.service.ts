@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -126,7 +127,7 @@ export class VendorService {
 
       if (batchCount > 0) {
         // Don't delete, just return an error
-        throw new Error(
+        throw new BadRequestException(
           `Cannot delete vendor with ${batchCount} associated batches`,
         );
       }

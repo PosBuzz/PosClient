@@ -133,10 +133,15 @@ export class PromotionsService {
       return new Map<number, any>();
     }
 
+    // Same definition of a "use" as getPromotionUsage (what the server enforces):
+    // live sales only, never quotations, deleted or cancelled sales
     const grouped = await (this.prisma.sale as any).groupBy({
       by: ['promotion_id'],
       where: {
         promotion_id: { in: promotionIds },
+        sale_type: 'sale',
+        payment_status: { not: 'cancelled' },
+        deleted_at: null,
       },
       _count: {
         _all: true,
@@ -1367,6 +1372,8 @@ export class PromotionsService {
         consumer_id: consumerId,
         promotion_id: promotionId,
         sale_type: 'sale',
+        payment_status: { not: 'cancelled' },
+        deleted_at: null,
       };
 
       if (filters.date_from || filters.date_to) {

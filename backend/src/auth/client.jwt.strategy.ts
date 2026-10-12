@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { Algorithm } from 'jsonwebtoken';
@@ -47,7 +47,14 @@ export class JwtClientStrategy extends PassportStrategy(
       },
     });
 
-    if (!user) throw new Error('Client user not found');
+    // A plain Error would surface as a 500; an unknown account is a 401
+    if (!user) throw new UnauthorizedException('Client user not found');
+
+    // Soft-deleted tenants cannot log in (see AuthService.validateUser), and
+    // sessions issued before the deletion must stop working too
+    if (user.consumer.deleted_at) {
+      throw new UnauthorizedException('This account is no longer active');
+    }
 
     const {
       password: _password,
