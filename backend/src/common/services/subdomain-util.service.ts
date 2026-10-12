@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { Injectable, Logger } from '@nestjs/common';
 
 /**
@@ -52,6 +53,9 @@ export class SubdomainUtilService {
   extractSubdomainFromHost(host: string): string | null {
     // Remove port if present
     const hostname = host.split(':')[0];
+
+    // IP addresses are direct API hosts, not tenant subdomains.
+    if (isIP(hostname)) return null;
 
     // Split by dots
     const parts = hostname.split('.');

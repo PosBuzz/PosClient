@@ -7,6 +7,8 @@ data in one line.
 
 **Depends on:** P0. **Unblocks:** B2–B7, X1.
 
+**Status (2026-10-13): implemented and locally verified; B1 CI verification pending publication.**
+
 ---
 
 ## Step 1: Install dev dependencies
@@ -75,8 +77,7 @@ backend/test/
   jest-e2e.json            # REPLACED
   .tmp/                    # gitignored
 ```
-Add `backend/test/.tmp/` to `backend/.gitignore`. Delete `test/app.e2e-spec.ts` (it is replaced by
-BE-HARN-003).
+Add `backend/test/.tmp/` to `backend/.gitignore`. Preserve the old scaffold as `test/app.e2e-spec.ts.disabled` (outside active Jest/tsc globs); BE-HARN-003 replaces it reversibly.
 
 ## Step 4: Jest configs
 `test/jest-integration.json`:
@@ -210,7 +211,7 @@ Integration tests that need only services (not HTTP) use the same function and c
 - BE-HARN-013: with `REDIS_ENABLED=true` and a Testcontainers `redis:7-alpine` started **only in this file**,
   health reports redis `healthy`. Proves the switch still works when you turn Redis back on.
 - BE-HARN-014: with `RABBITMQ_ENABLED=true` and a Testcontainers `rabbitmq:3.13-alpine` (this file only), the service connects
-  and `sendMessage` without waiting for a response publishes successfully. Mark it slow; it runs in the nightly workflow.
+  and `sendMessage` without waiting for a response publishes successfully. Keep it in the separate `test:infra` suite. B1 adds a PR CI job for real opt-in verification; X3 can also schedule it nightly.
 
 ### `helpers/auth.ts`
 The cookies are `Secure; SameSite=None` (`AUTH_COOKIE_OPTIONS` in `auth.controller.ts`), so
@@ -233,9 +234,7 @@ api(app).as(tenantUser, { origin: 'http://acme.localhost:3000' }).post(...)
 api(app).anonymous().get(...)
 api(app).asAdmin(superAdmin).post(...)
 ```
-The default sets **no Origin header**, so `ClientAuthGuard` skips the subdomain check
-(`extractSubdomainFromRequest` returns null for `127.0.0.1`). Tenant-mismatch tests in B5 pass
-`origin` explicitly.
+The default sets no Origin and uses `Host: localhost`; B5 passes tenant origins explicitly. BE-HARN-018 also verifies bare IPv4 host requests: a confirmed parser bug treated 127.0.0.1 as subdomain 127, and has been fixed immediately to recognize IP addresses.
 
 ### `helpers/money.ts`
 `dec(v: Prisma.Decimal | number | string) => Number(v).toFixed(2)`. Assert money as
@@ -287,7 +286,7 @@ function; since the KI-005 fix, the server rejects any line that doesn't match i
 | ID | Assertion |
 |---|---|
 | BE-HARN-003 | `GET /api/v1` → 200 `"Hello World!"` (prefix + boot work) |
-| BE-HARN-007 | `GET /api/v1/auth/client` with a valid client token → 200 and `body.consumer_id` equals the tenant's |
+| BE-HARN-007 | `GET /api/v1/auth/client` with a valid client token → 200 and `body.user.consumer_id` equals the tenant's |
 | BE-HARN-008 | `POST /api/v1/consumer/branches` **without** `x-csrf-token` → 403 `{ message: 'invalid csrf token' }` (CSRF middleware is active in tests) |
 | BE-HARN-009 | A response has helmet's `x-content-type-options: nosniff` and no `x-powered-by` |
 | BE-HARN-010 | `GET /api/v1/health` → `services.database.status === 'healthy'` and `services.redis.status === 'disabled'` (Redis off by default; see BE-HARN-011…013) (read `app.service.ts#getHealth` for the exact redis status string) |
@@ -314,6 +313,19 @@ already supports that path (Step 5). Log it as a FALLBACK.
 
 ## Exit criteria
 - [ ] BE-HARN-001…010 pass locally 3× in a row and in CI.
-- [ ] `npm test` still shows the original 35 tests passing.
-- [ ] Only `main.ts` + `app.setup.ts` changed in `src/`.
-- [ ] A fresh clone with only Docker running can execute `npm run test:all`. No manual DB setup needed.
+- [x] `npm test` still shows the original 8 suites/35 tests passing.
+- [x] Middleware extraction is limited to `main.ts`/`app.setup.ts`; confirmed RabbitMQ shutdown and IP-subdomain bugs are repaired immediately under owner policy D-018 and documented in D-026. No unrelated production changes.
+- [x] A fresh source copy with a clean `npm ci` and only Docker running executes `npm run test:all`. No manual DB setup needed.
+
+
+## Implementation details and local results (2026-10-13)
+- `configureApp` shares Helmet/CORS/CSRF/validation/prefix/shutdown/Prisma-filter setup with production; the existing setup body was moved without changing its behavior.
+- The harness auto-starts migrated Postgres 17 or uses `TEST_DATABASE_URL`. Helpers refuse non-test-qualified database names and non-public schemas before truncation. Migrations remain intact; resets truncate all application tables and restart identities.
+- Fixtures use deterministic sequence suffixes, schema-derived types, fixed billing/promotion periods, catalog-derived sale DTO pricing, and matching purchase audit rows/timestamps. Faker is installed for later factory expansion; no unseeded randomness is used now.
+- Manual secure-cookie/CSRF forwarding supports client/admin requests, tenant origins, anonymous requests, valid and tampered CSRF, and direct IP hosts.
+- Test IDs BE-HARN-001…018 exist and pass: **9 integration/default-infrastructure + 7 HTTP + 2 real optional-infrastructure tests**, three consecutive runs. Extras 015/016/017/018 cover admin/tenant origins, destructive-reset safety, related fixtures, and direct-IP auth respectively.
+- RabbitMQ testing awaits actual delivery rather than polling too early. Intentional shutdown no longer schedules/repeats reconnects; tests exit without force-exit or skipped failures.
+- All three apps' lint/typechecks remain 0 errors/0 warnings; backend build and original unit specs pass. New dependencies introduce no additional audit findings; the PR delta gate passes against the prior lockfile.
+- `npm run test:all --prefix backend` runs unit/integration/e2e; `test:infra` explicitly runs Redis/RabbitMQ. CI gains `backend-integration` and `backend-optional-infra`, each with immutable-lockfile checks after npm ci. The old scaffold is kept disabled, not deleted.
+- A clean source copy with fresh `npm ci` passes all 35 unit + 9 integration + 7 HTTP tests using automatic Postgres provisioning. The same tests pass through the Compose `TEST_DATABASE_URL` fallback; Compose resources were removed afterward.
+- Formal B1 completion still requires CI green on the published checkpoint. The owner authorized committing and pushing B1 to draft PR #40.
