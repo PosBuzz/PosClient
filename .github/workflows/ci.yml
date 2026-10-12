@@ -193,6 +193,8 @@ jobs:
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npx prisma generate
       - run: npm run test:int -- --ci
+      - name: Report reconciliation in the business time zone (Asia/Dhaka)
+        run: npm run test:int:tz -- --ci
       - run: npm run test:e2e -- --ci
 
   backend-optional-infra:

@@ -26,7 +26,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:int": "TZ=UTC jest --config ./test/jest-integration.json",
     "test:infra": "TZ=UTC jest --config ./test/jest-optional-infra.json",
-    "test:all": "npm test -- --runInBand && npm run test:int && npm run test:e2e"
+    "test:all": "npm test -- --runInBand && npm run test:int && npm run test:e2e",
+    "test:int:tz": "TZ=Asia/Dhaka jest --config ./test/jest-integration.json test/integration/reports"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",
