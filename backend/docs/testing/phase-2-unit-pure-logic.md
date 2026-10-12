@@ -7,7 +7,7 @@ mutation-testing targets in B7.
 **Depends on:** B1 (only for the `prisma-client-exception` moduleNameMapper fix). **Location:**
 next to the source as `*.spec.ts` (existing convention). **Runner:** `npm test`.
 
-**Status (2026-10-13): locally verified; publication and CI checkpoint pending.**
+**Status (2026-10-13): complete; locally verified and all 19 GitHub CI jobs passed.**
 
 Add `fast-check` for property tests: `npm i -D fast-check@^4`.
 
@@ -185,6 +185,6 @@ CI runs `npm test -- --ci --runInBand --coverage` in the existing backend-unit j
 - BE-PEF-007/008 extend the required filter tests to validation errors and metadata labels; BE-PEF-009 exercises the real duplicate-product API on migrated Postgres. BE-DTO-010 proves an empty sale is rejected over HTTP and via the service without database writes.
 - Zero rewards cap means uncapped: the existing DTO transform, UI serialization and earning service agree. BE-DTO-680 pins this convention; it is not a new zero-cap feature.
 - Immediate defects repaired: undefined error formatting, empty sales and incorrect indefinite articles for user/unit. See KI-022…024 and D-030.
-- Publication and green GitHub CI remain required before the master B2 checkbox is ticked.
+- All 19 GitHub CI jobs passed on implementation commit `a9b82b8` in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151), published to [draft PR #40](https://github.com/PosBuzz/PosClient/pull/40). The master B2 checkbox is ticked.
 
 Local checkpoint: all 261 unit tests pass three times (2.9/2.8/2.9 seconds), all three apps report lint 0 errors/0 warnings and clean typechecks, backend build passes, and all 9 integration + 9 HTTP + 2 optional-infrastructure tests pass. A fresh npm ci keeps the lockfile hash identical and passes the exact CI coverage command. The dependency delta gate confirms no added findings; the existing backend dev audit baseline remains KI-018.
