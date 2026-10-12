@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "path": "/consumer/inventory/batches",
+  "auth": "client",
+  "body": {
+    "variant_id": 1,
+    "branch_id": 1,
+    "batch_number": "C4-BATCH",
+    "quantity": 5,
+    "cost_price": "40",
+    "regular_price": "100",
+    "location": "",
+    "expiry_date": null,
+    "payments": []
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "net_amount": 480,
+      "product_name": "Product 12",
+      "returned_amount": 0,
+      "returned_qty": 0,
+      "sku": "SKU15",
+      "total_amount": 480,
+      "total_qty": 2,
+      "total_sales": 2,
+      "variant_id": 2,
+      "variant_name": "Default"
+    },
+    {
+      "net_amount": 305,
+      "product_name": "Product 5",
+      "returned_amount": 0,
+      "returned_qty": 0,
+      "sku": "SKU8",
+      "total_amount": 305,
+      "total_qty": 3,
+      "total_sales": 2,
+      "variant_id": 1,
+      "variant_name": "Default"
+    },
+    {
+      "net_amount": 68,
+      "product_name": "Product 19",
+      "returned_amount": 152,
+      "returned_qty": 4,
+      "sku": "SKU22",
+      "total_amount": 220,
+      "total_qty": 6,
+      "total_sales": 2,
+      "variant_id": 3,
+      "variant_name": "Default"
+    }
+  ],
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 3,
+    "total_pages": 1
+  }
+}

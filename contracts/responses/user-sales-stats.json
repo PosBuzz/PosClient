@@ -1,0 +1,22 @@
+[
+  {
+    "email": "admin1@example.test",
+    "id": 1,
+    "name": "Tenant Admin",
+    "netSales": 795,
+    "returnsCount": 2,
+    "salesCount": 4,
+    "totalRefunds": 40,
+    "totalSales": 835
+  },
+  {
+    "email": "user2@example.test",
+    "id": 2,
+    "name": "User 2",
+    "netSales": 230,
+    "returnsCount": 0,
+    "salesCount": 1,
+    "totalRefunds": 0,
+    "totalSales": 230
+  }
+]
