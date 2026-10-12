@@ -161,7 +161,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: node --test scripts/check-production-audit.test.mjs
+      - run: node --test scripts/check-production-audit.test.mjs scripts/check-destructive-migrations.test.mjs
 
   docker-build:
     name: Docker image builds (${{ matrix.app }})
@@ -182,6 +182,9 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The destructive-migration guard compares against origin/main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -193,6 +196,8 @@ jobs:
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npx prisma generate
       - run: npm run test:int -- --ci
+      - name: Destructive migration guard
+        run: node ../scripts/check-destructive-migrations.mjs
       - name: Report reconciliation in the business time zone (Asia/Dhaka)
         run: npm run test:int:tz -- --ci
       - run: npm run test:e2e -- --ci

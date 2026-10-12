@@ -36,3 +36,6 @@ with `actions/checkout@v4` using `fetch-depth: 0` so `origin/main` exists.
 ## Exit criteria
 - [ ] BE-SCHEMA-001…007 pass (BE-SCHEMA-002 asserts an empty diff).
 - [ ] Locally, adding `DROP COLUMN` in a new migration makes the guard fail.
+
+## Status (2026-10-13)
+Implemented; see D-045. `backend/test/integration/schema.int-spec.ts`, `scripts/check-destructive-migrations.mjs` (+ test) and the two CI steps.
