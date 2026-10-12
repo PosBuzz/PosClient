@@ -117,8 +117,9 @@ export class InventoryImportService {
     const variantByBarcode = new Map<string, number>();
     for (const variant of variants) {
       if (variant.sku) variantBySku.set(variant.sku.toLowerCase(), variant.id);
-      if (variant.barcode)
+      if (variant.barcode) {
         variantByBarcode.set(variant.barcode.toLowerCase(), variant.id);
+      }
     }
 
     const branchIds = new Map(

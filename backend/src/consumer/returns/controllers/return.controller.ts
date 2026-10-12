@@ -71,7 +71,7 @@ export class ReturnController {
     );
 
     if (!returnData) {
-      return res.status(404).json({ message: 'Sale not found' });
+      return res.status(404).json({ message: 'Return not found' });
     }
 
     const pdfBuffer =
@@ -84,7 +84,7 @@ export class ReturnController {
     res.setHeader('Content-Length', pdfBuffer.length);
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   }
 
   @Get(':id')

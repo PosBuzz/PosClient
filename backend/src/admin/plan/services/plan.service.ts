@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
 import { errorMessage, errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class PlanService {
@@ -27,6 +28,9 @@ export class PlanService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Plan creation failed', errorStack(error));
 
       throw new HttpException(
@@ -49,6 +53,9 @@ export class PlanService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching plans failed', errorStack(error));
 
       throw new HttpException(
@@ -77,6 +84,9 @@ export class PlanService {
 
       return plan;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Fetching plan ${id} failed`, errorStack(error));
 
       throw new HttpException(
@@ -177,7 +187,7 @@ export class PlanService {
           }
 
           // Update plan
-          return await tx.plan.update({
+          return tx.plan.update({
             where: { id: planId },
             data: {
               ...rest,
@@ -191,12 +201,15 @@ export class PlanService {
         }
 
         // Update only basic info
-        return await tx.plan.update({
+        return tx.plan.update({
           where: { id: planId },
           data: { ...rest },
         });
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Updating plan ${planId} failed`, errorStack(error));
 
       throw new HttpException(
@@ -211,6 +224,9 @@ export class PlanService {
     try {
       return await this.prisma.permission.findMany({ orderBy: { id: 'asc' } });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching permissions failed', errorStack(error));
 
       throw new HttpException(
@@ -226,6 +242,9 @@ export class PlanService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Deleting plan ${id} failed`, errorStack(error));
 
       if (error.code === 'P2025') {

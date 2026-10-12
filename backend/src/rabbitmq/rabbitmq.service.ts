@@ -18,7 +18,7 @@ interface PendingRequest {
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
-  private connection: amqp.Connection;
+  private connection: amqp.ChannelModel;
   private channel: amqp.Channel;
   private readonly logger = new Logger(RabbitMQService.name);
   private pendingRequests: Map<string, PendingRequest> = new Map();
@@ -26,7 +26,16 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
   constructor(private configService: ConfigService) {}
 
+  /** Off by default; see RABBITMQ_ENABLED in config.schema.ts */
+  get enabled(): boolean {
+    return String(this.configService.get('RABBITMQ_ENABLED')) === 'true';
+  }
+
   async onModuleInit() {
+    if (!this.enabled) {
+      this.logger.log('RabbitMQ disabled (RABBITMQ_ENABLED is not true)');
+      return;
+    }
     await this.connect();
     await this.setupResponseConsumer();
     this.startCleanupTimer();
@@ -40,7 +49,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   async connect() {
     try {
       this.connection = await amqp.connect(
-        this.configService.get<string>('RABBITMQ_URL'),
+        this.configService.getOrThrow<string>('RABBITMQ_URL'),
       );
       this.channel = await this.connection.createChannel();
 
@@ -159,6 +168,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     waitForResponse = false,
     timeoutMs = 60000,
   ): Promise<any> {
+    if (!this.enabled) {
+      throw new Error('RabbitMQ is disabled');
+    }
     try {
       // Ensure channel is available
       if (!this.channel) {
@@ -173,7 +185,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       const requestId = data.requestId;
 
       // Send the message
-      await this.channel.publish(
+      this.channel.publish(
         exchange,
         routingKey,
         Buffer.from(JSON.stringify(data)),
@@ -195,7 +207,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           timestamp: Date.now(),
         });
 
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
           responseSubject.pipe(timeout(timeoutMs), take(1)).subscribe({
             next: (response) => resolve(response),
             error: (error: unknown) => {

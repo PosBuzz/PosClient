@@ -56,6 +56,7 @@ import { calculateSaleTotals } from "../../utils/calculate-totals.utils";
 import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useSaleManager } from "../../hooks/useSaleManager";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -418,9 +419,7 @@ const NewQuotation = () => {
       navigate(`/quotations/view/${createdQuotation.id}`);
     } catch (error: any) {
       console.error("Error creating quotation:", error);
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create quotation",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create quotation"));
     } finally {
       setLoading(false);
     }
@@ -624,7 +623,9 @@ const NewQuotation = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />

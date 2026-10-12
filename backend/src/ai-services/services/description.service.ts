@@ -27,6 +27,15 @@ export class DescriptionService {
     jwt: string,
   ): Promise<string> {
     try {
+      // Queue is optional; without it, call the AI service directly
+      if (!this.configService.rabbitMQEnabled) {
+        return await this.generateDescriptionViaHttp(
+          dto.product,
+          jwt,
+          dto.force_refresh,
+        );
+      }
+
       const requestId = uuidv4();
 
       try {

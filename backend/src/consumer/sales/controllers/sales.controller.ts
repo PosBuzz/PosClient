@@ -191,7 +191,7 @@ export class SalesController {
     res.setHeader('Content-Length', pdfBuffer.length);
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   }
 
   @Get('receipt/:id/payment/:paymentId')
@@ -219,7 +219,7 @@ export class SalesController {
     res.setHeader('Content-Length', pdfBuffer.length);
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   }
 
   @Get('search/:saleNumber')
@@ -279,7 +279,7 @@ export class SalesController {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
 
     // Send the PDF
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   }
 
   @Get('variant-sales-stats')

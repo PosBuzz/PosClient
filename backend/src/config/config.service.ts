@@ -83,6 +83,16 @@ export class ConfigService {
     return name;
   }
 
+  /** Redis cache is optional; see REDIS_ENABLED in config.schema.ts */
+  get redisEnabled(): boolean {
+    return String(this.configService.get('REDIS_ENABLED')) === 'true';
+  }
+
+  /** RabbitMQ queue is optional; see RABBITMQ_ENABLED in config.schema.ts */
+  get rabbitMQEnabled(): boolean {
+    return String(this.configService.get('RABBITMQ_ENABLED')) === 'true';
+  }
+
   // Redis configuration
   get redisHost(): string {
     return this.configService.get<string>('REDIS_HOST') || 'localhost';

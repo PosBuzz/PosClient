@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { get, patch, post } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -15,7 +16,7 @@ export default function DrawerForm({
   isEditing,
   editedItem,
   planOptions,
-  ...props
+  // ...props
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
@@ -28,28 +29,28 @@ export default function DrawerForm({
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.consumer, data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [`all-${model}`] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(`${endpoints.consumer}/${data.id}`, data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [`all-${model}`] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

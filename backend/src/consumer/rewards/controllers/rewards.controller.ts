@@ -35,7 +35,7 @@ export class RewardsController {
   // Settings endpoints
   @Get('settings')
   async getSettings(@Req() req: Request) {
-    return await this.rewardsService.getSettings(Number(req.user.consumer_id));
+    return this.rewardsService.getSettings(Number(req.user.consumer_id));
   }
 
   @Post('settings')
@@ -43,7 +43,7 @@ export class RewardsController {
     @Req() req: Request,
     @Body() dto: CreateRewardsSettingsDto,
   ) {
-    return await this.rewardsService.createOrUpdateSettings(
+    return this.rewardsService.createOrUpdateSettings(
       Number(req.user.consumer_id),
       dto,
     );
@@ -54,7 +54,7 @@ export class RewardsController {
     @Req() req: Request,
     @Body() dto: UpdateRewardsSettingsDto,
   ) {
-    return await this.rewardsService.createOrUpdateSettings(
+    return this.rewardsService.createOrUpdateSettings(
       Number(req.user.consumer_id),
       dto,
     );
@@ -66,7 +66,7 @@ export class RewardsController {
     @Req() req: Request,
     @Query() filters: RewardsFiltersDto,
   ) {
-    return await this.rewardsService.getCustomersWithPoints(
+    return this.rewardsService.getCustomersWithPoints(
       Number(req.user.consumer_id),
       filters,
     );
@@ -77,7 +77,7 @@ export class RewardsController {
     @Req() req: Request,
     @Param('id', ParseIntPipe) customerId: number,
   ) {
-    return await this.rewardsService.getCustomerPoints(
+    return this.rewardsService.getCustomerPoints(
       Number(req.user.consumer_id),
       customerId,
     );
@@ -89,7 +89,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Body() dto: Omit<RedeemPointsDto, 'customer_id'>,
   ) {
-    return await this.rewardsService.redeemPoints(
+    return this.rewardsService.redeemPoints(
       Number(req.user.consumer_id),
       { ...dto, customer_id: customerId },
       Number(req.user.id),
@@ -102,7 +102,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Body() dto: Omit<AdjustPointsDto, 'customer_id'>,
   ) {
-    return await this.rewardsService.adjustPoints(
+    return this.rewardsService.adjustPoints(
       Number(req.user.consumer_id),
       { ...dto, customer_id: customerId },
       Number(req.user.id),
@@ -115,7 +115,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Param('points', ParseIntPipe) points: number,
   ) {
-    return await this.rewardsService.canRedeemPoints(
+    return this.rewardsService.canRedeemPoints(
       Number(req.user.consumer_id),
       customerId,
       points,
@@ -128,7 +128,7 @@ export class RewardsController {
     @Req() req: Request,
     @Query() filters: RewardsFiltersDto,
   ) {
-    return await this.rewardsService.getPointTransactions(
+    return this.rewardsService.getPointTransactions(
       Number(req.user.consumer_id),
       filters,
     );
@@ -141,7 +141,7 @@ export class RewardsController {
     @Query() filters: RewardsFiltersDto,
   ) {
     const filtersWithCustomer = { ...filters, customer_id: customerId };
-    return await this.rewardsService.getPointTransactions(
+    return this.rewardsService.getPointTransactions(
       Number(req.user.consumer_id),
       filtersWithCustomer,
     );
@@ -150,7 +150,7 @@ export class RewardsController {
   // Utility endpoints
   @Post('expire-points')
   async expirePoints(@Req() req: Request) {
-    return await this.rewardsService.expirePoints(Number(req.user.consumer_id));
+    return this.rewardsService.expirePoints(Number(req.user.consumer_id));
   }
 
   @Get('redemption-value/:points')
@@ -184,7 +184,7 @@ export class RewardsController {
       return { isValid: false, reason: 'Invalid credit amount' };
     }
 
-    return await this.rewardsService.validateCreditPayment(
+    return this.rewardsService.validateCreditPayment(
       Number(req.user.consumer_id),
       customerId,
       creditAmount,
@@ -197,7 +197,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Body() dto: { amount: number; sale_id: number; reference?: string },
   ) {
-    return await this.rewardsService.processCreditPayment(
+    return this.rewardsService.processCreditPayment(
       Number(req.user.consumer_id),
       customerId,
       dto.amount,
@@ -218,7 +218,7 @@ export class RewardsController {
       reference?: string;
     },
   ) {
-    return await this.rewardsService.processCreditRefund(
+    return this.rewardsService.processCreditRefund(
       Number(req.user.consumer_id),
       customerId,
       dto.amount,

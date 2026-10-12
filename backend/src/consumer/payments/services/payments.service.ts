@@ -11,6 +11,7 @@ import { MakePaymentDto } from '../dto/make-payment.dto';
 import { PartialPaymentFiltersDto } from '../dto/partial-payment-filters.dto';
 import { Prisma } from '@prisma/client';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class PaymentsService {
@@ -120,6 +121,9 @@ export class PaymentsService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting partially paid sales for consumer ${consumerId}`,
         errorStack(error),
@@ -194,7 +198,7 @@ export class PaymentsService {
           Number(sale.total_amount) - Number(sale.received_amount),
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error getting sale for payment with ID ${saleId} for consumer ${consumerId}`,
         errorStack(error),
@@ -329,7 +333,7 @@ export class PaymentsService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error making payment for sale with ID ${paymentData.sale_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -375,7 +379,7 @@ export class PaymentsService {
 
       return { payments };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching sale payments with ID ${saleId} for consumer ${consumerId}`,
         errorStack(error),

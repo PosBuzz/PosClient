@@ -65,7 +65,7 @@ export class CustomerImportService {
    * write.
    */
   async prepare(
-    consumerId: number,
+    _consumerId: number,
     rows: ParsedRow[],
   ): Promise<{ prepared: PreparedCustomer[]; errors: ImportRowError[] }> {
     const errors: ImportRowError[] = [];

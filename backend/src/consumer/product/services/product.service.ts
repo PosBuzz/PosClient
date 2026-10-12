@@ -13,6 +13,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class ProductService {
@@ -190,9 +191,9 @@ export class ProductService {
         return createdProduct;
       });
 
-      return this.findOne(product.id, consumerId);
+      return await this.findOne(product.id, consumerId);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.throwProductNameConflict(error);
       this.logger.error(
         `Error creating product for consumer ${consumerId}`,
@@ -358,7 +359,7 @@ export class ProductService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching products for consumer ${consumerId}`,
         errorStack(error),
@@ -677,7 +678,7 @@ export class ProductService {
         metrics: productMetrics,
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -782,9 +783,9 @@ export class ProductService {
         );
       }
 
-      return this.findOne(id, consumerId);
+      return await this.findOne(id, consumerId);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.throwProductNameConflict(error);
       this.logger.error(
         `Error updating product with ID ${id} for consumer ${consumerId}`,
@@ -808,7 +809,7 @@ export class ProductService {
 
       return { success: true, message: 'Product deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),

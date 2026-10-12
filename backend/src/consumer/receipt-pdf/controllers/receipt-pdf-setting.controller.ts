@@ -98,12 +98,14 @@ export class ReceiptPdfSettingController {
 
         // Branch-specific fields (only present when branchId was provided)
         if (branding.branchName) mockData.branchName = branding.branchName;
-        if (branding.branchAddress)
+        if (branding.branchAddress) {
           mockData.branchAddress = branding.branchAddress;
+        }
         if (branding.branchPhone) mockData.branchPhone = branding.branchPhone;
         if (branding.branchEmail) mockData.branchEmail = branding.branchEmail;
-        if (branding.vatRegistrationNumber)
+        if (branding.vatRegistrationNumber) {
           mockData.vatRegistrationNumber = branding.vatRegistrationNumber;
+        }
       }
     } catch (error) {
       // If branding fetch fails, continue with pure sample data

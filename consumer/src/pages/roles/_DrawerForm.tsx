@@ -17,6 +17,7 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { Permissions } from "../../constants/permissions";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -151,7 +152,7 @@ export default function DrawerForm({
   onSubmitSuccess,
   isEditing,
   editedItem,
-  ...props
+  // ...props
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
@@ -159,28 +160,28 @@ export default function DrawerForm({
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.role, data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.roles] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateRole(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.roles] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

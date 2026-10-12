@@ -1,6 +1,6 @@
 // quotation-pdf.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
@@ -9,7 +9,7 @@ import { deepMerge, normalizeLineBreaks } from '../helpers/receipt-pdf.helpers';
 
 @Injectable()
 export class QuotationPdfService {
-  private readonly logger = new Logger(QuotationPdfService.name);
+  // private readonly logger = new Logger(QuotationPdfService.name);
 
   constructor(
     private readonly receiptPdfService: ReceiptPdfService,

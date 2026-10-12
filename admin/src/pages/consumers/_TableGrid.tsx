@@ -32,6 +32,7 @@ import { endpoints } from "../../api/endpoints";
 import { AdminPermission } from "../../constants/adminPermissions";
 import { useMessageStore } from "../../stores/messageStore";
 import ImportDataModal from "./_ImportDataModal";
+import { getErrorMessage } from "../../utils/api-error";
 const { Option } = Select;
 
 export default function TableGrid({
@@ -155,8 +156,8 @@ export default function TableGrid({
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
@@ -171,8 +172,8 @@ export default function TableGrid({
       messageApi?.success("Consumer restored");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Failed to restore consumer");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Failed to restore consumer"));
     },
   });
 
@@ -189,7 +190,7 @@ export default function TableGrid({
     },
     onError: (e: any) => {
       messageApi?.error(
-        e?.response?.data?.message || "Failed to permanently delete consumer",
+        getErrorMessage(e, "Failed to permanently delete consumer"),
       );
     },
   });

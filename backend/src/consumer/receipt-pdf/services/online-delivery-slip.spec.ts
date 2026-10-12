@@ -10,17 +10,15 @@ describe('online delivery slip', () => {
       getActiveSettings: jest
         .fn()
         .mockResolvedValue(PRESET_DEFAULTS.online_delivery_slip),
-      getBrandingData: jest
-        .fn()
-        .mockResolvedValue({
-          storeName: 'Test Store',
-          branchName: 'Main',
-          branchAddress: '',
-          branchPhone: '0123456',
-          branchEmail: '',
-          logoPath: '',
-          vatRegistrationNumber: '',
-        }),
+      getBrandingData: jest.fn().mockResolvedValue({
+        storeName: 'Test Store',
+        branchName: 'Main',
+        branchAddress: '',
+        branchPhone: '0123456',
+        branchEmail: '',
+        logoPath: '',
+        vatRegistrationNumber: '',
+      }),
     };
     const service = new SalesPdfService(renderer, settingsService as any);
     const result = await service.generateSaleReceiptPdf(

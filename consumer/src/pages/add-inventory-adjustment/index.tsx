@@ -28,6 +28,7 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -114,9 +115,7 @@ export default function AddInventoryAdjustment() {
       navigate("/inventory/adjustments");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create adjustment",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create adjustment"));
     },
   });
 

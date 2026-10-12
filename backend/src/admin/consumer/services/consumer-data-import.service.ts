@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  HttpException,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,6 +13,7 @@ import {
   PreviewConsumerDataImportDto,
   RunConsumerDataImportDto,
 } from '../dto/consumer-data-import.dto';
+import { isClientError } from '../../../common/errors/client-error';
 
 type ImportAction = 'created' | 'updated' | 'skipped' | 'conflicts';
 type ImportSummary = Record<
@@ -211,7 +211,7 @@ export class ConsumerDataImportService {
         `Account data import ${job.id} failed`,
         errorStack(error),
       );
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       throw new BadRequestException(
         `Import failed without changing destination data: ${errorMessage(error)}`,
       );

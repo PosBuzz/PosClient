@@ -70,6 +70,7 @@ import {
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -420,7 +421,7 @@ const NewSale = () => {
         }
       } catch (error: any) {
         console.error("Error scanning barcode:", error);
-        messageApi?.error("Failed to scan barcode");
+        messageApi?.error(getErrorMessage(error, "Failed to scan barcode"));
       }
     },
     [addToSale, messageApi, selectedBranch],
@@ -592,7 +593,7 @@ const NewSale = () => {
     } catch (error: any) {
       console.error("Error creating sale:", error);
       messageApi?.error(
-        error.response?.data?.message || "Failed to create sale",
+        getErrorMessage(error, "Failed to create sale"),
       );
     } finally {
       setLoading(false);
@@ -862,7 +863,7 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(getErrorMessage(error, "Failed to create customer"));
           }
         }}
       />

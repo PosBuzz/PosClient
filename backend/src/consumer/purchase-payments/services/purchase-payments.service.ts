@@ -11,6 +11,7 @@ import { MakePurchasePaymentDto } from '../dto/make-purchase-payment.dto';
 import { PurchaseBatchesFiltersDto } from '../dto/purchase-batches-filters.dto';
 import { Prisma } from '@prisma/client';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class PurchasePaymentsService {
@@ -143,6 +144,9 @@ export class PurchasePaymentsService {
     try {
       return await this.findPurchaseBatches(filters, consumerId);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting purchase payment batches for consumer ${consumerId}`,
         errorStack(error),
@@ -195,7 +199,7 @@ export class PurchasePaymentsService {
         remaining_amount: totalCost - paidAmount,
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error getting batch for payment with ID ${batchId} for consumer ${consumerId}`,
         errorStack(error),
@@ -357,7 +361,7 @@ export class PurchasePaymentsService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error making purchase payment for batch with ID ${paymentData.batch_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -395,7 +399,7 @@ export class PurchasePaymentsService {
 
       return { payments };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching purchase payments for batch ${batchId} for consumer ${consumerId}`,
         errorStack(error),

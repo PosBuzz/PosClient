@@ -12,11 +12,11 @@ export class AppController {
 
   @Get('health')
   async getHealth() {
-    return await this.appService.getHealth();
+    return this.appService.getHealth();
   }
 
   @Get('metrics')
   async getMetrics() {
-    return await this.appService.getMetrics();
+    return this.appService.getMetrics();
   }
 }

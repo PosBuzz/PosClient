@@ -660,12 +660,15 @@ export class ReceiptPdfService {
     }
 
     const contactLines: string[] = [];
-    if (s.storeInfo.showAddress && data.branchAddress)
+    if (s.storeInfo.showAddress && data.branchAddress) {
       contactLines.push(data.branchAddress);
-    if (s.storeInfo.showPhone && data.branchPhone)
+    }
+    if (s.storeInfo.showPhone && data.branchPhone) {
       contactLines.push('Tel: ' + data.branchPhone);
-    if (s.storeInfo.showEmail && data.branchEmail)
+    }
+    if (s.storeInfo.showEmail && data.branchEmail) {
       contactLines.push(data.branchEmail);
+    }
 
     if (contactLines.length) {
       doc
@@ -862,8 +865,9 @@ export class ReceiptPdfService {
       !data.customerPhone &&
       !data.customerEmail &&
       !data.customerAddress
-    )
+    ) {
       return y;
+    }
 
     const lh = s.fontSizes.body + 3;
 
@@ -971,21 +975,24 @@ export class ReceiptPdfService {
 
     specs.push({ key: 'item', header: 'Item', weight: 5, align: 'left' });
 
-    if (s.items.showSku)
+    if (s.items.showSku) {
       specs.push({ key: 'sku', header: 'SKU', weight: 1.8, align: 'left' });
+    }
 
-    if (s.items.showQuantity)
+    if (s.items.showQuantity) {
       specs.push({ key: 'qty', header: 'Qty', weight: 1, align: 'center' });
+    }
 
-    if (s.items.showUnitPrice)
+    if (s.items.showUnitPrice) {
       specs.push({
         key: 'unitPrice',
         header: 'Unit Price',
         weight: 1.6,
         align: 'right',
       });
+    }
 
-    if (s.items.showDiscount)
+    if (s.items.showDiscount) {
       specs.push({
         key: 'discount',
         header: 'Discount',
@@ -993,22 +1000,25 @@ export class ReceiptPdfService {
         weight: 2.2,
         align: 'right',
       });
+    }
 
-    if (s.items.showTax)
+    if (s.items.showTax) {
       specs.push({
         key: 'tax',
         header: 'Tax',
         weight: 1.4,
         align: 'right',
       });
+    }
 
-    if (s.items.showLineTotal)
+    if (s.items.showLineTotal) {
       specs.push({
         key: 'total',
         header: 'Total',
         weight: 1.6,
         align: 'right',
       });
+    }
 
     const totalWeight = specs.reduce((a, c) => a + c.weight, 0);
 
@@ -1146,18 +1156,21 @@ export class ReceiptPdfService {
 
       // Each discount carries its rate as well as its amount, the way the tax
       // breakdown does — a flat "-৳5.00" alone doesn't say how deep the cut was.
-      if (item.specialDiscount > 0)
+      if (item.specialDiscount > 0) {
         parts.push(
           `Special Discount${this.discountPercentSuffix(item, item.specialDiscount)}: ${this.fmt(item.specialDiscount, data)}`,
         );
-      if (item.promotionDiscount > 0)
+      }
+      if (item.promotionDiscount > 0) {
         parts.push(
           `Promotion Discount${this.discountPercentSuffix(item, item.promotionDiscount)}: ${this.fmt(item.promotionDiscount, data)}`,
         );
-      if (item.averageDiscount > 0)
+      }
+      if (item.averageDiscount > 0) {
         parts.push(
           `Average Discount${this.discountPercentSuffix(item, item.averageDiscount)}: ${this.fmt(item.averageDiscount, data)}`,
         );
+      }
 
       doc.font('Helvetica').fontSize(s.fontSizes.small).fillColor('#333333');
       this.drawCurrencyAwareText(doc, parts.join('   |   '), indent, y, {
@@ -1324,10 +1337,12 @@ export class ReceiptPdfService {
       for (const p of data.payments) {
         let label = p.method;
         if (p.type) label += ' (' + p.type + ')';
-        if (s.payment.showPaymentDate && p.date)
+        if (s.payment.showPaymentDate && p.date) {
           label += ' — ' + this.formatDate(p.date);
-        if (s.payment.showReference !== false && p.reference)
+        }
+        if (s.payment.showReference !== false && p.reference) {
           label += ' — Ref: ' + p.reference;
+        }
 
         paymentRows.push({ key: label + ':', value: this.fmt(p.amount, data) });
       }
