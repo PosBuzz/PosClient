@@ -330,3 +330,13 @@ Type: DECISION
 Chosen: `test/integration/schema.int-spec.ts` asserts the migrated database has an empty `prisma migrate diff` against `schema.prisma` (BE-SCHEMA-002, with BE-SCHEMA-008 proving the check reports a deliberate difference), migration folder names and files, the PostgreSQL lock, that the real `prisma/seed.ts` runs on a migrated database and the seeded super admin and tenant admin can log in, and that every tenant table leads an index with `consumer_id` (the exceptions list starts empty because none are missing today). `scripts/check-destructive-migrations.mjs` (with regression tests in the guardrail job) fails a branch that adds DROP TABLE, DROP COLUMN, ALTER COLUMN ... TYPE or TRUNCATE without an `ALLOW_DESTRUCTIVE.md`; the `backend-integration` job now checks out full history for it. SQL comments are ignored so a note cannot trip the guard.
 Verification: 7 schema tests pass; 3 guard tests pass; the guard sees this branch's one added migration (an index rename, not destructive).
 Follow-up: CI result; C3 consumer API, stores and hooks next.
+
+
+### D-046 B5 and B6 verified; C3 first checkpoint (2026-10-13)
+Type: DECISION / REFACTOR / DOC-DRIFT
+Verification: commit 418419f (B5 contracts, B6 schema guards) passed all jobs in https://github.com/PosBuzz/PosClient/actions/runs/38312797811. B5 and B6 exit criteria are satisfied; trackers updated.
+C3 so far: HTTP client, React Query defaults, 123 API-function cases checked against `contracts/routes.json` by method and path, endpoint parity both ways (X-ENDP-001/004), print agent, auth store, route permissions and menu. Defects fixed under D-018: KI-060…062.
+Seams (pre-approved, behavior unchanged): `queryClientOptions` moved to `src/queryClientOptions.ts` instead of being exported from Providers.tsx (importing Providers pulls in the whole app); the sidebar menu moved to `src/menuItems.tsx` with a pure `visibleMenuItems` filter. Harness: jsdom's Blob lacked `stream()`, which hung every `responseType: "blob"` request under MSW; a small polyfill in `src/test/setup.ts` fixes it for all tests.
+Notes: `RequirePermission` gained list support (any one permission) so a route can mirror the menu's rule. `contracts/unused-routes.json` records the four tenant routes the app never calls; the two credit routes are a QUESTION (a customers-permission user can burn or add points through them without a sale or refund). The route-permission snapshot `src/__snapshots__/route-permissions.json` makes any permission change visible in review.
+Verification: lint, typecheck pass; 421 consumer tests pass twice.
+Follow-up: C3 cache invalidation, hooks and coverage floors.

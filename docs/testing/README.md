@@ -187,9 +187,9 @@ A phase is done only when **all** of the following are true:
 - [ ] X1 Cross-layer contracts — sections 1-3 implemented 2026-10-13 (pricing, subdomains, promotions, sale totals, permissions, inline paths); endpoint/request/type contracts wait for B5/C4/A2
 - [x] B3 Domain integration — verified 2026-10-13; all jobs passed in [CI run 38308437854](https://github.com/PosBuzz/PosClient/actions/runs/38308437854)
 - [x] B4 Report reconciliation — verified 2026-10-13; all jobs passed in [CI run 38309445550](https://github.com/PosBuzz/PosClient/actions/runs/38309445550)
-- [ ] B5 API security & tenancy — implemented and verified locally 2026-10-13 (manifest, auth/CSRF/CORS, 712-case permission matrix, tenancy and robustness sweeps, 18 response contracts); awaiting CI
-- [ ] B6 Schema & migrations — implemented and verified locally 2026-10-13; awaiting CI
-- [ ] C3 Consumer API/stores/hooks
+- [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
+- [x] B6 Schema & migrations — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
+- [ ] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes and menu done 2026-10-13; cache invalidation and hooks pending
 - [ ] C4 Consumer page flows
 - [ ] A1/A2 Admin
 - [ ] X2 Full-stack E2E

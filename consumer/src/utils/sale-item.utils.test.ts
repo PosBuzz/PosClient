@@ -34,28 +34,31 @@ describe("line tax", () => {
       }),
   );
   it("[CO-CALC-005] inclusive aliases are normalized", () => {
-    for (const method of ["inclusive", " Inc ", "INC"])
-      {expect(calc(115, 1, 15, method)).toEqual({
+    for (const method of ["inclusive", " Inc ", "INC"]) {
+      expect(calc(115, 1, 15, method)).toEqual({
         line_total: 115,
         tax_amount: 15,
         taxable_amount: 100,
-      });}
+      });
+    }
   });
   it("[CO-CALC-006] missing/unknown methods use exclusive tax", () => {
-    for (const method of ["", undefined, "foo"])
-      {expect(calc(100, 1, 10, method as string)).toEqual({
+    for (const method of ["", undefined, "foo"]) {
+      expect(calc(100, 1, 10, method as string)).toEqual({
         line_total: 110,
         tax_amount: 10,
         taxable_amount: 100,
-      });}
+      });
+    }
   });
   it("[CO-CALC-007] invalid/missing tax is zero", () => {
-    for (const value of [NaN, undefined, "abc"])
-      {expect(calc(100, 1, value as number, "EXCLUSIVE")).toEqual({
+    for (const value of [NaN, undefined, "abc"]) {
+      expect(calc(100, 1, value as number, "EXCLUSIVE")).toEqual({
         line_total: 100,
         tax_amount: 0,
         taxable_amount: 100,
-      });}
+      });
+    }
   });
   it("[CO-CALC-P01] exclusive tax plus base conserves the line within rounding", () =>
     fc.assert(
@@ -106,13 +109,14 @@ describe("cart mutations", () => {
   it("[CO-CART-001] wholesale falls back to regular when missing or zero", () => {
     expect(getVariantPriceForSale(variant(), PriceType.REGULAR)).toBe(100);
     expect(getVariantPriceForSale(variant(), PriceType.WHOLESALE)).toBe(80);
-    for (const value of [0, undefined, null])
-      {expect(
+    for (const value of [0, undefined, null]) {
+      expect(
         getVariantPriceForSale(
           variant({ wholesale_price: value as number }),
           PriceType.WHOLESALE,
         ),
-      ).toBe(100);}
+      ).toBe(100);
+    }
   });
   it("[CO-CART-002] new variant carries display fields and computed tax", () => {
     const v = variant({ image: "image.png", tax_percentage: 5 });
