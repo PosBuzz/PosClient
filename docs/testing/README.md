@@ -183,7 +183,7 @@ A phase is done only when **all** of the following are true:
 - [x] B1 Backend harness — verified 2026-10-13; all 19 jobs passed in [CI run 38297463078](https://github.com/PosBuzz/PosClient/actions/runs/38297463078)
 - [x] B2 Backend unit — verified 2026-10-13; all 19 jobs passed in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151)
 - [x] C1 Consumer harness — verified 2026-10-13; all 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165)
-- [ ] C2 Consumer calculations
+- [x] C2 Consumer calculations — verified 2026-10-13; all 20 jobs passed in [CI run 38303007404](https://github.com/PosBuzz/PosClient/actions/runs/38303007404)
 - [ ] X1 Cross-layer contracts
 - [ ] B3 Domain integration
 - [ ] B4 Report reconciliation
