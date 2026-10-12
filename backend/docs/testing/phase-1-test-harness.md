@@ -7,7 +7,7 @@ data in one line.
 
 **Depends on:** P0. **Unblocks:** B2–B7, X1.
 
-**Status (2026-10-13): implemented and locally verified; B1 CI verification pending publication.**
+**Status (2026-10-13): complete; locally verified and all 19 GitHub CI jobs passed.**
 
 ---
 
@@ -312,7 +312,7 @@ Postgres and set `TEST_DATABASE_URL`. The harness
 already supports that path (Step 5). Log it as a FALLBACK.
 
 ## Exit criteria
-- [ ] BE-HARN-001…010 pass locally 3× in a row and in CI.
+- [x] BE-HARN-001…018 pass locally 3× in a row and in CI.
 - [x] `npm test` still shows the original 8 suites/35 tests passing.
 - [x] Middleware extraction is limited to `main.ts`/`app.setup.ts`; confirmed RabbitMQ shutdown and IP-subdomain bugs are repaired immediately under owner policy D-018 and documented in D-026. No unrelated production changes.
 - [x] A fresh source copy with a clean `npm ci` and only Docker running executes `npm run test:all`. No manual DB setup needed.
@@ -328,4 +328,4 @@ already supports that path (Step 5). Log it as a FALLBACK.
 - All three apps' lint/typechecks remain 0 errors/0 warnings; backend build and original unit specs pass. New dependencies introduce no additional audit findings; the PR delta gate passes against the prior lockfile.
 - `npm run test:all --prefix backend` runs unit/integration/e2e; `test:infra` explicitly runs Redis/RabbitMQ. CI gains `backend-integration` and `backend-optional-infra`, each with immutable-lockfile checks after npm ci. The old scaffold is kept disabled, not deleted.
 - A clean source copy with fresh `npm ci` passes all 35 unit + 9 integration + 7 HTTP tests using automatic Postgres provisioning. The same tests pass through the Compose `TEST_DATABASE_URL` fallback; Compose resources were removed afterward.
-- Formal B1 completion still requires CI green on the published checkpoint. The owner authorized committing and pushing B1 to draft PR #40.
+- B1 is complete: all 19 jobs passed on implementation commit `3f94838` in [CI run 38297463078](https://github.com/PosBuzz/PosClient/actions/runs/38297463078), published to [draft PR #40](https://github.com/PosBuzz/PosClient/pull/40).
