@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { getPrisma, disconnect } from '../helpers/db';
 import { Boot, World, bootDomain, newWorld } from '../helpers/domain';
 import { createVendor } from '../factories';
@@ -98,12 +99,24 @@ describe('inventory', () => {
       expect(after.location).toBe('A-1');
     });
 
-    it('[BE-INV-012] a batch with stock cannot be deleted; an empty one can', async () => {
+    it('[BE-INV-012] a batch with stock cannot be deleted, and one with history stays even at zero', async () => {
       const v = await stocked(2);
       const b = await batchOf(v.id);
       const error = await failure(batches.remove(b.id, cid()));
       expect(error).toBeInstanceOf(BadRequestException);
-      expect(error.message).toMatch(/remaining quantity/);
+      expect(error.message).toMatch(/still has stock/);
+      await adjustments.create(cid(), uid(), {
+        variant_id: v.id,
+        branch_id: main(),
+        batch_id: b.id,
+        quantity_change: -2,
+        reason: 'empty it',
+      });
+      // Its audit trail and adjustment rows still point at it, so it is kept
+      const kept = await failure(batches.remove(b.id, cid()));
+      expect(kept).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+      expect(kept.code).toBe('P2003');
+      expect(await db.inventoryBatch.count({ where: { id: b.id } })).toBe(1);
     });
 
     it("[BE-INV-013] a batch cannot be moved to another tenant's branch", async () => {

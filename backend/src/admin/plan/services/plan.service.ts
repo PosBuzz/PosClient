@@ -101,7 +101,8 @@ export class PlanService {
       return await this.prisma.$transaction(async (tx) => {
         const { permission_ids, ...rest } = data;
 
-        if (permission_ids?.length) {
+        // An empty list is a real request (remove every permission), not "no change"
+        if (permission_ids) {
           // Current permissions
           const currentPlanPermissions = await tx.planPermission.findMany({
             where: { plan_id: planId },

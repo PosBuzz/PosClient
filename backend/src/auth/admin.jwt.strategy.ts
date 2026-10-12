@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { Algorithm } from 'jsonwebtoken';
@@ -38,7 +38,8 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       },
     });
 
-    if (!admin) throw new Error('SuperAdmin not found');
+    // A plain Error would surface as a 500; an unknown account is a 401
+    if (!admin) throw new UnauthorizedException('SuperAdmin not found');
 
     const {
       password: _password,

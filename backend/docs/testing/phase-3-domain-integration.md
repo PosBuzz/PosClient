@@ -218,3 +218,6 @@ using two matrix entries. Log it.
 - [ ] Every ID in §§2–6 and §8 exists; §7 modules each have a file covering every `throw`.
 - [ ] Every KI-tagged test is `it.failing` with its KI row status set to `CONFIRMED` (or `FIXED` if it passes, meaning the suspicion was wrong; then remove the KI and log it).
 - [ ] `npm run test:int` green 3× in a row.
+
+## Status (2026-10-13)
+Implemented and verified locally; see D-040 in `docs/testing/DECISIONS.md`. Files: `test/helpers/invariants.ts`, `test/helpers/domain.ts`, and `test/integration/{invariants,sales,sales-lifecycle,returns,inventory,payments,purchase-payments,rewards,catalog-lookups,master-data,products,promotions,imports,admin}.int-spec.ts`.
