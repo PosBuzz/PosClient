@@ -9,7 +9,12 @@
     "build": "concurrently -n BACKEND,ADMIN,CONSUMER,PORTFOLIO,AI -c green,blue,magenta,cyan,yellow \"npm run build --prefix backend\" \"npm run build --prefix admin\" \"npm run build --prefix consumer\" \"npm run build --prefix portfolio\" \"cd ai-service && echo 'AI Service does not need to be built'\"",
     "build:portfolio": "npm run build --prefix portfolio",
     "format": "npm run format --prefix backend && npm run format --prefix admin && npm run format --prefix consumer",
-    "setup": "bash setup.sh"
+    "setup": "bash setup.sh",
+    "lint:all": "npm run lint:check --prefix backend && npm run lint:check --prefix consumer && npm run lint:check --prefix admin",
+    "typecheck:all": "npm run typecheck --prefix backend && npm run typecheck --prefix consumer && npm run typecheck --prefix admin",
+    "test:all": "npm test --prefix backend -- --runInBand && npm run test:guardrails",
+    "test:guardrails": "node --test scripts/check-production-audit.test.mjs",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -24,6 +29,11 @@
   "homepage": "https://github.com/PosBuzz/PosClient#readme",
   "description": "",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0"
+  },
+  "engines": {
+    "node": ">=22.22.1 <23"
   }
 }

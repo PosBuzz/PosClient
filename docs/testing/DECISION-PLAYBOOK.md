@@ -7,7 +7,7 @@ improvise past a step that says STOP.**
 Guiding priorities, highest first:
 1. **Never weaken a check to get green.** Never lower a threshold, delete an assertion, or loosen
    a matcher just to pass.
-2. **Never change production behavior inside a testing PR.**
+2. **Fix confirmed defects encountered during testing immediately** under the owner's 2026-10-13 instruction; keep unrelated production changes out of scope.
 3. **Prefer real dependencies over mocks** (real Postgres > mocked Prisma), except for external
    services (RabbitMQ, the FastAPI AI service, Cloudinary, the local print agent).
 4. **Prefer testing through the public surface** (HTTP route > service method > private helper).
@@ -28,14 +28,12 @@ The test either found a bug or assumed something wrong. Decide which:
    d. Consistency with sibling code (e.g. if 5 queries filter `deleted_at: null` and 1 doesn't).
 3. **If the evidence says the current behavior is intended:** your expectation was wrong. Fix the
    test. Log it as `DECISION: behavior is intended` with the evidence link.
-4. **If the evidence says it is a bug**, or a security or money-integrity problem whatever the
-   evidence:
-   - Keep the test asserting the **correct** behavior, wrapped in `it.failing(...)` (Jest) or
-     `it.fails(...)` (Vitest).
-   - Title: `[BE-SALE-020] KNOWN-ISSUE KI-004: concurrent sales never oversell`.
-   - Add a row to `KNOWN-ISSUES.md` with severity, reproduction, and a suggested fix.
-   - **Do not fix it in the testing PR.** Fixing is the owner's call and goes in a separate
-     `fix:` PR that removes the `.failing` marker.
+4. **If evidence confirms a bug, fix it immediately** (owner instruction, 2026-10-13):
+   - Keep the test asserting the correct behavior and fix the underlying implementation in the same work session.
+   - Re-run the failing test, relevant related suites, and all three apps' lint/typecheck. Verify changed backend behavior over real HTTP/Postgres where applicable.
+   - Record the defect, cause, fix and verification in `KNOWN-ISSUES.md`/`DECISIONS.md`; the regression test must pass normally.
+   - Do not weaken assertions, lower thresholds, disable checks, or mark a real defect `it.failing`/`it.fails`/skip merely to keep working.
+   - If an external dependency or unavailable environment prevents a fix, record the concrete blocker honestly and continue unaffected work. This is not permission to hide a failure.
 5. **If evidence is contradictory or absent:** write a **characterization test** pinning the current
    behavior. Title suffix `(characterization: confirm intent)`. Add a `QUESTION` entry in
    `DECISIONS.md` for the owner. Keep going; do not block on the answer.

@@ -107,3 +107,54 @@ Chosen: Explicitly set backend REDIS_ENABLED=false and AI CACHE_REDIS_ENABLED=Fa
 Follow-up: Permanent regression suites and dependency/CI gates remain tracked in P0/X4/X3. Consumer build also reports stale Browserslist data; refresh it in a scoped dependency maintenance update.
 
 Final review verification: all three typechecks/builds pass, ESLint is 0 errors / 0 warnings in each app, backend 8 suites / 35 tests pass, and all six real HTTP error scenarios pass on freshly migrated Postgres 17. Compose YAML/service flags and the existing AI changes parse successfully. AI runtime with external models/queue was not exercised.
+
+
+### D-017 Phase P0 implementation and owner policy (2026-10-13)
+Type: DECISION
+Chosen: Implement baseline scripts, Node 22 pin, CI, production audit checks, weekly Dependabot and read-only local hooks. Hooks use ESLint instead of repo-wide Prettier because legacy frontend files are not uniformly Prettier-clean, and run lint-staged with no stash/revert to respect the owner's mixed working tree. lint-staged 17 requires Node >=22.22.1 (root tools), while app engines retain the planned >=22.12.0 floor.
+Owner chose no license restrictions for now. Vulnerability gates remain high/critical. Private repository metadata reports security_and_analysis=null; PR dependency-delta audits run independently, with the GitHub dependency-review action optionally enabled by DEPENDENCY_REVIEW_ENABLED when supported. Delta audits include dev dependencies and reject newly added vulnerable versions/parents; production audits have only exact documented SPA exceptions.
+Owner authorized compatible dependency security fixes separately from P0 tooling, without forced major upgrades.
+Follow-up: actual GitHub CI execution requires publishing the changes; no push has been authorized for this phase.
+
+### D-018 Fix testing failures immediately (2026-10-13, owner instruction)
+Type: DECISION
+Context: Owner explicitly requested: "while testing if any fail occurs fix it immediately".
+Chosen: Investigate every failing check immediately; fix confirmed defects and rerun the failing and related checks. Retain normal passing regression tests; record causes/fixes/verification. Never weaken tests or suppress failures with failing/skip markers. This supersedes all older phase/playbook text requiring confirmed defects to be deferred to separate fix PRs. Keep unrelated changes out of scope and report genuine environment blockers honestly.
+Follow-up: apply throughout sequential implementation.
+
+
+### D-019 Node 22 consistently across runtimes (2026-10-13, owner instruction)
+Type: DECISION
+Chosen: Backend/consumer/admin Docker images move from node:20-alpine to node:22-alpine. Portfolio images already use Node 22; its engine metadata is aligned under the owner's repository-wide Node instruction, with no portfolio source changes. Root and all Node app engine ranges are >=22.22.1 <23, CI reads root .nvmrc=22, and setup checks the same runtime range before installing dependencies. Compose uses these Dockerfile builds, not a separate Node image. This explicitly supersedes P0's original prohibition on changing Docker Node versions.
+Follow-up: verify image builds on Node 22 before proceeding through P0.
+
+
+### D-020 P0 failures repaired and verification (2026-10-13)
+Type: DECISION
+Context: Owner-authorized compatible security updates made four existing type assertions unnecessary; lint then failed. Backend Docker's default command pointed at dist/main while the real build emits dist/src/main, and it lacked a dockerignore.
+Chosen: Remove the obsolete assertions and redundant parentheses immediately without changing ESLint rules. Correct the default Docker command; exclude host dependencies/build outputs/local env and runtime data from the backend build context. Existing env files are untouched. Preserve prior Node 20 behavior as historical context in D-004; current Docker stages use Node 22 under D-019.
+Verification: all three images build; backend container boots by its default command on Node v22.23.3 and passes six real HTTP scenarios on Postgres 17. Three consecutive root check runs pass (35 backend tests and 16 gate tests). Fresh per-app npm ci keeps lockfile hashes identical. All production audits are zero; PR delta gate passes for current backend dev baseline.
+Follow-up: GitHub CI green status awaits publication; no new commit/push authorized. Backend 29 high/5 moderate development audit findings remain tracked in KI-018 for scoped remediation; do not force major upgrades or blanket-allow them in the production gate.
+
+
+### D-021 Retire the obsolete React Router audit exception (2026-10-13)
+Type: DOC-DRIFT / DECISION
+Context: Owner asked to fix any exception that can be resolved now. Both frontend lockfiles already contain react-router/react-router-dom 7.18.2. The current GitHub advisory https://github.com/advisories/GHSA-qwww-vcr4-c8h2 lists 7.18.2 as patched, contradicting the older SECURITY-NOTES assertion that a v8 migration was required.
+Chosen: Remove both active exception entries; `.github/audit-exceptions.json` is empty. Correct SECURITY-NOTES and P0 requirements. Keep the scoped evaluator infrastructure reversible, with hypothetical 7.18.1 fixtures; add a regression assertion that the production exception list is empty and a vulnerable fixture fails without an exception.
+Verification: consumer/admin full audits including dev dependencies report zero vulnerabilities; all three production gates pass with no exceptions. No runtime routing changes required.
+Follow-up: backend development findings remain tracked separately in KI-018; no production exceptions remain.
+
+
+### D-022 Current advisory review and compatible portfolio fixes (2026-10-13)
+Type: DOC-DRIFT / DECISION
+Context: Owner asked to verify the other advisory claims against current records and explicitly authorized portfolio security patches despite the original portfolio scope exclusion.
+Chosen: Correct SECURITY-NOTES ranges and upstream claims against GitHub advisories. UUID/PostCSS overrides still cover their referenced findings; Next 15 patches exist, contrary to the old "only Next 16" claim. Patch portfolio to Next 15.5.27, Sharp 0.35.5 and source-map-js 1.2.2; raise Next/Sharp minimum constraints. Raise the consumer Sharp override floor to ^0.35.5 without changing its already-patched installed version. Retain portfolio PostCSS override because Next 15.5.27 still pins 8.4.31.
+Verification: full frontend/portfolio audits are zero; portfolio builds and serves home/pricing/health with HTTP 200; patched Sharp decodes SVG, resizes and encodes PNG. Backend dev findings correspond to two unpatched leaf advisories (braces <=3.0.3 and sprintf-js <=1.1.3), not 34 independent vulnerabilities; document exact sources and retain KI-018 rather than invent a patched version or suppress the findings.
+Follow-up: scoped investigation of replacing/migrating the development graph remains KI-018; no commits or pushes authorized for this phase.
+
+
+### D-023 Publish the P0 checkpoint as a draft PR (2026-10-13, owner instruction)
+Type: DECISION
+Context: Owner explicitly authorized committing this phase, pushing fix/known-issues, and opening a draft PR to verify the checkpoint.
+Chosen: Publish the locally verified P0 guardrails, Node 22 alignment, compatible security patches and advisory corrections. The draft PR includes the earlier known-issues commit already on this branch. Keep P0 completion pending until the required GitHub CI jobs pass; investigate and fix any failures immediately under D-018.
+Follow-up: record the actual PR/CI result in the phase tracker after verification.

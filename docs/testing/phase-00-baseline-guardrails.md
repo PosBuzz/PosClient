@@ -3,13 +3,15 @@
 **Goal:** before adding tests, make the *existing* static checks green and run them in CI on
 every PR. Otherwise new failures hide among old ones.
 
+**Status (2026-10-13): implemented and verified locally; GitHub CI execution pending publication.**
+
 **Baseline refreshed 2026-10-13 (requested stricter rules enabled):**
 | Check | backend | consumer | admin |
 |---|---|---|---|
 | `tsc` | Pass: 0 errors | Pass: 0 errors | Pass: 0 errors |
 | ESLint | Pass: 0 errors / 0 warnings | Pass: 0 errors / 0 warnings | Pass: 0 errors / 0 warnings |
 | Unit tests | Pass: 8 suites, 35 tests (`npm test`) | none | none |
-| CI on PR | none (only manual deploy workflows) | none | none |
+| CI on PR | `ci.yml` implemented; run pending | same | same |
 | Node | v22.23.x locally | same | same |
 
 ---
@@ -18,15 +20,10 @@ every PR. Otherwise new failures hide among old ones.
 1. Create `/.nvmrc` containing `22`.
 2. In each of `backend/package.json`, `consumer/package.json`, `admin/package.json`, add:
    ```json
-   "engines": { "node": ">=22.12.0" }
+   "engines": { "node": ">=22.22.1 <23" }
    ```
    Reason: Vitest 5, MSW 3, jsdom 30 and Testcontainers 12 all require Node ≥ 22.12 (verified via `npm view <pkg> engines`).
-3. Note: **Docker images use `node:20-alpine`** (`backend/`, `consumer/`, `admin/` Dockerfiles), and their
-   `npm ci` installs devDependencies too. The `engines` field only produces an `EBADENGINE` **warning**
-   (no `engine-strict` is set), so builds keep working. **Do not change the Dockerfiles in a testing PR.**
-   The `docker-build` CI job (Step 4) proves the images still build after each phase adds devDependencies.
-   If it ever fails because of Node 20, STOP: bumping the base image to `node:22-alpine` is a runtime
-   change for the owner, so open a separate PR and log it in DECISIONS.md.
+3. Owner instruction (2026-10-13): use Node 22 in every Node runtime. Backend/consumer/admin Dockerfiles now use `node:22-alpine`; portfolio already used it. Compose builds those Dockerfiles. Root and all app package engines use `>=22.22.1 <23`, `.nvmrc` selects 22, CI reads `.nvmrc`, and setup rejects other Node major versions. The higher floor supports lint-staged 17.
 
 ## Step 2: Make lint green without behavior change
 1. Backend: `cd backend && npx eslint "{src,apps,libs,test}/**/*.ts" --fix`, then rerun without
@@ -48,7 +45,7 @@ In root `package.json` `scripts`, add:
 ```json
 "lint:all": "npm run lint:check --prefix backend && npm run lint:check --prefix consumer && npm run lint:check --prefix admin",
 "typecheck:all": "npm run typecheck --prefix backend && npm run typecheck --prefix consumer && npm run typecheck --prefix admin",
-"test:all": "npm test --prefix backend"
+"test:all": "npm test --prefix backend -- --runInBand && npm run test:guardrails"
 ```
 (`test:all` grows in later phases: each phase appends its scripts.)
 
@@ -57,6 +54,9 @@ Create this file. **Later phases add jobs to it. Do not create separate workflow
 
 ```yaml
 name: CI
+permissions:
+  contents: read
+
 on:
   pull_request:
   push:
@@ -122,16 +122,43 @@ jobs:
           node ../scripts/check-production-audit.mjs "$RUNNER_TEMP/audit.json" "$audit_status" "${{ matrix.app }}"
 
   dependency-review:
-    name: Review dependencies added by PR
+    name: PR dependency review (${{ matrix.app }})
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v5
         with:
-          fail-on-severity: high
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - name: Block new high or critical dependency findings
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git show "$PR_BASE_SHA:${{ matrix.app }}/package-lock.json" > "$RUNNER_TEMP/base-lock.json"
+          set +e
+          npm audit --json > "$RUNNER_TEMP/audit.json"
+          audit_status=$?
+          set -e
+          node ../scripts/check-production-audit.mjs "$RUNNER_TEMP/audit.json" "$audit_status" "${{ matrix.app }}" "$RUNNER_TEMP/base-lock.json" delta
+      - name: GitHub dependency graph review (when available)
+        if: vars.DEPENDENCY_REVIEW_ENABLED == 'true' && matrix.app == 'backend'
+        uses: actions/dependency-review-action@v5
+        with:
           config-file: .github/dependency-review-config.yml
 
   backend-unit:
@@ -152,7 +179,7 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npx prisma generate
-      - run: npm test -- --ci
+      - run: npm test -- --ci --runInBand
         env:
           TZ: UTC
 
@@ -181,6 +208,16 @@ jobs:
         run: npx prisma generate
       - run: npm run build
 
+  guardrail-tests:
+    name: Dependency gate regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node --test scripts/check-production-audit.test.mjs
+
   docker-build:
     name: Docker image builds (${{ matrix.app }})
     runs-on: ubuntu-latest
@@ -202,26 +239,13 @@ commit the updated `package-lock.json` in a separate commit `chore(<app>): sync 
 generation), it is already in the workflow above.
 
 ## Step 5: Pre-commit hook (local fast feedback)
-1. Root: `npm i -D husky@^9 lint-staged@^17` then `npx husky init`.
-2. `.husky/pre-commit`:
-   ```sh
-   npx lint-staged
-   ```
-3. Root `package.json`:
-   ```json
-   "lint-staged": {
-     "backend/**/*.ts": ["prettier --check"],
-     "consumer/src/**/*.{ts,tsx}": ["prettier --check"],
-     "admin/src/**/*.{ts,tsx}": ["prettier --check"]
-   }
-   ```
-   Hooks are a convenience. **CI is the authority.** If a developer objects to hooks, drop step 5
-   (log it in DECISIONS.md). CI still enforces everything.
+Implemented with Husky 9 and lint-staged 17. Root tools require Node >=22.22.1 <23.
+`.husky/pre-commit` runs `npx lint-staged --no-stash --no-revert`; `lint-staged.config.mjs` runs the relevant app's read-only ESLint checks. This preserves the owner's working tree and avoids enforcing new repo-wide Prettier formatting on legacy files. CI remains authoritative (D-017).
 
 ## Exit criteria
-- [ ] `npm run lint:all && npm run typecheck:all && npm run test:all` passes at the repo root.
+- [x] `npm run lint:all && npm run typecheck:all && npm run test:all` passes at the repo root (three consecutive runs; 35 backend tests).
 - [ ] `ci.yml` jobs `static`, `backend-unit` and `build` are green on the PR.
-- [ ] `git diff -w` of the lint-fix commit shows no logic changes.
+- [x] Lint fixes remove four obsolete type assertions and redundant parentheses; no check was weakened. Owner-authorized compatible security updates and Node 22/Docker command repairs are recorded separately below.
 - [ ] X3 will make these required checks. Until then, don't merge red PRs.
 
 
@@ -254,13 +278,14 @@ Each ratchet gets a reviewed baseline and owners; shrink findings, then enforce 
 Never turn on a rule while leaving warnings, or disable checks to make the totals green.
 
 ## Dependency checks: implementation requirements for Step 4
-The workflow above is the plan, not an already-installed workflow. Create the referenced files when implementing P0/X3.
+P0 now includes the workflow and referenced audit/dependency configuration files. The private-repo fallback audits PR dependency deltas; GitHub graph review can be enabled when available. Owner policy: no license restrictions for now (D-017).
 
 - `scripts/check-production-audit.mjs` must parse the JSON and accept only audit exit codes 0/1 with a valid vulnerabilities report. Fail closed on registry/network errors, invalid JSON and unsupported report formats. Follow transitive `via` links to advisory leaves; fail on every high/critical advisory unless its exact advisory/app/package/version/path matches a documented exception. Lower severity findings are reported but do not fail this high/critical gate. Include meaningful tests proving an accepted finding passes, an additional high/critical finding fails, and malformed/unavailable audits fail.
-- An exception file may cover **only** `GHSA-qwww-vcr4-c8h2` in `consumer`/`admin` for the currently documented React Router SPA dependency/version/path. Link each entry to `SECURITY-NOTES.md`, record owner/review date and revisit triggers; fail or request review on changed versions/paths, expired exceptions or adoption of server/RSC/data-router behavior. Read installed lockfiles to establish the exact paths at implementation time. Do not allowlist whole packages or ignore audit command failures. The backend starts with no exceptions. Existing overrides are patched dependencies, not reasons to suppress advisories.
-- `.github/dependency-review-config.yml` sets `fail-on-severity: high` and the owner's reviewed `deny-licenses` list. Do not invent a license policy; configure it and test it before declaring this gate complete. Keep `allow-ghsas` empty: the accepted existing SPA finding is handled by the production audit gate, while new vulnerable additions stay blocked on PRs. The action reviews dependency changes across the PR, including workflows/development dependencies. Confirm dependency-graph/review support for the repository; if unavailable, document it and implement an equivalent PR delta/license gate before marking X3 complete. See the [action configuration](https://github.com/actions/dependency-review-action) for severity/license inputs.
+- `.github/audit-exceptions.json` is empty: the old React Router finding is patched in the already-installed 7.18.2 version (D-021). All three production audits and both frontend full audits pass without exceptions. Do not restore an exception for this resolved advisory. The evaluator's scoped matching is tested with hypothetical fixtures; every real high/critical finding currently fails.
+
+- Original license-gate proposal (superseded by owner's no-restrictions policy in D-017): `.github/dependency-review-config.yml` sets `fail-on-severity: high` and the owner's reviewed `deny-licenses` list. Do not invent a license policy; configure it and test it before declaring this gate complete. Keep `allow-ghsas` empty: the accepted existing SPA finding is handled by the production audit gate, while new vulnerable additions stay blocked on PRs. The action reviews dependency changes across the PR, including workflows/development dependencies. Confirm dependency-graph/review support for the repository; if unavailable, document it and implement an equivalent PR delta/license gate before marking X3 complete. See the [action configuration](https://github.com/actions/dependency-review-action) for severity/license inputs.
 - Every job running `npm ci` checks `git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json` from the repo root immediately afterward. This includes later integration/frontend/e2e jobs; installed lockfile changes must fail, not be automatically committed.
-- Add `.github/dependabot.yml` with the weekly updates below (no automatic merging). These are planned artifacts, not created by this documentation change.
+- Add `.github/dependabot.yml` with the weekly updates below (no automatic merging). The configuration is now implemented in `.github/dependabot.yml`.
 
 ```yaml
 version: 2
@@ -284,3 +309,12 @@ updates:
 ```
 
 Optional: evaluate `knip` or `depcheck` in a separate non-blocking inventory pass; review dynamic imports/framework entry points before removing anything. This does not replace vulnerability or license checks.
+
+
+## Local verification (2026-10-13)
+- Three consecutive root lint/typecheck/test/guardrail runs pass. ESLint Node API confirms 0 errors and 0 warnings in all three apps; backend has 8 suites/35 passing tests, audit gate has 16 passing tests.
+- Fresh `npm ci` succeeds in separate temporary backend/consumer/admin directories, with identical lockfile hashes before and after.
+- All three images build using Node 22. The backend container's default command starts successfully; `node --version` inside it returns v22.23.3. Six authenticated HTTP error scenarios pass against disposable Postgres 17 with Redis/RabbitMQ disabled.
+- Production dependency audits report 0 vulnerabilities in each app following owner-authorized compatible updates. Backend full/dev audit still has 29 high and 5 moderate baseline findings; PR delta checks include dev dependencies and pass against the prior lockfile because those findings are unchanged. Track remediation separately without suppressing newly introduced vulnerabilities.
+- CI/Dependabot YAML parses; Node constraints are consistent across root/apps/Dockerfiles/setup/CI. Portfolio changes are only engine metadata; its Dockerfile already uses Node 22.
+- No GitHub workflow run is claimed: publishing/committing this phase was not authorized. The phase tracker remains unticked until required CI evidence exists.

@@ -139,8 +139,7 @@ Prefixes: `BE` backend, `CO` consumer, `AD` admin, `X` cross-layer, `E2E` Playwr
 | Full-stack | `e2e/` at repo root (Playwright) | same |
 
 ### 3.3 Production code changes
-Test-phase PRs must not change runtime behavior. Only the **pre-approved seams** below may be
-added. Each goes in its own commit titled `refactor(testability): …`, and the existing tests must
+Keep testing changes focused. Confirmed defects are fixed immediately under §3.4; unrelated runtime changes stay out of scope. The **pre-approved testability seams** below may be added. Each goes in its own commit titled `refactor(testability): …`, and the existing tests must
 pass before and after:
 1. `backend/src/main.ts`: extract the body of `bootstrap()` (from `app.disable('x-powered-by')`
    to just before `app.listen`) into an exported `configureApp(app, configService)` in
@@ -150,12 +149,8 @@ pass before and after:
 
 Anything else that seems necessary → `DECISION-PLAYBOOK.md` §2.
 
-### 3.4 Known bugs found while testing
-Never "fix the test to match the bug" silently. Follow `DECISION-PLAYBOOK.md` §1: write the test
-for the **correct** behavior and mark it with `it.failing` (Jest) / `it.fails` (Vitest). Put
-`KI-###` in the title and add a row to `KNOWN-ISSUES.md`. When someone fixes the bug, the test
-starts passing, `it.failing` then fails the run, and that forces the marker's removal. That is
-deliberate.
+### 3.4 Failures found while testing
+Owner instruction (2026-10-13): investigate and fix any failure immediately, then rerun the failing check and relevant related checks. Confirmed runtime defects may be repaired during phased testing; keep a normal passing regression test and record the cause/fix/verification in KNOWN-ISSUES and DECISIONS. Never weaken assertions or use failing/skip markers to hide defects. Document real environment blockers and continue unaffected work. This supersedes older phase text that requires deferring fixes to a separate PR or using `it.failing`/`it.fails`.
 
 ### 3.5 Determinism rules
 - Backend and consumer test scripts set `TZ=UTC`. Timezone-specific tests set their zone
@@ -179,12 +174,12 @@ A phase is done only when **all** of the following are true:
 - [ ] Every test ID listed in the phase doc exists (`grep`) and passes, or is `failing`-marked with a KI.
 - [ ] The phase's CI job is in `.github/workflows/ci.yml` and green on the PR.
 - [ ] The run is deterministic: `npm run <script>` passes 3 times in a row locally (`for i in 1 2 3; do … || break; done`).
-- [ ] No production behavior change (only §3.3 seams).
+- [ ] Production changes are limited to §3.3 seams and confirmed defects repaired under §3.4, with passing regression evidence.
 - [ ] `DECISIONS.md` updated for every judgement call made.
 - [ ] The phase's checkbox in §5 below is ticked in the same PR.
 
 ## 5. Progress tracker
-- [ ] P0 Baseline & guardrails
+- [ ] P0 Baseline & guardrails — implemented and locally verified 2026-10-13; GitHub CI run pending
 - [ ] B1 Backend harness
 - [ ] B2 Backend unit
 - [ ] C1 Consumer harness
