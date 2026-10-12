@@ -271,3 +271,9 @@ Random carts: 200 carts, seed 20261012, 1-5 lines, integer tax 0-25 (catalog col
 Deferred inside X1 until their prerequisites exist: X-ENDP-001/002/004 and X-REQ-* (need B5 routes.json and C4/A2 request files) and X-TYPE-* (need B5 response contracts). X-ENDP-003 and X-PERM-* run in the new static `contracts` CI job.
 Verification: consumer lint, typecheck, build and test:cov (three runs) clean; backend 299 unit, 52 integration and 9 e2e tests pass, lint and build clean.
 Follow-up: record the CI result; X1 stays open (partial) until the deferred sections land.
+
+
+### D-039 X1 sections 1-3 verified on GitHub (2026-10-13)
+Type: DECISION
+Verification: commit 3f5cd2c passed all jobs in https://github.com/PosBuzz/PosClient/actions/runs/38305070818, including the new static `contracts` job, the 200-cart replay in backend-integration and the contract tests in consumer-tests and backend-unit. X1 remains open only for the sections that need B5/C4/A2 outputs (D-038). No merge or deployment performed.
+Follow-up: B3 domain integration (invariant net first).
