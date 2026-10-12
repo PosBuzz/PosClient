@@ -18,9 +18,11 @@ it("[CO-FLOW-STATS-002] renders variant quantities, sales, refunds and net amoun
   for (const variant of data.data) {
     const row = (await screen.findByText(variant.product_name)).closest("tr")!;
     expect(row).toHaveTextContent(variant.sku);
-    for (const key of ["total_amount", "net_amount"])
-      {expect(row).toHaveTextContent(variant[key].toFixed(2));}
-    if (variant.returned_amount)
-      {expect(row).toHaveTextContent(variant.returned_amount.toFixed(2));}
+    for (const key of ["total_amount", "net_amount"]) {
+      expect(row).toHaveTextContent(variant[key].toFixed(2));
+    }
+    if (variant.returned_amount) {
+      expect(row).toHaveTextContent(variant.returned_amount.toFixed(2));
+    }
   }
 });

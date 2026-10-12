@@ -3,8 +3,6 @@ import { Card, Tabs } from "antd";
 import VariantsTab from "./VariantsTab";
 import InventoryTab from "./InventoryTab";
 
-const { TabPane } = Tabs;
-
 interface ProductDetailsTabsProps {
   product: any;
 }
@@ -17,35 +15,40 @@ const ProductDetailsTabs: React.FC<ProductDetailsTabsProps> = ({ product }) => {
     }, 0) || 0;
 
   return (
-    <Tabs defaultActiveKey="variants" style={{ marginTop: 16 }}>
-      <TabPane
-        tab={
-          <span>
-            <SettingOutlined />
-            Variants ({product.variants?.length || 0})
-          </span>
-        }
-        key="variants"
-      >
-        <Card bordered={false}>
-          <VariantsTab variants={product.variants || []} />
-        </Card>
-      </TabPane>
-
-      <TabPane
-        tab={
-          <span>
-            <ShopOutlined />
-            Inventory ({totalInventoryItems})
-          </span>
-        }
-        key="inventory"
-      >
-        <Card bordered={false}>
-          <InventoryTab product={product} />
-        </Card>
-      </TabPane>
-    </Tabs>
+    <Tabs
+      defaultActiveKey="variants"
+      style={{ marginTop: 16 }}
+      items={[
+        {
+          key: "variants",
+          label: (
+            <span>
+              <SettingOutlined />
+              Variants ({product.variants?.length || 0})
+            </span>
+          ),
+          children: (
+            <Card variant="borderless">
+              <VariantsTab variants={product.variants || []} />
+            </Card>
+          ),
+        },
+        {
+          key: "inventory",
+          label: (
+            <span>
+              <ShopOutlined />
+              Inventory ({totalInventoryItems})
+            </span>
+          ),
+          children: (
+            <Card variant="borderless">
+              <InventoryTab product={product} />
+            </Card>
+          ),
+        },
+      ]}
+    />
   );
 };
 
