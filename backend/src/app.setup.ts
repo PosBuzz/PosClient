@@ -7,6 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClientExceptionFilter } from 'prisma-client-exception/prisma-client-exception.filter';
 import { PrismaClientValidationExceptionFilter } from 'prisma-client-exception/prisma-client-validation-exception.filter';
+import { PrismaClientUnknownRequestExceptionFilter } from 'prisma-client-exception/prisma-client-unknown-request-exception.filter';
 import { validationExceptionFactory } from './common/errors/validation-exception.factory';
 import { ConfigService } from './config/config.service';
 
@@ -172,4 +173,7 @@ export function configureApp(
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
   app.useGlobalFilters(new PrismaClientValidationExceptionFilter(httpAdapter));
+  app.useGlobalFilters(
+    new PrismaClientUnknownRequestExceptionFilter(httpAdapter),
+  );
 }

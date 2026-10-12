@@ -518,6 +518,16 @@ export class RewardsService {
 
       const skip = (page - 1) * limit;
 
+      // A customer id from the URL must belong to this shop (404 like every
+      // other customer route, instead of an empty page)
+      if (customer_id) {
+        const owned = await this.prisma.customer.findFirst({
+          where: { id: Number(customer_id), consumer_id: consumerId },
+          select: { id: true },
+        });
+        if (!owned) throw new NotFoundException('Customer not found');
+      }
+
       const where: any = {
         consumer_id: consumerId,
       };

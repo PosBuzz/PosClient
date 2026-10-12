@@ -171,8 +171,9 @@ export class VendorService {
         },
       };
 
-      const page = options?.page || 1;
-      const limit = options?.limit || 50;
+      // Query-string values arrive as text; Prisma wants real numbers
+      const page = Math.max(1, Number(options?.page) || 1);
+      const limit = Math.min(200, Math.max(1, Number(options?.limit) || 50));
       const skip = (page - 1) * limit;
 
       // 3. Fetch batches and total count

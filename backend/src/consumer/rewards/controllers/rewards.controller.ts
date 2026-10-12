@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Request } from 'express';
 import { ConsumerPermission } from '../../../auth/enums/consumerPermissions.enum';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
@@ -25,6 +26,24 @@ import {
   RedeemPointsDto,
 } from '../dto/rewards-transaction.dto';
 import { RewardsService } from '../services/rewards.service';
+
+class ProcessCreditRefundDto {
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsOptional()
+  @IsInt()
+  original_sale_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  return_id?: number;
+
+  @IsOptional()
+  @IsString()
+  reference?: string;
+}
 
 @Controller('consumer/rewards')
 @UseGuards(ClientAuthGuard, PermissionsGuard)
@@ -210,13 +229,7 @@ export class RewardsController {
   async processCreditRefund(
     @Req() req: Request,
     @Param('id', ParseIntPipe) customerId: number,
-    @Body()
-    dto: {
-      amount: number;
-      original_sale_id?: number;
-      return_id?: number;
-      reference?: string;
-    },
+    @Body() dto: ProcessCreditRefundDto,
   ) {
     return this.rewardsService.processCreditRefund(
       Number(req.user.consumer_id),

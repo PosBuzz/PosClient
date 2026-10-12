@@ -1,3 +1,4 @@
+import { ChangePasswordDto } from 'src/common/dto/change-password.dto';
 import {
   Body,
   Controller,
@@ -29,15 +30,11 @@ export class UsersController {
 
   @HasPermissions([AdminPermission.profile])
   @Patch('change-password')
-  changePassword(
-    @Req() req: Request,
-    @Body('old_password') old_password: string,
-    @Body('new_password') new_password: string,
-  ) {
+  changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
     return this.usersService.changePassword(
       Number(req.user?.id),
-      old_password,
-      new_password,
+      dto.old_password,
+      dto.new_password,
     );
   }
 

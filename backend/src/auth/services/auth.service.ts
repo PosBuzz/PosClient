@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Algorithm } from 'jsonwebtoken';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import { createHmac } from 'crypto';
+import { createHmac, randomUUID } from 'crypto';
 import { ConfigService } from 'src/config/config.service';
 import { errorStack } from '../../common/utils/error.util';
 import { isClientError } from '../../common/errors/client-error';
@@ -42,6 +42,10 @@ export class AuthService {
     return this.jwtService.sign(payload, {
       expiresIn,
       algorithm: this.jwtAlgorithm,
+      // Without a unique id, two tokens for the same user signed in the same
+      // second are identical, which makes refresh-token rotation a no-op and a
+      // replayed token indistinguishable from the fresh one
+      jwtid: randomUUID(),
     });
   }
 
