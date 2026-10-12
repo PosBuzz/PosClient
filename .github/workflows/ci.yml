@@ -214,3 +214,22 @@ jobs:
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npx prisma generate
       - run: npm run test:infra -- --ci
+
+  consumer-tests:
+    name: Consumer tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - run: npm run test:cov
