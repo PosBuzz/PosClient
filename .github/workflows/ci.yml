@@ -196,6 +196,9 @@ jobs:
       - name: Report reconciliation in the business time zone (Asia/Dhaka)
         run: npm run test:int:tz -- --ci
       - run: npm run test:e2e -- --ci
+      - name: Contract files were not rewritten by the tests
+        working-directory: .
+        run: git diff --exit-code -- contracts/
 
   backend-optional-infra:
     name: Backend optional infrastructure

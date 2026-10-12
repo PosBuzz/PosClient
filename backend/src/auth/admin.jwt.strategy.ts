@@ -43,6 +43,7 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
 
     const {
       password: _password,
+      refresh_token: _refreshToken,
       created_at: _created_at,
       updated_at: _updated_at,
       ...rest

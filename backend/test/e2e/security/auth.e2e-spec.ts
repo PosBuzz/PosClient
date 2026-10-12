@@ -347,6 +347,46 @@ describe('authentication and sessions over HTTP', () => {
     });
   });
 
+  it('[BE-SEC-015] after a real login the session endpoints never return the stored refresh-token hash or password', async () => {
+    const own = await createTenant(db);
+    const loggedIn = await loginUser(own.adminUser.email, TEST_PASSWORD, own);
+    const access = cookies(loggedIn)
+      .find((c) => c.startsWith('client_access_token='))!
+      .split(';')[0]
+      .split('=')
+      .slice(1)
+      .join('=');
+    const stored = await db.user.findUniqueOrThrow({
+      where: { id: own.adminUser.id },
+    });
+    expect(stored.refresh_token).toMatch(/^sha256:/);
+    const me = await request(context.app.getHttpServer())
+      .get('/api/v1/auth/client')
+      .set('Host', 'localhost')
+      .set('Cookie', `client_access_token=${access}`);
+    expect(me.status).toBe(200);
+    expect(JSON.stringify(me.body)).not.toContain('sha256:');
+    expect(me.body.user).not.toHaveProperty('refresh_token');
+    expect(me.body.user).not.toHaveProperty('password');
+    const admin = await createAdmin(db);
+    const adminLogin = await login('/auth/login-superadmin', {
+      email: admin.email,
+      password: TEST_PASSWORD,
+    });
+    const adminAccess = cookies(adminLogin)
+      .find((c) => c.startsWith('admin_access_token='))!
+      .split(';')[0]
+      .split('=')
+      .slice(1)
+      .join('=');
+    const adminMe = await request(context.app.getHttpServer())
+      .get('/api/v1/auth/admin')
+      .set('Host', 'localhost')
+      .set('Cookie', `admin_access_token=${adminAccess}`);
+    expect(adminMe.status).toBe(200);
+    expect(JSON.stringify(adminMe.body)).not.toContain('sha256:');
+  });
+
   it('[BE-SEC-010] the receipt test routes are hidden outside development, even with a valid token', async () => {
     for (const path of ['/test-receipts', '/test-receipts/0']) {
       const response = await api(context.app).as(tenant.adminUser).get(path);

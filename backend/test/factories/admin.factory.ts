@@ -9,15 +9,16 @@ export async function createAdmin(
   /** Defaults to every admin permission */
   actions: AdminPermission[] = Object.values(AdminPermission),
 ) {
-  const permissions = await Promise.all(
-    actions.map((action) =>
-      db.superAdminPermission.upsert({
+  const permissions = [];
+  for (const action of actions) {
+    permissions.push(
+      await db.superAdminPermission.upsert({
         where: { action },
         update: {},
         create: { action },
       }),
-    ),
-  );
+    );
+  }
   const role = await db.superAdminRole.create({
     data: {
       name: `Admin role ${seq()}`,

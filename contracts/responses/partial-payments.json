@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "branch": {
+        "name": "Branch 2"
+      },
+      "branch_name": "Branch 2",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "customer_name": null,
+      "customer_phone": null,
+      "id": 4,
+      "payment_status": "partial",
+      "received_amount": "75",
+      "remaining_amount": 20,
+      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_number": "SAL-20260314-0003",
+      "total_amount": "95"
+    }
+  ],
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 1,
+    "total_pages": 1
+  }
+}

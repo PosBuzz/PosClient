@@ -6,7 +6,7 @@ import { createTestApp } from '../../helpers/app';
 import { getPrisma, resetDb, disconnect } from '../../helpers/db';
 import { createAdmin, createTenant } from '../../factories';
 import { api, dispatch } from '../../helpers/http';
-import type { RouteEntry } from './manifest';
+import { NEVER_EXECUTE, type RouteEntry } from './manifest';
 
 // Cases come from the committed manifest (BE-ROUTE-003 proves it equals the live one)
 const manifest: RouteEntry[] = JSON.parse(
@@ -15,8 +15,6 @@ const manifest: RouteEntry[] = JSON.parse(
 const guarded = manifest.filter(
   (e) => e.guards.includes('PermissionsGuard') && e.permissions.length > 0,
 );
-// Running these would start a real database dump/restore; the guard verdict is still checked
-const NEVER_EXECUTE = (e: RouteEntry) => e.path.includes('/backup-restore');
 const fill = (path: string) =>
   path.replace(/:(\w+)/g, (_m, name: string) =>
     /number|code|name|entity|slug|key|reference/i.test(name) ? 'x' : '999999',

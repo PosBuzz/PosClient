@@ -1,0 +1,23 @@
+{
+  "user": {
+    "created_by_id": null,
+    "email": "super28@example.test",
+    "id": 1,
+    "name": "Super Admin",
+    "permissions": [
+      "plans",
+      "billing",
+      "backup&restore",
+      "profile",
+      "show_consumers",
+      "add_consumers",
+      "modify_consumers",
+      "delete_consumers",
+      "users",
+      "support",
+      "portfolio"
+    ],
+    "role": "Admin role 27",
+    "role_id": 1
+  }
+}

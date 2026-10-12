@@ -96,3 +96,7 @@ export function buildManifest(app: NestExpressApplication): RouteEntry[] {
 
 export const routeKey = (entry: Pick<RouteEntry, 'method' | 'path'>) =>
   `${entry.method} ${entry.path}`;
+
+/** Routes the sweeps must never execute: they run a real database dump or restore. */
+export const NEVER_EXECUTE = (entry: Pick<RouteEntry, 'path'>) =>
+  /^\/api\/v1\/admin\/(backup|restore)$/.test(entry.path);
