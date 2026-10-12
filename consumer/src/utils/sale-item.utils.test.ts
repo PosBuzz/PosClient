@@ -8,6 +8,7 @@ import {
   upsertVariantInSaleItems,
   updateSaleItemQuantity,
   removeSaleItem,
+  repriceSaleItems,
   updateSaleItemSpecialDiscount,
 } from "./sale-item.utils";
 const options = { seed: 424242, numRuns: 500 };
@@ -275,4 +276,43 @@ it("[CO-CART-010] existing items handle missing tax method and zero-price quanti
       variants: [],
     })[0],
   ).toMatchObject({ line_total: 0, tax_amount: 0 });
+});
+
+it("[CO-SALE-REPRICE-001] switching price type re-prices every known line, keeps discounts, and leaves unknown lines alone", () => {
+  const v1 = variant({
+    id: 1,
+    regular_price: 100,
+    wholesale_price: 80,
+    tax_percentage: 10,
+  });
+  const sourceItems = [
+    item({
+      variant_id: 1,
+      unit_price: 100,
+      quantity: 2,
+      tax_percentage: 10,
+      special_discount_amount: 5,
+    }),
+    item({ variant_id: 9, unit_price: 33, quantity: 1 }),
+  ];
+  const [one, unknown] = repriceSaleItems({
+    sourceItems,
+    variants: [v1],
+    priceType: PriceType.WHOLESALE,
+  });
+  expect(one).toMatchObject({
+    unit_price: 80,
+    quantity: 2,
+    special_discount_amount: 5,
+    tax_amount: 16,
+    line_total: 176,
+  });
+  expect(unknown).toBe(sourceItems[1]);
+  expect(
+    repriceSaleItems({
+      sourceItems: [one],
+      variants: [v1],
+      priceType: PriceType.REGULAR,
+    })[0].unit_price,
+  ).toBe(100);
 });

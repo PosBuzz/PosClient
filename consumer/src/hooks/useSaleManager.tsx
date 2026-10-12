@@ -5,6 +5,7 @@ import { endpoints } from "../api/endpoints";
 import { promotionApi } from "../api/promotion-api";
 import { salesApi } from "../api/sales-api";
 import { queryKeys, queryStaleTimeMap } from "../constants/queryKeys";
+import { repriceSaleItems } from "../utils/sale-item.utils";
 import {
   Customer,
   DiscountType,
@@ -50,7 +51,7 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     name: string;
   } | null>(null);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
-  const [priceType, setPriceType] = useState<PriceType>(PriceType.REGULAR);
+  const [priceType, setPriceTypeState] = useState<PriceType>(PriceType.REGULAR);
   const [averageDiscountType, setAverageDiscountType] = useState<DiscountType>(
     DiscountType.FLAT,
   );
@@ -143,6 +144,18 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
       setFilteredVariants(productsForSaleQuery.data);
     }
   }, [productsForSaleQuery.data]);
+
+  // Changing the price type re-prices the cart so one sale never mixes retail and wholesale prices
+  const setPriceType = (next: PriceType) => {
+    setPriceTypeState(next);
+    setSelectedItems((items) =>
+      repriceSaleItems({
+        sourceItems: items,
+        variants: productsForSaleQuery.data || [],
+        priceType: next,
+      }),
+    );
+  };
 
   const handleBranchChange = (branchId: number) => {
     setSelectedBranch(branchId);
