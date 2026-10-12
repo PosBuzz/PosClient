@@ -194,3 +194,26 @@ Type: DECISION
 Context: Owner-authorized B1 implementation commit 3f94838 was pushed to draft PR https://github.com/PosBuzz/PosClient/pull/40.
 Verification: https://github.com/PosBuzz/PosClient/actions/runs/38297463078 passed all 19 jobs, including real Postgres integration/HTTP and optional Redis/RabbitMQ suites. Original unit tests, static checks, builds, Docker builds, audits and dependency reviews remain green. B1 exit criteria are satisfied; phase and master trackers are updated.
 Follow-up: B2 pure-logic unit tests are the next sequential phase. Keep PR #40 draft; no merge or deployment performed.
+
+
+### D-029 B2 testability seam and phase corrections (2026-10-13)
+Type: REFACTOR / DOC-DRIFT / DECISION
+Chosen: Extract the three promotion math helpers without logic changes; compare original and extracted bodies ignoring only method/export declarations and indentation. Service call sites invoke the exported helpers directly. Add seeded fast-check 4 properties with 1,000 examples each. Keep the seam separate when commits are authorized.
+Corrections: Existing KI-016 already supplies specific Prisma messages and 404/400 for P2025/P2018; test these instead of restoring stale technical errors. KI-021 already fixes IPv4 hosts. cache-invalidation.util.ts is empty, so BE-UTIL-002 is retired as DOC-DRIFT rather than inventing tests or code. The purge SCOPE lives in consumer-purge.service.ts and covers indirect models only; generated direct consumer_id models must match the complete reachable purge graph.
+Runner: Load reflect-metadata before DTO imports. Set unit rootDir to backend, restrict roots to src and prisma-client-exception, and include external filter specs/coverage. Thresholds use working-directory paths; keep 100/95 numeric targets. Name the two pure inventory files explicitly: stock-mutation performs I/O and its real atomicity/conservation coverage belongs to B3. This corrects phase scope, not a lowered threshold.
+Behavior evidence: A zero rewards cap is normalized to null by the DTO, serialized as absent by consumer rewards settings, and ignored by the earning service. BE-DTO-680 pins that intended convention. Return quantities are service-filtered and shipping-only returns are supported; test the existing numeric constraints without inventing a blanket nonempty-return restriction. Multilevel hosts take the first label (existing explicit source comment); retain the characterization pending owner intent.
+Follow-up: Publication and green CI are required for B2 completion; B3 remains responsible for real stock-mutation invariants.
+
+### D-030 Repair defects exposed by B2 (2026-10-13)
+Type: DECISION
+Context: BE-UTIL-001 failed because JSON.stringify(undefined) returned undefined despite the helper's string return contract. BE-DTO-005 proved an empty sale passed DTO validation; the sale creation service also lacked a nonempty guard. BE-PEF-008 found “An user” and “An unit” in duplicate messages.
+Chosen: Fall back to String(error) when JSON serialization yields undefined. Reject empty sales at the DTO and at the service before I/O, with a specific message. Select “A” for user/unit nouns while preserving the existing vowel article mapping. Keep all regression assertions passing normally under D-018.
+Verification: Unit coverage is 100% across the scoped targets. Real HTTP/Postgres tests reject empty sales without sale/item/payment/audit writes and return a specific safe duplicate-product message. All three apps have lint 0 errors/0 warnings and clean typechecks; backend builds. All 261 unit tests pass three times with 100% scoped coverage, and 9 integration + 9 HTTP + 2 optional-infrastructure tests pass. Fresh npm ci keeps the lockfile hash identical and passes the exact CI coverage command; the dependency delta gate finds no added findings.
+Follow-up: none for the repaired defects; B2 publication/CI remains pending.
+
+
+### D-031 Publish the B2 checkpoint (2026-10-13, owner instruction)
+Type: DECISION
+Context: Owner explicitly authorized “Commit and push B2 checkpoint” to draft PR #40 after local verification.
+Chosen: Commit the verbatim promotion extraction separately, then commit/push the remaining tests, immediate repairs, coverage gates and phase records. Verify all GitHub jobs before marking B2 complete; repair any failure immediately under D-018.
+Follow-up: record the actual GitHub CI run and advance the sequential tracker only after it is green.

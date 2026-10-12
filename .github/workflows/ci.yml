@@ -124,7 +124,7 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - run: npx prisma generate
-      - run: npm test -- --ci --runInBand
+      - run: npm test -- --ci --runInBand --coverage
         env:
           TZ: UTC
 

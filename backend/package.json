@@ -83,6 +83,7 @@
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
+    "fast-check": "^4.10.2",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
     "prettier": "^3.4.2",
@@ -104,20 +105,55 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1",
-      "^prisma-client-exception/(.*)$": "<rootDir>/../prisma-client-exception/$1"
+      "^src/(.*)$": "<rootDir>/src/$1",
+      "^prisma-client-exception/(.*)$": "<rootDir>/prisma-client-exception/$1"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/consumer/promotions/promotion-math.ts",
+      "src/consumer/inventory/utils/validate-purchase.util.ts",
+      "src/consumer/inventory/utils/batch-location.util.ts",
+      "src/common/services/subdomain-util.service.ts",
+      "src/common/utils/error.util.ts",
+      "prisma-client-exception/**/*.ts",
+      "!prisma-client-exception/**/*.spec.ts"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "coverage",
+    "testEnvironment": "node",
+    "setupFiles": [
+      "reflect-metadata"
+    ],
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/prisma-client-exception"
+    ],
+    "coverageThreshold": {
+      "./src/consumer/promotions/promotion-math.ts": {
+        "branches": 100,
+        "lines": 100
+      },
+      "./src/consumer/inventory/utils/validate-purchase.util.ts": {
+        "branches": 100,
+        "lines": 100
+      },
+      "./src/consumer/inventory/utils/batch-location.util.ts": {
+        "branches": 100,
+        "lines": 100
+      },
+      "./src/common/services/subdomain-util.service.ts": {
+        "branches": 95,
+        "lines": 95
+      },
+      "./prisma-client-exception/": {
+        "branches": 100,
+        "lines": 100
+      }
+    }
   },
   "overrides": {
     "uuid": "$uuid"

@@ -10,7 +10,8 @@ const words = (identifier: string) =>
     .trim()
     .toLowerCase();
 
-const article = (noun: string) => (/^[aeiou]/.test(noun) ? 'an' : 'a');
+const article = (noun: string) =>
+  /^(user|unit)\b/.test(noun) ? 'a' : /^[aeiou]/.test(noun) ? 'an' : 'a';
 
 // Internal model names that read badly to a shop owner
 const MODEL_LABELS: Record<string, string> = {

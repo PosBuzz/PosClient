@@ -7,6 +7,8 @@ mutation-testing targets in B7.
 **Depends on:** B1 (only for the `prisma-client-exception` moduleNameMapper fix). **Location:**
 next to the source as `*.spec.ts` (existing convention). **Runner:** `npm test`.
 
+**Status (2026-10-13): locally verified; publication and CI checkpoint pending.**
+
 Add `fast-check` for property tests: `npm i -D fast-check@^4`.
 
 ---
@@ -16,7 +18,7 @@ Add `fast-check` for property tests: `npm i -D fast-check@^4`.
 `calculateDiscount`, `calculateEffectiveQuantity` and `calculateBaseWithQuantityLimit` are `private`
 but pure. **Pre-approved seam #2:** move them **verbatim** into a new file
 `src/consumer/promotions/promotion-math.ts` as exported functions, and have the service call them.
-Make no other change. Commit `refactor(testability): extract promotion math`. The service's
+Make no other change. The extraction is isolated in `2cb5bce` (`refactor(testability): extract promotion math`). The service's
 private methods become one-line delegations (or the call sites call the functions directly; pick
 one and keep the diff minimal). This also lets X1 import the exact functions.
 
@@ -81,7 +83,7 @@ directly (`new SubdomainUtilService(...)`; check its constructor).
 | BE-SUB-005 | `localhost` | null |
 | BE-SUB-006 | each excluded subdomain (`www`, `api`, `admin`, `app`; read `excludedSubdomains` for the real list) `.example.com` | null |
 | BE-SUB-007 | `a.b.example.com` | `a` (characterization: confirm intent, since multi-level hosts take the first label) |
-| BE-SUB-008 | `127.0.0.1` | characterization: record the actual result. **If it returns `127`, that is a KNOWN-ISSUE** (an IP host would be treated as tenant "127"): add a KI |
+| BE-SUB-008 | `127.0.0.1` | characterization: record the actual result. B1 already repaired this (KI-021); IPv4/IPv6 and port forms must return null |
 | BE-SUB-009 | `extractSubdomainFromUrl('https://acme.example.com/path')` | `acme` |
 | BE-SUB-010 | `extractSubdomainFromUrl('not a url')` | null, no throw |
 | BE-SUB-011 | `extractSubdomainFromRequest`: origin wins over referer, and referer over host | priority order |
@@ -91,12 +93,12 @@ The existing spec is 7 lines (only "is defined"). Replace its body:
 
 | ID | Prisma code | Expected response |
 |---|---|---|
-| BE-PEF-001 | P2002 | 409, `message: 'Unique constraint failed'` |
-| BE-PEF-002 | P2003 | 409, `'Foreign key constraint failed'` |
-| BE-PEF-003 | P2025 | 409, `'Foreign key constraint failed P2025'` (characterization: P2025 is "record not found", and 404 would be conventional. Log a QUESTION) |
-| BE-PEF-004 | P2018 | 409 |
+| BE-PEF-001 | P2002 | 409, `message: 'A product with this name already exists.'` with Product/name metadata |
+| BE-PEF-002 | P2003 | 409, actionable still-in-use message naming the model |
+| BE-PEF-003 | P2025 | 404, readable missing-record message (KI-016 already repaired this) |
+| BE-PEF-004 | P2018 | 400, readable missing-linked-items message |
 | BE-PEF-005 | P9999 (unknown) | delegates to `BaseExceptionFilter.catch` (spy on the prototype) |
-| BE-PEF-006 | message containing `\n` | newlines stripped in `error` |
+| BE-PEF-006 | message containing `\n` | newlines stripped in server logs; raw detail is absent from the response |
 
 Build the exception with `new Prisma.PrismaClientKnownRequestError('msg\nline', { code: 'P2002', clientVersion: 'test' })`.
 Build `ArgumentsHost` as a minimal object whose `switchToHttp().getResponse()` returns
@@ -125,7 +127,7 @@ export async function errorsFor<T extends object>(cls: new () => T, plain: objec
 | BE-DTO-002 | item `quantity: 0` | `items.0.quantity.min` |
 | BE-DTO-003 | item `unit_price: -1` / `line_total: -1` / each discount `-1` | `min` error for each field |
 | BE-DTO-004 | payment `amount: 0` | `payments.0.amount.min` (min is 0.01) |
-| BE-DTO-005 | `items: []` | characterization. **A sale with zero items should be rejected**: if it validates, write the correct expectation with `it.failing`, file a KI (no `@ArrayMinSize(1)`), and check BE-SALE-022 in B3 for what the service does |
+| BE-DTO-005 | `items: []` | rejected by `ArrayMinSize(1)` and the service guard; keep a normal passing regression (owner D-018, KI-023) |
 | BE-DTO-006 | payment_method `CARD`/`BANK_TRANSFER`/`MFS` without `payment_type` | `payment_type.isEnum` |
 | BE-DTO-007 | payment_method `CASH` without `payment_type` | valid |
 | BE-DTO-008 | unknown `sale_type` / `price_type` / `online_order_status` | isEnum error |
@@ -146,28 +148,43 @@ Use IDs `BE-DTO-1xx` (returns), `2xx` (inventory), `3xx` (payments), `4xx` (purc
 | ID | Target | Test |
 |---|---|---|
 | BE-UTIL-001 | `src/common/utils/error.util.ts` | `errorMessage`/`errorStack` with Error, string, object, undefined |
-| BE-UTIL-002 | `src/common/utils/cache-invalidation.util.ts` | read it; one test per exported function/branch |
-| BE-UTIL-003 | `admin/consumer/services/consumer-purge.scope.ts` | already has a spec. Check it covers every table listed; add a test that **every Prisma model with a `consumer_id` field** appears in the purge scope (read the model list from `Prisma.dmmf.datamodel.models`). This makes the test fail when someone adds a tenant table and forgets the purge. |
+| BE-UTIL-002 | `src/common/utils/cache-invalidation.util.ts` | empty file with no exports/branches as of 2026-10-13; retired as DOC-DRIFT (D-029), no invented behavior |
+| BE-UTIL-003 | `admin/consumer/services/consumer-purge.service.ts` and its existing `consumer-purge.scope.spec.ts` | already has a spec. Check it covers every table listed; add a test that **every Prisma model with a `consumer_id` field** belongs to the generated purge graph (direct `consumer_id` models are automatically scoped; SCOPE holds indirect models only) (read the model list from `Prisma.dmmf.datamodel.models`). This makes the test fail when someone adds a tenant table and forgets the purge. |
 
 BE-UTIL-003 is a **"change A → fail Z"** guard. Copy its idea wherever a list must mirror the schema.
 
 ## 8. Coverage gate for this phase
-Add to the unit `jest` config in `package.json`:
+The unit Jest root is the backend directory, with `roots` restricted to `src` and
+`prisma-client-exception` so both sets of unit specs are discovered. `reflect-metadata` loads before
+DTO modules. Collect coverage for the targets below plus `src/common/utils/error.util.ts`.
+The original plan used paths relative to `src`, but Jest resolves threshold paths from the backend
+working directory. The corrected paths are:
 ```json
 "coverageThreshold": {
   "./src/consumer/promotions/promotion-math.ts": { "branches": 100, "lines": 100 },
-  "./src/consumer/inventory/utils/": { "branches": 100, "lines": 100 },
+  "./src/consumer/inventory/utils/validate-purchase.util.ts": { "branches": 100, "lines": 100 },
+  "./src/consumer/inventory/utils/batch-location.util.ts": { "branches": 100, "lines": 100 },
   "./src/common/services/subdomain-util.service.ts": { "branches": 95, "lines": 95 },
   "./prisma-client-exception/": { "branches": 100, "lines": 100 }
 }
 ```
-Paths in `coverageThreshold` are resolved against `rootDir` (`src`). If Jest reports
-"coverage data not found" for a path, adjust that path to be relative to `rootDir` and log it
-(the `prisma-client-exception` folder sits outside `src`, so add
-`"collectCoverageFrom": ["**/*.(t|j)s", "../prisma-client-exception/**/*.ts"]` or drop that key and
-log it). Change the CI step from `npm test -- --ci` to `npm test -- --ci --coverage`.
+The inventory gate names the two pure utilities explicitly. `stock-mutation.util.ts` performs
+real database updates; its atomicity/conservation tests belong to B3, not this no-I/O phase.
+No numeric threshold is lowered. Exception coverage includes both filters and their message mapper.
+CI runs `npm test -- --ci --runInBand --coverage` in the existing backend-unit job.
 
 ## Exit criteria
-- [ ] All IDs above exist and pass (or are `failing` with a KI).
-- [ ] `npm test -- --coverage` meets the thresholds.
-- [ ] `promotion-math.ts` extraction commit contains zero logic changes (`git diff` reviewed).
+- [x] All applicable IDs exist and pass normally; BE-UTIL-002 is retired as DOC-DRIFT.
+- [x] `npm test -- --coverage` meets the thresholds in three consecutive runs.
+- [x] `promotion-math.ts` extraction contains zero logic changes (original bodies compared; isolated in commit `2cb5bce`).
+
+
+## Implementation notes (2026-10-13)
+- 261 unit tests in 20 suites, including the original 35; seeded fast-check properties run 1,000 examples each (seed 12345). Current scoped coverage is 100% statements, branches, functions and lines.
+- DTO constraint cases use explicit invalid examples, plus valid boundaries, conditional payment types, signed adjustments, partial promotion updates, transformed numeric strings and unchanged unknown-property handling. Generated test IDs use fixed phase ranges; append new cases to preserve existing IDs.
+- BE-PEF-007/008 extend the required filter tests to validation errors and metadata labels; BE-PEF-009 exercises the real duplicate-product API on migrated Postgres. BE-DTO-010 proves an empty sale is rejected over HTTP and via the service without database writes.
+- Zero rewards cap means uncapped: the existing DTO transform, UI serialization and earning service agree. BE-DTO-680 pins this convention; it is not a new zero-cap feature.
+- Immediate defects repaired: undefined error formatting, empty sales and incorrect indefinite articles for user/unit. See KI-022…024 and D-030.
+- Publication and green GitHub CI remain required before the master B2 checkbox is ticked.
+
+Local checkpoint: all 261 unit tests pass three times (2.9/2.8/2.9 seconds), all three apps report lint 0 errors/0 warnings and clean typechecks, backend build passes, and all 9 integration + 9 HTTP + 2 optional-infrastructure tests pass. A fresh npm ci keeps the lockfile hash identical and passes the exact CI coverage command. The dependency delta gate confirms no added findings; the existing backend dev audit baseline remains KI-018.

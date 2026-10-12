@@ -203,6 +203,10 @@ export class SalesService {
     userId: number,
   ) {
     try {
+      if (!createSaleDto.items?.length) {
+        throw new BadRequestException('A sale must contain at least one item');
+      }
+
       // If quotation_id is provided, validate and mark quotation as converted
       if (createSaleDto.quotation_id) {
         const quotation = await this.prisma.sale.findFirst({
