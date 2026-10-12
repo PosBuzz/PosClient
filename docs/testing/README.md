@@ -189,7 +189,7 @@ A phase is done only when **all** of the following are true:
 - [x] B4 Report reconciliation — verified 2026-10-13; all jobs passed in [CI run 38309445550](https://github.com/PosBuzz/PosClient/actions/runs/38309445550)
 - [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] B6 Schema & migrations — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
-- [ ] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes and menu done 2026-10-13; cache invalidation and hooks pending
+- [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
 - [ ] C4 Consumer page flows
 - [ ] A1/A2 Admin
 - [ ] X2 Full-stack E2E
