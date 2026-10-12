@@ -157,6 +157,34 @@ export const updateSaleItemQuantity = ({
   });
 };
 
+// Re-prices every line for the chosen price type so a sale never mixes retail and wholesale prices; lines whose variant is unknown keep their price.
+export const repriceSaleItems = ({
+  sourceItems,
+  variants,
+  priceType,
+}: {
+  sourceItems: SaleItem[];
+  variants: ProductVariantForSale[];
+  priceType: PriceType;
+}) =>
+  sourceItems.map((item) => {
+    const variant = variants.find((v) => v.id === item.variant_id);
+    if (!variant) return item;
+    const price = getVariantPriceForSale(variant, priceType);
+    const { line_total, tax_amount } = calculateTaxAndTotal(
+      price,
+      item.quantity,
+      Number(variant.tax_percentage) || 0,
+      variant.tax_method || "EXCLUSIVE",
+    );
+    return {
+      ...item,
+      unit_price: Number(price) || 0,
+      tax_amount: Number(tax_amount) || 0,
+      line_total: Number(line_total) || 0,
+    };
+  });
+
 // Removes a specific variant from the sale items array by its ID.
 export const removeSaleItem = (sourceItems: SaleItem[], variantId: number) => {
   return sourceItems.filter((item) => item.variant_id !== variantId);

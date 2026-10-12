@@ -2187,6 +2187,7 @@ const NewSale = () => {
               >
                 <Text style={{ fontSize: 14, fontWeight: 600 }}>TOTAL</Text>
                 <Text
+                  data-testid="pos-total"
                   style={{
                     fontSize: 32,
                     fontWeight: 800,
