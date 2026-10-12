@@ -158,3 +158,10 @@ Type: DECISION
 Context: Owner explicitly authorized committing this phase, pushing fix/known-issues, and opening a draft PR to verify the checkpoint.
 Chosen: Publish the locally verified P0 guardrails, Node 22 alignment, compatible security patches and advisory corrections. The draft PR includes the earlier known-issues commit already on this branch. Keep P0 completion pending until the required GitHub CI jobs pass; investigate and fix any failures immediately under D-018.
 Follow-up: record the actual PR/CI result in the phase tracker after verification.
+
+
+### D-024 Phase P0 checkpoint verified on GitHub (2026-10-13)
+Type: DECISION
+Context: Owner authorized publication; phase commit 113abfb pushed to fix/known-issues, draft PR https://github.com/PosBuzz/PosClient/pull/40 opened against main.
+Verification: https://github.com/PosBuzz/PosClient/actions/runs/38293064702 completed successfully with all 17 jobs passing: static/typechecks, app builds, Docker builds, backend unit tests, production audits, PR dependency reviews and gate regression tests. Phase P0 exit criteria are satisfied; master and phase trackers are updated. No merge or deployment performed.
+Follow-up: B1 backend test harness is the next sequential phase. Keep PR #40 draft as the verified checkpoint.

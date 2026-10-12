@@ -3,7 +3,7 @@
 **Goal:** before adding tests, make the *existing* static checks green and run them in CI on
 every PR. Otherwise new failures hide among old ones.
 
-**Status (2026-10-13): implemented and verified locally; GitHub CI execution pending publication.**
+**Status (2026-10-13): COMPLETE — verified locally and in GitHub CI on draft PR [#40](https://github.com/PosBuzz/PosClient/pull/40).**
 
 **Baseline refreshed 2026-10-13 (requested stricter rules enabled):**
 | Check | backend | consumer | admin |
@@ -11,7 +11,7 @@ every PR. Otherwise new failures hide among old ones.
 | `tsc` | Pass: 0 errors | Pass: 0 errors | Pass: 0 errors |
 | ESLint | Pass: 0 errors / 0 warnings | Pass: 0 errors / 0 warnings | Pass: 0 errors / 0 warnings |
 | Unit tests | Pass: 8 suites, 35 tests (`npm test`) | none | none |
-| CI on PR | `ci.yml` implemented; run pending | same | same |
+| CI on PR | `ci.yml`: all checks passed | same | same |
 | Node | v22.23.x locally | same | same |
 
 ---
@@ -244,9 +244,9 @@ Implemented with Husky 9 and lint-staged 17. Root tools require Node >=22.22.1 <
 
 ## Exit criteria
 - [x] `npm run lint:all && npm run typecheck:all && npm run test:all` passes at the repo root (three consecutive runs; 35 backend tests).
-- [ ] `ci.yml` jobs `static`, `backend-unit` and `build` are green on the PR.
+- [x] `ci.yml` jobs `static`, `backend-unit` and `build` are green on PR #40; all 17 jobs passed in the [checkpoint run](https://github.com/PosBuzz/PosClient/actions/runs/38293064702) at commit `113abfb`.
 - [x] Lint fixes remove four obsolete type assertions and redundant parentheses; no check was weakened. Owner-authorized compatible security updates and Node 22/Docker command repairs are recorded separately below.
-- [ ] X3 will make these required checks. Until then, don't merge red PRs.
+- [x] CI checks run on this draft PR. X3 will make them required branch-protection checks; merging/deployment remains out of scope for this checkpoint.
 
 
 ## Static strictness ratchet (D-014)
@@ -317,4 +317,4 @@ Optional: evaluate `knip` or `depcheck` in a separate non-blocking inventory pas
 - All three images build using Node 22. The backend container's default command starts successfully; `node --version` inside it returns v22.23.3. Six authenticated HTTP error scenarios pass against disposable Postgres 17 with Redis/RabbitMQ disabled.
 - Production dependency audits report 0 vulnerabilities in each app following owner-authorized compatible updates. Backend full/dev audit still has 29 high and 5 moderate baseline findings; PR delta checks include dev dependencies and pass against the prior lockfile because those findings are unchanged. Track remediation separately without suppressing newly introduced vulnerabilities.
 - CI/Dependabot YAML parses; Node constraints are consistent across root/apps/Dockerfiles/setup/CI. Portfolio changes are only engine metadata; its Dockerfile already uses Node 22.
-- No GitHub workflow run is claimed: publishing/committing this phase was not authorized. The phase tracker remains unticked until required CI evidence exists.
+- GitHub checkpoint verified: draft PR #40, commit `113abfb`, [CI run](https://github.com/PosBuzz/PosClient/actions/runs/38293064702), 17/17 successful jobs including all three Docker builds. Publication was explicitly authorized by the owner; the master P0 tracker is now ticked.

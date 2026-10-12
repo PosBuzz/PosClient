@@ -179,7 +179,7 @@ A phase is done only when **all** of the following are true:
 - [ ] The phase's checkbox in §5 below is ticked in the same PR.
 
 ## 5. Progress tracker
-- [ ] P0 Baseline & guardrails — implemented and locally verified 2026-10-13; GitHub CI run pending
+- [x] P0 Baseline & guardrails — local checks and all 17 CI jobs passed 2026-10-13 on [draft PR #40](https://github.com/PosBuzz/PosClient/pull/40)
 - [ ] B1 Backend harness
 - [ ] B2 Backend unit
 - [ ] C1 Consumer harness
