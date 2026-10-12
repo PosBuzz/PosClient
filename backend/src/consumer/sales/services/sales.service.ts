@@ -3500,9 +3500,10 @@ export class SalesService {
         sort_order = 'desc',
       } = filters;
 
-      const pageNumber = Number(page);
-      const limitNumber = Number(limit);
-      const skip = (page - 1) * limit;
+      // Query-string values arrive as text; Prisma wants real numbers
+      const pageNumber = Math.max(1, Number(page) || 1);
+      const limitNumber = Math.min(100, Math.max(1, Number(limit) || 20));
+      const skip = (pageNumber - 1) * limitNumber;
 
       const where: any = {
         consumer_id: consumerId,
@@ -3521,7 +3522,7 @@ export class SalesService {
       }
 
       if (branch_id) {
-        where.branch_id = branch_id;
+        where.branch_id = Number(branch_id);
       }
 
       if (status) {
@@ -3565,7 +3566,7 @@ export class SalesService {
         this.prisma.sale.count({ where }),
       ]);
 
-      const totalPages = Math.ceil(total / limit);
+      const totalPages = Math.ceil(total / limitNumber);
 
       // Calculate summary stats by status
       const statusCounts = await this.prisma.sale.groupBy({

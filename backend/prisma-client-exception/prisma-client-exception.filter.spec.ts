@@ -3,8 +3,10 @@ import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { PrismaClientExceptionFilter } from './prisma-client-exception.filter';
 import { PrismaClientValidationExceptionFilter } from './prisma-client-validation-exception.filter';
+import { PrismaClientUnknownRequestExceptionFilter } from './prisma-client-unknown-request-exception.filter';
 import {
   describePrismaError,
+  isOutOfRangeMessage,
   recordName,
   uniqueFields,
 } from './prisma-error-messages';
@@ -149,5 +151,57 @@ describe('Prisma exception responses', () => {
       'A product with these details already exists.',
     );
     expect(describePrismaError('P9999', undefined)).toBeNull();
+  });
+
+  it('[BE-PEF-020] P2020 (value out of range) is a readable 400', () => {
+    expect(describePrismaError('P2020', undefined)).toEqual({
+      status: 400,
+      message: 'A number in the request is too large or too small.',
+    });
+  });
+
+  it.each([
+    ['BE-PEF-021', 'Value out of range for the type', true],
+    ['BE-PEF-022', 'Unable to fit integer value into an INT4', true],
+    ['BE-PEF-023', 'numeric field overflow', true],
+    ['BE-PEF-024', 'invalid input syntax for type integer: "abc"', true],
+    ['BE-PEF-025', 'connection refused', false],
+  ])('[%s] "%s" is out of range: %s', (_id, message, expected) => {
+    expect(isOutOfRangeMessage(message)).toBe(expected);
+  });
+
+  it('[BE-PEF-026] an unknown-request error caused by an oversized number is a 400 without query details', () => {
+    const { host, response } = httpHost();
+    new PrismaClientUnknownRequestExceptionFilter({} as never).catch(
+      new Prisma.PrismaClientUnknownRequestError(
+        'value out of range\nSELECT secret',
+        {
+          clientVersion: 'test',
+        },
+      ),
+      host,
+    );
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({
+      statusCode: 400,
+      message: 'A number in the request is too large or too small.',
+    });
+    expect(log).toHaveBeenCalledWith('value out of range SELECT secret');
+  });
+
+  it('[BE-PEF-027] any other unknown-request error keeps the default 500 handling', () => {
+    const { host, response } = httpHost();
+    const base = jest
+      .spyOn(BaseExceptionFilter.prototype, 'catch')
+      .mockImplementation(() => {});
+    const error = new Prisma.PrismaClientUnknownRequestError('boom', {
+      clientVersion: 'test',
+    });
+    new PrismaClientUnknownRequestExceptionFilter({} as never).catch(
+      error,
+      host,
+    );
+    expect(base).toHaveBeenCalledWith(error, host);
+    expect(response.json).not.toHaveBeenCalled();
   });
 });

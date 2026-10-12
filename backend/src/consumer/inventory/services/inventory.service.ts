@@ -369,12 +369,12 @@ export class InventoryService {
     }
   }
 
-  async getProductVariants(productId: number) {
+  async getProductVariants(productId: number, consumerId: number) {
     try {
-      // Get the product to verify ownership and get consumerId for cache key
-      const product = await this.prisma.product.findUnique({
-        where: { id: productId },
-        select: { consumer_id: true },
+      // The product must belong to the caller's shop
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, consumer_id: consumerId },
+        select: { id: true },
       });
 
       if (!product) {

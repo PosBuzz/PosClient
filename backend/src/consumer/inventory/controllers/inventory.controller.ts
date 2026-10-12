@@ -72,8 +72,14 @@ export class InventoryController {
 
   @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('products/:productId/variants')
-  getProductVariants(@Param('productId', ParseIntPipe) productId: number) {
-    return this.inventoryService.getProductVariants(productId);
+  getProductVariants(
+    @Req() req: Request,
+    @Param('productId', ParseIntPipe) productId: number,
+  ) {
+    return this.inventoryService.getProductVariants(
+      productId,
+      Number(req?.user.consumer_id),
+    );
   }
 
   @HasPermissions([ConsumerPermission.inventory_batches])
@@ -99,6 +105,7 @@ export class InventoryController {
     );
   }
 
+  @HasPermissions([ConsumerPermission.inventory_batches])
   @Get('movement-history/:variantId')
   getInventoryMovementHistory(
     @Req() req: Request,

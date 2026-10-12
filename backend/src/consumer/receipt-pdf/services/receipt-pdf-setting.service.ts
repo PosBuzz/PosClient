@@ -220,6 +220,17 @@ export class ReceiptPdfSettingService implements OnModuleInit {
     isActive?: boolean;
     createdById?: number;
   }) {
+    // A setting can only be attached to one of this shop's own branches
+    if (data.branchId) {
+      const branch = await this.prisma.branch.findFirst({
+        where: { id: data.branchId, consumer_id: data.consumerId },
+        select: { id: true },
+      });
+      if (!branch) {
+        throw new NotFoundException('Branch not found');
+      }
+    }
+
     await this.ensureNameIsUnique(
       data.consumerId,
       data.branchId ?? null,

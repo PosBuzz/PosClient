@@ -1,3 +1,4 @@
+import { isClientError } from '../../../common/errors/client-error';
 import {
   calculateDiscount,
   calculateEffectiveQuantity,
@@ -399,10 +400,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([created.id]);
       return this.mapPromotion(created, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to create promotion');
@@ -429,10 +427,7 @@ export class PromotionsService {
         this.mapPromotion(promotion, summaryMap),
       );
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotions');
@@ -448,10 +443,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([promotion.id]);
       return this.mapPromotion(promotion, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotion');
@@ -589,10 +581,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([updated.id]);
       return this.mapPromotion(updated, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to update promotion');
@@ -609,10 +598,7 @@ export class PromotionsService {
 
       return { success: true };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to delete promotion');
@@ -669,10 +655,7 @@ export class PromotionsService {
         })),
       };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -777,10 +760,7 @@ export class PromotionsService {
         this.mapPromotion(promotion, summaryMap),
       );
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -886,10 +866,7 @@ export class PromotionsService {
         });
       }
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -1344,10 +1321,7 @@ export class PromotionsService {
 
       return evaluation;
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -1440,10 +1414,7 @@ export class PromotionsService {
         },
       };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotion sales');

@@ -6,9 +6,11 @@ const password = hashSync(TEST_PASSWORD, 4);
 export async function createAdmin(
   db: PrismaClient,
   overrides: Partial<Prisma.SuperAdminUncheckedCreateInput> = {},
+  /** Defaults to every admin permission */
+  actions: AdminPermission[] = Object.values(AdminPermission),
 ) {
   const permissions = await Promise.all(
-    Object.values(AdminPermission).map((action) =>
+    actions.map((action) =>
       db.superAdminPermission.upsert({
         where: { action },
         update: {},
