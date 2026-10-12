@@ -452,7 +452,7 @@ describe("POS checkout", () => {
         return ok({ success: true });
       }),
     );
-    captureRequests("post", endpoints.createSale, {
+    const created = captureRequests("post", endpoints.createSale, {
       id: 8,
       sale_number: "S-8",
       total_amount: "105",
@@ -463,8 +463,17 @@ describe("POS checkout", () => {
     await addProduct(user, P1);
     await complete(user);
     await screen.findByText("Receipt sent to printer!");
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
     expect(printed).toHaveLength(1);
     expect(printed[0]).toMatchObject({ saleNumber: "S-8" });
+    await waitFor(
+      () =>
+        expect(
+          screen.queryByText("Sale created successfully!"),
+        ).not.toBeInTheDocument(),
+      { timeout: 5000 },
+    );
 
     server.use(
       http.post("http://localhost:8080/print", () => Response.error()),
@@ -472,7 +481,8 @@ describe("POS checkout", () => {
     await addProduct(user, P1);
     await complete(user);
     await screen.findByText(/Printing agent is not running/);
-    expect(screen.getAllByText("Sale created successfully!").length).toBe(2);
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(2);
   });
 
   it("[CO-FLOW-POS-012] a completed sale refreshes every report", async () => {
