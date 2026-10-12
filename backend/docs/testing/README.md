@@ -35,3 +35,6 @@ Master plan, conventions, and the decision playbook live in `../../../docs/testi
 | `npm run test:e2e` | `test/e2e/**/*.e2e-spec.ts` | yes |
 | `npm run test:all` | all three, in that order | yes |
 | `npm run test:mutation` | Stryker on critical modules | yes |
+
+## B1 local checkpoint (2026-10-13)
+Real Postgres harness, shared configureApp, auth/CSRF/HTTP helpers and fixtures are implemented. Eighteen self-tests pass three times, including separate real Redis/RabbitMQ opt-in tests. Original 35 unit tests remain green; CI verification is pending publication. See phase-1-test-harness.md for commands and fixes.

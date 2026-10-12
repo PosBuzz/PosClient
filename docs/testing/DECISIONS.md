@@ -165,3 +165,25 @@ Type: DECISION
 Context: Owner authorized publication; phase commit 113abfb pushed to fix/known-issues, draft PR https://github.com/PosBuzz/PosClient/pull/40 opened against main.
 Verification: https://github.com/PosBuzz/PosClient/actions/runs/38293064702 completed successfully with all 17 jobs passing: static/typechecks, app builds, Docker builds, backend unit tests, production audits, PR dependency reviews and gate regression tests. Phase P0 exit criteria are satisfied; master and phase trackers are updated. No merge or deployment performed.
 Follow-up: B1 backend test harness is the next sequential phase. Keep PR #40 draft as the verified checkpoint.
+
+
+### D-025 Backend harness implementation and doc corrections (2026-10-13, B1)
+Type: DECISION / DOC-DRIFT
+Chosen: Extract production setup verbatim into configureApp; use real migrated Postgres 17 with Testcontainers 12 and a TEST_DATABASE_URL compose fallback. Guard destructive resets with NODE_ENV=test and a test-qualified database name. Keep the old scaffold as .ts.disabled, preserving reversible removal. Fixtures use sequence suffixes and schema-derived types; purchase histories share batch timestamps, sale DTOs use catalog pricing. JWT helpers forward Secure cookies manually and pair CSRF token/signature.
+Corrections: /auth/client wraps its identity in body.user; helper defaults explicitly use Host localhost. Opt-in Redis/RabbitMQ tests have a separate test:infra config and CI job; no failures are deferred or marked failing. Original 35 unit tests remain unchanged.
+Verification: all BE-HARN-001…018 pass three consecutive times (9 int + 7 e2e + 2 infra); lint/typechecks are 0/0 in all apps and backend builds. New test dependencies add no audit findings. A clean source copy with fresh npm ci passes 35 unit + 9 integration + 7 HTTP tests using automatic Postgres provisioning. The Compose TEST_DATABASE_URL fallback passes the same tests and its resources were removed afterward.
+Follow-up: B1 CI verification requires publication; do not tick the master B1 tracker before that evidence exists.
+
+### D-026 Fix runtime failures discovered by B1 immediately (2026-10-13)
+Type: DECISION
+Context: Enabled RabbitMQ tests passed publishing but Jest stayed alive after close because the connection close handler scheduled reconnects. A focused direct-IP HTTP test returned 401 because 127.0.0.1 was misclassified as tenant subdomain 127.
+Chosen: Cancel/deduplicate reconnect timers and suppress reconnects on intentional close; prove no 5-second retry is scheduled during app shutdown. Recognize IP addresses in the shared subdomain parser; direct-IP auth now succeeds while mismatched tenant-origin auth still returns 401. Fix the test's queue race by awaiting real consumer delivery, with the payload assertion retained. These two scoped runtime fixes supersede B1's original seam-only restriction under the owner's D-018 immediate-fix policy.
+Verification: real Redis/RabbitMQ and HTTP/Postgres suites pass three times with no open-handle warning or force-exit. Original 35 unit specs and all static checks remain green.
+Follow-up: none for these repaired defects; B1 publishing/CI checkpoint remains pending.
+
+
+### D-027 Publish the B1 checkpoint (2026-10-13, owner instruction)
+Type: DECISION
+Context: Owner explicitly authorized “Commit and push B1 checkpoint” to draft PR #40.
+Chosen: Commit and push the locally verified harness, two immediate runtime repairs, CI jobs and phase documentation. Keep B1 completion pending until GitHub CI passes, and repair any CI failures immediately under D-018.
+Follow-up: record the CI run and update phase completion after verification.
