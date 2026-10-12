@@ -277,3 +277,14 @@ Follow-up: record the CI result; X1 stays open (partial) until the deferred sect
 Type: DECISION
 Verification: commit 3f5cd2c passed all jobs in https://github.com/PosBuzz/PosClient/actions/runs/38305070818, including the new static `contracts` job, the 200-cart replay in backend-integration and the contract tests in consumer-tests and backend-unit. X1 remains open only for the sections that need B5/C4/A2 outputs (D-038). No merge or deployment performed.
 Follow-up: B3 domain integration (invariant net first).
+
+
+### D-040 B3 domain integration (2026-10-13)
+Type: DECISION / DOC-DRIFT
+Chosen: A SQL-only invariant net (`test/helpers/invariants.ts`: INV-01…13) runs in `afterEach` of every B3 file through a shared `newWorld` helper that also snapshots a bystander tenant; BE-NET-001…006 prove it catches tampering. Services come from the real DI container against Postgres. Covered: sales (create, pricing checks, quotations, deliveries, credit, promotions, soft delete/restore, concurrency), returns and exchanges, inventory (batches, adjustments, transfers, summaries), payments, vendor payments, rewards, customers, vendors, branches, categories/brands/units/tags, operational costs, support tickets, promotions, products/variants, spreadsheet imports and the super-admin flows (plans, consumer lifecycle, billing periods, purge, account data import). BE-ADM-006 (backup/restore) stays skipped per the phase doc.
+Defects fixed under D-018 (each with a normal regression test): KI-033…045. The net itself found KI-030 (batch moved into another tenant's branch) and KI-044 (import without audit).
+Characterizations kept (confirm intent later): sales never split a line across batches (BE-SALE-005); settling a due sale later earns no reward points (BE-PAY-002); a return item without a batch does not restock (BE-RET-019); a batch created without payments counts as fully paid (BE-INV-010).
+Doc-drift: several `HttpException` branches in plans, billing and product-name handling are unreachable because Prisma duplicate/not-found errors are deliberately rethrown for the HTTP filter (KI-016 design). Tests assert the Prisma error and the filter's readable message instead; removing the dead branches is a cleanup for X4.
+QUESTION: vendor summary totals only cover the page of batches requested (findOneWithDetails paginates before totalling); promotion sales report sums sale discount, not promotion discount. Both belong to B4 reconciliation.
+Verification: lint and build clean; 307 unit tests pass with coverage thresholds; 277 integration tests pass three runs; 9 e2e tests pass.
+Follow-up: CI result for the B3 commit; then B4.

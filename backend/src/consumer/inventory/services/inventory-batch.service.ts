@@ -11,6 +11,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { priceChanged as pricesDiffer } from '../../product/utils/price.util';
 import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
@@ -92,13 +93,14 @@ export class InventoryBatchService {
           dto.regular_price !== undefined ||
           dto.wholesale_price !== undefined
         ) {
-          const regularChanged =
-            dto.regular_price !== undefined &&
-            dto.regular_price !== variant.regular_price.toString();
-          const wholesaleChanged =
-            dto.wholesale_price !== undefined &&
-            dto.wholesale_price !==
-              (variant.wholesale_price?.toString() ?? undefined);
+          const regularChanged = pricesDiffer(
+            dto.regular_price,
+            variant.regular_price,
+          );
+          const wholesaleChanged = pricesDiffer(
+            dto.wholesale_price,
+            variant.wholesale_price,
+          );
 
           await prisma.productVariant.update({
             where: { id: dto.variant_id },
@@ -436,13 +438,14 @@ export class InventoryBatchService {
             where: { id: _batch.variant_id },
             select: { regular_price: true, wholesale_price: true },
           });
-        const regularChanged =
-          dto.regular_price !== undefined &&
-          dto.regular_price !== currentVariant.regular_price.toString();
-        const wholesaleChanged =
-          dto.wholesale_price !== undefined &&
-          dto.wholesale_price !==
-            (currentVariant.wholesale_price?.toString() ?? undefined);
+        const regularChanged = pricesDiffer(
+          dto.regular_price,
+          currentVariant.regular_price,
+        );
+        const wholesaleChanged = pricesDiffer(
+          dto.wholesale_price,
+          currentVariant.wholesale_price,
+        );
 
         await this.prisma.productVariant.update({
           where: { id: _batch.variant_id },
@@ -486,7 +489,7 @@ export class InventoryBatchService {
 
       if (batch.quantity > 0) {
         throw new BadRequestException(
-          'Cannot delete batch with remaining quantity. Use inventory adjustment to reduce quantity to 0 first.',
+          'Cannot delete a batch that still has stock. A batch with stock history (purchases, sales, adjustments, transfers) is kept for the audit trail, so reduce it to 0 with an inventory adjustment and leave it there.',
         );
       }
 

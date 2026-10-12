@@ -284,12 +284,14 @@ export class BranchService {
       });
 
       if (branchCount === 1) {
-        throw new Error('Cannot delete the last remaining branch');
+        throw new BadRequestException(
+          'Cannot delete the last remaining branch',
+        );
       }
 
       // Can't delete the main branch
       if (branch.is_main) {
-        throw new Error('Cannot delete the main branch');
+        throw new BadRequestException('Cannot delete the main branch');
       }
 
       await this.prismaService.branch.delete({

@@ -606,10 +606,29 @@ export class ConsumerDataImportService {
       if (target) {
         await saveMapping('inventory_batch', source.id, target.id);
         if (strategy === ConsumerImportDuplicateStrategy.UPDATE) {
+          const previousQuantity = target.quantity;
           target = await tx.inventoryBatch.update({
             where: { id: target.id },
             data: batchData,
           });
+          // Stock only moves with an audit row, or the ledger stops adding up
+          if (target.quantity !== previousQuantity) {
+            await tx.inventoryAuditLog.create({
+              data: {
+                consumer_id: targetId,
+                branch_id: targetBranchId,
+                variant_id: targetVariantId,
+                batch_id: target.id,
+                inventoryBatchId: target.id,
+                event_type: 'ADJUSTMENT',
+                quantity_delta: target.quantity - previousQuantity,
+                quantity_after: target.quantity,
+                reference_id: target.id,
+                reference_type: 'inventory_batches',
+                notes: `Quantity set by account data import from account #${sourceId}`,
+              },
+            });
+          }
           count('inventory_batches', 'updated');
         } else {
           count('inventory_batches', 'skipped');
@@ -621,6 +640,23 @@ export class ConsumerDataImportService {
             created_at: source.created_at,
           },
         });
+        if (target.quantity > 0) {
+          await tx.inventoryAuditLog.create({
+            data: {
+              consumer_id: targetId,
+              branch_id: targetBranchId,
+              variant_id: targetVariantId,
+              batch_id: target.id,
+              inventoryBatchId: target.id,
+              event_type: 'PURCHASE_IN',
+              quantity_delta: target.quantity,
+              quantity_after: target.quantity,
+              reference_id: target.id,
+              reference_type: 'inventory_batches',
+              notes: `Stock copied by account data import from account #${sourceId}`,
+            },
+          });
+        }
         await saveMapping('inventory_batch', source.id, target.id);
         targetBatches.push(target);
         count('inventory_batches', 'created');
