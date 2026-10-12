@@ -108,8 +108,9 @@ axiosInstance.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
 
-    // Handle CSRF token errors
-    if (isInvalidCsrfError(err)) {
+    // Handle CSRF token errors. Retry a request once: if the server still rejects the
+    // token we just fetched, retrying again would loop forever.
+    if (isInvalidCsrfError(err) && !originalRequest?._csrfRetried) {
       try {
         // Get a fresh CSRF token
         const newCsrfToken = await refreshCsrfToken();
@@ -118,6 +119,7 @@ axiosInstance.interceptors.response.use(
         }
 
         // Retry the original request with new token
+        originalRequest._csrfRetried = true;
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers["X-CSRF-TOKEN"] = newCsrfToken;
         return axiosInstance(originalRequest);

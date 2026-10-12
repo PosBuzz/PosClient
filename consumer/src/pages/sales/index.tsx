@@ -91,10 +91,7 @@ const SalesTable = () => {
       invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
-      showMessage(
-        getErrorMessage(error, "Failed to delete sale"),
-        "error",
-      );
+      showMessage(getErrorMessage(error, "Failed to delete sale"), "error");
     },
   });
 
@@ -105,10 +102,7 @@ const SalesTable = () => {
       invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
-      showMessage(
-        getErrorMessage(error, "Failed to restore sale"),
-        "error",
-      );
+      showMessage(getErrorMessage(error, "Failed to restore sale"), "error");
     },
   });
 
@@ -678,7 +672,10 @@ const SalesTable = () => {
             <Card>
               <Statistic
                 title="Total Received"
-                value={salesQuery.data.summary.total_received ?? salesQuery.data.summary.total_amount}
+                value={
+                  salesQuery.data.summary.total_received ??
+                  salesQuery.data.summary.total_amount
+                }
                 prefix={takaPrefix}
                 precision={2}
                 valueStyle={{ color: "#389e0d" }}

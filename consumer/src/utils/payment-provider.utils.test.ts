@@ -15,24 +15,26 @@ describe("payment providers", () => {
       PaymentMethod.BANK_TRANSFER,
       PaymentMethod.MFS,
     ]);
-    for (const method of [...Object.values(PaymentMethod), undefined])
-      {expect(paymentMethodRequiresProvider(method)).toBe(
+    for (const method of [...Object.values(PaymentMethod), undefined]) {
+      expect(paymentMethodRequiresProvider(method)).toBe(
         method !== undefined &&
           [
             PaymentMethod.CARD,
             PaymentMethod.BANK_TRANSFER,
             PaymentMethod.MFS,
           ].includes(method),
-      );}
+      );
+    }
   });
   it("[CO-PAYP-002] bank and MFS options retain complete labels/values", () => {
-    for (const method of [PaymentMethod.CARD, PaymentMethod.BANK_TRANSFER])
-      {expect(getPaymentProviderOptions(method)).toEqual(
+    for (const method of [PaymentMethod.CARD, PaymentMethod.BANK_TRANSFER]) {
+      expect(getPaymentProviderOptions(method)).toEqual(
         bankOptions.map((option) => ({
           label: option.label,
           value: String(option.value),
         })),
-      );}
+      );
+    }
     expect(getPaymentProviderOptions(PaymentMethod.MFS)).toEqual(
       mfsProviderOptions.map((option) => ({
         label: option.label,
