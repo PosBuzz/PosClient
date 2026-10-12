@@ -259,19 +259,45 @@ export class PaymentsService {
         throw new BadRequestException('Cannot make payment on cancelled sale');
       }
 
-      // Calculate remaining amount
-      const remainingAmount =
-        Number(sale.total_amount) - Number(sale.received_amount);
-
-      // Validate payment amount
-      if (totalPaymentAmount > remainingAmount) {
-        throw new BadRequestException(
-          `Total payment amount (${totalPaymentAmount}) exceeds remaining amount (${remainingAmount})`,
-        );
-      }
-
-      // Use transaction to ensure data consistency
+      // Use a transaction to ensure data consistency. The sale row is locked
+      // first and every amount is re-read under the lock: two concurrent
+      // payments would otherwise both validate against the same balance and
+      // overwrite each other's received_amount.
+      const toCents = (value: unknown) => Math.round(Number(value) * 100);
       const result = await this.prisma.$transaction(async (prisma) => {
+        const locked = await prisma.$queryRaw<
+          {
+            total_amount: Prisma.Decimal;
+            received_amount: Prisma.Decimal;
+            payment_status: string;
+          }[]
+        >`SELECT "total_amount", "received_amount", "payment_status" FROM "sales" WHERE "id" = ${sale_id} FOR UPDATE`;
+        const current = locked[0];
+        if (!current) {
+          throw new NotFoundException('Sale not found');
+        }
+
+        if (current.payment_status === 'paid') {
+          throw new BadRequestException('Sale is already fully paid');
+        }
+
+        if (current.payment_status === 'cancelled') {
+          throw new BadRequestException(
+            'Cannot make payment on cancelled sale',
+          );
+        }
+
+        const totalCents = toCents(current.total_amount);
+        const receivedCents = toCents(current.received_amount);
+        const paymentCents = toCents(totalPaymentAmount);
+        const remainingCents = totalCents - receivedCents;
+
+        if (paymentCents > remainingCents) {
+          throw new BadRequestException(
+            `Total payment amount (${totalPaymentAmount}) exceeds remaining amount (${remainingCents / 100})`,
+          );
+        }
+
         // Create all payment records
         const createdPayments = await Promise.all(
           payments.map((payment) =>
@@ -287,16 +313,13 @@ export class PaymentsService {
           ),
         );
 
-        // Calculate new received amount
-        const newReceivedAmount =
-          Number(sale.received_amount) + Number(totalPaymentAmount);
-        const totalAmount = Number(sale.total_amount);
+        const newReceivedCents = receivedCents + paymentCents;
 
         // Determine new payment status
         let newPaymentStatus: string;
-        if (newReceivedAmount >= totalAmount) {
+        if (newReceivedCents >= totalCents) {
           newPaymentStatus = 'paid';
-        } else if (newReceivedAmount > 0) {
+        } else if (newReceivedCents > 0) {
           newPaymentStatus = 'partial';
         } else {
           newPaymentStatus = 'due';
@@ -306,7 +329,7 @@ export class PaymentsService {
         const updatedSale = await prisma.sale.update({
           where: { id: sale_id },
           data: {
-            received_amount: newReceivedAmount,
+            received_amount: newReceivedCents / 100,
             payment_status: newPaymentStatus,
           },
           select: {
