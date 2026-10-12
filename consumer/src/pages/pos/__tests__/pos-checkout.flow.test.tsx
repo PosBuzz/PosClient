@@ -165,7 +165,7 @@ describe("POS checkout", () => {
     // cart cleared, branch kept
     await waitFor(() => expect(totalOnScreen()).toContain("0.00"));
     expect(cartRow(P1)).toBeUndefined();
-    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("Branch 1")).toBeInTheDocument();
   });
 
   it("[CO-FLOW-POS-002] a scanned barcode adds its variant and scanning again adds one more", async () => {

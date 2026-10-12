@@ -9,14 +9,12 @@ type User = {
   role_id: number;
   email: string;
   name: string;
-  refresh_token: string;
-  created_by_id: number | null;
   company_name: string;
   company_email: string;
-  secondary_email: string;
-  logo: string;
-  phone: string;
-  address: string;
+  secondary_email: string | null;
+  logo: string | null;
+  phone: string | null;
+  address: string | null;
   role: string;
   permissions: string[];
   branches: Array<{

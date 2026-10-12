@@ -13,10 +13,7 @@ import AddSale from "../../add-sales";
 import QuotationDetail from "../index";
 
 it("[CO-FLOW-QUO-002] converts the viewed quotation through Add sale with quotation_id", async () => {
-  const quotation = {
-    ...responseContract<any>("sale-detail"),
-    sale_type: "quotation",
-  };
+  const quotation = responseContract<any>("quotation-detail");
   server.use(
     http.get(`${API}${endpoints.getQuotation(quotation.id)}`, () =>
       ok(quotation),

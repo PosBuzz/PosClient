@@ -54,6 +54,23 @@ const CALLS: Call[] = [
     as: 'tenant',
     path: () => '/consumer/sales/reports/eod?date=2026-03-14',
   },
+  {
+    name: 'user-sales-stats',
+    as: 'tenant',
+    path: () =>
+      '/consumer/sales/user-sales-stats?startDate=2026-03-14&endDate=2026-03-14',
+  },
+  {
+    name: 'variant-sales-stats',
+    as: 'tenant',
+    path: () =>
+      '/consumer/sales/variant-sales-stats?startDate=2026-03-14&endDate=2026-03-14&page=1&limit=20',
+  },
+  {
+    name: 'quotation-detail',
+    as: 'tenant',
+    path: (s) => `/consumer/sales/quotations/${s.quotation.id}`,
+  },
   { name: 'returns-list', as: 'tenant', path: () => '/consumer/returns' },
   {
     name: 'return-detail',
@@ -69,6 +86,28 @@ const CALLS: Call[] = [
     name: 'low-stock',
     as: 'tenant',
     path: () => '/consumer/inventory/low-stock',
+  },
+  {
+    name: 'inventory-products',
+    as: 'tenant',
+    path: () => '/consumer/inventory/products',
+  },
+  {
+    name: 'inventory-variants',
+    as: 'tenant',
+    path: (s) =>
+      `/consumer/inventory/products/${s.p1.variant.product_id}/variants`,
+  },
+  {
+    name: 'inventory-batches',
+    as: 'tenant',
+    path: () => '/consumer/inventory/batches',
+  },
+  { name: 'branches', as: 'tenant', path: () => '/consumer/branches' },
+  {
+    name: 'inventory-expiring',
+    as: 'tenant',
+    path: () => '/consumer/inventory/expiring',
   },
   {
     name: 'promotions-active',
