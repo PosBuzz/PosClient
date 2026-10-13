@@ -21,7 +21,7 @@ This folder holds the cross-project plan. Each app keeps its own phases in its o
 | `docs/testing/phase-00-baseline-guardrails.md` | Repo-wide first phase: green lint, CI skeleton |
 | `docs/testing/phase-X1-cross-layer-contracts.md` | Shared fixtures that backend AND consumer must both satisfy |
 | `docs/testing/phase-X2-full-stack-e2e.md` | Playwright journeys against the real stack |
-| `docs/testing/phase-X3-ci-enforcement.md` | Branch protection, deploy gating, nightly jobs, ratchets |
+| `docs/testing/phase-X3-ci-enforcement.md` | Deploy gating, nightly jobs, ratchets |
 | `docs/testing/phase-X4-error-messages.md` | Readable errors from backend to screen |
 | `backend/docs/testing/` | Backend phases B1–B8 |
 | `consumer/docs/testing/` | Consumer phases C1–C5 |
@@ -212,4 +212,4 @@ A phase is done only when **all** of the following are true:
 - [ ] B7/C5 Mutation testing — fresh consumer run passes nine files, Axios survivor assertions added; backend unit mutation running, isolated domain config/database setup implemented. Scores and CI confirmation remain.
 - [x] X4 Error messages end-to-end — frontend scans/rendering, backend contract sweep/scanner/scenarios and J12–J14 pass; CI green in run 38418049941 (D-058, KI-084…087).
 - [ ] B8 Every service method tested — all 305 methods claimed; known-gaps.json deleted; inventory and dummy-method proofs pass. Depth/tenancy requirements and nightly tier score gate remain.
-- [ ] X3 CI enforcement — workflows, CODEOWNERS, PR template, gitleaks, ratchet and deploy gate written; branch protection, proofs and baseline pending
+- [ ] X3 CI enforcement — workflows, CODEOWNERS, PR template, gitleaks, ratchet and deploy gate written; branch protection dropped (D-065); deploy proof, first nightly and baseline pending

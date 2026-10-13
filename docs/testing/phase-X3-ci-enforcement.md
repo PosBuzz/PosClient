@@ -72,19 +72,9 @@ the jobs succeed when no relevant paths changed. A mutation failure therefore bl
 |---|---|
 | X-SEC-001 | Gitleaks passes on the PR diff. On first enablement it will flag the committed `.env.docker` and `backend/.env.docker`. Those secrets were rotated on the VM (KI-012 resolved, D-010), so add both paths to `.gitleaksignore` with a comment referencing D-010. Also allowlist the test-only values (`test/setup/test-env.ts`, `e2e/.env.e2e`, which contain `test`/`e2e` and `not-for-prod`). Keep `secret-scan` in `all-green.needs`; any **new** secret fails the build |
 
-## 3. Branch protection (one-time, needs repo admin)
-Run once (or set in GitHub → Settings → Branches → `main`):
-```bash
-gh api -X PUT repos/PosBuzz/PosClient/branches/main/protection \
-  -H "Accept: application/vnd.github+json" \
-  -f required_status_checks.strict=true \
-  -f 'required_status_checks.contexts[]=All checks' \
-  -F enforce_admins=true \
-  -F required_pull_request_reviews.required_approving_review_count=1 \
-  -F restrictions=null
-```
-If `gh api` rejects the nested `-f` syntax, send the JSON body with `--input protection.json`
-instead (same fields). Record in DECISIONS.md who ran it and when.
+## 3. Branch protection — DROPPED (D-065)
+Not applied: the repo is not on a GitHub plan/team that supports it. `All checks` is still the
+single aggregator, and CI/deploy gating below is enforced by workflows, not by GitHub settings.
 
 `CODEOWNERS` (repo root `.github/CODEOWNERS`):
 ```
@@ -93,10 +83,7 @@ instead (same fields). Record in DECISIONS.md who ran it and when.
 /backend/prisma/migrations/ @Istiak-A-Tashrif
 /.github/workflows/         @Istiak-A-Tashrif
 ```
-(D-007.) With a single code owner, `required_approving_review_count=1` means the owner can't
-approve their own PRs. Either keep enforcement for other contributors' PRs only (GitHub lets admins
-bypass when `enforce_admins=false`), or set the count to 0 and rely on the required checks. Decide
-when you apply branch protection and record it in DECISIONS.md.
+(D-007.) CODEOWNERS is advisory without branch protection.
 
 ## 4. Deploy gating
 Today both deploy workflows (`deploy-backend.yml`, `deploy-ai-service.yml`) are
@@ -184,7 +171,7 @@ Record each run in DECISIONS.md:
 - PWA update flow (`swUpdate.ts`) after a deploy.
 
 ## Exit criteria
-- [ ] `All checks` is a required status on `main`; a PR with a failing test cannot merge (prove it with a throwaway PR).
+- [x] ~~`All checks` required status on `main`~~ — dropped (D-065); no branch protection.
 - [ ] Deploy workflow refuses a SHA without green CI (prove it with a dispatch on a red branch).
 - [ ] Nightly ran once successfully, or opened an issue for real findings.
 - [ ] Coverage baseline committed; ratchet active.
