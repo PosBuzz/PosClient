@@ -34,11 +34,11 @@ const getRequiredVariantIds = (promotion: Promotion): number[] => {
 
 const calculateEffectiveQuantity = (
   items: AggregatedCartItem[],
-  quantityLimit?: number | null,
+  quantityLimit: number | null,
 ): number => {
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  if (!quantityLimit || quantityLimit <= 0) {
+  if (quantityLimit === null) {
     return totalQuantity;
   }
 
@@ -47,36 +47,20 @@ const calculateEffectiveQuantity = (
 
 const calculateBaseWithQuantityLimit = (
   items: AggregatedCartItem[],
-  quantityLimit?: number | null,
+  quantityLimit: number | null,
 ): number => {
-  const totalBase = items.reduce((sum, item) => sum + item.subtotal, 0);
-
-  if (!quantityLimit || quantityLimit <= 0) {
-    return totalBase;
+  if (quantityLimit === null) {
+    return items.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
-  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  if (totalQuantity <= quantityLimit) {
-    return totalBase;
-  }
-
+  // Cart lines always have a positive quantity, so the per-unit price is well defined.
+  const perUnitOf = (item: AggregatedCartItem) => item.subtotal / item.quantity;
   let remaining = quantityLimit;
   let base = 0;
 
-  const sorted = [...items].sort((a, b) => {
-    const aPerUnit = a.quantity > 0 ? a.subtotal / a.quantity : 0;
-    const bPerUnit = b.quantity > 0 ? b.subtotal / b.quantity : 0;
-    return bPerUnit - aPerUnit;
-  });
-
-  for (const item of sorted) {
-    if (remaining <= 0) {
-      break;
-    }
-
+  for (const item of [...items].sort((a, b) => perUnitOf(b) - perUnitOf(a))) {
     const takeQty = Math.min(item.quantity, remaining);
-    const perUnit = item.quantity > 0 ? item.subtotal / item.quantity : 0;
-    base += perUnit * takeQty;
+    base += perUnitOf(item) * takeQty;
     remaining -= takeQty;
   }
 
@@ -88,12 +72,8 @@ const calculateDiscount = (
   discountValue: number,
   base: number,
   eligibleQuantity: number,
-  capDiscountAmount?: number | null,
+  capDiscountAmount: number,
 ): number => {
-  if (base <= 0 || eligibleQuantity <= 0) {
-    return 0;
-  }
-
   let discount = 0;
 
   if (discountType === "percentage") {
@@ -102,15 +82,12 @@ const calculateDiscount = (
     discount = discountValue * eligibleQuantity;
   }
 
-  if (
-    capDiscountAmount !== null &&
-    capDiscountAmount !== undefined &&
-    capDiscountAmount > 0
-  ) {
+  if (capDiscountAmount > 0) {
     discount = Math.min(discount, capDiscountAmount);
   }
 
-  return Math.min(base, discount);
+  // A non-positive base or quantity never yields a discount.
+  return Math.max(0, Math.min(base, discount));
 };
 
 const ineligible = (
@@ -163,10 +140,7 @@ export const evaluatePromotionLocally = ({
     );
   }
 
-  const usageLimit =
-    promotion.usage_limit !== null && promotion.usage_limit !== undefined
-      ? toNumber(promotion.usage_limit)
-      : null;
+  const usageLimit = toNumber(promotion.usage_limit);
   const maxDiscountAmount =
     promotion.max_discount_amount !== null &&
     promotion.max_discount_amount !== undefined
@@ -176,7 +150,7 @@ export const evaluatePromotionLocally = ({
   const usedUsageCount = toNumber(promotion.sales_count);
   const usedDiscountAmount = toNumber(promotion.total_discount_given);
 
-  if (usageLimit !== null && usageLimit > 0 && usedUsageCount >= usageLimit) {
+  if (usageLimit > 0 && usedUsageCount >= usageLimit) {
     return ineligible(
       promotion.id,
       "Promotion usage limit reached and promo closed",
@@ -246,12 +220,9 @@ export const evaluatePromotionLocally = ({
     0,
   );
 
-  const minPurchase =
-    promotion.min_purchase !== null && promotion.min_purchase !== undefined
-      ? toNumber(promotion.min_purchase)
-      : null;
+  const minPurchase = toNumber(promotion.min_purchase);
 
-  if (minPurchase !== null && minPurchase > 0 && cartSubtotal < minPurchase) {
+  if (minPurchase > 0 && cartSubtotal < minPurchase) {
     return ineligible(
       promotion.id,
       "Minimum purchase amount condition not met",
@@ -263,10 +234,7 @@ export const evaluatePromotionLocally = ({
   let matchedVariantIds: number[] = [];
 
   if (promotion.scope === "BRAND") {
-    const brandId =
-      promotion.brand_id !== null && promotion.brand_id !== undefined
-        ? Number(promotion.brand_id)
-        : null;
+    const brandId = toNumber(promotion.brand_id);
 
     if (!brandId) {
       return ineligible(
@@ -335,12 +303,8 @@ export const evaluatePromotionLocally = ({
     .map((variantId) => cartMap.get(variantId))
     .filter((item): item is AggregatedCartItem => Boolean(item));
 
-  const quantityLimit =
-    promotion.cap_quantity !== null && promotion.cap_quantity !== undefined
-      ? toNumber(promotion.cap_quantity)
-      : null;
-  const effectiveQuantityLimit =
-    quantityLimit !== null && quantityLimit > 0 ? quantityLimit : null;
+  const quantityLimit = toNumber(promotion.cap_quantity);
+  const effectiveQuantityLimit = quantityLimit > 0 ? quantityLimit : null;
 
   const discountBase = calculateBaseWithQuantityLimit(
     matchedItems,
@@ -351,11 +315,7 @@ export const evaluatePromotionLocally = ({
     effectiveQuantityLimit,
   );
 
-  const capDiscountAmount =
-    promotion.cap_discount_amount !== null &&
-    promotion.cap_discount_amount !== undefined
-      ? toNumber(promotion.cap_discount_amount)
-      : null;
+  const capDiscountAmount = toNumber(promotion.cap_discount_amount);
 
   const computedDiscount = calculateDiscount(
     promotion.discount_type,
