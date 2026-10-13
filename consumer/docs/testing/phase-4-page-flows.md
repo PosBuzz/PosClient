@@ -151,6 +151,8 @@ Add to thresholds: `src/pages/pos/**`, `src/pages/returns/**`, `src/pages/add-sa
 `src/pages/partial-payments/**` ≥ 70% lines. Global ≥ 50% lines (ratchet upward in X3).
 
 ## Exit criteria
-- [ ] All flow IDs green or `fails` + KI.
-- [ ] `contracts/requests/*.json` committed: `pos-cash-sale`, `pos-discounts-sale`, `pos-split-payment`, `pos-promotion-sale`, `quotation`, `return-cash`, `return-exchange`, `make-payment`, `inventory-batch-create`, `inventory-transfer-create`.
-- [ ] Every `src/pages/*` directory has a test.
+- [x] All flow IDs green.
+- [x] `contracts/requests/*.json` committed: `pos-cash-sale`, `pos-discounts-sale`, `pos-split-payment`, `pos-promotion-sale`, `quotation`, `return-cash`, `return-exchange`, `make-payment`, `inventory-batch-create`, `inventory-transfer-create`.
+- [x] Every `src/pages/*` directory has a test.
+
+Verification: 551 tests pass twice under TZ=UTC with the CI worker setting; coverage lines 64.21% globally and all four page floors pass. Backend response-contract replay passes 49 checks. CI is checked after the checkpoint push (D-052).
