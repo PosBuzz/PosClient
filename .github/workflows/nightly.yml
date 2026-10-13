@@ -23,15 +23,15 @@ jobs:
           if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
 
   backend-mutation-domain:
-    name: Backend mutation (domain ${{ matrix.shard }}/16)
+    name: Backend mutation (domain ${{ matrix.shard }}/32)
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
     permissions:
       contents: read
     defaults:
@@ -52,7 +52,7 @@ jobs:
       - run: npm run test:mutation:shard
         env:
           TZ: UTC
-          STRYKER_SHARD: ${{ matrix.shard }}/16
+          STRYKER_SHARD: ${{ matrix.shard }}/32
           # Jest workers in long Stryker runs grow past Node's default heap and get restarted.
           NODE_OPTIONS: --max-old-space-size=3072
       - if: always()
