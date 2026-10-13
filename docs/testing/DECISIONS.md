@@ -508,4 +508,4 @@ The first D-068 nightly still timed out (shard 1 had 1,678 mutants, ~90 min proj
 - `timeoutMS` 120 s → 15 s: an infinite-loop mutant no longer waits two minutes.
 - `ignorers: ['logging']` (`stryker-plugins/ignore-logging.mjs`) skips mutants inside `logger.*` / `this.logger.*` / `console.*` calls — diagnostic text only.
 - `thresholds.break: null`: a shard fails only on errors; the BE-COV-021 ratchet gate judges scores.
-- 12 shards, mutation step capped at 50 min so the cache save still runs. The first full pass is the slow one; later nights retest only what changed.
+- 12 shards; mutation step capped at 110 min (job 120) so a cold pass always completes and saves its cache (a shard cut off at 50 min saved nothing). Runner minutes are free on the public repository. The first full pass is the slow one; later nights retest only what changed.
