@@ -78,3 +78,36 @@ it("[AD-FLOW-LOGIN-002] wrong credentials show the server message without refres
   expect(refreshes).toBe(0);
   expect(screen.getByRole("button", { name: "Login" })).toBeEnabled();
 });
+
+it("[AD-ERR-025] an inactive account shows the server's 403 message", async () => {
+  const message = "Your account is not active. Please contact support.";
+  server.use(
+    http.post(`${API}${endpoints.login}`, () =>
+      HttpResponse.json({ message }, { status: 403 }),
+    ),
+  );
+  const { user } = renderWithProviders(<Page />, {
+    user: null,
+    route: "/login",
+  });
+  await user.type(screen.getByLabelText("Email"), "admin@example.test");
+  await user.type(screen.getByLabelText("Password"), "secret");
+  await user.click(screen.getByRole("button", { name: "Login" }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
+});
+
+it("[AD-ERR-026] an unreachable server is explained", async () => {
+  server.use(http.post(`${API}${endpoints.login}`, () => HttpResponse.error()));
+  const { user } = renderWithProviders(<Page />, {
+    user: null,
+    route: "/login",
+  });
+  await user.type(screen.getByLabelText("Email"), "admin@example.test");
+  await user.type(screen.getByLabelText("Password"), "secret");
+  await user.click(screen.getByRole("button", { name: "Login" }));
+  expect(
+    await screen.findByText(
+      "Can't reach the server. Check your connection and try again.",
+    ),
+  ).toBeInTheDocument();
+});

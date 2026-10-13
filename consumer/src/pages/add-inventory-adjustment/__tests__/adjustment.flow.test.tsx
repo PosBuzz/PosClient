@@ -9,7 +9,7 @@ import { server } from "../../../test/msw/server";
 import { renderWithProviders } from "../../../test/render";
 import Adjustment from "../index";
 
-it("[CO-FLOW-INV-003] shows the server shortage if stock changes before an inventory removal", async () => {
+it("[CO-FLOW-INV-003][CO-ERR-028] shows the server shortage if stock changes before an inventory removal", async () => {
   const batches = responseContract<any>("inventory-batches");
   const batch = batches.data.find(
     (batch: any) => batch.variant_id === 1 && batch.branch_id === 1,

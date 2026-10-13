@@ -65,11 +65,11 @@ export class ReceiptPdfSettingController {
       body.settings === null ||
       Array.isArray(body.settings)
     ) {
-      throw new BadRequestException('settings must be an object');
+      throw new BadRequestException('Receipt settings must be an object.');
     }
     if (!Object.prototype.hasOwnProperty.call(PRESET_DEFAULTS, body.type)) {
       throw new BadRequestException(
-        `type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
+        `Receipt type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
       );
     }
 
@@ -187,6 +187,23 @@ export class ReceiptPdfSettingController {
     },
   ) {
     const consumerId = req.user.consumer_id;
+    if (typeof body?.name !== 'string' || !body.name.trim()) {
+      throw new BadRequestException(
+        'A name is required for the receipt setting.',
+      );
+    }
+    if (!Object.prototype.hasOwnProperty.call(PRESET_DEFAULTS, body.type)) {
+      throw new BadRequestException(
+        `Receipt type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
+      );
+    }
+    if (
+      typeof body.settings !== 'object' ||
+      body.settings === null ||
+      Array.isArray(body.settings)
+    ) {
+      throw new BadRequestException('Receipt settings must be an object.');
+    }
     return this.service.createSetting({
       consumerId,
       branchId: body.branchId,

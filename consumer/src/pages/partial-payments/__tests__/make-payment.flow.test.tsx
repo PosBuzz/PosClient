@@ -5,7 +5,7 @@ import { endpoints } from "../../../api/endpoints";
 import { queryKeys } from "../../../constants/queryKeys";
 import { responseContract } from "../../../test/contracts/load";
 import { expectRequestContract } from "../../../test/contracts/record";
-import { API, ok } from "../../../test/msw/api";
+import { API, fail, ok } from "../../../test/msw/api";
 import { captureRequests } from "../../../test/msw/capture";
 import { server } from "../../../test/msw/server";
 import { renderWithProviders } from "../../../test/render";
@@ -124,4 +124,14 @@ it("[CO-FLOW-PAY-003] a successful payment refreshes sales and every report", as
   ]) {
     expect(keys).toContain(key);
   }
+});
+
+it("[CO-ERR-026] an overpayment refused by the server shows its exact message", async () => {
+  const message =
+    "Total payment amount (500.00) exceeds remaining amount (300.00)";
+  captureRequests("post", endpoints.makePayment, () => fail(400, message));
+  const { user } = mount();
+  await screen.findByPlaceholderText("0.00");
+  await user.click(screen.getByRole("button", { name: /Record Payment/ }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
 });

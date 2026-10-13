@@ -192,7 +192,9 @@ export class PromotionsService {
     }
 
     if (endDate && endDate < startDate) {
-      throw new BadRequestException('end_date must be after start_date');
+      throw new BadRequestException(
+        'The end date must be after the start date.',
+      );
     }
 
     const minQuantity = input.min_quantity ?? 1;
@@ -208,7 +210,7 @@ export class PromotionsService {
     if (capQuantity !== null && capQuantity !== undefined && capQuantity > 0) {
       if (capQuantity < minQuantity) {
         throw new BadRequestException(
-          'cap_quantity must be greater than or equal to min_quantity',
+          'The cap quantity must be at least the minimum quantity.',
         );
       }
     }
@@ -222,19 +224,19 @@ export class PromotionsService {
       capDiscountAmount > maxDiscountAmount
     ) {
       throw new BadRequestException(
-        'cap_discount_amount cannot be greater than max_discount_amount',
+        'The cap discount amount cannot be greater than the maximum discount amount.',
       );
     }
 
     if (limitPerCustomer && (!customerUsageLimit || customerUsageLimit < 1)) {
       throw new BadRequestException(
-        'customer_usage_limit is required when limit_per_customer is true',
+        'A customer usage limit is required when the promotion is limited per customer.',
       );
     }
 
     if (!limitPerCustomer && customerUsageDailyReset) {
       throw new BadRequestException(
-        'customer_usage_daily_reset requires limit_per_customer to be true',
+        'Daily reset of customer usage requires the promotion to be limited per customer.',
       );
     }
 
@@ -243,7 +245,7 @@ export class PromotionsService {
 
     if (input.branch_specific && branchIds.length === 0) {
       throw new BadRequestException(
-        'branch_ids is required when branch_specific is true',
+        'Select at least one branch for a branch-specific promotion.',
       );
     }
 
@@ -264,14 +266,12 @@ export class PromotionsService {
 
     if (input.scope === PromotionScope.BRAND) {
       if (!input.brand_id) {
-        throw new BadRequestException(
-          'brand_id is required for BRAND promotions',
-        );
+        throw new BadRequestException('Select a brand for a brand promotion.');
       }
 
       if (variantIds.length > 0) {
         throw new BadRequestException(
-          'variant_ids should not be provided for BRAND promotions',
+          'Brand promotions apply to a whole brand; remove the selected products.',
         );
       }
 
@@ -288,7 +288,7 @@ export class PromotionsService {
     } else {
       if (variantIds.length === 0) {
         throw new BadRequestException(
-          'variant_ids is required for SINGLE_PRODUCT or BUNDLE promotions',
+          'Select at least one product for a single-product or bundle promotion.',
         );
       }
 

@@ -1,0 +1,7 @@
+[
+  { "file": "pages/pos/index.tsx", "reason": "Print-agent errors come from the local agent on the cashier's PC, not from the API." },
+  { "file": "pages/view-sale/index.tsx", "reason": "Print-agent errors come from the local agent on the cashier's PC, not from the API." },
+  { "file": "pages/barcode-printing/index.tsx", "reason": "Print-agent errors come from the local agent on the cashier's PC, not from the API." },
+  { "file": "pages/add-or-edit-receipt-settings/index.tsx", "reason": "The literal branch is client-side form validation; API failures use getErrorMessage in the else branch." },
+  { "file": "pages/returns/create.tsx", "reason": "A 404 lookup shows deliberate guidance about the sale number; every other failure uses getErrorMessage." }
+]

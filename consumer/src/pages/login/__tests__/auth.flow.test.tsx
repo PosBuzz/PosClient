@@ -147,3 +147,36 @@ it("[CO-FLOW-AUTH-003] routes an inactive tenant to its subscription message and
   renderWithProviders(app, { route: "/login", user: null });
   await screen.findByText("Unknown business");
 });
+
+it("[CO-ERR-029] a failed login shows the server message and sends no refresh-token request", async () => {
+  captureRequests("post", endpoints.login, () =>
+    fail(401, "Invalid email or password"),
+  );
+  const refresh = captureRequests("post", endpoints.refreshToken, { ok: true });
+  const { user } = renderWithProviders(<Login />, { user: null });
+  await user.type(
+    screen.getByPlaceholderText("Enter your email"),
+    "x@example.test",
+  );
+  await user.type(screen.getByPlaceholderText("Enter your password"), "wrong");
+  await user.click(screen.getByRole("button", { name: "Login" }));
+  expect(
+    await screen.findByText("Invalid email or password"),
+  ).toBeInTheDocument();
+  expect(refresh.calls).toHaveLength(0);
+});
+
+it("[CO-ERR-030] an inactive subscription shows its message on the login page", async () => {
+  const message =
+    "Your subscription is not active. Please renew it or contact support to continue.";
+  captureRequests("post", endpoints.login, () => fail(403, message));
+  const { user } = renderWithProviders(<Login />, { user: null });
+  await user.type(
+    screen.getByPlaceholderText("Enter your email"),
+    "x@example.test",
+  );
+  await user.type(screen.getByPlaceholderText("Enter your password"), "secret");
+  await user.click(screen.getByRole("button", { name: "Login" }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
+  expect(useAuthStore.getState().isAuthenticated).toBe(false);
+});
