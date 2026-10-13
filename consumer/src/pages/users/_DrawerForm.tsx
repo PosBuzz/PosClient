@@ -91,6 +91,7 @@ export default function DrawerForm({
   };
 
   useEffect(() => {
+    if (!open) return;
     if (isEditing && editedItem) {
       const branchIds = editedItem.branches?.map((ub) => ub.branch.id) || [];
       form.setFieldsValue({
@@ -104,7 +105,7 @@ export default function DrawerForm({
       form.resetFields();
       setSelectAllBranches(false);
     }
-  }, [isEditing, editedItem, form, branchOptions]);
+  }, [open, isEditing, editedItem, form, branchOptions]);
 
   return (
     <>
@@ -140,7 +141,9 @@ export default function DrawerForm({
               options={roleOptions}
               onChange={(_value) => {
                 // Clear branch selection when role changes
-                form.setFieldValue("branch_ids", []);
+                if (form.getFieldValue("branch_ids")?.length) {
+                  form.setFieldsValue({ branch_ids: [] });
+                }
                 setSelectAllBranches(false);
               }}
             />

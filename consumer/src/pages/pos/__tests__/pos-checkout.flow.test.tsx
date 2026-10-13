@@ -128,6 +128,143 @@ function expectedCart(
 const money = (n: number) => n.toFixed(2);
 
 describe("POS checkout", () => {
+  it("[CO-FLOW-POS-022] a printer HTTP rejection reports its reason without retrying the sale", async () => {
+    localStorage.setItem("autoPrintThermal", "true");
+    server.use(
+      http.post(
+        "http://localhost:8080/print",
+        () => new Response("Printer out of paper", { status: 400 }),
+      ),
+    );
+    const created = captureRequests("post", endpoints.createSale, { id: 106 });
+    const { user } = mount();
+    await addProduct(user, P1);
+    await complete(user);
+    await screen.findByText("Failed to print receipt: Printer out of paper");
+    expect(screen.getByText("Sale created successfully!")).toBeInTheDocument();
+    expect(created.calls).toHaveLength(1);
+  });
+  it("[CO-FLOW-POS-021] decreasing the restaurant quantity to zero removes the line and disables checkout", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    const created = captureRequests("post", endpoints.createSale);
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByRole("button", { name: `Decrease ${P1}` }));
+    expect(await screen.findByText("Your order is empty")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Checkout/ })).toBeDisabled();
+    expect(created.calls).toHaveLength(0);
+  });
+  it("[CO-FLOW-POS-020] adding the same menu product again scales its per-quantity discount", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    const created = captureRequests("post", endpoints.createSale, { id: 105 });
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByText("Per qty"));
+    await setNumber(user, screen.getByRole("spinbutton"), "5");
+    await user.click(
+      screen.getAllByText(P1).find((node) => node.closest("article"))!,
+    );
+    await user.click(screen.getByRole("button", { name: /Checkout/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.items[0]).toMatchObject({
+      quantity: 2,
+      special_discount_amount: 10,
+    });
+  });
+  it("[CO-FLOW-POS-019] a per-quantity discount scales when the restaurant quantity changes", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    const created = captureRequests("post", endpoints.createSale, { id: 104 });
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByText("Per qty"));
+    await setNumber(user, screen.getByRole("spinbutton"), "5");
+    await user.click(screen.getByRole("button", { name: `Increase ${P1}` }));
+    await user.click(screen.getByRole("button", { name: /Checkout/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.items[0]).toMatchObject({
+      quantity: 2,
+      special_discount_amount: 10,
+    });
+  });
+  it("[CO-FLOW-POS-018] restaurant order options retain selected customer, staff and shipping on checkout", async () => {
+    localStorage.setItem("posLayout", "restaurant");
+    server.use(
+      http.get(`${API}${endpoints.getCustomers}`, () =>
+        ok({ data: [{ id: 31, name: "C4 customer" }] }),
+      ),
+      http.get(`${API}${endpoints.user}`, () =>
+        ok({ data: [{ id: 32, name: "C4 staff" }] }),
+      ),
+    );
+    const created = captureRequests("post", endpoints.createSale, { id: 103 });
+    const { user } = mount();
+    await user.click(await screen.findByText(P1));
+    await user.click(screen.getByRole("button", { name: /Options/ }));
+    const customer = screen
+      .getByText("Walk-in customer")
+      .closest(".ant-select")!;
+    await user.click(within(customer as HTMLElement).getByRole("combobox"));
+    await user.click(await screen.findByTitle("C4 customer"));
+    await user.click(screen.getByLabelText("Served by"));
+    await user.click(await screen.findByTitle("C4 staff"));
+    await setNumber(user, screen.getByLabelText("Shipping cost"), "10");
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }),
+    );
+    await user.click(screen.getByRole("button", { name: /Checkout/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body).toMatchObject({
+      customer_id: 31,
+      served_by_id: 32,
+      shipping_cost: 10,
+    });
+  });
+  it("[CO-FLOW-POS-016] thermal receipt includes the backend's item and payment details", async () => {
+    localStorage.setItem("autoPrintThermal", "true");
+    const sale = responseContract<any>("sale-detail");
+    const printed: any[] = [];
+    server.use(
+      http.post("http://localhost:8080/print", async ({ request }) => {
+        printed.push(await request.json());
+        return ok({ success: true });
+      }),
+    );
+    const created = captureRequests("post", endpoints.createSale, sale);
+    const { user } = mount();
+    await addProduct(user, P2);
+    await complete(user);
+    await screen.findByText("Receipt sent to printer!");
+    expect(created.calls).toHaveLength(1);
+    expect(printed).toHaveLength(1);
+    expect(printed[0]).toMatchObject({
+      saleNumber: sale.sale_number,
+      total: Number(sale.total_amount),
+    });
+    expect(printed[0].items).toHaveLength(sale.items.length);
+    expect(printed[0].items[0]).toMatchObject({
+      quantity: sale.items[0].quantity,
+    });
+    expect(printed[0].payments).toHaveLength(sale.payments.length);
+  });
+
+  it("[CO-FLOW-POS-017] cancelling a sale requires confirmation and resets the cart", async () => {
+    const created = captureRequests("post", endpoints.createSale);
+    const { user } = mount();
+    await addProduct(user, P1);
+    await user.click(screen.getByRole("button", { name: /Cancel/ }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(
+      within(dialog).getByRole("button", { name: /Yes|Confirm|Cancel Sale/ }),
+    );
+    await screen.findByText("Sale cancelled and form cleared.");
+    expect(
+      screen.getByRole("button", { name: /Complete Sale/ }),
+    ).toBeDisabled();
+    expect(created.calls).toHaveLength(0);
+  });
   it("[CO-FLOW-POS-014] restaurant menu checkout records the same sale and clears the order", async () => {
     localStorage.setItem("posLayout", "restaurant");
     const created = captureRequests("post", endpoints.createSale, { id: 101 });

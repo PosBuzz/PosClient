@@ -69,6 +69,63 @@ const row = (label: string) =>
     ) as HTMLElement;
 
 describe("Add sale", () => {
+  it("[CO-FLOW-SALE-007] adding a duplicate product scales a per-quantity special discount", async () => {
+    const created = captureRequests("post", endpoints.createSale, { id: 7 });
+    const { user } = mount();
+    await addProduct(user, "Product 5 - Default");
+    const line = row("Product 5");
+    await user.click(within(line).getByText("Per qty"));
+    await setNumber(user, within(line).getAllByRole("spinbutton")[1], "5");
+    await addProduct(user, "Product 5 - Default");
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.items[0]).toMatchObject({
+      quantity: 2,
+      special_discount_amount: 10,
+    });
+  });
+  it("[CO-FLOW-SALE-005] barcode entry adds a variant and an unpaid checkout sends due status", async () => {
+    const product = variants[0];
+    server.use(
+      http.get(`${API}${endpoints.getProductByBarcode}`, () => ok(product)),
+    );
+    const created = captureRequests("post", endpoints.createSale, { id: 5 });
+    const { user } = mount();
+    await screen.findByText("Search and select products...");
+    await user.keyboard(`${product.barcode}{Enter}`);
+    await screen.findByText(
+      `Added ${product.product_name} - ${product.name} to sale`,
+    );
+    await setNumber(user, screen.getByPlaceholderText("0.00"), "0");
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body).toMatchObject({
+      payment_status: "due",
+      received_amount: 0,
+      payments: [],
+      items: [{ variant_id: product.id, quantity: 1 }],
+    });
+  });
+
+  it("[CO-FLOW-SALE-006] a payment below the invoice total sends partial status", async () => {
+    const created = captureRequests("post", endpoints.createSale, { id: 6 });
+    const { user } = mount();
+    await addProduct(user, "Product 5 - Default");
+    await setNumber(user, screen.getByPlaceholderText("0.00"), "30");
+    await user.type(screen.getByPlaceholderText("Reference"), "Cash desk");
+    await user.click(screen.getByRole("button", { name: /Create Sale/ }));
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body).toMatchObject({
+      payment_status: "partial",
+      received_amount: 30,
+      payments: [
+        { payment_method: "CASH", amount: 30, reference: "Cash desk" },
+      ],
+    });
+  });
   it("[CO-FLOW-SALE-003] split cash and MFS payments match the POS recording", async () => {
     const created = captureRequests("post", endpoints.createSale, { id: 3 });
     const { user } = mount();

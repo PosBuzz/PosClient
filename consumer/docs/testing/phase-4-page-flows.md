@@ -92,7 +92,7 @@ Fixture: `sale-by-number.json` (S4 from the scenario).
 | CO-FLOW-RET-001 | look up the sale number → items listed with the remaining returnable qty | |
 | CO-FLOW-RET-002 | return 1 unit, CASH refund pre-filled with the prorated value (`line_total × qty / original qty`) | the amount shown equals the backend formula (B3 BE-RET-001); body recorded `return-cash.json` |
 | CO-FLOW-RET-003 | refund amount edited to ≠ selected value → client-side validation message (if any) or the server 400 shown | |
-| CO-FLOW-RET-004 | exchange: pick an exchange variant/batch | body has `exchanges[]` + EXCHANGE payment; recorded `return-exchange.json` |
+| CO-FLOW-RET-004 | exchange: look up a replacement sale from the same branch | body has `exchange_sale_id` + EXCHANGE payment; recorded `return-exchange.json` (current UI, D-048) |
 | CO-FLOW-RET-005 | shipping refund > remaining | blocked/400 shown |
 | CO-FLOW-RET-006 | success → `invalidateSalesReports` called, navigates to `/returns/view/:id` | |
 | CO-FLOW-RET-007 | server 500 → exactly **1** POST (KI-010 regression guard) | |
@@ -110,12 +110,12 @@ Fixture: `sale-by-number.json` (S4 from the scenario).
 | CO-FLOW-SL-001 | list renders the `sales-list.json` rows; summary tiles show `total_amount`, `total_due`, `total_refund`, `net_amount` from the summary block |
 | CO-FLOW-SL-002 | delete with reason → DELETE/POST body; server 400 "has return(s)" message shown verbatim |
 | CO-FLOW-SL-003 | restore deleted sale |
-| CO-FLOW-VS-001 | view sale renders items, discounts breakdown, payments, returns from `sale-detail.json`; displayed per-line net equals `line_total − discounts` (same formula as `getVariantSalesDetail`) |
+| CO-FLOW-VS-001 | view sale renders items, discounts breakdown, payments, returns from `sale-detail.json`; displayed per-line net equals `line_total`, which already includes discounts (KI-047, D-049) |
 
 ### 3.6 Reports (`pages/dashboard`, `pages/eod`, stats pages)
 | ID | Flow |
 |---|---|
-| CO-FLOW-DASH-001 | dashboard renders every `summary` field from `dashboard.json`; each value appears formatted (`formatCurrency`). Assert by test id or label → value. **A renamed backend field shows as "N/A"/0 and fails here** |
+| CO-FLOW-DASH-001 | dashboard renders all nine daily `summary` fields used by the page from `dashboard.json`; weekly fields are not displayed (D-049). Assert by label → value using each control's currency/count formatting. **A renamed backend field shows as "N/A"/0 and fails here** |
 | CO-FLOW-DASH-002 | period switches (daily/weekly/monthly) send the right query params (`payment_period`, `return_payment_period`, `top_products_period`) |
 | CO-FLOW-EOD-001 | EOD renders every field of `eod.json` used by the page; the business report PDF button calls `endpoints.businessReportPdf` with the same params |
 | CO-FLOW-STATS-001 | user-sales-stats and variant-sales-stats pages render their contract files |
