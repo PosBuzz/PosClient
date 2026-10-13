@@ -45,9 +45,28 @@ if (
   throw new Error(
     'STRYKER_SHARD must look like "2/8" with 1 <= index <= count.',
   );
-const files = [
+const allFiles = [
   ...new Set(targets.flatMap((pattern) => globSync(pattern))),
 ].sort();
+// STRYKER_ROTATION="d/D" (1-based) keeps every D-th file starting at d, so D nights cover every file
+// once. STRYKER_CHANGED_FILES (newline or comma separated) always joins today's set, so a file that
+// was just edited is measured the same night whatever its rotation day. Unset = every file.
+const rotation = process.env.STRYKER_ROTATION?.match(/^(\d+)\/(\d+)$/);
+if (process.env.STRYKER_ROTATION && !rotation)
+  throw new Error('STRYKER_ROTATION must look like "3/7".');
+const changed = new Set(
+  (process.env.STRYKER_CHANGED_FILES ?? '')
+    .split(/[\n,]/)
+    .map((file) => file.trim().replace(/^backend\//, ''))
+    .filter(Boolean),
+);
+const files = rotation
+  ? allFiles.filter(
+      (file, index) =>
+        index % Number(rotation[2]) === Number(rotation[1]) - 1 ||
+        changed.has(file),
+    )
+  : allFiles;
 // A file bigger than SPLIT_BYTES is cut into line ranges (Stryker's "file:start-end") so one huge
 // service cannot be the shard that decides the nightly's duration.
 const SPLIT_BYTES = 18000;

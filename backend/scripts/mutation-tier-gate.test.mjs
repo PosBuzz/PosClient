@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeReports, tierFailures } from './mutation-tier-gate.mjs';
+import {
+  mergeReports,
+  ratchetResult,
+  tierFailures,
+} from './mutation-tier-gate.mjs';
 const inventory = [
   { service: 'MoneyService', file: 'src/money.service.ts' },
   { service: 'CatalogService', file: 'src/catalog.service.ts' },
@@ -121,4 +125,27 @@ test('[BE-COV-020] shard reports merge, and a file split into line ranges combin
     split.files['src/a.ts'].mutants.map((m) => m.status),
     ['Killed', 'Killed', 'Survived', 'Killed'],
   );
+});
+
+test('[BE-COV-021] ratchet: a drop below baseline fails, small noise and new files do not', () => {
+  const report = {
+    files: {
+      'src/a.ts': result(['Killed', 'Killed', 'Survived', 'Survived']),
+      'src/b.ts': result(['Killed', 'Survived']),
+      'src/c.ts': result(['Killed', 'Killed', 'Killed', 'NoCoverage']),
+    },
+  };
+  const { failures, unrecorded, candidate } = ratchetResult(report, {
+    'src/a.ts': 60,
+    'src/b.ts': 50.5,
+    'src/old.ts': 90,
+  });
+  assert.deepEqual(failures, ['src/a.ts: 50% < baseline 60%']);
+  assert.deepEqual(unrecorded, ['src/c.ts: 75%']);
+  assert.deepEqual(candidate, {
+    'src/a.ts': 50,
+    'src/b.ts': 50,
+    'src/c.ts': 75,
+    'src/old.ts': 90,
+  });
 });
