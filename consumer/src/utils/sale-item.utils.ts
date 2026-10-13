@@ -60,11 +60,13 @@ export const upsertVariantInSaleItems = ({
   variant,
   quantityToAdd,
   priceType,
+  specialDiscountPerQuantity = false,
 }: {
   sourceItems: SaleItem[];
   variant: ProductVariantForSale;
   quantityToAdd: number;
   priceType: PriceType;
+  specialDiscountPerQuantity?: boolean;
 }) => {
   const existingItem = sourceItems.find(
     (item) => item.variant_id === variant.id,
@@ -85,6 +87,11 @@ export const upsertVariantInSaleItems = ({
         ? {
             ...item,
             quantity: newQuantity,
+            special_discount_amount: specialDiscountPerQuantity
+              ? ((Number(item.special_discount_amount) || 0) /
+                  Math.max(1, Number(item.quantity) || 1)) *
+                newQuantity
+              : item.special_discount_amount,
             unit_price: Number(price) || 0,
             tax_amount: Number(tax_amount) || 0,
             line_total: Number(line_total) || 0,

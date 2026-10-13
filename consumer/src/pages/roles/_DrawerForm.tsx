@@ -264,6 +264,7 @@ export default function DrawerForm({
   };
 
   useEffect(() => {
+    if (!open) return;
     if (isEditing && editedItem) {
       form.setFieldsValue({
         name: editedItem.name,
@@ -274,7 +275,7 @@ export default function DrawerForm({
     } else {
       form.resetFields();
     }
-  }, [isEditing, editedItem, form]);
+  }, [open, isEditing, editedItem, form]);
 
   return (
     <>

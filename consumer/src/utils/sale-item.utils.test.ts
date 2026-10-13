@@ -17,6 +17,24 @@ const qty = fc.integer({ min: 0, max: 50 });
 const tax = fc.integer({ min: 0, max: 2500 }).map((n) => n / 100);
 const round = (n: number) => Number(n.toFixed(2));
 const cents = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+it("[CO-SALE-PER-QTY-001] adding a unit preserves an opted-in per-unit discount and handles zero discount", () => {
+  const v = variant();
+  for (const [quantity, discount, expected] of [
+    [2, 10, 15],
+    [0, 0, 0],
+  ]) {
+    const result = upsertVariantInSaleItems({
+      sourceItems: [
+        item({ variant_id: v.id, quantity, special_discount_amount: discount }),
+      ],
+      variant: v,
+      quantityToAdd: 1,
+      priceType: PriceType.REGULAR,
+      specialDiscountPerQuantity: true,
+    });
+    expect(result[0].special_discount_amount).toBe(expected);
+  }
+});
 it("[CO-SALE-REPRICE-002] a zero-priced variant with absent tax metadata stays a zero total", () => {
   const zero = variant({
     regular_price: 0,
