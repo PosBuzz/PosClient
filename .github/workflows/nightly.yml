@@ -8,8 +8,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Changes since last night
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
+
   backend-mutation-domain:
     name: Backend mutation (domain)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions:
@@ -52,6 +68,8 @@ jobs:
 
   consumer-mutation-full:
     name: Consumer mutation (full)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,6 +105,8 @@ jobs:
 
   backend-tz-matrix:
     name: Backend integration (TZ ${{ matrix.tz }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -123,6 +143,8 @@ jobs:
 
   e2e-repeat:
     name: Full-stack E2E (3x)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
