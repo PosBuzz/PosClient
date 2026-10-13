@@ -443,3 +443,5 @@ Rules R2 "starts with a capital letter" is checked for static messages and runti
 ## D-059 B7/C5/B8/X3 first pass (2026-10-13)
 Type: DECISION / DOC-DRIFT
 Stryker 10's vitest runner finds no tests under vitest 5.0.4, so the consumer uses the command runner with each file's own tests (`npm run test:mutation`, one file per run; contracts copied beside the sandbox). In-place mode instruments every file and was abandoned. The first measured score was formatters 91.89% and calculate-totals 89.89% (below the 90 break); survivors are being killed. Backend unit config lists only unit-tested files; DB-backed utilities belong to the unfinished domain config. B8 tags come from direct service calls in existing tests only (helper-mediated calls are not claimed); its folder is `test/service-coverage` because `coverage/` is gitignored. X3 files are in place; GitHub-side steps (branch protection, throwaway-PR proofs, first nightly) need repo admin.
+
+Secret scan runs the open-source gitleaks v8.18.4 binary (checksum-pinned) with `.gitleaks.toml`, because the GitHub Action requires a paid license for organizations (first CI run: "License key is required").
