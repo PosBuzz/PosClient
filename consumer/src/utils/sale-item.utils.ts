@@ -19,7 +19,6 @@ export const calculateTaxAndTotal = (
   let taxableAmount: number;
 
   const validTaxPercentage = Number(taxPercentage) || 0;
-  // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
   const normalizedTaxMethod = String(taxMethod || "EXCLUSIVE")
     .trim()
     .toUpperCase();
@@ -28,7 +27,6 @@ export const calculateTaxAndTotal = (
   if (isInclusiveTax) {
     lineTotal = baseAmount;
     taxAmount =
-      // Stryker disable next-line ConditionalExpression,EqualityOperator: a 0% rate divides by 100 and yields 0 tax either way
       validTaxPercentage > 0
         ? (baseAmount * validTaxPercentage) / (100 + validTaxPercentage)
         : 0;
@@ -81,7 +79,6 @@ export const upsertVariantInSaleItems = ({
       price,
       newQuantity,
       Number(variant.tax_percentage) || 0,
-      // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
       variant.tax_method || "EXCLUSIVE",
     );
 
@@ -107,7 +104,6 @@ export const upsertVariantInSaleItems = ({
     price,
     quantityToAdd,
     Number(variant.tax_percentage) || 0,
-    // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
     variant.tax_method || "EXCLUSIVE",
   );
 
@@ -128,7 +124,6 @@ export const upsertVariantInSaleItems = ({
     image: variant.image ?? undefined,
     unit_name: variant.unit_name,
     tax_percentage: Number(variant.tax_percentage || 0),
-    // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
     tax_method: variant.tax_method || "EXCLUSIVE",
   };
 
@@ -157,7 +152,6 @@ export const updateSaleItemQuantity = ({
       Number(item.unit_price),
       quantity,
       Number(item.tax_percentage) || 0,
-      // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
       variant?.tax_method || item.tax_method || "EXCLUSIVE",
     );
 
@@ -188,7 +182,6 @@ export const repriceSaleItems = ({
       price,
       item.quantity,
       Number(variant.tax_percentage) || 0,
-      // Stryker disable next-line StringLiteral: "" and "EXCLUSIVE" are both treated as non-inclusive
       variant.tax_method || "EXCLUSIVE",
     );
     return {

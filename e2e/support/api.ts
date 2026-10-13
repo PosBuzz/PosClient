@@ -1,5 +1,7 @@
 import { expect, type Page, type APIRequestContext } from "@playwright/test";
 import { API, CONSUMER, ADMIN } from "./env";
+import { fileURLToPath } from 'node:url';
+import { reserveLoginSlot } from '../scripts/login-budget.mjs';
 
 /** Uses the browser's cookie jar; a second login would rotate its refresh token. */
 export class StackApi {
@@ -25,12 +27,14 @@ export class StackApi {
   patch(path:string,data:unknown){return this.json('PATCH',path,data);}
 }
 
-const loginTimes=new Map<string,number[]>();
+const loginBudgetPath=fileURLToPath(new URL('../.cache/login-budget.json', import.meta.url));
 /** Login is throttled to 5/min per IP+email (D-005); the suite paces itself instead of weakening that control. */
 export async function waitForLoginBudget(key:string){
-  const recent=(loginTimes.get(key)??[]).filter(time=>Date.now()-time<61000);
-  if (recent.length>=4) await new Promise(resolve=>setTimeout(resolve,61000-(Date.now()-recent[0])));
-  loginTimes.set(key,[...recent.filter(time=>Date.now()-time<61000),Date.now()]);
+  for (;;) {
+    const slot=reserveLoginSlot(loginBudgetPath,key);
+    if(slot.reserved) return;
+    await new Promise(resolve=>setTimeout(resolve,slot.wait));
+  }
 }
 
 export async function login(page:Page, admin=false) {

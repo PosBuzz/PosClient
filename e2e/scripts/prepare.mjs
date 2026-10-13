@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -9,6 +9,9 @@ const root = resolve(e2e, "..");
 const env = { ...process.env, ...parse(readFileSync(resolve(e2e, ".env.e2e"))) };
 const db = new URL(env.DATABASE_URL);
 if (db.hostname !== "localhost" || db.port !== "55433" || db.pathname !== "/posbuzz_e2e_test" || env.NODE_ENV !== "test") throw new Error("Refusing to prepare a non-E2E database");
+// A new stack has a fresh throttle; clear only this harness's old reservations and lock.
+rmSync(resolve(e2e, '.cache/login-budget.json'), {force: true});
+rmSync(resolve(e2e, '.cache/login-budget.json.lock'), {force: true});
 const run = (command, args, cwd, extra = {}) => execFileSync(command, args, {cwd, env:{...env,...extra},stdio:"inherit"});
 run("docker", ["compose", "-f", "docker-compose.e2e.yml", "up", "-d", "--wait"], root);
 for (const app of ["backend", "consumer", "admin"]) {

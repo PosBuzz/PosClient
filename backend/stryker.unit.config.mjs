@@ -1,3 +1,5 @@
+import { cpSync, mkdirSync } from 'node:fs';
+
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   packageManager: 'npm',
@@ -6,7 +8,10 @@ export default {
   jest: { projectType: 'custom', enableFindRelatedTests: true },
   checkers: ['typescript'],
   tsconfigFile: 'tsconfig.json',
+  ignorePatterns: ['.env*', 'reports/**', 'coverage/**'],
   coverageAnalysis: 'perTest',
+  concurrency: 1,
+  timeoutMS: 60000,
   // Files with unit tests. DB-backed utilities (stock-mutation, document-number-lock, business-time)
   // are killed by the integration suites and belong to the domain config.
   mutate: [
@@ -25,4 +30,9 @@ export default {
   incrementalFile: 'reports/stryker/unit-incremental.json',
   reporters: ['clear-text', 'progress', 'html', 'json'],
   htmlReporter: { fileName: 'reports/stryker/unit.html' },
+  jsonReporter: { fileName: 'reports/stryker/unit.mutation.json' },
 };
+
+// Contract specs resolve fixtures beside Stryker's sandbox, just like the consumer runner.
+mkdirSync('.stryker-tmp', { recursive: true });
+cpSync('../contracts', '.stryker-tmp/contracts', { recursive: true });

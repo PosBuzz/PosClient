@@ -403,7 +403,7 @@ describe("cart mutation boundaries", () => {
   });
 
   it("[CO-CART-032] adding to an existing inclusive line recalculates inclusively and touches only that line", () => {
-    const first = item({ variant_id: 1, quantity: 1 });
+    const first = item({ variant_id: 1, quantity: 7 });
     const second = item({ variant_id: 2, quantity: 1, unit_price: 115 });
     const result = upsertVariantInSaleItems({
       sourceItems: [first, second],

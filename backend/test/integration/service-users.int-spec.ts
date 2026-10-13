@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import * as bcryptjs from 'bcryptjs';
 import { getPrisma, disconnect } from '../helpers/db';
 import { Boot, World, bootDomain, newWorld } from '../helpers/domain';
-import { TEST_PASSWORD, createAdmin, createTenant } from '../factories';
+import { createAdmin, createTenant } from '../factories';
 import { UsersService as ConsumerUsers } from '../../src/consumer/users/services/users.service';
 import { UsersService as AdminUsers } from '../../src/admin/users/services/users.service';
 
@@ -41,7 +41,7 @@ describe('consumer and super-admin user management', () => {
     ).map((p) => p.permission_id);
 
   describe('consumer users', () => {
-    it('[BE-USR-001] {UsersService.permissionOptions} {UsersService.createRole} {UsersService.getRoles} {UsersService.updateRole} {UsersService.deleteRole} roles are limited to the plan, scoped to the tenant, and can be renamed and deleted', async () => {
+    it('[BE-USR-001] {ConsumerUsersService.permissionOptions} {ConsumerUsersService.createRole} {ConsumerUsersService.getRoles} {ConsumerUsersService.updateRole} {ConsumerUsersService.deleteRole} roles are limited to the plan, scoped to the tenant, and can be renamed and deleted', async () => {
       const options: any[] = (await users.permissionOptions(
         w.tenant.consumer.plan_id,
       )) as any[];
@@ -71,20 +71,19 @@ describe('consumer and super-admin user management', () => {
       });
       expect(renamed.name).toBe('Senior cashier');
       expect(renamed.permissions).toHaveLength(1);
+      const foreignRoleError = await failure(
+        users.updateRole(role.id, { name: 'Hijack' }, w.bystander.consumer.id),
+      );
+      expect(foreignRoleError.getStatus()).toBe(404);
+      expect(foreignRoleError.message).toBe('Role not found');
       expect(
-        await failure(
-          users.updateRole(
-            role.id,
-            { name: 'Hijack' } as any,
-            w.bystander.consumer.id,
-          ),
-        ),
-      ).not.toBeNull();
+        (await db.role.findUniqueOrThrow({ where: { id: role.id } })).name,
+      ).toBe('Senior cashier');
       await users.deleteRole(role.id, cid());
       expect(await db.role.count({ where: { id: role.id } })).toBe(0);
     });
 
-    it('[BE-USR-002] {UsersService.createRole} a role cannot grant a permission the plan does not include', async () => {
+    it('[BE-USR-002] {ConsumerUsersService.createRole} a role cannot grant a permission the plan does not include', async () => {
       const own = await createTenant(db, {
         permissions: ['sales' as any],
       });
@@ -97,11 +96,14 @@ describe('consumer and super-admin user management', () => {
         ),
       );
       expect(error).toBeInstanceOf(BadRequestException);
-      expect(error.message).toMatch(/^[A-Z]/);
+      expect(error.getStatus()).toBe(400);
+      expect(error.message).toBe(
+        'One or more permissions are not included in your plan',
+      );
       expect(await db.role.count({ where: { name: 'Too much' } })).toBe(0);
     });
 
-    it('[BE-USR-003] {UsersService.createUser} {UsersService.getUsers} {UsersService.updateUser} {UsersService.deleteUser} users are created with a hashed password in their own tenant, found by search, updated and deleted', async () => {
+    it('[BE-USR-003] {ConsumerUsersService.createUser} {ConsumerUsersService.getUsers} {ConsumerUsersService.updateUser} {ConsumerUsersService.deleteUser} users are created with a hashed password in their own tenant, found by search, updated and deleted', async () => {
       const role = await db.role.findFirstOrThrow({
         where: { consumer_id: cid() },
       });
@@ -129,15 +131,15 @@ describe('consumer and super-admin user management', () => {
       expect(
         (await db.user.findUniqueOrThrow({ where: { id: created.id } })).name,
       ).toBe('Rahim Uddin');
-      expect(
-        await failure(
-          users.updateUser(
-            created.id,
-            { name: 'Hijack' } as any,
-            w.bystander.consumer.id,
-          ),
+      const foreignUserError = await failure(
+        users.updateUser(
+          created.id,
+          { name: 'Hijack' },
+          w.bystander.consumer.id,
         ),
-      ).not.toBeNull();
+      );
+      expect(foreignUserError.getStatus()).toBe(404);
+      expect(foreignUserError.message).toBe('User not found');
       expect(
         (await db.user.findUniqueOrThrow({ where: { id: created.id } })).name,
       ).toBe('Rahim Uddin');
@@ -145,7 +147,7 @@ describe('consumer and super-admin user management', () => {
       expect(await db.user.count({ where: { id: created.id } })).toBe(0);
     });
 
-    it("[BE-USR-004] {UsersService.createUser} another tenant's role or branch cannot be assigned", async () => {
+    it("[BE-USR-004] {ConsumerUsersService.createUser} another tenant's role or branch cannot be assigned", async () => {
       const foreignRole = await db.role.findFirstOrThrow({
         where: { consumer_id: w.bystander.consumer.id },
       });
@@ -160,7 +162,8 @@ describe('consumer and super-admin user management', () => {
           cid(),
         ),
       );
-      expect(error).not.toBeNull();
+      expect(error.getStatus()).toBe(404);
+      expect(error.message).toBe('Role not found');
       expect(
         await db.user.count({ where: { email: 'sneaky@example.test' } }),
       ).toBe(0);
@@ -168,7 +171,7 @@ describe('consumer and super-admin user management', () => {
   });
 
   describe('super-admin users', () => {
-    it('[BE-USR-010] {UsersService.findAllPermissions} {UsersService.createRole} {UsersService.findAllRoles} {UsersService.findOneRole} {UsersService.updateRole} {UsersService.removeRole} admin roles carry permissions and can be read, changed and removed', async () => {
+    it('[BE-USR-010] {AdminUsersService.findAllPermissions} {AdminUsersService.createRole} {AdminUsersService.findAllRoles} {AdminUsersService.findOneRole} {AdminUsersService.updateRole} {AdminUsersService.removeRole} admin roles carry permissions and can be read, changed and removed', async () => {
       await createAdmin(db);
       const permissions: any[] = (await admins.findAllPermissions()) as any[];
       const role: any = await admins.createRole({
@@ -195,7 +198,7 @@ describe('consumer and super-admin user management', () => {
       expect(await db.superAdminRole.count({ where: { id: role.id } })).toBe(0);
     });
 
-    it('[BE-USR-011] {UsersService.createUser} {UsersService.findAllUsers} {UsersService.findOneUser} {UsersService.updateUser} {UsersService.changePassword} {UsersService.removeUser} admin users are hashed, found, updated, and their password changes only with the old one', async () => {
+    it('[BE-USR-011] {AdminUsersService.createUser} {AdminUsersService.findAllUsers} {AdminUsersService.findOneUser} {AdminUsersService.updateUser} {AdminUsersService.changePassword} {AdminUsersService.removeUser} admin users are hashed, found, updated, and their password changes only with the old one', async () => {
       const first = await createAdmin(db);
       const roleId = first.role_id;
       const created: any = await admins.createUser({
@@ -224,13 +227,20 @@ describe('consumer and super-admin user management', () => {
       const wrong = await failure(
         admins.changePassword(created.id, 'wrong', 'Another!234'),
       );
-      expect(wrong).not.toBeNull();
+      expect(wrong.getStatus()).toBe(417);
+      expect(wrong.message).toBe('Old password is incorrect');
+      expect(
+        await bcryptjs.compare(
+          'Secret!234',
+          (await db.superAdmin.findUniqueOrThrow({ where: { id: created.id } }))
+            .password,
+        ),
+      ).toBe(true);
       await admins.changePassword(created.id, 'Secret!234', 'Another!234');
       const after = await db.superAdmin.findUniqueOrThrow({
         where: { id: created.id },
       });
       expect(await bcryptjs.compare('Another!234', after.password)).toBe(true);
-      expect(TEST_PASSWORD).toBeTruthy();
       expect(await admins.removeUser(created.id)).toEqual({ success: true });
       expect(await db.superAdmin.count({ where: { id: created.id } })).toBe(0);
     });

@@ -8,6 +8,48 @@ on:
   workflow_dispatch:
 
 jobs:
+  backend-mutation-domain:
+    name: Backend mutation (domain)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
+      - run: npx prisma generate
+      - run: node --test scripts/mutation-tier-gate.test.mjs
+        working-directory: backend
+      - run: npm run test:mutation:domain
+        env:
+          TZ: UTC
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-domain-mutation-report
+          path: backend/reports/stryker
+          retention-days: 14
+      - if: always()
+        run: docker compose -f ../docker-compose.test.yml down
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: backend-mutation-domain" --body "Run and mutation artifact: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+
   consumer-mutation-full:
     name: Consumer mutation (full)
     runs-on: ubuntu-latest
@@ -25,8 +67,11 @@ jobs:
           cache: npm
           cache-dependency-path: consumer/package-lock.json
       - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: rm -rf reports/stryker
-      - run: npm run test:mutation
+      - run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -61,6 +106,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: npx prisma generate
       - run: npx jest --config ./test/jest-integration.json
         env:
@@ -95,7 +143,11 @@ jobs:
             consumer/package-lock.json
             admin/package-lock.json
       - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: npx playwright install --with-deps chromium
+      - run: node --test scripts/login-budget.test.mjs
       - run: npm run prepare:stack -- --install
       - run: npx playwright test --repeat-each=3
         env:
