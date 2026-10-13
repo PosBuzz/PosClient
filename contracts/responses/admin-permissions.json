@@ -1,0 +1,46 @@
+[
+  {
+    "action": "plans",
+    "id": 1
+  },
+  {
+    "action": "billing",
+    "id": 2
+  },
+  {
+    "action": "backup&restore",
+    "id": 3
+  },
+  {
+    "action": "profile",
+    "id": 4
+  },
+  {
+    "action": "show_consumers",
+    "id": 5
+  },
+  {
+    "action": "add_consumers",
+    "id": 6
+  },
+  {
+    "action": "modify_consumers",
+    "id": 7
+  },
+  {
+    "action": "delete_consumers",
+    "id": 8
+  },
+  {
+    "action": "users",
+    "id": 9
+  },
+  {
+    "action": "support",
+    "id": 10
+  },
+  {
+    "action": "portfolio",
+    "id": 11
+  }
+]

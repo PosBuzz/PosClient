@@ -39,7 +39,7 @@ export function renderWithProviders(
   const queryClient = testQueryClient();
   // Same order as Providers.tsx; MemoryRouter replaces BrowserRouter for isolation.
   const result = render(
-    <ConfigProvider theme={{ token: { motion: false } }}>
+    <ConfigProvider virtual={false} theme={{ token: { motion: false } }}>
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <MemoryRouter initialEntries={[opts.route ?? "/"]}>

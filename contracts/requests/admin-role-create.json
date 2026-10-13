@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "path": "/admin/users/roles",
+  "auth": "admin",
+  "body": {
+    "name": "Flow Admin Role",
+    "permission_ids": [
+      1
+    ]
+  }
+}

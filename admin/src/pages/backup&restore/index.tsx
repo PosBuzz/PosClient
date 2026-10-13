@@ -5,6 +5,7 @@ import axiosInstance from "../../api/axiosInstance";
 import { endpoints } from "../../api/endpoints";
 import PageTitle from "../../components/PageTitle"; // Assuming this is still being used
 import { useMessageStore } from "../../stores/messageStore";
+import { useModalStore } from "../../stores/modalStore";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { saveAs } from "file-saver";
 import { getErrorMessage } from "../../utils/api-error";
@@ -15,6 +16,7 @@ function BackupRestorePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [restoreLoading, setRestoreLoading] = useState<boolean>(false);
   const { messageApi } = useMessageStore();
+  const { modal } = useModalStore();
 
   const handleBackup = async () => {
     setLoading(true);
@@ -39,7 +41,7 @@ function BackupRestorePage() {
   const handleRestore = async (file: File) => {
     setRestoreLoading(true);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", file, file.name);
 
     try {
       // Build query parameters for restore
@@ -61,7 +63,13 @@ function BackupRestorePage() {
     accept: ".sql",
     showUploadList: false,
     beforeUpload: (file: File) => {
-      handleRestore(file);
+      modal?.confirm({
+        title: "Restore database?",
+        content: "This replaces the current database with the selected backup.",
+        okText: "Restore",
+        okButtonProps: { danger: true },
+        onOk: () => handleRestore(file),
+      });
       return false; // Prevent automatic upload
     },
   };

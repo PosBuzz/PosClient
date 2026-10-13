@@ -136,7 +136,7 @@
         "total_refund": 0
       },
       "returns": [],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-14T15:00:00.000Z",
       "sale_number": "SAL-20260314-0006",
       "sale_type": "sale",
       "served_by": {
@@ -294,13 +294,13 @@
         {
           "id": 3,
           "reason": null,
-          "return_date": "2026-03-14T12:00:00.000Z",
+          "return_date": "2026-03-14T13:30:00.000Z",
           "return_number": "RET-20260314-0003",
           "total_exchange": "72",
           "total_refund": "0"
         }
       ],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-14T11:30:00.000Z",
       "sale_number": "SAL-20260314-0004",
       "sale_type": "sale",
       "served_by": {
@@ -472,7 +472,7 @@
         "total_refund": 0
       },
       "returns": [],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-14T11:00:00.000Z",
       "sale_number": "SAL-20260314-0003",
       "sale_type": "sale",
       "served_by": {
@@ -638,7 +638,7 @@
         "total_refund": 0
       },
       "returns": [],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-14T10:30:00.000Z",
       "sale_number": "SAL-20260314-0002",
       "sale_type": "sale",
       "served_by": {
@@ -867,13 +867,13 @@
         {
           "id": 1,
           "reason": null,
-          "return_date": "2026-03-14T12:00:00.000Z",
+          "return_date": "2026-03-14T13:00:00.000Z",
           "return_number": "RET-20260314-0001",
           "total_exchange": "0",
           "total_refund": "40"
         }
       ],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-14T10:00:00.000Z",
       "sale_number": "SAL-20260314-0001",
       "sale_type": "sale",
       "served_by": {
@@ -1041,13 +1041,13 @@
         {
           "id": 2,
           "reason": null,
-          "return_date": "2026-03-14T12:00:00.000Z",
+          "return_date": "2026-03-14T11:15:00.000Z",
           "return_number": "RET-20260314-0002",
           "total_exchange": "0",
           "total_refund": "40"
         }
       ],
-      "sale_date": "2026-03-14T12:00:00.000Z",
+      "sale_date": "2026-03-13T15:00:00.000Z",
       "sale_number": "SAL-20260313-0001",
       "sale_type": "sale",
       "served_by": {

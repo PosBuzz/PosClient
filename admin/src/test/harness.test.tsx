@@ -60,7 +60,7 @@ describe("admin harness", { concurrent: false }, () => {
     sessionStorage.setItem("a", "changed");
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
-  it("[AD-HARN-003] next test starts with clean auth, query and storage", () => {
+  it("[AD-HARN-007] next test starts with clean auth, query and storage", () => {
     expect(useAuthStore.getState()).toMatchObject({
       user: null,
       isAuthenticated: false,

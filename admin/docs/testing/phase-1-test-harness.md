@@ -19,4 +19,4 @@ duplication is small, and a shared workspace would change the build. Copy the he
 header comment `// Mirrors consumer/src/test/<file> — keep in sync`.
 
 ## Exit criteria
-- [ ] AD-HARN-001…004 green; `npm run build` still works; CI job green.
+- [x] AD-HARN-001…004 green; `npm run build` still works; CI job green on 80112bb (D-052/D-053).

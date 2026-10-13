@@ -40,7 +40,7 @@ function Index() {
         <Row gutter={[16, 16]}>
           {/* Total Users Card */}
           <Col xs={24} sm={12} md={8} lg={6}>
-            <Card bordered={false}>
+            <Card variant="borderless">
               <Statistic
                 title="Total Users"
                 value={totalUsers || 0}
@@ -52,7 +52,7 @@ function Index() {
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <Card bordered={false}>
+            <Card variant="borderless">
               <Statistic
                 title="Active Users"
                 value={totalActiveUsers || 0}
@@ -66,7 +66,7 @@ function Index() {
           {/* Active Users By Plan */}
           {Object.entries(activeUsersByPlan).map(([plan, count]) => (
             <Col xs={24} sm={12} md={8} lg={6} key={plan}>
-              <Card bordered={false}>
+                  <Card variant="borderless">
                 <Statistic
                   title={plan}
                   value={count || 0}

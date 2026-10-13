@@ -51,7 +51,7 @@ describe("admin endpoints against the backend route manifest", () => {
     expect(missing).toEqual([]);
   });
 
-  it("[X-ENDP-002] the not-served list has no stale entries", () => {
+  it("[X-ENDP-005] the not-served list has no stale entries", () => {
     const names = new Set(resolved.map((r) => r.name));
     expect(Object.keys(NOT_SERVED).filter((n) => !names.has(n))).toEqual([]);
     expect(
