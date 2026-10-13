@@ -190,7 +190,7 @@ A phase is done only when **all** of the following are true:
 - [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] B6 Schema & migrations — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
-- [ ] C4 Consumer page flows — critical flows and most smoke tests implemented; global ≥50%, returns/partial-payments ≥70% gates enabled. Remaining directories and POS/Add sale ≥70% floors pending (D-050).
+- [ ] C4 Consumer page flows — critical flows and most smoke tests implemented; global ≥50% and all four page ≥70% gates enabled. Remaining smoke directories: add-or-edit-receipt-settings, barcode-printing, customer-rewards, inventory-adjustments, inventory-movement-history, inventory-variant-stock, product-audit, promotions, receipt-settings, view-vendor. The every-page smoke guard is pending (D-051).
 - [ ] A1/A2 Admin
 - [ ] X2 Full-stack E2E
 - [ ] B7/C5 Mutation testing

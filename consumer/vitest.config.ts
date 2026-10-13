@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    maxWorkers: 2,
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
@@ -18,6 +19,8 @@ export default defineConfig({
         lines: 50,
         "src/pages/returns/**": { lines: 70 },
         "src/pages/partial-payments/**": { lines: 70 },
+        "src/pages/pos/**": { lines: 70 },
+        "src/pages/add-sales/**": { lines: 70 },
         "src/utils/calculate-totals.utils.ts": {
           lines: 100,
           branches: 100,

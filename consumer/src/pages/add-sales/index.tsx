@@ -139,6 +139,8 @@ const NewSale = () => {
       variant,
       quantityToAdd: qty,
       priceType,
+      specialDiscountPerQuantity:
+        specialDiscountModes[variant.id] === "quantity",
     });
 
   const getVariantPriceFn = (variant: ProductVariantForSale) =>
