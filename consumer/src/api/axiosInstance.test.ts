@@ -332,6 +332,12 @@ describe("axiosInstance", () => {
       client.get("/b"),
     ]);
     expect(results.map((r) => r.status)).toEqual(["rejected", "rejected"]);
+    for (const result of results) {
+      expect(result).toMatchObject({
+        status: "rejected",
+        reason: { response: { data: { message: "expired" } } },
+      });
+    }
     expect(hits).toEqual({ a: 1, b: 1 });
   });
 
@@ -440,14 +446,19 @@ describe("axiosInstance", () => {
 
   it("[CO-API-028] a refresh whose CSRF recovery gives no token fails with the refresh error", async () => {
     const { client } = await load();
+    let refreshes = 0;
     server.use(
       http.get(`${API}/thing`, () => unauthorized()),
-      http.post(`${API}${endpoints.refreshToken}`, () => csrfError()),
+      http.post(`${API}${endpoints.refreshToken}`, () => {
+        refreshes++;
+        return csrfError();
+      }),
       http.get(`${API}${endpoints.csrfToken}`, () => HttpResponse.json({})),
     );
     await expect(client.get("/thing")).rejects.toMatchObject({
       response: { status: 403 },
     });
+    expect(refreshes).toBe(1);
   });
 
   it("[CO-API-029] the retried request sends the new token in the x-csrf-token header", async () => {
@@ -465,5 +476,156 @@ describe("axiosInstance", () => {
     );
     await client.get("/thing");
     expect(seen).toEqual(["stale", "fresh"]);
+  });
+
+  it("[CO-API-030] adapter sees credentials on both clients and custom headers survive CSRF recovery", async () => {
+    vi.resetModules();
+    const { default: axios, AxiosError } = await import("axios");
+    const instances: ReturnType<typeof axios.create>[] = [];
+    const create = axios.create.bind(axios);
+    const spy = vi.spyOn(axios, "create").mockImplementation((config) => {
+      const instance = create(config);
+      instances.push(instance);
+      return instance;
+    });
+    try {
+      const [{ default: client }, { useAuthStore: store }] = await Promise.all([
+        import("./axiosInstance"),
+        import("../stores/authStore"),
+      ]);
+      expect(instances).toHaveLength(2);
+      store.setState({ csrfToken: "stale" });
+      // A public interceptor can observe an auth-state change before the built-in injector.
+      // Recovery must preserve the explicit fresh header already attached to this retry.
+      client.interceptors.request.use((config) => {
+        if (
+          (config as typeof config & { _csrfRetried?: boolean })._csrfRetried
+        ) {
+          store.setState({ csrfToken: null });
+        }
+        return config;
+      });
+      let attempts = 0;
+      const seen: Record<string, unknown>[] = [];
+      client.defaults.adapter = async (config) => {
+        expect(config.withCredentials).toBe(true);
+        seen.push(config.headers.toJSON());
+        const response = {
+          config,
+          status: attempts++ === 0 ? 403 : 200,
+          statusText: "",
+          headers: {},
+          data: { message: "invalid csrf token" },
+        };
+        if (response.status === 403) {
+          throw new AxiosError(
+            "csrf",
+            "ERR_BAD_REQUEST",
+            config,
+            undefined,
+            response,
+          );
+        }
+        return response;
+      };
+      instances[1].defaults.adapter = async (config) => {
+        expect(config.withCredentials).toBe(true);
+        return {
+          config,
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          data: { csrfToken: "fresh" },
+        };
+      };
+      await client.post(
+        "/thing",
+        {},
+        { headers: { "X-Correlation-ID": "request-1" } },
+      );
+      expect(seen).toHaveLength(2);
+      expect(seen[1]).toMatchObject({
+        "X-Correlation-ID": "request-1",
+        "X-CSRF-TOKEN": "fresh",
+      });
+      expect(Object.keys(seen[1])).not.toContain("");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("[CO-API-031] queued retries preserve the token attached at recovery even if auth state changes before injection", async () => {
+    for (const refreshedToken of ["fresh", null]) {
+      vi.resetModules();
+      const { default: axios, AxiosError } = await import("axios");
+      const instances: ReturnType<typeof axios.create>[] = [];
+      const create = axios.create.bind(axios);
+      const spy = vi.spyOn(axios, "create").mockImplementation((config) => {
+        const instance = create(config);
+        instances.push(instance);
+        return instance;
+      });
+      try {
+        const [{ default: client }, { useAuthStore: store }] =
+          await Promise.all([
+            import("./axiosInstance"),
+            import("../stores/authStore"),
+          ]);
+        store.setState({ csrfToken: "old" });
+        client.interceptors.request.use((config) => {
+          if (
+            config.url === "/b" &&
+            (config as typeof config & { _retry?: boolean })._retry &&
+            refreshedToken
+          ) {
+            store.setState({ csrfToken: null });
+          }
+          return config;
+        });
+        const retried: Record<string, unknown> = {};
+        client.defaults.adapter = async (config) => {
+          const response = {
+            config,
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            data: { name: config.url },
+          };
+          if (!(config as typeof config & { _retry?: boolean })._retry) {
+            throw new AxiosError(
+              "expired",
+              "ERR_BAD_REQUEST",
+              config,
+              undefined,
+              { ...response, status: 401 },
+            );
+          }
+          retried[config.url!] = config.headers.get("X-CSRF-TOKEN");
+          return response;
+        };
+        let refreshes = 0;
+        instances[1].defaults.adapter = async (config) => {
+          refreshes++;
+          await new Promise((resolve) => setTimeout(resolve, 30));
+          store.setState({ csrfToken: refreshedToken });
+          return {
+            config,
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            data: {},
+          };
+        };
+        expect(
+          (await Promise.all([client.get("/a"), client.get("/b")])).map(
+            (result) => result.data.name,
+          ),
+        ).toEqual(["/a", "/b"]);
+        expect(refreshes).toBe(1);
+        expect(retried["/b"]).toBe(refreshedToken ?? "old");
+      } finally {
+        spy.mockRestore();
+      }
+    }
   });
 });

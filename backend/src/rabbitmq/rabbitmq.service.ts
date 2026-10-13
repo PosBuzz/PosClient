@@ -142,7 +142,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
       if (!requestId) {
         this.logger.warn('Received message without requestId');
-        this.channel.ack(message);
         return;
       }
 

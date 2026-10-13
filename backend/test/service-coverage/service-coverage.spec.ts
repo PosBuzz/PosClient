@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { claimedTags, serviceInventory } from './service-inventory';
 
@@ -18,7 +18,8 @@ const UPDATE = process.env.UPDATE_COVERAGE === '1';
 if (UPDATE) {
   write('service-methods.json', inventory);
   const gaps = keys.filter((key) => !claims.has(key));
-  write('known-gaps.json', gaps);
+  if (gaps.length) write('known-gaps.json', gaps);
+  else rmSync(join(dir, 'known-gaps.json'), { force: true });
 }
 
 describe('every public service method is claimed by a test (B8)', () => {

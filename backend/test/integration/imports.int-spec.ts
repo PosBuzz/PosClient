@@ -54,12 +54,12 @@ describe('spreadsheet imports', () => {
   describe('customers', () => {
     const headers = ['Name', 'Phone', 'Email', 'Customer Type'];
 
-    it('[BE-IMP-001] a clean file creates tenant-owned customers; a dry run writes nothing', async () => {
+    it('[BE-IMP-001] {ImportService.run} a clean file creates tenant-owned customers; a dry run writes nothing', async () => {
       const file = await sheet(headers, [
         ['Rahim', '01711111111', 'rahim@example.test', 'individual'],
         ['Karim Traders', '01722222222', '', 'business'],
       ]);
-      const preview = await run('customers', file, true);
+      const preview = await importer.run('customers', cid(), uid(), file, true);
       expect(preview).toMatchObject({
         imported: false,
         totalRows: 2,
@@ -69,7 +69,7 @@ describe('spreadsheet imports', () => {
       expect(await db.customer.count({ where: { consumer_id: cid() } })).toBe(
         0,
       );
-      const result = await run('customers', file);
+      const result = await importer.run('customers', cid(), uid(), file, false);
       expect(result).toMatchObject({
         imported: true,
         created: { customers: 2 },

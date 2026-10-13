@@ -200,7 +200,7 @@ A phase is done only when **all** of the following are true:
 - [x] B2 Backend unit — verified 2026-10-13; all 19 jobs passed in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151)
 - [x] C1 Consumer harness — verified 2026-10-13; all 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165)
 - [x] C2 Consumer calculations — verified 2026-10-13; all 20 jobs passed in [CI run 38303007404](https://github.com/PosBuzz/PosClient/actions/runs/38303007404)
-- [ ] X1 Cross-layer contracts — all sections implemented and locally verified: static parity, golden/random math, all request replays, type contracts and deliberate proof runs complete. Checkpoint CI verification follows the push (D-054).
+- [x] X1 Cross-layer contracts — static parity, golden/random math, request replays, type contracts and deliberate proofs complete; all CI checks passed on a483ebc in [run 38418049941](https://github.com/PosBuzz/PosClient/actions/runs/38418049941).
 - [x] B3 Domain integration — verified 2026-10-13; all jobs passed in [CI run 38308437854](https://github.com/PosBuzz/PosClient/actions/runs/38308437854)
 - [x] B4 Report reconciliation — verified 2026-10-13; all jobs passed in [CI run 38309445550](https://github.com/PosBuzz/PosClient/actions/runs/38309445550)
 - [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
@@ -208,8 +208,8 @@ A phase is done only when **all** of the following are true:
 - [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
 - [x] C4 Consumer page flows — all critical flows, every-page smoke guard and required request recordings pass; 551 tests pass twice, global lines 64.21%, all four page ≥70% floors enabled (D-052). CI verification follows the checkpoint push.
 - [x] A1/A2 Admin — all page/API/auth/route/smoke flows, recordings and coverage floors pass; all CI jobs pass on e588a0a (D-053/D-054).
-- [x] X2 Full-stack E2E — J0–J11 pass 3 consecutive local runs (2.9 min each); stock-decrement proof done; CI job added, first CI run pending (D-057, KI-083)
-- [ ] B7/C5 Mutation testing — consumer per-file Stryker runs and backend unit config added; survivors still being worked, backend domain config not written (D-059)
-- [x] X4 Error messages end-to-end — frontend scan + rendering tests, backend contract sweep, scanner, scenarios and E2E J12–J14 pass locally; CI verification pending (D-058, KI-084…087)
-- [ ] B8 Every service method tested — inventory and BE-COV-001/010/011/013 done; 102 of 305 methods claimed, 203 in known-gaps.json; BE-COV-012/014/020 not done
+- [ ] X2 Full-stack E2E — J0–J14 green in CI 38418049941; J2 baseline/pacing repairs pass 20 isolated repetitions. Final repeated full-suite and pacing CI confirmation remain (KI-092/095).
+- [ ] B7/C5 Mutation testing — fresh consumer run passes nine files, Axios survivor assertions added; backend unit mutation running, isolated domain config/database setup implemented. Scores and CI confirmation remain.
+- [x] X4 Error messages end-to-end — frontend scans/rendering, backend contract sweep/scanner/scenarios and J12–J14 pass; CI green in run 38418049941 (D-058, KI-084…087).
+- [ ] B8 Every service method tested — all 305 methods claimed; known-gaps.json deleted; inventory and dummy-method proofs pass. Depth/tenancy requirements and nightly tier score gate remain.
 - [ ] X3 CI enforcement — workflows, CODEOWNERS, PR template, gitleaks, ratchet and deploy gate written; branch protection, proofs and baseline pending

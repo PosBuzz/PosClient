@@ -5,7 +5,7 @@ import {
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { STATIC_TEST_ENV, assertTestDatabaseUrl } from './test-env';
+import { testEnvironment, assertTestDatabaseUrl } from './test-env';
 
 export type HarnessGlobal = typeof globalThis & {
   __PG__?: StartedPostgreSqlContainer;
@@ -25,7 +25,7 @@ export default async function setup(): Promise<void> {
     }
     const url = assertTestDatabaseUrl(databaseUrl);
     const env = {
-      ...STATIC_TEST_ENV,
+      ...testEnvironment(),
       DATABASE_URL: databaseUrl,
       DB_HOST: url.hostname,
       DB_PORT: url.port || '5432',

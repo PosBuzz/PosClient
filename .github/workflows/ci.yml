@@ -313,6 +313,7 @@ jobs:
             admin/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - run: node --test scripts/login-budget.test.mjs
       - run: npm run prepare:stack -- --install
       - run: npm test
         env:
@@ -374,10 +375,140 @@ jobs:
             fi
           fi
 
+  consumer-mutation:
+    name: Consumer mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            mutation:
+              - 'consumer/src/utils/calculate-totals.utils*'
+              - 'consumer/src/utils/sale-item.utils*'
+              - 'consumer/src/utils/promotion-validation*'
+              - 'consumer/src/utils/promotion-helpers.utils*'
+              - 'consumer/src/utils/formatters*'
+              - 'consumer/src/utils/payment-provider.utils*'
+              - 'consumer/src/utils/invalidate-sales-reports*'
+              - 'consumer/src/api/axiosInstance*'
+              - 'consumer/src/components/Require*'
+              - 'consumer/src/routes.test.tsx'
+              - 'consumer/src/utils/__contracts__/**'
+              - 'consumer/stryker.config.mjs'
+              - 'consumer/scripts/**'
+              - 'consumer/src/**'
+              - 'consumer/vitest.config.ts'
+              - 'consumer/tsconfig*.json'
+              - 'consumer/package*.json'
+              - 'contracts/**'
+              - '.github/workflows/ci.yml'
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm ci
+      - name: Lockfiles stay unchanged
+        if: steps.changes.outputs.mutation == 'true'
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            consumer/reports/stryker/*.json
+            consumer/reports/stryker/*.json.inputs
+          key: stryker-consumer-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            stryker-consumer-${{ github.head_ref || github.ref_name }}-
+            stryker-consumer-main-
+      - if: steps.changes.outputs.mutation == 'true'
+        run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation
+        env:
+          TZ: UTC
+      - if: always() && steps.changes.outputs.mutation == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-mutation-report
+          path: consumer/reports/stryker
+          retention-days: 14
+
+  backend-mutation-unit:
+    name: Backend mutation (unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            mutation:
+              - 'backend/src/consumer/promotions/promotion-math*'
+              - 'backend/src/consumer/inventory/utils/**'
+              - 'backend/src/consumer/sales/utils/sale-pricing*'
+              - 'backend/src/common/services/subdomain-util*'
+              - 'backend/src/common/utils/error.util*'
+              - 'backend/src/common/errors/client-error*'
+              - 'backend/prisma-client-exception/**'
+              - 'backend/stryker.unit.config.mjs'
+              - 'backend/tsconfig*.json'
+              - 'backend/package*.json'
+              - '.github/workflows/ci.yml'
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm ci
+      - name: Lockfiles stay unchanged
+        if: steps.changes.outputs.mutation == 'true'
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/cache@v4
+        with:
+          path: backend/reports/stryker/unit-incremental.json
+          key: stryker-backend-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            stryker-backend-${{ github.head_ref || github.ref_name }}-
+            stryker-backend-main-
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npx prisma generate
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm run test:mutation:unit
+        env:
+          TZ: UTC
+      - if: always() && steps.changes.outputs.mutation == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-mutation-unit-report
+          path: backend/reports/stryker
+          retention-days: 14
+
   all-green:
     name: All checks
     if: always()
-    needs: [static, build, docker-build, dependency-audit, dependency-review, guardrail-tests, backend-unit, backend-integration, backend-optional-infra, consumer-tests, admin-tests, contracts, e2e, secret-scan, tests-required]
+    needs: [static, build, docker-build, dependency-audit, dependency-review, guardrail-tests, backend-unit, backend-integration, backend-optional-infra, consumer-tests, admin-tests, contracts, e2e, secret-scan, tests-required, consumer-mutation, backend-mutation-unit]
     runs-on: ubuntu-latest
     steps:
       - name: Require successful mandatory jobs
