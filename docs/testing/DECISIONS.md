@@ -486,7 +486,3 @@ KI-098 requires both consumerId and consumer_id signatures to trigger the tenant
 ## D-065 Branch protection dropped (2026-10-13)
 Type: DECISION
 Owner decision: the repository is not on a GitHub team plan, so branch protection / required `All checks` is not applied and its throwaway-PR proof is removed from X3 exit criteria. Remaining X3 gates: deploy refuses red SHA, first nightly, coverage baseline.
-
-## D-066 CI runs only the areas a change touches (2026-10-14)
-Type: DECISION
-Owner request: do not run CI jobs for code that did not change. A `changes` job (paths-filter) selects backend/consumer/admin; shared paths (contracts, scripts, .github, compose, root package files) select every app; e2e/** alone runs only E2E; docs-only selects nothing. The workflow still triggers on every PR and main push, so the "All checks" check-run that the deploy gate looks up always exists. `All checks` accepts a skipped area job only when `changes` succeeded; secret scan, contracts, guardrail tests and the mutation jobs' own filters are unchanged and always evaluated. Full E2E runs whenever any app is selected. Not yet exercised on a narrow change: the first push touches .github/** and so selects everything.
