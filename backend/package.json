@@ -29,7 +29,8 @@
     "test:all": "npm test -- --runInBand && npm run test:int && npm run test:e2e",
     "test:mutation:unit": "stryker run stryker.unit.config.mjs",
     "test:int:tz": "TZ=Asia/Dhaka jest --config ./test/jest-integration.json test/integration/reports",
-    "test:mutation:domain": "node test/setup/stryker-db.mjs && STRYKER_DOMAIN_RUN=1 stryker run stryker.domain.config.mjs && node scripts/mutation-tier-gate.mjs"
+    "test:mutation:domain": "npm run test:mutation:shard && node scripts/mutation-tier-gate.mjs",
+    "test:mutation:shard": "node test/setup/stryker-db.mjs && STRYKER_DOMAIN_RUN=1 stryker run stryker.domain.config.mjs"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tierFailures } from './mutation-tier-gate.mjs';
+import { mergeReports, tierFailures } from './mutation-tier-gate.mjs';
 const inventory = [
   { service: 'MoneyService', file: 'src/money.service.ts' },
   { service: 'CatalogService', file: 'src/catalog.service.ts' },
@@ -104,4 +104,14 @@ test('[BE-MUT-001] a passing file cannot mask a low critical method', () => {
     ),
     ['Money.return: 0.00% < critical 80%'],
   );
+});
+
+test('[BE-COV-020] shard reports merge, and a file in two shards is rejected', () => {
+  const a = { files: { 'src/a.ts': result(['Killed']) } };
+  const b = { files: { 'src/b.ts': result(['Survived']) } };
+  assert.deepEqual(Object.keys(mergeReports([a, b]).files).sort(), [
+    'src/a.ts',
+    'src/b.ts',
+  ]);
+  assert.throws(() => mergeReports([a, a]), /two shards/);
 });

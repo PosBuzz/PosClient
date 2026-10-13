@@ -23,14 +23,17 @@ jobs:
           if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
 
   backend-mutation-domain:
-    name: Backend mutation (domain)
+    name: Backend mutation (domain ${{ matrix.shard }}/8)
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     permissions:
       contents: read
-      issues: write
     defaults:
       run:
         working-directory: backend
@@ -46,25 +49,56 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: npx prisma generate
-      - run: node --test scripts/mutation-tier-gate.test.mjs
-        working-directory: backend
-      - run: npm run test:mutation:domain
+      - run: npm run test:mutation:shard
         env:
           TZ: UTC
+          STRYKER_SHARD: ${{ matrix.shard }}/8
+          # Jest workers in long Stryker runs grow past Node's default heap and get restarted.
+          NODE_OPTIONS: --max-old-space-size=3072
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-domain-mutation-report
+          name: backend-domain-mutation-shard-${{ matrix.shard }}
           path: backend/reports/stryker
           retention-days: 14
       - if: always()
         run: docker compose -f ../docker-compose.test.yml down
+
+  backend-mutation-gate:
+    name: Backend mutation tier gate
+    needs: [changes, backend-mutation-domain]
+    if: always() && needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: node --test scripts/mutation-tier-gate.test.mjs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: backend-domain-mutation-shard-*
+          path: backend/reports/shards
+      - name: Gate merged shard reports
+        run: |
+          set -e
+          test "${{ needs.backend-mutation-domain.result }}" = success
+          node scripts/mutation-tier-gate.mjs reports/shards/*/*.mutation.json
       - if: failure()
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create --title "Nightly failure: backend-mutation-domain" --body "Run and mutation artifact: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+          gh issue create --title "Nightly failure: backend-mutation-domain" --body "Run and shard artifacts: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: backend-mutation-domain in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
   consumer-mutation-full:
     name: Consumer mutation (${{ matrix.target }})
