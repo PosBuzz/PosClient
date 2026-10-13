@@ -242,7 +242,11 @@ const NewSale = () => {
               : regularPrice;
 
           const quantity = Number(item.quantity || 0);
-          const taxPercentage = Number(currentVariant?.tax_percentage || 0);
+          // The sale-products list is capped, so the variant may be missing; the
+          // quotation's own product still carries the tax rate.
+          const taxPercentage = Number(
+            currentVariant?.tax_percentage ?? item.variant?.product?.tax ?? 0,
+          );
           const taxMethod = String(
             currentVariant?.tax_method ||
               item.variant?.product?.tax_method ||

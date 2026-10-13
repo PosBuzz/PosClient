@@ -211,4 +211,35 @@ describe("Add sale", () => {
     const pos = requestContract("pos-discounts-sale");
     expect(withoutScreenOnly(created.calls[0].body)).toEqual(pos.body);
   });
+  it("[CO-FLOW-SALE-008] converting a quotation keeps the product tax when the capped product list omits the variant", async () => {
+    const quotation = responseContract<any>("quotation-detail");
+    server.use(
+      http.get(`${API}${endpoints.getProductsForSale}`, () =>
+        ok(
+          variants.filter(
+            (variant) => variant.id !== quotation.items[0].variant_id,
+          ),
+        ),
+      ),
+      http.get(`${API}${endpoints.getQuotation(quotation.id)}`, () =>
+        ok(quotation),
+      ),
+    );
+    const created = captureRequests("post", endpoints.createSale, { id: 9 });
+    const { user } = renderWithProviders(<AddSale />, {
+      route: `/sales/new?quotation_id=${quotation.id}`,
+      path: "/sales/new",
+      permissions: [Permissions.sales],
+    });
+    await waitFor(() => expect(row("Product 5")).toBeDefined());
+    await user.click(
+      await screen.findByRole("button", { name: /Create Sale/ }),
+    );
+    await waitFor(() => expect(created.calls).toHaveLength(1));
+    expect(created.calls[0].body.items[0]).toMatchObject({
+      quantity: 3,
+      tax_amount: 15,
+      line_total: 315,
+    });
+  });
 });
