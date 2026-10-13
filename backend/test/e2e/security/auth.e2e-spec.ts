@@ -55,7 +55,7 @@ describe('authentication and sessions over HTTP', () => {
   const cookies = (response: request.Response) =>
     (response.headers['set-cookie'] ?? []) as unknown as string[];
 
-  it('[BE-SEC-001] a real login sets HttpOnly, Secure, SameSite=None access and refresh cookies', async () => {
+  it('[BE-SEC-001] {AuthService.loginUser} a real login sets HttpOnly, Secure, SameSite=None access and refresh cookies', async () => {
     const response = await loginUser(tenant.adminUser.email, TEST_PASSWORD);
     expect(response.status).toBe(201);
     for (const name of ['client_access_token', 'client_refresh_token']) {
@@ -67,7 +67,7 @@ describe('authentication and sessions over HTTP', () => {
     }
   });
 
-  it('[BE-SEC-002] every kind of bad login gets the same 401 and body; an expired subscription is only revealed to the right password', async () => {
+  it('[BE-SEC-002] {AuthService.loginUser} every kind of bad login gets the same 401 and body; an expired subscription is only revealed to the right password', async () => {
     const attempts = [
       loginUser(tenant.adminUser.email, 'wrong-password'),
       loginUser('nobody@example.test', TEST_PASSWORD),
@@ -99,7 +99,7 @@ describe('authentication and sessions over HTTP', () => {
     expect(right.body.message).toMatch(/subscription is not active/);
   });
 
-  it('[BE-SEC-002] super-admin login: wrong password and unknown email look the same', async () => {
+  it('[BE-SEC-002] {AuthService.validateSuperAdmin} super-admin login: wrong password and unknown email look the same', async () => {
     const admin = await createAdmin(db);
     const wrong = await login('/auth/login-superadmin', {
       email: admin.email,
@@ -288,7 +288,7 @@ describe('authentication and sessions over HTTP', () => {
     };
 
     // The login throttle allows 5 attempts a minute per email, so each test uses its own tenant
-    it('[BE-SEC-008] a refresh token works, rotates, and is dead after logout', async () => {
+    it('[BE-SEC-008] {AuthService.clientRefreshToken} {AuthService.invalidateClientRefreshToken} a refresh token works, rotates, and is dead after logout', async () => {
       const own = await createTenant(db);
       const loggedIn = await loginUser(own.adminUser.email, TEST_PASSWORD, own);
       const first = cookieValue(loggedIn, 'client_refresh_token')!;
@@ -310,6 +310,37 @@ describe('authentication and sessions over HTTP', () => {
         )
         .set('x-csrf-token', csrf.token);
       expect((await refresh(second)).status).toBe(401);
+    });
+
+    it('[BE-SEC-016] {AuthService.loginSuperAdmin} {AuthService.validateSuperAdmin} {AuthService.adminRefreshToken} {AuthService.invalidateAdminRefreshToken} a super-admin refresh token works, rotates, and is dead after logout', async () => {
+      const admin = await createAdmin(db);
+      const loggedIn = await login('/auth/login-superadmin', {
+        email: admin.email,
+        password: TEST_PASSWORD,
+      });
+      expect(loggedIn.status).toBe(201);
+      expect(
+        cookies(loggedIn).some((c) => c.startsWith('admin_access_token=')),
+      ).toBe(true);
+      const first = cookieValue(loggedIn, 'admin_refresh_token')!;
+      const adminCall = async (path: string, token: string) => {
+        const csrf = await getCsrf(context.app);
+        return request(context.app.getHttpServer())
+          .post(`/api/v1/auth/${path}`)
+          .set('Host', 'localhost')
+          .set(
+            'Cookie',
+            `admin_refresh_token=${token}; csrf_signature=${csrf.signature}`,
+          )
+          .set('x-csrf-token', csrf.token);
+      };
+      const refreshed = await adminCall('admin-refresh-token', first);
+      expect(refreshed.status).toBe(201);
+      const second = cookieValue(refreshed, 'admin_refresh_token')!;
+      expect(second).not.toBe(first);
+      expect((await adminCall('admin-refresh-token', first)).status).toBe(401);
+      await adminCall('admin-logout', second);
+      expect((await adminCall('admin-refresh-token', second)).status).toBe(401);
     });
 
     it('[BE-SEC-009] a rotated-out refresh token cannot be used again', async () => {

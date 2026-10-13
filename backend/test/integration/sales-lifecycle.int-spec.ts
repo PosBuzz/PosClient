@@ -40,7 +40,7 @@ describe('sales: soft delete, restore and concurrency', () => {
       (e: any) => e,
     );
 
-  it('[BE-SALE-050] deleting restores stock to the original batch and reverses earned points', async () => {
+  it('[BE-SALE-050] {SalesService.restore} deleting restores stock to the original batch and reverses earned points', async () => {
     await createRewardsSettings(db, { consumer_id: w.tenant.consumer.id });
     const customer = await createCustomer(db, {
       consumer_id: w.tenant.consumer.id,
@@ -178,7 +178,7 @@ describe('sales: soft delete, restore and concurrency', () => {
     ).toBe(1);
   });
 
-  it('[BE-SALE-059] two concurrent restores deduct exactly once', async () => {
+  it('[BE-SALE-059] {SalesService.restore} two concurrent restores deduct exactly once', async () => {
     const v = await stocked();
     const sale = await w.sell([{ variant: v, qty: 3 }]);
     await del(sale.id);

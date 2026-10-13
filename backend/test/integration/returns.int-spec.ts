@@ -86,7 +86,7 @@ describe('returns and exchanges', () => {
       ...extra,
     });
 
-  it('[BE-RET-001] returning one unit restocks the batch and writes the audit trail', async () => {
+  it('[BE-RET-001] {ReturnService.create} returning one unit restocks the batch and writes the audit trail', async () => {
     const s = await committedSale();
     const ret = await returnA(s, 1);
     expect(Number(ret.total_refund)).toBe(100);
@@ -109,14 +109,14 @@ describe('returns and exchanges', () => {
     ).toBe(1);
   });
 
-  it('[BE-RET-002] a refund that differs from the selected value is refused', async () => {
+  it('[BE-RET-002] {ReturnService.create} a refund that differs from the selected value is refused', async () => {
     const s = await committedSale();
     const error = await failure(returnA(s, 1, { payments: cash(90) }));
     expect(error).toBeInstanceOf(BadRequestException);
     expect(error.message).toMatch(/must exactly match/);
   });
 
-  it('[BE-RET-003] returning more than what is left is refused', async () => {
+  it('[BE-RET-003] {ReturnService.create} returning more than what is left is refused', async () => {
     const s = await committedSale();
     await returnA(s, 2);
     const error = await failure(returnA(s, 2));

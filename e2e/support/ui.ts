@@ -42,8 +42,12 @@ export async function backFromPos(page:Page){
   await expect(page).toHaveURL(`${CONSUMER}/`);
 }
 export async function pickOption(page:Page,id:string,label:string){
-  await page.locator(`#${id}`).click({force:true});
-  await page.locator('.ant-select-dropdown:visible').locator('.ant-select-item-option-content').getByText(label,{exact:true}).click();
+  // The dropdown can toggle shut or open late while the form re-renders, so open-and-pick is retried as a unit.
+  await expect(async()=>{
+    const dropdown=page.locator('.ant-select-dropdown:visible');
+    if(!(await dropdown.count())) await page.locator(`#${id}`).click({force:true});
+    await dropdown.locator('.ant-select-item-option-content').getByText(label,{exact:true}).click({timeout:3000});
+  }).toPass({timeout:30000});
 }
 /** Baselines must wait for the dashboard queries; the initial render shows 0.00. */
 export async function settledDashboardCents(page:Page,title:string){

@@ -182,3 +182,51 @@ it("[CO-PH-013] zero-quantity matching lines are enriched to the minimum", () =>
     items: [{ quantity: 1 }],
   });
 });
+
+describe("promotion cart helper boundaries", () => {
+  it("[CO-PH-020] the most expensive candidate is chosen whatever the catalog order", () => {
+    const result = enrich({
+      promotion: promotion({ scope: "BRAND", brand_id: 10, min_quantity: 2 }),
+      filteredVariants: [
+        variant({ id: 3, regular_price: 50, brand_id: 10 }),
+        variant({ id: 2, regular_price: 200, brand_id: 10 }),
+        variant({ id: 4, regular_price: 120, brand_id: 10 }),
+      ],
+    });
+    expect(result.items).toMatchObject([{ variant_id: 2, quantity: 2 }]);
+  });
+
+  it("[CO-PH-021] a subtotal exactly at the minimum purchase needs nothing more", () => {
+    const rows = [item()];
+    expect(
+      enrich({
+        promotion: promotion({ min_purchase: 100 }),
+        sourceItems: rows,
+      }),
+    ).toEqual({
+      changed: false,
+      items: rows,
+    });
+  });
+
+  it("[CO-PH-022] a subtotal one unit short adds exactly one unit", () => {
+    const result = enrich({
+      promotion: promotion({ min_purchase: 101 }),
+      sourceItems: [item()],
+    });
+    expect(result.items).toMatchObject([{ variant_id: 1, quantity: 2 }]);
+  });
+
+  it("[CO-PH-023] a minimum purchase and a minimum quantity both add what they need", () => {
+    const result = enrich({
+      promotion: promotion({
+        scope: "BRAND",
+        brand_id: 10,
+        min_quantity: 2,
+        min_purchase: 700,
+      }),
+      filteredVariants: [variant({ id: 2, regular_price: 200, brand_id: 10 })],
+    });
+    expect(result.items).toMatchObject([{ variant_id: 2, quantity: 4 }]);
+  });
+});
