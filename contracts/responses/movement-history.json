@@ -1,0 +1,38 @@
+{
+  "data": [
+    {
+      "batch_number": "BATCH10",
+      "date": "2026-03-14T12:00:00.000Z",
+      "id": 5,
+      "location": "Branch 1",
+      "notes": null,
+      "quantity_change": 1,
+      "reason": "Stock Count Correction",
+      "type": "adjustment",
+      "user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      }
+    },
+    {
+      "batch_number": "BATCH10",
+      "date": "2026-03-14T12:00:00.000Z",
+      "id": 4,
+      "location": "Branch 1",
+      "notes": "Return ID: RET-20260314-0003",
+      "quantity_change": -1,
+      "reason": "Exchange from return RET-20260314-0003",
+      "type": "adjustment",
+      "user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      }
+    }
+  ],
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 2,
+    "totalPages": 1
+  }
+}
