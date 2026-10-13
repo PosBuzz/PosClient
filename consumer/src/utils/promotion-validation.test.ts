@@ -336,3 +336,145 @@ describe("promotion validation boundaries", () => {
     ).toBe("Promotion max discount reached and promo closed");
   });
 });
+
+describe("promotion validation kills", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(now));
+  });
+  afterEach(() => vi.useRealTimers());
+  const closed = "Promotion max discount reached and promo closed";
+  const membersOnly = "This promotion is for registered customers only";
+
+  it("[CO-PROMO-060] a fixed discount is per unit, not a percentage of the base", () => {
+    // price 50 x 4: a percentage reading of 3 would give 6, per unit gives 12
+    expect(
+      evaluate({ discount_type: "fixed_amount", discount_value: 3 }, [
+        item({ unit_price: 50, quantity: 4 }),
+      ]).discount_amount,
+    ).toBe(12);
+    expect(
+      evaluate({ discount_value: 3 }, [item({ unit_price: 50, quantity: 4 })])
+        .discount_amount,
+    ).toBe(6);
+  });
+
+  it("[CO-PROMO-061] an exhausted maximum discount is reported before later checks, a zero or unreached one is not", () => {
+    expect(
+      evaluate({
+        member_only: true,
+        max_discount_amount: 10,
+        total_discount_given: 10,
+      }).reason,
+    ).toBe(closed);
+    expect(
+      evaluate({
+        member_only: true,
+        max_discount_amount: 10,
+        total_discount_given: 11,
+      }).reason,
+    ).toBe(closed);
+    expect(
+      evaluate({
+        member_only: true,
+        max_discount_amount: 10,
+        total_discount_given: 9,
+      }).reason,
+    ).toBe(membersOnly);
+    expect(
+      evaluate({
+        member_only: true,
+        max_discount_amount: 0,
+        total_discount_given: 0,
+      }).reason,
+    ).toBe(membersOnly);
+    expect(
+      evaluate({
+        member_only: true,
+        max_discount_amount: -5,
+        total_discount_given: 0,
+      }).reason,
+    ).toBe(membersOnly);
+  });
+
+  it("[CO-PROMO-062] an exhausted usage limit is reported before later checks, a zero or unreached one is not", () => {
+    const base = { member_only: true } as const;
+    expect(evaluate({ ...base, usage_limit: 3, sales_count: 3 }).reason).toBe(
+      "Promotion usage limit reached and promo closed",
+    );
+    expect(evaluate({ ...base, usage_limit: 3, sales_count: 2 }).reason).toBe(
+      membersOnly,
+    );
+    expect(evaluate({ ...base, usage_limit: 0, sales_count: 0 }).reason).toBe(
+      membersOnly,
+    );
+    expect(evaluate({ ...base, usage_limit: -1, sales_count: 0 }).reason).toBe(
+      membersOnly,
+    );
+  });
+
+  it("[CO-PROMO-063] the minimum purchase is checked against the cart subtotal and a zero minimum never applies", () => {
+    const reason = "Minimum purchase amount condition not met";
+    expect(evaluate({ min_purchase: 100 }).is_eligible).toBe(true);
+    expect(evaluate({ min_purchase: 100.01 }).reason).toBe(reason);
+    // a zero minimum is ignored even for a non-positive cart, which then closes on the empty discount
+    expect(
+      evaluate({ min_purchase: 0 }, [item({ unit_price: -5 })]).reason,
+    ).toBe(closed);
+    expect(
+      evaluate({ min_purchase: -1 }, [item({ unit_price: -5 })]).reason,
+    ).toBe(closed);
+  });
+
+  it("[CO-PROMO-064] a brand id of zero or missing is misconfigured and a set one must match", () => {
+    for (const brand_id of [0, null, undefined]) {
+      expect(
+        evaluate({ scope: "BRAND", brand_id: brand_id as never }).reason,
+      ).toBe("Promotion brand is not configured correctly");
+    }
+    expect(evaluate({ scope: "BRAND", brand_id: 10 }).is_eligible).toBe(true);
+  });
+
+  it("[CO-PROMO-065] cap quantity: a nonpositive cap is no cap, a positive cap limits units", () => {
+    const rows = [item({ unit_price: 100, quantity: 4 })];
+    for (const cap_quantity of [0, -1, null, undefined]) {
+      expect(
+        evaluate({ cap_quantity: cap_quantity as never }, rows).discount_base,
+      ).toBe(400);
+    }
+    expect(evaluate({ cap_quantity: 1 }, rows)).toMatchObject({
+      discount_base: 100,
+      discount_amount: 10,
+    });
+    expect(evaluate({ cap_quantity: 4 }, rows).discount_base).toBe(400);
+    expect(evaluate({ cap_quantity: 3 }, rows).discount_base).toBe(300);
+  });
+
+  it("[CO-PROMO-066] cap discount amount: a nonpositive cap is ignored, a positive one limits", () => {
+    for (const cap_discount_amount of [0, -1, null, undefined]) {
+      expect(
+        evaluate({ cap_discount_amount: cap_discount_amount as never })
+          .discount_amount,
+      ).toBe(10);
+    }
+    expect(evaluate({ cap_discount_amount: 10 }).discount_amount).toBe(10);
+    expect(evaluate({ cap_discount_amount: 4 }).discount_amount).toBe(4);
+  });
+
+  it("[CO-PROMO-067] a quantity cap spreads across lines from the dearest unit down and stops when used up", () => {
+    const rows = [
+      item({ variant_id: 1, unit_price: 10, quantity: 5 }),
+      item({ variant_id: 2, unit_price: 40, quantity: 1 }),
+      item({ variant_id: 3, unit_price: 25, quantity: 2 }),
+    ];
+    const bundle = { scope: "BUNDLE" as const, variant_ids: [1, 2, 3] };
+    // 1 x 40, 2 x 25, then 1 x 10
+    expect(evaluate({ ...bundle, cap_quantity: 4 }, rows).discount_base).toBe(
+      100,
+    );
+    // 1 x 40 and 1 x 25
+    expect(evaluate({ ...bundle, cap_quantity: 2 }, rows).discount_base).toBe(
+      65,
+    );
+  });
+});

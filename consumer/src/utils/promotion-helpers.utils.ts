@@ -77,7 +77,8 @@ export function enrichCartForPromotion(params: {
 
   let nextItems = [...sourceItems];
   let changed = false;
-  const reasonText = (reason || "").toLowerCase();
+  const reasonMentions = (phrase: string) =>
+    reason?.toLowerCase().includes(phrase) ?? false;
 
   const requiredIds = getPromotionRequiredVariantIds(promotion);
   const requiredVariants = requiredIds
@@ -86,17 +87,12 @@ export function enrichCartForPromotion(params: {
     )
     .filter(Boolean) as ProductVariantForSale[];
 
-  if (promotion.scope !== "BRAND") {
-    const existingIds = new Set(nextItems.map((item) => item.variant_id));
-    const missingRequired = requiredVariants.filter(
-      (variant) => !existingIds.has(variant.id),
-    );
-
-    if (missingRequired.length > 0) {
-      missingRequired.forEach((variant) => {
-        nextItems = upsertFn(nextItems, variant, 1);
-        changed = true;
-      });
+  // Brand promotions have no required variants, so this loop is a no-op for them.
+  const existingIds = new Set(nextItems.map((item) => item.variant_id));
+  for (const variant of requiredVariants) {
+    if (!existingIds.has(variant.id)) {
+      nextItems = upsertFn(nextItems, variant, 1);
+      changed = true;
     }
   }
 
@@ -120,14 +116,10 @@ export function enrichCartForPromotion(params: {
   }, 0);
 
   const minQty = Number(promotion.min_quantity || 1);
-  const currentSubtotal = nextItems.reduce(
-    (sum, item) => sum + Number(item.line_total || 0),
-    0,
-  );
   const minPurchase = Number(promotion.min_purchase || 0);
 
   const needsMinQty =
-    currentMatchedQty < minQty || reasonText.includes("minimum quantity");
+    currentMatchedQty < minQty || reasonMentions("minimum quantity");
   if (needsMinQty) {
     const qtyToAdd = Math.max(1, minQty - currentMatchedQty);
     nextItems = upsertFn(nextItems, highestPriceVariant, qtyToAdd);
@@ -139,8 +131,7 @@ export function enrichCartForPromotion(params: {
     0,
   );
   const needsMinPurchase =
-    recalculatedSubtotal < minPurchase ||
-    reasonText.includes("minimum purchase");
+    recalculatedSubtotal < minPurchase || reasonMentions("minimum purchase");
 
   if (needsMinPurchase) {
     const unitPrice = Math.max(0.01, getVariantPriceFn(highestPriceVariant));
@@ -154,26 +145,13 @@ export function enrichCartForPromotion(params: {
 
   if (
     !changed &&
-    (reasonText.includes("required product") ||
-      reasonText.includes("bundle") ||
-      reasonText.includes("no matching brand"))
+    (reasonMentions("required product") ||
+      reasonMentions("bundle") ||
+      reasonMentions("no matching brand"))
   ) {
     nextItems = upsertFn(nextItems, highestPriceVariant, 1);
     changed = true;
   }
 
-  /* v8 ignore start -- Dead redundant fallback, see D-036. When unchanged,
-   * recalculatedSubtotal equals currentSubtotal and needsMinPurchase already handled it. */
-  if (!changed && currentSubtotal < minPurchase) {
-    const unitPrice = Math.max(0.01, getVariantPriceFn(highestPriceVariant));
-    const qtyToAdd = Math.max(
-      1,
-      Math.ceil(Math.max(0, minPurchase - currentSubtotal) / unitPrice),
-    );
-    nextItems = upsertFn(nextItems, highestPriceVariant, qtyToAdd);
-    changed = true;
-  }
-
-  /* v8 ignore stop */
   return { items: nextItems, changed };
 }
