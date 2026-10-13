@@ -29,12 +29,16 @@ export function criticalMethodRange(file, method) {
 }
 
 export function mergeReports(reports) {
+  // A large file is split into line ranges across shards, so its mutants arrive from several reports.
   const files = {};
   for (const report of reports)
     for (const [file, value] of Object.entries(report.files ?? {})) {
-      if (files[file])
-        throw new Error(`Mutation file reported by two shards: ${file}`);
-      files[file] = value;
+      files[file] = files[file]
+        ? {
+            ...files[file],
+            mutants: [...files[file].mutants, ...(value.mutants ?? [])],
+          }
+        : { ...value, mutants: [...(value.mutants ?? [])] };
     }
   return { files };
 }
