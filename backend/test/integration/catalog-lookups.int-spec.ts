@@ -89,7 +89,7 @@ describe('catalog lookup modules (categories, brands, units, tags)', () => {
   describe.each(['CAT', 'BRND', 'UNIT', 'TAG'])('%s', (code) => {
     const get = () => lookups.find((l) => l.code === code)!;
 
-    it(`[BE-${code}-001] create stores a row owned by the tenant and findAll lists only the tenant's rows by name`, async () => {
+    it(`[BE-${code}-001] {CategoryService.create} {BrandService.create} {UnitService.create} {TagService.create} {CategoryService.findAll} {BrandService.findAll} {UnitService.findAll} {TagService.findAll} create stores a row owned by the tenant and findAll lists only the tenant's rows by name`, async () => {
       const l = get();
       await l.service.create({ name: 'Zeta' }, cid());
       await l.service.create({ name: 'Alpha' }, cid());
@@ -100,7 +100,7 @@ describe('catalog lookup modules (categories, brands, units, tags)', () => {
       expect(await rows(l)).toHaveLength(2);
     });
 
-    it(`[BE-${code}-002] findOne, update and remove of another tenant's row are NotFound and change nothing`, async () => {
+    it(`[BE-${code}-002] {CategoryService.findOne} {BrandService.findOne} {UnitService.findOne} {TagService.findOne} {CategoryService.update} {BrandService.update} {UnitService.update} {TagService.update} {CategoryService.remove} {BrandService.remove} {UnitService.remove} {TagService.remove} findOne, update and remove of another tenant's row are NotFound and change nothing`, async () => {
       const l = get();
       const foreign = await l.make(db, w.bystander.consumer.id, 'Theirs');
       await w.rebaseBystander();
@@ -118,7 +118,7 @@ describe('catalog lookup modules (categories, brands, units, tags)', () => {
       ).toMatchObject({ name: 'Theirs' });
     });
 
-    it(`[BE-${code}-003] update renames and remove deletes the tenant's own row`, async () => {
+    it(`[BE-${code}-003] {CategoryService.update} {BrandService.update} {UnitService.update} {TagService.update} {CategoryService.remove} {BrandService.remove} {UnitService.remove} {TagService.remove} update renames and remove deletes the tenant's own row`, async () => {
       const l = get();
       const own = await l.make(db, cid(), 'Old');
       const updated = await l.service.update(own.id, { name: 'New' }, cid());
@@ -129,7 +129,7 @@ describe('catalog lookup modules (categories, brands, units, tags)', () => {
       );
     });
 
-    it(`[BE-${code}-004] a duplicate name is refused with a readable error, on create and on rename`, async () => {
+    it(`[BE-${code}-004] {CategoryService.create} {BrandService.create} {UnitService.create} {TagService.create} {CategoryService.update} {BrandService.update} {UnitService.update} {TagService.update} a duplicate name is refused with a readable error, on create and on rename`, async () => {
       const l = get();
       await l.service.create({ name: 'Same' }, cid());
       const other = await l.make(db, cid(), 'Other');

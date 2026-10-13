@@ -292,4 +292,178 @@ describe("axiosInstance", () => {
     });
     expect(refreshes).toBe(0);
   });
+  it("[CO-API-020] the refresh request itself carries the stored CSRF token, or none", async () => {
+    const seen: Array<string | null> = [];
+    server.use(
+      http.post(`${API}${endpoints.refreshToken}`, ({ request }) => {
+        seen.push(request.headers.get("x-csrf-token"));
+        return ok({});
+      }),
+    );
+    for (const token of ["t9", null]) {
+      const { client, store } = await load();
+      store.setState({ csrfToken: token });
+      let calls = 0;
+      server.use(
+        http.get(`${API}/thing`, () =>
+          ++calls === 1 ? unauthorized() : ok({}),
+        ),
+      );
+      await client.get("/thing");
+    }
+    expect(seen).toEqual(["t9", null]);
+  });
+
+  it("[CO-API-021] a failed refresh rejects queued requests without retrying them", async () => {
+    const { client } = await load();
+    const hits: Record<string, number> = { a: 0, b: 0 };
+    server.use(
+      http.get(`${API}/:name`, ({ params }) => {
+        hits[params.name as string]++;
+        return unauthorized();
+      }),
+      http.post(`${API}${endpoints.refreshToken}`, async () => {
+        await new Promise((r) => setTimeout(r, 30));
+        return HttpResponse.json({ message: "expired" }, { status: 401 });
+      }),
+    );
+    const results = await Promise.allSettled([
+      client.get("/a"),
+      client.get("/b"),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["rejected", "rejected"]);
+    expect(hits).toEqual({ a: 1, b: 1 });
+  });
+
+  it("[CO-API-022] a queued request that is refused again does not start another refresh", async () => {
+    const { client } = await load();
+    let refreshes = 0;
+    server.use(
+      http.get(`${API}/:name`, () => unauthorized()),
+      http.post(`${API}${endpoints.refreshToken}`, async () => {
+        refreshes++;
+        await new Promise((r) => setTimeout(r, 30));
+        return ok({});
+      }),
+    );
+    const results = await Promise.allSettled(
+      ["a", "b", "c"].map((n) => client.get(`/${n}`)),
+    );
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+    expect(refreshes).toBe(1);
+  });
+
+  it("[CO-API-023] a queued request is retried with the CSRF token rotated during the refresh", async () => {
+    const { client, store } = await load();
+    store.setState({ csrfToken: "old" });
+    const retried: Array<string | null> = [];
+    const attempts: Record<string, number> = { a: 0, b: 0 };
+    server.use(
+      http.get(`${API}/:name`, ({ params, request }) => {
+        const name = params.name as string;
+        if (++attempts[name] === 1) return unauthorized();
+        retried.push(request.headers.get("x-csrf-token"));
+        return ok({});
+      }),
+      http.post(`${API}${endpoints.refreshToken}`, async () => {
+        await new Promise((r) => setTimeout(r, 30));
+        store.setState({ csrfToken: "rotated" });
+        return ok({});
+      }),
+    );
+    await Promise.all([client.get("/a"), client.get("/b")]);
+    expect(retried).toEqual(["rotated", "rotated"]);
+  });
+
+  it("[CO-API-024] a network failure or an empty error body is passed on, not turned into a TypeError", async () => {
+    const { client } = await load();
+    server.use(
+      http.get(`${API}/down`, () => HttpResponse.error()),
+      http.get(`${API}/nullbody`, () =>
+        HttpResponse.json(null, { status: 403 }),
+      ),
+    );
+    await expect(client.get("/down")).rejects.toMatchObject({
+      code: "ERR_NETWORK",
+    });
+    await expect(client.get("/nullbody")).rejects.toMatchObject({
+      response: { status: 403 },
+    });
+  });
+
+  it("[CO-API-025] only a 403 with the CSRF message is retried", async () => {
+    const { client } = await load();
+    let calls = 0;
+    server.use(
+      http.get(`${API}/odd`, () => {
+        calls++;
+        return HttpResponse.json(
+          { message: "invalid csrf token" },
+          { status: 400 },
+        );
+      }),
+    );
+    await expect(client.get("/odd")).rejects.toMatchObject({
+      response: { status: 400 },
+    });
+    expect(calls).toBe(1);
+  });
+
+  it("[CO-API-026] a CSRF endpoint that gives no token ends the retry with the original error", async () => {
+    const { client } = await load();
+    let calls = 0;
+    server.use(
+      http.get(`${API}/thing`, () => {
+        calls++;
+        return csrfError();
+      }),
+      http.get(`${API}${endpoints.csrfToken}`, () => HttpResponse.json(null)),
+    );
+    await expect(client.get("/thing")).rejects.toMatchObject({
+      response: { status: 403 },
+    });
+    expect(calls).toBe(1);
+  });
+
+  it("[CO-API-027] a failing CSRF endpoint rejects with its own error", async () => {
+    const { client } = await load();
+    server.use(
+      http.get(`${API}/thing`, () => csrfError()),
+      http.get(`${API}${endpoints.csrfToken}`, () =>
+        HttpResponse.json({ message: "down" }, { status: 500 }),
+      ),
+    );
+    await expect(client.get("/thing")).rejects.toMatchObject({
+      response: { status: 500 },
+    });
+  });
+
+  it("[CO-API-028] a refresh whose CSRF recovery gives no token fails with the refresh error", async () => {
+    const { client } = await load();
+    server.use(
+      http.get(`${API}/thing`, () => unauthorized()),
+      http.post(`${API}${endpoints.refreshToken}`, () => csrfError()),
+      http.get(`${API}${endpoints.csrfToken}`, () => HttpResponse.json({})),
+    );
+    await expect(client.get("/thing")).rejects.toMatchObject({
+      response: { status: 403 },
+    });
+  });
+
+  it("[CO-API-029] the retried request sends the new token in the x-csrf-token header", async () => {
+    const { client, store } = await load();
+    store.setState({ csrfToken: "stale" });
+    const seen: Array<string | null> = [];
+    server.use(
+      http.get(`${API}/thing`, ({ request }) => {
+        seen.push(request.headers.get("x-csrf-token"));
+        return seen.length === 1 ? csrfError() : ok({});
+      }),
+      http.get(`${API}${endpoints.csrfToken}`, () =>
+        ok({ csrfToken: "fresh" }),
+      ),
+    );
+    await client.get("/thing");
+    expect(seen).toEqual(["stale", "fresh"]);
+  });
 });
