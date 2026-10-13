@@ -482,3 +482,7 @@ KI-097 invalidates the earlier consumer mutation completion estimates: Stryker c
 ## D-064 Tenant inventory and nightly tier gate (2026-10-13)
 Type: DEFECT / DECISION
 KI-098 requires both consumerId and consumer_id signatures to trigger the tenant obligation. The inventory regression checks consumer roles, sales and unscoped admin roles. BE-COV-020 now has a report gate that requires results for every reviewed Tier A/B service file, rejects absent or wholly unmeasured results, and applies each file's 75%/60% floor independently. Its regression cases prove an overall passing score cannot mask one low file. Domain mutation targets are derived from the reviewed inventory plus B7 guard/math targets; old partial method ranges cannot satisfy the all-method B8 requirement. Actual domain scores and the separate B7 critical thresholds remain pending, so the phase stays open.
+
+## D-065 Branch protection dropped (2026-10-13)
+Type: DECISION
+Owner decision: the repository is not on a GitHub team plan, so branch protection / required `All checks` is not applied and its throwaway-PR proof is removed from X3 exit criteria. Remaining X3 gates: deploy refuses red SHA, first nightly, coverage baseline.
