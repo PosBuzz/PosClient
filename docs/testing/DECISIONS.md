@@ -499,3 +499,13 @@ Owner request: reach the B7/B8 goal with far less compute. The full domain run (
 - **Gate:** BE-COV-021 ratchet — a measured file may not fall more than 1 point below `test/service-coverage/mutation-baseline.json`; unrecorded files are reported. Each nightly uploads `backend-mutation-baseline-candidate`; recording baselines is a reviewed copy of that file into the repo. The Tier A 75% / Tier B 60% floors remain the target, still enforced by the strict mode (`node scripts/mutation-tier-gate.mjs <reports>` without `--baseline`).
 - **Seed baseline:** 19 unsplit files from nightly 38457921171 (KI-106). Split files and support.service (ambiguous name) are recorded by the first candidate.
 This keeps the regression guarantee (a change that weakens tests for a file fails within a day for edited files, within a week for the rest) while cutting nightly mutation work by roughly 85%. It does not claim the floors are met: raising scores to the floors remains test-writing work tracked in KI-106.
+
+## D-069 Domain mutation speed: incremental cache, runner recycling, short timeouts (2026-10-14)
+Type: DECISION
+The first D-068 nightly still timed out (shard 1 had 1,678 mutants, ~90 min projected, with out-of-memory runner restarts). Changes:
+- Stryker's incremental report is restored and saved per rotation day and shard (`actions/cache` restore/save, saved even when the shard fails). Mutants whose code and covering tests are unchanged reuse their earlier result. Local check: the same shard took 12 min 26 s cold and 79 s with the cache, with identical scores.
+- `maxTestRunnerReuse: 25` recycles Jest runners before Nest/Prisma state grows into an OOM crash.
+- `timeoutMS` 120 s → 15 s: an infinite-loop mutant no longer waits two minutes.
+- `ignorers: ['logging']` (`stryker-plugins/ignore-logging.mjs`) skips mutants inside `logger.*` / `this.logger.*` / `console.*` calls — diagnostic text only.
+- `thresholds.break: null`: a shard fails only on errors; the BE-COV-021 ratchet gate judges scores.
+- 12 shards, mutation step capped at 50 min so the cache save still runs. The first full pass is the slow one; later nights retest only what changed.
