@@ -45,4 +45,6 @@ own instance.
 `src/api/**` ≥ 90% lines; `src/stores/**` ≥ 90%; pages global ≥ 50% lines.
 
 ## Exit criteria
-- [ ] IDs green; `contracts/requests/admin-*.json` committed (X1 replays them on the backend).
+- [x] IDs green; all six required admin request recordings committed and replayed over backend HTTP (D-053).
+
+Verification: all 50 admin tests pass with coverage: API 94.90%, stores 100%, pages 61.17%; all required thresholds enabled. Every non-portfolio page directory has a test. Consumer passes all 551 tests twice with frozen fixtures, all-app lint/typecheck pass and all 76 backend response/replay checks pass. CI is checked after this checkpoint push.

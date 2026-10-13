@@ -7,6 +7,7 @@ import { createAdmin, createVendor, resetSequence } from '../../factories';
 import { InventoryAdjustmentService } from '../../../src/consumer/inventory/services/inventory-adjustment.service';
 import { ReceiptPdfSettingService } from '../../../src/consumer/receipt-pdf/services/receipt-pdf-setting.service';
 import { PRESET_DEFAULTS } from '../../../src/consumer/receipt-pdf/preset/receipt-pdf-settings';
+import { SupportService } from '../../../src/consumer/support/services/support.service';
 import {
   Scenario,
   at,
@@ -225,9 +226,51 @@ const CALLS: Call[] = [
     as: 'tenant',
     path: () => '/consumer/promotions/options',
   },
+  {
+    name: 'admin-plan-permissions',
+    as: 'admin',
+    path: () => '/admin/plans/permissions',
+  },
+  { name: 'admin-roles', as: 'admin', path: () => '/admin/users/roles' },
+  {
+    name: 'admin-permissions',
+    as: 'admin',
+    path: () => '/admin/users/permissions',
+  },
+  { name: 'admin-users', as: 'admin', path: () => '/admin/users' },
+  { name: 'admin-billings', as: 'admin', path: () => '/admin/billing' },
+  { name: 'admin-support', as: 'admin', path: () => '/admin/support/tickets' },
+  {
+    name: 'admin-support-stats',
+    as: 'admin',
+    path: () => '/admin/support/tickets/stats',
+  },
+  {
+    name: 'admin-support-populated',
+    as: 'admin',
+    path: () => '/admin/support/tickets',
+  },
+  {
+    name: 'admin-support-detail',
+    as: 'admin',
+    path: () => '/admin/support/tickets/1',
+  },
 ];
 
 describe('response contracts for the canonical business day', () => {
+  it('[BE-CONTRACT-DATE-001] preserves business dates and normalizes only volatile metadata', () => {
+    expect(
+      normalize({
+        billing_till: '2040-01-01T00:00:00.000Z',
+        billing_from: '2020-01-01T00:00:00.000Z',
+        created_at: '2026-10-13T00:00:00.000Z',
+      }),
+    ).toEqual({
+      billing_till: '2040-01-01T00:00:00.000Z',
+      billing_from: '2020-01-01T00:00:00.000Z',
+      created_at: '2026-03-14T12:00:00.000Z',
+    });
+  });
   const db = getPrisma();
   let boot: Boot;
   let live: Record<string, unknown>;
@@ -241,6 +284,15 @@ describe('response contracts for the canonical business day', () => {
     let vendorId: number;
     let receiptSettingId: number;
     for (const call of CALLS) {
+      if (call.name === 'admin-support-populated') {
+        await boot
+          .get(SupportService)
+          .create(scenario.tenant.consumer.id, scenario.tenant.adminUser.id, {
+            subject: 'C4 support request',
+            category: 'TECHNICAL',
+            message: 'Please help with the receipt',
+          });
+      }
       if (call.name === 'inventory-adjustments') {
         await boot
           .get(InventoryAdjustmentService)
@@ -251,6 +303,14 @@ describe('response contracts for the canonical business day', () => {
             quantity_change: 1,
             reason: 'Stock Count Correction',
           });
+        // Movement history exposes this DB-generated timestamp as `date`.
+        // Pin fixture metadata at its source instead of rewriting business dates.
+        await db.inventoryAdjustment.updateMany({
+          where: {
+            variant: { product: { consumer_id: scenario.tenant.consumer.id } },
+          },
+          data: { created_at: new Date(iso('16:00')) },
+        });
         const vendor = await createVendor(db, {
           consumer_id: scenario.tenant.consumer.id,
           name: 'C4 vendor',

@@ -111,7 +111,7 @@ export default function DrawerForm({
         null,
       );
       const billingFrom = latestBillingTill
-        ? latestBillingTill.add(1, "millisecond").startOf("day")
+        ? latestBillingTill.add(1, "day").startOf("day")
         : dayjs().startOf("day");
 
       form.setFieldsValue({
