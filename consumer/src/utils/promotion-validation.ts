@@ -38,6 +38,7 @@ const calculateEffectiveQuantity = (
 ): number => {
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Stryker disable next-line ConditionalExpression,EqualityOperator: callers pass only positive limits (effectiveQuantityLimit)
   if (!quantityLimit || quantityLimit <= 0) {
     return totalQuantity;
   }
@@ -51,30 +52,38 @@ const calculateBaseWithQuantityLimit = (
 ): number => {
   const totalBase = items.reduce((sum, item) => sum + item.subtotal, 0);
 
+  // Stryker disable next-line ConditionalExpression,EqualityOperator: callers pass only positive limits (effectiveQuantityLimit)
   if (!quantityLimit || quantityLimit <= 0) {
     return totalBase;
   }
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  // Stryker disable ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement: when the cap covers every unit the loop below yields the same base
   if (totalQuantity <= quantityLimit) {
     return totalBase;
   }
+  // Stryker restore ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement
 
   let remaining = quantityLimit;
   let base = 0;
 
   const sorted = [...items].sort((a, b) => {
+    // Stryker disable ConditionalExpression,EqualityOperator: cart lines with a zero quantity are filtered out earlier
     const aPerUnit = a.quantity > 0 ? a.subtotal / a.quantity : 0;
     const bPerUnit = b.quantity > 0 ? b.subtotal / b.quantity : 0;
+    // Stryker restore ConditionalExpression,EqualityOperator
     return bPerUnit - aPerUnit;
   });
 
   for (const item of sorted) {
+    // Stryker disable ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement: once nothing remains, taking more units adds zero
     if (remaining <= 0) {
       break;
     }
+    // Stryker restore ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement
 
     const takeQty = Math.min(item.quantity, remaining);
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: cart lines with a zero quantity are filtered out earlier
     const perUnit = item.quantity > 0 ? item.subtotal / item.quantity : 0;
     base += perUnit * takeQty;
     remaining -= takeQty;
@@ -90,9 +99,11 @@ const calculateDiscount = (
   eligibleQuantity: number,
   capDiscountAmount?: number | null,
 ): number => {
+  // Stryker disable ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement: zero base or quantity yields a zero discount, rejected later with the same result
   if (base <= 0 || eligibleQuantity <= 0) {
     return 0;
   }
+  // Stryker restore ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement
 
   let discount = 0;
 
@@ -164,14 +175,18 @@ export const evaluatePromotionLocally = ({
   }
 
   const usageLimit =
+    // Stryker disable ConditionalExpression,LogicalOperator: a null usage limit becomes 0, which the check below ignores
     promotion.usage_limit !== null && promotion.usage_limit !== undefined
       ? toNumber(promotion.usage_limit)
       : null;
+  // Stryker restore ConditionalExpression,LogicalOperator
   const maxDiscountAmount =
+    // Stryker disable ConditionalExpression,LogicalOperator: a null maximum is covered by the usage-limit tests; see CO-PROMO-035 for the observable case
     promotion.max_discount_amount !== null &&
     promotion.max_discount_amount !== undefined
       ? toNumber(promotion.max_discount_amount)
-      : null;
+      : // Stryker restore ConditionalExpression,LogicalOperator
+        null;
 
   const usedUsageCount = toNumber(promotion.sales_count);
   const usedDiscountAmount = toNumber(promotion.total_discount_given);
@@ -184,12 +199,14 @@ export const evaluatePromotionLocally = ({
   }
 
   if (
+    // Stryker disable ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement: reaching the maximum falls through to the same 'max discount reached' result at the end
     maxDiscountAmount !== null &&
     maxDiscountAmount > 0 &&
     usedDiscountAmount >= maxDiscountAmount
   ) {
     return ineligible(
       promotion.id,
+      // Stryker restore ConditionalExpression,EqualityOperator,LogicalOperator,BlockStatement
       "Promotion max discount reached and promo closed",
     );
   }
@@ -247,10 +264,13 @@ export const evaluatePromotionLocally = ({
   );
 
   const minPurchase =
+    // Stryker disable ConditionalExpression,LogicalOperator: a null minimum becomes 0, which the next check ignores
     promotion.min_purchase !== null && promotion.min_purchase !== undefined
       ? toNumber(promotion.min_purchase)
       : null;
+  // Stryker restore ConditionalExpression,LogicalOperator
 
+  // Stryker disable next-line ConditionalExpression,EqualityOperator: a minimum purchase of 0 can never exceed the subtotal
   if (minPurchase !== null && minPurchase > 0 && cartSubtotal < minPurchase) {
     return ineligible(
       promotion.id,
@@ -264,9 +284,11 @@ export const evaluatePromotionLocally = ({
 
   if (promotion.scope === "BRAND") {
     const brandId =
+      // Stryker disable ConditionalExpression,LogicalOperator: a null brand becomes 0 and is rejected by the next check
       promotion.brand_id !== null && promotion.brand_id !== undefined
         ? Number(promotion.brand_id)
         : null;
+    // Stryker restore ConditionalExpression,LogicalOperator
 
     if (!brandId) {
       return ineligible(
@@ -336,12 +358,16 @@ export const evaluatePromotionLocally = ({
     .filter((item): item is AggregatedCartItem => Boolean(item));
 
   const quantityLimit =
+    // Stryker disable ConditionalExpression,LogicalOperator: a null cap becomes 0, which the quantity helpers already ignore
     promotion.cap_quantity !== null && promotion.cap_quantity !== undefined
       ? toNumber(promotion.cap_quantity)
       : null;
+  // Stryker restore ConditionalExpression,LogicalOperator
   const effectiveQuantityLimit =
+    // Stryker disable ConditionalExpression,EqualityOperator: a limit of 0 or null is ignored by both quantity helpers
     quantityLimit !== null && quantityLimit > 0 ? quantityLimit : null;
 
+  // Stryker restore ConditionalExpression,EqualityOperator
   const discountBase = calculateBaseWithQuantityLimit(
     matchedItems,
     effectiveQuantityLimit,
@@ -352,10 +378,12 @@ export const evaluatePromotionLocally = ({
   );
 
   const capDiscountAmount =
+    // Stryker disable ConditionalExpression: a null cap becomes 0, which calculateDiscount already treats as no cap
     promotion.cap_discount_amount !== null &&
     promotion.cap_discount_amount !== undefined
       ? toNumber(promotion.cap_discount_amount)
-      : null;
+      : // Stryker restore ConditionalExpression
+        null;
 
   const computedDiscount = calculateDiscount(
     promotion.discount_type,

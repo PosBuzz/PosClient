@@ -11,8 +11,8 @@ const targets = {
   "src/utils/payment-provider.utils.ts": "src/utils/payment-provider.utils.test.ts",
   "src/utils/invalidate-sales-reports.ts": "src/utils/invalidate-sales-reports.test.ts",
   "src/api/axiosInstance.ts": "src/api/axiosInstance.test.ts",
-  "src/components/RequireAuth.tsx": "src/routes.test.tsx",
-  "src/components/RequirePermission.tsx": "src/routes.test.tsx",
+  "src/components/RequireAuth.tsx": "src/routes.test.tsx src/components/Require.test.tsx",
+  "src/components/RequirePermission.tsx": "src/routes.test.tsx src/components/Require.test.tsx",
 };
 const only = process.argv[2];
 let failed = false;

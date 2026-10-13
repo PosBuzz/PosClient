@@ -364,3 +364,117 @@ it("[CO-SALE-REPRICE-001] switching price type re-prices every known line, keeps
     })[0].unit_price,
   ).toBe(100);
 });
+
+describe("cart mutation boundaries", () => {
+  const inclusive = variant({
+    id: 2,
+    regular_price: 115,
+    tax_percentage: 15,
+    tax_method: "INCLUSIVE",
+  });
+  const exclusive = variant({
+    id: 1,
+    regular_price: 100,
+    tax_percentage: 10,
+    tax_method: "EXCLUSIVE",
+  });
+
+  it("[CO-CART-030] a missing tax method is exclusive", () => {
+    for (const method of ["", undefined as never]) {
+      expect(calc(100, 1, 10, method)).toEqual({
+        line_total: 110,
+        tax_amount: 10,
+        taxable_amount: 100,
+      });
+    }
+  });
+
+  it("[CO-CART-031] a new inclusive line keeps its price as the total and records the tax rate", () => {
+    const [line] = upsertVariantInSaleItems({
+      sourceItems: [],
+      variant: inclusive,
+      quantityToAdd: 2,
+      priceType: PriceType.REGULAR,
+    });
+    expect(line.line_total).toBe(230);
+    expect(line.tax_amount).toBe(30);
+    expect(line.tax_percentage).toBe(15);
+    expect(line.tax_method).toBe("INCLUSIVE");
+  });
+
+  it("[CO-CART-032] adding to an existing inclusive line recalculates inclusively and touches only that line", () => {
+    const first = item({ variant_id: 1, quantity: 1 });
+    const second = item({ variant_id: 2, quantity: 1, unit_price: 115 });
+    const result = upsertVariantInSaleItems({
+      sourceItems: [first, second],
+      variant: inclusive,
+      quantityToAdd: 1,
+      priceType: PriceType.REGULAR,
+    });
+    expect(result[0]).toBe(first);
+    expect(result[1].quantity).toBe(2);
+    expect(result[1].line_total).toBe(230);
+    expect(result[1].tax_amount).toBe(30);
+  });
+
+  it("[CO-CART-033] a special discount is left alone unless it is per quantity", () => {
+    const existing = item({
+      variant_id: 1,
+      quantity: 2,
+      special_discount_amount: 20,
+    });
+    const [line] = upsertVariantInSaleItems({
+      sourceItems: [existing],
+      variant: exclusive,
+      quantityToAdd: 2,
+      priceType: PriceType.REGULAR,
+    });
+    expect(line.special_discount_amount).toBe(20);
+    const [scaled] = upsertVariantInSaleItems({
+      sourceItems: [existing],
+      variant: exclusive,
+      quantityToAdd: 2,
+      priceType: PriceType.REGULAR,
+      specialDiscountPerQuantity: true,
+    });
+    expect(scaled.special_discount_amount).toBe(40);
+  });
+
+  it("[CO-CART-034] changing a quantity uses the tax method of the matching variant", () => {
+    const rows = [
+      item({
+        variant_id: 1,
+        unit_price: 100,
+        tax_percentage: 10,
+        tax_method: "EXCLUSIVE",
+      }),
+      item({
+        variant_id: 2,
+        unit_price: 115,
+        tax_percentage: 15,
+        tax_method: "EXCLUSIVE",
+      }),
+    ];
+    const result = updateSaleItemQuantity({
+      sourceItems: rows,
+      variantId: 2,
+      quantity: 2,
+      variants: [exclusive, inclusive],
+    });
+    expect(result[0]).toBe(rows[0]);
+    expect(result[1].line_total).toBe(230);
+    expect(result[1].tax_amount).toBe(30);
+  });
+
+  it("[CO-CART-035] repricing uses each line's own variant and inclusive tax", () => {
+    const rows = [item({ variant_id: 2, unit_price: 1, quantity: 2 })];
+    const [line] = repriceSaleItems({
+      sourceItems: rows,
+      variants: [exclusive, inclusive],
+      priceType: PriceType.REGULAR,
+    });
+    expect(line.unit_price).toBe(115);
+    expect(line.line_total).toBe(230);
+    expect(line.tax_amount).toBe(30);
+  });
+});

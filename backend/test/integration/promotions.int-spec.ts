@@ -55,7 +55,7 @@ describe('promotions management', () => {
   const create = (dto: any) =>
     promotions.create(dto, cid(), uid()) as Promise<any>;
 
-  it('[BE-PRM-001] a promotion is stored with its products, branches and brand', async () => {
+  it('[BE-PRM-001] {PromotionsService.create} a promotion is stored with its products, branches and brand', async () => {
     const a = await stocked();
     const b = await stocked();
     const bundle = await create(
@@ -159,7 +159,7 @@ describe('promotions management', () => {
       },
     );
 
-    it('[BE-PRM-003] branches, variants and brands of another tenant are refused', async () => {
+    it('[BE-PRM-003] {PromotionsService.create} branches, variants and brands of another tenant are refused', async () => {
       const mine = await stocked();
       const foreignBrand = await createBrand(db, {
         consumer_id: w.bystander.consumer.id,

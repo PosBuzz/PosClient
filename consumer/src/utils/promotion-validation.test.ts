@@ -254,3 +254,85 @@ describe("promotion validation", () => {
       true,
     ));
 });
+
+describe("promotion validation boundaries", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(now));
+  });
+  afterEach(() => vi.useRealTimers());
+  const two = [
+    item({ variant_id: 1, unit_price: 100, quantity: 2 }),
+    item({ variant_id: 2, unit_price: 50, quantity: 4 }),
+  ];
+  const bundle = { scope: "BUNDLE" as const, variant_ids: [1, 2] };
+
+  it("[CO-PROMO-030] a promotion without variant_ids falls back to its products list", () => {
+    const r = evaluate({
+      variant_ids: undefined,
+      products: [{ variant_id: 1 } as never],
+    });
+    expect(r.is_eligible).toBe(true);
+    expect(r.matched_variant_ids).toEqual([1]);
+  });
+
+  it("[CO-PROMO-031] a quantity cap limits a fixed discount to the capped units", () => {
+    const r = evaluate(
+      { discount_type: "fixed_amount", discount_value: 7, cap_quantity: 3 },
+      [item({ unit_price: 100, quantity: 5 })],
+    );
+    expect(r.discount_amount).toBe(21);
+  });
+
+  it("[CO-PROMO-032] a cap bigger than the matched quantity changes nothing", () => {
+    const r = evaluate(
+      { cap_quantity: 10, discount_value: 10 },
+      two.slice(0, 1),
+    );
+    expect(r.discount_base).toBe(200);
+    expect(r.discount_amount).toBe(20);
+  });
+
+  it("[CO-PROMO-033] a cap equal to the matched quantity keeps the whole base", () => {
+    const r = evaluate({ ...bundle, cap_quantity: 6, discount_value: 10 }, two);
+    expect(r.discount_base).toBe(400);
+  });
+
+  it("[CO-PROMO-034] a quantity cap discounts the dearest units first, whatever the cart order", () => {
+    const cheapFirst = [
+      item({ variant_id: 2, unit_price: 50, quantity: 4 }),
+      item({ variant_id: 3, unit_price: 20, quantity: 4 }),
+      item({ variant_id: 1, unit_price: 100, quantity: 2 }),
+    ];
+    const r = evaluate(
+      {
+        scope: "BUNDLE",
+        variant_ids: [2, 3, 1],
+        cap_quantity: 3,
+        discount_value: 10,
+      },
+      cheapFirst,
+    );
+    // 2 units at 100 and 1 unit at 50
+    expect(r.discount_base).toBe(250);
+    expect(r.discount_amount).toBe(25);
+  });
+
+  it("[CO-PROMO-035] a null or missing maximum discount means unlimited", () => {
+    for (const max_discount_amount of [null, undefined]) {
+      const r = evaluate({ max_discount_amount: max_discount_amount as never });
+      expect(r.is_eligible).toBe(true);
+      expect(r.discount_amount).toBe(10);
+    }
+  });
+
+  it("[CO-PROMO-036] the remaining maximum discount trims the discount and closes at zero", () => {
+    expect(
+      evaluate({ max_discount_amount: 15, total_discount_given: 10 })
+        .discount_amount,
+    ).toBe(5);
+    expect(
+      evaluate({ max_discount_amount: 15, total_discount_given: 15 }).reason,
+    ).toBe("Promotion max discount reached and promo closed");
+  });
+});
