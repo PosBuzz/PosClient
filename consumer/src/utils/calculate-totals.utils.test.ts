@@ -304,6 +304,67 @@ describe("promotion selection", () => {
         .appliedPromotionId,
     ).toBe(1);
   });
+  it("[CO-TOT-029] a smaller per-line discount never wins on a better tie-break tier", () => {
+    const results = {
+      1: { discount_amount: 15, matched_variant_ids: [1] },
+      2: { discount_amount: 25, matched_variant_ids: [1, 2] },
+    };
+    for (const order of [
+      [1, 2],
+      [2, 1],
+    ]) {
+      // Promotion 2 matches more variants but gives variant 1 only 10 against 15.
+      expect(
+        select(results, rows, order).discountBreakdownByVariant[1]
+          .appliedPromotionId,
+      ).toBe(1);
+    }
+  });
+  it("[CO-TOT-030] the variant-count and quantity tiers decide in either evaluation order", () => {
+    const byCount = {
+      1: { discount_amount: 25, matched_variant_ids: [1, 2] },
+      2: { discount_amount: 10, matched_variant_ids: [1] },
+    };
+    const byQuantity = {
+      1: { discount_amount: 25, matched_variant_ids: [1, 2] },
+      2: { discount_amount: 15, matched_variant_ids: [1, 3] },
+    };
+    for (const results of [byCount, byQuantity]) {
+      for (const order of [
+        [1, 2],
+        [2, 1],
+      ]) {
+        expect(
+          select(results, rows, order).discountBreakdownByVariant[1]
+            .appliedPromotionId,
+        ).toBe(1);
+      }
+    }
+  });
+  it("[CO-TOT-031] a special discount is capped by what the promotion left on the line", () => {
+    const only = [
+      item({ variant_id: 1, quantity: 1, special_discount_amount: 60 }),
+    ];
+    const r = select(
+      { 1: { discount_amount: 60, matched_variant_ids: [1] } },
+      only,
+    );
+    const line = r.discountBreakdownByVariant[1];
+    expect(line.promotion).toBe(60);
+    expect(line.special).toBe(40);
+    expect(line.total).toBe(100);
+  });
+  it("[CO-TOT-032] the breakdown names the chosen promotion and totals every discount", () => {
+    const r = select({
+      1: { discount_amount: 10, matched_variant_ids: [1] },
+      2: { discount_amount: 15, matched_variant_ids: [1] },
+    });
+    const line = r.discountBreakdownByVariant[1];
+    expect(line.promotionName).toBe("Offer 2");
+    expect(line.appliedPromotionName).toBe("Offer 2");
+    expect(line.total).toBe(line.average + line.special + line.promotion);
+    expect(line.total).toBe(15);
+  });
   it("[CO-TOT-025] ineligible, unmatched and zero discounts are ignored", () => {
     const r = select({
       1: {

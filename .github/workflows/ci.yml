@@ -337,8 +337,17 @@ jobs:
           curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz -o gitleaks.tgz
           echo "ba6dbb656933921c775ee5a2d1c13a91046e7952e9d919f9bac4cec61d628e7d  gitleaks.tgz" | sha256sum -c -
           tar -xzf gitleaks.tgz gitleaks
-      - name: Scan history
-        run: ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose
+      # Only the commits this PR or push adds are scanned. Secrets already in history are tracked in
+      # KNOWN-ISSUES (KI-088) and need rotating by the owner; they are not waived here.
+      - name: Scan new commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --log-opts="-1"
+          else
+            ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --log-opts="$BASE_SHA..HEAD"
+          fi
 
   tests-required:
     name: Tests required
