@@ -490,3 +490,12 @@ Owner decision: the repository is not on a GitHub team plan, so branch protectio
 ## D-067 Intentional tracked deployment credentials; JWT already rotated (2026-10-14)
 Type: DECISION
 Owner decision: `pull.sh` (with its deployment token) and the tracked `.env.docker` files are intentional and are not to be removed or reworked by the test programme. The old JWT from rabbitmq.controller.ts history was rotated and is dead; HEAD contains no JWT. No history rewrite or force-push. The secret scan keeps scanning new commits only. Security note recorded for the owner: the repository is public, so any live credential in these tracked files is readable by anyone.
+
+## D-068 Lighter domain mutation: weekly rotation, changed files, ratchet gate (2026-10-14)
+Type: DECISION
+Owner request: reach the B7/B8 goal with far less compute. The full domain run (≈13,500 mutants, 32 one-hour shards) is replaced by:
+- **Rotation:** each night mutates every 7th service file (`STRYKER_ROTATION=d/7`, d from the UTC day), so every file is measured once a week; files changed in the last 25 hours are always added (`STRYKER_CHANGED_FILES`). Six shards; a shard with nothing assigned skips Stryker.
+- **Tests used:** integration specs plus the unit specs (`src/**/*.spec.ts`, with reflect-metadata). Unit specs add kills for files the integration suite never reaches (the 0% files in KI-106) at ~seconds per run. E2E specs stay out (KI-105).
+- **Gate:** BE-COV-021 ratchet — a measured file may not fall more than 1 point below `test/service-coverage/mutation-baseline.json`; unrecorded files are reported. Each nightly uploads `backend-mutation-baseline-candidate`; recording baselines is a reviewed copy of that file into the repo. The Tier A 75% / Tier B 60% floors remain the target, still enforced by the strict mode (`node scripts/mutation-tier-gate.mjs <reports>` without `--baseline`).
+- **Seed baseline:** 19 unsplit files from nightly 38457921171 (KI-106). Split files and support.service (ambiguous name) are recorded by the first candidate.
+This keeps the regression guarantee (a change that weakens tests for a file fails within a day for edited files, within a week for the rest) while cutting nightly mutation work by roughly 85%. It does not claim the floors are met: raising scores to the floors remains test-writing work tracked in KI-106.
