@@ -2,7 +2,10 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
   "testRegex": "(test/integration/.*\\.int-spec|src/.*\\.spec)\\.ts$",
-  "testPathIgnorePatterns": ["optional-infra.int-spec.ts"],
+  "testPathIgnorePatterns": [
+    "optional-infra.int-spec.ts",
+    "src/common/errors/messages.spec.ts"
+  ],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
