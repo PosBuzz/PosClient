@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testRegex": "test/(integration|e2e)/.*\\.(int|e2e)-spec\\.ts$",
+  "testPathIgnorePatterns": ["optional-infra.int-spec.ts"],
+  "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/src/$1",
+    "^prisma-client-exception/(.*)$": "<rootDir>/prisma-client-exception/$1"
+  },
+  "testEnvironment": "node",
+  "setupFiles": ["<rootDir>/test/setup/load-test-env.ts"],
+  "maxWorkers": 1,
+  "testTimeout": 60000
+}

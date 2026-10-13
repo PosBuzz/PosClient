@@ -7,6 +7,9 @@ export interface ServiceMethod {
   service: string;
   method: string;
   file: string;
+  line: number;
+  throws: number;
+  consumerId: boolean;
 }
 
 const LIFECYCLE = new Set([
@@ -59,9 +62,26 @@ export function serviceInventory(): ServiceMethod[] {
         const method = member.name.getText();
         if (LIFECYCLE.has(method)) continue;
         found.push({
-          service: node.name.text,
+          // These two classes share a runtime name, but must never share a coverage claim.
+          service:
+            node.name.text === 'UsersService'
+              ? relative(ROOT, file).startsWith('src/admin/')
+                ? 'AdminUsersService'
+                : 'ConsumerUsersService'
+              : node.name.text,
           method,
           file: relative(ROOT, file),
+          line:
+            source.getLineAndCharacterOfPosition(member.getStart(source)).line +
+            1,
+          throws: [
+            ...(member.body?.getText(source) ?? '').matchAll(
+              /throw\s+new\s+\w*Exception\b/g,
+            ),
+          ].length,
+          consumerId: member.parameters.some((parameter) =>
+            /^(consumerId|consumer_id)$/.test(parameter.name.getText(source)),
+          ),
         });
       }
     });
@@ -71,34 +91,71 @@ export function serviceInventory(): ServiceMethod[] {
   );
 }
 
-/** `{Service.method}` tags found in test titles, with the file that claims them. */
-export function claimedTags(): Map<string, string[]> {
-  const claims = new Map<string, string[]>();
+export interface TestClaim {
+  title: string;
+  file: string;
+  tags: string[];
+}
+
+/** Parse actual test calls, including multiline it.each(...)(title, callback). */
+export function claimsInSource(text: string, file: string): TestClaim[] {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const claims: TestClaim[] = [];
+  const testCall = (node: ts.Expression): boolean => {
+    if (ts.isIdentifier(node)) {
+      return node.text === 'it' || node.text === 'test';
+    }
+    if (ts.isCallExpression(node)) return testCall(node.expression);
+    if (ts.isPropertyAccessExpression(node)) {
+      if (['skip', 'todo', 'failing', 'fails'].includes(node.name.text)) {
+        return false;
+      }
+      return testCall(node.expression);
+    }
+    return false;
+  };
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && testCall(node.expression)) {
+      const titleNode = node.arguments[0];
+      if (
+        titleNode &&
+        (ts.isStringLiteralLike(titleNode) ||
+          ts.isTemplateExpression(titleNode))
+      ) {
+        const title = ts.isStringLiteralLike(titleNode)
+          ? titleNode.text
+          : titleNode.getText(source);
+        const tags = [...title.matchAll(/\{([A-Za-z]+\.[A-Za-z0-9_]+)\}/g)].map(
+          (match) => match[1],
+        );
+        if (tags.length) claims.push({ title, file, tags });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return claims;
+}
+
+export function testClaims(): TestClaim[] {
   const files = [
     ...filesUnder(join(ROOT, 'src'), /\.spec\.ts$/),
     ...filesUnder(join(ROOT, 'prisma-client-exception'), /\.spec\.ts$/),
     ...filesUnder(join(ROOT, 'test'), /\.(int|e2e)-spec\.ts$/),
   ];
-  for (const file of files) {
-    const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(
-      /\b(?:it|test)(?:\.each\([^)]*\))?\(\s*['"`][^'"`\n]*?\{([A-Za-z]+\.[A-Za-z0-9_]+)\}/g,
-    )) {
-      const list = claims.get(match[1]) ?? [];
-      list.push(relative(ROOT, file));
-      claims.set(match[1], list);
-    }
-    // Several tags can share one title; collect them all.
-    for (const title of text.matchAll(
-      /\b(?:it|test)\(\s*(['"`])((?:(?!\1)[^\n])*)\1/g,
-    )) {
-      for (const tag of title[2].matchAll(/\{([A-Za-z]+\.[A-Za-z0-9_]+)\}/g)) {
-        const list = claims.get(tag[1]) ?? [];
-        if (!list.includes(relative(ROOT, file))) {
-          list.push(relative(ROOT, file));
-        }
-        claims.set(tag[1], list);
-      }
+  return files.flatMap((file) =>
+    claimsInSource(readFileSync(file, 'utf8'), relative(ROOT, file)),
+  );
+}
+
+/** `{Service.method}` tags found in test titles, with the file that claims them. */
+export function claimedTags(): Map<string, string[]> {
+  const claims = new Map<string, string[]>();
+  for (const test of testClaims()) {
+    for (const tag of test.tags) {
+      const list = claims.get(tag) ?? [];
+      if (!list.includes(test.file)) list.push(test.file);
+      claims.set(tag, list);
     }
   }
   return claims;

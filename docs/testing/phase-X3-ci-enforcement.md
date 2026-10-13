@@ -53,8 +53,9 @@ individual ones:
 ```
 `dependency-review` is skipped only on pushes because it compares PR base/head; it is required on PRs. The aggregator above rejects skipped mandatory jobs, including dependency-review on a PR.
 
-Path-filtered mutation jobs are **not** in `needs` (they may be skipped). They fail on their own
-when they run.
+Path-filtered mutation jobs are in `all-green.needs`. Only their expensive steps are filtered;
+the jobs succeed when no relevant paths changed. A mutation failure therefore blocks the required
+"All checks" status, and a failed path-filter cannot silently bypass the gate.
 
 ## 2. Secret scanning (KI-012)
 ```yaml

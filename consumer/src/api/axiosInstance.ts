@@ -12,7 +12,6 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   const csrfToken = useAuthStore.getState().csrfToken;
 
-  // Stryker disable next-line ConditionalExpression: axios drops a null header, so sending one is the same as sending none
   if (csrfToken) {
     config.headers["X-CSRF-TOKEN"] = csrfToken;
   }
@@ -23,7 +22,6 @@ axiosInstance.interceptors.request.use((config) => {
 // Separate instance for refresh token call
 const refreshInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  // Stryker disable next-line BooleanLiteral: cookies are not observable under jsdom and MSW; the real-browser E2E journeys J0/J5 cover this
   withCredentials: true,
 });
 
@@ -31,7 +29,6 @@ const refreshInstance = axios.create({
 refreshInstance.interceptors.request.use((config) => {
   const csrfToken = useAuthStore.getState().csrfToken;
 
-  // Stryker disable next-line ConditionalExpression: axios drops a null header, so sending one is the same as sending none
   if (csrfToken) {
     config.headers["X-CSRF-TOKEN"] = csrfToken;
   }

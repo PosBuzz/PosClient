@@ -90,11 +90,17 @@ describe('reports: the business day against hand-computed numbers', () => {
 
     it('hourly sales, payment status and the date labels', async () => {
       const report = await eod();
-      // Hours are business-local: Dhaka is UTC+6, the scenario is stamped in UTC
-      const offset =
-        Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Dhaka'
-          ? 6
-          : 0;
+      // Fixed 2026-03-14 UTC scenario: New York is already on daylight-saving time.
+      // Keep hand-computed bucket expectations for each nightly business-local zone.
+      const offsets: Record<string, number> = {
+        UTC: 0,
+        'Etc/UTC': 0,
+        'Asia/Dhaka': 6,
+        'America/New_York': -4,
+      };
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      expect(offsets).toHaveProperty(zone);
+      const offset = offsets[zone];
       const hour = (h: number) =>
         report.hourly_sales.find((x) => x.hour === h + offset)!;
       expect(hour(10)).toMatchObject({ sales_count: 2, total_amount: 480 }); // S1 250 + S2 230
