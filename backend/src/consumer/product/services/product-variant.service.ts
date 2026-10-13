@@ -212,8 +212,8 @@ export class ProductVariantService {
         }
       }
 
-      const variant = await this.prisma.productVariant.findUnique({
-        where: { id },
+      const variant = await this.prisma.productVariant.findFirst({
+        where: { id, product: { consumer_id: consumerId } },
         include: {
           sale_unit: true,
           purchase_unit: true,
@@ -253,10 +253,11 @@ export class ProductVariantService {
         (sum, item) => sum + item.quantity,
         0,
       );
-      const isLowStock =
+      const isLowStock = Boolean(
         variant.alert_quantity &&
-        variant.alert_quantity > 0 &&
-        totalStock <= variant.alert_quantity;
+          variant.alert_quantity > 0 &&
+          totalStock <= variant.alert_quantity,
+      );
 
       return {
         ...variant,

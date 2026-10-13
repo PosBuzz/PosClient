@@ -10,6 +10,7 @@ import {
 } from '../../factories';
 import { SalesService } from '../../../src/consumer/sales/services/sales.service';
 import { PaymentMethod } from '../../../src/consumer/sales/dto/create-sale.dto';
+import { assertInvariants } from '../../helpers/invariants';
 
 // Replays the payloads the consumer generated (X-TOT-R00/R01) through the real SalesService.create
 // and asserts the stored totals equal what the POS showed. Regenerate with
@@ -134,4 +135,7 @@ describe('consumer-generated sale totals replayed on the backend', () => {
     }
     expect(failures).toEqual([]);
   }, 600000);
+  it('[X-TOT-R03] the invariant net holds after every golden/random replay', async () => {
+    await assertInvariants(db);
+  });
 });

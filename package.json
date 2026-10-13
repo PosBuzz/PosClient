@@ -12,7 +12,7 @@
     "setup": "bash setup.sh",
     "lint:all": "npm run lint:check --prefix backend && npm run lint:check --prefix consumer && npm run lint:check --prefix admin",
     "typecheck:all": "npm run typecheck --prefix backend && npm run typecheck --prefix consumer && npm run typecheck --prefix admin",
-    "test:all": "npm run test:all --prefix backend && npm test --prefix consumer && npm run test:guardrails",
+    "test:all": "npm run test:all --prefix backend && npm test --prefix consumer && npm test --prefix admin && npm run test:guardrails",
     "test:guardrails": "node --test scripts/check-production-audit.test.mjs",
     "prepare": "husky"
   },
