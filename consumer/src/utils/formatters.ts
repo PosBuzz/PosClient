@@ -1,4 +1,6 @@
-export const formatCurrency = (amount: number | null | undefined): string => {
+export const formatCurrency = (
+  amount: number | string | null | undefined,
+): string => {
   if (amount === null || amount === undefined) {
     return "N/A";
   }

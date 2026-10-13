@@ -206,11 +206,13 @@ The fixture-based tests (§1, §2, §4, §5) run inside the existing `backend-un
 `backend-integration`, `consumer-tests` and `admin-tests` jobs. No extra job is needed.
 
 ## Exit criteria
-- [ ] `contracts/` exists with fixtures, generated files, routes, responses, requests.
-- [ ] X-PRICE-*, X-TOT-*, X-TOT-R01…03, X-PROMO-*, X-PERM-*, X-SUBD-*, X-ENDP-*, X-REQ-*, X-TYPE-* green or `failing` + KI.
-- [ ] **Proof run** (record it in the PR description, then revert both edits):
+- [x] `contracts/` exists with fixtures, generated files, routes, responses, requests.
+- [x] X-PRICE-*, X-TOT-*, X-TOT-R01…03, X-PROMO-*, X-PERM-*, X-SUBD-*, X-ENDP-*, X-REQ-*, X-TYPE-* green or `failing` + KI.
+- [x] **Proof run** (record it in the PR description, then revert both edits):
       (a) in `consumer/src/utils/calculate-totals.utils.ts`, drop the remainder logic in
       `distributeDiscount` (give the last item `share` like the others) → X-TOT-R01 and the
       `average-flat-remainder` fixture fail on the consumer side.
       (b) in `backend/src/consumer/sales/services/sales.service.ts#create`, remove `+ shippingCost`
       from `totalAmount` → X-TOT-R02 (carts with shipping), the `shipping` fixture, and B4 reconciliation fail on the backend side.
+
+Implementation/verification (2026-10-13, D-053/D-054): all request recordings replay over real HTTP with stored totals and invariants, and X-REQ-000 rejects unlisted files. Twenty consumer response literals plus admin auth are checked by TypeScript; exact copies/freshness checks avoid JSON import widening of nulls/enum strings. Admin plan/consumer types do not exist and are skipped under §5's explicit exception. X-TOT-R03 checks every stored batch's invariants after the complete 200-cart replay suite. The isolated proof baseline passed; shipping removal fails X-TOT-R02, the shipping fixture and B4 BE-RPT-102/000. Removing the current allocator's remainder causes nontermination in X-TOT-R01 and X-TOT-003; a 20-second process watchdog detected this (DOC-DRIFT from the old cent-mismatch expectation). Restoring both files passes 13 consumer fixture tests and 24 backend replay/reconciliation tests. The temporary checkout was removed; no mutant is committed.

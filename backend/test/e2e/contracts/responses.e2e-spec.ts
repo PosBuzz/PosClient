@@ -8,6 +8,7 @@ import { InventoryAdjustmentService } from '../../../src/consumer/inventory/serv
 import { ReceiptPdfSettingService } from '../../../src/consumer/receipt-pdf/services/receipt-pdf-setting.service';
 import { PRESET_DEFAULTS } from '../../../src/consumer/receipt-pdf/preset/receipt-pdf-settings';
 import { SupportService } from '../../../src/consumer/support/services/support.service';
+import { ProductVariantService } from '../../../src/consumer/product/services/product-variant.service';
 import {
   Scenario,
   at,
@@ -255,6 +256,11 @@ const CALLS: Call[] = [
     as: 'admin',
     path: () => '/admin/support/tickets/1',
   },
+  {
+    name: 'rewards-settings',
+    as: 'tenant',
+    path: () => '/consumer/rewards/settings',
+  },
 ];
 
 describe('response contracts for the canonical business day', () => {
@@ -419,5 +425,54 @@ describe('response contracts for the canonical business day', () => {
     expect(typeof sale.total_amount).toBe('string');
     expect(typeof sale.id).toBe('number');
     expect(typeof sale.items[0].line_total).toBe('string');
+  });
+  it('[BE-CONTRACT-BOOL-001] low-stock flags are boolean at zero and at the exact stock threshold', async () => {
+    const product = live['product-detail'] as {
+      consumer_id: number;
+      variants: Array<{
+        id: number;
+        total_stock: number;
+        is_low_stock: unknown;
+      }>;
+    };
+    const variant = product.variants[0];
+    expect(variant.is_low_stock).toBe(false);
+    const service = boot.get(ProductVariantService);
+    const current = await service.findOne(variant.id, product.consumer_id);
+    expect(current.is_low_stock).toBe(false);
+    const batches = await db.inventoryBatch.aggregate({
+      where: { variant_id: variant.id },
+      _sum: { quantity: true },
+    });
+    expect(current.total_stock).toBe(batches._sum.quantity);
+    await db.productVariant.update({
+      where: { id: variant.id },
+      data: { alert_quantity: current.total_stock },
+    });
+    expect(
+      (await service.findOne(variant.id, product.consumer_id)).is_low_stock,
+    ).toBe(true);
+    await db.productVariant.update({
+      where: { id: variant.id },
+      data: { alert_quantity: current.total_stock - 1 },
+    });
+    expect(
+      (await service.findOne(variant.id, product.consumer_id)).is_low_stock,
+    ).toBe(false);
+    await db.productVariant.update({
+      where: { id: variant.id },
+      data: { alert_quantity: 0 },
+    });
+  });
+  it('[BE-CONTRACT-TEN-001] variant details reject an explicitly mismatched tenant', async () => {
+    const product = live['product-detail'] as {
+      consumer_id: number;
+      variants: Array<{ id: number }>;
+    };
+    await expect(
+      boot
+        .get(ProductVariantService)
+        .findOne(product.variants[0].id, product.consumer_id + 1000),
+    ).rejects.toMatchObject({ status: 404 });
   });
 });

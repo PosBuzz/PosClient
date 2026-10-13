@@ -24,7 +24,10 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
-import { Product, ProductVariantDetailed } from "../../types/product.types";
+import {
+  ProductListItem,
+  ProductVariantSummary,
+} from "../../types/product.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -82,8 +85,8 @@ const BarcodePrinting = () => {
     select: (data) => {
       // Flatten variants from all products that have barcodes
       const options: ProductOption[] = [];
-      data.data.forEach((product: Product) => {
-        product.variants?.forEach((variant: ProductVariantDetailed) => {
+      data.data.forEach((product: ProductListItem) => {
+        product.variants?.forEach((variant: ProductVariantSummary) => {
           if (variant.barcode) {
             options.push({
               id: variant.id || 0,

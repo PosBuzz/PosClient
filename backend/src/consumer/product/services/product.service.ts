@@ -656,10 +656,11 @@ export class ProductService {
           );
 
           // Check if stock is low
-          const isLowStock =
+          const isLowStock = Boolean(
             variant.alert_quantity &&
-            variant.alert_quantity > 0 &&
-            totalStock <= variant.alert_quantity;
+              variant.alert_quantity > 0 &&
+              totalStock <= variant.alert_quantity,
+          );
 
           // Get current and previous prices
           const currentPrice = variant.price_history[0];

@@ -1,9 +1,9 @@
 export interface Customer {
   id: number;
   name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
   /** Date of birth, ISO date string */
   birthday?: string | null;
   customer_type: CustomerType;
@@ -13,6 +13,7 @@ export interface Customer {
 }
 
 export enum CustomerType {
+  REGULAR = "regular",
   INDIVIDUAL = "individual",
   BUSINESS = "business",
 }

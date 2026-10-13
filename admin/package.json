@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "tsc": "tsc -b",
     "lint:check": "eslint . --max-warnings=0",
-    "typecheck": "tsc -b",
+    "typecheck": "node ../scripts/contracts/generate-response-types.mjs --check --app admin && tsc -b",
     "test": "TZ=UTC vitest run",
     "test:watch": "TZ=UTC vitest",
     "test:cov": "TZ=UTC vitest run --coverage"

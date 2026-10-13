@@ -18,7 +18,7 @@ export interface PromotionOptionVariant {
   regular_price: number;
   product_id: number;
   product_name: string;
-  brand_id?: number;
+  brand_id?: number | null;
 }
 
 export interface PromotionOptionsResponse {
@@ -30,29 +30,29 @@ export interface PromotionOptionsResponse {
 export interface Promotion {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   scope: PromotionScope;
   discount_type: PromotionDiscountType;
   discount_value: number;
   start_date: string;
   end_date?: string;
   is_active: boolean;
-  min_purchase?: number;
-  min_quantity?: number;
-  usage_limit?: number;
-  cap_quantity?: number;
-  max_discount_amount?: number;
-  cap_discount_amount?: number;
+  min_purchase?: number | null;
+  min_quantity?: number | null;
+  usage_limit?: number | null;
+  cap_quantity?: number | null;
+  max_discount_amount?: number | null;
+  cap_discount_amount?: number | null;
   member_only?: boolean;
   limit_per_customer?: boolean;
-  customer_usage_limit?: number;
+  customer_usage_limit?: number | null;
   customer_usage_daily_reset?: boolean;
   auto_apply: boolean;
   branch_specific: boolean;
   branch_ids: number[];
   variant_ids: number[];
-  brand_id?: number;
-  brand?: { id: number; name: string };
+  brand_id?: number | null;
+  brand?: { id: number; name: string } | null;
   products?: Array<{
     variant_id: number;
     variant_name: string;
