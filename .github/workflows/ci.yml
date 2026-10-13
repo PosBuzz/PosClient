@@ -376,9 +376,23 @@ jobs:
           fi
 
   consumer-mutation:
-    name: Consumer mutation
+    name: Consumer mutation (${{ matrix.target }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - src/utils/calculate-totals.utils.ts
+          - src/utils/sale-item.utils.ts
+          - src/utils/promotion-validation.ts
+          - src/utils/promotion-helpers.utils.ts
+          - src/utils/formatters.ts
+          - src/utils/payment-provider.utils.ts
+          - src/utils/invalidate-sales-reports.ts
+          - src/api/axiosInstance.ts
+          - src/components/RequireAuth.tsx
+          - src/components/RequirePermission.tsx
     permissions:
       contents: read
       pull-requests: read
@@ -429,18 +443,18 @@ jobs:
           path: |
             consumer/reports/stryker/*.json
             consumer/reports/stryker/*.json.inputs
-          key: stryker-consumer-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          key: stryker-consumer-${{ matrix.target }}-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            stryker-consumer-${{ github.head_ref || github.ref_name }}-
-            stryker-consumer-main-
+            stryker-consumer-${{ matrix.target }}-${{ github.head_ref || github.ref_name }}-
+            stryker-consumer-${{ matrix.target }}-main-
       - if: steps.changes.outputs.mutation == 'true'
-        run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation
+        run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation -- ${{ matrix.target }}
         env:
           TZ: UTC
       - if: always() && steps.changes.outputs.mutation == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: consumer-mutation-report
+          name: consumer-mutation-report-${{ strategy.job-index }}
           path: consumer/reports/stryker
           retention-days: 14
 
