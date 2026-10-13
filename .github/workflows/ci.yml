@@ -11,71 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      apps: ${{ steps.apps.outputs.apps }}
-      backend: ${{ steps.apps.outputs.backend }}
-      consumer: ${{ steps.apps.outputs.consumer }}
-      admin: ${{ steps.apps.outputs.admin }}
-      e2e: ${{ steps.apps.outputs.e2e }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            shared:
-              - 'contracts/**'
-              - 'scripts/**'
-              - '.github/**'
-              - 'docker-compose*.yml'
-              - '.nvmrc'
-              - 'package*.json'
-            backend:
-              - 'backend/**'
-            consumer:
-              - 'consumer/**'
-            admin:
-              - 'admin/**'
-            e2e:
-              - 'e2e/**'
-      # Docs-only changes select nothing; shared files (contracts, scripts, workflows) select every app.
-      - id: apps
-        env:
-          SHARED: ${{ steps.filter.outputs.shared }}
-          BACKEND: ${{ steps.filter.outputs.backend }}
-          CONSUMER: ${{ steps.filter.outputs.consumer }}
-          ADMIN: ${{ steps.filter.outputs.admin }}
-          E2E: ${{ steps.filter.outputs.e2e }}
-        run: |
-          node --input-type=module <<'JS'
-          const on = (name) => process.env.SHARED === 'true' || process.env[name] === 'true';
-          const selected = { backend: on('BACKEND'), consumer: on('CONSUMER'), admin: on('ADMIN') };
-          const apps = Object.keys(selected).filter((app) => selected[app]);
-          const e2e = apps.length > 0 || process.env.E2E === 'true';
-          const out = [
-            `apps=${JSON.stringify(apps)}`,
-            ...Object.entries(selected).map(([app, value]) => `${app}=${value}`),
-            `e2e=${e2e}`,
-          ].join('\n');
-          console.log(out);
-          (await import('node:fs')).appendFileSync(process.env.GITHUB_OUTPUT, `${out}\n`);
-          JS
-
   static:
     name: Lint & typecheck (${{ matrix.app }})
-    needs: changes
-    if: needs.changes.outputs.apps != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        app: [backend, consumer, admin]
     defaults:
       run:
         working-directory: ${{ matrix.app }}
@@ -97,13 +39,11 @@ jobs:
 
   dependency-audit:
     name: Production dependency audit (${{ matrix.app }})
-    needs: changes
-    if: needs.changes.outputs.apps != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        app: [backend, consumer, admin]
     defaults:
       run:
         working-directory: ${{ matrix.app }}
@@ -168,8 +108,6 @@ jobs:
 
   backend-unit:
     name: Backend unit tests
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -198,13 +136,11 @@ jobs:
 
   build:
     name: Build (${{ matrix.app }})
-    needs: changes
-    if: needs.changes.outputs.apps != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        app: [backend, consumer, admin]
     defaults:
       run:
         working-directory: ${{ matrix.app }}
@@ -235,13 +171,11 @@ jobs:
 
   docker-build:
     name: Docker image builds (${{ matrix.app }})
-    needs: changes
-    if: needs.changes.outputs.apps != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+        app: [backend, consumer, admin]
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -253,8 +187,6 @@ jobs:
 
   backend-integration:
     name: Backend integration + e2e
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -286,8 +218,6 @@ jobs:
 
   backend-optional-infra:
     name: Backend optional infrastructure
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -308,8 +238,6 @@ jobs:
 
   consumer-tests:
     name: Consumer tests
-    needs: changes
-    if: needs.changes.outputs.consumer == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -332,8 +260,6 @@ jobs:
 
   admin-tests:
     name: Admin tests
-    needs: changes
-    if: needs.changes.outputs.admin == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -369,8 +295,7 @@ jobs:
   e2e:
     name: Full-stack E2E
     runs-on: ubuntu-latest
-    needs: [changes, backend-integration, consumer-tests, admin-tests]
-    if: always() && needs.changes.outputs.e2e == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    needs: [backend-integration, consumer-tests, admin-tests]
     timeout-minutes: 30
     defaults:
       run:
@@ -599,7 +524,7 @@ jobs:
   all-green:
     name: All checks
     if: always()
-    needs: [changes, static, build, docker-build, dependency-audit, dependency-review, guardrail-tests, backend-unit, backend-integration, backend-optional-infra, consumer-tests, admin-tests, contracts, e2e, secret-scan, tests-required, consumer-mutation, backend-mutation-unit]
+    needs: [static, build, docker-build, dependency-audit, dependency-review, guardrail-tests, backend-unit, backend-integration, backend-optional-infra, consumer-tests, admin-tests, contracts, e2e, secret-scan, tests-required, consumer-mutation, backend-mutation-unit]
     runs-on: ubuntu-latest
     steps:
       - name: Require successful mandatory jobs
@@ -610,13 +535,8 @@ jobs:
           node --input-type=module <<'JS'
           const jobs = JSON.parse(process.env.JOB_RESULTS);
           const pullRequestOnly = ['dependency-review', 'tests-required'];
-          // Area jobs may be skipped only because change detection ran and found nothing for them.
-          const changeFiltered = ['static', 'build', 'docker-build', 'dependency-audit', 'backend-unit', 'backend-integration', 'backend-optional-infra', 'consumer-tests', 'admin-tests', 'e2e'];
-          const detected = jobs.changes?.result === 'success';
           for (const [name, job] of Object.entries(jobs)) {
-            const allowedSkip =
-              (pullRequestOnly.includes(name) && process.env.EVENT_NAME !== 'pull_request') ||
-              (detected && changeFiltered.includes(name));
+            const allowedSkip = pullRequestOnly.includes(name) && process.env.EVENT_NAME !== 'pull_request';
             if (job.result !== 'success' && !(allowedSkip && job.result === 'skipped')) {
               console.error(`${name}: ${job.result}`);
               process.exitCode = 1;
