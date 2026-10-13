@@ -50,7 +50,7 @@ const files = [
 ].sort();
 // A file bigger than SPLIT_BYTES is cut into line ranges (Stryker's "file:start-end") so one huge
 // service cannot be the shard that decides the nightly's duration.
-const SPLIT_BYTES = 36000;
+const SPLIT_BYTES = 18000;
 const units = files.flatMap((file) => {
   const size = statSync(file).size;
   const pieces = Math.ceil(size / SPLIT_BYTES);
