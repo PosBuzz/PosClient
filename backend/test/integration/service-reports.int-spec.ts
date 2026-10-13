@@ -38,7 +38,8 @@ describe('inventory and sales lookups', () => {
       () => null,
       (e: any) => e,
     );
-  const today = () => new Date().toISOString().slice(0, 10);
+  // Business days follow the process time zone (UTC, Dhaka, New York in the matrix); en-CA prints YYYY-MM-DD.
+  const today = () => new Intl.DateTimeFormat('en-CA').format(new Date());
 
   it('[BE-INV-070] {InventoryService.getStockByVariant} stock by variant shows the remaining quantity to its tenant only', async () => {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
