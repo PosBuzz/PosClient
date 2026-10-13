@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
-  "testRegex": "test/(integration|e2e)/.*\\.(int|e2e)-spec\\.ts$",
+  "testRegex": "test/integration/.*\\.int-spec\\.ts$",
   "testPathIgnorePatterns": ["optional-infra.int-spec.ts"],
   "transform": { "^.+\\.(t|j)s$": "ts-jest" },
   "moduleNameMapper": {
