@@ -28,6 +28,17 @@ export function criticalMethodRange(file, method) {
   return range;
 }
 
+export function mergeReports(reports) {
+  const files = {};
+  for (const report of reports)
+    for (const [file, value] of Object.entries(report.files ?? {})) {
+      if (files[file])
+        throw new Error(`Mutation file reported by two shards: ${file}`);
+      files[file] = value;
+    }
+  return { files };
+}
+
 export function tierFailures(report, inventory, tiers, criticalRanges = []) {
   const requirements = new Map();
   for (const method of inventory) {
@@ -92,8 +103,13 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
+  const paths = process.argv.slice(2);
   const failures = tierFailures(
-    read(process.argv[2] ?? 'reports/stryker/domain.mutation.json'),
+    mergeReports(
+      (paths.length ? paths : ['reports/stryker/domain.mutation.json']).map(
+        read,
+      ),
+    ),
     read('test/service-coverage/service-methods.json'),
     read('test/service-coverage/tiers.json'),
     [
