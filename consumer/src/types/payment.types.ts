@@ -1,18 +1,23 @@
-import { PaymentStatus, Sale, SalePayment } from "./sale.types";
+import {
+  PaymentStatus,
+  Sale,
+  SalePayment,
+  SaleResponsePayment,
+} from "./sale.types";
 
 // Type for a sale with partial payment information
 export interface SaleForPayment {
   id: number;
   sale_number: string;
-  customer_name?: string;
-  customer_phone?: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
   branch_name?: string;
   sale_date: string;
-  total_amount: number;
+  total_amount: number | string;
   payment_status: PaymentStatus;
-  received_amount: number;
+  received_amount: number | string;
   remaining_amount: number;
-  payments?: SalePayment[];
+  payments?: SaleResponsePayment[];
   created_at?: string;
 }
 
@@ -24,7 +29,7 @@ export interface MakePaymentForm {
 
 // Response after making a payment
 export interface PaymentResponse {
-  payment: SalePayment;
+  payment: SaleResponsePayment;
   sale: Sale;
 }
 

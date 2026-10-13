@@ -121,7 +121,7 @@ export const upsertVariantInSaleItems = ({
     product_name: variant.product_name,
     regular_price: Number(variant.regular_price || 0),
     wholesale_price: Number(variant.wholesale_price || 0),
-    image: variant.image,
+    image: variant.image ?? undefined,
     unit_name: variant.unit_name,
     tax_percentage: Number(variant.tax_percentage || 0),
     tax_method: variant.tax_method || "EXCLUSIVE",

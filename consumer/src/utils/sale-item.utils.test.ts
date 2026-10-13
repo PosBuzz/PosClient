@@ -17,6 +17,20 @@ const qty = fc.integer({ min: 0, max: 50 });
 const tax = fc.integer({ min: 0, max: 2500 }).map((n) => n / 100);
 const round = (n: number) => Number(n.toFixed(2));
 const cents = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+it("[CO-SALE-MAP-001] API Decimal strings and null images become numeric cart values and an absent image", () => {
+  const rows = upsertVariantInSaleItems({
+    sourceItems: [],
+    variant: variant({ regular_price: "100", image: null, tax_percentage: 5 }),
+    quantityToAdd: 1,
+    priceType: PriceType.REGULAR,
+  });
+  expect(rows[0]).toMatchObject({
+    unit_price: 100,
+    line_total: 105,
+    tax_amount: 5,
+    image: undefined,
+  });
+});
 it("[CO-SALE-PER-QTY-001] adding a unit preserves an opted-in per-unit discount and handles zero discount", () => {
   const v = variant();
   for (const [quantity, discount, expected] of [

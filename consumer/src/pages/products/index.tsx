@@ -37,7 +37,7 @@ import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import type {
-  Product,
+  ProductListItem,
   ProductListFilters,
   ProductListResponse,
 } from "../../types/product.types";
@@ -245,7 +245,7 @@ const ProductsTable = () => {
   };
 
   // Helper function to get main variant (default or first)
-  const getMainVariant = (product: Product) => {
+  const getMainVariant = (product: ProductListItem) => {
     return product.variants?.find((v) => v.is_default) || product.variants?.[0];
   };
 
@@ -265,7 +265,7 @@ const ProductsTable = () => {
       title: "Product",
       key: "product",
       width: "35%",
-      render: (_, record: Product) => {
+      render: (_, record: ProductListItem) => {
         const mainVariant = getMainVariant(record);
         return (
           <Space>
@@ -337,7 +337,7 @@ const ProductsTable = () => {
       key: "tax",
       width: "8%",
       align: "center" as const,
-      render: (_, record: Product) => {
+      render: (_, record: ProductListItem) => {
         const taxMethod = record.tax_method || "exclusive";
         const taxValue = record.tax || 0;
 
@@ -360,7 +360,7 @@ const ProductsTable = () => {
       title: "Created",
       key: "created_at",
       width: "10%",
-      render: (_, record: Product) => {
+      render: (_, record: ProductListItem) => {
         const date = new Date(record.created_at);
         return (
           <div>
@@ -383,7 +383,7 @@ const ProductsTable = () => {
       title: "Actions",
       key: "actions",
       width: "11%",
-      render: (_, record: Product) => (
+      render: (_, record: ProductListItem) => (
         <Space size="small">
           <Tooltip title="View Details">
             <Button

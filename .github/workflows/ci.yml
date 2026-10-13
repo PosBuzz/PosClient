@@ -273,3 +273,4 @@ jobs:
           node-version-file: .nvmrc
       - run: node scripts/contracts/check-permissions.mjs
       - run: node scripts/contracts/check-inline-paths.mjs
+      - run: node scripts/contracts/generate-response-types.mjs --check

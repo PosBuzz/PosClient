@@ -1,8 +1,8 @@
 export interface Customer {
   id: number;
   name: string;
-  phone?: string;
-  email?: string;
+  phone?: string | null;
+  email?: string | null;
   rewards_points?: {
     total_points: number;
     lifetime_earned?: number;
@@ -43,6 +43,48 @@ export interface SaleItem {
   returned_quantity?: number; // Qty of this line returned across all returns
 }
 
+/** Stored API lines have Decimal strings and nested relations; cart inputs stay numeric. */
+export interface SaleResponseItem {
+  id?: number;
+  variant_id: number;
+  quantity: number;
+  unit_price: number | string;
+  sold_unit_price?: number | string;
+  line_total: number | string;
+  average_discount_amount?: number | string;
+  special_discount_amount?: number | string;
+  promotion_discount_amount?: number | string;
+  tax_amount?: number | string;
+  applied_promotion_id?: number | null;
+  applied_promotion?: {
+    id: number;
+    name: string;
+    scope: string;
+    discount_type: string;
+    discount_value: number | string;
+  } | null;
+  batch_id?: number | null;
+  returned_quantity?: number;
+  variant_name?: string;
+  product_name?: string;
+  variant_sku?: string | null;
+  regular_price?: number | string;
+  wholesale_price?: number | string | null;
+  batch_number?: string;
+  unit_name?: string;
+  image?: string | null;
+  tax_percentage?: number;
+  tax_method?: string;
+  variant?: {
+    id: number;
+    name: string;
+    sku?: string | null;
+    product?: { id: number; name: string };
+    sale_unit?: { id: number; name: string } | null;
+  };
+  batch?: { id: number; batch_number: string } | null;
+}
+
 export interface SaleReturnRecord {
   id: number;
   return_number: string;
@@ -66,18 +108,18 @@ export interface SaleReturnSummary {
 export interface Sale {
   id?: number;
   sale_number: string;
-  customer_id?: number;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_email?: string;
-  promotion_id?: number;
+  customer_id?: number | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  promotion_id?: number | null;
   promotion?: {
     id: number;
     name: string;
     scope: string;
     discount_type: string;
     discount_value: number;
-  };
+  } | null;
   branch_id: number;
   branch_name?: string;
   branch?: Branch; // Include branch object from Prisma relation
@@ -88,30 +130,30 @@ export interface Sale {
     id: number;
     name: string;
   };
-  served_by_id?: number;
+  served_by_id?: number | null;
   served_by_name?: string;
   served_by?: {
     // Include served_by user object from Prisma relation
     id: number;
     name: string;
-  };
-  customer?: Customer;
+  } | null;
+  customer?: Customer | null;
   sale_date: string;
   sale_type: SaleType;
   price_type: PriceType;
-  subtotal: number;
+  subtotal: number | string;
   discount_type?: DiscountType;
-  discount_amount: number; // Total discount amount for the sale
-  promotion_discount: number; // Promotion discount (tracked separately for stats)
-  shipping_cost: number;
-  tax_amount: number;
-  total_amount: number;
+  discount_amount: number | string; // Total discount amount for the sale
+  promotion_discount: number | string; // Promotion discount (tracked separately for stats)
+  shipping_cost: number | string;
+  tax_amount: number | string;
+  total_amount: number | string;
   payment_status: PaymentStatus;
-  received_amount: number;
-  change_amount: number;
-  notes?: string;
-  converted_to_sale_id?: number; // For quotations: which sale it was converted to
-  converted_at?: string; // For quotations: timestamp when converted to sale
+  received_amount: number | string;
+  change_amount?: number; // Derived in the UI; absent from stored API responses.
+  notes?: string | null;
+  converted_to_sale_id?: number | null; // For quotations: which sale it was converted to
+  converted_at?: string | null; // For quotations: timestamp when converted to sale
   converted_from_quotations?: Array<{
     // For sales: original quotations if converted
     id: number;
@@ -120,12 +162,12 @@ export interface Sale {
   }>;
   is_online_order?: boolean;
   delivery_partner?: string | null;
-  online_order_status?: OnlineOrderStatus | string;
+  online_order_status?: OnlineOrderStatus | string | null;
   is_delivery_later?: boolean;
-  delivery_status?: "PENDING" | "DELIVERED" | "CANCELLED";
-  delivered_at?: string;
-  items: SaleItem[];
-  payments?: SalePayment[]; // New: support for partial payments
+  delivery_status?: "PENDING" | "DELIVERED" | "CANCELLED" | null;
+  delivered_at?: string | null;
+  items: SaleResponseItem[];
+  payments?: SaleResponsePayment[]; // New: support for partial payments
   returns?: SaleReturnRecord[];
   return_summary?: SaleReturnSummary;
   deleted_at?: string | null;
@@ -288,12 +330,12 @@ export interface ProductVariantForSale {
   name: string;
   sku?: string;
   barcode?: string;
-  brand_id?: number;
-  category_id?: number;
+  brand_id?: number | null;
+  category_id?: number | null;
   category_name?: string;
-  regular_price: number;
-  wholesale_price?: number;
-  image?: string;
+  regular_price: number | string;
+  wholesale_price?: number | string | null;
+  image?: string | null;
   product_name: string;
   product_code?: string;
   unit_name: string;
@@ -315,9 +357,9 @@ export interface InventoryBatch {
 export interface Branch {
   id: number;
   name: string;
-  address?: string;
-  phone?: string;
-  email?: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
   is_main: boolean;
   is_warehouse: boolean;
 }
@@ -590,4 +632,14 @@ export interface DashboardAnalyticsResponse {
       branch_name?: string;
     }>;
   };
+}
+
+/** API payments serialize Prisma Decimals; submitted payment amounts remain numeric. */
+export interface SaleResponsePayment extends Omit<
+  SalePayment,
+  "amount" | "reference" | "payment_type"
+> {
+  amount: number | string;
+  reference?: string | null;
+  payment_type?: PaymentType | null;
 }

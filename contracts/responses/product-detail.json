@@ -94,7 +94,7 @@
         }
       ],
       "is_default": true,
-      "is_low_stock": 0,
+      "is_low_stock": false,
       "name": "Default",
       "price_change_percentage": null,
       "price_history": [],
