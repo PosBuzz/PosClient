@@ -28,7 +28,7 @@ jobs:
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     # A shard's first (cold) pass can take over an hour; the incremental cache makes later nights take minutes.
-    timeout-minutes: 120
+    # timeout-minutes: 120  # disabled for now (owner request): let cold passes run to completion
     strategy:
       fail-fast: false
       matrix:
@@ -74,7 +74,7 @@ jobs:
           restore-keys: |
             stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
       - name: Mutate this shard's files
-        timeout-minutes: 110
+        # timeout-minutes: 110  # disabled for now (owner request)
         run: |
           if node --input-type=module -e "const c = (await import('./stryker.domain.config.mjs')).default; process.exit(c.mutate.length ? 0 : 3)"; then
             npm run test:mutation:shard
