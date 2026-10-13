@@ -252,7 +252,7 @@ export default function ReceiptSettingsFormPage() {
       form.setFieldsValue({
         name: existingSetting.name,
         type: existingSetting.type,
-        branchId: existingSetting.branch_id,
+        branchId: existingSetting.branch_id ?? undefined,
         settings: mergedSettings,
       });
     }
@@ -394,7 +394,7 @@ export default function ReceiptSettingsFormPage() {
         onValuesChange={(changedValues) =>
           handleMasterToggleSync(form, changedValues)
         }
-        initialValues={{ type: "receipt", branchId: null, settings: {} }}
+        initialValues={{ type: "receipt", branchId: undefined, settings: {} }}
       >
         {/* Basic Info */}
         <Card title="Basic Information" style={{ marginBottom: 16 }}>
@@ -438,9 +438,6 @@ export default function ReceiptSettingsFormPage() {
                   placeholder="Consumer Default (all branches)"
                   allowClear
                 >
-                  <Select.Option value={null as any}>
-                    Consumer Default (all branches)
-                  </Select.Option>
                   {branches.map((b) => (
                     <Select.Option key={b.id} value={b.id}>
                       {b.name}
@@ -476,637 +473,701 @@ export default function ReceiptSettingsFormPage() {
             "fonts",
           ]}
           style={{ marginBottom: 16 }}
-        >
-          {/* Page & Layout */}
-          <Collapse.Panel header="Page & Layout" key="page">
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={["settings", "page", "size"]}
-                  label="Page Size"
-                >
-                  <Select>
-                    {PAGE_SIZE_OPTIONS.map((opt) => (
-                      <Select.Option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              {/* Currency Settings Added Here */}
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={["settings", "currencySymbol"]}
-                  label="Currency Symbol"
-                >
-                  <Select>
-                    <Select.Option value="৳">৳</Select.Option>
-                    <Select.Option value="$">$</Select.Option>
-                    <Select.Option value="€">€</Select.Option>
-                    <Select.Option value="£">£</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={["settings", "currencyPosition"]}
-                  label="Currency Position"
-                >
-                  <Select>
-                    <Select.Option value="before">
-                      Before Amount (৳100)
-                    </Select.Option>
-                    <Select.Option value="after">
-                      After Amount (100৳)
-                    </Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-            <Text
-              type="secondary"
-              style={{ display: "block", marginBottom: 12 }}
-            >
-              Margins (points)
-            </Text>
-            <Row gutter={[16, 8]}>
-              <Col xs={12} sm={6}>
-                <Form.Item
-                  name={["settings", "page", "margins", "top"]}
-                  label="Top"
-                >
-                  <InputNumber min={0} style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={12} sm={6}>
-                <Form.Item
-                  name={["settings", "page", "margins", "right"]}
-                  label="Right"
-                >
-                  <InputNumber min={0} style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={12} sm={6}>
-                <Form.Item
-                  name={["settings", "page", "margins", "bottom"]}
-                  label="Bottom"
-                >
-                  <InputNumber min={0} style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={12} sm={6}>
-                <Form.Item
-                  name={["settings", "page", "margins", "left"]}
-                  label="Left"
-                >
-                  <InputNumber min={0} style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Header */}
-          <Collapse.Panel header="Header" key="header">
-            <SectionToggle
-              label="Show Header"
-              name={["settings", "header", "show"]}
-            />
-            <Row gutter={[16, 12]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "header", "text"]}
-                  label="Header Text"
-                >
-                  <Input placeholder="RECEIPT" disabled={!headerShow} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={6}>
-                <Form.Item
-                  name={["settings", "header", "layout"]}
-                  label="Layout"
-                >
-                  <Select disabled={!headerShow}>
-                    <Select.Option value="center">Center</Select.Option>
-                    <Select.Option value="logo-left">Logo Left</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
-              <Col>
-                <ToggleItem
-                  label="Show Logo"
-                  name={["settings", "header", "showLogo"]}
-                  disabled={!headerShow}
-                />
-              </Col>
-            </Row>
-            {headerShow && (
-              <Row gutter={[16, 8]} style={{ marginTop: 12 }}>
-                <Col xs={12} sm={6}>
-                  <Form.Item
-                    name={["settings", "header", "logoMaxWidth"]}
-                    label="Logo Max Width"
+          items={[
+            {
+              key: "page",
+              label: "Page & Layout",
+              children: (
+                <>
+                  <Row gutter={[16, 8]}>
+                    <Col xs={24} sm={8}>
+                      <Form.Item
+                        name={["settings", "page", "size"]}
+                        label="Page Size"
+                      >
+                        <Select>
+                          {PAGE_SIZE_OPTIONS.map((opt) => (
+                            <Select.Option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    {/* Currency Settings Added Here */}
+                    <Col xs={24} sm={8}>
+                      <Form.Item
+                        name={["settings", "currencySymbol"]}
+                        label="Currency Symbol"
+                      >
+                        <Select>
+                          <Select.Option value="৳">৳</Select.Option>
+                          <Select.Option value="$">$</Select.Option>
+                          <Select.Option value="€">€</Select.Option>
+                          <Select.Option value="£">£</Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Form.Item
+                        name={["settings", "currencyPosition"]}
+                        label="Currency Position"
+                      >
+                        <Select>
+                          <Select.Option value="before">
+                            Before Amount (৳100)
+                          </Select.Option>
+                          <Select.Option value="after">
+                            After Amount (100৳)
+                          </Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Text
+                    type="secondary"
+                    style={{ display: "block", marginBottom: 12 }}
                   >
-                    <InputNumber min={20} max={500} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Form.Item
-                    name={["settings", "header", "logoMaxHeight"]}
-                    label="Logo Max Height"
-                  >
-                    <InputNumber min={20} max={300} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-            )}
-          </Collapse.Panel>
-
-          {/* Store Info */}
-          <Collapse.Panel header="Store Information" key="storeInfo">
-            <SectionToggle
-              label="Show Store Info"
-              name={["settings", "storeInfo", "show"]}
-            />
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Store Name"
-                  name={["settings", "storeInfo", "showStoreName"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Branch Name"
-                  name={["settings", "storeInfo", "showBranchName"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Address"
-                  name={["settings", "storeInfo", "showAddress"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Phone"
-                  name={["settings", "storeInfo", "showPhone"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Email"
-                  name={["settings", "storeInfo", "showEmail"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="VAT Registration"
-                  name={["settings", "storeInfo", "showVatRegistration"]}
-                  disabled={!storeInfoShow}
-                />
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Order Info */}
-          <Collapse.Panel header="Order Information" key="orderInfo">
-            <SectionToggle
-              label="Show Order Info"
-              name={["settings", "orderInfo", "show"]}
-            />
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Sale Number"
-                  name={["settings", "orderInfo", "showSaleNumber"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Date"
-                  name={["settings", "orderInfo", "showDate"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Sale Type"
-                  name={["settings", "orderInfo", "showSaleType"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Price Type"
-                  name={["settings", "orderInfo", "showPriceType"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Cashier"
-                  name={["settings", "orderInfo", "showCashier"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Served By"
-                  name={["settings", "orderInfo", "showServedBy"]}
-                  disabled={!orderInfoShow}
-                />
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Customer Info */}
-          <Collapse.Panel header="Customer Information" key="customerInfo">
-            <SectionToggle
-              label="Show Customer Info"
-              name={["settings", "customerInfo", "show"]}
-            />
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Name"
-                  name={["settings", "customerInfo", "showName"]}
-                  disabled={!customerInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Phone"
-                  name={["settings", "customerInfo", "showPhone"]}
-                  disabled={!customerInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Email"
-                  name={["settings", "customerInfo", "showEmail"]}
-                  disabled={!customerInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Address"
-                  name={["settings", "customerInfo", "showAddress"]}
-                  disabled={!customerInfoShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Reward Points"
-                  name={["settings", "customerInfo", "showRewardPoints"]}
-                  disabled={!customerInfoShow}
-                />
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Items Table */}
-          <Collapse.Panel header="Items Table" key="items">
-            <SectionToggle
-              label="Show Items Table"
-              name={["settings", "items", "show"]}
-            />
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Product Name / Variant"
-                  name={["settings", "items", "showVariantName"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="SKU"
-                  name={["settings", "items", "showSku"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Quantity"
-                  name={["settings", "items", "showQuantity"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Unit Price"
-                  name={["settings", "items", "showUnitPrice"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Discount"
-                  name={["settings", "items", "showDiscount"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Tax"
-                  name={["settings", "items", "showTax"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Line Total"
-                  name={["settings", "items", "showLineTotal"]}
-                  disabled={!itemsShow}
-                />
-              </Col>
-            </Row>
-            {itemsShow && (
-              <Row gutter={[16, 8]} style={{ marginTop: 16 }}>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    name={["settings", "items", "discountDisplay"]}
-                    label="Discount Display"
-                  >
-                    <Select>
-                      <Select.Option value="total">Total Only</Select.Option>
-                      <Select.Option value="breakdown">
-                        Breakdown (Special, Promo, Avg)
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    name={["settings", "items", "taxDisplay"]}
-                    label="Tax Display"
-                  >
-                    <Select>
-                      <Select.Option value="total">Total Only</Select.Option>
-                      <Select.Option value="breakdown">
-                        Breakdown (Rate & Method)
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-            )}
-          </Collapse.Panel>
-
-          {/* Totals */}
-          <Collapse.Panel header="Totals" key="totals">
-            <SectionToggle
-              label="Show Totals"
-              name={["settings", "totals", "show"]}
-            />
-            <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={["settings", "totals", "titleAlign"]}
-                  label="Totals Position"
-                >
-                  <Select disabled={!totalsShow}>
-                    <Select.Option value="left">Regular</Select.Option>
-                    <Select.Option value="right">Right aligned</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Subtotal"
-                  name={["settings", "totals", "showSubtotal"]}
-                  disabled={!totalsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Discount"
-                  name={["settings", "totals", "showDiscount"]}
-                  disabled={!totalsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Shipping"
-                  name={["settings", "totals", "showShipping"]}
-                  disabled={!totalsShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Tax"
-                  name={["settings", "totals", "showTax"]}
-                  disabled={!totalsShow}
-                />
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Payment */}
-          <Collapse.Panel header="Payment" key="payment">
-            <SectionToggle
-              label="Show Payment Info"
-              name={["settings", "payment", "show"]}
-            />
-            <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
-              <Col xs={24} sm={8}>
-                <Form.Item
-                  name={["settings", "payment", "titleAlign"]}
-                  label="Payment Position"
-                >
-                  <Select disabled={!paymentShow}>
-                    <Select.Option value="left">Regular</Select.Option>
-                    <Select.Option value="right">Right aligned</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Payment Breakdown"
-                  name={["settings", "payment", "showBreakdown"]}
-                  disabled={!paymentShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Received Amount"
-                  name={["settings", "payment", "showReceivedAmount"]}
-                  disabled={!paymentShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Change"
-                  name={["settings", "payment", "showChangeAmount"]}
-                  disabled={!paymentShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Due Amount"
-                  name={["settings", "payment", "showDueAmount"]}
-                  disabled={!paymentShow}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Payment Date"
-                  name={["settings", "payment", "showPaymentDate"]}
-                  disabled={!paymentShow || !paymentBreakdown}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Reference / Txn ID"
-                  name={["settings", "payment", "showReference"]}
-                  disabled={!paymentShow || !paymentBreakdown}
-                />
-              </Col>
-            </Row>
-            {paymentShow && !paymentBreakdown && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Payment date and reference are printed per payment line, so they
-                need "Payment Breakdown" turned on.
-              </Text>
-            )}
-          </Collapse.Panel>
-
-          {/* Notes */}
-          <Collapse.Panel header="Notes" key="notes">
-            <SectionToggle
-              label="Show Notes"
-              name={["settings", "notes", "show"]}
-            />
-          </Collapse.Panel>
-
-          {/* Footer */}
-          <Collapse.Panel header="Footer" key="footer">
-            <Row gutter={[16, 12]}>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Barcode"
-                  name={["settings", "footer", "showBarcode"]}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Terms & Conditions"
-                  name={["settings", "footer", "showTerms"]}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Thank You Message"
-                  name={["settings", "footer", "showThankYou"]}
-                />
-              </Col>
-              <Col xs={12} sm={8}>
-                <ToggleItem
-                  label="Print Date"
-                  name={["settings", "footer", "showPrintDate"]}
-                />
-              </Col>
-            </Row>
-            {/* Footer Terms Text Added Here */}
-            <Row gutter={[16, 12]} style={{ marginTop: 16 }}>
-              <Col xs={24}>
-                <Form.Item
-                  name={["settings", "footer", "termsText"]}
-                  label="Terms & Conditions Text"
-                >
-                  <TextArea
-                    rows={3}
-                    placeholder="e.g., All sales are final. Items must be returned within 7 days..."
+                    Margins (points)
+                  </Text>
+                  <Row gutter={[16, 8]}>
+                    <Col xs={12} sm={6}>
+                      <Form.Item
+                        name={["settings", "page", "margins", "top"]}
+                        label="Top"
+                      >
+                        <InputNumber min={0} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Form.Item
+                        name={["settings", "page", "margins", "right"]}
+                        label="Right"
+                      >
+                        <InputNumber min={0} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Form.Item
+                        name={["settings", "page", "margins", "bottom"]}
+                        label="Bottom"
+                      >
+                        <InputNumber min={0} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Form.Item
+                        name={["settings", "page", "margins", "left"]}
+                        label="Left"
+                      >
+                        <InputNumber min={0} style={{ width: "100%" }} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "header",
+              label: "Header",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Header"
+                    name={["settings", "header", "show"]}
                   />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Collapse.Panel>
-
-          {/* Font Sizes */}
-          <Collapse.Panel header="Font Sizes" key="fonts">
-            <Row gutter={[24, 16]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "fontSizes", "title"]}
-                  label="Title"
-                >
-                  <Slider
-                    min={14}
-                    max={32}
-                    step={1}
-                    marks={{ 14: "14", 20: "20", 32: "32" }}
+                  <Row gutter={[16, 12]}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "header", "text"]}
+                        label="Header Text"
+                      >
+                        <Input placeholder="RECEIPT" disabled={!headerShow} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={6}>
+                      <Form.Item
+                        name={["settings", "header", "layout"]}
+                        label="Layout"
+                      >
+                        <Select disabled={!headerShow}>
+                          <Select.Option value="center">Center</Select.Option>
+                          <Select.Option value="logo-left">
+                            Logo Left
+                          </Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+                    <Col>
+                      <ToggleItem
+                        label="Show Logo"
+                        name={["settings", "header", "showLogo"]}
+                        disabled={!headerShow}
+                      />
+                    </Col>
+                  </Row>
+                  {headerShow && (
+                    <Row gutter={[16, 8]} style={{ marginTop: 12 }}>
+                      <Col xs={12} sm={6}>
+                        <Form.Item
+                          name={["settings", "header", "logoMaxWidth"]}
+                          label="Logo Max Width"
+                        >
+                          <InputNumber
+                            min={20}
+                            max={500}
+                            style={{ width: "100%" }}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <Form.Item
+                          name={["settings", "header", "logoMaxHeight"]}
+                          label="Logo Max Height"
+                        >
+                          <InputNumber
+                            min={20}
+                            max={300}
+                            style={{ width: "100%" }}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  )}
+                </>
+              ),
+            },
+            {
+              key: "storeInfo",
+              label: "Store Information",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Store Info"
+                    name={["settings", "storeInfo", "show"]}
                   />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "fontSizes", "subtitle"]}
-                  label="Subtitle"
-                >
-                  <Slider
-                    min={10}
-                    max={24}
-                    step={1}
-                    marks={{ 10: "10", 16: "16", 24: "24" }}
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Store Name"
+                        name={["settings", "storeInfo", "showStoreName"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Branch Name"
+                        name={["settings", "storeInfo", "showBranchName"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Address"
+                        name={["settings", "storeInfo", "showAddress"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Phone"
+                        name={["settings", "storeInfo", "showPhone"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Email"
+                        name={["settings", "storeInfo", "showEmail"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="VAT Registration"
+                        name={["settings", "storeInfo", "showVatRegistration"]}
+                        disabled={!storeInfoShow}
+                      />
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "orderInfo",
+              label: "Order Information",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Order Info"
+                    name={["settings", "orderInfo", "show"]}
                   />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "fontSizes", "heading"]}
-                  label="Heading"
-                >
-                  <Slider
-                    min={8}
-                    max={20}
-                    step={1}
-                    marks={{ 8: "8", 13: "13", 20: "20" }}
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Sale Number"
+                        name={["settings", "orderInfo", "showSaleNumber"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Date"
+                        name={["settings", "orderInfo", "showDate"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Sale Type"
+                        name={["settings", "orderInfo", "showSaleType"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Price Type"
+                        name={["settings", "orderInfo", "showPriceType"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Cashier"
+                        name={["settings", "orderInfo", "showCashier"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Served By"
+                        name={["settings", "orderInfo", "showServedBy"]}
+                        disabled={!orderInfoShow}
+                      />
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "customerInfo",
+              label: "Customer Information",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Customer Info"
+                    name={["settings", "customerInfo", "show"]}
                   />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "fontSizes", "body"]}
-                  label="Body"
-                >
-                  <Slider
-                    min={6}
-                    max={16}
-                    step={1}
-                    marks={{ 6: "6", 10: "10", 16: "16" }}
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Name"
+                        name={["settings", "customerInfo", "showName"]}
+                        disabled={!customerInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Phone"
+                        name={["settings", "customerInfo", "showPhone"]}
+                        disabled={!customerInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Email"
+                        name={["settings", "customerInfo", "showEmail"]}
+                        disabled={!customerInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Address"
+                        name={["settings", "customerInfo", "showAddress"]}
+                        disabled={!customerInfoShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Reward Points"
+                        name={["settings", "customerInfo", "showRewardPoints"]}
+                        disabled={!customerInfoShow}
+                      />
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "items",
+              label: "Items Table",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Items Table"
+                    name={["settings", "items", "show"]}
                   />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name={["settings", "fontSizes", "small"]}
-                  label="Small"
-                >
-                  <Slider
-                    min={4}
-                    max={12}
-                    step={1}
-                    marks={{ 4: "4", 8: "8", 12: "12" }}
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Product Name / Variant"
+                        name={["settings", "items", "showVariantName"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="SKU"
+                        name={["settings", "items", "showSku"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Quantity"
+                        name={["settings", "items", "showQuantity"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Unit Price"
+                        name={["settings", "items", "showUnitPrice"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Discount"
+                        name={["settings", "items", "showDiscount"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Tax"
+                        name={["settings", "items", "showTax"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Line Total"
+                        name={["settings", "items", "showLineTotal"]}
+                        disabled={!itemsShow}
+                      />
+                    </Col>
+                  </Row>
+                  {itemsShow && (
+                    <Row gutter={[16, 8]} style={{ marginTop: 16 }}>
+                      <Col xs={24} sm={8}>
+                        <Form.Item
+                          name={["settings", "items", "discountDisplay"]}
+                          label="Discount Display"
+                        >
+                          <Select>
+                            <Select.Option value="total">
+                              Total Only
+                            </Select.Option>
+                            <Select.Option value="breakdown">
+                              Breakdown (Special, Promo, Avg)
+                            </Select.Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Form.Item
+                          name={["settings", "items", "taxDisplay"]}
+                          label="Tax Display"
+                        >
+                          <Select>
+                            <Select.Option value="total">
+                              Total Only
+                            </Select.Option>
+                            <Select.Option value="breakdown">
+                              Breakdown (Rate & Method)
+                            </Select.Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  )}
+                </>
+              ),
+            },
+            {
+              key: "totals",
+              label: "Totals",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Totals"
+                    name={["settings", "totals", "show"]}
                   />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Collapse.Panel>
-        </Collapse>
+                  <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+                    <Col xs={24} sm={8}>
+                      <Form.Item
+                        name={["settings", "totals", "titleAlign"]}
+                        label="Totals Position"
+                      >
+                        <Select disabled={!totalsShow}>
+                          <Select.Option value="left">Regular</Select.Option>
+                          <Select.Option value="right">
+                            Right aligned
+                          </Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Subtotal"
+                        name={["settings", "totals", "showSubtotal"]}
+                        disabled={!totalsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Discount"
+                        name={["settings", "totals", "showDiscount"]}
+                        disabled={!totalsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Shipping"
+                        name={["settings", "totals", "showShipping"]}
+                        disabled={!totalsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Tax"
+                        name={["settings", "totals", "showTax"]}
+                        disabled={!totalsShow}
+                      />
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "payment",
+              label: "Payment",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Payment Info"
+                    name={["settings", "payment", "show"]}
+                  />
+                  <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+                    <Col xs={24} sm={8}>
+                      <Form.Item
+                        name={["settings", "payment", "titleAlign"]}
+                        label="Payment Position"
+                      >
+                        <Select disabled={!paymentShow}>
+                          <Select.Option value="left">Regular</Select.Option>
+                          <Select.Option value="right">
+                            Right aligned
+                          </Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={[16, 12]} style={{ marginTop: 8 }}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Payment Breakdown"
+                        name={["settings", "payment", "showBreakdown"]}
+                        disabled={!paymentShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Received Amount"
+                        name={["settings", "payment", "showReceivedAmount"]}
+                        disabled={!paymentShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Change"
+                        name={["settings", "payment", "showChangeAmount"]}
+                        disabled={!paymentShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Due Amount"
+                        name={["settings", "payment", "showDueAmount"]}
+                        disabled={!paymentShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Payment Date"
+                        name={["settings", "payment", "showPaymentDate"]}
+                        disabled={!paymentShow || !paymentBreakdown}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Reference / Txn ID"
+                        name={["settings", "payment", "showReference"]}
+                        disabled={!paymentShow || !paymentBreakdown}
+                      />
+                    </Col>
+                  </Row>
+                  {paymentShow && !paymentBreakdown && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Payment date and reference are printed per payment line,
+                      so they need "Payment Breakdown" turned on.
+                    </Text>
+                  )}
+                </>
+              ),
+            },
+            {
+              key: "notes",
+              label: "Notes",
+              children: (
+                <>
+                  <SectionToggle
+                    label="Show Notes"
+                    name={["settings", "notes", "show"]}
+                  />
+                </>
+              ),
+            },
+            {
+              key: "footer",
+              label: "Footer",
+              children: (
+                <>
+                  <Row gutter={[16, 12]}>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Barcode"
+                        name={["settings", "footer", "showBarcode"]}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Terms & Conditions"
+                        name={["settings", "footer", "showTerms"]}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Thank You Message"
+                        name={["settings", "footer", "showThankYou"]}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Print Date"
+                        name={["settings", "footer", "showPrintDate"]}
+                      />
+                    </Col>
+                  </Row>
+                  {/* Footer Terms Text Added Here */}
+                  <Row gutter={[16, 12]} style={{ marginTop: 16 }}>
+                    <Col xs={24}>
+                      <Form.Item
+                        name={["settings", "footer", "termsText"]}
+                        label="Terms & Conditions Text"
+                      >
+                        <TextArea
+                          rows={3}
+                          placeholder="e.g., All sales are final. Items must be returned within 7 days..."
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+            {
+              key: "fonts",
+              label: "Font Sizes",
+              children: (
+                <>
+                  <Row gutter={[24, 16]}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "fontSizes", "title"]}
+                        label="Title"
+                      >
+                        <Slider
+                          min={14}
+                          max={32}
+                          step={1}
+                          marks={{ 14: "14", 20: "20", 32: "32" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "fontSizes", "subtitle"]}
+                        label="Subtitle"
+                      >
+                        <Slider
+                          min={10}
+                          max={24}
+                          step={1}
+                          marks={{ 10: "10", 16: "16", 24: "24" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "fontSizes", "heading"]}
+                        label="Heading"
+                      >
+                        <Slider
+                          min={8}
+                          max={20}
+                          step={1}
+                          marks={{ 8: "8", 13: "13", 20: "20" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "fontSizes", "body"]}
+                        label="Body"
+                      >
+                        <Slider
+                          min={6}
+                          max={16}
+                          step={1}
+                          marks={{ 6: "6", 10: "10", 16: "16" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        name={["settings", "fontSizes", "small"]}
+                        label="Small"
+                      >
+                        <Slider
+                          min={4}
+                          max={12}
+                          step={1}
+                          marks={{ 4: "4", 8: "8", 12: "12" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </>
+              ),
+            },
+          ]}
+        />
 
         {/* Action Buttons */}
         <Card>

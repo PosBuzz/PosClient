@@ -16,7 +16,7 @@ import {
   Space,
   Switch,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Barcode from "react-barcode";
 import { inventoryApi } from "../../api/inventory-api";
 import { productApi } from "../../api/product-api";
@@ -69,22 +69,6 @@ const BarcodePrinting = () => {
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
   });
-
-  // Fetch consumer profile for shop name
-  const { data: consumerData } = useQuery({
-    queryKey: ["consumer"],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/client");
-      return response.json();
-    },
-  });
-
-  // Set initial shop name when consumer data loads
-  useEffect(() => {
-    if (consumerData?.company_name) {
-      form.setFieldValue("ShopName", consumerData.company_name);
-    }
-  }, [consumerData, form]);
 
   // Fetch products with variants that have barcodes
   const { data: productOptions = [], isLoading: loadingProducts } = useQuery({
@@ -539,7 +523,7 @@ const BarcodePrinting = () => {
       {/* Preview Modal */}
       <Modal
         title="Barcode Label Preview"
-        visible={previewModalVisible}
+        open={previewModalVisible}
         onCancel={() => setPreviewModalVisible(false)}
         footer={[
           <Button key="close" onClick={() => setPreviewModalVisible(false)}>

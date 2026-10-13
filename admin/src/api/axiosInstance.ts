@@ -104,13 +104,14 @@ axiosInstance.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
 
-    if (isInvalidCsrfError(err)) {
+    if (isInvalidCsrfError(err) && !originalRequest?._csrfRetried) {
       try {
         const newCsrfToken = await refreshCsrfToken();
         if (!newCsrfToken) {
           return Promise.reject(err);
         }
 
+        originalRequest._csrfRetried = true;
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers["X-CSRF-TOKEN"] = newCsrfToken;
         return axiosInstance(originalRequest);
