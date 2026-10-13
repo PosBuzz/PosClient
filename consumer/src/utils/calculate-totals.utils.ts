@@ -151,6 +151,7 @@ export function calculateSaleTotals(params: {
   selectedItems.forEach((item) => {
     const rawBase = Number(item.unit_price) * Number(item.quantity || 0);
     variantBaseMap.set(item.variant_id, Number(rawBase) || 0);
+    // Stryker disable next-line all: variantQuantityMap is never read, so changes to it are unobservable
     variantQuantityMap.set(item.variant_id, Number(item.quantity || 0));
   });
 
@@ -185,6 +186,7 @@ export function calculateSaleTotals(params: {
     selectedItems.forEach((item) => {
       if (!matchedVariantIds.has(item.variant_id)) return;
       const base = Number(variantBaseMap.get(item.variant_id) || 0);
+      // Stryker disable next-line ConditionalExpression,EqualityOperator: distributeDiscount ignores zero-base lines itself
       if (base > 0) {
         eligibleBaseMap.set(item.variant_id, base);
       }
@@ -198,6 +200,7 @@ export function calculateSaleTotals(params: {
     );
 
     selectedItems.forEach((item) => {
+      // Stryker disable next-line ConditionalExpression: unmatched lines always have a zero discount and return just below
       if (!matchedVariantIds.has(item.variant_id)) return;
 
       const itemDiscount = promoDistMap.get(item.variant_id) || 0;
@@ -218,11 +221,16 @@ export function calculateSaleTotals(params: {
         itemDiscount > current.discount ||
         (itemDiscount === current.discount &&
           (matchedVariantCount > current.matchedVariantCount ||
+            // Stryker disable next-line ConditionalExpression: a challenger with fewer variants cannot also match more quantity on the same variant
             (matchedVariantCount === current.matchedVariantCount &&
               (matchedTotalQty > current.matchedTotalQty ||
+                // Stryker disable next-line ConditionalExpression: reached only with equal variant counts and quantities
                 (matchedTotalQty === current.matchedTotalQty &&
+                  // Stryker disable next-line ConditionalExpression,EqualityOperator,LogicalOperator: both promotions see the same line, so matchedItemQty is always equal (CO-TOT-023)
                   (matchedItemQty > current.matchedItemQty ||
+                    // Stryker disable next-line ConditionalExpression: matchedItemQty is always equal
                     (matchedItemQty === current.matchedItemQty &&
+                      // Stryker disable next-line EqualityOperator: a promotion is never compared with itself, so ids are never equal
                       promotion.id < current.promotionId)))))))
       ) {
         promotionChoiceByVariant.set(item.variant_id, {
