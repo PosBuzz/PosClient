@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { API, CONSUMER } from "./env";
+import { StackApi } from './api';
 
 export async function navigate(page:Page,label:string){
   await page.getByRole('menuitem',{name:new RegExp(label)}).click();
@@ -49,8 +50,17 @@ export async function pickOption(page:Page,id:string,label:string){
     await dropdown.locator('.ant-select-item-option-content').getByText(label,{exact:true}).click({timeout:3000});
   }).toPass({timeout:30000});
 }
-/** Baselines must wait for the dashboard queries; the initial render shows 0.00. */
+/** Pin the rendered baseline to the live API; network idle can precede query retries. */
 export async function settledDashboardCents(page:Page,title:string){
-  await page.waitForLoadState('networkidle');
-  return dashboardCents(page,title);
+  const fields: Record<string, string> = {
+    "Today's Sale Amount": 'today_total_sale',
+    "Today's Net Sale": 'today_net_sale',
+  };
+  const field = fields[title];
+  if (!field) throw new Error(`Unsupported dashboard baseline: ${title}`);
+  const analytics = await new StackApi(page.request).get('/consumer/dashboard/analytics?payment_period=daily&return_payment_period=daily&top_products_period=daily');
+  const expected = Math.round(Number(analytics.summary[field]) * 100);
+  expect(Number.isFinite(expected)).toBe(true);
+  await expect.poll(() => dashboardCents(page, title)).toBe(expected);
+  return expected;
 }
