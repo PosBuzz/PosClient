@@ -105,11 +105,17 @@ export default {
   tsconfigFile: 'tsconfig.json',
   coverageAnalysis: 'perTest',
   concurrency: 3,
-  timeoutMS: 120000,
+  // A mutant that loops forever is declared timed out after the normal test time plus 15 s.
+  timeoutMS: 15000,
+  // Restart Jest runners before Nest/Prisma state leaks into an out-of-memory crash.
+  maxTestRunnerReuse: 25,
+  plugins: ['@stryker-mutator/*', './stryker-plugins/ignore-logging.mjs'],
+  ignorers: ['logging'],
   dryRunTimeoutMinutes: 30,
   mutate: slices[shardIndex - 1],
   ignoreStatic: true,
-  thresholds: { high: 80, low: 70, break: 70 },
+  // The nightly gate (mutation-tier-gate.mjs) judges scores per file; a shard only fails on errors.
+  thresholds: { high: 80, low: 70, break: null },
   incremental: true,
   incrementalFile: `reports/stryker/domain-incremental${suffix}.json`,
   reporters: ['clear-text', 'progress', 'html', 'json'],
