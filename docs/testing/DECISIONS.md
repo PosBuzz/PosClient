@@ -486,3 +486,7 @@ KI-098 requires both consumerId and consumer_id signatures to trigger the tenant
 ## D-065 Branch protection dropped (2026-10-13)
 Type: DECISION
 Owner decision: the repository is not on a GitHub team plan, so branch protection / required `All checks` is not applied and its throwaway-PR proof is removed from X3 exit criteria. Remaining X3 gates: deploy refuses red SHA, first nightly, coverage baseline.
+
+## D-067 Intentional tracked deployment credentials; JWT already rotated (2026-10-14)
+Type: DECISION
+Owner decision: `pull.sh` (with its deployment token) and the tracked `.env.docker` files are intentional and are not to be removed or reworked by the test programme. The old JWT from rabbitmq.controller.ts history was rotated and is dead; HEAD contains no JWT. No history rewrite or force-push. The secret scan keeps scanning new commits only. Security note recorded for the owner: the repository is public, so any live credential in these tracked files is readable by anyone.
