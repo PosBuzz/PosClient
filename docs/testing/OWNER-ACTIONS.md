@@ -1,7 +1,7 @@
 # Owner actions for the final safety-net gates
 
 These repository/account actions remain pending. Implementation, local tests and PR CI do not
-prove branch protection, credential revocation or a successful first nightly run.
+prove credential revocation or a successful first nightly run.
 
 ## Credentials (KI-088, high priority)
 
@@ -18,38 +18,13 @@ does not guarantee that an older green dispatch deploys that older revision.
 
 ## Required status on main
 
-The prepared policy requires an up-to-date `All checks` status and applies to administrators.
-It uses zero required approvals because the sole code owner cannot approve their own PR.
-If a second reviewer is available, choose one required approval instead before applying it.
-
-Save this JSON as `/tmp/posbuzz-main-protection.json`:
-
-```json
-{
-  "required_status_checks": { "strict": true, "contexts": ["All checks"] },
-  "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 0,
-    "require_code_owner_reviews": false
-  },
-  "restrictions": null
-}
-```
-
-```sh
-gh api --method PUT repos/PosBuzz/PosClient/branches/main/protection \
-  --input /tmp/posbuzz-main-protection.json
-gh api repos/PosBuzz/PosClient/branches/main/protection \
-  --jq '{strict: .required_status_checks.strict, contexts: .required_status_checks.contexts, enforce_admins: .enforce_admins.enabled}'
-```
-
-Record the applied policy, actor and evidence in DECISIONS.md.
+Dropped (D-065): branch protection is not available to this repo.
 
 ## Throwaway proofs
 
 Use a separate temporary worktree and branch; never introduce deliberate failures on
 `fix/known-issues` or `main`. Open a draft throwaway PR with one deliberately false normal test.
-Wait for `All checks` to fail, verify GitHub reports the required-check merge block, then close
+Wait for `All checks` to fail, verify the failure is reported, then close
 the PR and remove the temporary branch/worktree. Do not actually attempt a merge.
 
 For the deploy proof, add a temporary unconditional failure immediately after the unchanged
