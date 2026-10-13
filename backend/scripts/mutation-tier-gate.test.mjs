@@ -106,12 +106,19 @@ test('[BE-MUT-001] a passing file cannot mask a low critical method', () => {
   );
 });
 
-test('[BE-COV-020] shard reports merge, and a file in two shards is rejected', () => {
+test('[BE-COV-020] shard reports merge, and a file split into line ranges combines its mutants', () => {
   const a = { files: { 'src/a.ts': result(['Killed']) } };
   const b = { files: { 'src/b.ts': result(['Survived']) } };
   assert.deepEqual(Object.keys(mergeReports([a, b]).files).sort(), [
     'src/a.ts',
     'src/b.ts',
   ]);
-  assert.throws(() => mergeReports([a, a]), /two shards/);
+  const split = mergeReports([
+    { files: { 'src/a.ts': result(['Killed', 'Killed']) } },
+    { files: { 'src/a.ts': result(['Survived', 'Killed']) } },
+  ]);
+  assert.deepEqual(
+    split.files['src/a.ts'].mutants.map((m) => m.status),
+    ['Killed', 'Killed', 'Survived', 'Killed'],
+  );
 });

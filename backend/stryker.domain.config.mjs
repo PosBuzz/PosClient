@@ -48,14 +48,28 @@ if (
 const files = [
   ...new Set(targets.flatMap((pattern) => globSync(pattern))),
 ].sort();
+// A file bigger than SPLIT_BYTES is cut into line ranges (Stryker's "file:start-end") so one huge
+// service cannot be the shard that decides the nightly's duration.
+const SPLIT_BYTES = 36000;
+const units = files.flatMap((file) => {
+  const size = statSync(file).size;
+  const pieces = Math.ceil(size / SPLIT_BYTES);
+  if (pieces <= 1) return [{ target: file, size }];
+  const lines = readFileSync(file, 'utf8').split('\n').length;
+  const perPiece = Math.ceil(lines / pieces);
+  return Array.from({ length: pieces }, (_, i) => ({
+    target: `${file}:${i * perPiece + 1}-${Math.min(lines, (i + 1) * perPiece)}`,
+    size: size / pieces,
+  }));
+});
 const loads = Array.from({ length: shardCount }, () => 0);
 const slices = Array.from({ length: shardCount }, () => []);
-for (const file of [...files].sort(
-  (a, b) => statSync(b).size - statSync(a).size || a.localeCompare(b),
+for (const unit of [...units].sort(
+  (a, b) => b.size - a.size || a.target.localeCompare(b.target),
 )) {
   const lightest = loads.indexOf(Math.min(...loads));
-  slices[lightest].push(file);
-  loads[lightest] += statSync(file).size;
+  slices[lightest].push(unit.target);
+  loads[lightest] += unit.size;
 }
 const suffix = shard ? `-shard-${shardIndex}` : '';
 
