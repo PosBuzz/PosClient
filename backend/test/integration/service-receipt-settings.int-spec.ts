@@ -157,11 +157,11 @@ describe('receipt preset persistence and tenant boundaries', () => {
       'Cannot delete the active consumer default setting. This is the ultimate fallback for all branches.',
     );
     for (const request of [
-      service.setActive(first.id, w.bystander.consumer.id),
-      service.deactivateSetting(first.id, w.bystander.consumer.id),
-      service.deleteSetting(first.id, w.bystander.consumer.id),
+      () => service.setActive(first.id, w.bystander.consumer.id),
+      () => service.deactivateSetting(first.id, w.bystander.consumer.id),
+      () => service.deleteSetting(first.id, w.bystander.consumer.id),
     ]) {
-      await rejected(request, NotFoundException, 'Setting not found');
+      await rejected(request(), NotFoundException, 'Setting not found');
     }
     expect(await service.deleteSetting(first.id, cid())).toMatchObject({
       id: first.id,

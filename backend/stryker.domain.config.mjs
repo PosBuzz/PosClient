@@ -33,6 +33,7 @@ export default {
   coverageAnalysis: 'perTest',
   concurrency: 2,
   timeoutMS: 120000,
+  dryRunTimeoutMinutes: 30,
   mutate: [
     ...tierFiles,
     'src/consumer/promotions/promotion-math.ts',
