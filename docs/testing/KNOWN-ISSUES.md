@@ -143,3 +143,10 @@ All six checked error bodies contained no Prisma text, constraint text or databa
 
 
 | KI-074 | Medium | FIXED (admin regression verified) | Admin repeated a request indefinitely when every response said invalid csrf token, unlike the consumer retry guard. Mark the original request after one CSRF refresh and reject the second rejection. | AD-API-012 asserts at most two requests and one CSRF refresh, with no timeout or assertion relaxation. |
+
+| KI-075 | Low | FIXED (focused smoke verified) | Admin Home rendered deprecated Card bordered props and emitted console errors. Migrated the three cards to variant="borderless". | AD-SMOKE-home checks empty/populated totals and retains zero-console-error assertion. |
+| KI-076 | High | FIXED (focused regression verified) | Admin database restore started immediately after file selection, without the confirmation required by A2. Show a destructive-action confirmation through the existing modal provider and upload only after Restore is confirmed. | AD-FLOW-BKP-001 uses MSW exclusively and asserts zero restore POSTs before confirmation. |
+
+| KI-077 | Medium | FIXED (backend replay verified) | Billing renewal added one millisecond to the previous period end then rounded down to start-of-day. When that end was not midnight, the new bill overlapped the existing period and the backend rejected the form's default payload with 409. Start on the next calendar day instead. | AD-FLOW-BILL-001 asserts the new period begins after latest_billing_till; X-REQ-admin-billing-create replays the exact captured payload. |
+
+| KI-078 | Medium | FIXED (contract regeneration verified) | The response-contract normalizer collapsed every ISO datetime, including billing_from/billing_till and promotion dates, to one instant. This changed business meaning and made the browser billing recording conflict with the backend's real 2040 period end. Normalize only volatile created/updated/generated metadata and last_reply_at; preserve actual business dates. | BE-CONTRACT-DATE-001, repeat-scenario determinism and X-REQ-admin-billing-create. |

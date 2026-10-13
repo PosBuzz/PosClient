@@ -14,6 +14,12 @@ export default defineConfig({
     testTimeout: 15000,
     coverage: {
       provider: "v8",
+      thresholds: {
+        lines: 50,
+        "src/api/**": { lines: 90 },
+        "src/stores/**": { lines: 90 },
+        "src/pages/**": { lines: 50 },
+      },
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/**/*.test.{ts,tsx}",

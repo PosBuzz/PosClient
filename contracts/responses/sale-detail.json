@@ -51,7 +51,7 @@
       "created_at": "2026-03-14T12:00:00.000Z",
       "customer_id": 1,
       "id": 1,
-      "last_earned_at": "2026-03-14T12:00:00.000Z",
+      "last_earned_at": "2026-03-14T10:30:00.000Z",
       "last_redeemed_at": null,
       "lifetime_earned": 230,
       "lifetime_redeemed": 0,
@@ -177,7 +177,7 @@
     "total_refund": 0
   },
   "returns": [],
-  "sale_date": "2026-03-14T12:00:00.000Z",
+  "sale_date": "2026-03-14T10:30:00.000Z",
   "sale_number": "SAL-20260314-0002",
   "sale_type": "sale",
   "served_by": {

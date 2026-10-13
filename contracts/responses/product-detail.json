@@ -107,11 +107,11 @@
             "description": null,
             "discount_type": "percentage",
             "discount_value": "10",
-            "end_date": "2026-03-14T12:00:00.000Z",
+            "end_date": "2040-01-01T00:00:00.000Z",
             "id": 1,
             "min_purchase": null,
             "name": "Promotion 26",
-            "start_date": "2026-03-14T12:00:00.000Z"
+            "start_date": "2020-01-01T00:00:00.000Z"
           },
           "promotion_id": 1,
           "variant_id": 1

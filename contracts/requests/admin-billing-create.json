@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "path": "/admin/billing",
+  "auth": "admin",
+  "body": {
+    "consumer_id": 1,
+    "plan_id": 1,
+    "amount": 100,
+    "billing_date": "2026-03-14T00:00:00.000Z",
+    "billing_from": "2040-01-02T00:00:00.000Z",
+    "billing_till": "2040-02-01T23:59:59.999Z",
+    "reference": "Flow billing"
+  }
+}

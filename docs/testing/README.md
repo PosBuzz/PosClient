@@ -184,14 +184,14 @@ A phase is done only when **all** of the following are true:
 - [x] B2 Backend unit — verified 2026-10-13; all 19 jobs passed in [CI run 38299671151](https://github.com/PosBuzz/PosClient/actions/runs/38299671151)
 - [x] C1 Consumer harness — verified 2026-10-13; all 20 jobs passed in [CI run 38301291165](https://github.com/PosBuzz/PosClient/actions/runs/38301291165)
 - [x] C2 Consumer calculations — verified 2026-10-13; all 20 jobs passed in [CI run 38303007404](https://github.com/PosBuzz/PosClient/actions/runs/38303007404)
-- [ ] X1 Cross-layer contracts — sections 1-3 implemented 2026-10-13 (pricing, subdomains, promotions, sale totals, permissions, inline paths); endpoint/request/type contracts wait for B5/C4/A2
+- [ ] X1 Cross-layer contracts — sections 1-3 implemented 2026-10-13 (pricing, subdomains, promotions, sale totals, permissions, inline paths); endpoint parity and all 16 request recordings now replay over real HTTP (D-053); type-level response checks remain pending
 - [x] B3 Domain integration — verified 2026-10-13; all jobs passed in [CI run 38308437854](https://github.com/PosBuzz/PosClient/actions/runs/38308437854)
 - [x] B4 Report reconciliation — verified 2026-10-13; all jobs passed in [CI run 38309445550](https://github.com/PosBuzz/PosClient/actions/runs/38309445550)
 - [x] B5 API security & tenancy — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] B6 Schema & migrations — verified 2026-10-13; all jobs passed in [CI run 38312797811](https://github.com/PosBuzz/PosClient/actions/runs/38312797811)
 - [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
 - [x] C4 Consumer page flows — all critical flows, every-page smoke guard and required request recordings pass; 551 tests pass twice, global lines 64.21%, all four page ≥70% floors enabled (D-052). CI verification follows the checkpoint push.
-- [ ] A1/A2 Admin — A1 harness, build and 30 initial API/auth/parity tests pass; admin-tests CI added. A2 page flows and coverage gates are in progress (D-052).
+- [ ] A1/A2 Admin — A1 is CI-verified; all 50 A2 flow/API/auth/route/smoke tests and required coverage gates pass locally. Both final consumer runs pass all 551 tests and all 76 backend contract checks pass; checkpoint CI verification follows the push (D-053).
 - [ ] X2 Full-stack E2E
 - [ ] B7/C5 Mutation testing
 - [ ] X4 Error messages end-to-end
