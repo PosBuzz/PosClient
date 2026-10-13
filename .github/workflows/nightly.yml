@@ -67,7 +67,22 @@ jobs:
           gh issue create --title "Nightly failure: backend-mutation-domain" --body "Run and mutation artifact: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
 
   consumer-mutation-full:
-    name: Consumer mutation (full)
+    name: Consumer mutation (${{ matrix.target }})
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - src/utils/calculate-totals.utils.ts
+          - src/utils/sale-item.utils.ts
+          - src/utils/promotion-validation.ts
+          - src/utils/promotion-helpers.utils.ts
+          - src/utils/formatters.ts
+          - src/utils/payment-provider.utils.ts
+          - src/utils/invalidate-sales-reports.ts
+          - src/api/axiosInstance.ts
+          - src/components/RequireAuth.tsx
+          - src/components/RequirePermission.tsx
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -89,11 +104,11 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: rm -rf reports/stryker
-      - run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation
+      - run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation -- ${{ matrix.target }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: consumer-mutation-report
+          name: consumer-mutation-report-${{ strategy.job-index }}
           path: consumer/reports/stryker
           retention-days: 14
       - if: failure()
@@ -101,7 +116,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create --title "Nightly failure: consumer-mutation-full" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: consumer-mutation-full in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh issue create --title "Nightly failure: consumer-mutation ${{ matrix.target }}" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: consumer-mutation ${{ matrix.target }} in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
   backend-tz-matrix:
     name: Backend integration (TZ ${{ matrix.tz }})
