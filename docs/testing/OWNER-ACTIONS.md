@@ -3,7 +3,9 @@
 These repository/account actions remain pending. Implementation, local tests and PR CI do not
 prove credential revocation or a successful first nightly run.
 
-## Credentials (KI-088, high priority)
+## Credentials (KI-088)
+
+Update 2026-10-14: the owner confirmed the historical JWT is already rotated, and that the `pull.sh` token and the tracked `.env.docker` files are intentional (D-067). The repository is public; no history rewrite is planned. The text below is the original recommendation and is kept for reference.
 
 Revoke the GitHub personal access token used by `pull.sh` first. Rotate/revoke the historical JWT,
 GCP API key and Kubernetes credentials as applicable. Record completion without copying values
