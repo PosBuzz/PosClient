@@ -23,7 +23,7 @@ jobs:
           if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
 
   backend-mutation-domain:
-    name: Backend mutation (domain ${{ matrix.shard }}/6)
+    name: Backend mutation (domain ${{ matrix.shard }}/12)
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     permissions:
       contents: read
     defaults:
@@ -55,13 +55,25 @@ jobs:
       - name: Select tonight's mutation files
         working-directory: .
         run: |
-          echo "STRYKER_ROTATION=$(( $(date -u +%s) / 86400 % 7 + 1 ))/7" >> "$GITHUB_ENV"
+          day=$(( $(date -u +%s) / 86400 % 7 + 1 ))
+          echo "STRYKER_ROTATION=$day/7" >> "$GITHUB_ENV"
+          echo "STRYKER_ROTATION_KEY=r$day" >> "$GITHUB_ENV"
           {
             echo 'STRYKER_CHANGED_FILES<<EOF'
             git log --since='25 hours ago' --name-only --pretty=format: -- backend/src | sort -u
             echo EOF
           } >> "$GITHUB_ENV"
+      # Stryker's incremental report lets a night reuse every result whose code and covering tests did not
+      # change, so after the first measurement only edited code is retested. One cache per rotation day and shard.
+      - name: Restore incremental mutation results
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
+          key: stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
       - name: Mutate this shard's files
+        timeout-minutes: 50
         run: |
           if node --input-type=module -e "const c = (await import('./stryker.domain.config.mjs')).default; process.exit(c.mutate.length ? 0 : 3)"; then
             npm run test:mutation:shard
@@ -70,9 +82,15 @@ jobs:
           fi
         env:
           TZ: UTC
-          STRYKER_SHARD: ${{ matrix.shard }}/6
+          STRYKER_SHARD: ${{ matrix.shard }}/12
           # Jest workers in long Stryker runs grow past Node's default heap and get restarted.
           NODE_OPTIONS: --max-old-space-size=3072
+      - name: Save incremental mutation results
+        if: always() && hashFiles(format('backend/reports/stryker/domain-incremental-shard-{0}.json', matrix.shard)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
+          key: stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
