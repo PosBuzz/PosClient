@@ -100,7 +100,7 @@ describe('sale payments', () => {
     expect(await db.salePayment.count({ where: { sale_id: sale.id } })).toBe(0);
   });
 
-  it('[BE-PAY-006] the partially-paid list holds exactly the due and partial live sales', async () => {
+  it('[BE-PAY-006] {PaymentsService.getPartiallyPaidSales} the partially-paid list holds exactly the due and partial live sales', async () => {
     const due = await dueSale();
     const partial = await dueSale(100, 1, 30);
     await dueSale(100, 1, 100);

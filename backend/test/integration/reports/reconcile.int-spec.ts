@@ -51,7 +51,7 @@ describe('reports: cross-report reconciliation', () => {
     expect(e.summary.total_sales).toBe(l.summary.total_sales);
   });
 
-  it('[BE-RPT-102] the variant stats add up to the EOD sales without shipping', async () => {
+  it('[BE-RPT-102] {SalesService.getVariantSalesStats} the variant stats add up to the EOD sales without shipping', async () => {
     const variants: any = await sales.getVariantSalesStats(
       cid,
       '2026-03-14',
@@ -72,7 +72,7 @@ describe('reports: cross-report reconciliation', () => {
     );
   });
 
-  it('[BE-RPT-103] the cashier stats add up to the EOD sales amount', async () => {
+  it('[BE-RPT-103] {SalesService.getUsersSalesStats} the cashier stats add up to the EOD sales amount', async () => {
     const users: any[] = await sales.getUsersSalesStats(
       cid,
       '2026-03-14',
@@ -155,7 +155,7 @@ describe('reports: cross-report reconciliation', () => {
     }
   });
 
-  it('[BE-RPT-108] a quotation and a deleted sale change no number in any report', async () => {
+  it('[BE-RPT-108] {SalesService.getEODReport} {SalesService.getUsersSalesStats} {SalesService.getVariantSalesStats} a quotation and a deleted sale change no number in any report', async () => {
     const clean = await buildBusinessDay(db, boot, { withoutNoise: true });
     const strip = async (id: number, branch?: number) => {
       const [e, d, l, u, v] = await Promise.all([
@@ -204,7 +204,7 @@ describe('reports: cross-report reconciliation', () => {
     expect(await strip(clean.tenant.consumer.id)).toEqual(await strip(cid));
   });
 
-  it('[BE-RPT-109] stock per variant agrees between batches, the variant view and the inventory summary', async () => {
+  it('[BE-RPT-109] {InventoryService.getVariantStock} {InventoryService.getInventorySummary} stock per variant agrees between batches, the variant view and the inventory summary', async () => {
     const inventory = boot.get(InventoryService);
     let physical = 0;
     let reserved = 0;

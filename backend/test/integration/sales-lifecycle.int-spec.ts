@@ -82,7 +82,7 @@ describe('sales: soft delete, restore and concurrency', () => {
     ).toBe(0);
   });
 
-  it('[BE-SALE-054] a sale with payments collected later cannot be deleted', async () => {
+  it('[BE-SALE-054] {PaymentsService.makePayment} a sale with payments collected later cannot be deleted', async () => {
     const v = await stocked();
     const sale = await w.sell([{ variant: v, qty: 1 }], {}, 40);
     const payments = boot.get(PaymentsService);
@@ -148,7 +148,7 @@ describe('sales: soft delete, restore and concurrency', () => {
     expect((await batchFor(v.id)).quantity).toBe(1);
   });
 
-  it('[BE-SALE-057] deleted sales disappear from listings and return lookups', async () => {
+  it('[BE-SALE-057] {SalesService.findAll} {SalesService.findBySaleNumber} deleted sales disappear from listings and return lookups', async () => {
     const v = await stocked();
     const sale = await w.sell([{ variant: v, qty: 1 }]);
     await del(sale.id);
@@ -203,7 +203,7 @@ describe('sales: soft delete, restore and concurrency', () => {
     });
   });
 
-  it('[BE-SALE-061] concurrent complete and cancel of a delivery move the stock once', async () => {
+  it('[BE-SALE-061] {SalesService.completePendingDelivery} {SalesService.cancelPendingDelivery} concurrent complete and cancel of a delivery move the stock once', async () => {
     const v = await stocked();
     const sale = await w.sell([{ variant: v, qty: 3 }], {
       is_delivery_later: true,
@@ -226,7 +226,7 @@ describe('sales: soft delete, restore and concurrency', () => {
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
 
-  it('[BE-SALE-062] concurrent conversions of one quotation create exactly one sale', async () => {
+  it('[BE-SALE-062] {SalesService.create} {SalesService.convertQuotationToSale} concurrent conversions of one quotation create exactly one sale', async () => {
     const v = await stocked();
     const quotation: any = await sales.create(
       saleDto(

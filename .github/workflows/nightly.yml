@@ -1,0 +1,114 @@
+name: Nightly
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: "0 20 * * *" # 02:00 Asia/Dhaka
+  workflow_dispatch:
+
+jobs:
+  consumer-mutation-full:
+    name: Consumer mutation (full)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - run: npm ci
+      - run: rm -rf reports/stryker
+      - run: npm run test:mutation
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-mutation-report
+          path: consumer/reports/stryker
+          retention-days: 14
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: consumer-mutation-full" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: consumer-mutation-full in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+  backend-tz-matrix:
+    name: Backend integration (TZ ${{ matrix.tz }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [UTC, Asia/Dhaka, America/New_York]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx jest --config ./test/jest-integration.json
+        env:
+          TZ: ${{ matrix.tz }}
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TZ_NAME: ${{ matrix.tz }}
+        run: |
+          gh issue create --title "Nightly failure: backend-tz-matrix ($TZ_NAME)" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+
+  e2e-repeat:
+    name: Full-stack E2E (3x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            e2e/package-lock.json
+            backend/package-lock.json
+            consumer/package-lock.json
+            admin/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run prepare:stack -- --install
+      - run: npx playwright test --repeat-each=3
+        env:
+          CI: "true"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-nightly
+          path: e2e/playwright-report
+          retention-days: 14
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: e2e-repeat" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true

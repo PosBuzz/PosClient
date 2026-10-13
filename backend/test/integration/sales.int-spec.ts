@@ -293,7 +293,7 @@ describe('sales: create', () => {
     );
   });
 
-  it('[BE-SALE-015] convertQuotationToSale deducts stock, leaves the sale due and converts only once', async () => {
+  it('[BE-SALE-015] {SalesService.convertQuotationToSale} convertQuotationToSale deducts stock, leaves the sale due and converts only once', async () => {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
     const q = await create(
       saleDto(
@@ -341,7 +341,7 @@ describe('sales: create', () => {
     expect(sale.delivery_status).toBe('PENDING');
   });
 
-  it('[BE-SALE-017] completing a pending delivery moves reserved stock out with one audit row', async () => {
+  it('[BE-SALE-017] {SalesService.completePendingDelivery} completing a pending delivery moves reserved stock out with one audit row', async () => {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
     const sale = await w.sell([{ variant: v, qty: 3 }], {
       is_delivery_later: true,
@@ -364,7 +364,7 @@ describe('sales: create', () => {
     ).toBe(1);
   });
 
-  it('[BE-SALE-018] cancelling a pending delivery releases the reservation only', async () => {
+  it('[BE-SALE-018] {SalesService.cancelPendingDelivery} {SalesService.completePendingDelivery} cancelling a pending delivery releases the reservation only', async () => {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
     const sale = await w.sell([{ variant: v, qty: 3 }], {
       is_delivery_later: true,
@@ -387,7 +387,7 @@ describe('sales: create', () => {
     ).rejects.toThrow(/Pending delivery not found/);
   });
 
-  it('[BE-SALE-019] an online order starts PENDING and its status can be updated', async () => {
+  it('[BE-SALE-019] {SalesService.updateOnlineOrderStatus} an online order starts PENDING and its status can be updated', async () => {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
     const sale = await w.sell([{ variant: v, qty: 1 }], {
       is_online_order: true,

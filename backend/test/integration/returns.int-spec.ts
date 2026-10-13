@@ -173,7 +173,7 @@ describe('returns and exchanges', () => {
     expect(error.message).toMatch(/greater than 0/);
   });
 
-  it('[BE-RET-009] a deleted sale cannot be returned against', async () => {
+  it('[BE-RET-009] {SalesService.softDelete} a deleted sale cannot be returned against', async () => {
     const s = await committedSale();
     await sales.softDelete(
       s.sale.id,
@@ -336,7 +336,7 @@ describe('returns and exchanges', () => {
       expect(error.message).toMatch(/Insufficient stock for exchange/);
     });
 
-    it('[BE-SALE-053] a sale that was created as an exchange cannot be deleted', async () => {
+    it('[BE-SALE-053] {SalesService.softDelete} a sale that was created as an exchange cannot be deleted', async () => {
       const s = await committedSale();
       const { c } = await exchangeFor();
       const exchangeSale = await w.sell([{ variant: c, qty: 1 }]);
@@ -353,7 +353,7 @@ describe('returns and exchanges', () => {
     });
   });
 
-  it('[BE-SALE-052] a sale with a return cannot be deleted', async () => {
+  it('[BE-SALE-052] {SalesService.softDelete} a sale with a return cannot be deleted', async () => {
     const s = await committedSale();
     await returnA(s, 1);
     const error = await failure(

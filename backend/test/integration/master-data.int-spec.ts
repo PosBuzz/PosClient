@@ -60,7 +60,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
         cid(),
       );
 
-    it('[BE-CUST-001] create stores a tenant-owned customer; listings are tenant scoped, sorted and searchable', async () => {
+    it('[BE-CUST-001] {CustomerService.findAll} {CustomerService.search} {CustomerService.findAllWithFilters} create stores a tenant-owned customer; listings are tenant scoped, sorted and searchable', async () => {
       await create('Zoya Rahman', { email: 'zoya@example.test' });
       await create('Amir Khan');
       await createCustomer(db, {
@@ -83,7 +83,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect(page.meta).toMatchObject({ total: 1, limit: 100, total_pages: 1 });
     });
 
-    it("[BE-CUST-002] every read and write on another tenant's customer is NotFound", async () => {
+    it("[BE-CUST-002] {CustomerService.findOne} {CustomerService.getSummary} {CustomerService.getSalesHistory} {CustomerService.getReturnsHistory} {CustomerService.getRewardsHistory} {CustomerService.update} {CustomerService.remove} every read and write on another tenant's customer is NotFound", async () => {
       const foreign = await createCustomer(db, {
         consumer_id: w.bystander.consumer.id,
       });
@@ -106,7 +106,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       ).toBe(foreign.name);
     });
 
-    it('[BE-CUST-003] the summary equals the raw sales, returns and rewards rows', async () => {
+    it('[BE-CUST-003] {CustomerService.getSummary} {CustomerService.getSalesHistory} {CustomerService.getReturnsHistory} the summary equals the raw sales, returns and rewards rows', async () => {
       const customer = await create('Summary Person');
       const v = await w.stock({ price: 100, batches: [{ qty: 20, cost: 10 }] });
       const paid = await w.sell([{ variant: v, qty: 2 }], {
@@ -161,7 +161,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       ).toHaveLength(1);
     });
 
-    it('[BE-CUST-004] deleting a customer keeps their sales; an empty birthday clears the stored one', async () => {
+    it('[BE-CUST-004] {CustomerService.update} {CustomerService.remove} deleting a customer keeps their sales; an empty birthday clears the stored one', async () => {
       const customer = await create('To Delete', { birthday: '1990-05-17' });
       expect(
         (await db.customer.findUniqueOrThrow({ where: { id: customer.id } }))
@@ -187,7 +187,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
   });
 
   describe('vendors', () => {
-    it('[BE-VEND-001] create, list, update and delete a vendor', async () => {
+    it('[BE-VEND-001] {VendorService.create} {VendorService.findAll} {VendorService.update} {VendorService.remove} create, list, update and delete a vendor', async () => {
       const created: any = await vendors.create(
         { name: 'Acme Supplies', phone: '0170' },
         cid(),
@@ -205,7 +205,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       });
     });
 
-    it("[BE-VEND-002] another tenant's vendor is NotFound for every call", async () => {
+    it("[BE-VEND-002] {VendorService.findOne} {VendorService.update} {VendorService.remove} {VendorService.findOneWithDetails} another tenant's vendor is NotFound for every call", async () => {
       const foreign = await createVendor(db, {
         consumer_id: w.bystander.consumer.id,
       });
@@ -220,7 +220,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       }
     });
 
-    it('[BE-VEND-003] a vendor with stock batches cannot be deleted, with a 400 that says why', async () => {
+    it('[BE-VEND-003] {VendorService.remove} a vendor with stock batches cannot be deleted, with a 400 that says why', async () => {
       const vendor = await createVendor(db, { consumer_id: cid() });
       const v = await w.stock({ price: 100, batches: [] });
       await boot.get(InventoryBatchService).create(cid(), uid(), {
@@ -237,7 +237,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect(await db.vendor.count({ where: { id: vendor.id } })).toBe(1);
     });
 
-    it('[BE-VEND-004] the vendor summary owes the purchased quantity even after the stock sold', async () => {
+    it('[BE-VEND-004] {VendorService.findOneWithDetails} the vendor summary owes the purchased quantity even after the stock sold', async () => {
       const vendor = await createVendor(db, { consumer_id: cid() });
       const v = await w.stock({ price: 100, batches: [] });
       await boot.get(InventoryBatchService).create(cid(), uid(), {
@@ -269,7 +269,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
     const mainCount = () =>
       db.branch.count({ where: { consumer_id: cid(), is_main: true } });
 
-    it('[BE-BRCH-001] a new main branch takes over; there is never more than one', async () => {
+    it('[BE-BRCH-001] {BranchService.setMainBranch} {BranchService.update} a new main branch takes over; there is never more than one', async () => {
       await db.consumer.update({
         where: { id: cid() },
         data: { max_branch: 4 },
@@ -303,7 +303,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect(error.message).toMatch(/Branch limit reached/);
     });
 
-    it("[BE-BRCH-003] another tenant's branch is NotFound for every call", async () => {
+    it("[BE-BRCH-003] {BranchService.findOne} {BranchService.update} {BranchService.remove} {BranchService.setMainBranch} {BranchService.findAll} another tenant's branch is NotFound for every call", async () => {
       const foreign = w.bystander.branches[0];
       for (const call of [
         () => branches.findOne(foreign.id, cid()),
@@ -320,7 +320,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       ).toBe(true);
     });
 
-    it('[BE-BRCH-004] the last and the main branch cannot be deleted, with a 400', async () => {
+    it('[BE-BRCH-004] {BranchService.remove} the last and the main branch cannot be deleted, with a 400', async () => {
       const only = w.tenant.branches[0];
       const last = await failure(branches.remove(only.id, cid()));
       expect(last).toBeInstanceOf(BadRequestException);
@@ -336,7 +336,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect(await branches.remove(extra.id, cid())).toEqual({ success: true });
     });
 
-    it('[BE-BRCH-005] a branch that holds stock cannot be deleted, with a readable error', async () => {
+    it('[BE-BRCH-005] {BranchService.remove} a branch that holds stock cannot be deleted, with a readable error', async () => {
       await db.consumer.update({
         where: { id: cid() },
         data: { max_branch: 3 },
@@ -365,7 +365,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
         ...extra,
       }) as any;
 
-    it('[BE-OPC-001] create, filter, update and delete a cost', async () => {
+    it('[BE-OPC-001] {OperationalCostsService.create} {OperationalCostsService.findAll} {OperationalCostsService.update} {OperationalCostsService.remove} create, filter, update and delete a cost', async () => {
       const a: any = await costs.create(
         cid(),
         uid(),
@@ -403,7 +403,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect(await costs.remove(a.id, cid())).toEqual({ success: true });
     });
 
-    it("[BE-OPC-002] another tenant's branch or cost is NotFound", async () => {
+    it("[BE-OPC-002] {OperationalCostsService.create} {OperationalCostsService.update} {OperationalCostsService.remove} {OperationalCostsService.findAll} another tenant's branch or cost is NotFound", async () => {
       const foreignBranch = w.bystander.branches[0].id;
       expect(
         await failure(
@@ -446,7 +446,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
         message: ' It jams ',
       } as any) as Promise<any>;
 
-    it('[BE-SUP-001] a ticket starts open with its first message; replies, close and reopen move the status', async () => {
+    it('[BE-SUP-001] {SupportService.addMessage} {SupportService.close} {SupportService.reopen} a ticket starts open with its first message; replies, close and reopen move the status', async () => {
       const ticket = await open();
       expect(ticket).toMatchObject({
         status: 'OPEN',
@@ -472,7 +472,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       expect((await support.reopen(ticket.id, cid())).status).toBe('OPEN');
     });
 
-    it("[BE-SUP-002] listing filters by status and subject and never shows another tenant's tickets", async () => {
+    it("[BE-SUP-002] {SupportService.create} {SupportService.findAll} {SupportService.close} listing filters by status and subject and never shows another tenant's tickets", async () => {
       const mine = await open();
       await support.create(cid(), uid(), {
         subject: 'Billing question',
@@ -504,7 +504,7 @@ describe('master data: customers, vendors, branches, costs, support', () => {
       ).toEqual([]);
     });
 
-    it("[BE-SUP-003] another tenant's ticket is NotFound for every call", async () => {
+    it("[BE-SUP-003] {SupportService.findOne} {SupportService.addMessage} {SupportService.close} {SupportService.reopen} another tenant's ticket is NotFound for every call", async () => {
       const theirs = await db.supportTicket.create({
         data: {
           consumer_id: w.bystander.consumer.id,
