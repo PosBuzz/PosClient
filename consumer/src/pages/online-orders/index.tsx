@@ -169,7 +169,9 @@ const OnlineOrders = () => {
       form.resetFields();
       refetch();
     } catch (error: any) {
-      messageApi?.error(error.message || "Failed to update order status");
+      messageApi?.error(
+        getErrorMessage(error, "Failed to update order status"),
+      );
     } finally {
       setUpdatingStatus(false);
     }

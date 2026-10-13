@@ -95,47 +95,47 @@ describe('promotions management', () => {
       [
         'end before start',
         () => ({ end_date: '2025-01-01T00:00:00.000Z' }),
-        /end_date must be after start_date/,
+        /end date must be after the start date/,
       ],
       [
         'cap quantity below minimum',
         () => ({ min_quantity: 5, cap_quantity: 2 }),
-        /cap_quantity must be greater than or equal/,
+        /cap quantity must be at least the minimum quantity/,
       ],
       [
         'discount cap above max discount',
         () => ({ max_discount_amount: 50, cap_discount_amount: 80 }),
-        /cap_discount_amount cannot be greater/,
+        /cap discount amount cannot be greater/,
       ],
       [
         'per-customer limit without a number',
         () => ({ limit_per_customer: true }),
-        /customer_usage_limit is required/,
+        /customer usage limit is required/,
       ],
       [
         'daily reset without per-customer limit',
         () => ({ customer_usage_daily_reset: true }),
-        /requires limit_per_customer/,
+        /requires the promotion to be limited per customer/,
       ],
       [
         'branch-specific without branches',
         () => ({ branch_specific: true }),
-        /branch_ids is required/,
+        /Select at least one branch/,
       ],
       [
         'brand scope without a brand',
         () => ({ scope: 'BRAND' }),
-        /brand_id is required/,
+        /Select a brand/,
       ],
       [
         'brand scope with variants',
         (v) => ({ scope: 'BRAND', brand_id: 1, variant_ids: v }),
-        /variant_ids should not be provided/,
+        /remove the selected products/,
       ],
       [
         'product scope without variants',
         () => ({ variant_ids: [] }),
-        /variant_ids is required/,
+        /Select at least one product/,
       ],
       [
         'single product with two variants',
@@ -194,7 +194,7 @@ describe('promotions management', () => {
     });
   });
 
-  it("[BE-PRM-004] another tenant's promotion is NotFound for every call", async () => {
+  it("[BE-PRM-004] {PromotionsService.findOne} {PromotionsService.update} {PromotionsService.remove} {PromotionsService.getPromotionSales} {PromotionsService.findAll} another tenant's promotion is NotFound for every call", async () => {
     const theirs = await createPromotion(db, w.bystander, {
       variants: [w.theirs.id],
     });
@@ -210,7 +210,7 @@ describe('promotions management', () => {
     expect((await promotions.findAll(cid())).length).toBe(0);
   });
 
-  it('[BE-PRM-005] update merges with the stored promotion, rewrites relations and re-validates the result', async () => {
+  it('[BE-PRM-005] {PromotionsService.update} {PromotionsService.findOne} update merges with the stored promotion, rewrites relations and re-validates the result', async () => {
     const a = await stocked();
     const b = await stocked();
     const promo = await create(base([a.id], { min_purchase: 100 }));
@@ -236,7 +236,7 @@ describe('promotions management', () => {
     expect(cleared.min_purchase).toBeNull();
   });
 
-  it('[BE-PRM-006] removing a promotion keeps the sales that used it', async () => {
+  it('[BE-PRM-006] {SalesService.create} {PromotionsService.remove} removing a promotion keeps the sales that used it', async () => {
     const v = await stocked();
     const promo = await create(base([v.id]));
     const dto = saleDto(
@@ -252,7 +252,7 @@ describe('promotions management', () => {
     expect(Number(kept.discount_amount)).toBe(20);
   });
 
-  it('[BE-PRM-007] options list only my branches, brands and variants', async () => {
+  it('[BE-PRM-007] {PromotionsService.getOptions} options list only my branches, brands and variants', async () => {
     await stocked();
     await createBrand(db, { consumer_id: cid(), name: 'Mine' });
     await createBrand(db, {
@@ -267,7 +267,7 @@ describe('promotions management', () => {
   });
 
   describe('active promotions', () => {
-    it('[BE-PRM-008] only live promotions for the branch are returned; exhausted ones are closed', async () => {
+    it('[BE-PRM-008] {SalesService.create} {PromotionsService.findActive} only live promotions for the branch are returned; exhausted ones are closed', async () => {
       const v = await stocked();
       const live = await create(base([v.id], { name: 'Live' }));
       await create(base([v.id], { name: 'Inactive', is_active: false }));
@@ -326,7 +326,7 @@ describe('promotions management', () => {
       expect(live.id).toBeGreaterThan(0);
     });
 
-    it('[BE-PRM-009] a promotion is closed once its discount budget is spent', async () => {
+    it('[BE-PRM-009] {SalesService.create} {PromotionsService.closePromotionIfExhausted} a promotion is closed once its discount budget is spent', async () => {
       const v = await stocked();
       const promo = await create(base([v.id], { max_discount_amount: 20 }));
       const dto = saleDto(
@@ -344,7 +344,7 @@ describe('promotions management', () => {
     });
   });
 
-  it("[BE-PRM-010] usage figures count live sales only, as the server's own usage check does", async () => {
+  it("[BE-PRM-010] {SalesService.create} {SalesService.softDelete} {PromotionsService.findOne} {PromotionsService.findAll} usage figures count live sales only, as the server's own usage check does", async () => {
     const v = await stocked();
     const promo = await create(base([v.id]));
     const use = async (qty: number, extra: object = {}) => {
@@ -377,7 +377,7 @@ describe('promotions management', () => {
     expect(listed?.sales_count).toBe(1);
   });
 
-  it("[BE-PRM-011] the promotion sales report lists only this promotion's sales in my tenant", async () => {
+  it("[BE-PRM-011] {SalesService.create} {PromotionsService.getPromotionSales} the promotion sales report lists only this promotion's sales in my tenant", async () => {
     const v = await stocked();
     const promo = await create(base([v.id]));
     const dto = saleDto(

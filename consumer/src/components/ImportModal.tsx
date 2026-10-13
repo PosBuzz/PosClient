@@ -31,9 +31,6 @@ import { getErrorMessage } from "../utils/api-error";
 const { Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 
-/** Server-supplied message when there is one, otherwise the given fallback */
-const apiMessage = getErrorMessage;
-
 interface ImportModalProps {
   entity: ImportEntity;
   open: boolean;
@@ -88,7 +85,7 @@ export default function ImportModal({
     mutationFn: (upload: File) => importApi.preview(entity, upload),
     onSuccess: setResult,
     onError: (error: unknown) =>
-      messageApi?.error(apiMessage(error, "Could not read that file")),
+      messageApi?.error(getErrorMessage(error, "Could not read that file")),
   });
 
   const importMutation = useMutation({
@@ -104,7 +101,9 @@ export default function ImportModal({
       }
     },
     onError: (error: unknown) =>
-      messageApi?.error(apiMessage(error, "Import failed, nothing was saved")),
+      messageApi?.error(
+        getErrorMessage(error, "Import failed, nothing was saved"),
+      ),
   });
 
   const handleFile = useCallback(

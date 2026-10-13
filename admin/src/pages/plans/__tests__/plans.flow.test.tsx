@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { endpoints } from "../../../api/endpoints";
 import { responseContract } from "../../../test/contracts/load";
 import { expectRequestContract } from "../../../test/contracts/record";
-import { API, ok } from "../../../test/msw/api";
+import { API, fail, ok } from "../../../test/msw/api";
 import { server } from "../../../test/msw/server";
 import { captureRequests } from "../../../test/msw/capture";
 import { renderWithProviders } from "../../../test/render";
@@ -70,4 +70,15 @@ it("[AD-FLOW-PLAN-002] edits a plan and removes one permission", async () => {
     body: updated.calls[0].body,
   });
   expect(errors).not.toHaveBeenCalled();
+});
+
+it("[AD-ERR-021] deleting a plan that is in use shows the server's 409 message", async () => {
+  const message = "This plan is assigned to consumers and cannot be deleted.";
+  captureRequests("delete", endpoints.plan + "/1", () => fail(409, message));
+  const { user } = renderWithProviders(<Page />);
+  await screen.findByText("Plan 1");
+  const row = screen.getByText("Plan 1").closest("tr") as HTMLElement;
+  await user.click(within(row).getByRole("button", { name: /delete/i }));
+  await user.click(await screen.findByRole("button", { name: "Yes" }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
 });
