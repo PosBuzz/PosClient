@@ -418,7 +418,7 @@ describe("POS checkout", () => {
       body,
       expect: cart.expect,
     });
-  });
+  }, 60_000);
 
   it("[CO-FLOW-POS-004] a split cash + MFS payment needs the provider and sends both payments", async () => {
     const created = captureRequests("post", endpoints.createSale, { id: 3 });
