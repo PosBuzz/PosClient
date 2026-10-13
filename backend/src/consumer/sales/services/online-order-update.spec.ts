@@ -13,7 +13,7 @@ describe('online order delivery partner', () => {
     prisma.sale.findFirst.mockResolvedValue({ id: 1 });
     prisma.sale.update.mockResolvedValue({ id: 1 });
   });
-  it('saves a partner on an existing tenant-owned online order', async () => {
+  it('{SalesService.updateOnlineOrderStatus} saves a partner on an existing tenant-owned online order', async () => {
     await service.updateOnlineOrderStatus(1, 'READY', 7, ' Courier ');
     expect(prisma.sale.findFirst).toHaveBeenCalledWith({
       where: { id: 1, consumer_id: 7, is_online_order: true, deleted_at: null },
@@ -24,7 +24,7 @@ describe('online order delivery partner', () => {
       }),
     );
   });
-  it('allows clearing a partner', async () => {
+  it('{SalesService.updateOnlineOrderStatus} allows clearing a partner', async () => {
     await service.updateOnlineOrderStatus(1, 'READY', 7, null);
     expect(prisma.sale.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -32,7 +32,7 @@ describe('online order delivery partner', () => {
       }),
     );
   });
-  it('keeps the partner when only changing status', async () => {
+  it('{SalesService.updateOnlineOrderStatus} keeps the partner when only changing status', async () => {
     await service.updateOnlineOrderStatus(1, 'READY', 7);
     expect(prisma.sale.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -40,7 +40,7 @@ describe('online order delivery partner', () => {
       }),
     );
   });
-  it('does not update an order outside the consumer scope', async () => {
+  it('{SalesService.updateOnlineOrderStatus} does not update an order outside the consumer scope', async () => {
     prisma.sale.findFirst.mockResolvedValue(null);
     await expect(
       service.updateOnlineOrderStatus(1, 'READY', 7, 'Courier'),

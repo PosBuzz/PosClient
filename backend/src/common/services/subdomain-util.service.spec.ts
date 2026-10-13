@@ -11,7 +11,7 @@ describe('subdomain parsing', () => {
   ])('[%s] %s -> %s', (_id, host, result) =>
     expect(service.extractSubdomainFromHost(host)).toBe(result),
   );
-  it('[BE-SUB-006] excludes each system subdomain for production and localhost', () => {
+  it('[BE-SUB-006] {SubdomainUtilService.getExcludedSubdomains} {SubdomainUtilService.extractSubdomainFromHost} {SubdomainUtilService.isExcludedSubdomain} excludes each system subdomain for production and localhost', () => {
     expect(service.getExcludedSubdomains()).toEqual([
       'www',
       'api',
@@ -32,13 +32,13 @@ describe('subdomain parsing', () => {
     copy.push('acme');
     expect(service.isExcludedSubdomain('acme')).toBe(false);
   });
-  it('[BE-SUB-007] multi-level hosts take the first label (characterization: confirm intent)', () =>
+  it('[BE-SUB-007] {SubdomainUtilService.extractSubdomainFromHost} multi-level hosts take the first label (characterization: confirm intent)', () =>
     expect(service.extractSubdomainFromHost('a.b.example.com')).toBe('a'));
   it.each(['127.0.0.1', '127.0.0.1:3000', '::1', '[::1]:3000'])(
     '[BE-SUB-008] IP host %s is not a tenant',
     (host) => expect(service.extractSubdomainFromHost(host)).toBeNull(),
   );
-  it('[BE-SUB-009] parses full HTTP/HTTPS URLs and bare hosts', () => {
+  it('[BE-SUB-009] {SubdomainUtilService.extractSubdomainFromUrl} parses full HTTP/HTTPS URLs and bare hosts', () => {
     expect(
       service.extractSubdomainFromUrl('https://acme.example.com/path'),
     ).toBe('acme');
@@ -47,7 +47,7 @@ describe('subdomain parsing', () => {
     ).toBe('acme');
     expect(service.extractSubdomainFromUrl('acme.localhost')).toBe('acme');
   });
-  it('[BE-SUB-010] invalid URLs return null without throwing', () => {
+  it('[BE-SUB-010] {SubdomainUtilService.extractSubdomainFromUrl} invalid URLs return null without throwing', () => {
     const log = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => {});
@@ -59,7 +59,7 @@ describe('subdomain parsing', () => {
       log.mockRestore();
     }
   });
-  it('[BE-SUB-011] origin wins then referer then host, skipping sources without a tenant', () => {
+  it('[BE-SUB-011] {SubdomainUtilService.extractSubdomainFromRequest} origin wins then referer then host, skipping sources without a tenant', () => {
     const headers = {
       origin: 'https://origin.example.com',
       referer: 'https://referer.example.com',

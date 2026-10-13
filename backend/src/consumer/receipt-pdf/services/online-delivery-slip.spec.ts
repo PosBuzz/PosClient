@@ -3,7 +3,7 @@ import { ReceiptPdfService } from './receipt-pdf.service';
 import { PRESET_DEFAULTS } from '../preset/receipt-pdf-settings';
 
 describe('online delivery slip', () => {
-  it('renders the partner, customer destination and outstanding balance with its own preset', async () => {
+  it('{SalesPdfService.generateSaleReceiptPdf} renders the partner, customer destination and outstanding balance with its own preset', async () => {
     const renderer = new ReceiptPdfService();
     const render = jest.spyOn(renderer, 'generatePdf');
     const settingsService = {

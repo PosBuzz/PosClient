@@ -426,7 +426,7 @@ describe('response contracts for the canonical business day', () => {
     expect(typeof sale.id).toBe('number');
     expect(typeof sale.items[0].line_total).toBe('string');
   });
-  it('[BE-CONTRACT-BOOL-001] low-stock flags are boolean at zero and at the exact stock threshold', async () => {
+  it('[BE-CONTRACT-BOOL-001] {ProductVariantService.findOne} low-stock flags are boolean at zero and at the exact stock threshold', async () => {
     const product = live['product-detail'] as {
       consumer_id: number;
       variants: Array<{

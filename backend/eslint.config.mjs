@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', '.stryker-tmp/**', 'reports/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

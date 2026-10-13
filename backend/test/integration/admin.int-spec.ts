@@ -66,7 +66,7 @@ describe('super-admin flows', () => {
       .sort();
 
   describe('plans and roles', () => {
-    it('[BE-ADM-001] removing a permission from a plan removes it from every tenant role and from the session; adding gives it to Admin only', async () => {
+    it('[BE-ADM-001] {PlanService.update} removing a permission from a plan removes it from every tenant role and from the session; adding gives it to Admin only', async () => {
       const plans = boot.get(PlanService);
       const strategy = boot.get(JwtClientStrategy);
       const planPermissions = await db.planPermission.findMany({
@@ -107,7 +107,7 @@ describe('super-admin flows', () => {
       expect(await actionsOf(staff.id)).toEqual([]);
     });
 
-    it('[BE-ADM-001] a plan can be saved with no permissions at all', async () => {
+    it('[BE-ADM-001] {PlanService.update} a plan can be saved with no permissions at all', async () => {
       const plans = boot.get(PlanService);
       await plans.update(w.tenant.plan.id, { permission_ids: [] });
       expect(
@@ -130,7 +130,7 @@ describe('super-admin flows', () => {
   });
 
   describe('consumers', () => {
-    it('[BE-ADM-002] creating a consumer sets up its admin, default roles, main branch and receipt settings from the plan', async () => {
+    it('[BE-ADM-002] {ConsumerService.create} {ConsumerService.checkSubdomain} creating a consumer sets up its admin, default roles, main branch and receipt settings from the plan', async () => {
       const consumers = boot.get(ConsumerService);
       const created: any = await consumers.create({
         company_name: 'New Shop',
@@ -180,7 +180,7 @@ describe('super-admin flows', () => {
       });
     });
 
-    it("[BE-ADM-003] a soft-deleted consumer's users can no longer log in or use an existing session; the subdomain stays reserved; restore reverses it", async () => {
+    it("[BE-ADM-003] {AuthService.validateUser} {ConsumerService.softDelete} {ConsumerService.checkSubdomain} {ConsumerService.restore} a soft-deleted consumer's users can no longer log in or use an existing session; the subdomain stays reserved; restore reverses it", async () => {
       const consumers = boot.get(ConsumerService);
       const strategy = boot.get(JwtClientStrategy);
       const auth = boot.get(AuthService);
@@ -237,7 +237,7 @@ describe('super-admin flows', () => {
         ...extra,
       }) as any;
 
-    it('[BE-ADM-005] periods are checked for order and overlap, including month ends and leap days', async () => {
+    it('[BE-ADM-005] {BillingHistoryService.create} periods are checked for order and overlap, including month ends and leap days', async () => {
       const billing = boot.get(BillingHistoryService);
       // The factory already holds a 2020-2040 period; clear it to test from scratch
       await db.billingHistory.deleteMany({ where: { consumer_id: cid() } });
@@ -289,7 +289,7 @@ describe('super-admin flows', () => {
       expect(statusOf(sameDate)).toBe(409);
     });
 
-    it('[BE-ADM-005] update re-checks the period against the other bills; unknown ids are 404', async () => {
+    it('[BE-ADM-005] {BillingHistoryService.create} {BillingHistoryService.update} {BillingHistoryService.remove} {BillingHistoryService.findAll} update re-checks the period against the other bills; unknown ids are 404', async () => {
       const billing = boot.get(BillingHistoryService);
       await db.billingHistory.deleteMany({ where: { consumer_id: cid() } });
       const first: any = await billing.create(bill());
@@ -385,7 +385,7 @@ describe('super-admin flows', () => {
   }
 
   describe('purge', () => {
-    it('[BE-ADM-004] purging a consumer removes every row it owns and leaves the other tenant untouched', async () => {
+    it('[BE-ADM-004] {ConsumerPurgeService.purge} purging a consumer removes every row it owns and leaves the other tenant untouched', async () => {
       await enrich();
       const purge = boot.get(ConsumerPurgeService);
       const wrong = await failure(purge.purge(cid(), 'not-the-subdomain'));
@@ -415,7 +415,7 @@ describe('super-admin flows', () => {
   });
 
   describe('account data import', () => {
-    it('[BE-ADM-007] importing one account into another copies its catalog, customers and stock with audit rows, and never touches the source or a bystander', async () => {
+    it('[BE-ADM-007] {ConsumerDataImportService.run} importing one account into another copies its catalog, customers and stock with audit rows, and never touches the source or a bystander', async () => {
       await enrich();
       const target = await createTenant(db, { maxBranches: 5 });
       const importer = boot.get(ConsumerDataImportService);
@@ -476,7 +476,7 @@ describe('super-admin flows', () => {
       expect(await mine('customer')).toBe(1);
     });
 
-    it('[BE-ADM-007] the import refuses the same account, unknown or deleted accounts and a wrong confirmation', async () => {
+    it('[BE-ADM-007] {ConsumerDataImportService.run} {ConsumerDataImportService.preview} the import refuses the same account, unknown or deleted accounts and a wrong confirmation', async () => {
       const importer = boot.get(ConsumerDataImportService);
       const dto = (extra: object) =>
         ({

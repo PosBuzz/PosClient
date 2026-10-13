@@ -188,7 +188,7 @@ describe('reports: the business day against hand-computed numbers', () => {
       ]);
     });
 
-    it('the week starts on Saturday: 03-13 belongs to the previous week', async () => {
+    it('{DashboardService.getAnalytics} the week starts on Saturday: 03-13 belongs to the previous week', async () => {
       const { summary, weekly_sales_trend } = await dash();
       expect(summary).toMatchObject({
         weekly_total_sale: 1065,
@@ -215,7 +215,7 @@ describe('reports: the business day against hand-computed numbers', () => {
     });
   });
 
-  it('[BE-RPT-007] the sales list summary covers the day; refunds follow the original sale', async () => {
+  it('[BE-RPT-007] {SalesService.findAll} the sales list summary covers the day; refunds follow the original sale', async () => {
     const list: any = await sales.findAll(
       { date_from: iso('00:00'), date_to: '2026-03-14T23:59:59.999Z' },
       cid,
@@ -231,7 +231,7 @@ describe('reports: the business day against hand-computed numbers', () => {
     });
   });
 
-  it('[BE-RPT-008] variant sales stats', async () => {
+  it('[BE-RPT-008] {SalesService.getVariantSalesStats} variant sales stats', async () => {
     const result: any = await sales.getVariantSalesStats(
       cid,
       '2026-03-14',
@@ -262,7 +262,7 @@ describe('reports: the business day against hand-computed numbers', () => {
     expect(row(s.p3.variant.id).returned_amount).toBeCloseTo(152, 2);
   });
 
-  it('[BE-RPT-009] user sales stats follow who served the sale', async () => {
+  it('[BE-RPT-009] {SalesService.getUsersSalesStats} user sales stats follow who served the sale', async () => {
     const result: any[] = await sales.getUsersSalesStats(
       cid,
       '2026-03-14',

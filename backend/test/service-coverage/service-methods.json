@@ -1,0 +1,1527 @@
+[
+  {
+    "service": "AdminSupportService",
+    "method": "findAll",
+    "file": "src/admin/support/services/support.service.ts"
+  },
+  {
+    "service": "AdminSupportService",
+    "method": "findOne",
+    "file": "src/admin/support/services/support.service.ts"
+  },
+  {
+    "service": "AdminSupportService",
+    "method": "reply",
+    "file": "src/admin/support/services/support.service.ts"
+  },
+  {
+    "service": "AdminSupportService",
+    "method": "stats",
+    "file": "src/admin/support/services/support.service.ts"
+  },
+  {
+    "service": "AdminSupportService",
+    "method": "update",
+    "file": "src/admin/support/services/support.service.ts"
+  },
+  {
+    "service": "AppService",
+    "method": "getHealth",
+    "file": "src/app.service.ts"
+  },
+  {
+    "service": "AppService",
+    "method": "getHello",
+    "file": "src/app.service.ts"
+  },
+  {
+    "service": "AppService",
+    "method": "getMetrics",
+    "file": "src/app.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "adminRefreshToken",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "clientRefreshToken",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "invalidateAdminRefreshToken",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "invalidateClientRefreshToken",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "loginSuperAdmin",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "loginUser",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "validateSuperAdmin",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "AuthService",
+    "method": "validateUser",
+    "file": "src/auth/services/auth.service.ts"
+  },
+  {
+    "service": "BackupRestoreService",
+    "method": "createBackup",
+    "file": "src/admin/backup-restore/backup-restore.service.ts"
+  },
+  {
+    "service": "BackupRestoreService",
+    "method": "restoreBackup",
+    "file": "src/admin/backup-restore/backup-restore.service.ts"
+  },
+  {
+    "service": "BillingHistoryService",
+    "method": "create",
+    "file": "src/admin/billing-invoices/billing-history.service.ts"
+  },
+  {
+    "service": "BillingHistoryService",
+    "method": "findAll",
+    "file": "src/admin/billing-invoices/billing-history.service.ts"
+  },
+  {
+    "service": "BillingHistoryService",
+    "method": "remove",
+    "file": "src/admin/billing-invoices/billing-history.service.ts"
+  },
+  {
+    "service": "BillingHistoryService",
+    "method": "update",
+    "file": "src/admin/billing-invoices/billing-history.service.ts"
+  },
+  {
+    "service": "BillingInvoicesService",
+    "method": "generateBillingHistoryExcel",
+    "file": "src/admin/billing-invoices/billing-invoices.service.ts"
+  },
+  {
+    "service": "BillingInvoicesService",
+    "method": "generateBillingHistoryPdf",
+    "file": "src/admin/billing-invoices/billing-invoices.service.ts"
+  },
+  {
+    "service": "BillingInvoicesService",
+    "method": "generateInvoicePdf",
+    "file": "src/admin/billing-invoices/billing-invoices.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "create",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "findAll",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "findOne",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "getBranchOptions",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "remove",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "setMainBranch",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BranchService",
+    "method": "update",
+    "file": "src/consumer/branch/services/branch.service.ts"
+  },
+  {
+    "service": "BrandService",
+    "method": "create",
+    "file": "src/consumer/brand/services/brand.service.ts"
+  },
+  {
+    "service": "BrandService",
+    "method": "findAll",
+    "file": "src/consumer/brand/services/brand.service.ts"
+  },
+  {
+    "service": "BrandService",
+    "method": "findOne",
+    "file": "src/consumer/brand/services/brand.service.ts"
+  },
+  {
+    "service": "BrandService",
+    "method": "remove",
+    "file": "src/consumer/brand/services/brand.service.ts"
+  },
+  {
+    "service": "BrandService",
+    "method": "update",
+    "file": "src/consumer/brand/services/brand.service.ts"
+  },
+  {
+    "service": "BusinessReportPdfService",
+    "method": "generate",
+    "file": "src/consumer/sales/services/business-report-pdf.service.ts"
+  },
+  {
+    "service": "CategoryService",
+    "method": "create",
+    "file": "src/consumer/category/services/category.service.ts"
+  },
+  {
+    "service": "CategoryService",
+    "method": "findAll",
+    "file": "src/consumer/category/services/category.service.ts"
+  },
+  {
+    "service": "CategoryService",
+    "method": "findOne",
+    "file": "src/consumer/category/services/category.service.ts"
+  },
+  {
+    "service": "CategoryService",
+    "method": "remove",
+    "file": "src/consumer/category/services/category.service.ts"
+  },
+  {
+    "service": "CategoryService",
+    "method": "update",
+    "file": "src/consumer/category/services/category.service.ts"
+  },
+  {
+    "service": "ChangePasswordService",
+    "method": "changePassword",
+    "file": "src/consumer/change-password/change-password.service.ts"
+  },
+  {
+    "service": "ConsumerDataImportService",
+    "method": "history",
+    "file": "src/admin/consumer/services/consumer-data-import.service.ts"
+  },
+  {
+    "service": "ConsumerDataImportService",
+    "method": "preview",
+    "file": "src/admin/consumer/services/consumer-data-import.service.ts"
+  },
+  {
+    "service": "ConsumerDataImportService",
+    "method": "run",
+    "file": "src/admin/consumer/services/consumer-data-import.service.ts"
+  },
+  {
+    "service": "ConsumerPurgeService",
+    "method": "purge",
+    "file": "src/admin/consumer/services/consumer-purge.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "checkSubdomain",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "create",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "findAll",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "restore",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "softDelete",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "ConsumerService",
+    "method": "update",
+    "file": "src/admin/consumer/services/consumer.service.ts"
+  },
+  {
+    "service": "CustomerImportService",
+    "method": "prepare",
+    "file": "src/consumer/import/services/customer-import.service.ts"
+  },
+  {
+    "service": "CustomerImportService",
+    "method": "write",
+    "file": "src/consumer/import/services/customer-import.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "create",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "findAll",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "findAllWithFilters",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "findOne",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "getReturnsHistory",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "getRewardsHistory",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "getSalesHistory",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "getSummary",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "remove",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "search",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "CustomerService",
+    "method": "update",
+    "file": "src/consumer/customer/services/customer.service.ts"
+  },
+  {
+    "service": "DashboardService",
+    "method": "getAnalytics",
+    "file": "src/consumer/dashboard/services/dashboard.service.ts"
+  },
+  {
+    "service": "DescriptionService",
+    "method": "generateDescription",
+    "file": "src/ai-services/services/description.service.ts"
+  },
+  {
+    "service": "DescriptionService",
+    "method": "submitFeedback",
+    "file": "src/ai-services/services/description.service.ts"
+  },
+  {
+    "service": "ImportService",
+    "method": "assertKnownEntity",
+    "file": "src/consumer/import/services/import.service.ts"
+  },
+  {
+    "service": "ImportService",
+    "method": "buildTemplate",
+    "file": "src/consumer/import/services/import.service.ts"
+  },
+  {
+    "service": "ImportService",
+    "method": "columnsFor",
+    "file": "src/consumer/import/services/import.service.ts"
+  },
+  {
+    "service": "ImportService",
+    "method": "run",
+    "file": "src/consumer/import/services/import.service.ts"
+  },
+  {
+    "service": "InventoryAdjustmentService",
+    "method": "create",
+    "file": "src/consumer/inventory/services/inventory-adjustment.service.ts"
+  },
+  {
+    "service": "InventoryAdjustmentService",
+    "method": "findAll",
+    "file": "src/consumer/inventory/services/inventory-adjustment.service.ts"
+  },
+  {
+    "service": "InventoryAdjustmentService",
+    "method": "findOne",
+    "file": "src/consumer/inventory/services/inventory-adjustment.service.ts"
+  },
+  {
+    "service": "InventoryBatchService",
+    "method": "create",
+    "file": "src/consumer/inventory/services/inventory-batch.service.ts"
+  },
+  {
+    "service": "InventoryBatchService",
+    "method": "findAll",
+    "file": "src/consumer/inventory/services/inventory-batch.service.ts"
+  },
+  {
+    "service": "InventoryBatchService",
+    "method": "findOne",
+    "file": "src/consumer/inventory/services/inventory-batch.service.ts"
+  },
+  {
+    "service": "InventoryBatchService",
+    "method": "remove",
+    "file": "src/consumer/inventory/services/inventory-batch.service.ts"
+  },
+  {
+    "service": "InventoryBatchService",
+    "method": "update",
+    "file": "src/consumer/inventory/services/inventory-batch.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "generateAdjustmentBatchNumber",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "generateTransferBatchNumber",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "getLocationDescription",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "getLocationName",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "getWarehouseBranch",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryHelperService",
+    "method": "isWarehouse",
+    "file": "src/consumer/inventory/services/inventory-helper.service.ts"
+  },
+  {
+    "service": "InventoryImportService",
+    "method": "prepare",
+    "file": "src/consumer/import/services/inventory-import.service.ts"
+  },
+  {
+    "service": "InventoryImportService",
+    "method": "write",
+    "file": "src/consumer/import/services/inventory-import.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getExpiringBatches",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getInventoryMovementHistory",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getInventorySummary",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getLowStockItems",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getProductsForInventory",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getProductVariants",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getStockByVariant",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryService",
+    "method": "getVariantStock",
+    "file": "src/consumer/inventory/services/inventory.service.ts"
+  },
+  {
+    "service": "InventoryTransferService",
+    "method": "cancelTransfer",
+    "file": "src/consumer/inventory/services/inventory-transfer.service.ts"
+  },
+  {
+    "service": "InventoryTransferService",
+    "method": "completeTransfer",
+    "file": "src/consumer/inventory/services/inventory-transfer.service.ts"
+  },
+  {
+    "service": "InventoryTransferService",
+    "method": "create",
+    "file": "src/consumer/inventory/services/inventory-transfer.service.ts"
+  },
+  {
+    "service": "InventoryTransferService",
+    "method": "findAll",
+    "file": "src/consumer/inventory/services/inventory-transfer.service.ts"
+  },
+  {
+    "service": "InventoryTransferService",
+    "method": "findOne",
+    "file": "src/consumer/inventory/services/inventory-transfer.service.ts"
+  },
+  {
+    "service": "OperationalCostsService",
+    "method": "create",
+    "file": "src/consumer/operational-costs/services/operational-costs.service.ts"
+  },
+  {
+    "service": "OperationalCostsService",
+    "method": "findAll",
+    "file": "src/consumer/operational-costs/services/operational-costs.service.ts"
+  },
+  {
+    "service": "OperationalCostsService",
+    "method": "remove",
+    "file": "src/consumer/operational-costs/services/operational-costs.service.ts"
+  },
+  {
+    "service": "OperationalCostsService",
+    "method": "update",
+    "file": "src/consumer/operational-costs/services/operational-costs.service.ts"
+  },
+  {
+    "service": "PaymentsService",
+    "method": "getPartiallyPaidSales",
+    "file": "src/consumer/payments/services/payments.service.ts"
+  },
+  {
+    "service": "PaymentsService",
+    "method": "getSaleForPayment",
+    "file": "src/consumer/payments/services/payments.service.ts"
+  },
+  {
+    "service": "PaymentsService",
+    "method": "getSalePayments",
+    "file": "src/consumer/payments/services/payments.service.ts"
+  },
+  {
+    "service": "PaymentsService",
+    "method": "makePayment",
+    "file": "src/consumer/payments/services/payments.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "create",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "findAll",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "findAllPermissions",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "findOne",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "remove",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PlanService",
+    "method": "update",
+    "file": "src/admin/plan/services/plan.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createDemoProduct",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createFaq",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createFeature",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createPricingPlan",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createSolution",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "createTestimonial",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "getSettings",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listDemoProducts",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listFaqs",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listFeatures",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listPricingPlans",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listSolutions",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "listTestimonials",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicContent",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicDemoProducts",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicFaqs",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicFeatures",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicPricingPlans",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicSolutions",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "publicTestimonials",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removeDemoProduct",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removeFaq",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removeFeature",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removePricingPlan",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removeSolution",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "removeTestimonial",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateDemoProduct",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateFaq",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateFeature",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updatePricingPlan",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateSettings",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateSolution",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioContentService",
+    "method": "updateTestimonial",
+    "file": "src/portfolio/services/portfolio-content.service.ts"
+  },
+  {
+    "service": "PortfolioLeadService",
+    "method": "create",
+    "file": "src/portfolio/services/portfolio-lead.service.ts"
+  },
+  {
+    "service": "PortfolioLeadService",
+    "method": "findAll",
+    "file": "src/portfolio/services/portfolio-lead.service.ts"
+  },
+  {
+    "service": "PortfolioLeadService",
+    "method": "remove",
+    "file": "src/portfolio/services/portfolio-lead.service.ts"
+  },
+  {
+    "service": "PortfolioLeadService",
+    "method": "stats",
+    "file": "src/portfolio/services/portfolio-lead.service.ts"
+  },
+  {
+    "service": "PortfolioLeadService",
+    "method": "update",
+    "file": "src/portfolio/services/portfolio-lead.service.ts"
+  },
+  {
+    "service": "PortfolioRevalidationService",
+    "method": "trigger",
+    "file": "src/portfolio/services/portfolio-revalidation.service.ts"
+  },
+  {
+    "service": "PrismaService",
+    "method": "getPoolMetrics",
+    "file": "src/prisma/prisma.service.ts"
+  },
+  {
+    "service": "PrismaService",
+    "method": "healthCheck",
+    "file": "src/prisma/prisma.service.ts"
+  },
+  {
+    "service": "ProductAuditPdfService",
+    "method": "generatePdf",
+    "file": "src/product-audit/services/product-audit-pdf.service.ts"
+  },
+  {
+    "service": "ProductAuditService",
+    "method": "generateAuditReport",
+    "file": "src/product-audit/services/product-audit.service.ts"
+  },
+  {
+    "service": "ProductAuditService",
+    "method": "getAuditData",
+    "file": "src/product-audit/services/product-audit.service.ts"
+  },
+  {
+    "service": "ProductImportService",
+    "method": "checkProductLimit",
+    "file": "src/consumer/import/services/product-import.service.ts"
+  },
+  {
+    "service": "ProductImportService",
+    "method": "prepare",
+    "file": "src/consumer/import/services/product-import.service.ts"
+  },
+  {
+    "service": "ProductImportService",
+    "method": "write",
+    "file": "src/consumer/import/services/product-import.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "create",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "findAll",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "findOne",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "getProductLimit",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "remove",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductService",
+    "method": "update",
+    "file": "src/consumer/product/services/product.service.ts"
+  },
+  {
+    "service": "ProductVariantService",
+    "method": "create",
+    "file": "src/consumer/product/services/product-variant.service.ts"
+  },
+  {
+    "service": "ProductVariantService",
+    "method": "findOne",
+    "file": "src/consumer/product/services/product-variant.service.ts"
+  },
+  {
+    "service": "ProductVariantService",
+    "method": "remove",
+    "file": "src/consumer/product/services/product-variant.service.ts"
+  },
+  {
+    "service": "ProductVariantService",
+    "method": "update",
+    "file": "src/consumer/product/services/product-variant.service.ts"
+  },
+  {
+    "service": "ProfileService",
+    "method": "updateProfile",
+    "file": "src/consumer/profile/profile.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "assertAndCalculateDiscount",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "closePromotionIfExhausted",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "create",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "findActive",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "findAll",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "findOne",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "getOptions",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "getPromotionSales",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "remove",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PromotionsService",
+    "method": "update",
+    "file": "src/consumer/promotions/services/promotions.service.ts"
+  },
+  {
+    "service": "PurchasePaymentsService",
+    "method": "getBatchForPayment",
+    "file": "src/consumer/purchase-payments/services/purchase-payments.service.ts"
+  },
+  {
+    "service": "PurchasePaymentsService",
+    "method": "getBatchPayments",
+    "file": "src/consumer/purchase-payments/services/purchase-payments.service.ts"
+  },
+  {
+    "service": "PurchasePaymentsService",
+    "method": "getPurchaseBatches",
+    "file": "src/consumer/purchase-payments/services/purchase-payments.service.ts"
+  },
+  {
+    "service": "PurchasePaymentsService",
+    "method": "makePayment",
+    "file": "src/consumer/purchase-payments/services/purchase-payments.service.ts"
+  },
+  {
+    "service": "QuotationPdfService",
+    "method": "generateQuotationPdf",
+    "file": "src/consumer/receipt-pdf/services/quotation-pdf.service.ts"
+  },
+  {
+    "service": "RabbitMQService",
+    "method": "close",
+    "file": "src/rabbitmq/rabbitmq.service.ts"
+  },
+  {
+    "service": "RabbitMQService",
+    "method": "connect",
+    "file": "src/rabbitmq/rabbitmq.service.ts"
+  },
+  {
+    "service": "RabbitMQService",
+    "method": "sendMessage",
+    "file": "src/rabbitmq/rabbitmq.service.ts"
+  },
+  {
+    "service": "RabbitMQService",
+    "method": "setupResponseConsumer",
+    "file": "src/rabbitmq/rabbitmq.service.ts"
+  },
+  {
+    "service": "ReceiptPdfService",
+    "method": "generatePdf",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "copyToBranch",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "createSetting",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "deactivateSetting",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "deleteSetting",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "getActiveSettings",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "getBrandingData",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "getConsumerOnlyBrandingData",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "getSettingById",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "initializeConsumerDefaults",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "listAllByType",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "listSettings",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "setActive",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReceiptPdfSettingService",
+    "method": "updateSetting",
+    "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts"
+  },
+  {
+    "service": "ReturnPdfService",
+    "method": "generateReturnReceiptPdf",
+    "file": "src/consumer/receipt-pdf/services/return-pdf.service.ts"
+  },
+  {
+    "service": "ReturnService",
+    "method": "create",
+    "file": "src/consumer/returns/services/return.service.ts"
+  },
+  {
+    "service": "ReturnService",
+    "method": "findAll",
+    "file": "src/consumer/returns/services/return.service.ts"
+  },
+  {
+    "service": "ReturnService",
+    "method": "findOne",
+    "file": "src/consumer/returns/services/return.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "adjustPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "calculateRedemptionValue",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "canRedeemPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "createOrUpdateSettings",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "earnPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "expirePoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "getCustomerPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "getCustomersWithPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "getPointTransactions",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "getSettings",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "processCreditPayment",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "processCreditRefund",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "redeemPoints",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "RewardsService",
+    "method": "validateCreditPayment",
+    "file": "src/consumer/rewards/services/rewards.service.ts"
+  },
+  {
+    "service": "SalesPdfService",
+    "method": "generatePaymentReceiptPdf",
+    "file": "src/consumer/receipt-pdf/services/sales-pdf.service.ts"
+  },
+  {
+    "service": "SalesPdfService",
+    "method": "generateSaleReceiptPdf",
+    "file": "src/consumer/receipt-pdf/services/sales-pdf.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "cancelPendingDelivery",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "completePendingDelivery",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "convertQuotationToSale",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "create",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findAll",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findAllOnlineOrders",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findAllQuotations",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findBySaleNumber",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findOne",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "findOneQuotation",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getDailyTargetReport",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getEODReport",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getOnlineOrderStats",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getPendingDeliveries",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getProductByBarcode",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getProductsForSale",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getSalesStats",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getUserSalesDetail",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getUsersSalesStats",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getVariantSalesDetail",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "getVariantSalesStats",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "restore",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "softDelete",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "updateNote",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SalesService",
+    "method": "updateOnlineOrderStatus",
+    "file": "src/consumer/sales/services/sales.service.ts"
+  },
+  {
+    "service": "SpreadsheetService",
+    "method": "buildTemplate",
+    "file": "src/consumer/import/services/spreadsheet.service.ts"
+  },
+  {
+    "service": "SpreadsheetService",
+    "method": "parse",
+    "file": "src/consumer/import/services/spreadsheet.service.ts"
+  },
+  {
+    "service": "SubdomainUtilService",
+    "method": "extractSubdomainFromHost",
+    "file": "src/common/services/subdomain-util.service.ts"
+  },
+  {
+    "service": "SubdomainUtilService",
+    "method": "extractSubdomainFromRequest",
+    "file": "src/common/services/subdomain-util.service.ts"
+  },
+  {
+    "service": "SubdomainUtilService",
+    "method": "extractSubdomainFromUrl",
+    "file": "src/common/services/subdomain-util.service.ts"
+  },
+  {
+    "service": "SubdomainUtilService",
+    "method": "getExcludedSubdomains",
+    "file": "src/common/services/subdomain-util.service.ts"
+  },
+  {
+    "service": "SubdomainUtilService",
+    "method": "isExcludedSubdomain",
+    "file": "src/common/services/subdomain-util.service.ts"
+  },
+  {
+    "service": "SubdomainValidationService",
+    "method": "extractSubdomainFromUrl",
+    "file": "src/common/services/subdomain-validation.service.ts"
+  },
+  {
+    "service": "SubdomainValidationService",
+    "method": "validateSubdomain",
+    "file": "src/common/services/subdomain-validation.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "addMessage",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "close",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "create",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "findAll",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "findOne",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "SupportService",
+    "method": "reopen",
+    "file": "src/consumer/support/services/support.service.ts"
+  },
+  {
+    "service": "TagService",
+    "method": "create",
+    "file": "src/consumer/tag/services/tag.service.ts"
+  },
+  {
+    "service": "TagService",
+    "method": "findAll",
+    "file": "src/consumer/tag/services/tag.service.ts"
+  },
+  {
+    "service": "TagService",
+    "method": "findOne",
+    "file": "src/consumer/tag/services/tag.service.ts"
+  },
+  {
+    "service": "TagService",
+    "method": "remove",
+    "file": "src/consumer/tag/services/tag.service.ts"
+  },
+  {
+    "service": "TagService",
+    "method": "update",
+    "file": "src/consumer/tag/services/tag.service.ts"
+  },
+  {
+    "service": "UnitService",
+    "method": "create",
+    "file": "src/consumer/unit/services/unit.service.ts"
+  },
+  {
+    "service": "UnitService",
+    "method": "findAll",
+    "file": "src/consumer/unit/services/unit.service.ts"
+  },
+  {
+    "service": "UnitService",
+    "method": "findOne",
+    "file": "src/consumer/unit/services/unit.service.ts"
+  },
+  {
+    "service": "UnitService",
+    "method": "remove",
+    "file": "src/consumer/unit/services/unit.service.ts"
+  },
+  {
+    "service": "UnitService",
+    "method": "update",
+    "file": "src/consumer/unit/services/unit.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "changePassword",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "createRole",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "createRole",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "createUser",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "createUser",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "deleteRole",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "deleteUser",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "findAllPermissions",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "findAllRoles",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "findAllUsers",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "findOneRole",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "findOneUser",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "getRoles",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "getUsers",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "permissionOptions",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "removeRole",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "removeUser",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "updateRole",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "updateRole",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "updateUser",
+    "file": "src/admin/users/services/users.service.ts"
+  },
+  {
+    "service": "UsersService",
+    "method": "updateUser",
+    "file": "src/consumer/users/services/users.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "create",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "findAll",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "findOne",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "findOneWithDetails",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "remove",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  },
+  {
+    "service": "VendorService",
+    "method": "update",
+    "file": "src/consumer/vendor/services/vendor.service.ts"
+  }
+]

@@ -40,7 +40,7 @@ describe('reports: business time zone', () => {
       expect(s.sales.s1.sale_number).toMatch(/^SAL-20260314-/);
     });
 
-    it('[BE-RPT-021] at 02:00 local the dashboard and the EOD report show the same new day, without the daytime sales', async () => {
+    it('[BE-RPT-021] {DashboardService.getAnalytics} {SalesService.getEODReport} at 02:00 local the dashboard and the EOD report show the same new day, without the daytime sales', async () => {
       const now = '2026-03-14T20:00:00.000Z'; // 2026-03-15 02:00 in Dhaka
       const d = await at(now, () => dashboard.getAnalytics(cid, {} as any));
       const e = await sales.getEODReport(cid, { date: '2026-03-15' });
@@ -50,7 +50,7 @@ describe('reports: business time zone', () => {
       expect(d.summary.today_transactions).toBe(e.summary.total_sales);
     });
 
-    it('[BE-RPT-022] the weekly trend files S7 under the local date 2026-03-15', async () => {
+    it('[BE-RPT-022] {DashboardService.getAnalytics} the weekly trend files S7 under the local date 2026-03-15', async () => {
       const d = await at('2026-03-14T20:00:00.000Z', () =>
         dashboard.getAnalytics(cid, {} as any),
       );
@@ -60,7 +60,7 @@ describe('reports: business time zone', () => {
       expect(byDate).toEqual({ '2026-03-14': 5, '2026-03-15': 1 });
     });
 
-    it('[BE-RPT-023] the EOD labels are the requested local date, not a UTC day', async () => {
+    it('[BE-RPT-023] {SalesService.getEODReport} the EOD labels are the requested local date, not a UTC day', async () => {
       const e = await sales.getEODReport(cid, { date: '2026-03-15' });
       expect(e).toMatchObject({
         date: '2026-03-15',
@@ -79,7 +79,7 @@ describe('reports: business time zone', () => {
   });
 
   (utc ? describe : describe.skip)('UTC', () => {
-    it('[BE-RPT-024] the same sale is part of 2026-03-14 and the reports still agree', async () => {
+    it('[BE-RPT-024] {SalesService.getEODReport} {DashboardService.getAnalytics} the same sale is part of 2026-03-14 and the reports still agree', async () => {
       expect(s.sales.s7.sale_number).toMatch(/^SAL-20260314-/);
       const e = await sales.getEODReport(cid, { date: '2026-03-14' });
       const d = await at(iso('16:00'), () =>

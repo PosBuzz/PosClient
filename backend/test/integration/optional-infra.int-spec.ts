@@ -26,7 +26,7 @@ describe('Optional infrastructure disabled by default', () => {
       await app.close();
     }
   });
-  it('[BE-HARN-012] disabled queue rejects publishing and AI uses mocked HTTP directly', async () => {
+  it('[BE-HARN-012] {RabbitMQService.sendMessage} disabled queue rejects publishing and AI uses mocked HTTP directly', async () => {
     const post = jest
       .fn()
       .mockReturnValue(of({ data: { description: 'Mock description' } }));

@@ -100,7 +100,7 @@ describe('products and variants', () => {
     expect(two.message).toMatch(/Simple products can only have one variant/);
   });
 
-  it("[BE-PROD-003] the plan's product cap blocks new products but keeps existing ones", async () => {
+  it("[BE-PROD-003] {ProductService.getProductLimit} the plan's product cap blocks new products but keeps existing ones", async () => {
     await db.plan.update({
       where: { id: w.tenant.plan.id },
       data: { max_products: 1 },
@@ -126,7 +126,7 @@ describe('products and variants', () => {
     expect(first.id).toBeGreaterThan(0);
   });
 
-  it('[BE-PROD-004] a duplicate product name is refused on create and on rename', async () => {
+  it('[BE-PROD-004] {ProductService.update} a duplicate product name is refused on create and on rename', async () => {
     await create({ name: 'Unique' });
     const other = await create({ name: 'Other' });
     // The Prisma filter turns the unique violation into a readable 409 over HTTP.
@@ -189,7 +189,7 @@ describe('products and variants', () => {
     ).toBe(1);
   });
 
-  it("[BE-PROD-007] another tenant's product is NotFound to read, update and delete", async () => {
+  it("[BE-PROD-007] {ProductService.findOne} {ProductService.update} {ProductService.remove} another tenant's product is NotFound to read, update and delete", async () => {
     const theirs = await db.product.create({
       data: {
         consumer_id: w.bystander.consumer.id,
@@ -211,7 +211,7 @@ describe('products and variants', () => {
   });
 
   describe("references to another tenant's records are refused", () => {
-    it('[BE-PROD-008] a variant id of another tenant cannot be updated through my product', async () => {
+    it('[BE-PROD-008] {ProductService.update} a variant id of another tenant cannot be updated through my product', async () => {
       const mine = await create();
       const theirs = await foreignFreeVariant();
       const error = await failure(
@@ -236,7 +236,7 @@ describe('products and variants', () => {
       ).not.toBe('Hijacked');
     });
 
-    it('[BE-PROD-009] a variant id of another tenant cannot be deleted through my product', async () => {
+    it('[BE-PROD-009] {ProductService.update} a variant id of another tenant cannot be deleted through my product', async () => {
       const mine = await create();
       const error = await failure(
         products.update(
@@ -252,7 +252,7 @@ describe('products and variants', () => {
       ).toBe(1);
     });
 
-    it("[BE-PROD-010] my own other product's variant cannot be reached through this product either", async () => {
+    it("[BE-PROD-010] {ProductService.update} my own other product's variant cannot be reached through this product either", async () => {
       const a = await create();
       const b = await create();
       const error = await failure(
@@ -354,7 +354,7 @@ describe('products and variants', () => {
       expect(await db.product.count({ where: { consumer_id: cid() } })).toBe(0);
     });
 
-    it('[BE-PROD-013] a serial id of another variant cannot be rewritten through my variant', async () => {
+    it('[BE-PROD-013] {ProductService.update} a serial id of another variant cannot be rewritten through my variant', async () => {
       const mine = await create({}, [
         variant({ serials: [{ serial_number: 'MINE-1' }] }),
       ]);
@@ -390,7 +390,7 @@ describe('products and variants', () => {
     });
   });
 
-  it('[BE-VAR-001] changing a price records history; unchanged prices do not', async () => {
+  it('[BE-VAR-001] {ProductService.update} changing a price records history; unchanged prices do not', async () => {
     const product = await create();
     const id = product.variants[0].id;
     await products.update(
@@ -417,7 +417,7 @@ describe('products and variants', () => {
     ).toBe(120);
   });
 
-  it('[BE-VAR-002] new variants need all required fields; added variants and deletions work on my own product', async () => {
+  it('[BE-VAR-002] {ProductService.update} new variants need all required fields; added variants and deletions work on my own product', async () => {
     const product = await create({ has_variants: true }, [
       variant({ name: 'A' }),
       variant({ name: 'B' }),
@@ -452,7 +452,7 @@ describe('products and variants', () => {
     expect(names).toEqual(['B', 'C']);
   });
 
-  it('[BE-PROD-014] deleting a product removes its variants; sold variants are protected with a readable error', async () => {
+  it('[BE-PROD-014] {ProductService.remove} deleting a product removes its variants; sold variants are protected with a readable error', async () => {
     const free = await create();
     await products.remove(free.id, cid());
     expect(
@@ -465,7 +465,7 @@ describe('products and variants', () => {
     expect(await db.product.count({ where: { id: sold.product.id } })).toBe(1);
   });
 
-  it('[BE-PROD-015] the product list is tenant scoped and filterable', async () => {
+  it('[BE-PROD-015] {ProductService.findAll} the product list is tenant scoped and filterable', async () => {
     const category = await createCategory(db, { consumer_id: cid() });
     await create({ name: 'Green Tea', category_id: category.id });
     await create({ name: 'Coffee' });
