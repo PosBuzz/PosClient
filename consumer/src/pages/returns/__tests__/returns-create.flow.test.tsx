@@ -213,4 +213,16 @@ describe("Create return", () => {
     await screen.findByText(/Internal server error|Failed to create return/);
     await waitFor(() => expect(created.calls).toHaveLength(1));
   });
+
+  it("[CO-ERR-025] a payment mismatch shows the server's exact message", async () => {
+    const message =
+      "Total payment amount must exactly match selected return value. Expected 35.00, got 30.00";
+    captureRequests("post", endpoints.createReturn, () => fail(400, message));
+    const { user } = mount();
+    await loadSale(user);
+    await user.click(screen.getByRole("button", { name: "+" }));
+    await addPayment(user, "CASH");
+    await createReturn(user);
+    expect(await screen.findByText(message)).toBeInTheDocument();
+  });
 });

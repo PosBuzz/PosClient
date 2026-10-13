@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { endpoints } from "../../../api/endpoints";
 import { responseContract } from "../../../test/contracts/load";
 import { expectRequestContract } from "../../../test/contracts/record";
-import { API, ok } from "../../../test/msw/api";
+import { API, fail, ok } from "../../../test/msw/api";
 import { server } from "../../../test/msw/server";
 import { captureRequests } from "../../../test/msw/capture";
 import { renderWithProviders } from "../../../test/render";
@@ -51,4 +51,25 @@ it("[AD-FLOW-BILL-001] creates a billing entry with its consumer plan and dates"
   });
   expect(errors).not.toHaveBeenCalled();
   vi.useRealTimers();
+});
+
+it("[AD-ERR-022] a billing entry refused by the server shows its message", async () => {
+  const message = "This billing period overlaps an existing bill.";
+  const consumer = responseContract<any[]>("admin-consumers")[0];
+  server.use(
+    http.get(`${API}${endpoints.billing}`, () =>
+      ok(responseContract("admin-billings")),
+    ),
+  );
+  captureRequests("post", endpoints.billing, () => fail(400, message));
+  const { user, queryClient } = renderWithProviders(<Page />);
+  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+  await user.click(screen.getByRole("button", { name: /Add Bill/ }));
+  await selectAntdOption(
+    user,
+    screen.getByRole("combobox", { name: "Consumer" }),
+    `${consumer.company_name} (${consumer.plan.name})`,
+  );
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(await screen.findByText(message)).toBeInTheDocument();
 });

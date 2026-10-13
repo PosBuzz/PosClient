@@ -291,7 +291,9 @@ export class SalesController {
     const { startDate, endDate, branch_id, page, limit } = query;
 
     if (!startDate || !endDate) {
-      throw new BadRequestException('startDate and endDate are required');
+      throw new BadRequestException(
+        'A start date and an end date are required.',
+      );
     }
 
     return this.salesService.getVariantSalesStats(
@@ -332,7 +334,9 @@ export class SalesController {
     @Req() req: Request,
   ) {
     if (!startDate || !endDate) {
-      throw new BadRequestException('startDate and endDate are required');
+      throw new BadRequestException(
+        'A start date and an end date are required.',
+      );
     }
     return this.salesService.getUsersSalesStats(
       req.user.consumer_id!,

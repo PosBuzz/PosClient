@@ -489,7 +489,7 @@ export class InventoryBatchService {
 
       if (batch.quantity > 0) {
         throw new BadRequestException(
-          'Cannot delete a batch that still has stock. A batch with stock history (purchases, sales, adjustments, transfers) is kept for the audit trail, so reduce it to 0 with an inventory adjustment and leave it there.',
+          'Cannot delete a batch that still has stock. Reduce it to 0 with an inventory adjustment first; batches with history are kept for the audit trail.',
         );
       }
 
