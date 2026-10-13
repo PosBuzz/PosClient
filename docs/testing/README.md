@@ -167,6 +167,22 @@ Coverage thresholds stop backsliding. The real proof that tests catch changes is
 testing** (B7/C5): Stryker edits the code (`>` → `>=`, `+` → `-`, deletes a line) and checks a test
 fails. The target for critical modules is a mutation score of at least 80%.
 
+### 3.7 Living-document rules (X3)
+1. New controller/route: regenerate `contracts/routes.json` and review it; the B5 manifest, policy and sweeps pick the route up.
+2. New page in consumer/admin: the smoke-coverage test forces at least a smoke test.
+3. New `useMutation`: CO-API-022 forces a retry decision.
+4. New Prisma model with `consumer_id`: BE-UTIL-003 forces the purge scope; INV-13 covers tenancy.
+5. New money or stock flow: add it to B3 and the B4 scenario; INV-01…13 apply automatically.
+6. New public service method: BE-COV-010 requires a `{Service.method}` test (or an entry in `known-gaps.json`, which may only shrink).
+7. New thrown 4xx: write a readable message (X-ERR-010…012); a `catch` that returns 500 must pass client errors through (`isClientError`).
+8. A KNOWN-ISSUE fixed: keep its regression test as a normal passing test in the same PR.
+9. Quarterly: re-count routes, pages and models against each README's "Current state" and update the docs.
+
+### 3.8 Manual checklist (not worth automating yet; record each run in DECISIONS.md)
+- Backup → restore round trip on a staging copy (admin backup & restore uses `pg_dump`/`psql`).
+- Thermal and barcode printers with the real Windows print agent (`PrintingFromWebToPOSPrinter`, out of scope).
+- PWA update flow (`swUpdate.ts`) after a deploy.
+
 ---
 
 ## 4. Definition of Done (per phase)
@@ -192,8 +208,8 @@ A phase is done only when **all** of the following are true:
 - [x] C3 Consumer API/stores/hooks — API client, endpoint parity, auth store, routes/menu, cache invalidation, hooks and coverage floors done 2026-10-13
 - [x] C4 Consumer page flows — all critical flows, every-page smoke guard and required request recordings pass; 551 tests pass twice, global lines 64.21%, all four page ≥70% floors enabled (D-052). CI verification follows the checkpoint push.
 - [x] A1/A2 Admin — all page/API/auth/route/smoke flows, recordings and coverage floors pass; all CI jobs pass on e588a0a (D-053/D-054).
-- [ ] X2 Full-stack E2E
-- [ ] B7/C5 Mutation testing
-- [ ] X4 Error messages end-to-end
-- [ ] B8 Every service method tested
-- [ ] X3 CI enforcement
+- [x] X2 Full-stack E2E — J0–J11 pass 3 consecutive local runs (2.9 min each); stock-decrement proof done; CI job added, first CI run pending (D-057, KI-083)
+- [ ] B7/C5 Mutation testing — consumer per-file Stryker runs and backend unit config added; survivors still being worked, backend domain config not written (D-059)
+- [x] X4 Error messages end-to-end — frontend scan + rendering tests, backend contract sweep, scanner, scenarios and E2E J12–J14 pass locally; CI verification pending (D-058, KI-084…087)
+- [ ] B8 Every service method tested — inventory and BE-COV-001/010/011/013 done; 102 of 305 methods claimed, 203 in known-gaps.json; BE-COV-012/014/020 not done
+- [ ] X3 CI enforcement — workflows, CODEOWNERS, PR template, gitleaks, ratchet and deploy gate written; branch protection, proofs and baseline pending

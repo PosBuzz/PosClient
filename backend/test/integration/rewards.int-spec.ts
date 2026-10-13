@@ -63,7 +63,7 @@ describe('rewards ledger', () => {
     ).total_points;
 
   describe('earning', () => {
-    it('[BE-RWD-001] points follow the rate, the minimum purchase, the per-sale cap and the enable switch', async () => {
+    it('[BE-RWD-001] {RewardsService.earnPoints} points follow the rate, the minimum purchase, the per-sale cap and the enable switch', async () => {
       const c = await customer();
       await settings({
         points_per_currency: 2,
@@ -118,7 +118,7 @@ describe('rewards ledger', () => {
       expect(await balance(c.id)).toBe(50);
     });
 
-    it('[BE-RWD-003] redemption value is points times the configured rate', () => {
+    it('[BE-RWD-003] {RewardsService.calculateRedemptionValue} redemption value is points times the configured rate', () => {
       expect(rewards.calculateRedemptionValue(250, 0.04)).toBe(10);
     });
 
@@ -150,7 +150,7 @@ describe('rewards ledger', () => {
     expect(await balance(c.id)).toBe(30);
   });
 
-  it('[BE-RWD-005] a credit payment followed by its refund returns the balance to where it started', async () => {
+  it('[BE-RWD-005] {RewardsService.processCreditRefund} {RewardsService.validateCreditPayment} a credit payment followed by its refund returns the balance to where it started', async () => {
     const c = await customer();
     await settings();
     await grant(c.id, 500);
@@ -189,7 +189,7 @@ describe('rewards ledger', () => {
       return tx!;
     };
 
-    it('[BE-RWD-004] expired earnings are taken off the balance once', async () => {
+    it('[BE-RWD-004] {RewardsService.expirePoints} expired earnings are taken off the balance once', async () => {
       const c = await customer();
       await settings({ points_expire_days: 30 });
       await earnAt(c.id, 1, 100, 1);
@@ -201,7 +201,7 @@ describe('rewards ledger', () => {
       ).toBe(1);
     });
 
-    it('[BE-RWD-009] a later earning expires on a later run even after an earlier one expired', async () => {
+    it('[BE-RWD-009] {RewardsService.earnPoints} {RewardsService.expirePoints} a later earning expires on a later run even after an earlier one expired', async () => {
       const c = await customer();
       await settings({ points_expire_days: 30 });
       const first = await earnAt(c.id, 1, 100, 10);
@@ -222,7 +222,7 @@ describe('rewards ledger', () => {
       void first;
     });
 
-    it('[BE-RWD-010] points already spent are not expired twice', async () => {
+    it('[BE-RWD-010] {RewardsService.redeemPoints} {RewardsService.expirePoints} points already spent are not expired twice', async () => {
       const c = await customer();
       await settings({ points_expire_days: 30 });
       await earnAt(c.id, 1, 100, 1);

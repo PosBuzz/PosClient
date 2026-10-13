@@ -28,7 +28,7 @@ describe('BillingHistoryService', () => {
     billing_till: '2026-09-30T23:59:59.999Z',
   };
 
-  it('stores the explicit billing coverage period', async () => {
+  it('{BillingHistoryService.create} stores the explicit billing coverage period', async () => {
     prisma.billingHistory.findFirst.mockResolvedValue(null);
     prisma.billingHistory.create.mockResolvedValue({ id: 1 });
 
@@ -43,7 +43,7 @@ describe('BillingHistoryService', () => {
     });
   });
 
-  it('rejects an overlapping billing period', async () => {
+  it('{BillingHistoryService.create} rejects an overlapping billing period', async () => {
     prisma.billingHistory.findFirst.mockResolvedValue({ id: 99 });
 
     await expect(service.create(dto)).rejects.toMatchObject({
@@ -52,7 +52,7 @@ describe('BillingHistoryService', () => {
     expect(prisma.billingHistory.create).not.toHaveBeenCalled();
   });
 
-  it('rejects a period whose till date precedes its from date', async () => {
+  it('{BillingHistoryService.create} rejects a period whose till date precedes its from date', async () => {
     await expect(
       service.create({
         ...dto,

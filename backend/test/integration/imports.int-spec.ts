@@ -315,7 +315,7 @@ describe('spreadsheet imports', () => {
       expect(empty.message).toMatch(/no data rows/);
     });
 
-    it('[BE-IMP-031] unknown import types are refused and every template builds', async () => {
+    it('[BE-IMP-031] {ImportService.assertKnownEntity} {ImportService.buildTemplate} {ImportService.columnsFor} unknown import types are refused and every template builds', async () => {
       expect(() => importer.assertKnownEntity('orders')).toThrow(
         /Unknown import type/,
       );

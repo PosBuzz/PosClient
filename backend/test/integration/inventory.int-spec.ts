@@ -59,7 +59,7 @@ describe('inventory', () => {
       ...extra,
     });
 
-    it('[BE-INV-010] creating a batch writes a PURCHASE_IN audit row and payment status', async () => {
+    it('[BE-INV-010] {InventoryBatchService.create} creating a batch writes a PURCHASE_IN audit row and payment status', async () => {
       const v = await w.stock({ price: 100, batches: [] });
       const full: any = await batches.create(
         cid(),
@@ -87,7 +87,7 @@ describe('inventory', () => {
       ).toBe(3);
     });
 
-    it('[BE-INV-011] a quantity sent to update is ignored; stock only moves through audited paths', async () => {
+    it('[BE-INV-011] {InventoryBatchService.update} a quantity sent to update is ignored; stock only moves through audited paths', async () => {
       const v = await stocked();
       const b = await batchOf(v.id);
       await batches.update(b.id, cid(), {
@@ -99,7 +99,7 @@ describe('inventory', () => {
       expect(after.location).toBe('A-1');
     });
 
-    it('[BE-INV-012] a batch with stock cannot be deleted, and one with history stays even at zero', async () => {
+    it('[BE-INV-012] {InventoryBatchService.remove} {InventoryAdjustmentService.create} a batch with stock cannot be deleted, and one with history stays even at zero', async () => {
       const v = await stocked(2);
       const b = await batchOf(v.id);
       const error = await failure(batches.remove(b.id, cid()));
@@ -119,7 +119,7 @@ describe('inventory', () => {
       expect(await db.inventoryBatch.count({ where: { id: b.id } })).toBe(1);
     });
 
-    it("[BE-INV-013] a batch cannot be moved to another tenant's branch", async () => {
+    it("[BE-INV-013] {InventoryBatchService.update} a batch cannot be moved to another tenant's branch", async () => {
       const v = await stocked();
       const b = await batchOf(v.id);
       const error = await failure(
@@ -131,7 +131,7 @@ describe('inventory', () => {
       expect((await batchOf(v.id)).branch_id).toBe(main());
     });
 
-    it("[BE-INV-014] a batch cannot reference another tenant's vendor", async () => {
+    it("[BE-INV-014] {InventoryBatchService.create} a batch cannot reference another tenant's vendor", async () => {
       const v = await w.stock({ price: 100, batches: [] });
       const foreign = await createVendor(db, {
         consumer_id: w.bystander.consumer.id,
@@ -146,7 +146,7 @@ describe('inventory', () => {
       ).toBe(0);
     });
 
-    it('[BE-INV-015] a duplicate batch number for the variant is refused; foreign variants and branches are not found', async () => {
+    it('[BE-INV-015] {InventoryBatchService.create} a duplicate batch number for the variant is refused; foreign variants and branches are not found', async () => {
       const v = await stocked();
       const existing = await batchOf(v.id);
       const dup = await failure(
@@ -256,7 +256,7 @@ describe('inventory', () => {
       ).toBe(0);
     });
 
-    it('[BE-INV-031] completing creates a destination batch, or merges into a matching one', async () => {
+    it('[BE-INV-031] {InventoryTransferService.completeTransfer} completing creates a destination batch, or merges into a matching one', async () => {
       const v = await stocked(10);
       const b = await batchOf(v.id);
       const t1 = await transfer([{ batch_id: b.id, quantity: 3 }]);
@@ -285,7 +285,7 @@ describe('inventory', () => {
       ).toBe(2);
     });
 
-    it('[BE-INV-032] a completed transfer cannot be completed again', async () => {
+    it('[BE-INV-032] {InventoryTransferService.completeTransfer} a completed transfer cannot be completed again', async () => {
       const v = await stocked(10);
       const t = await transfer([
         { batch_id: (await batchOf(v.id)).id, quantity: 3 },
@@ -296,7 +296,7 @@ describe('inventory', () => {
       expect((await batchOf(v.id)).quantity).toBe(7);
     });
 
-    it('[BE-INV-033] a cancelled transfer moves nothing and cannot be completed', async () => {
+    it('[BE-INV-033] {InventoryTransferService.cancelTransfer} {InventoryTransferService.completeTransfer} a cancelled transfer moves nothing and cannot be completed', async () => {
       const v = await stocked(10);
       const t = await transfer([
         { batch_id: (await batchOf(v.id)).id, quantity: 3 },
@@ -308,7 +308,7 @@ describe('inventory', () => {
       expect(error.message).toMatch(/not in pending status/);
     });
 
-    it('[BE-INV-034] same-branch and other-tenant branches are refused', async () => {
+    it('[BE-INV-034] {InventoryTransferService.create} same-branch and other-tenant branches are refused', async () => {
       const v = await stocked(10);
       const b = await batchOf(v.id);
       const same = await failure(
@@ -340,7 +340,7 @@ describe('inventory', () => {
       expect(error.message).toMatch(/Insufficient available quantity/);
     });
 
-    it('[BE-INV-036] a transfer whose source was sold down meanwhile fails and stays pending', async () => {
+    it('[BE-INV-036] {InventoryTransferService.completeTransfer} a transfer whose source was sold down meanwhile fails and stays pending', async () => {
       const v = await stocked(6);
       const b = await batchOf(v.id);
       const t = await transfer([{ batch_id: b.id, quantity: 6 }]);
@@ -354,7 +354,7 @@ describe('inventory', () => {
       ).toBe('pending');
     });
 
-    it('[BE-INV-037] concurrent complete and cancel move the stock at most once', async () => {
+    it('[BE-INV-037] {InventoryTransferService.completeTransfer} {InventoryTransferService.cancelTransfer} concurrent complete and cancel move the stock at most once', async () => {
       const v = await stocked(10);
       const t = await transfer([
         { batch_id: (await batchOf(v.id)).id, quantity: 4 },
@@ -382,7 +382,7 @@ describe('inventory', () => {
     });
   });
 
-  it('[BE-INV-039] listing one batch twice cannot exceed its available quantity', async () => {
+  it('[BE-INV-039] {InventoryTransferService.create} listing one batch twice cannot exceed its available quantity', async () => {
     const v = await stocked(5);
     const b = await batchOf(v.id);
     const error = await failure(
@@ -398,7 +398,7 @@ describe('inventory', () => {
     expect(error.message).toMatch(/Insufficient available quantity/);
   });
 
-  it('[BE-INV-040] summary and stock queries equal the raw tables', async () => {
+  it('[BE-INV-040] {InventoryService.getInventorySummary} {InventoryService.getLowStockItems} {InventoryService.getVariantStock} summary and stock queries equal the raw tables', async () => {
     const a = await stocked(10);
     const b = await w.stock({
       price: 50,

@@ -27,6 +27,7 @@
     "test:int": "TZ=UTC jest --config ./test/jest-integration.json",
     "test:infra": "TZ=UTC jest --config ./test/jest-optional-infra.json",
     "test:all": "npm test -- --runInBand && npm run test:int && npm run test:e2e",
+    "test:mutation:unit": "stryker run stryker.unit.config.mjs",
     "test:int:tz": "TZ=Asia/Dhaka jest --config ./test/jest-integration.json test/integration/reports"
   },
   "dependencies": {
@@ -68,6 +69,9 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/jest-runner": "^10.0.0",
+    "@stryker-mutator/typescript-checker": "^10.0.0",
     "@swc/cli": "^0.8.1",
     "@swc/core": "^1.10.7",
     "@testcontainers/postgresql": "^12.2.0",
@@ -124,6 +128,11 @@
       "prisma-client-exception/**/*.ts",
       "!prisma-client-exception/**/*.spec.ts"
     ],
+    "coverageReporters": [
+      "text-summary",
+      "json-summary",
+      "html"
+    ],
     "coverageDirectory": "coverage",
     "testEnvironment": "node",
     "setupFiles": [
@@ -131,7 +140,8 @@
     ],
     "roots": [
       "<rootDir>/src",
-      "<rootDir>/prisma-client-exception"
+      "<rootDir>/prisma-client-exception",
+      "<rootDir>/test/service-coverage"
     ],
     "coverageThreshold": {
       "./src/consumer/promotions/promotion-math.ts": {

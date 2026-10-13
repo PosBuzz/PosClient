@@ -70,7 +70,7 @@ describe('vendor (purchase) payments', () => {
     expect(Number(rows._sum.amount)).toBe(400);
   });
 
-  it('[BE-PPAY-002] each invalid payment is refused with its own message', async () => {
+  it('[BE-PPAY-002] {PurchasePaymentsService.makePayment} each invalid payment is refused with its own message', async () => {
     const { batch } = await unpaidPurchase();
     expect(
       (
@@ -91,7 +91,7 @@ describe('vendor (purchase) payments', () => {
     );
   });
 
-  it("[BE-PPAY-003] another tenant's batch is not found", async () => {
+  it("[BE-PPAY-003] {PurchasePaymentsService.getBatchPayments} {PurchasePaymentsService.getBatchForPayment} another tenant's batch is not found", async () => {
     const { batch } = await unpaidPurchase();
     const error = await failure(pay(batch.id, [10], w.bystander.consumer.id));
     expect(error).toBeInstanceOf(NotFoundException);
@@ -125,7 +125,7 @@ describe('vendor (purchase) payments', () => {
     expect(Number(rows._sum.amount)).toBe(Number(stored.paid_amount));
   });
 
-  it('[BE-PPAY-005] selling the stock does not change what the vendor is owed', async () => {
+  it('[BE-PPAY-005] {PurchasePaymentsService.getBatchForPayment} selling the stock does not change what the vendor is owed', async () => {
     const { v, batch } = await unpaidPurchase();
     await w.sell([{ variant: v, qty: 10 }]);
     const ledger: any = await ppay.getBatchForPayment(batch.id, cid());
@@ -135,7 +135,7 @@ describe('vendor (purchase) payments', () => {
     expect(result.batch.payment_status).toBe('paid');
   });
 
-  it('[BE-PPAY-006] the ledger lists unpaid purchases and hides paid ones', async () => {
+  it('[BE-PPAY-006] {PurchasePaymentsService.getPurchaseBatches} the ledger lists unpaid purchases and hides paid ones', async () => {
     const { batch } = await unpaidPurchase();
     const unpaid: any = await ppay.getPurchaseBatches(
       { payment_status: 'unpaid' } as any,
