@@ -23,7 +23,7 @@ jobs:
           if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
 
   backend-mutation-domain:
-    name: Backend mutation (domain ${{ matrix.shard }}/32)
+    name: Backend mutation (domain ${{ matrix.shard }}/6)
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+        shard: [1, 2, 3, 4, 5, 6]
     permissions:
       contents: read
     defaults:
@@ -39,6 +39,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -49,10 +51,26 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
       - run: npx prisma generate
-      - run: npm run test:mutation:shard
+      # One seventh of the service files per night (all of them weekly) plus anything changed in the last 25 hours.
+      - name: Select tonight's mutation files
+        working-directory: .
+        run: |
+          echo "STRYKER_ROTATION=$(( $(date -u +%s) / 86400 % 7 + 1 ))/7" >> "$GITHUB_ENV"
+          {
+            echo 'STRYKER_CHANGED_FILES<<EOF'
+            git log --since='25 hours ago' --name-only --pretty=format: -- backend/src | sort -u
+            echo EOF
+          } >> "$GITHUB_ENV"
+      - name: Mutate this shard's files
+        run: |
+          if node --input-type=module -e "const c = (await import('./stryker.domain.config.mjs')).default; process.exit(c.mutate.length ? 0 : 3)"; then
+            npm run test:mutation:shard
+          else
+            echo "Nothing is assigned to this shard tonight."
+          fi
         env:
           TZ: UTC
-          STRYKER_SHARD: ${{ matrix.shard }}/32
+          STRYKER_SHARD: ${{ matrix.shard }}/6
           # Jest workers in long Stryker runs grow past Node's default heap and get restarted.
           NODE_OPTIONS: --max-old-space-size=3072
       - if: always()
@@ -92,7 +110,17 @@ jobs:
         run: |
           set -e
           test "${{ needs.backend-mutation-domain.result }}" = success
-          node scripts/mutation-tier-gate.mjs reports/shards/*/*.mutation.json
+          shopt -s nullglob
+          reports=(reports/shards/*/*.mutation.json)
+          if [ ${#reports[@]} -eq 0 ]; then echo "No shard measured anything tonight."; exit 0; fi
+          node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-mutation-baseline-candidate
+          path: backend/reports/mutation-baseline.candidate.json
+          if-no-files-found: ignore
+          retention-days: 30
       - if: failure()
         working-directory: .
         env:
