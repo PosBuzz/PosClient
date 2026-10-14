@@ -22,9 +22,9 @@ const bill = (id: number, extra: object = {}): any => ({
   reference: `REF-${id}`,
   created_at: instant,
   updated_at: instant,
-  billing_date: new Date(`2026-0${id}-01T00:00:00Z`),
-  billing_from: new Date(`2026-0${id}-01T00:00:00Z`),
-  billing_till: new Date(`2026-0${id}-28T00:00:00Z`),
+  billing_date: new Date(`2026-0${id}-01T12:00:00Z`),
+  billing_from: new Date(`2026-0${id}-01T12:00:00Z`),
+  billing_till: new Date(`2026-0${id}-28T12:00:00Z`),
   plan: plan('Starter'),
   ...extra,
 });
