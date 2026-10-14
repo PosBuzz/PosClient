@@ -6,7 +6,7 @@ import base from './stryker.domain.config.mjs';
 export default {
   ...base,
   jest: { ...base.jest, configFile: 'test/jest-stryker-unit-only.json' },
-  concurrency: 6,
+  concurrency: Number(process.env.STRYKER_CONCURRENCY ?? 6),
   incremental: false,
   reporters: ['json', 'clear-text'],
   jsonReporter: { fileName: 'reports/stryker/unit-only.mutation.json' },
