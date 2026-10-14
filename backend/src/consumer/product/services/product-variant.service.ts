@@ -433,14 +433,6 @@ export class ProductVariantService {
         }
       }
 
-      await this.prisma.productVariant.findUnique({
-        where: { id },
-        select: {
-          product_id: true,
-          product: { select: { consumer_id: true } },
-        },
-      });
-
       return await this.findOne(id);
     } catch (error) {
       if (isClientError(error)) throw error;
