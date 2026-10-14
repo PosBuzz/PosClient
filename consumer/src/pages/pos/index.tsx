@@ -562,7 +562,7 @@ const NewSale = () => {
       }
     }
     const totalPaymentAmount = effectivePayments.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum, payment) => sum + (Number(payment.amount) || 0),
       0,
     );
 
@@ -665,7 +665,7 @@ const NewSale = () => {
       salePayments[0].payment_method === PaymentMethod.CASH
     ) {
       const currentTotalPaid = salePayments.reduce(
-        (sum, p) => sum + p.amount,
+        (sum, p) => sum + (Number(p.amount) || 0),
         0,
       );
       if (currentTotalPaid !== totals.total) {
@@ -1848,7 +1848,10 @@ const NewSale = () => {
                       const remainingAmount = Math.max(
                         0,
                         totals.total -
-                          salePayments.reduce((sum, p) => sum + p.amount, 0),
+                          salePayments.reduce(
+                            (sum, p) => sum + (Number(p.amount) || 0),
+                            0,
+                          ),
                       );
                       setSalePayments([
                         ...salePayments,
@@ -1980,7 +1983,9 @@ const NewSale = () => {
                                   value={payment.amount}
                                   onChange={(value) => {
                                     const updatedPayments = [...salePayments];
-                                    updatedPayments[index].amount = value || 0;
+                                    // A cleared box stays empty (KI-065); a blank amount counts as 0 wherever it is summed or sent
+                                    updatedPayments[index].amount =
+                                      value as number;
                                     setSalePayments(updatedPayments);
                                   }}
                                   onPressEnter={(e) =>
