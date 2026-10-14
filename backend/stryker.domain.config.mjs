@@ -104,7 +104,9 @@ export default {
   checkers: ['typescript'],
   tsconfigFile: 'tsconfig.json',
   coverageAnalysis: 'perTest',
-  concurrency: 3,
+  // Stryker splits this between type-check workers and test runners: 3 gave a single test runner, which left
+  // most of a 4-vCPU CI runner idle. 4 gives two runners; each recycles after 25 mutants (maxTestRunnerReuse).
+  concurrency: Number(process.env.STRYKER_CONCURRENCY) || 4,
   // A mutant that loops forever is declared timed out after the normal test time plus 15 s.
   timeoutMS: 15000,
   // Restart Jest runners before Nest/Prisma state leaks into an out-of-memory crash.
