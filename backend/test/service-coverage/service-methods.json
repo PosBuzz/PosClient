@@ -244,7 +244,7 @@
     "method": "create",
     "file": "src/admin/billing-invoices/billing-history.service.ts",
     "line": 78,
-    "throws": 2,
+    "throws": 1,
     "consumerId": false
   },
   {
@@ -259,16 +259,16 @@
     "service": "BillingHistoryService",
     "method": "remove",
     "file": "src/admin/billing-invoices/billing-history.service.ts",
-    "line": 198,
-    "throws": 2,
+    "line": 178,
+    "throws": 1,
     "consumerId": false
   },
   {
     "service": "BillingHistoryService",
     "method": "update",
     "file": "src/admin/billing-invoices/billing-history.service.ts",
-    "line": 119,
-    "throws": 4,
+    "line": 113,
+    "throws": 2,
     "consumerId": false
   },
   {
@@ -427,7 +427,7 @@
     "service": "CategoryService",
     "method": "remove",
     "file": "src/consumer/category/services/category.service.ts",
-    "line": 125,
+    "line": 121,
     "throws": 1,
     "consumerId": true
   },
@@ -435,7 +435,7 @@
     "service": "CategoryService",
     "method": "update",
     "file": "src/consumer/category/services/category.service.ts",
-    "line": 94,
+    "line": 92,
     "throws": 1,
     "consumerId": true
   },
@@ -1092,7 +1092,7 @@
     "method": "remove",
     "file": "src/admin/plan/services/plan.service.ts",
     "line": 240,
-    "throws": 3,
+    "throws": 1,
     "consumerId": false
   },
   {
@@ -1483,7 +1483,7 @@
     "service": "ProductService",
     "method": "create",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 201,
+    "line": 184,
     "throws": 3,
     "consumerId": true
   },
@@ -1491,7 +1491,7 @@
     "service": "ProductService",
     "method": "findAll",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 288,
+    "line": 270,
     "throws": 1,
     "consumerId": true
   },
@@ -1499,7 +1499,7 @@
     "service": "ProductService",
     "method": "findOne",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 453,
+    "line": 435,
     "throws": 2,
     "consumerId": true
   },
@@ -1515,7 +1515,7 @@
     "service": "ProductService",
     "method": "remove",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 906,
+    "line": 887,
     "throws": 1,
     "consumerId": true
   },
@@ -1523,7 +1523,7 @@
     "service": "ProductService",
     "method": "update",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 773,
+    "line": 755,
     "throws": 3,
     "consumerId": true
   },
@@ -1547,7 +1547,7 @@
     "service": "ProductVariantService",
     "method": "remove",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 458,
+    "line": 450,
     "throws": 2,
     "consumerId": false
   },
