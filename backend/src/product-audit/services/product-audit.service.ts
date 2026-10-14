@@ -26,10 +26,10 @@ export class ProductAuditService {
 
   private async buildAuditData(consumerId: number, dto: GetProductAuditDto) {
     const start = new Date(dto.start_date);
-    start.setHours(0, 0, 0, 0);
+    start.setUTCHours(0, 0, 0, 0);
 
     const end = new Date(dto.end_date);
-    end.setHours(23, 59, 59, 999);
+    end.setUTCHours(23, 59, 59, 999);
 
     const variant = await this.prisma.productVariant.findFirst({
       where: { id: dto.variant_id, product: { consumer_id: consumerId } },
