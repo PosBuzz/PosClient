@@ -173,8 +173,8 @@ Record each run in DECISIONS.md:
 ## Exit criteria
 - [x] ~~`All checks` required status on `main`~~ — dropped (D-065); no branch protection.
 - [ ] Deploy workflow refuses a SHA without green CI (prove it with a dispatch on a red branch).
-- [ ] Nightly ran once successfully, or opened an issue for real findings.
-- [ ] Coverage baseline committed; ratchet active.
+- [x] Nightly ran once successfully, or opened an issue for real findings. (run 38514413086, 2026-10-14; the earlier failure 38483487752 was a real finding, KI-108)
+- [x] Coverage baseline committed; ratchet active. (`backend/test/service-coverage/mutation-baseline.json`, BE-COV-021)
 
 
 ## Dependency maintenance and exit checks (P0/D-014)
