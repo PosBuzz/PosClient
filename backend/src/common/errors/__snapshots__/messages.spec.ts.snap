@@ -108,7 +108,6 @@ exports[`thrown client error messages [X-ERR-012] the full message list is revie
   "Product '{value}' has a variant with a missing unit relationship",
   "Product limit exceeded: {value} allows {value}, destination has {value}, and this import needs {value} more",
   "Product limit reached: your {value} plan allows {value} product(s) and you already have {value}. Upgrade your plan to add more products.",
-  "Product name already exists",
   "Product not found",
   "Product not found for this barcode",
   "Product variant not found",
