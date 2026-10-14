@@ -367,6 +367,10 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
+      // Mapped before the client-error rethrow: the Prisma filter's generic wording would hide these.
+      if (error.code === 'P2025') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
       if (isClientError(error)) {
         throw error;
       }
@@ -374,10 +378,6 @@ export class UsersService {
         `Error deleting super admin user ${id}`,
         errorStack(error),
       );
-
-      if (error.code === 'P2025') {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
 
       throw new HttpException(
         'Failed to delete user',
@@ -392,6 +392,18 @@ export class UsersService {
 
       return { success: true };
     } catch (error) {
+      // Mapped before the client-error rethrow: the Prisma filter's generic wording would hide these.
+      if (error.code === 'P2025') {
+        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
+      }
+
+      // SuperAdmin.role_id is Restrict, so a role that still has users cannot be deleted.
+      if (error.code === 'P2003') {
+        throw new HttpException(
+          'Cannot delete a role that still has users assigned',
+          HttpStatus.CONFLICT,
+        );
+      }
       if (isClientError(error)) {
         throw error;
       }
@@ -399,18 +411,6 @@ export class UsersService {
         `Error deleting super admin role ${id}`,
         errorStack(error),
       );
-
-      if (error.code === 'P2025') {
-        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
-      }
-
-      // SuperAdmin.role_id is Restrict-free but users still reference it.
-      if (error.code === 'P2003') {
-        throw new HttpException(
-          'Cannot delete a role that still has users assigned',
-          HttpStatus.CONFLICT,
-        );
-      }
 
       throw new HttpException(
         'Failed to delete role',

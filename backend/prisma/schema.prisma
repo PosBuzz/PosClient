@@ -198,7 +198,7 @@ model SuperAdmin {
   created_by_id          Int?
   created_by             SuperAdmin?          @relation("CreatedBy", fields: [created_by_id], references: [id])
   created                SuperAdmin[]         @relation("CreatedBy")
-  role                   SuperAdminRole       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  role                   SuperAdminRole       @relation(fields: [role_id], references: [id], onDelete: Restrict)
   deleted_consumers      Consumer[]           @relation("ConsumerDeletedBy")
   requested_data_imports ConsumerDataImport[] @relation("ConsumerDataImportRequestedBy")
 

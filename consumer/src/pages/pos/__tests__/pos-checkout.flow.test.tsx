@@ -425,6 +425,22 @@ describe("POS checkout", () => {
     });
   }, 60_000);
 
+  it("[CO-FLOW-POS-004b] clearing a payment amount leaves the box empty, so typing replaces rather than appends (KI-065)", async () => {
+    const created = captureRequests("post", endpoints.createSale, { id: 3 });
+    const { user } = mount();
+    await addProduct(user, P2);
+    const cart = expectedCart([{ product: P2, qty: 1 }]);
+    await user.click(screen.getByRole("button", { name: /Add/ }));
+    const amounts = await screen.findAllByPlaceholderText("Amount");
+    await user.clear(amounts[0]);
+    expect((amounts[0] as HTMLInputElement).value).toBe("");
+    await user.type(amounts[0], String(cart.totals.total));
+    expect((amounts[0] as HTMLInputElement).value).toBe(
+      String(cart.totals.total),
+    );
+    expect(created.calls).toHaveLength(0);
+  });
+
   it("[CO-FLOW-POS-004] a split cash + MFS payment needs the provider and sends both payments", async () => {
     const created = captureRequests("post", endpoints.createSale, { id: 3 });
     const { user } = mount();
