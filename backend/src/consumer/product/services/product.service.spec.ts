@@ -289,10 +289,8 @@ describe('ProductService.create (unit)', () => {
   });
 
   it('[BE-MUT-567] the product row carries the tenant, tax defaults and every field; tags and variants are created in the transaction', async () => {
-    const { prisma, variants, service } = setup();
-    jest
-      .spyOn(service, 'findOne')
-      .mockResolvedValue({ id: 50, loaded: true } as any);
+    const { prisma, variants, service, findOneSpy } = setup();
+    findOneSpy.mockResolvedValue({ id: 50, loaded: true } as any);
     await expect(
       service.create(5, 8, productDto({ tag_ids: [11, 12] })),
     ).resolves.toEqual({ id: 50, loaded: true });
