@@ -57,7 +57,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     }) as Promise<any>;
   const COST_10 = /^\$2[aby]\$10\$/;
 
-  it('[BE-ADM-201] {UsersService.createUser} {UsersService.updateUser} {UsersService.changePassword} passwords are hashed with bcrypt cost 10', async () => {
+  it('[BE-ADM-201] {AdminUsersService.createUser} {AdminUsersService.updateUser} {AdminUsersService.changePassword} passwords are hashed with bcrypt cost 10', async () => {
     const role = await roleWith('Cost');
     const u = await mkUser(role.id);
     const read = async () =>
@@ -74,7 +74,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     expect(await bcryptjs.compare('Third!2345', afterChange)).toBe(true);
   });
 
-  it('[BE-ADM-202] {UsersService.updateRole} only the target role permissions are replaced, each new link belongs to that role', async () => {
+  it('[BE-ADM-202] {AdminUsersService.updateRole} only the target role permissions are replaced, each new link belongs to that role', async () => {
     const a = await roleWith('A', 2);
     const b = await roleWith('B', 3);
     const ids = await permissionIds(5);
@@ -101,7 +101,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     ).toBe('A2');
   });
 
-  it('[BE-ADM-203] {UsersService.updateRole} a failure while replacing permissions is a generic 500', async () => {
+  it('[BE-ADM-203] {AdminUsersService.updateRole} a failure while replacing permissions is a generic 500', async () => {
     const role = await roleWith('Fail');
     for (const method of ['deleteMany', 'createMany'] as const) {
       const spy = jest
@@ -117,7 +117,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     }
   });
 
-  it('[BE-ADM-204] {UsersService.updateUser} only the target user changes and untouched fields keep their value', async () => {
+  it('[BE-ADM-204] {AdminUsersService.updateUser} only the target user changes and untouched fields keep their value', async () => {
     const r1 = await roleWith('One');
     const r2 = await roleWith('Two');
     const target = await mkUser(r1.id, { name: 'T', email: 't@x.test' });
@@ -143,7 +143,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     ).toEqual(otherBefore);
   });
 
-  it('[BE-ADM-205] {UsersService.changePassword} only the given user password changes and an empty old password is refused', async () => {
+  it('[BE-ADM-205] {AdminUsersService.changePassword} only the given user password changes and an empty old password is refused', async () => {
     const role = await roleWith('One');
     const a = await mkUser(role.id);
     const b = await mkUser(role.id);
@@ -159,7 +159,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     ).toBe(bBefore);
   });
 
-  it('[BE-ADM-206] {UsersService.findAllUsers} a role id of 0 or an undefined filter does not narrow the list; filters combine with AND', async () => {
+  it('[BE-ADM-206] {AdminUsersService.findAllUsers} a role id of 0 or an undefined filter does not narrow the list; filters combine with AND', async () => {
     const r1 = await roleWith('One');
     const r2 = await roleWith('Two');
     const a = await mkUser(r1.id, { name: 'Zed Match', email: 'zed@x.test' });
@@ -184,7 +184,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     ]);
   });
 
-  it('[BE-ADM-207] {UsersService.removeUser} {UsersService.removeRole} only the target row goes; other users, roles and permission links stay', async () => {
+  it('[BE-ADM-207] {AdminUsersService.removeUser} {AdminUsersService.removeRole} only the target row goes; other users, roles and permission links stay', async () => {
     const r1 = await roleWith('One', 2);
     const r2 = await roleWith('Two', 3);
     const u1 = await mkUser(r1.id);
@@ -355,7 +355,7 @@ describe('super-admin users and roles (extra, adversarial)', () => {
     error.mockRestore();
   });
 
-  it('[BE-ADM-210] {UsersService.findAllRoles} {UsersService.findOneRole} {UsersService.findAllUsers} the nested permission shape is exactly permission link plus permission row', async () => {
+  it('[BE-ADM-210] {AdminUsersService.findAllRoles} {AdminUsersService.findOneRole} {AdminUsersService.findAllUsers} the nested permission shape is exactly permission link plus permission row', async () => {
     const role = await roleWith('Shape', 1);
     const u = await mkUser(role.id);
     const one: any = await admins.findOneRole(role.id);
