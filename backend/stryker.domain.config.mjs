@@ -45,8 +45,13 @@ if (
   throw new Error(
     'STRYKER_SHARD must look like "2/8" with 1 <= index <= count.',
   );
+// Globs such as src/auth/guards/*.ts also match the unit specs next to the code; those are tests, not targets.
 const allFiles = [
-  ...new Set(targets.flatMap((pattern) => globSync(pattern))),
+  ...new Set(
+    targets
+      .flatMap((pattern) => globSync(pattern))
+      .filter((file) => !file.endsWith('.spec.ts')),
+  ),
 ].sort();
 // STRYKER_ROTATION="d/D" (1-based) keeps every D-th file starting at d, so D nights cover every file
 // once. STRYKER_CHANGED_FILES (newline or comma separated) always joins today's set, so a file that

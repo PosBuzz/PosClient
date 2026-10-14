@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: "0 20 * * *" # 02:00 Asia/Dhaka
   workflow_dispatch:
+    inputs:
+      full_domain:
+        description: "Mutate every domain file (no weekly rotation) and judge it against the strict Tier A/B floors"
+        type: boolean
+        default: false
 
 jobs:
   changes:
@@ -57,8 +62,13 @@ jobs:
         working-directory: .
         run: |
           day=$(( $(date -u +%s) / 86400 % 7 + 1 ))
-          echo "STRYKER_ROTATION=$day/7" >> "$GITHUB_ENV"
-          echo "STRYKER_ROTATION_KEY=r$day" >> "$GITHUB_ENV"
+          if [ "${{ inputs.full_domain }}" = "true" ]; then
+            # One-off full measurement: no rotation, its own cache so the weekday caches stay untouched
+            echo "STRYKER_ROTATION_KEY=full" >> "$GITHUB_ENV"
+          else
+            echo "STRYKER_ROTATION=$day/7" >> "$GITHUB_ENV"
+            echo "STRYKER_ROTATION_KEY=r$day" >> "$GITHUB_ENV"
+          fi
           {
             echo 'STRYKER_CHANGED_FILES<<EOF'
             git log --since='25 hours ago' --name-only --pretty=format: -- backend/src | sort -u
@@ -134,7 +144,12 @@ jobs:
           shopt -s nullglob
           reports=(reports/shards/*/*.mutation.json)
           if [ ${#reports[@]} -eq 0 ]; then echo "No shard measured anything tonight."; exit 0; fi
-          node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
+          if [ "${{ inputs.full_domain }}" = "true" ]; then
+            # Every file was measured, so judge the strict Tier A 75 / Tier B 60 floors (BE-COV-020)
+            node scripts/mutation-tier-gate.mjs "${reports[@]}"
+          else
+            node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
+          fi
       - if: always()
         uses: actions/upload-artifact@v4
         with:
