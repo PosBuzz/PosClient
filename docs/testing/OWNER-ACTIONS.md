@@ -70,3 +70,6 @@ GitHub dependency review is available for this repository, then enable
 `DEPENDENCY_REVIEW_ENABLED=true` and prove both a deliberately vulnerable dependency and an
 explicitly denied license are blocked on throwaway PRs. Remove those deliberate dependencies
 after collecting evidence. Record the chosen policy and proofs in DECISIONS.md.
+
+## KI-088 remaining key rotation (2026-10-15)
+Accepted by the owner; rotate or revoke when convenient: the GCP API key in `ai-service/.env.example` history and the secrets in the old `k8s/base/secrets.yaml`. History is not rewritten.
