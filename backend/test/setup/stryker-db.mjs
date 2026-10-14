@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 
@@ -61,11 +61,13 @@ execFileSync(
 for (let worker = 0; worker < count; worker++)
   sql(`CREATE DATABASE posbuzz_test_w${worker} TEMPLATE posbuzz_test_template`);
 mkdirSync('test/.tmp', { recursive: true });
+// Worker processes claim database slots here (KI-108); fresh databases start with no claims.
+rmSync('test/.tmp/stryker-slots', { recursive: true, force: true });
 writeFileSync('test/.tmp/stryker-env.json', JSON.stringify(env), {
   mode: 0o600,
 });
 mkdirSync('.stryker-tmp', { recursive: true });
 cpSync('../contracts', '.stryker-tmp/contracts', { recursive: true });
 console.log(
-  `Prepared ${count} isolated Stryker databases (worker ids start at zero).`,
+  `Prepared ${count} isolated Stryker databases (each worker process claims a free one).`,
 );
