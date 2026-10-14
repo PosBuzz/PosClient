@@ -18,7 +18,8 @@ export class PermissionsGuard implements CanActivate {
         'permissions',
         context.getClass(),
       );
-    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    // every() over an empty list is already true, so no separate empty-list check is needed
+    if (!requiredPermissions) return true;
 
     const request = context.switchToHttp().getRequest<Request>();
     const user = request.user;
