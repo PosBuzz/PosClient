@@ -57,7 +57,7 @@ describe('super-admin users and roles (detail)', () => {
       ...extra,
     }) as Promise<any>;
 
-  it('[BE-ADM-101] {UsersService.createRole} a role is stored with its permissions and returned with them nested', async () => {
+  it('[BE-ADM-101] {AdminUsersService.createRole} a role is stored with its permissions and returned with them nested', async () => {
     await createAdmin(db);
     const ids = await permissionIds(3);
     const role: any = await admins.createRole({
@@ -83,7 +83,7 @@ describe('super-admin users and roles (detail)', () => {
     ).toBe(0);
   });
 
-  it('[BE-ADM-102] {UsersService.findAllRoles} {UsersService.findOneRole} roles list in id order with permissions; a missing role is null', async () => {
+  it('[BE-ADM-102] {AdminUsersService.findAllRoles} {AdminUsersService.findOneRole} roles list in id order with permissions; a missing role is null', async () => {
     const a = await roleWith('Zeta');
     const b = await roleWith('Alpha');
     const all: any[] = (await admins.findAllRoles()) as any[];
@@ -101,7 +101,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(await admins.findOneRole(999999)).toBeNull();
   });
 
-  it('[BE-ADM-103] {UsersService.findAllPermissions} the catalogue lists every permission in id order', async () => {
+  it('[BE-ADM-103] {AdminUsersService.findAllPermissions} the catalogue lists every permission in id order', async () => {
     await createAdmin(db);
     const res: any[] = (await admins.findAllPermissions()) as any[];
     expect(res.length).toBe(await db.superAdminPermission.count());
@@ -117,7 +117,7 @@ describe('super-admin users and roles (detail)', () => {
     );
   });
 
-  it('[BE-ADM-104] {UsersService.createUser} the password is hashed, the shape is limited and the role is returned', async () => {
+  it('[BE-ADM-104] {AdminUsersService.createUser} the password is hashed, the shape is limited and the role is returned', async () => {
     const role = await roleWith('Ops');
     const created: any = await mkUser(role.id, {
       email: 'ops@example.test',
@@ -140,7 +140,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(stored.password.startsWith('$2')).toBe(true);
   });
 
-  it('[BE-ADM-105] {UsersService.findAllUsers} {UsersService.findOneUser} users list without passwords, filtered by role and by name or email search', async () => {
+  it('[BE-ADM-105] {AdminUsersService.findAllUsers} {AdminUsersService.findOneUser} users list without passwords, filtered by role and by name or email search', async () => {
     const r1 = await roleWith('One');
     const r2 = await roleWith('Two');
     const a = await mkUser(r1.id, { name: 'Alice Wong', email: 'a@x.test' });
@@ -194,7 +194,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(await admins.findOneUser(999999)).toBeNull();
   });
 
-  it('[BE-ADM-106] {UsersService.updateRole} renames and replaces the permission set; omitting permission_ids keeps them; an empty list clears them', async () => {
+  it('[BE-ADM-106] {AdminUsersService.updateRole} renames and replaces the permission set; omitting permission_ids keeps them; an empty list clears them', async () => {
     const role = await roleWith('Old', 3);
     const ids = await permissionIds(4);
     const renamed: any = await admins.updateRole(role.id, {
@@ -223,7 +223,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(missing.code).toBe('P2025');
   });
 
-  it('[BE-ADM-107] {UsersService.updateUser} changes only the given fields, hashes a new password and keeps the old hash when none is given', async () => {
+  it('[BE-ADM-107] {AdminUsersService.updateUser} changes only the given fields, hashes a new password and keeps the old hash when none is given', async () => {
     const r1 = await roleWith('One');
     const r2 = await roleWith('Two');
     const u = await mkUser(r1.id, { name: 'Before', email: 'before@x.test' });
@@ -259,7 +259,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(missing.code).toBe('P2025');
   });
 
-  it('[BE-ADM-108] {UsersService.changePassword} a wrong old password or unknown user is a 417 with its message; success stores a new hash and returns id, email and name', async () => {
+  it('[BE-ADM-108] {AdminUsersService.changePassword} a wrong old password or unknown user is a 417 with its message; success stores a new hash and returns id, email and name', async () => {
     const role = await roleWith('One');
     const u = await mkUser(role.id, { name: 'Pat', email: 'pat@x.test' });
     const missing = await failure(admins.changePassword(999999, 'a', 'b'));
@@ -286,7 +286,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(await bcryptjs.compare('Secret!234', after.password)).toBe(false);
   });
 
-  it('[BE-ADM-109] {UsersService.removeUser} {UsersService.removeRole} deletion returns success, a role with users is refused with 409, missing ids are 404', async () => {
+  it('[BE-ADM-109] {AdminUsersService.removeUser} {AdminUsersService.removeRole} deletion returns success, a role with users is refused with 409, missing ids are 404', async () => {
     const role = await roleWith('Busy');
     const u = await mkUser(role.id);
     expect(await admins.removeUser(u.id)).toEqual({ success: true });
@@ -316,7 +316,7 @@ describe('super-admin users and roles (detail)', () => {
     expect(missingRole.message).toBe('Role not found');
   });
 
-  it('[BE-ADM-110] {UsersService.removeUser} {UsersService.removeRole} raw database error codes without a readable meaning map to not-found and conflict responses', async () => {
+  it('[BE-ADM-110] {AdminUsersService.removeUser} {AdminUsersService.removeRole} raw database error codes without a readable meaning map to not-found and conflict responses', async () => {
     const codes: [string, string, number, string][] = [
       ['removeUser', 'P2025', 404, 'User not found'],
       ['removeRole', 'P2025', 404, 'Role not found'],
@@ -343,7 +343,7 @@ describe('super-admin users and roles (detail)', () => {
     }
   });
 
-  it('[BE-ADM-111] {UsersService.createRole} {UsersService.findAllRoles} {UsersService.findOneRole} {UsersService.findAllUsers} {UsersService.findOneUser} {UsersService.createUser} {UsersService.updateRole} {UsersService.updateUser} {UsersService.changePassword} {UsersService.findAllPermissions} unexpected failures are wrapped as a generic 500', async () => {
+  it('[BE-ADM-111] {AdminUsersService.createRole} {AdminUsersService.findAllRoles} {AdminUsersService.findOneRole} {AdminUsersService.findAllUsers} {AdminUsersService.findOneUser} {AdminUsersService.createUser} {AdminUsersService.updateRole} {AdminUsersService.updateUser} {AdminUsersService.changePassword} {AdminUsersService.findAllPermissions} unexpected failures are wrapped as a generic 500', async () => {
     const cases: [string, string, () => Promise<unknown>, string][] = [
       [
         'superAdminRole',
@@ -424,7 +424,7 @@ describe('super-admin users and roles (detail)', () => {
     }
   });
 
-  it('[BE-ADM-112] {UsersService.createRole} {UsersService.createUser} database errors with a readable meaning are passed through, not replaced by a 500', async () => {
+  it('[BE-ADM-112] {AdminUsersService.createRole} {AdminUsersService.createUser} database errors with a readable meaning are passed through, not replaced by a 500', async () => {
     const role = await roleWith('Dup');
     const dup = await failure(
       admins.createRole({ name: 'Dup', permission_ids: [] }),

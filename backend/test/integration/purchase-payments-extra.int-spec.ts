@@ -262,7 +262,7 @@ describe('vendor (purchase) payments (extra, adversarial)', () => {
     expect(none.meta).toEqual({ total: 0, page: 1, limit: 20, total_pages: 0 });
   });
 
-  it('[BE-PPAY-211] {PurchasePaymentsService.findPurchaseBatches} fixed statuses win over the payment status filter; an empty list falls back to it', async () => {
+  it('[BE-PPAY-211] findPurchaseBatches: fixed statuses win over the payment status filter; an empty list falls back to it', async () => {
     const paid = await purchase({ qty: 1, cost: 10, paid: 10 });
     const partial = await purchase({ qty: 1, cost: 10, paid: 5 });
     const due = await purchase({ qty: 1, cost: 10, paid: 0 });

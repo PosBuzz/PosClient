@@ -500,7 +500,7 @@ describe('admin consumers and purge (extra, adversarial)', () => {
       ).toBeGreaterThan(0);
     });
 
-    it('[BE-ADM-237] {ConsumerPurgeService.reachableTables} every SCOPE table is reachable, and every SCOPE predicate is valid SQL for a consumer id', async () => {
+    it('[BE-ADM-237] every SCOPE table is reachable, and every SCOPE predicate is valid SQL for a consumer id', async () => {
       const tables: any[] = await (purge as any).reachableTables(db);
       const names = new Set(tables.map((t) => t.name));
       const entries = Object.entries(SCOPE);
@@ -517,7 +517,7 @@ describe('admin consumers and purge (extra, adversarial)', () => {
       }
     });
 
-    it('[BE-ADM-238] {ConsumerPurgeService.deleteOrder} a table with several parents is deleted before all of them; diamonds and chains order correctly', async () => {
+    it('[BE-ADM-238] a table with several parents is deleted before all of them; diamonds and chains order correctly', async () => {
       const order = async (names: string[], edges: [string, string][]) =>
         (purge as any).deleteOrder(
           {

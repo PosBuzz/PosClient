@@ -654,7 +654,7 @@ describe('admin consumers and purge (detail)', () => {
       expect(await db.branch.count({ where: { consumer_id: cid() } })).toBe(1);
     });
 
-    it('[BE-ADM-143] {ConsumerPurgeService.reachableTables} finds tables that point at consumers, directly or through another table, and flags the ones with a consumer_id column', async () => {
+    it('[BE-ADM-143] finds tables that point at consumers, directly or through another table, and flags the ones with a consumer_id column', async () => {
       const tables: any[] = await (purge as any).reachableTables(db);
       const byName = new Map(tables.map((t) => [t.name, t.hasConsumerId]));
       expect(byName.get('branches')).toBe(true);
@@ -672,7 +672,7 @@ describe('admin consumers and purge (detail)', () => {
       }
     });
 
-    it('[BE-ADM-144] {ConsumerPurgeService.deleteOrder} children are deleted before their parents, unrelated and duplicate edges are ignored, and a cycle is refused', async () => {
+    it('[BE-ADM-144] children are deleted before their parents, unrelated and duplicate edges are ignored, and a cycle is refused', async () => {
       const order = async (names: string[], edges: [string, string][]) =>
         (purge as any).deleteOrder(
           {
