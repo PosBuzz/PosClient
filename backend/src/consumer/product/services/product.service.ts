@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Prisma, TaxMethod } from '@prisma/client';
+import { TaxMethod } from '@prisma/client';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
@@ -181,23 +181,6 @@ export class ProductService {
     );
   }
 
-  private throwProductNameConflict(error: unknown): void {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      const target = error.meta?.target;
-      const targetFields = Array.isArray(target) ? target : [target];
-
-      if (
-        targetFields.includes('consumer_id') &&
-        targetFields.includes('name')
-      ) {
-        throw new BadRequestException('Product name already exists');
-      }
-    }
-  }
-
   async create(
     consumerId: number,
     userId: number | undefined,
@@ -273,7 +256,6 @@ export class ProductService {
       return await this.findOne(product.id, consumerId);
     } catch (error) {
       if (isClientError(error)) throw error;
-      this.throwProductNameConflict(error);
       this.logger.error(
         `Error creating product for consumer ${consumerId}`,
         errorStack(error),
@@ -891,7 +873,6 @@ export class ProductService {
       return await this.findOne(id, consumerId);
     } catch (error) {
       if (isClientError(error)) throw error;
-      this.throwProductNameConflict(error);
       this.logger.error(
         `Error updating product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
