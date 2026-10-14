@@ -78,8 +78,6 @@ export class CategoryService {
       if (isClientError(error)) {
         throw error;
       }
-      if (error instanceof NotFoundException) throw error;
-
       this.logger.error(
         `Failed to fetch category ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -109,8 +107,6 @@ export class CategoryService {
       if (isClientError(error)) {
         throw error;
       }
-      if (error instanceof NotFoundException) throw error;
-
       this.logger.error(
         `Failed to update category ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -133,8 +129,6 @@ export class CategoryService {
       if (isClientError(error)) {
         throw error;
       }
-      if (error instanceof NotFoundException) throw error;
-
       this.logger.error(
         `Failed to delete category ${id} for consumer ${consumerId}`,
         errorStack(error),
