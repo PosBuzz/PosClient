@@ -91,4 +91,4 @@ without checking it. Strengthen its assertions (DECISION-PLAYBOOK §5).
 ## Exit criteria
 - [ ] `service-methods.json` committed; BE-COV-001/010/011/012/013/014 green with `known-gaps.json` deleted.
 - [ ] Nightly BE-COV-020 green for Tier A and B.
-- [ ] Proof in PR: add a dummy public method to `VendorService` → BE-COV-001 and BE-COV-010 fail.
+- [x] Proof: adding a dummy public method to `VendorService` makes BE-COV-001 and BE-COV-010 fail (run 2026-10-14, reverted; all five service-coverage tests pass again).
