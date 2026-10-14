@@ -509,3 +509,11 @@ The first D-068 nightly still timed out (shard 1 had 1,678 mutants, ~90 min proj
 - `ignorers: ['logging']` (`stryker-plugins/ignore-logging.mjs`) skips mutants inside `logger.*` / `this.logger.*` / `console.*` calls — diagnostic text only.
 - `thresholds.break: null`: a shard fails only on errors; the BE-COV-021 ratchet gate judges scores.
 - 12 shards; mutation step capped at 110 min (job 120) so a cold pass always completes and saves its cache (a shard cut off at 50 min saved nothing). Runner minutes are free on the public repository. The first full pass is the slow one; later nights retest only what changed.
+
+## D-070 Stryker database slots are claimed per worker process; incremental cache v2 (2026-10-14)
+Type: DECISION
+Nightly 38483487752 failed the ratchet on an unchanged file (KI-108): `maxTestRunnerReuse` (D-069) made Stryker start more worker processes than the 16 prepared databases, so 28% of mutants ended as RuntimeError and were dropped from the score.
+- Each worker process claims the first database slot whose lock file names no live process (`claimStrykerDatabaseSlot`, directory-mutex serialised, `test/.tmp/stryker-slots`, reset by `stryker-db.mjs`). Chosen over worker-id modulo 16 (two live workers could share a database, giving false kills and survivors) and over dropping runner recycling (brings back the out-of-memory crashes).
+- The incremental cache key is now `stryker-domain-v2-…`. Stryker reuses every non-killed result, errors included, and a harness fix does not invalidate them, so the old caches were unusable. Bump the prefix again whenever saved results are invalid.
+- Baselines: the nine files first measured correctly in nightly 38514413086 were added to `mutation-baseline.json` (existing entries untouched). Scores from 38483487752 were not used.
+Verification: local Stryker with recycling every 2 mutants (about 100 processes) finished with 0 RuntimeErrors; nightly 38514413086 green with 0 RuntimeErrors in 3,951 mutants. BE-HARN-022 pins slot reuse.
