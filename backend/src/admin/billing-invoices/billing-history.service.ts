@@ -101,14 +101,8 @@ export class BillingHistoryService {
       if (isClientError(error)) throw error;
       this.logger.error('Creating billing record failed', errorStack(error));
 
-      // @@unique([consumer_id, billing_date])
-      if (error.code === 'P2002') {
-        throw new HttpException(
-          'A billing record already exists for this consumer on that date',
-          HttpStatus.CONFLICT,
-        );
-      }
-
+      // @@unique([consumer_id, billing_date]) (P2002) is a Prisma client error that
+      // isClientError passes to the Prisma filter above.
       throw new HttpException(
         'Failed to create billing record',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -174,20 +168,6 @@ export class BillingHistoryService {
         errorStack(error),
       );
 
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Billing record not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      if (error.code === 'P2002') {
-        throw new HttpException(
-          'A billing record already exists for this consumer on that date',
-          HttpStatus.CONFLICT,
-        );
-      }
-
       throw new HttpException(
         'Failed to update billing record',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -208,13 +188,6 @@ export class BillingHistoryService {
         `Deleting billing record ${id} failed`,
         errorStack(error),
       );
-
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Billing record not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
 
       throw new HttpException(
         'Failed to delete billing record',
