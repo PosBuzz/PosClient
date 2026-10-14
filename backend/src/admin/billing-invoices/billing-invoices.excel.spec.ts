@@ -92,16 +92,7 @@ describe('BillingInvoicesService Excel export (unit)', () => {
       21,
     ]);
     expect(row(sheet, 4)[0]).toBe(3);
-    expect(row(sheet, 5)).toEqual([
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      'Total',
-      63,
-    ]);
+    expect(row(sheet, 5)).toEqual(['', '', '', '', '', '', 'Total', 63]);
     expect(sheet.rowCount).toBe(5);
   });
 
@@ -157,16 +148,7 @@ describe('BillingInvoicesService Excel export (unit)', () => {
     const workbook = await load(consumer({ billing_logs: [] }));
     const sheet = workbook.getWorksheet('Billing History')!;
     expect(sheet.rowCount).toBe(2);
-    expect(row(sheet, 2)).toEqual([
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      'Total',
-      0,
-    ]);
+    expect(row(sheet, 2)).toEqual(['', '', '', '', '', '', 'Total', 0]);
     const input = consumer();
     const before = input.billing_logs.map((b: any) => b.id);
     await service.generateBillingHistoryExcel(input);
