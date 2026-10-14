@@ -19,9 +19,9 @@ export function createPdfRecorder() {
       height: 842,
       margins: { top: 36, bottom: 40, left: 40, right: 40 },
     };
-    private handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
+    handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
     readonly calls: PdfCall[] = [];
-    private pages = 1;
+    pages = 1;
 
     constructor(options?: unknown) {
       documents.push({ options, calls: this.calls });
