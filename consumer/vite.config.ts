@@ -12,6 +12,29 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: false },
       includeAssets: ["favicon.ico", "*.png", "*.svg", "*.jpg"],
+      workbox: {
+        // index.html is deliberately not precached. A precached index.html is
+        // served cache-first on every navigation, so a plain refresh after a
+        // deploy kept showing the old build until a second refresh or a hard
+        // reload. Navigations go network-first instead: online they always get
+        // the current index.html (and so the current hashed assets); offline,
+        // or after the timeout, they fall back to the last one fetched.
+        globPatterns: ["**/*.{js,wasm,css}"],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "app-shell",
+              networkTimeoutSeconds: 5,
+              // Every SPA route renders the same index.html, so store it under
+              // one key: an offline reload of any route can then be served.
+              plugins: [{ cacheKeyWillBeUsed: async () => "/index.html" }],
+            },
+          },
+        ],
+      },
       manifest: {
         name: "PossBuzz",
         short_name: "PossBuzz",

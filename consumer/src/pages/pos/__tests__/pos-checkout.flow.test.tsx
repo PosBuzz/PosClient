@@ -357,6 +357,11 @@ describe("POS checkout", () => {
         return ok(byProduct(P3));
       }),
     );
+    // The scanner hook only buffers keys that arrive within 100ms of each
+    // other (Date.now deltas). On a loaded machine user.keyboard can exceed
+    // that between keys and drop the start of the code, so freeze the clock:
+    // every key then arrives "instantly", like a real scanner.
+    vi.useFakeTimers({ toFake: ["Date"] });
     const { user } = mount();
     await screen.findByText(/Search or scan barcode/);
     await user.keyboard("BAR23{Enter}");
