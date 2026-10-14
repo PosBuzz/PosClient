@@ -66,13 +66,15 @@ jobs:
           } >> "$GITHUB_ENV"
       # Stryker's incremental report lets a night reuse every result whose code and covering tests did not
       # change, so after the first measurement only edited code is retested. One cache per rotation day and shard.
+      # Bump the key prefix (v2) whenever saved results are invalid: Stryker reuses every non-killed status, errors
+      # included, and harness fixes do not invalidate them (v1 held KI-108's no-database RuntimeErrors).
       - name: Restore incremental mutation results
         uses: actions/cache/restore@v4
         with:
           path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
-          key: stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
+          key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
           restore-keys: |
-            stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
+            stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
       - name: Mutate this shard's files
         # timeout-minutes: 110  # disabled for now (owner request)
         run: |
@@ -91,7 +93,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
-          key: stryker-domain-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
+          key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
