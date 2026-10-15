@@ -1,6 +1,7 @@
 import {
   CopyOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   EditOutlined,
   EyeOutlined,
   FileTextOutlined,
@@ -36,6 +37,7 @@ import {
 } from "../../api/receipt-settings-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import { PRINT_SERVER_DOWNLOAD_URL } from "../../constants/printer.constants";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
@@ -458,6 +460,17 @@ export default function ReceiptSettingsPage() {
                 unCheckedChildren="OFF"
               />
             </Space>
+          </Col>
+          <Col>
+            <Tooltip title="Windows app that prints receipts on the thermal printer. Update: quit it, delete the old folder, extract the new zip, run. Your settings are kept.">
+              <Button
+                icon={<DownloadOutlined />}
+                href={PRINT_SERVER_DOWNLOAD_URL}
+                download
+              >
+                Download Print Server
+              </Button>
+            </Tooltip>
           </Col>
           <Col>
             <Select
