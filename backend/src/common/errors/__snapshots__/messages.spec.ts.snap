@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`thrown client error messages [X-ERR-012] the full message list is reviewed in a snapshot 1`] = `
 [
