@@ -29,6 +29,8 @@ Re-deploy by hand: Actions -> Deploy -> Run workflow (pick the environment, opti
 - Certificates: `*.posbuzz.cloud` and `*.posbuzz.xyz` via certbot dns-cloudflare (`/root/.cloudflare*.ini`), auto-renewed.
 
 ## Access and recovery
+**Day-to-day operating guide: `docs/OPERATIONS.md`; on the server the helper `sudo posbuzz-ctl help` covers status, logs, restart, psql, snapshot, health, backup, drill.**
+
 **Log in:** `ssh -i ~/.ssh/posbuzz_admin_ed25519 -p 22222 testadmin@195.35.45.101` (the owner's Mac has the alias `ssh posbuzz`). Password login and root login are disabled, so the **private key file is the only way in**. Then `sudo -i` (needs the `testadmin` password; docker needs sudo).
 Handy: `sudo docker ps`, `sudo docker logs --tail 100 posbuzz-backend` (`posbuzz-stg-backend` for staging), `sudo systemctl list-timers`, `sudo /usr/local/sbin/posbuzz-health-check`, `sudo nginx -t && sudo systemctl reload nginx`.
 
