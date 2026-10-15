@@ -16,7 +16,6 @@ import {
   FloatButton,
   Form,
   Input,
-  InputNumber,
   List,
   Radio,
   Row,
@@ -26,6 +25,7 @@ import {
   Tag,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { post } from "../../api/crud-api";
@@ -56,6 +56,7 @@ import {
 import { calculateSaleTotals } from "../../utils/calculate-totals.utils";
 import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useSaleManager } from "../../hooks/useSaleManager";
+import { blankIfZero } from "../../utils/number";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getErrorMessage } from "../../utils/api-error";
 
@@ -386,6 +387,8 @@ const NewQuotation = () => {
 
     const quotationData: SaleFormData = {
       ...values,
+      // A blank box means 0; the API always gets a number
+      average_discount_amount: Number(values.average_discount_amount) || 0,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
@@ -546,7 +549,7 @@ const NewQuotation = () => {
         <InputNumber
           min={0}
           precision={2}
-          value={Number(record.special_discount_amount) || 0}
+          value={blankIfZero(record.special_discount_amount)}
           onChange={(value) =>
             updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
           }

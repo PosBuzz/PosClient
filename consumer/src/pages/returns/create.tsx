@@ -16,7 +16,6 @@ import {
   Col,
   Form,
   Input,
-  InputNumber,
   Modal,
   Row,
   Select,
@@ -25,6 +24,7 @@ import {
   Typography,
   Divider,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { returnsApi } from "../../api/returns-api";
