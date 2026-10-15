@@ -1,0 +1,26 @@
+name: Cancel CI on PR close
+
+# A closed or merged PR no longer needs its CI. Pushing new commits already
+# cancels the older run (concurrency in ci.yml); closing did not. This frees
+# the Actions minutes straight away.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+
+jobs:
+  cancel:
+    name: Cancel in-progress runs of this PR
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          for status in in_progress queued; do
+            gh run list --repo "$REPO" --branch "$BRANCH" --event pull_request --status "$status" --json databaseId -q '.[].databaseId' \
+              | xargs -r -n1 gh run cancel --repo "$REPO" || true
+          done
