@@ -1,0 +1,20 @@
+{
+  "backend": {
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "consumer": {
+    "lines": 64.68,
+    "statements": 63.47,
+    "functions": 56.12,
+    "branches": 52.31
+  },
+  "admin": {
+    "lines": 62.26,
+    "statements": 61.53,
+    "functions": 52.44,
+    "branches": 48.58
+  }
+}
