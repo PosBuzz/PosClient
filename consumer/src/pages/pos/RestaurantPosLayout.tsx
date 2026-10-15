@@ -321,6 +321,8 @@ const RestaurantPosLayout = ({
                   <div className="restaurant-pos__product-meta">
                     <span className="restaurant-pos__product-variant">
                       {product.name}
+                      {product.available_quantity !== undefined &&
+                        ` • Stock: ${product.available_quantity}`}
                     </span>
                     <span className="restaurant-pos__product-price">
                       <Money value={price} />

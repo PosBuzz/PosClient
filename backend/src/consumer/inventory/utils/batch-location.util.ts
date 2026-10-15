@@ -18,3 +18,22 @@ export function collectBatchLocations(
 
   return [...seen];
 }
+
+/**
+ * Units of a variant that can still be sold in a branch: each batch's stock
+ * minus what pending sales have reserved, never below zero per batch.
+ */
+export function availableQuantity(
+  batches:
+    | { quantity: number; reserved_quantity?: number | null }[]
+    | null
+    | undefined,
+): number {
+  if (!batches?.length) return 0;
+
+  return batches.reduce(
+    (sum, batch) =>
+      sum + Math.max(0, batch.quantity - (batch.reserved_quantity ?? 0)),
+    0,
+  );
+}
