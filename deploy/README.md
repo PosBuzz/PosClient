@@ -1,4 +1,4 @@
-# Deploy: staging, then promote to production
+# Deploy and server setup (staging and production)
 
 Two environments on one VPS (195.35.45.101, ssh port 22222), separate stacks, databases and secrets:
 
