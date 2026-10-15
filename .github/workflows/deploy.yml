@@ -1,8 +1,10 @@
-name: Deploy
+name: Deploy staging
 
-# Continuous delivery: every push to main that passes CI ("All checks") is built
-# into images, pushed to GHCR and rolled out to the VPS. Failed health checks
-# roll back to the last good commit (deploy/deploy.sh).
+# Continuous delivery to STAGING (posbuzz.cloud): every push to main that passes
+# CI ("All checks") is built into images, pushed to GHCR and rolled out to the
+# staging stack on the VPS. Production (posbuzz.xyz) is promoted by hand with the
+# "Promote to production" workflow once staging looks right.
+# Failed health checks roll back to the last good commit (deploy/deploy.sh).
 on:
   workflow_run:
     workflows: [CI]
@@ -15,7 +17,7 @@ on:
         required: false
 
 concurrency:
-  group: deploy-production
+  group: deploy-vps
   cancel-in-progress: false
 
 permissions:
@@ -64,7 +66,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        app: [backend, admin, consumer, portfolio]
+        include:
+          # backend/portfolio are environment-agnostic: promoted to production as-is.
+          - { app: backend,   suffix: "",     api: "" }
+          - { app: portfolio, suffix: "",     api: "" }
+          # the frontends bake in the API URL at build time, so staging has its own.
+          - { app: admin,     suffix: "-stg", api: "https://api.posbuzz.cloud/api/v1" }
+          - { app: consumer,  suffix: "-stg", api: "https://api.posbuzz.cloud/api/v1" }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,11 +96,10 @@ jobs:
           context: ${{ steps.ctx.outputs.context }}
           file: ${{ steps.ctx.outputs.file }}
           push: true
-          # Next.js prerenders against live CMS content when this is reachable.
           build-args: |
-            BACKEND_API_URL=https://api.posbuzz.cloud/api/v1
+            VITE_API_BASE_URL=${{ matrix.api }}
           tags: |
-            ghcr.io/posbuzz/posclient-${{ matrix.app }}:${{ needs.guard.outputs.sha }}
+            ghcr.io/posbuzz/posclient-${{ matrix.app }}:${{ needs.guard.outputs.sha }}${{ matrix.suffix }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ needs.guard.outputs.sha }}
@@ -100,10 +107,10 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
   deploy:
-    name: Deploy to VPS
+    name: Deploy to staging
     needs: [guard, build]
     runs-on: ubuntu-latest
-    environment: production
+    environment: staging
     steps:
       - uses: actions/checkout@v4
         with:
@@ -122,12 +129,12 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          { printf '%s\n' "$GHCR_TOKEN"; tar -c -C deploy docker-compose.prod.yml deploy.sh; } \
+          { printf '%s\n' "$GHCR_TOKEN"; tar -c -C deploy docker-compose.prod.yml deploy.sh refresh-staging.sh; } \
             | ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes \
-                "$DEPLOY_USER@$HOST" "deploy $SHA"
+                "$DEPLOY_USER@$HOST" "deploy staging $SHA"
 
   verify:
-    name: Verify live site
+    name: Verify staging
     needs: deploy
     runs-on: ubuntu-latest
     steps:
@@ -158,10 +165,10 @@ jobs:
       matrix:
         app: [backend, admin, consumer, portfolio]
     steps:
-      # Keep the 10 newest versions per image: plenty of rollback targets
+      # Keep the 30 newest versions per image (each deploy adds up to 3): plenty of rollback targets
       # without letting GHCR grow forever. Only runs after a verified deploy.
       - uses: actions/delete-package-versions@v5
         with:
           package-name: posclient-${{ matrix.app }}
           package-type: container
-          min-versions-to-keep: 10
+          min-versions-to-keep: 30

@@ -17,7 +17,9 @@ COPY admin/ .
 COPY contracts/ /app/contracts/
 COPY scripts/contracts/generate-response-types.mjs /app/scripts/contracts/generate-response-types.mjs
 # Public build-time values (embedded into the bundle by Vite).
-ENV VITE_API_BASE_URL=https://api.posbuzz.cloud/api/v1
+# Overridden per environment by the deploy workflows (staging vs production).
+ARG VITE_API_BASE_URL=https://api.posbuzz.xyz/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_Root_Admin=superadmin@posbuzz.cloud
 
 # Build the application
