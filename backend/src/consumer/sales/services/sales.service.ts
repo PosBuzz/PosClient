@@ -7,7 +7,10 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { collectBatchLocations } from '../../inventory/utils/batch-location.util';
+import {
+  availableQuantity,
+  collectBatchLocations,
+} from '../../inventory/utils/batch-location.util';
 import { Prisma } from '@prisma/client';
 import {
   CreateSaleDto,
@@ -1507,6 +1510,7 @@ export class SalesService {
         tax_method: variant.product.tax_method || 'exclusive',
         // Where the stock sits, so staff can find it straight from search
         locations: collectBatchLocations(variant.inventory_items),
+        available_quantity: availableQuantity(variant.inventory_items),
       }));
 
       return result;
@@ -1572,6 +1576,7 @@ export class SalesService {
         product_code: variant.product.code,
         unit_name: variant.sale_unit.name,
         locations: collectBatchLocations(variant.inventory_items),
+        available_quantity: availableQuantity(variant.inventory_items),
         tax_percentage: variant.product.tax || 0,
         tax_method: variant.product.tax_method || 'exclusive',
       };
