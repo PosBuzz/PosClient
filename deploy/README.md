@@ -10,13 +10,15 @@ Two environments on one VPS (195.35.45.101, ssh port 22222), separate stacks, da
 | containers / project | `posbuzz-stg-*` / `posclient-stg` | `posbuzz-*` / `posclient` |
 | database volume | `posclient_stg_postgres_data` | `posclient_postgres_data` |
 
-Flow:
-1. Push to `main` -> `CI` -> (green `All checks`) -> **Deploy staging** (`deploy.yml`): builds backend, portfolio (shared images, tag = sha) and admin/consumer (tag `<sha>-stg`, API URL `api.posbuzz.cloud`), pushes to GHCR, deploys staging over SSH, health-checks, rolls back on failure, smoke-tests.
-2. Test on staging. Refresh its data from production any time: Actions -> **Refresh staging data**.
-3. Actions -> **Promote to production** (`promote.yml`, manual): refuses a commit that did not deploy to staging successfully; reuses the exact backend/portfolio images, builds admin/consumer as `<sha>-prod` (API URL `api.posbuzz.xyz`), deploys production, smoke-tests it.
+Branch flow (only `main` and `staging` exist long-term):
+1. Work on a feature branch, open a PR **into `staging`**. CI runs on the PR.
+2. Merge it: `staging` -> CI -> (green `All checks`) -> **Deploy** workflow builds the images and rolls out **staging** (`api.posbuzz.cloud` frontends, tag `<sha>-stg`).
+3. Test on staging. Pull fresh production data into it any time: Actions -> **Refresh staging data** (replaces the staging database; nothing is merged).
+4. Open a PR **`staging` -> `main`** and merge it: `main` -> CI -> **Deploy** rolls out **production** (`api.posbuzz.xyz` frontends, tag `<sha>-prod`). Production only ever receives code that was merged on staging first (convention, not enforced by branch protection, see D-065).
 
-Both deploys keep a pre-deploy `pg_dump` (last 5 in `predeploy/`), roll back images (not migrations) on a failed health check, and prune old images.
-Re-deploy staging by hand: Actions -> Deploy staging -> Run workflow (optional `sha`).
+The Deploy workflow picks the environment from the branch: `staging` -> staging, `main` -> production. It refuses a commit without a green `All checks`, or one that is not on that branch, builds backend/portfolio (tag = sha) and the two frontends (tag `<sha>-stg` / `<sha>-prod`, API URL baked in), deploys over SSH, health-checks, rolls back on failure, smoke-tests the live site (status codes, cache headers, and that each frontend talks to its own API) and prunes old images.
+Both deploys keep a pre-deploy `pg_dump` (last 5 in `predeploy/`) and roll back images, not migrations.
+Re-deploy by hand: Actions -> Deploy -> Run workflow (pick the environment, optional `sha`). Hotfix: PR straight into `main`, then merge `main` back into `staging`.
 
 ## Server layout (shown for production; staging is the same under `/opt/posbuzz-staging`)
 - `docker-compose.prod.yml`, `deploy.sh`: copied from the repo on every deploy.

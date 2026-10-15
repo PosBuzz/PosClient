@@ -1,19 +1,24 @@
-name: Deploy staging
+name: Deploy
 
-# Continuous delivery to STAGING (posbuzz.cloud): every push to main that passes
-# CI ("All checks") is built into images, pushed to GHCR and rolled out to the
-# staging stack on the VPS. Production (posbuzz.xyz) is promoted by hand with the
-# "Promote to production" workflow once staging looks right.
-# Failed health checks roll back to the last good commit (deploy/deploy.sh).
+# Branch flow:  feature -> PR into `staging` -> merge -> staging.posbuzz.cloud
+#               PR `staging` -> `main` -> merge -> production (posbuzz.xyz)
+# A push that passes CI ("All checks") is built into images, pushed to GHCR and
+# rolled out to the matching stack on the VPS. Failed health checks roll back to
+# the last good commit of that stack (deploy/deploy.sh).
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    branches: [main, staging]
   workflow_dispatch:
     inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        required: true
       sha:
-        description: Commit to (re)deploy; must have passed CI. Defaults to the branch head.
+        description: Commit to (re)deploy; must be on the matching branch and have passed CI. Defaults to the branch head.
         required: false
 
 concurrency:
@@ -27,37 +32,50 @@ permissions:
 
 jobs:
   guard:
-    name: Resolve commit
+    name: Resolve commit and target
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.pick.outputs.sha }}
+      env: ${{ steps.pick.outputs.env }}
+      suffix: ${{ steps.pick.outputs.suffix }}
+      api: ${{ steps.pick.outputs.api }}
     steps:
       - id: pick
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
           RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           RUN_EVENT: ${{ github.event.workflow_run.event }}
+          INPUT_ENV: ${{ inputs.environment }}
           INPUT_SHA: ${{ inputs.sha }}
         run: |
           set -euo pipefail
+          repo=${{ github.repository }}
           if [ "$EVENT" = workflow_run ]; then
             [ "$RUN_CONCLUSION" = success ] || { echo "CI did not succeed ($RUN_CONCLUSION): not deploying"; exit 1; }
-            [ "$RUN_EVENT" = push ] || { echo "CI ran for $RUN_EVENT, not a push to main: not deploying"; exit 1; }
-            sha="$RUN_SHA"
+            [ "$RUN_EVENT" = push ] || { echo "CI ran for $RUN_EVENT, not a push: not deploying"; exit 1; }
+            sha="$RUN_SHA"; branch="$RUN_BRANCH"
           else
-            sha="${INPUT_SHA:-$(gh api repos/${{ github.repository }}/commits/main --jq .sha)}"
+            if [ "$INPUT_ENV" = production ]; then branch=main; else branch=staging; fi
+            sha="${INPUT_SHA:-$(gh api repos/$repo/commits/$branch --jq .sha)}"
           fi
+          case "$branch" in
+            main)    env=production; suffix=-prod; api=https://api.posbuzz.xyz/api/v1 ;;
+            staging) env=staging;    suffix=-stg;  api=https://api.posbuzz.cloud/api/v1 ;;
+            *) echo "::error::branch $branch is not deployable"; exit 1 ;;
+          esac
           # Never ship a commit without a green aggregate check.
-          conclusion=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs?check_name=All%20checks" \
+          conclusion=$(gh api "repos/$repo/commits/$sha/check-runs?check_name=All%20checks" \
             --jq '.check_runs | sort_by(.completed_at) | last | .conclusion')
           echo "All checks on $sha: $conclusion"
           [ "$conclusion" = success ] || { echo "::error::CI is not green for $sha"; exit 1; }
-          # Only commits on main are deployable.
-          git_status=$(gh api "repos/${{ github.repository }}/compare/main...$sha" --jq .status)
-          case "$git_status" in identical|behind) ;; *) echo "::error::$sha is not on main ($git_status)"; exit 1;; esac
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          # The commit must belong to the branch that selects the environment.
+          st=$(gh api "repos/$repo/compare/$branch...$sha" --jq .status)
+          case "$st" in identical|behind) ;; *) echo "::error::$sha is not on $branch ($st)"; exit 1;; esac
+          echo "deploying $sha to $env"
+          { echo "sha=$sha"; echo "env=$env"; echo "suffix=$suffix"; echo "api=$api"; } >> "$GITHUB_OUTPUT"
 
   build:
     name: Build image (${{ matrix.app }})
@@ -67,12 +85,12 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          # backend/portfolio are environment-agnostic: promoted to production as-is.
-          - { app: backend,   suffix: "",     api: "" }
-          - { app: portfolio, suffix: "",     api: "" }
-          # the frontends bake in the API URL at build time, so staging has its own.
-          - { app: admin,     suffix: "-stg", api: "https://api.posbuzz.cloud/api/v1" }
-          - { app: consumer,  suffix: "-stg", api: "https://api.posbuzz.cloud/api/v1" }
+          # backend/portfolio do not depend on the environment's API URL.
+          - { app: backend,   frontend: false }
+          - { app: portfolio, frontend: false }
+          # the frontends bake in the API URL at build time: one build per environment.
+          - { app: admin,     frontend: true }
+          - { app: consumer,  frontend: true }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,7 +101,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Context and Dockerfile
+      - name: Context, Dockerfile and tag
         id: ctx
         run: |
           case "${{ matrix.app }}" in
@@ -91,26 +109,28 @@ jobs:
             portfolio) echo "context=portfolio" >> "$GITHUB_OUTPUT"; echo "file=portfolio/Dockerfile" >> "$GITHUB_OUTPUT";;
             *)         echo "context=."         >> "$GITHUB_OUTPUT"; echo "file=${{ matrix.app }}/Dockerfile" >> "$GITHUB_OUTPUT";;
           esac
+          suffix=""; [ "${{ matrix.frontend }}" = true ] && suffix="${{ needs.guard.outputs.suffix }}"
+          echo "tag=${{ needs.guard.outputs.sha }}$suffix" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: ${{ steps.ctx.outputs.context }}
           file: ${{ steps.ctx.outputs.file }}
           push: true
           build-args: |
-            VITE_API_BASE_URL=${{ matrix.api }}
-          tags: |
-            ghcr.io/posbuzz/posclient-${{ matrix.app }}:${{ needs.guard.outputs.sha }}${{ matrix.suffix }}
+            VITE_API_BASE_URL=${{ matrix.frontend && needs.guard.outputs.api || '' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ needs.guard.outputs.sha }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          tags: |
+            ghcr.io/posbuzz/posclient-${{ matrix.app }}:${{ steps.ctx.outputs.tag }}
+          cache-from: type=gha,scope=${{ matrix.app }}${{ matrix.frontend && needs.guard.outputs.suffix || '' }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}${{ matrix.frontend && needs.guard.outputs.suffix || '' }}
 
   deploy:
-    name: Deploy to staging
+    name: Deploy to ${{ needs.guard.outputs.env }}
     needs: [guard, build]
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ needs.guard.outputs.env }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -118,6 +138,7 @@ jobs:
       - name: Roll out
         env:
           SHA: ${{ needs.guard.outputs.sha }}
+          TARGET: ${{ needs.guard.outputs.env }}
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           HOST: ${{ secrets.DEPLOY_HOST }}
@@ -131,28 +152,34 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           { printf '%s\n' "$GHCR_TOKEN"; tar -c -C deploy docker-compose.prod.yml deploy.sh refresh-staging.sh; } \
             | ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes \
-                "$DEPLOY_USER@$HOST" "deploy staging $SHA"
+                "$DEPLOY_USER@$HOST" "deploy $TARGET $SHA"
 
   verify:
-    name: Verify staging
-    needs: deploy
+    name: Verify ${{ needs.guard.outputs.env }}
+    needs: [guard, deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Smoke test
+        env:
+          TARGET: ${{ needs.guard.outputs.env }}
         run: |
           set -euo pipefail
+          if [ "$TARGET" = production ]; then d=posbuzz.xyz; else d=posbuzz.cloud; fi
           code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1"; }
           header() { curl -sI --max-time 20 "$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2- | tr 'A-Z' 'a-z'; }
-          [ "$(code https://api.posbuzz.cloud/api/v1)" = 200 ]
-          [ "$(code https://admin.posbuzz.cloud/)" = 200 ]
-          [ "$(code https://posbuzz.cloud/)" = 200 ]
-          [ "$(code https://portfolio.posbuzz.cloud/)" = 200 ]
+          [ "$(code https://api.$d/api/v1)" = 200 ]
+          [ "$(code https://admin.$d/)" = 200 ]
+          [ "$(code https://$d/)" = 200 ]
+          [ "$(code https://portfolio.$d/)" = 200 ]
           # A plain refresh must pick up a deploy: the entry point and the
           # service worker may never be cached, hashed assets may be.
-          header https://posbuzz.cloud/ cache-control | grep -q 'no-cache'
-          header https://admin.posbuzz.cloud/ cache-control | grep -q 'no-cache'
-          header https://posbuzz.cloud/sw.js cache-control | grep -q 'no-store'
-          echo "live site OK"
+          header https://$d/ cache-control | grep -q 'no-cache'
+          header https://admin.$d/ cache-control | grep -q 'no-cache'
+          header https://$d/sw.js cache-control | grep -q 'no-store'
+          # Each frontend must talk to its own environment's API.
+          f=$(curl -s https://$d/ | grep -oE '/assets/index-[^"]+\.js' | head -1)
+          curl -s "https://$d$f" | grep -q "https://api.$d/api/v1"
+          echo "$TARGET OK"
 
   prune:
     name: Prune old images (${{ matrix.app }})
@@ -165,8 +192,8 @@ jobs:
       matrix:
         app: [backend, admin, consumer, portfolio]
     steps:
-      # Keep the 30 newest versions per image (each deploy adds up to 3): plenty of rollback targets
-      # without letting GHCR grow forever. Only runs after a verified deploy.
+      # Keep the 30 newest versions per image (each deploy adds up to 3):
+      # plenty of rollback targets without letting GHCR grow forever.
       - uses: actions/delete-package-versions@v5
         with:
           package-name: posclient-${{ matrix.app }}
