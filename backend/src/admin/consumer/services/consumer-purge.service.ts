@@ -20,9 +20,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 /**
  * Tables that have no `consumer_id` of their own. Each entry is the SQL
  * predicate that selects the rows belonging to consumer `$1`, reached through
- * the table's owning parent.
+ * the table's owning parent. A function, not a constant, so its predicates run
+ * inside tests and mutation testing can see them.
  */
-export const SCOPE: Record<string, string> = {
+export const consumerScope = (): Record<string, string> => ({
   product_variants: `product_id IN (SELECT id FROM products WHERE consumer_id = $1)`,
   price_history: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
   product_serials: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
@@ -48,7 +49,7 @@ export const SCOPE: Record<string, string> = {
   support_ticket_messages: `ticket_id IN (SELECT id FROM support_tickets WHERE consumer_id = $1)`,
   consumer_data_imports: `source_consumer_id = $1 OR target_consumer_id = $1`,
   consumer_import_mappings: `source_consumer_id = $1 OR target_consumer_id = $1`,
-};
+});
 
 interface TableInfo {
   name: string;
@@ -179,12 +180,13 @@ export class ConsumerPurgeService {
 
     await this.prisma.$transaction(
       async (tx) => {
+        const scope = consumerScope();
         const tables = await this.reachableTables(tx);
         const byName = new Map(tables.map((t) => [t.name, t]));
 
         // Fail before deleting anything if a reachable table cannot be scoped.
         const unmapped = tables
-          .filter((t) => !t.hasConsumerId && !SCOPE[t.name])
+          .filter((t) => !t.hasConsumerId && !scope[t.name])
           .map((t) => t.name);
 
         if (unmapped.length) {
@@ -197,7 +199,7 @@ export class ConsumerPurgeService {
 
         for (const table of await this.deleteOrder(tx, tables)) {
           const info = byName.get(table)!;
-          const where = info.hasConsumerId ? `consumer_id = $1` : SCOPE[table];
+          const where = info.hasConsumerId ? `consumer_id = $1` : scope[table];
 
           const count = await tx.$executeRawUnsafe(
             `DELETE FROM "${table}" WHERE ${where}`,

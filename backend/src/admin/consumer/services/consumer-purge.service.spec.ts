@@ -1,5 +1,5 @@
 import { HttpException, Logger } from '@nestjs/common';
-import { ConsumerPurgeService, SCOPE } from './consumer-purge.service';
+import { ConsumerPurgeService, consumerScope } from './consumer-purge.service';
 
 type Table = { name: string; has_consumer_id: boolean };
 type Edge = { child: string; parent: string };
@@ -44,7 +44,7 @@ describe('ConsumerPurgeService (unit)', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('[BE-MUT-300] the scope table is pinned: every tenant-less table reaches the consumer through its owning parent', () => {
-    expect(SCOPE).toEqual({
+    expect(consumerScope()).toEqual({
       product_variants: `product_id IN (SELECT id FROM products WHERE consumer_id = $1)`,
       price_history: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
       product_serials: `variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id = v.product_id WHERE p.consumer_id = $1)`,
@@ -125,7 +125,7 @@ describe('ConsumerPurgeService (unit)', () => {
       'DELETE FROM "users" WHERE consumer_id = $1',
     );
     expect(sqlFor('role_permissions')).toEqual({
-      sql: `DELETE FROM "role_permissions" WHERE ${SCOPE.role_permissions}`,
+      sql: `DELETE FROM "role_permissions" WHERE ${consumerScope().role_permissions}`,
       arg: 7,
     });
     expect(sqlFor('consumers')).toEqual({
