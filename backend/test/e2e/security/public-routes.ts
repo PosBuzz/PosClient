@@ -39,8 +39,6 @@ export const AUTH_ONLY_ROUTES: Record<string, string> = {
     'TODO-QUESTION: any signed-in user can call the AI gateway; confirm whether add_product/edit_product should be required',
   'POST /api/v1/ai/description-feedback':
     'TODO-QUESTION: same as auto-description',
-  'GET /api/v1/consumer/import/status':
-    'any signed-in user; reveals only whether bulk import is switched on',
   'POST /api/v1/consumer/import/:entity':
     'permission checked in the handler per entity (products: add_product, inventory: inventory_batches, customers: customers)',
   'GET /api/v1/consumer/import/:entity/columns':

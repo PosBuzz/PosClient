@@ -6,7 +6,7 @@ import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
-import { useImportEnabled } from "../../hooks/useImportEnabled";
+import { IMPORT_ENABLED } from "../../constants/features";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
@@ -16,7 +16,6 @@ const title = "Customers";
 
 const Customers = () => {
   const queryClient = useQueryClient();
-  const importEnabled = useImportEnabled();
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editedItem, setEditedItem] = useState<Customer | null>(null);
@@ -71,7 +70,7 @@ const Customers = () => {
         rightSection={
           <Space>
             <ExportButton entity="customers" />
-            {importEnabled && (
+            {IMPORT_ENABLED && (
               <Button
                 icon={<UploadOutlined />}
                 onClick={() => setImportOpen(true)}

@@ -32,7 +32,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
 import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
-import { useImportEnabled } from "../../hooks/useImportEnabled";
+import { IMPORT_ENABLED } from "../../constants/features";
 import PageTitle from "../../components/PageTitle";
 import { Permissions } from "../../constants/permissions";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -59,7 +59,6 @@ const ProductsTable = () => {
   const { messageApi } = useMessageStore();
   // Input state (tracks what the user is typing)
   const [importOpen, setImportOpen] = useState(false);
-  const importEnabled = useImportEnabled();
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -469,7 +468,7 @@ const ProductsTable = () => {
                 </Tag>
               )}
               <ExportButton entity="products" />
-              {importEnabled && (
+              {IMPORT_ENABLED && (
                 <Button
                   icon={<UploadOutlined />}
                   onClick={() => setImportOpen(true)}

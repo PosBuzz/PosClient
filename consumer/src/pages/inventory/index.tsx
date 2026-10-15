@@ -1,7 +1,7 @@
 import { Money } from "../../components/Currency";
 import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
-import { useImportEnabled } from "../../hooks/useImportEnabled";
+import { IMPORT_ENABLED } from "../../constants/features";
 import {
   EditOutlined,
   EnvironmentOutlined,
@@ -50,7 +50,6 @@ export default function InventoryPage() {
 
   // Input state (tracks what the user is typing)
   const [importOpen, setImportOpen] = useState(false);
-  const importEnabled = useImportEnabled();
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -489,7 +488,7 @@ export default function InventoryPage() {
         rightSection={
           <Space>
             <ExportButton entity="inventory" />
-            {importEnabled && (
+            {IMPORT_ENABLED && (
               <Button
                 icon={<UploadOutlined />}
                 onClick={() => setImportOpen(true)}

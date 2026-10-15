@@ -659,11 +659,6 @@ const CASES: Case[] = [
     },
   ],
   [
-    "importApi.getStatus",
-    () => importApi.getStatus(),
-    { method: "GET", path: "/consumer/import/status" },
-  ],
-  [
     "importApi.getColumns",
     () => importApi.getColumns("products"),
     { method: "GET", path: "/consumer/import/products/columns" },

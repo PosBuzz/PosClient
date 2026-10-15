@@ -48,12 +48,6 @@ interface UploadedSpreadsheet {
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
-  /** Lets the UI hide the import buttons while the feature is off */
-  @Get('status')
-  status() {
-    return { enabled: isImportEnabled() };
-  }
-
   @Get(':entity/template')
   async downloadTemplate(
     @Param('entity') entity: string,
