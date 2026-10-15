@@ -2,9 +2,11 @@ import { PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Col, Row, Space } from "antd";
 import { useState } from "react";
+import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
 import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
+import { IMPORT_ENABLED } from "../../constants/features";
 import { setPageTitle } from "../../utils/setPageTitle";
 import DrawerForm from "./_DrawerForm";
 import TableGrid from "./_TableGrid";
@@ -67,12 +69,15 @@ const Customers = () => {
         ]}
         rightSection={
           <Space>
-            <Button
-              icon={<UploadOutlined />}
-              onClick={() => setImportOpen(true)}
-            >
-              Import Excel
-            </Button>
+            <ExportButton entity="customers" />
+            {IMPORT_ENABLED && (
+              <Button
+                icon={<UploadOutlined />}
+                onClick={() => setImportOpen(true)}
+              >
+                Import Excel
+              </Button>
+            )}
             <Button type="primary" icon={<PlusOutlined />} onClick={showDrawer}>
               Add New Customer
             </Button>

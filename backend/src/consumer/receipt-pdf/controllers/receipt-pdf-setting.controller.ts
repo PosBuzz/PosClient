@@ -398,6 +398,17 @@ export class ReceiptPdfSettingController {
       base.headerText = 'SAMPLE ONLINE DELIVERY SLIP';
       base.notes = 'Delivery partner: Demo Courier\nCall before delivery.';
       base.isOnlineOrder = true;
+    } else if (type === 'transfer_slip' || type === 'transfer_chalan') {
+      base.headerText =
+        type === 'transfer_slip'
+          ? 'SAMPLE INVENTORY TRANSFER SLIP'
+          : 'SAMPLE TRANSFER CHALAN';
+      base.saleNumber = 'TR-123';
+      base.numberLabel = 'Transfer No:';
+      base.codeHeader = 'Code';
+      base.sourceBranchName = 'Main Warehouse';
+      base.destinationBranchName = 'Downtown Branch';
+      base.notes = 'SAMPLE PREVIEW ONLY - Handle with care.';
     } else if (type === 'delivery_slip') {
       base.headerText = 'SAMPLE DELIVERY SLIP';
       base.saleNumber = 'SAMPLE-DS-000123';

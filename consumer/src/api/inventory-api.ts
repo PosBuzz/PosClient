@@ -1,5 +1,6 @@
 import { get, post, patch, deleteApi } from "./crud-api";
 import { endpoints } from "./endpoints";
+import axiosInstance from "./axiosInstance";
 
 export interface InventorySummary {
   total_batches: number;
@@ -208,6 +209,17 @@ export interface PaginatedResponse<T> {
 }
 
 export const inventoryApi = {
+  downloadTransferPdf: async (
+    id: number,
+    type: "transfer_slip" | "transfer_chalan",
+  ): Promise<Blob> => {
+    const response = await axiosInstance.get(
+      endpoints.inventoryTransferPdf(id, type),
+      { responseType: "blob" },
+    );
+    return response.data;
+  },
+
   // Summary
   getSummary: async (branchId?: number): Promise<InventorySummary> => {
     const params = branchId ? { branch_id: branchId } : {};

@@ -30,7 +30,9 @@ import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
+import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
+import { IMPORT_ENABLED } from "../../constants/features";
 import PageTitle from "../../components/PageTitle";
 import { Permissions } from "../../constants/permissions";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -465,13 +467,16 @@ const ProductsTable = () => {
                   {productLimit.used} / {productLimit.max_products} products
                 </Tag>
               )}
-              <Button
-                icon={<UploadOutlined />}
-                onClick={() => setImportOpen(true)}
-                disabled={productLimit?.limit_reached}
-              >
-                Import Excel
-              </Button>
+              <ExportButton entity="products" />
+              {IMPORT_ENABLED && (
+                <Button
+                  icon={<UploadOutlined />}
+                  onClick={() => setImportOpen(true)}
+                  disabled={productLimit?.limit_reached}
+                >
+                  Import Excel
+                </Button>
+              )}
               {productLimit?.limit_reached ? (
                 <Tooltip
                   title={`Your ${productLimit.plan_name ?? "current"} plan allows ${productLimit.max_products} products. Upgrade your plan to add more.`}

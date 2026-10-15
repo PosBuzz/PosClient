@@ -34,8 +34,8 @@ describe("useSaleManager", () => {
     expect(form.setFieldsValue).toHaveBeenCalledWith({
       branch_id: 7,
       price_type: PriceType.REGULAR,
-      average_discount_amount: 0,
-      shipping_cost: 0,
+      average_discount_amount: undefined,
+      shipping_cost: undefined,
     });
     expect(result.current.userBranches).toHaveLength(2);
   });
@@ -105,7 +105,7 @@ describe("useSaleManager", () => {
     expect(result.current.productSearch).toBe("");
     expect(form.setFieldsValue).toHaveBeenLastCalledWith({
       branch_id: 8,
-      average_discount_amount: 0,
+      average_discount_amount: undefined,
     });
   });
 

@@ -226,6 +226,7 @@ export class ReceiptPdfService {
     Discount: 'Disc.',
     Item: 'Item',
     SKU: 'SKU',
+    Code: 'Code',
     Qty: 'Qty',
     Tax: 'Tax',
     Total: 'Total',
@@ -746,7 +747,10 @@ export class ReceiptPdfService {
       doc
         .font('Helvetica-Bold')
         .fontSize(s.fontSizes.body)
-        .text('Sale No:', leftX, y, { continued: true, width: halfW })
+        .text(data.numberLabel ?? 'Sale No:', leftX, y, {
+          continued: true,
+          width: halfW,
+        })
         .font('Helvetica')
         .text(' ' + data.saleNumber);
       y += lh;
@@ -860,6 +864,9 @@ export class ReceiptPdfService {
     lm: number,
   ): number {
     if (!s.customerInfo.show) return y;
+    if (data.sourceBranchName || data.destinationBranchName) {
+      return this.drawTransferBranches(doc, data, s, y, uw, lm);
+    }
     if (
       !data.customerName &&
       !data.customerPhone &&
@@ -930,6 +937,33 @@ export class ReceiptPdfService {
     return y;
   }
 
+  /** Inventory transfers show where stock goes from and to, not a customer. */
+  private drawTransferBranches(
+    doc: PDFKit.PDFDocument,
+    data: ReceiptPdfData,
+    s: ReceiptPdfSettings,
+    y: number,
+    uw: number,
+    lm: number,
+  ): number {
+    const lh = s.fontSizes.body + 3;
+    const rows: [string, string | undefined][] = [
+      ['Source Branch:', data.sourceBranchName],
+      ['Destination Branch:', data.destinationBranchName],
+    ];
+    for (const [label, value] of rows) {
+      if (!value) continue;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(s.fontSizes.body)
+        .text(label, lm, y, { continued: true, width: uw })
+        .font('Helvetica')
+        .text(' ' + value);
+      y += lh;
+    }
+    return this.hr(doc, y, lm, uw);
+  }
+
   /* ================================================================== */
   /*  SECTION: Items Table                                              */
   /* ================================================================== */
@@ -944,7 +978,7 @@ export class ReceiptPdfService {
   ): number {
     if (!s.items.show || !data.items.length) return y;
 
-    const cols = this.buildItemColumns(s, uw, lm);
+    const cols = this.buildItemColumns(s, uw, lm, data.codeHeader);
 
     y = this.ensureSpace(doc, y, 30, s);
     y = this.drawItemTableHeader(doc, cols, y, s);
@@ -963,6 +997,7 @@ export class ReceiptPdfService {
     s: ReceiptPdfSettings,
     uw: number,
     lm: number,
+    codeHeader = 'SKU',
   ): ColumnDef[] {
     interface ColSpec {
       key: string;
@@ -976,7 +1011,12 @@ export class ReceiptPdfService {
     specs.push({ key: 'item', header: 'Item', weight: 5, align: 'left' });
 
     if (s.items.showSku) {
-      specs.push({ key: 'sku', header: 'SKU', weight: 1.8, align: 'left' });
+      specs.push({
+        key: 'sku',
+        header: codeHeader,
+        weight: 1.8,
+        align: 'left',
+      });
     }
 
     if (s.items.showQuantity) {

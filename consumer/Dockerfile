@@ -20,6 +20,8 @@ COPY scripts/contracts/generate-response-types.mjs /app/scripts/contracts/genera
 # Overridden per environment by the deploy workflows (staging vs production).
 ARG VITE_API_BASE_URL=https://api.posbuzz.xyz/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_IMPORT_ENABLED=false
+ENV VITE_IMPORT_ENABLED=$VITE_IMPORT_ENABLED
 ENV VITE_CLOUD_NAME=ddluuftiq
 ENV VITE_UPLOAD_PRESET=test-preset
 ENV VITE_CLOUDINARY_API=https://api.cloudinary.com/v1_1/ddluuftiq/image/upload

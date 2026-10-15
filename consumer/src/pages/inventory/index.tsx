@@ -1,5 +1,7 @@
 import { Money } from "../../components/Currency";
+import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
+import { IMPORT_ENABLED } from "../../constants/features";
 import {
   EditOutlined,
   EnvironmentOutlined,
@@ -485,12 +487,15 @@ export default function InventoryPage() {
         ]}
         rightSection={
           <Space>
-            <Button
-              icon={<UploadOutlined />}
-              onClick={() => setImportOpen(true)}
-            >
-              Import Excel
-            </Button>
+            <ExportButton entity="inventory" />
+            {IMPORT_ENABLED && (
+              <Button
+                icon={<UploadOutlined />}
+                onClick={() => setImportOpen(true)}
+              >
+                Import Excel
+              </Button>
+            )}
             <Button
               type="primary"
               icon={<PlusOutlined />}

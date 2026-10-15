@@ -343,6 +343,8 @@ export interface ProductVariantForSale {
   tax_method: string; // "inclusive" or "exclusive"
   /** Distinct storage locations of this variant's batches in the branch */
   locations?: string[];
+  /** Units in the branch that can still be sold (stock minus reserved) */
+  available_quantity?: number;
 }
 
 export interface InventoryBatch {

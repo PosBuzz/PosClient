@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 import { aiApi } from "../ai-api";
+import { exportApi } from "../export-api";
 import { importApi } from "../import-api";
 import { inventoryApi } from "../inventory-api";
 import { operationalCostsApi } from "../operational-costs-api";
@@ -649,6 +650,15 @@ const CASES: Case[] = [
     },
   ],
   [
+    "exportApi.download",
+    () => exportApi.download("customers", "pdf"),
+    {
+      method: "GET",
+      path: "/consumer/export/customers",
+      query: { format: "pdf" },
+    },
+  ],
+  [
     "importApi.getColumns",
     () => importApi.getColumns("products"),
     { method: "GET", path: "/consumer/import/products/columns" },
@@ -748,6 +758,15 @@ const CASES: Case[] = [
     ];
   }),
   // ---- inventory
+  [
+    "inventoryApi.downloadTransferPdf",
+    () => inventoryApi.downloadTransferPdf(6, "transfer_chalan"),
+    {
+      method: "GET",
+      path: "/consumer/inventory/transfers/6/pdf",
+      query: { type: "transfer_chalan" },
+    },
+  ],
   [
     "inventoryApi.getSummary",
     () => inventoryApi.getSummary(2),
@@ -1020,6 +1039,7 @@ const MODULES: Record<string, object> = {
   supportApi,
   aiApi,
   importApi,
+  exportApi,
   productApi,
   inventoryApi,
   receiptSettingsApi,
