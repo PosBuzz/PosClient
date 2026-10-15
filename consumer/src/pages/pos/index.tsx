@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { Money, takaPrefix } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
@@ -78,6 +79,7 @@ import {
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
 import { useSaleManager } from "../../hooks/useSaleManager";
+import { getErrorMessage } from "../../utils/api-error";
 import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
@@ -86,6 +88,7 @@ import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -173,6 +176,8 @@ const NewSale = () => {
       variant,
       quantityToAdd: qty,
       priceType,
+      specialDiscountPerQuantity:
+        specialDiscountModes[variant.id] === "quantity",
     });
 
   const getVariantPriceFn = (variant: ProductVariantForSale) =>
@@ -291,8 +296,8 @@ const NewSale = () => {
         } else {
           messageApi?.error(`Product not found for barcode: ${barcode}`);
         }
-      } catch {
-        messageApi?.error("Failed to scan barcode");
+      } catch (error) {
+        messageApi?.error(getErrorMessage(error, "Failed to scan barcode"));
       }
     },
     [addToSale, messageApi, selectedBranch],
@@ -328,8 +333,7 @@ const NewSale = () => {
         specialDiscountPerQuantity !== undefined
           ? {
               ...item,
-              special_discount_amount:
-                specialDiscountPerQuantity * quantity,
+              special_discount_amount: specialDiscountPerQuantity * quantity,
             }
           : item,
       ),
@@ -558,7 +562,7 @@ const NewSale = () => {
       }
     }
     const totalPaymentAmount = effectivePayments.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum, payment) => sum + (Number(payment.amount) || 0),
       0,
     );
 
@@ -578,18 +582,7 @@ const NewSale = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,
@@ -618,11 +611,9 @@ const NewSale = () => {
         queryKey: [queryKeys.productsForInventory],
       });
       queryClient.invalidateQueries({ queryKey: [queryKeys.productsForSale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sale] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.salesStats] });
       queryClient.invalidateQueries({ queryKey: [queryKeys.promotions] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.eod] });
+      // Dashboard, EOD, sales stats, daily target, user/variant stats
+      invalidateSalesReports(queryClient);
 
       messageApi?.success("Sale created successfully!");
 
@@ -660,9 +651,7 @@ const NewSale = () => {
       });
     } catch (error: any) {
       console.error("Error creating sale:", error);
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create sale",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create sale"));
     } finally {
       setLoading(false);
     }
@@ -676,7 +665,7 @@ const NewSale = () => {
       salePayments[0].payment_method === PaymentMethod.CASH
     ) {
       const currentTotalPaid = salePayments.reduce(
-        (sum, p) => sum + p.amount,
+        (sum, p) => sum + (Number(p.amount) || 0),
         0,
       );
       if (currentTotalPaid !== totals.total) {
@@ -944,114 +933,119 @@ const NewSale = () => {
           overflow: "hidden",
         }}
       >
-      <CustomerModal
-        open={customerModalOpen}
-        onClose={() => setCustomerModalOpen(false)}
-        onCreateCustomer={async (customer) => {
-          try {
-            const newCustomer = await post(endpoints.createCustomer, customer);
-            setSelectedCustomer(newCustomer);
-            setCustomers([...customers, newCustomer]);
-            form.setFieldsValue({ customer_id: newCustomer.id });
-            queryClient.invalidateQueries({
-              queryKey: [queryKeys.customers],
-            });
-            messageApi?.success("Customer created successfully");
-          } catch (error) {
-            console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
-          }
-        }}
-      />
-
-      <Drawer
-        title="Available Promotions"
-        open={promotionDrawerOpen}
-        onClose={() => setPromotionDrawerOpen(false)}
-        width={460}
-      >
-        <List
-          loading={activePromotionsQuery.isLoading}
-          locale={{ emptyText: "No active promotions found" }}
-          dataSource={activePromotionsQuery.data || []}
-          renderItem={(promotion) => {
-            const eligibility = promotionEligibilityMap[promotion.id];
-            const isAvailableNow = Boolean(eligibility?.is_eligible);
-            const isApplied = appliedPromotions.some(
-              (item) => item.id === promotion.id,
-            );
-
-            return (
-              <List.Item
-                actions={[
-                  <Button
-                    key={`apply-${promotion.id}`}
-                    type={isApplied ? "default" : "primary"}
-                    size="small"
-                    loading={applyingPromotionId === promotion.id}
-                    onClick={() => {
-                      if (isApplied) {
-                        removeAppliedPromotion(promotion.id);
-                        return;
-                      }
-                      applyPromotionToCurrentSale(promotion);
-                    }}
-                  >
-                    {isApplied ? "Remove" : "Apply"}
-                  </Button>,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <Space>
-                      <span>{promotion.name}</span>
-                      <Tag
-                        color={
-                          promotion.scope === "BRAND"
-                            ? "blue"
-                            : promotion.scope === "BUNDLE"
-                              ? "purple"
-                              : "green"
-                        }
-                      >
-                        {promotion.scope}
-                      </Tag>
-                      {isApplied ? <Tag color="green">Applied</Tag> : null}
-                      {isAvailableNow ? (
-                        <Tag color="success">Available</Tag>
-                      ) : null}
-                    </Space>
-                  }
-                  description={
-                    <Space direction="vertical" size={2}>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {promotion.discount_type === "percentage"
-                          ? `${promotion.discount_value}% discount`
-                          : `${formatCurrency(
-                              Number(promotion.discount_value),
-                            )} discount`}
-                      </Text>
-                      {promotion.description ? (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {promotion.description}
-                        </Text>
-                      ) : null}
-                      {selectedItems.length > 0 &&
-                      eligibility &&
-                      !eligibility.is_eligible ? (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {eligibility.reason ||
-                            "Not eligible for current cart"}
-                        </Text>
-                      ) : null}
-                    </Space>
-                  }
-                />
-              </List.Item>
-            );
+        <CustomerModal
+          open={customerModalOpen}
+          onClose={() => setCustomerModalOpen(false)}
+          onCreateCustomer={async (customer) => {
+            try {
+              const newCustomer = await post(
+                endpoints.createCustomer,
+                customer,
+              );
+              setSelectedCustomer(newCustomer);
+              setCustomers([...customers, newCustomer]);
+              form.setFieldsValue({ customer_id: newCustomer.id });
+              queryClient.invalidateQueries({
+                queryKey: [queryKeys.customers],
+              });
+              messageApi?.success("Customer created successfully");
+            } catch (error) {
+              console.error("Error creating customer:", error);
+              messageApi?.error(
+                getErrorMessage(error, "Failed to create customer"),
+              );
+            }
           }}
         />
-      </Drawer>
+
+        <Drawer
+          title="Available Promotions"
+          open={promotionDrawerOpen}
+          onClose={() => setPromotionDrawerOpen(false)}
+          width={460}
+        >
+          <List
+            loading={activePromotionsQuery.isLoading}
+            locale={{ emptyText: "No active promotions found" }}
+            dataSource={activePromotionsQuery.data || []}
+            renderItem={(promotion) => {
+              const eligibility = promotionEligibilityMap[promotion.id];
+              const isAvailableNow = Boolean(eligibility?.is_eligible);
+              const isApplied = appliedPromotions.some(
+                (item) => item.id === promotion.id,
+              );
+
+              return (
+                <List.Item
+                  actions={[
+                    <Button
+                      key={`apply-${promotion.id}`}
+                      type={isApplied ? "default" : "primary"}
+                      size="small"
+                      loading={applyingPromotionId === promotion.id}
+                      onClick={() => {
+                        if (isApplied) {
+                          removeAppliedPromotion(promotion.id);
+                          return;
+                        }
+                        applyPromotionToCurrentSale(promotion);
+                      }}
+                    >
+                      {isApplied ? "Remove" : "Apply"}
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space>
+                        <span>{promotion.name}</span>
+                        <Tag
+                          color={
+                            promotion.scope === "BRAND"
+                              ? "blue"
+                              : promotion.scope === "BUNDLE"
+                                ? "purple"
+                                : "green"
+                          }
+                        >
+                          {promotion.scope}
+                        </Tag>
+                        {isApplied ? <Tag color="green">Applied</Tag> : null}
+                        {isAvailableNow ? (
+                          <Tag color="success">Available</Tag>
+                        ) : null}
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size={2}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {promotion.discount_type === "percentage"
+                            ? `${promotion.discount_value}% discount`
+                            : `${formatCurrency(
+                                Number(promotion.discount_value),
+                              )} discount`}
+                        </Text>
+                        {promotion.description ? (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {promotion.description}
+                          </Text>
+                        ) : null}
+                        {selectedItems.length > 0 &&
+                        eligibility &&
+                        !eligibility.is_eligible ? (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {eligibility.reason ||
+                              "Not eligible for current cart"}
+                          </Text>
+                        ) : null}
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+        </Drawer>
 
         <Form
           form={form}
@@ -1153,7 +1147,9 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />
@@ -1415,8 +1411,9 @@ const NewSale = () => {
                       setTimeout(() => {
                         const activeElement =
                           document.activeElement as HTMLElement;
-                        if (activeElement && activeElement.blur)
+                        if (activeElement && activeElement.blur) {
                           activeElement.blur();
+                        }
                       }, 0);
                     }}
                     loading={loading}
@@ -1459,8 +1456,9 @@ const NewSale = () => {
                         setTimeout(() => {
                           const activeElement =
                             document.activeElement as HTMLElement;
-                          if (activeElement && activeElement.blur)
+                          if (activeElement && activeElement.blur) {
                             activeElement.blur();
+                          }
                         }, 0);
                       }}
                       style={{ flex: 1, minWidth: 0 }}
@@ -1512,8 +1510,9 @@ const NewSale = () => {
                           setTimeout(() => {
                             const activeElement =
                               document.activeElement as HTMLElement;
-                            if (activeElement && activeElement.blur)
+                            if (activeElement && activeElement.blur) {
                               activeElement.blur();
+                            }
                           }, 0);
                         }}
                       >
@@ -1609,8 +1608,9 @@ const NewSale = () => {
                     setTimeout(() => {
                       const activeElement =
                         document.activeElement as HTMLElement;
-                      if (activeElement && activeElement.blur)
+                      if (activeElement && activeElement.blur) {
                         activeElement.blur();
+                      }
                     }, 0);
                   }}
                   filterOption={false}
@@ -1848,7 +1848,10 @@ const NewSale = () => {
                       const remainingAmount = Math.max(
                         0,
                         totals.total -
-                          salePayments.reduce((sum, p) => sum + p.amount, 0),
+                          salePayments.reduce(
+                            (sum, p) => sum + (Number(p.amount) || 0),
+                            0,
+                          ),
                       );
                       setSalePayments([
                         ...salePayments,
@@ -1980,7 +1983,9 @@ const NewSale = () => {
                                   value={payment.amount}
                                   onChange={(value) => {
                                     const updatedPayments = [...salePayments];
-                                    updatedPayments[index].amount = value || 0;
+                                    // A cleared box stays empty (KI-065); a blank amount counts as 0 wherever it is summed or sent
+                                    updatedPayments[index].amount =
+                                      value as number;
                                     setSalePayments(updatedPayments);
                                   }}
                                   onPressEnter={(e) =>
@@ -2189,6 +2194,7 @@ const NewSale = () => {
               >
                 <Text style={{ fontSize: 14, fontWeight: 600 }}>TOTAL</Text>
                 <Text
+                  data-testid="pos-total"
                   style={{
                     fontSize: 32,
                     fontWeight: 800,

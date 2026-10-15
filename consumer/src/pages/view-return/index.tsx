@@ -142,7 +142,7 @@ export default function ViewReturn() {
       title: "Total",
       key: "total",
       render: (_: any, record: ReturnExchange) =>
-        formatCurrency(record.quantity * record.unit_price),
+        formatCurrency(record.quantity * Number(record.unit_price)),
     },
   ];
 
@@ -213,9 +213,7 @@ export default function ViewReturn() {
                   </Descriptions.Item>
                   {returnDetail.exchange_sale?.sale_number && (
                     <Descriptions.Item label="Exchange Sale">
-                      <Link
-                        to={`/sales/view/${returnDetail.exchange_sale.id}`}
-                      >
+                      <Link to={`/sales/view/${returnDetail.exchange_sale.id}`}>
                         {returnDetail.exchange_sale.sale_number}
                       </Link>
                     </Descriptions.Item>
@@ -302,7 +300,8 @@ export default function ViewReturn() {
                         <Text strong>
                           {formatCurrency(
                             returnDetail.exchanges.reduce(
-                              (sum, e) => sum + e.quantity * e.unit_price,
+                              (sum, e) =>
+                                sum + e.quantity * Number(e.unit_price),
                               0,
                             ),
                           )}
@@ -339,7 +338,8 @@ export default function ViewReturn() {
                         <Text strong>
                           {formatCurrency(
                             returnDetail.exchanges.reduce(
-                              (sum, e) => sum + e.quantity * e.unit_price,
+                              (sum, e) =>
+                                sum + e.quantity * Number(e.unit_price),
                               0,
                             ),
                           )}

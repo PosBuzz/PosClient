@@ -33,6 +33,7 @@ import {
   RewardsTransactionType,
 } from "../../types/rewards.types";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -95,7 +96,9 @@ const CustomerRewardsPage: React.FC = () => {
         total: response.meta?.total ?? 0,
       });
     } catch (error) {
-      messageApi?.error("Failed to load customer rewards data");
+      messageApi?.error(
+        getErrorMessage(error, "Failed to load customer rewards data"),
+      );
       console.error("Error loading customers:", error);
     } finally {
       setLoading(false);
@@ -128,9 +131,7 @@ const CustomerRewardsPage: React.FC = () => {
       redeemForm.resetFields();
       loadCustomers();
     } catch (error: any) {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to redeem points",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to redeem points"));
     } finally {
       setProcessing(false);
     }
@@ -147,9 +148,7 @@ const CustomerRewardsPage: React.FC = () => {
       adjustForm.resetFields();
       loadCustomers();
     } catch (error: any) {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to adjust points",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to adjust points"));
     } finally {
       setProcessing(false);
     }
@@ -193,7 +192,9 @@ const CustomerRewardsPage: React.FC = () => {
         total: response.meta?.total ?? 0,
       });
     } catch (error) {
-      messageApi?.error("Failed to load transaction history");
+      messageApi?.error(
+        getErrorMessage(error, "Failed to load transaction history"),
+      );
       console.error("Error loading transactions:", error);
     } finally {
       setTransactionLoading(false);

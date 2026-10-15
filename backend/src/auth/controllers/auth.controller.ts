@@ -13,6 +13,7 @@ import { CookieOptions, Request, Response } from 'express';
 import { LoginDto } from '../dto/login.dto';
 import { AdminAuthGuard } from '../guards/admin.auth.guard';
 import { ClientAuthGuard } from '../guards/client.auth.guard';
+import { LoginThrottlerGuard } from '../guards/login-throttler.guard';
 import { AuthService } from '../services/auth.service';
 import { Throttle } from '@nestjs/throttler';
 import { SubdomainUtilService } from 'src/common/services/subdomain-util.service';
@@ -61,6 +62,7 @@ export class AuthController {
     this.clearAuthCookie(res, 'client_refresh_token');
   }
 
+  @UseGuards(LoginThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login-superadmin')
   async loginSuperAdmin(@Body() loginDto: LoginDto, @Res() res: Response) {
@@ -83,6 +85,7 @@ export class AuthController {
     return res.send({ message: 'Login successful' });
   }
 
+  @UseGuards(LoginThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login-user')
   async loginUser(

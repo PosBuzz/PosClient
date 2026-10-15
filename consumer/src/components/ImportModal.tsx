@@ -26,16 +26,10 @@ import {
   importApi,
 } from "../api/import-api";
 import { useMessageStore } from "../stores/messageStore";
+import { getErrorMessage } from "../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 const { Dragger } = Upload;
-
-/** Server-supplied message when there is one, otherwise the given fallback */
-function apiMessage(error: unknown, fallback: string): string {
-  const message = (error as { response?: { data?: { message?: unknown } } })
-    ?.response?.data?.message;
-  return typeof message === "string" && message ? message : fallback;
-}
 
 interface ImportModalProps {
   entity: ImportEntity;
@@ -81,14 +75,17 @@ export default function ImportModal({
     onSuccess: (blob) => {
       saveAs(blob, `${entity}-import-template.xlsx`);
     },
-    onError: () => messageApi?.error("Failed to download the template"),
+    onError: (error) =>
+      messageApi?.error(
+        getErrorMessage(error, "Failed to download the template"),
+      ),
   });
 
   const previewMutation = useMutation({
     mutationFn: (upload: File) => importApi.preview(entity, upload),
     onSuccess: setResult,
     onError: (error: unknown) =>
-      messageApi?.error(apiMessage(error, "Could not read that file")),
+      messageApi?.error(getErrorMessage(error, "Could not read that file")),
   });
 
   const importMutation = useMutation({
@@ -104,7 +101,9 @@ export default function ImportModal({
       }
     },
     onError: (error: unknown) =>
-      messageApi?.error(apiMessage(error, "Import failed, nothing was saved")),
+      messageApi?.error(
+        getErrorMessage(error, "Import failed, nothing was saved"),
+      ),
   });
 
   const handleFile = useCallback(

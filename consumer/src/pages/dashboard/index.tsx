@@ -133,49 +133,49 @@ function Dashboard() {
     });
   }, [data?.top_products]);
 
-const getPaymentMethodDisplay = (method: string) => {
-  switch (method?.toUpperCase()) {
-    case "CASH":
-      return "Cash";
-    case "CARD":
-      return "Card";
-    case "MFS":
-      return "MFS (bKash/Nagad/Rocket)";
-    case "CREDIT":
-      return "Reward Points / Credit";
-    case "EXCHANGE":
-      return "Product Exchange";
-    case "CHEQUE":
-      return "Cheque";
-    case "BANK_TRANSFER":
-      return "Bank Transfer";
-    case "MOBILE_MONEY":
-      return "Mobile Money";
-    default:
-      return method ? method.replace(/_/g, " ") : "Unknown";
-  }
-};
+  const getPaymentMethodDisplay = (method: string) => {
+    switch (method?.toUpperCase()) {
+      case "CASH":
+        return "Cash";
+      case "CARD":
+        return "Card";
+      case "MFS":
+        return "MFS (bKash/Nagad/Rocket)";
+      case "CREDIT":
+        return "Reward Points / Credit";
+      case "EXCHANGE":
+        return "Product Exchange";
+      case "CHEQUE":
+        return "Cheque";
+      case "BANK_TRANSFER":
+        return "Bank Transfer";
+      case "MOBILE_MONEY":
+        return "Mobile Money";
+      default:
+        return method ? method.replace(/_/g, " ") : "Unknown";
+    }
+  };
 
-const getPaymentMethodColor = (method: string) => {
-  switch (method?.toUpperCase()) {
-    case "CASH":
-      return "green";
-    case "CARD":
-      return "blue";
-    case "MFS":
-    case "MOBILE_MONEY":
-      return "cyan";
-    case "CREDIT":
-      return "orange";
-    case "EXCHANGE":
-      return "purple";
-    case "CHEQUE":
-    case "BANK_TRANSFER":
-      return "geekblue";
-    default:
-      return "default";
-  }
-};
+  const getPaymentMethodColor = (method: string) => {
+    switch (method?.toUpperCase()) {
+      case "CASH":
+        return "green";
+      case "CARD":
+        return "blue";
+      case "MFS":
+      case "MOBILE_MONEY":
+        return "cyan";
+      case "CREDIT":
+        return "orange";
+      case "EXCHANGE":
+        return "purple";
+      case "CHEQUE":
+      case "BANK_TRANSFER":
+        return "geekblue";
+      default:
+        return "default";
+    }
+  };
 
   const PaymentMethodsData = useMemo(() => {
     if (!data?.payment_method_breakdown) return [];

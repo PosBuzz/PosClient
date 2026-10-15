@@ -6,6 +6,7 @@ import { patch, post } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
+import { getErrorMessage } from "../../utils/api-error";
 
 // @ts-ignore
 export default function DrawerForm({
@@ -16,7 +17,7 @@ export default function DrawerForm({
   editedItem,
   roleOptions,
   branchOptions,
-  ...props
+  // ...props
 }) {
   const [form] = Form.useForm();
   const { messageApi } = useMessageStore();
@@ -36,28 +37,28 @@ export default function DrawerForm({
 
   const createData = useMutation({
     mutationFn: async (data) => await post(endpoints.user, data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       messageApi?.success("Saved Successfully");
       form.resetFields();
       onSubmitSuccess();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
   const updateData = useMutation({
     mutationFn: async (data: any) =>
       await patch(endpoints.updateUser(data.id), data),
-    onSuccess: (response) => {
+    onSuccess: (_response) => {
       queryClient.invalidateQueries({ queryKey: [queryKeys.users] });
       messageApi?.success("Updated Successfully");
       form.resetFields();
       onSubmitSuccess(true);
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 
@@ -90,6 +91,7 @@ export default function DrawerForm({
   };
 
   useEffect(() => {
+    if (!open) return;
     if (isEditing && editedItem) {
       const branchIds = editedItem.branches?.map((ub) => ub.branch.id) || [];
       form.setFieldsValue({
@@ -103,7 +105,7 @@ export default function DrawerForm({
       form.resetFields();
       setSelectAllBranches(false);
     }
-  }, [isEditing, editedItem, form, branchOptions]);
+  }, [open, isEditing, editedItem, form, branchOptions]);
 
   return (
     <>
@@ -137,9 +139,11 @@ export default function DrawerForm({
               size="middle"
               allowClear
               options={roleOptions}
-              onChange={(value) => {
+              onChange={(_value) => {
                 // Clear branch selection when role changes
-                form.setFieldValue("branch_ids", []);
+                if (form.getFieldValue("branch_ids")?.length) {
+                  form.setFieldsValue({ branch_ids: [] });
+                }
                 setSelectAllBranches(false);
               }}
             />

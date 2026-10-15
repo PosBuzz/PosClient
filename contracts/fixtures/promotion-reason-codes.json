@@ -1,0 +1,66 @@
+[
+  {
+    "code": "INACTIVE",
+    "pattern": "^Promotion is inactive$"
+  },
+  {
+    "code": "NOT_STARTED",
+    "pattern": "^Promotion has not started yet$"
+  },
+  {
+    "code": "EXPIRED",
+    "pattern": "^Promotion has already expired$"
+  },
+  {
+    "code": "BRANCH",
+    "pattern": "^Promotion is not available for selected branch$"
+  },
+  {
+    "code": "USAGE_LIMIT",
+    "pattern": "^Promotion usage limit reached"
+  },
+  {
+    "code": "MAX_DISCOUNT",
+    "pattern": "^Promotion max discount reached"
+  },
+  {
+    "code": "MEMBER_ONLY",
+    "pattern": "^This promotion is for registered customers only$"
+  },
+  {
+    "code": "CUSTOMER_REQUIRED",
+    "pattern": "^Select a registered customer"
+  },
+  {
+    "code": "CUSTOMER_LIMIT",
+    "pattern": "^Customer (daily )?usage limit reached"
+  },
+  {
+    "code": "MIN_PURCHASE",
+    "pattern": "^Minimum purchase amount"
+  },
+  {
+    "code": "NO_PRODUCTS",
+    "pattern": "^Promotion has no products configured$"
+  },
+  {
+    "code": "PRODUCT_MISSING",
+    "pattern": "^Required product is not present"
+  },
+  {
+    "code": "MIN_QUANTITY",
+    "pattern": "^Minimum quantity \\d+ not met$"
+  },
+  {
+    "code": "BUNDLE",
+    "pattern": "^Bundle conditions are not matched"
+  },
+  {
+    "code": "BRAND_CONFIG",
+    "pattern": "^Promotion brand is not configured"
+  },
+  {
+    "code": "BRAND_NONE",
+    "pattern": "^No matching brand products"
+  }
+]

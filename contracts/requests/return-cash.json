@@ -1,0 +1,25 @@
+{
+  "method": "POST",
+  "path": "/consumer/returns",
+  "auth": "client",
+  "body": {
+    "original_sale_id": 5,
+    "branch_id": 1,
+    "reason": "Defective",
+    "shipping_refund_amount": 0,
+    "items": [
+      {
+        "quantity": 1,
+        "sale_item_id": 6,
+        "variant_id": 3,
+        "batch_id": 5
+      }
+    ],
+    "payments": [
+      {
+        "payment_method": "CASH",
+        "amount": 36
+      }
+    ]
+  }
+}

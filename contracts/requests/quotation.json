@@ -1,0 +1,46 @@
+{
+  "method": "POST",
+  "path": "/consumer/sales",
+  "auth": "client",
+  "body": {
+    "branch_id": 1,
+    "average_discount_amount": 0,
+    "shipping_cost": 0,
+    "items": [
+      {
+        "variant_id": 1,
+        "quantity": 2,
+        "unit_price": 100,
+        "sold_unit_price": 105,
+        "average_discount_amount": 0,
+        "special_discount_amount": 0,
+        "promotion_discount_amount": 0,
+        "tax_amount": 10,
+        "line_total": 210
+      },
+      {
+        "variant_id": 3,
+        "quantity": 1,
+        "unit_price": 40,
+        "sold_unit_price": 40,
+        "average_discount_amount": 0,
+        "special_discount_amount": 0,
+        "promotion_discount_amount": 0,
+        "tax_amount": 0,
+        "line_total": 40
+      }
+    ],
+    "price_type": "regular",
+    "discount_amount": 0,
+    "sale_type": "quotation",
+    "payment_status": "due",
+    "received_amount": 0,
+    "payments": []
+  },
+  "expect": {
+    "subtotal": "240.00",
+    "tax_amount": "10.00",
+    "discount_amount": "0.00",
+    "total_amount": "250.00"
+  }
+}

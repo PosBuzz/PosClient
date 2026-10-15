@@ -20,6 +20,7 @@ import { useState } from "react";
 import { endpoints } from "../../api/endpoints";
 import { deleteApi, get, patch } from "../../api/http";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 
@@ -94,7 +95,8 @@ export default function Leads() {
       invalidate();
       messageApi?.success("Lead updated");
     },
-    onError: () => messageApi?.error("Could not update the lead"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not update the lead")),
   });
 
   const remove = useMutation({

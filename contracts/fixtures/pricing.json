@@ -1,0 +1,167 @@
+[
+  {
+    "id": "X-PRICE-001",
+    "price": 100,
+    "qty": 2,
+    "taxPct": 0,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 200,
+      "tax_amount": 0
+    }
+  },
+  {
+    "id": "X-PRICE-002",
+    "price": 100,
+    "qty": 2,
+    "taxPct": 5,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 210,
+      "tax_amount": 10
+    }
+  },
+  {
+    "id": "X-PRICE-003",
+    "price": 115,
+    "qty": 1,
+    "taxPct": 15,
+    "method": "INCLUSIVE",
+    "expected": {
+      "line_total": 115,
+      "tax_amount": 15
+    }
+  },
+  {
+    "id": "X-PRICE-004",
+    "price": 100,
+    "qty": 3,
+    "taxPct": 7.5,
+    "method": "INCLUSIVE",
+    "expected": {
+      "line_total": 300,
+      "tax_amount": 20.93
+    }
+  },
+  {
+    "id": "X-PRICE-005",
+    "price": 115,
+    "qty": 1,
+    "taxPct": 15,
+    "method": "inclusive",
+    "expected": {
+      "line_total": 115,
+      "tax_amount": 15
+    }
+  },
+  {
+    "id": "X-PRICE-006",
+    "price": 115,
+    "qty": 1,
+    "taxPct": 15,
+    "method": " Inc ",
+    "expected": {
+      "line_total": 115,
+      "tax_amount": 15
+    }
+  },
+  {
+    "id": "X-PRICE-007",
+    "price": 115,
+    "qty": 1,
+    "taxPct": 15,
+    "method": "INC",
+    "expected": {
+      "line_total": 115,
+      "tax_amount": 15
+    }
+  },
+  {
+    "id": "X-PRICE-008",
+    "price": 100,
+    "qty": 1,
+    "taxPct": 10,
+    "method": "",
+    "expected": {
+      "line_total": 110,
+      "tax_amount": 10
+    }
+  },
+  {
+    "id": "X-PRICE-009",
+    "price": 100,
+    "qty": 1,
+    "taxPct": 10,
+    "method": "foo",
+    "expected": {
+      "line_total": 110,
+      "tax_amount": 10
+    }
+  },
+  {
+    "id": "X-PRICE-010",
+    "price": 0.1,
+    "qty": 3,
+    "taxPct": 0,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 0.3,
+      "tax_amount": 0
+    }
+  },
+  {
+    "id": "X-PRICE-011",
+    "price": 33.333,
+    "qty": 3,
+    "taxPct": 0,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 100,
+      "tax_amount": 0
+    }
+  },
+  {
+    "id": "X-PRICE-012",
+    "price": 19.99,
+    "qty": 7,
+    "taxPct": 8.25,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 151.47,
+      "tax_amount": 11.54
+    }
+  },
+  {
+    "id": "X-PRICE-013",
+    "price": 19.99,
+    "qty": 7,
+    "taxPct": 8.25,
+    "method": "INCLUSIVE",
+    "expected": {
+      "line_total": 139.93,
+      "tax_amount": 10.66
+    }
+  },
+  {
+    "id": "X-PRICE-014",
+    "price": 0,
+    "qty": 5,
+    "taxPct": 10,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 0,
+      "tax_amount": 0
+    }
+  },
+  {
+    "id": "X-PRICE-015",
+    "price": 100,
+    "qty": 0,
+    "taxPct": 10,
+    "method": "EXCLUSIVE",
+    "expected": {
+      "line_total": 0,
+      "tax_amount": 0
+    }
+  }
+]

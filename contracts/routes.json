@@ -1,0 +1,3421 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1",
+    "controller": "AppController",
+    "handler": "getHello",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/backup",
+    "controller": "BackupRestoreController",
+    "handler": "backup",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "backup&restore"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/billing",
+    "controller": "BillingInvoicesController",
+    "handler": "findAll",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/billing",
+    "controller": "BillingInvoicesController",
+    "handler": "create",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/billing/:id",
+    "controller": "BillingInvoicesController",
+    "handler": "remove",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/billing/:id",
+    "controller": "BillingInvoicesController",
+    "handler": "update",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/billing/history/excel/:consumerId",
+    "controller": "BillingInvoicesController",
+    "handler": "downloadExcel",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/billing/history/pdf/:consumerId",
+    "controller": "BillingInvoicesController",
+    "handler": "getBillingHistoryPdf",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/billing/invoice/pdf/:billingId",
+    "controller": "BillingInvoicesController",
+    "handler": "generateInvoicePdf",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "billing"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/consumers",
+    "controller": "ConsumerController",
+    "handler": "findAll",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "show_consumers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/consumers",
+    "controller": "ConsumerController",
+    "handler": "create",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_consumers"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/consumers/:id",
+    "controller": "ConsumerController",
+    "handler": "softDelete",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_consumers"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/consumers/:id",
+    "controller": "ConsumerController",
+    "handler": "update",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "modify_consumers"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/consumers/:id/purge",
+    "controller": "ConsumerController",
+    "handler": "purge",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_consumers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/consumers/:id/restore",
+    "controller": "ConsumerController",
+    "handler": "restore",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_consumers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/consumers/check-subdomain",
+    "controller": "ConsumerController",
+    "handler": "checkSubdomain",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/consumers/data-imports",
+    "controller": "ConsumerController",
+    "handler": "importHistory",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "modify_consumers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/consumers/data-imports",
+    "controller": "ConsumerController",
+    "handler": "runImport",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "modify_consumers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/consumers/data-imports/preview",
+    "controller": "ConsumerController",
+    "handler": "previewImport",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "modify_consumers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/plans",
+    "controller": "PlanController",
+    "handler": "findAll",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/plans",
+    "controller": "PlanController",
+    "handler": "create",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/plans/:id",
+    "controller": "PlanController",
+    "handler": "remove",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/plans/:id",
+    "controller": "PlanController",
+    "handler": "findOne",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/plans/:id",
+    "controller": "PlanController",
+    "handler": "update",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/plans/permissions",
+    "controller": "PlanController",
+    "handler": "findAllPermissions",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "plans"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/demo-products",
+    "controller": "AdminPortfolioController",
+    "handler": "listDemoProducts",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/demo-products",
+    "controller": "AdminPortfolioController",
+    "handler": "createDemoProduct",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/demo-products/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeDemoProduct",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/demo-products/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateDemoProduct",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/faqs",
+    "controller": "AdminPortfolioController",
+    "handler": "listFaqs",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/faqs",
+    "controller": "AdminPortfolioController",
+    "handler": "createFaq",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/faqs/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeFaq",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/faqs/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateFaq",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/features",
+    "controller": "AdminPortfolioController",
+    "handler": "listFeatures",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/features",
+    "controller": "AdminPortfolioController",
+    "handler": "createFeature",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/features/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeFeature",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/features/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateFeature",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/leads",
+    "controller": "AdminPortfolioController",
+    "handler": "listLeads",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/leads/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeLead",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/leads/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateLead",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/leads/stats",
+    "controller": "AdminPortfolioController",
+    "handler": "leadStats",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/pricing-plans",
+    "controller": "AdminPortfolioController",
+    "handler": "listPricingPlans",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/pricing-plans",
+    "controller": "AdminPortfolioController",
+    "handler": "createPricingPlan",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/pricing-plans/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removePricingPlan",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/pricing-plans/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updatePricingPlan",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/publish-status",
+    "controller": "AdminPortfolioController",
+    "handler": "publishStatus",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/revalidate",
+    "controller": "AdminPortfolioController",
+    "handler": "revalidate",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/settings",
+    "controller": "AdminPortfolioController",
+    "handler": "getSettings",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/admin/portfolio/settings",
+    "controller": "AdminPortfolioController",
+    "handler": "updateSettings",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/solutions",
+    "controller": "AdminPortfolioController",
+    "handler": "listSolutions",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/solutions",
+    "controller": "AdminPortfolioController",
+    "handler": "createSolution",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/solutions/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeSolution",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/solutions/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateSolution",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/portfolio/testimonials",
+    "controller": "AdminPortfolioController",
+    "handler": "listTestimonials",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/portfolio/testimonials",
+    "controller": "AdminPortfolioController",
+    "handler": "createTestimonial",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/portfolio/testimonials/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "removeTestimonial",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/portfolio/testimonials/:id",
+    "controller": "AdminPortfolioController",
+    "handler": "updateTestimonial",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "portfolio"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/restore",
+    "controller": "BackupRestoreController",
+    "handler": "restore",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "backup&restore"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/support/tickets",
+    "controller": "AdminSupportController",
+    "handler": "findAll",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/support/tickets/:id",
+    "controller": "AdminSupportController",
+    "handler": "findOne",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/support/tickets/:id",
+    "controller": "AdminSupportController",
+    "handler": "update",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/support/tickets/:id/messages",
+    "controller": "AdminSupportController",
+    "handler": "reply",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/support/tickets/stats",
+    "controller": "AdminSupportController",
+    "handler": "stats",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users",
+    "controller": "UsersController",
+    "handler": "findAllUsers",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/users",
+    "controller": "UsersController",
+    "handler": "createUser",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/users/:id",
+    "controller": "UsersController",
+    "handler": "removeUser",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/:id",
+    "controller": "UsersController",
+    "handler": "updateUser",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/change-password",
+    "controller": "UsersController",
+    "handler": "changePassword",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "profile"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users/permissions",
+    "controller": "UsersController",
+    "handler": "findAllPermissions",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users/roles",
+    "controller": "UsersController",
+    "handler": "findAllRoles",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/admin/users/roles",
+    "controller": "UsersController",
+    "handler": "createRole",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/admin/users/roles/:id",
+    "controller": "UsersController",
+    "handler": "removeRole",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/roles/:id",
+    "controller": "UsersController",
+    "handler": "updateRole",
+    "guards": [
+      "AdminAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/auto-description",
+    "controller": "DescriptionController",
+    "handler": "generateDescription",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/ai/description-feedback",
+    "controller": "DescriptionController",
+    "handler": "submitFeedback",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/admin",
+    "controller": "AuthController",
+    "handler": "getAdminMe",
+    "guards": [
+      "AdminAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/admin-logout",
+    "controller": "AuthController",
+    "handler": "adminLogout",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/admin-refresh-token",
+    "controller": "AuthController",
+    "handler": "adminRefreshToken",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/client",
+    "controller": "AuthController",
+    "handler": "getClientMe",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/client-logout",
+    "controller": "AuthController",
+    "handler": "clientLogout",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/client-refresh-token",
+    "controller": "AuthController",
+    "handler": "clientRefreshToken",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/auth/csrf-token",
+    "controller": "AuthController",
+    "handler": "getCsrfToken",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login-superadmin",
+    "controller": "AuthController",
+    "handler": "loginSuperAdmin",
+    "guards": [
+      "LoginThrottlerGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login-user",
+    "controller": "AuthController",
+    "handler": "loginUser",
+    "guards": [
+      "LoginThrottlerGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/branches",
+    "controller": "BranchController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/branches",
+    "controller": "BranchController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/branches/:id",
+    "controller": "BranchController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/branches/:id",
+    "controller": "BranchController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/branches/:id",
+    "controller": "BranchController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/branches/:id/set-main",
+    "controller": "BranchController",
+    "handler": "setMainBranch",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/branches/options",
+    "controller": "BranchController",
+    "handler": "getBranchOptions",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "branches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/brands",
+    "controller": "BrandController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/brands",
+    "controller": "BrandController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/brands/:id",
+    "controller": "BrandController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/brands/:id",
+    "controller": "BrandController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/brands/:id",
+    "controller": "BrandController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/categories",
+    "controller": "CategoryController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/categories",
+    "controller": "CategoryController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/categories/:id",
+    "controller": "CategoryController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/categories/:id",
+    "controller": "CategoryController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/categories/:id",
+    "controller": "CategoryController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/change-password",
+    "controller": "ChangePasswordController",
+    "handler": "changePassword",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "profile"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers",
+    "controller": "CustomerController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/customers",
+    "controller": "CustomerController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/customers/:id",
+    "controller": "CustomerController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers/:id",
+    "controller": "CustomerController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/customers/:id",
+    "controller": "CustomerController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers/:id/returns",
+    "controller": "CustomerController",
+    "handler": "getReturnsHistory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers/:id/rewards",
+    "controller": "CustomerController",
+    "handler": "getRewardsHistory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers/:id/sales",
+    "controller": "CustomerController",
+    "handler": "getSalesHistory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/customers/:id/summary",
+    "controller": "CustomerController",
+    "handler": "getSummary",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/dashboard/analytics",
+    "controller": "DashboardController",
+    "handler": "getAnalytics",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/import/:entity",
+    "controller": "ImportController",
+    "handler": "import",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/import/:entity/columns",
+    "controller": "ImportController",
+    "handler": "columns",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/import/:entity/preview",
+    "controller": "ImportController",
+    "handler": "preview",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/import/:entity/template",
+    "controller": "ImportController",
+    "handler": "downloadTemplate",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/adjustments",
+    "controller": "InventoryAdjustmentController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/inventory/adjustments",
+    "controller": "InventoryAdjustmentController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/adjustments/:id",
+    "controller": "InventoryAdjustmentController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/audit",
+    "controller": "ProductAuditController",
+    "handler": "getAuditData",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "product_audit"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/audit/pdf",
+    "controller": "ProductAuditController",
+    "handler": "getAuditPdf",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "product_audit"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/batches",
+    "controller": "InventoryBatchController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/inventory/batches",
+    "controller": "InventoryBatchController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/batches/:id",
+    "controller": "InventoryBatchController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/inventory/batches/:id",
+    "controller": "InventoryBatchController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/expiring",
+    "controller": "InventoryController",
+    "handler": "getExpiringBatches",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/low-stock",
+    "controller": "InventoryController",
+    "handler": "getLowStockItems",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/movement-history/:variantId",
+    "controller": "InventoryController",
+    "handler": "getInventoryMovementHistory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/products",
+    "controller": "InventoryController",
+    "handler": "getProductsForInventory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_adjustment",
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/products/:productId/variants",
+    "controller": "InventoryController",
+    "handler": "getProductVariants",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/stock-by-variant",
+    "controller": "InventoryController",
+    "handler": "getStockByVariant",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/summary",
+    "controller": "InventoryController",
+    "handler": "getSummary",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/transfers",
+    "controller": "InventoryTransferController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/inventory/transfers",
+    "controller": "InventoryTransferController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/transfers/:id",
+    "controller": "InventoryTransferController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/inventory/transfers/:id/cancel",
+    "controller": "InventoryTransferController",
+    "handler": "cancelTransfer",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/inventory/transfers/:id/complete",
+    "controller": "InventoryTransferController",
+    "handler": "completeTransfer",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/variants/:variantId/stock",
+    "controller": "InventoryController",
+    "handler": "getVariantStock",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/operational-costs",
+    "controller": "OperationalCostsController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/operational-costs",
+    "controller": "OperationalCostsController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/operational-costs/:id",
+    "controller": "OperationalCostsController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/operational-costs/:id",
+    "controller": "OperationalCostsController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/payments/make-payment",
+    "controller": "PaymentsController",
+    "handler": "makePayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/payments/partial-sales",
+    "controller": "PaymentsController",
+    "handler": "getPartiallyPaidSales",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/payments/sales/:id",
+    "controller": "PaymentsController",
+    "handler": "getSaleForPayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/payments/sales/:id/payments",
+    "controller": "PaymentsController",
+    "handler": "getSalePayments",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/products",
+    "controller": "ProductController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "view_product"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/products",
+    "controller": "ProductController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/products/:id",
+    "controller": "ProductController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/products/:id",
+    "controller": "ProductController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/products/:id",
+    "controller": "ProductController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "edit_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/products/limit",
+    "controller": "ProductController",
+    "handler": "getProductLimit",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/profile/update",
+    "controller": "ProfileController",
+    "handler": "updateProfile",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "companyProfile"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/promotions",
+    "controller": "PromotionsController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/promotions",
+    "controller": "PromotionsController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/promotions/:id",
+    "controller": "PromotionsController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/promotions/:id",
+    "controller": "PromotionsController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/promotions/:id",
+    "controller": "PromotionsController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/promotions/:id/sales",
+    "controller": "PromotionsController",
+    "handler": "getPromotionSales",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/promotions/active/list",
+    "controller": "PromotionsController",
+    "handler": "getActive",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/promotions/options",
+    "controller": "PromotionsController",
+    "handler": "getOptions",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/purchase-payments/batches",
+    "controller": "PurchasePaymentsController",
+    "handler": "getPurchaseBatches",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/purchase-payments/batches/:id",
+    "controller": "PurchasePaymentsController",
+    "handler": "getBatchForPayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/purchase-payments/batches/:id/payments",
+    "controller": "PurchasePaymentsController",
+    "handler": "getBatchPayments",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/purchase-payments/make-payment",
+    "controller": "PurchasePaymentsController",
+    "handler": "makePayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/returns",
+    "controller": "ReturnController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/returns",
+    "controller": "ReturnController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/returns/:id",
+    "controller": "ReturnController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/returns/:id/pdf",
+    "controller": "ReturnController",
+    "handler": "generateReceiptPdfGet",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/customers",
+    "controller": "RewardsController",
+    "handler": "getCustomersWithPoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/customers/:id/adjust",
+    "controller": "RewardsController",
+    "handler": "adjustPoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/customers/:id/can-redeem/:points",
+    "controller": "RewardsController",
+    "handler": "canRedeemPoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/customers/:id/points",
+    "controller": "RewardsController",
+    "handler": "getCustomerPoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/customers/:id/process-credit",
+    "controller": "RewardsController",
+    "handler": "processCreditPayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/customers/:id/process-credit-refund",
+    "controller": "RewardsController",
+    "handler": "processCreditRefund",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/customers/:id/redeem",
+    "controller": "RewardsController",
+    "handler": "redeemPoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/customers/:id/transactions",
+    "controller": "RewardsController",
+    "handler": "getCustomerTransactions",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/customers/:id/validate-credit/:amount",
+    "controller": "RewardsController",
+    "handler": "validateCreditPayment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/expire-points",
+    "controller": "RewardsController",
+    "handler": "expirePoints",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/redemption-value/:points",
+    "controller": "RewardsController",
+    "handler": "getRedemptionValue",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/settings",
+    "controller": "RewardsController",
+    "handler": "getSettings",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/rewards/settings",
+    "controller": "RewardsController",
+    "handler": "updateSettings",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/rewards/settings",
+    "controller": "RewardsController",
+    "handler": "createSettings",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/rewards/transactions",
+    "controller": "RewardsController",
+    "handler": "getPointTransactions",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales",
+    "controller": "SalesController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/sales",
+    "controller": "SalesController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/sales/:id",
+    "controller": "SalesController",
+    "handler": "softDelete",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/:id",
+    "controller": "SalesController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/sales/:id/note",
+    "controller": "SalesController",
+    "handler": "updateNote",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/sales/:id/restore",
+    "controller": "SalesController",
+    "handler": "restore",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/sales/online-orders/:id/status",
+    "controller": "SalesController",
+    "handler": "updateOnlineOrderStatus",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/online-orders/list",
+    "controller": "SalesController",
+    "handler": "findAllOnlineOrders",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/online-orders/stats",
+    "controller": "SalesController",
+    "handler": "getOnlineOrderStats",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/sales/pending-deliveries/:id/cancel",
+    "controller": "SalesController",
+    "handler": "cancelPendingDelivery",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/sales/pending-deliveries/:id/complete",
+    "controller": "SalesController",
+    "handler": "completePendingDelivery",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/pending-deliveries/list",
+    "controller": "SalesController",
+    "handler": "getPendingDeliveries",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/product-by-barcode",
+    "controller": "SalesController",
+    "handler": "getProductByBarcode",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/products",
+    "controller": "SalesController",
+    "handler": "getProductsForSale",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/quotations/:id",
+    "controller": "SalesController",
+    "handler": "findOneQuotation",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "quotations"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/quotations/:id/pdf",
+    "controller": "SalesController",
+    "handler": "generateQuotationPdf",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "quotations"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/quotations/list",
+    "controller": "SalesController",
+    "handler": "findAllQuotations",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "quotations"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/receipt/:id",
+    "controller": "SalesController",
+    "handler": "generateReceiptPdfGet",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/receipt/:id/payment/:paymentId",
+    "controller": "SalesController",
+    "handler": "generatePaymentReceiptPdf",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/reports/business/pdf",
+    "controller": "SalesController",
+    "handler": "getBusinessReportPdf",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/reports/daily-target",
+    "controller": "SalesController",
+    "handler": "getDailyTargetReport",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/reports/eod",
+    "controller": "SalesController",
+    "handler": "getEODReport",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/search/:saleNumber",
+    "controller": "SalesController",
+    "handler": "findBySaleNumber",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/stats",
+    "controller": "SalesController",
+    "handler": "getStats",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/user-sales-stats",
+    "controller": "SalesController",
+    "handler": "getUserSalesStats",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/user-sales-stats/:userId",
+    "controller": "SalesController",
+    "handler": "getUserSalesDetail",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/variant-sales-stats",
+    "controller": "SalesController",
+    "handler": "getVariantSalesStats",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/sales/variant-sales-stats/:variantId",
+    "controller": "SalesController",
+    "handler": "getVariantSalesDetail",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "business_insights"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/support/tickets",
+    "controller": "SupportController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/support/tickets",
+    "controller": "SupportController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/support/tickets/:id",
+    "controller": "SupportController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/support/tickets/:id/close",
+    "controller": "SupportController",
+    "handler": "close",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/support/tickets/:id/messages",
+    "controller": "SupportController",
+    "handler": "addMessage",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/support/tickets/:id/reopen",
+    "controller": "SupportController",
+    "handler": "reopen",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "support"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/tags",
+    "controller": "TagController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/tags",
+    "controller": "TagController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/tags/:id",
+    "controller": "TagController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/tags/:id",
+    "controller": "TagController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/tags/:id",
+    "controller": "TagController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/units",
+    "controller": "UnitController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/units",
+    "controller": "UnitController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/units/:id",
+    "controller": "UnitController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "delete_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/units/:id",
+    "controller": "UnitController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/units/:id",
+    "controller": "UnitController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "add_product",
+      "delete_product",
+      "edit_product",
+      "view_product"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/users",
+    "controller": "UsersController",
+    "handler": "getUsers",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/users",
+    "controller": "UsersController",
+    "handler": "createUser",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/users/:id",
+    "controller": "UsersController",
+    "handler": "deleteUser",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/users/:id",
+    "controller": "UsersController",
+    "handler": "updateUser",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/users/plan-permissions",
+    "controller": "UsersController",
+    "handler": "permissionOptions",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/users/roles",
+    "controller": "UsersController",
+    "handler": "getRoles",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/users/roles",
+    "controller": "UsersController",
+    "handler": "createRole",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/users/roles/:id",
+    "controller": "UsersController",
+    "handler": "deleteRole",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/users/roles/:id",
+    "controller": "UsersController",
+    "handler": "updateRole",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "users"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/vendors",
+    "controller": "VendorController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/vendors",
+    "controller": "VendorController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/vendors/:id",
+    "controller": "VendorController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/vendors/:id",
+    "controller": "VendorController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/vendors/:id",
+    "controller": "VendorController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/vendors/:id/details",
+    "controller": "VendorController",
+    "handler": "findOneWithDetails",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches",
+      "vendors"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/health",
+    "controller": "AppController",
+    "handler": "getHealth",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/metrics",
+    "controller": "AppController",
+    "handler": "getMetrics",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/content",
+    "controller": "PublicPortfolioController",
+    "handler": "allContent",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/demo-products",
+    "controller": "PublicPortfolioController",
+    "handler": "demoProducts",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/faqs",
+    "controller": "PublicPortfolioController",
+    "handler": "faqs",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/features",
+    "controller": "PublicPortfolioController",
+    "handler": "features",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/public/portfolio/leads",
+    "controller": "PublicPortfolioController",
+    "handler": "createLead",
+    "guards": [
+      "ThrottlerGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/pricing-plans",
+    "controller": "PublicPortfolioController",
+    "handler": "pricingPlans",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/settings",
+    "controller": "PublicPortfolioController",
+    "handler": "settings",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/solutions",
+    "controller": "PublicPortfolioController",
+    "handler": "solutions",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/portfolio/testimonials",
+    "controller": "PublicPortfolioController",
+    "handler": "testimonials",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/public/subdomain/validate",
+    "controller": "SubdomainValidationController",
+    "handler": "validateSubdomain",
+    "guards": [],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/receipt-settings",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "list",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/receipt-settings",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/receipt-settings/:id",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "delete",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/receipt-settings/:id",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "getOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/receipt-settings/:id",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/receipt-settings/:id/activate",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "activate",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/receipt-settings/:id/copy-to-branch/:branchId",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "copyToBranch",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/receipt-settings/:id/deactivate",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "deactivate",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/receipt-settings/by-type/:type",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "listByType",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/receipt-settings/defaults/:type",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "getDefaults",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/receipt-settings/preview",
+    "controller": "ReceiptPdfSettingController",
+    "handler": "preview",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "receipt_settings"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/test-receipts",
+    "controller": "TestReceiptVariationsController",
+    "handler": "index",
+    "guards": [
+      "DevelopmentOnlyGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/test-receipts/:index",
+    "controller": "TestReceiptVariationsController",
+    "handler": "renderVariation",
+    "guards": [
+      "DevelopmentOnlyGuard"
+    ],
+    "permissions": []
+  }
+]

@@ -1,59 +1,34 @@
-import { ArgumentsHost, Catch, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, Logger } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import { describePrismaError } from './prisma-error-messages';
 
 //https://www.prisma.io/blog/nestjs-prisma-error-handling-7D056s1kOop2
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class PrismaClientExceptionFilter extends BaseExceptionFilter {
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
-    console.error('PrismaClientExceptionFilter', exception.code, exception.message);
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const message = exception.message.replace(/\n/g, '');
+  private readonly logger = new Logger(PrismaClientExceptionFilter.name);
 
-    switch (exception.code) {
-      case 'P2002': {
-        const status = HttpStatus.CONFLICT;
-        response.status(status).json({
-          statusCode: status,
-          message: 'Unique constraint failed',
-          error: message,
-        });
-        break;
-      }
-      case 'P2003': {
-        const status = HttpStatus.CONFLICT;
-        response.status(status).json({
-          statusCode: status,
-          message: 'Foreign key constraint failed',
-          error: message,
-        });
-        break;
-      }
-      case 'P2025': {
-        const status = HttpStatus.CONFLICT;
-        response.status(status).json({
-          statusCode: status,
-          message: 'Foreign key constraint failed P2025',
-          error: message,
-        });
-        break;
-      }
-      case 'P2018': {
-        const status = HttpStatus.CONFLICT;
-        response.status(status).json({
-          statusCode: status,
-          message: 'The required connected records were not found.',
-          //when you try to connect related ids but the data doesn't exist
-          error: message,
-        });
-        break;
-      }
-      default:
-        // default 500 error code
-        super.catch(exception, host);
-        break;
+  override catch(
+    exception: Prisma.PrismaClientKnownRequestError,
+    host: ArgumentsHost,
+  ) {
+    // Full Prisma detail stays in the server log; it names tables and fields
+    this.logger.error(
+      `${exception.code} ${exception.message.replace(/\n/g, ' ')}`,
+    );
+
+    const described = describePrismaError(exception.code, exception.meta);
+    if (!described) {
+      // default 500 error code
+      super.catch(exception, host);
+      return;
     }
+
+    const response = host.switchToHttp().getResponse<Response>();
+    response.status(described.status).json({
+      statusCode: described.status,
+      message: described.message,
+    });
   }
 }

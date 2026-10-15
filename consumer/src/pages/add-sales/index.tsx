@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { formatCurrency } from "../../utils/formatters";
 import {
   CalculatorOutlined,
@@ -70,6 +71,7 @@ import {
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -137,6 +139,8 @@ const NewSale = () => {
       variant,
       quantityToAdd: qty,
       priceType,
+      specialDiscountPerQuantity:
+        specialDiscountModes[variant.id] === "quantity",
     });
 
   const getVariantPriceFn = (variant: ProductVariantForSale) =>
@@ -238,7 +242,11 @@ const NewSale = () => {
               : regularPrice;
 
           const quantity = Number(item.quantity || 0);
-          const taxPercentage = Number(currentVariant?.tax_percentage || 0);
+          // The sale-products list is capped, so the variant may be missing; the
+          // quotation's own product still carries the tax rate.
+          const taxPercentage = Number(
+            currentVariant?.tax_percentage ?? item.variant?.product?.tax ?? 0,
+          );
           const taxMethod = String(
             currentVariant?.tax_method ||
               item.variant?.product?.tax_method ||
@@ -420,7 +428,7 @@ const NewSale = () => {
         }
       } catch (error: any) {
         console.error("Error scanning barcode:", error);
-        messageApi?.error("Failed to scan barcode");
+        messageApi?.error(getErrorMessage(error, "Failed to scan barcode"));
       }
     },
     [addToSale, messageApi, selectedBranch],
@@ -513,7 +521,7 @@ const NewSale = () => {
       }
     }
     const totalPaymentAmount = effectivePayments.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum, payment) => sum + (Number(payment.amount) || 0),
       0,
     );
 
@@ -533,19 +541,7 @@ const NewSale = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-        // Remove batch_id to let backend use FIFO automatically
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       applied_promotion_id: undefined,
@@ -591,9 +587,7 @@ const NewSale = () => {
       navigate(`/sales/view/${createdSale.id}`);
     } catch (error: any) {
       console.error("Error creating sale:", error);
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create sale",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create sale"));
     } finally {
       setLoading(false);
     }
@@ -607,7 +601,7 @@ const NewSale = () => {
       salePayments[0].payment_method === PaymentMethod.CASH
     ) {
       const currentTotalPaid = salePayments.reduce(
-        (sum, p) => sum + p.amount,
+        (sum, p) => sum + (Number(p.amount) || 0),
         0,
       );
       if (currentTotalPaid !== totals.total) {
@@ -774,33 +768,33 @@ const NewSale = () => {
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <Radio.Group
-            size="small"
-            optionType="button"
-            buttonStyle="solid"
-            value={mode}
-            onChange={(event) =>
-              setSpecialDiscountModes((modes) => ({
-                ...modes,
-                [record.variant_id]: event.target.value,
-              }))
-            }
-            options={[
-              { label: "Overall", value: "overall" },
-              { label: "Per qty", value: "quantity" },
-            ]}
+              size="small"
+              optionType="button"
+              buttonStyle="solid"
+              value={mode}
+              onChange={(event) =>
+                setSpecialDiscountModes((modes) => ({
+                  ...modes,
+                  [record.variant_id]: event.target.value,
+                }))
+              }
+              options={[
+                { label: "Overall", value: "overall" },
+                { label: "Per qty", value: "quantity" },
+              ]}
             />
             <InputNumber
-            min={0}
-            precision={2}
-            value={value}
-            onChange={(nextValue) =>
-              updateItemSpecialDiscount(
-                record.variant_id,
-                Number(nextValue) || 0,
-              )
-            }
-            style={{ width: 100 }}
-            size="small"
+              min={0}
+              precision={2}
+              value={value}
+              onChange={(nextValue) =>
+                updateItemSpecialDiscount(
+                  record.variant_id,
+                  Number(nextValue) || 0,
+                )
+              }
+              style={{ width: 100 }}
+              size="small"
             />
             <Money value={totalDiscount} negative />
           </div>
@@ -862,7 +856,9 @@ const NewSale = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />
@@ -1258,7 +1254,10 @@ const NewSale = () => {
                       const remainingAmount = Math.max(
                         0,
                         totals.total -
-                          salePayments.reduce((sum, p) => sum + p.amount, 0),
+                          salePayments.reduce(
+                            (sum, p) => sum + (Number(p.amount) || 0),
+                            0,
+                          ),
                       );
                       const newPayment: SalePayment = {
                         payment_method: PaymentMethod.CASH,
@@ -1361,7 +1360,8 @@ const NewSale = () => {
                               value={payment.amount}
                               onChange={(value) => {
                                 const updatedPayments = [...salePayments];
-                                updatedPayments[index].amount = value || 0;
+                                // A cleared box stays empty (KI-065); a blank amount counts as 0 wherever it is summed or sent
+                                updatedPayments[index].amount = value as number;
                                 setSalePayments(updatedPayments);
                               }}
                               onPressEnter={(e) =>

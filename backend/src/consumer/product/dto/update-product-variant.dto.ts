@@ -25,5 +25,5 @@ export class UpdateProductVariantDto extends PartialType(
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateProductSerialDto)
-  serials?: UpdateProductSerialDto[]; // Override with UpdateProductSerialDto
+  override serials?: UpdateProductSerialDto[]; // Override with UpdateProductSerialDto
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 import { RedisCacheService } from 'nest-cache-redis';
 import { errorMessage } from './common/utils/error.util';
@@ -7,7 +7,8 @@ import { errorMessage } from './common/utils/error.util';
 export class AppService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cache: RedisCacheService,
+    // Absent when REDIS_ENABLED is off
+    @Optional() private readonly cache?: RedisCacheService,
   ) {}
 
   getHello(): string {
@@ -56,7 +57,11 @@ export class AppService {
       health.status = 'degraded';
     }
 
-    // Check Redis
+    // Check Redis (optional infrastructure)
+    if (!this.cache) {
+      health.services.redis = { status: 'disabled' };
+      return health;
+    }
     try {
       await this.cache.set('health_check', { timestamp: Date.now() }, 10);
       const result = await this.cache.get('health_check');

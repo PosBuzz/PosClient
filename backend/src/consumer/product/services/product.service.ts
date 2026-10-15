@@ -7,12 +7,13 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Prisma, TaxMethod } from '@prisma/client';
+import { TaxMethod } from '@prisma/client';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class ProductService {
@@ -102,21 +103,82 @@ export class ProductService {
     }
   }
 
-  private throwProductNameConflict(error: unknown): void {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      const target = error.meta?.target;
-      const targetFields = Array.isArray(target) ? target : [target];
+  /**
+   * Every id the client sends must belong to this tenant. Without this, a
+   * product could point at another shop's brand, unit, branch or vendor (and
+   * show their names back), or edit and delete another shop's variants.
+   */
+  private async assertReferencesOwned(
+    consumerId: number,
+    refs: {
+      category_id?: number | null;
+      brand_id?: number | null;
+      tag_ids?: number[];
+      variants?: Array<{
+        sale_unit_id?: number;
+        purchase_unit_id?: number;
+        batches?: Array<{ branch_id?: number; vendor_id?: number | null }>;
+      }>;
+    },
+  ) {
+    const unique = (ids: Array<number | null | undefined>) => [
+      ...new Set(ids.filter((id): id is number => typeof id === 'number')),
+    ];
+    const variants = refs.variants ?? [];
+    const batches = variants.flatMap((variant) => variant.batches ?? []);
+    const owned = (
+      ids: number[],
+      count: (ids: number[]) => Promise<number>,
+      label: string,
+    ) =>
+      ids.length === 0
+        ? Promise.resolve()
+        : count(ids).then((found) => {
+            if (found !== ids.length) {
+              throw new NotFoundException(`${label} not found`);
+            }
+          });
+    const where = { consumer_id: consumerId };
 
-      if (
-        targetFields.includes('consumer_id') &&
-        targetFields.includes('name')
-      ) {
-        throw new BadRequestException('Product name already exists');
-      }
-    }
+    await owned(
+      unique([refs.category_id]),
+      (ids) =>
+        this.prisma.category.count({ where: { ...where, id: { in: ids } } }),
+      'Category',
+    );
+    await owned(
+      unique([refs.brand_id]),
+      (ids) =>
+        this.prisma.brand.count({ where: { ...where, id: { in: ids } } }),
+      'Brand',
+    );
+    await owned(
+      unique(refs.tag_ids ?? []),
+      (ids) => this.prisma.tag.count({ where: { ...where, id: { in: ids } } }),
+      'Tag',
+    );
+    await owned(
+      unique(
+        variants.flatMap((variant) => [
+          variant.sale_unit_id,
+          variant.purchase_unit_id,
+        ]),
+      ),
+      (ids) => this.prisma.unit.count({ where: { ...where, id: { in: ids } } }),
+      'Unit',
+    );
+    await owned(
+      unique(batches.map((batch) => batch.branch_id)),
+      (ids) =>
+        this.prisma.branch.count({ where: { ...where, id: { in: ids } } }),
+      'Branch',
+    );
+    await owned(
+      unique(batches.map((batch) => batch.vendor_id)),
+      (ids) =>
+        this.prisma.vendor.count({ where: { ...where, id: { in: ids } } }),
+      'Vendor',
+    );
   }
 
   async create(
@@ -126,6 +188,7 @@ export class ProductService {
   ) {
     try {
       await this.assertProductLimitNotReached(consumerId);
+      await this.assertReferencesOwned(consumerId, dto);
 
       // Validate that at least one variant is provided
       if (!dto.variants || dto.variants.length === 0) {
@@ -190,10 +253,9 @@ export class ProductService {
         return createdProduct;
       });
 
-      return this.findOne(product.id, consumerId);
+      return await this.findOne(product.id, consumerId);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
-      this.throwProductNameConflict(error);
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating product for consumer ${consumerId}`,
         errorStack(error),
@@ -358,7 +420,7 @@ export class ProductService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching products for consumer ${consumerId}`,
         errorStack(error),
@@ -576,10 +638,11 @@ export class ProductService {
           );
 
           // Check if stock is low
-          const isLowStock =
+          const isLowStock = Boolean(
             variant.alert_quantity &&
-            variant.alert_quantity > 0 &&
-            totalStock <= variant.alert_quantity;
+              variant.alert_quantity > 0 &&
+              totalStock <= variant.alert_quantity,
+          );
 
           // Get current and previous prices
           const currentPrice = variant.price_history[0];
@@ -677,7 +740,7 @@ export class ProductService {
         metrics: productMetrics,
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -698,6 +761,31 @@ export class ProductService {
     try {
       // First check if product exists and belongs to this consumer
       await this.findOne(id, consumerId);
+      await this.assertReferencesOwned(consumerId, dto);
+
+      // Variants may only be edited or deleted through the product they belong to
+      const ownVariantIds = new Set(
+        (
+          await this.prisma.productVariant.findMany({
+            where: { product_id: id },
+            select: { id: true },
+          })
+        ).map((variant) => variant.id),
+      );
+      const touchedVariantIds = [
+        ...(dto.variants ?? []).flatMap((variant) =>
+          'id' in variant && variant.id ? [variant.id] : [],
+        ),
+        ...(dto.variant_ids_to_delete ?? []),
+      ];
+      const foreignVariant = touchedVariantIds.find(
+        (variantId) => !ownVariantIds.has(variantId),
+      );
+      if (foreignVariant !== undefined) {
+        throw new NotFoundException(
+          `Product variant with ID ${foreignVariant} not found`,
+        );
+      }
 
       // Update the product
       await this.prisma.product.update({
@@ -782,10 +870,9 @@ export class ProductService {
         );
       }
 
-      return this.findOne(id, consumerId);
+      return await this.findOne(id, consumerId);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
-      this.throwProductNameConflict(error);
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -808,7 +895,7 @@ export class ProductService {
 
       return { success: true, message: 'Product deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting product with ID ${id} for consumer ${consumerId}`,
         errorStack(error),

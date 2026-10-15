@@ -1,0 +1,108 @@
+{
+  "branch": null,
+  "branch_id": null,
+  "consumer_id": 1,
+  "created_at": "2026-03-14T12:00:00.000Z",
+  "created_by": 1,
+  "createdBy": {
+    "email": "admin1@example.test",
+    "id": 1,
+    "name": "Tenant Admin"
+  },
+  "id": 1,
+  "is_active": false,
+  "name": "C4 receipt",
+  "settings": {
+    "currencyPosition": "before",
+    "currencySymbol": "৳",
+    "customerInfo": {
+      "show": true,
+      "showEmail": false,
+      "showName": true,
+      "showPhone": true,
+      "showRewardPoints": false
+    },
+    "fontSizes": {
+      "body": 9,
+      "heading": 10,
+      "small": 7.5,
+      "subtitle": 13,
+      "title": 18
+    },
+    "footer": {
+      "showBarcode": true,
+      "showPrintDate": true,
+      "showTerms": true,
+      "showThankYou": true,
+      "termsText": "Thank you for your purchase! All sales are final. Items must be returned within 7 days with original receipt."
+    },
+    "header": {
+      "layout": "centered",
+      "logoMaxHeight": 60,
+      "logoMaxWidth": 120,
+      "show": true,
+      "showLogo": true,
+      "text": "RECEIPT"
+    },
+    "items": {
+      "discountDisplay": "total",
+      "show": true,
+      "showDiscount": true,
+      "showLineTotal": true,
+      "showQuantity": true,
+      "showSku": false,
+      "showTax": false,
+      "showUnitPrice": true,
+      "showVariantName": true,
+      "taxDisplay": "total"
+    },
+    "notes": {
+      "show": false
+    },
+    "orderInfo": {
+      "show": true,
+      "showCashier": true,
+      "showDate": true,
+      "showPriceType": false,
+      "showSaleNumber": true,
+      "showSaleType": false,
+      "showServedBy": false
+    },
+    "page": {
+      "margins": {
+        "bottom": 50,
+        "left": 50,
+        "right": 50,
+        "top": 50
+      },
+      "size": "A4"
+    },
+    "payment": {
+      "show": true,
+      "showBreakdown": false,
+      "showChangeAmount": true,
+      "showDueAmount": true,
+      "showReceivedAmount": true,
+      "titleAlign": "left"
+    },
+    "storeInfo": {
+      "show": true,
+      "showAddress": true,
+      "showBranchName": true,
+      "showEmail": true,
+      "showPhone": true,
+      "showStoreName": true,
+      "showVatRegistration": false
+    },
+    "totals": {
+      "show": true,
+      "showDiscount": true,
+      "showShipping": false,
+      "showSubtotal": true,
+      "showTax": false,
+      "titleAlign": "left"
+    }
+  },
+  "type": "receipt",
+  "updated_at": "2026-03-14T12:00:00.000Z"
+}

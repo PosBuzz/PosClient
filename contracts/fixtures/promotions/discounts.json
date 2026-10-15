@@ -1,0 +1,332 @@
+{
+  "defaults": {
+    "now": "2026-03-14T10:00:00.000Z",
+    "variants": {
+      "P1": {
+        "brand": "B1"
+      },
+      "P2": {
+        "brand": "B1"
+      },
+      "P3": {
+        "brand": "B2"
+      }
+    },
+    "promotion": {
+      "scope": "SINGLE_PRODUCT",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "is_active": true,
+      "start_date": "2026-01-01T00:00:00.000Z",
+      "end_date": "2040-01-01T00:00:00.000Z",
+      "branch_specific": false,
+      "branches": [],
+      "products": [
+        "P1"
+      ],
+      "brand": null,
+      "min_purchase": null,
+      "min_quantity": 1,
+      "cap_quantity": null,
+      "cap_discount_amount": null,
+      "max_discount_amount": null,
+      "usage_limit": null,
+      "member_only": false,
+      "limit_per_customer": false,
+      "customer_usage_limit": null,
+      "sales_count": 0,
+      "total_discount_given": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "X-PROMO-020",
+      "description": "10% of 3 x 100",
+      "promotion": {},
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 3,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 30,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-021",
+      "description": "fixed 5 per unit x 3",
+      "promotion": {
+        "discount_type": "fixed_amount",
+        "discount_value": 5
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 3,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 15,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-022",
+      "description": "fixed amount is clamped to the base",
+      "promotion": {
+        "discount_type": "fixed_amount",
+        "discount_value": 150
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 100,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-023",
+      "description": "cap quantity 2 of 5",
+      "promotion": {
+        "cap_quantity": 2
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 5,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 20,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-024",
+      "description": "cap discount amount 15",
+      "promotion": {
+        "cap_discount_amount": 15
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 3,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 15,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-025",
+      "description": "remaining max discount 10",
+      "promotion": {
+        "max_discount_amount": 50,
+        "total_discount_given": 40
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 3,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-026",
+      "description": "bundle 10% of 100 + 2 x 50",
+      "promotion": {
+        "scope": "BUNDLE",
+        "products": [
+          "P1",
+          "P2"
+        ]
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        },
+        {
+          "variant": "P2",
+          "qty": 2,
+          "price": 50
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 20,
+        "matched": [
+          "P1",
+          "P2"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-027",
+      "description": "bundle with quantity cap takes dearest units first",
+      "promotion": {
+        "scope": "BUNDLE",
+        "products": [
+          "P1",
+          "P2"
+        ],
+        "cap_quantity": 2
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        },
+        {
+          "variant": "P2",
+          "qty": 2,
+          "price": 50
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 15,
+        "matched": [
+          "P1",
+          "P2"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-028",
+      "description": "brand B1 ignores the B2 line",
+      "promotion": {
+        "scope": "BRAND",
+        "brand": "B1",
+        "products": []
+      },
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        },
+        {
+          "variant": "P2",
+          "qty": 1,
+          "price": 50
+        },
+        {
+          "variant": "P3",
+          "qty": 1,
+          "price": 200
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 15,
+        "matched": [
+          "P1",
+          "P2"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-029",
+      "description": "duplicate cart lines are aggregated",
+      "promotion": {},
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 1,
+          "price": 100
+        },
+        {
+          "variant": "P1",
+          "qty": 2,
+          "price": 100
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 30,
+        "matched": [
+          "P1"
+        ]
+      }
+    },
+    {
+      "id": "X-PROMO-030",
+      "description": "rounds to 2 dp",
+      "promotion": {},
+      "branch": "main",
+      "customer": false,
+      "cart": [
+        {
+          "variant": "P1",
+          "qty": 3,
+          "price": 33.33
+        }
+      ],
+      "expected": {
+        "eligible": true,
+        "discount_amount": 10,
+        "matched": [
+          "P1"
+        ]
+      }
+    }
+  ]
+}

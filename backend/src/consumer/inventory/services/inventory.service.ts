@@ -9,6 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { collectBatchLocations } from '../utils/batch-location.util';
 import { InventoryHelperService } from './inventory-helper.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryService {
@@ -118,6 +119,9 @@ export class InventoryService {
         expiring_soon: expiringSoon,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting inventory summary with branch ID ${branchId} for ${consumerId}`,
         errorStack(error),
@@ -280,6 +284,9 @@ export class InventoryService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting stock by variant for ${consumerId}`,
         errorStack(error),
@@ -318,6 +325,9 @@ export class InventoryService {
 
       return batches;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting expiring batches for ${consumerId}`,
         errorStack(error),
@@ -345,6 +355,9 @@ export class InventoryService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting products for inventory for ${consumerId}`,
         errorStack(error),
@@ -356,12 +369,12 @@ export class InventoryService {
     }
   }
 
-  async getProductVariants(productId: number) {
+  async getProductVariants(productId: number, consumerId: number) {
     try {
-      // Get the product to verify ownership and get consumerId for cache key
-      const product = await this.prisma.product.findUnique({
-        where: { id: productId },
-        select: { consumer_id: true },
+      // The product must belong to the caller's shop
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, consumer_id: consumerId },
+        select: { id: true },
       });
 
       if (!product) {
@@ -383,6 +396,9 @@ export class InventoryService {
         },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting product variants for ${productId}`,
         errorStack(error),
@@ -489,6 +505,9 @@ export class InventoryService {
         batches,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting variant stock with ID ${variantId} for consumer ${consumerId} branch ${branchId}`,
         errorStack(error),
@@ -607,6 +626,9 @@ export class InventoryService {
 
       return lowStockItems;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching low stock items for consumer ${consumerId} branch ${branchId}`,
         errorStack(error),
@@ -786,6 +808,9 @@ export class InventoryService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding inventory movements with variant ID ${variantId} for consumer ${consumerId}`,
         errorStack(error),

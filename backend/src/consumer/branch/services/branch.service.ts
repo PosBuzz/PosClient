@@ -10,6 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBranchDto } from '../dto/create-branch.dto';
 import { UpdateBranchDto } from '../dto/update-branch.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class BranchService {
@@ -188,6 +189,9 @@ export class BranchService {
 
       return branch;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding branch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -256,6 +260,9 @@ export class BranchService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating branch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -277,12 +284,14 @@ export class BranchService {
       });
 
       if (branchCount === 1) {
-        throw new Error('Cannot delete the last remaining branch');
+        throw new BadRequestException(
+          'Cannot delete the last remaining branch',
+        );
       }
 
       // Can't delete the main branch
       if (branch.is_main) {
-        throw new Error('Cannot delete the main branch');
+        throw new BadRequestException('Cannot delete the main branch');
       }
 
       await this.prismaService.branch.delete({
@@ -291,6 +300,9 @@ export class BranchService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting branch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -323,6 +335,9 @@ export class BranchService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error setting main branch ${id} for consumer ${consumerId}`,
         errorStack(error),

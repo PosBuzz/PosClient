@@ -1,0 +1,301 @@
+name: Nightly
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: "0 20 * * *" # 02:00 Asia/Dhaka
+  workflow_dispatch:
+    inputs:
+      full_domain:
+        description: "Mutate every domain file (no weekly rotation) and judge it against the strict Tier A/B floors"
+        type: boolean
+        default: false
+
+jobs:
+  changes:
+    name: Changes since last night
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -n "$(git log --since='25 hours ago' --oneline -1)" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No commits in the last 25h; skipping nightly."; fi
+
+  backend-mutation-domain:
+    name: Backend mutation (domain ${{ matrix.shard }}/12)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    # A shard's first (cold) pass can take over an hour; the incremental cache makes later nights take minutes.
+    # timeout-minutes: 120  # disabled for now (owner request): let cold passes run to completion
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
+      - run: npx prisma generate
+      # One seventh of the service files per night (all of them weekly) plus anything changed in the last 25 hours.
+      - name: Select tonight's mutation files
+        working-directory: .
+        run: |
+          day=$(( $(date -u +%s) / 86400 % 7 + 1 ))
+          if [ "${{ inputs.full_domain }}" = "true" ]; then
+            # One-off full measurement: no rotation, its own cache so the weekday caches stay untouched
+            echo "STRYKER_ROTATION_KEY=full" >> "$GITHUB_ENV"
+          else
+            echo "STRYKER_ROTATION=$day/7" >> "$GITHUB_ENV"
+            echo "STRYKER_ROTATION_KEY=r$day" >> "$GITHUB_ENV"
+          fi
+          {
+            echo 'STRYKER_CHANGED_FILES<<EOF'
+            git log --since='25 hours ago' --name-only --pretty=format: -- backend/src | sort -u
+            echo EOF
+          } >> "$GITHUB_ENV"
+      # Stryker's incremental report lets a night reuse every result whose code and covering tests did not
+      # change, so after the first measurement only edited code is retested. One cache per rotation day and shard.
+      # Bump the key prefix (v2) whenever saved results are invalid: Stryker reuses every non-killed status, errors
+      # included, and harness fixes do not invalidate them (v1 held KI-108's no-database RuntimeErrors).
+      - name: Restore incremental mutation results
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
+          key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
+      - name: Mutate this shard's files
+        # timeout-minutes: 110  # disabled for now (owner request)
+        run: |
+          if node --input-type=module -e "const c = (await import('./stryker.domain.config.mjs')).default; process.exit(c.mutate.length ? 0 : 3)"; then
+            npm run test:mutation:shard
+          else
+            echo "Nothing is assigned to this shard tonight."
+          fi
+        env:
+          TZ: UTC
+          STRYKER_SHARD: ${{ matrix.shard }}/12
+          # Jest workers in long Stryker runs grow past Node's default heap and get restarted.
+          NODE_OPTIONS: --max-old-space-size=3072
+      - name: Save incremental mutation results
+        if: always() && hashFiles(format('backend/reports/stryker/domain-incremental-shard-{0}.json', matrix.shard)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
+          key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-domain-mutation-shard-${{ matrix.shard }}
+          path: backend/reports/stryker
+          retention-days: 14
+      - if: always()
+        run: docker compose -f ../docker-compose.test.yml down
+
+  backend-mutation-gate:
+    name: Backend mutation tier gate
+    needs: [changes, backend-mutation-domain]
+    if: always() && needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: node --test scripts/mutation-tier-gate.test.mjs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: backend-domain-mutation-shard-*
+          path: backend/reports/shards
+      - name: Gate merged shard reports
+        run: |
+          set -e
+          test "${{ needs.backend-mutation-domain.result }}" = success
+          shopt -s nullglob
+          reports=(reports/shards/*/*.mutation.json)
+          if [ ${#reports[@]} -eq 0 ]; then echo "No shard measured anything tonight."; exit 0; fi
+          if [ "${{ inputs.full_domain }}" = "true" ]; then
+            # Every file was measured, so judge the strict Tier A 75 / Tier B 60 floors (BE-COV-020)
+            node scripts/mutation-tier-gate.mjs "${reports[@]}"
+          else
+            node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
+          fi
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-mutation-baseline-candidate
+          path: backend/reports/mutation-baseline.candidate.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: backend-mutation-domain" --body "Run and shard artifacts: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: backend-mutation-domain in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+  consumer-mutation-full:
+    name: Consumer mutation (${{ matrix.target }})
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - src/utils/calculate-totals.utils.ts
+          - src/utils/sale-item.utils.ts
+          - src/utils/promotion-validation.ts
+          - src/utils/promotion-helpers.utils.ts
+          - src/utils/formatters.ts
+          - src/utils/payment-provider.utils.ts
+          - src/utils/invalidate-sales-reports.ts
+          - src/api/axiosInstance.ts
+          - src/components/RequireAuth.tsx
+          - src/components/RequirePermission.tsx
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
+      - run: rm -rf reports/stryker
+      - run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation -- ${{ matrix.target }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-mutation-report-${{ strategy.job-index }}
+          path: consumer/reports/stryker
+          retention-days: 14
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: consumer-mutation ${{ matrix.target }}" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || gh issue comment "$(gh issue list --search 'Nightly failure: consumer-mutation ${{ matrix.target }} in:title' --json number --jq '.[0].number')" --body "Failed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+  backend-tz-matrix:
+    name: Backend integration (TZ ${{ matrix.tz }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [UTC, Asia/Dhaka, America/New_York]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
+      - run: npx prisma generate
+      - run: npx jest --config ./test/jest-integration.json
+        env:
+          TZ: ${{ matrix.tz }}
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TZ_NAME: ${{ matrix.tz }}
+        run: |
+          gh issue create --title "Nightly failure: backend-tz-matrix ($TZ_NAME)" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+
+  e2e-repeat:
+    name: Full-stack E2E (3x)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            e2e/package-lock.json
+            backend/package-lock.json
+            consumer/package-lock.json
+            admin/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json e2e/package-lock.json
+      - run: npx playwright install --with-deps chromium
+      - run: node --test scripts/login-budget.test.mjs
+      - run: npm run prepare:stack -- --install
+      - run: npx playwright test --repeat-each=3
+        env:
+          CI: "true"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-nightly
+          path: e2e/playwright-report
+          retention-days: 14
+      - if: failure()
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Nightly failure: e2e-repeat" --body "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true

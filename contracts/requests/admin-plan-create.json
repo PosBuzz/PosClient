@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "path": "/admin/plans",
+  "auth": "admin",
+  "body": {
+    "name": "Flow Plan",
+    "price": 1200,
+    "max_products": null,
+    "permission_ids": [
+      13,
+      1
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 // receipt-pdf-setting.controller.ts
 
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -57,6 +58,21 @@ export class ReceiptPdfSettingController {
   ) {
     const consumerId = req.user.consumer_id;
 
+    // The body is untyped JSON: refuse shapes the PDF code cannot work with
+    if (
+      !body ||
+      typeof body.settings !== 'object' ||
+      body.settings === null ||
+      Array.isArray(body.settings)
+    ) {
+      throw new BadRequestException('Receipt settings must be an object.');
+    }
+    if (!Object.prototype.hasOwnProperty.call(PRESET_DEFAULTS, body.type)) {
+      throw new BadRequestException(
+        `Receipt type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
+      );
+    }
+
     // 1. Always merge with defaults so missing fields don't crash PDF generation
     const defaults = PRESET_DEFAULTS[body.type] || PRESET_DEFAULTS.receipt;
     const mergedSettings = this.deepMergeSettings(defaults, body.settings);
@@ -98,12 +114,14 @@ export class ReceiptPdfSettingController {
 
         // Branch-specific fields (only present when branchId was provided)
         if (branding.branchName) mockData.branchName = branding.branchName;
-        if (branding.branchAddress)
+        if (branding.branchAddress) {
           mockData.branchAddress = branding.branchAddress;
+        }
         if (branding.branchPhone) mockData.branchPhone = branding.branchPhone;
         if (branding.branchEmail) mockData.branchEmail = branding.branchEmail;
-        if (branding.vatRegistrationNumber)
+        if (branding.vatRegistrationNumber) {
           mockData.vatRegistrationNumber = branding.vatRegistrationNumber;
+        }
       }
     } catch (error) {
       // If branding fetch fails, continue with pure sample data
@@ -169,6 +187,23 @@ export class ReceiptPdfSettingController {
     },
   ) {
     const consumerId = req.user.consumer_id;
+    if (typeof body?.name !== 'string' || !body.name.trim()) {
+      throw new BadRequestException(
+        'A name is required for the receipt setting.',
+      );
+    }
+    if (!Object.prototype.hasOwnProperty.call(PRESET_DEFAULTS, body.type)) {
+      throw new BadRequestException(
+        `Receipt type must be one of: ${Object.keys(PRESET_DEFAULTS).join(', ')}`,
+      );
+    }
+    if (
+      typeof body.settings !== 'object' ||
+      body.settings === null ||
+      Array.isArray(body.settings)
+    ) {
+      throw new BadRequestException('Receipt settings must be an object.');
+    }
     return this.service.createSetting({
       consumerId,
       branchId: body.branchId,

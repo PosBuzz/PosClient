@@ -1,4 +1,5 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { getErrorMessage } from "../utils/api-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Form, Input, Modal, Select, Space, Tooltip } from "antd";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -70,11 +71,7 @@ export default function VendorSelector({
       }
     },
     onError: (error) => {
-      messageApi?.error(
-        `Failed to create vendor: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create vendor"));
     },
   });
 
@@ -103,11 +100,7 @@ export default function VendorSelector({
       editForm.resetFields();
     },
     onError: (error) => {
-      messageApi?.error(
-        `Failed to update vendor: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update vendor"));
     },
   });
 
@@ -127,11 +120,7 @@ export default function VendorSelector({
       messageApi?.success("Vendor deleted successfully");
     },
     onError: (error) => {
-      messageApi?.error(
-        `Failed to delete vendor: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to delete vendor"));
     },
   });
 

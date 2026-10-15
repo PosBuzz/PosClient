@@ -4,6 +4,7 @@ import {
   PlusOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
+import { getErrorMessage } from "../../../utils/api-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -98,9 +99,7 @@ export default function VendorSelector({
       onChange(created.id);
     },
     onError: (error: unknown) => {
-      const msg =
-        error instanceof Error ? error.message : "Failed to create vendor";
-      messageApi?.error(msg);
+      messageApi?.error(getErrorMessage(error, "Failed to create vendor"));
     },
   });
 
@@ -114,9 +113,7 @@ export default function VendorSelector({
       form.resetFields();
     },
     onError: (error: unknown) => {
-      const msg =
-        error instanceof Error ? error.message : "Failed to update vendor";
-      messageApi?.error(msg);
+      messageApi?.error(getErrorMessage(error, "Failed to update vendor"));
     },
   });
 
@@ -130,9 +127,7 @@ export default function VendorSelector({
       }
     },
     onError: (error: unknown) => {
-      const msg =
-        error instanceof Error ? error.message : "Failed to delete vendor";
-      messageApi?.error(msg);
+      messageApi?.error(getErrorMessage(error, "Failed to delete vendor"));
     },
   });
 

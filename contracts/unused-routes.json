@@ -1,0 +1,6 @@
+{
+  "PATCH /api/v1/consumer/branches/:id/set-main": "the branches page sets the main branch with PATCH /consumer/branches/:id and is_main",
+  "POST /api/v1/consumer/rewards/customers/:id/process-credit": "credit is redeemed inside POST /consumer/sales; QUESTION: remove, it lets a customers-permission user burn points without a sale",
+  "POST /api/v1/consumer/rewards/customers/:id/process-credit-refund": "credit is refunded inside POST /consumer/returns; QUESTION: remove, it lets a customers-permission user add points without a refund",
+  "GET /api/v1/consumer/rewards/customers/:id/validate-credit/:amount": "credit is validated inside POST /consumer/sales"
+}

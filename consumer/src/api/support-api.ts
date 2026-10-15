@@ -2,20 +2,12 @@ import { get, patch, post } from "./crud-api";
 import { endpoints } from "./endpoints";
 
 export type SupportTicketStatus =
-  | "OPEN"
-  | "IN_PROGRESS"
-  | "WAITING_ON_CUSTOMER"
-  | "RESOLVED"
-  | "CLOSED";
+  "OPEN" | "IN_PROGRESS" | "WAITING_ON_CUSTOMER" | "RESOLVED" | "CLOSED";
 
 export type SupportTicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export type SupportTicketCategory =
-  | "BILLING"
-  | "TECHNICAL"
-  | "FEATURE_REQUEST"
-  | "ACCOUNT"
-  | "OTHER";
+  "BILLING" | "TECHNICAL" | "FEATURE_REQUEST" | "ACCOUNT" | "OTHER";
 
 export interface SupportTicketMessage {
   id: number;
@@ -56,7 +48,9 @@ export const supportApi = {
   create: (data: SupportTicketInput) =>
     post(endpoints.supportTickets, data) as Promise<SupportTicket>,
   reply: (id: number, body: string) =>
-    post(endpoints.supportTicketMessages(id), { body }) as Promise<SupportTicket>,
+    post(endpoints.supportTicketMessages(id), {
+      body,
+    }) as Promise<SupportTicket>,
   close: (id: number) =>
     patch(endpoints.closeSupportTicket(id), {}) as Promise<SupportTicket>,
   reopen: (id: number) =>

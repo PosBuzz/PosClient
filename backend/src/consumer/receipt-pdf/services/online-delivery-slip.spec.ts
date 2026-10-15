@@ -3,24 +3,22 @@ import { ReceiptPdfService } from './receipt-pdf.service';
 import { PRESET_DEFAULTS } from '../preset/receipt-pdf-settings';
 
 describe('online delivery slip', () => {
-  it('renders the partner, customer destination and outstanding balance with its own preset', async () => {
+  it('{SalesPdfService.generateSaleReceiptPdf} renders the partner, customer destination and outstanding balance with its own preset', async () => {
     const renderer = new ReceiptPdfService();
     const render = jest.spyOn(renderer, 'generatePdf');
     const settingsService = {
       getActiveSettings: jest
         .fn()
         .mockResolvedValue(PRESET_DEFAULTS.online_delivery_slip),
-      getBrandingData: jest
-        .fn()
-        .mockResolvedValue({
-          storeName: 'Test Store',
-          branchName: 'Main',
-          branchAddress: '',
-          branchPhone: '0123456',
-          branchEmail: '',
-          logoPath: '',
-          vatRegistrationNumber: '',
-        }),
+      getBrandingData: jest.fn().mockResolvedValue({
+        storeName: 'Test Store',
+        branchName: 'Main',
+        branchAddress: '',
+        branchPhone: '0123456',
+        branchEmail: '',
+        logoPath: '',
+        vatRegistrationNumber: '',
+      }),
     };
     const service = new SalesPdfService(renderer, settingsService as any);
     const result = await service.generateSaleReceiptPdf(

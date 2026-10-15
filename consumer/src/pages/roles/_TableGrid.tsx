@@ -7,6 +7,7 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
@@ -28,8 +29,8 @@ export default function _TableGrid({ onClickEdit }) {
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

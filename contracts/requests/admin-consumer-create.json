@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "path": "/admin/consumers",
+  "auth": "admin",
+  "body": {
+    "company_name": "Flow Shop",
+    "name": "Flow Owner",
+    "subdomain": "flowshop",
+    "plan_id": 1,
+    "max_branch": 1,
+    "email": "flow@example.test",
+    "password": "PosBuzz!234",
+    "secondary_email": null,
+    "business_category": null
+  }
+}

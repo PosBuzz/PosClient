@@ -1,0 +1,31 @@
+{
+  "date": "2026-03-14",
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 1,
+    "total_pages": 1
+  },
+  "rows": [
+    {
+      "achievement_pct": 60,
+      "actual_sold": 3,
+      "daily_target": 5,
+      "gap": 2,
+      "gross_sold": 3,
+      "product_id": 1,
+      "product_name": "Product 5",
+      "returned": 0,
+      "sku": "SKU8",
+      "variant_id": 1,
+      "variant_name": "Default"
+    }
+  ],
+  "summary": {
+    "overall_achievement_pct": 60,
+    "total_gross_sold": 3,
+    "total_returned": 0,
+    "total_sold": 3,
+    "total_target": 5
+  }
+}

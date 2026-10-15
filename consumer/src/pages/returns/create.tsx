@@ -42,6 +42,7 @@ import { PaymentMethod } from "../../types/sale.types";
 import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { setPageTitle } from "../../utils/setPageTitle";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 import {
   getPaymentProviderOptions,
   getPaymentProviderPlaceholder,
@@ -92,9 +93,7 @@ const CreateReturn = () => {
           );
         } else {
           messageApi?.error(
-            `Error fetching exchange sale: ${
-              error.response?.data?.message || error.message || "Unknown error"
-            }`,
+            `Error fetching exchange sale: ${getErrorMessage(error)}`,
           );
         }
         throw error;
@@ -116,9 +115,7 @@ const CreateReturn = () => {
       navigate(`/returns/view/${data.id}`);
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create return",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create return"));
     },
   });
 
@@ -171,9 +168,7 @@ const CreateReturn = () => {
         messageApi?.error("Sale not found. Please check the sale number.");
       } else {
         messageApi?.error(
-          `Error searching for sale: ${
-            error.response?.data?.message || error.message || "Unknown error"
-          }`,
+          `Error searching for sale: ${getErrorMessage(error)}`,
         );
       }
 
@@ -223,9 +218,7 @@ const CreateReturn = () => {
         );
       } else {
         messageApi?.error(
-          `Error searching for exchange sale: ${
-            error.response?.data?.message || error.message || "Unknown error"
-          }`,
+          `Error searching for exchange sale: ${getErrorMessage(error)}`,
         );
       }
 
@@ -431,7 +424,11 @@ const CreateReturn = () => {
           : undefined,
     };
 
-    await createReturnMutation.mutateAsync(returnData);
+    try {
+      await createReturnMutation.mutateAsync(returnData);
+    } catch {
+      // onError already shows the message; swallowing here avoids an unhandled rejection from the form handler
+    }
   };
 
   const getTotalPayments = () => {
@@ -1711,8 +1708,9 @@ const CreateReturn = () => {
                         saleData?.total_amount ??
                         0;
                       if (selectedReturnValue <= 0) return "danger";
-                      if (selectedReturnValue > availableAmount + 0.01)
+                      if (selectedReturnValue > availableAmount + 0.01) {
                         return "danger";
+                      }
                       return Math.abs(
                         totalPaymentAmount - selectedReturnValue,
                       ) <= 0.01
@@ -1803,8 +1801,9 @@ const CreateReturn = () => {
                         saleData?.return_summary?.available_amount ??
                         saleData?.total_amount ??
                         0;
-                      if (selectedReturnValue > availableAmount + 0.01)
+                      if (selectedReturnValue > availableAmount + 0.01) {
                         return true;
+                      }
                       return (
                         Math.abs(totalPaymentAmount - selectedReturnValue) >
                         0.01

@@ -26,17 +26,20 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text, Paragraph } = Typography;
 
-const statusMeta: Record<SupportTicketStatus, { label: string; color: string }> =
-  {
-    OPEN: { label: "Open", color: "blue" },
-    IN_PROGRESS: { label: "In Progress", color: "gold" },
-    WAITING_ON_CUSTOMER: { label: "Waiting on You", color: "orange" },
-    RESOLVED: { label: "Resolved", color: "green" },
-    CLOSED: { label: "Closed", color: "default" },
-  };
+const statusMeta: Record<
+  SupportTicketStatus,
+  { label: string; color: string }
+> = {
+  OPEN: { label: "Open", color: "blue" },
+  IN_PROGRESS: { label: "In Progress", color: "gold" },
+  WAITING_ON_CUSTOMER: { label: "Waiting on You", color: "orange" },
+  RESOLVED: { label: "Resolved", color: "green" },
+  CLOSED: { label: "Closed", color: "default" },
+};
 
 const priorityMeta: Record<string, string> = {
   LOW: "default",
@@ -98,7 +101,8 @@ export default function Support() {
       setOpenTicketId(created.id);
       messageApi?.success("Support ticket created");
     },
-    onError: () => messageApi?.error("Could not create the ticket"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not create the ticket")),
   });
 
   const reply = useMutation({
@@ -108,7 +112,8 @@ export default function Support() {
       invalidate();
       replyForm.resetFields();
     },
-    onError: () => messageApi?.error("Could not send the reply"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not send the reply")),
   });
 
   const close = useMutation({
@@ -217,7 +222,8 @@ export default function Support() {
             {
               title: "Last activity",
               dataIndex: "last_reply_at",
-              render: (value: string) => dayjs(value).format("DD MMM YYYY, hh:mm A"),
+              render: (value: string) =>
+                dayjs(value).format("DD MMM YYYY, hh:mm A"),
             },
           ]}
         />
@@ -236,7 +242,11 @@ export default function Support() {
           initialValues={{ category: "TECHNICAL", priority: "MEDIUM" }}
           onFinish={(values) => create.mutate(values)}
         >
-          <Form.Item name="subject" label="Subject" rules={[{ required: true }]}>
+          <Form.Item
+            name="subject"
+            label="Subject"
+            rules={[{ required: true }]}
+          >
             <Input placeholder="Short summary of the issue" maxLength={150} />
           </Form.Item>
           <Form.Item

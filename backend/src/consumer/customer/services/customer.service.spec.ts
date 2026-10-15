@@ -28,7 +28,7 @@ describe('CustomerService history queries', () => {
     service = new CustomerService(prisma as any);
   });
 
-  it('returns tenant-scoped aggregates and only five shallow recent sales', async () => {
+  it('{CustomerService.getSummary} returns tenant-scoped aggregates and only five shallow recent sales', async () => {
     prisma.customer.findFirst.mockResolvedValue({
       id: 12,
       name: 'Customer',
@@ -85,7 +85,7 @@ describe('CustomerService history queries', () => {
     expect(result.rewards.total_points).toBe(0);
   });
 
-  it('caps requested sales history pages at 50 rows', async () => {
+  it('{CustomerService.getSalesHistory} caps requested sales history pages at 50 rows', async () => {
     prisma.customer.findFirst.mockResolvedValue({ id: 12 });
     prisma.sale.count.mockResolvedValue(80);
     prisma.sale.findMany.mockResolvedValue([]);
@@ -107,7 +107,7 @@ describe('CustomerService history queries', () => {
     });
   });
 
-  it('scopes reward history by both customer and tenant', async () => {
+  it('{CustomerService.getRewardsHistory} scopes reward history by both customer and tenant', async () => {
     prisma.customer.findFirst.mockResolvedValue({ id: 12 });
     prisma.rewardsPointTransaction.count.mockResolvedValue(1);
     prisma.rewardsPointTransaction.findMany.mockResolvedValue([]);

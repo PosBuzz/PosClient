@@ -1,6 +1,6 @@
 // return-pdf.service.ts
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
@@ -14,7 +14,7 @@ import {
 
 @Injectable()
 export class ReturnPdfService {
-  private readonly logger = new Logger(ReturnPdfService.name);
+  // private readonly logger = new Logger(ReturnPdfService.name);
 
   constructor(
     private readonly receiptPdfService: ReceiptPdfService,
@@ -59,7 +59,7 @@ export class ReturnPdfService {
     const originalSale = returnRecord.original_sale;
 
     // Combine returned items and exchange items into a single list for the PDF
-    const returnedItems = (returnRecord.items || [])
+    const returnedItems: ReceiptPdfData['items'] = (returnRecord.items || [])
       .filter((item: any) => Number(item.quantity) > 0) // Prevent 0-qty items from rendering
       .map((item: any) => {
         const variant = item.variant || item.sale_item?.variant;

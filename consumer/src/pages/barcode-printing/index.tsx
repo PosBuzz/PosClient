@@ -16,7 +16,7 @@ import {
   Space,
   Switch,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Barcode from "react-barcode";
 import { inventoryApi } from "../../api/inventory-api";
 import { productApi } from "../../api/product-api";
@@ -24,7 +24,10 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys } from "../../constants/queryKeys";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
-import { Product, ProductVariantDetailed } from "../../types/product.types";
+import {
+  ProductListItem,
+  ProductVariantSummary,
+} from "../../types/product.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
@@ -70,22 +73,6 @@ const BarcodePrinting = () => {
     queryFn: () => inventoryApi.getBranches(),
   });
 
-  // Fetch consumer profile for shop name
-  const { data: consumerData } = useQuery({
-    queryKey: ["consumer"],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/client");
-      return response.json();
-    },
-  });
-
-  // Set initial shop name when consumer data loads
-  useEffect(() => {
-    if (consumerData?.company_name) {
-      form.setFieldValue("ShopName", consumerData.company_name);
-    }
-  }, [consumerData, form]);
-
   // Fetch products with variants that have barcodes
   const { data: productOptions = [], isLoading: loadingProducts } = useQuery({
     queryKey: [queryKeys.products, searchTerm],
@@ -98,8 +85,8 @@ const BarcodePrinting = () => {
     select: (data) => {
       // Flatten variants from all products that have barcodes
       const options: ProductOption[] = [];
-      data.data.forEach((product: Product) => {
-        product.variants?.forEach((variant: ProductVariantDetailed) => {
+      data.data.forEach((product: ProductListItem) => {
+        product.variants?.forEach((variant: ProductVariantSummary) => {
           if (variant.barcode) {
             options.push({
               id: variant.id || 0,
@@ -539,7 +526,7 @@ const BarcodePrinting = () => {
       {/* Preview Modal */}
       <Modal
         title="Barcode Label Preview"
-        visible={previewModalVisible}
+        open={previewModalVisible}
         onCancel={() => setPreviewModalVisible(false)}
         footer={[
           <Button key="close" onClick={() => setPreviewModalVisible(false)}>

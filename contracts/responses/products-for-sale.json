@@ -1,0 +1,53 @@
+[
+  {
+    "barcode": "BAR9",
+    "brand_id": null,
+    "category_id": null,
+    "id": 1,
+    "image": null,
+    "locations": [],
+    "name": "Default",
+    "product_code": "PROD6",
+    "product_name": "Product 5",
+    "regular_price": "100",
+    "sku": "SKU8",
+    "tax_method": "EXCLUSIVE",
+    "tax_percentage": 5,
+    "unit_name": "Unit 7",
+    "wholesale_price": null
+  },
+  {
+    "barcode": "BAR16",
+    "brand_id": null,
+    "category_id": null,
+    "id": 2,
+    "image": null,
+    "locations": [],
+    "name": "Default",
+    "product_code": "PROD13",
+    "product_name": "Product 12",
+    "regular_price": "250",
+    "sku": "SKU15",
+    "tax_method": "INCLUSIVE",
+    "tax_percentage": 15,
+    "unit_name": "Unit 14",
+    "wholesale_price": null
+  },
+  {
+    "barcode": "BAR23",
+    "brand_id": null,
+    "category_id": null,
+    "id": 3,
+    "image": null,
+    "locations": [],
+    "name": "Default",
+    "product_code": "PROD20",
+    "product_name": "Product 19",
+    "regular_price": "40",
+    "sku": "SKU22",
+    "tax_method": "EXCLUSIVE",
+    "tax_percentage": 0,
+    "unit_name": "Unit 21",
+    "wholesale_price": null
+  }
+]

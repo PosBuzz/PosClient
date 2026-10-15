@@ -251,10 +251,6 @@ export const inventoryApi = {
     return patch(endpoints.updateInventoryBatch(id), data);
   },
 
-  deleteBatch: async (id: number): Promise<void> => {
-    return deleteApi(endpoints.deleteInventoryBatch(id));
-  },
-
   // Supporting data
   getBranches: async (): Promise<Branch[]> => {
     return get(endpoints.getBranches);

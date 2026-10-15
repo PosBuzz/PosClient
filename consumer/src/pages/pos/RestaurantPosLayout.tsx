@@ -479,9 +479,7 @@ const RestaurantPosLayout = ({
                       size="small"
                       optionType="button"
                       buttonStyle="solid"
-                      value={
-                        specialDiscountModes[item.variant_id] || "overall"
-                      }
+                      value={specialDiscountModes[item.variant_id] || "overall"}
                       onChange={(event) =>
                         onSpecialDiscountModeChange(
                           item.variant_id,
