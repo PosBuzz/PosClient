@@ -25,6 +25,10 @@ Re-deploy or roll forward manually: Actions → Deploy → Run workflow (optiona
 ## Env files in git
 No `.env.docker` or `.env.docker.example` files are tracked (removed 2026-10-15) and the root `docker-compose.yml` is gone. Secrets live only on the server. The public frontend build values (API URL, root admin email, Cloudinary cloud name and preset) are `ENV` lines in `admin/Dockerfile` and `consumer/Dockerfile`. Old values remain in git history; the JWT/CSRF/revalidate secrets were regenerated and the DB password rotated, so only the history copy is stale.
 
+## Database backups
+`backup-db.timer` runs `/usr/local/sbin/posbuzz-backup-db` (this repo: `deploy/backup-db.sh`) every night at 02:30 Dhaka: `pg_dump` -> gzip -> `age` (public key only on the server) -> Cloudflare R2 bucket `posbuzz`, prefix `daily/`, 14 days kept. Config and R2 keys: `/opt/posbuzz/env/backup.env` (root only). The private age key is held by the owner (password manager), never on the server. Install/update on the server: copy the script to `/usr/local/sbin/posbuzz-backup-db` (root, 700) and `backup-db.service`/`.timer` to `/etc/systemd/system/`, then `systemctl enable --now backup-db.timer`.
+Restore: `rclone copyto R2:posbuzz/daily/<file> f.age; age -d -i key.txt f.age | gunzip | psql -U postgres -d <db>`. A first backup was restored into a scratch database on 2026-10-15 (74 tables, matching production).
+
 ## Not covered yet
 - Redis and RabbitMQ are not deployed (the backend treats both as optional and off by default).
 - `posbuzz.com` has no DNS A record (left as is by the owner); the smoke test probes `portfolio.posbuzz.cloud` instead.
