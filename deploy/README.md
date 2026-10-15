@@ -1,7 +1,7 @@
 # Production deploy (CD)
 
 Push to `main` → `CI` → (green `All checks`) → `Deploy` workflow: builds 4 images,
-pushes them to GHCR tagged with the commit SHA, then SSHes to the VPS and runs
+pushes them to GHCR (10 newest versions kept) tagged with the commit SHA, then SSHes to the VPS and runs
 `deploy/deploy.sh`. It pulls the images, `docker compose up -d`, waits for every
 container to be healthy and rolls back to the previous good SHA if not. A final job
 smoke-tests the live site, including the cache headers that make a plain refresh

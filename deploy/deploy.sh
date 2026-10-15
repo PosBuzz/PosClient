@@ -35,7 +35,11 @@ export TAG
 
 if wait_healthy; then
   echo "$TAG" > "$LAST_GOOD_FILE"
-  docker image prune -f --filter "until=168h" >/dev/null
+  # Keep only this deploy and the previous one (the rollback target) on disk;
+  # anything else can be pulled again from GHCR if ever needed.
+  docker images --format '{{.Repository}}:{{.Tag}}' | grep '^ghcr.io/posbuzz/posclient-' \
+    | grep -v -e ":${TAG}$" -e ":${PREVIOUS:-none}$" | xargs -r docker rmi >/dev/null 2>&1 || true
+  docker image prune -f >/dev/null
   "${COMPOSE[@]}" ps
   echo "deploy ok: $TAG"
   exit 0
