@@ -29,6 +29,16 @@ wait_healthy() {
 PREVIOUS="$(cat "$LAST_GOOD_FILE" 2>/dev/null || true)"
 echo "deploying $TAG (previous good: ${PREVIOUS:-none})"
 
+# Safety net for migrations: images roll back, schema changes do not. Keep a
+# fresh dump from just before every deploy (last 5), so a bad migration can be
+# undone by restoring it. Skipped quietly if the database is not running yet.
+mkdir -p predeploy
+if docker exec posbuzz-postgres pg_isready -U postgres -q 2>/dev/null; then
+  docker exec posbuzz-postgres pg_dump -U postgres -Fc -d posbuzz > "predeploy/$(date -u +%Y%m%dT%H%M%SZ)-before-${TAG:0:12}.dump" \
+    || echo "warning: pre-deploy dump failed" >&2
+  ls -1t predeploy | tail -n +6 | while read -r f; do rm -f "predeploy/$f"; done
+fi
+
 export TAG
 "${COMPOSE[@]}" pull "${SERVICES[@]}"
 "${COMPOSE[@]}" up -d --remove-orphans
