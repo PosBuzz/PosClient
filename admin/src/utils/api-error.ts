@@ -2,7 +2,7 @@
 import { isAxiosError } from "axios";
 
 // The one place that decides what an error toast says. The server's message is
-// written for users (see docs/testing/phase-X4-error-messages.md), so show it;
+// written for users (error contract: docs/SYSTEM.md section 4), so show it;
 // fall back to the caller's text only when there is nothing better.
 
 const DEFAULT_FALLBACK = "Something went wrong. Please try again.";

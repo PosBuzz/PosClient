@@ -6,7 +6,7 @@ the files here, so a change on either side fails on the side that drifted.
 - `fixtures/` is hand-written and reviewed like code.
 - `generated/` is written by tests run with `UPDATE_CONTRACTS=1`, then committed. Never edit by hand.
 
-See `docs/testing/phase-X1-cross-layer-contracts.md`.
+See `docs/SYSTEM.md` (section 4, cross-layer contracts).
 
 - `responses/` is generated over backend HTTP on an isolated canonical scenario; business dates retain their actual meaning.
 - `requests/` records browser page mutations and is replayed over backend HTTP with fresh data and domain invariants.
