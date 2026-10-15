@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const baselinePath = join(root, "docs/testing/coverage-baseline.json");
+const baselinePath = join(root, "scripts/coverage-baseline.json");
 const METRICS = ["lines", "statements", "functions", "branches"];
 const DROP = 0.5;
 const RISE = 1;
@@ -47,7 +47,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
     const { failures, improvements } = compare(baseline[app], current);
     for (const line of failures) console.error(`${app} ${line}`);
-    for (const line of improvements) console.log(`${app} ${line}. Run node scripts/coverage-ratchet.mjs --update and commit docs/testing/coverage-baseline.json`);
+    for (const line of improvements) console.log(`${app} ${line}. Run node scripts/coverage-ratchet.mjs --update and commit scripts/coverage-baseline.json`);
     if (failures.length) failed = true;
     else console.log(`${app}: coverage holds against the baseline`);
   }

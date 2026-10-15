@@ -28,11 +28,21 @@ Re-deploy by hand: Actions -> Deploy -> Run workflow (pick the environment, opti
 - Host nginx (`deploy/nginx/posbuzz.conf` -> `/etc/nginx/sites-enabled/posbuzz`) routes by hostname to the ports in the table above; staging also sends `X-Robots-Tag: noindex`.
 - Certificates: `*.posbuzz.cloud` and `*.posbuzz.xyz` via certbot dns-cloudflare (`/root/.cloudflare*.ini`), auto-renewed.
 
-## Access model
-- GitHub secrets `DEPLOY_*` hold a key for the `deploy` user. That key is forced to
-  `/usr/local/bin/posbuzz-deploy-entry`, which only accepts `deploy staging|production <40-hex sha>` and `refresh-staging`.
-- `testadmin` logs in with a key only. Password SSH, root login are off; UFW allows 22222/80/443; fail2ban watches sshd.
-- Backups before the rebuild: `pg_dump -Fc` of `posbuzz` (see docs/testing).
+## Access and recovery
+**Log in:** `ssh -i ~/.ssh/posbuzz_admin_ed25519 -p 22222 testadmin@195.35.45.101` (the owner's Mac has the alias `ssh posbuzz`). Password login and root login are disabled, so the **private key file is the only way in**. Then `sudo -i` (needs the `testadmin` password; docker needs sudo).
+Handy: `sudo docker ps`, `sudo docker logs --tail 100 posbuzz-backend` (`posbuzz-stg-backend` for staging), `sudo systemctl list-timers`, `sudo /usr/local/sbin/posbuzz-health-check`, `sudo nginx -t && sudo systemctl reload nginx`.
+
+**Who can do what:**
+- GitHub secrets `DEPLOY_*` hold a key for the `deploy` user, forced to `/usr/local/bin/posbuzz-deploy-entry`, which only accepts `deploy staging|production <40-hex sha>` and `refresh-staging`.
+- `testadmin` (key only) is the human admin. UFW allows 22222/80/443; fail2ban watches sshd.
+
+**What to keep safe off the server** (in a password manager, never in git or a Google Doc):
+1. The admin SSH private key `~/.ssh/posbuzz_admin_ed25519`.
+2. The offline age private key (`age-private-key.txt`): the only key that can decrypt every R2 backup and the config backup.
+3. The `testadmin` sudo password and the logins for GitHub, Cloudflare, Hostinger, R2, Healthchecks.io and UptimeRobot.
+4. The encrypted server-config backup `posbuzz-server-config-<date>.tar.gz.age` (env files with all app secrets, drill key, Cloudflare token files, nginx, certificates, systemd units, SSH hardening). It is encrypted to the offline age key, so it can sit in cloud storage. Make a new one after any secret or config change: on the server, `tar czf - /opt/posbuzz/env /opt/posbuzz-staging/env /root/age-drill.key /root/.cloudflare*.ini /etc/nginx/sites-enabled/posbuzz /etc/letsencrypt /usr/local/bin/posbuzz-deploy-entry /usr/local/sbin/posbuzz-* /etc/systemd/system/{backup-db,health-check,restore-drill}.* | age -r <offline public key> > file.age`; restore with `age -d -i age-private-key.txt file.age | tar xz -C /`.
+
+**If the admin key is lost:** Hostinger hPanel -> VPS -> Browser terminal (or add an SSH key / reset the root password there), log in as root, append a new public key to `/home/testadmin/.ssh/authorized_keys`. **If the whole VPS is lost:** a new Ubuntu VPS, restore the config backup, `docker volume create` the two Postgres volumes, restore the newest R2 backup into production (`age -d … | gunzip | psql`), add the `DEPLOY_*` secrets and the DNS records, then run Deploy for both branches.
 
 ## Env files in git
 No `.env.docker` or `.env.docker.example` files are tracked (removed 2026-10-15) and the root `docker-compose.yml` is gone. Secrets live only on the server. The public frontend build values (API URL, root admin email, Cloudinary cloud name and preset) are `ENV` lines in `admin/Dockerfile` and `consumer/Dockerfile`. Old values remain in git history; the JWT/CSRF/revalidate secrets were regenerated and the DB password rotated, so only the history copy is stale.
@@ -47,6 +57,10 @@ All run on the VPS as root from systemd timers; scripts live in `/usr/local/sbin
 | `restore-drill.timer` | 1st of the month 04:00 Dhaka | restores the newest backup into a throwaway no-network Postgres and compares tables / sales / users with live | `posbuzz-restore-drill` (cron `0 4 1 * *`, grace 6 h) |
 
 A missed ping (dead server, stuck job) alerts just like an explicit failure. Keys: the **owner's offline age key** is the recovery key (kept off the server); `/root/age-drill.key` lets the drill run unattended. Anyone who only reaches the R2 bucket still cannot read a backup. Manual restore: `rclone copyto R2:posbuzz/daily/<file> f.age; age -d -i key.txt f.age | gunzip | psql -U postgres -d <db>`. Run a drill on demand: `sudo /usr/local/sbin/posbuzz-restore-drill`. Backups made before 2026-10-15 17:46 UTC were encrypted to the owner key only.
+
+## Edge security (Cloudflare + nginx)
+- Cloudflare: SSL mode **Full** on both zones (the origin's HTTP->HTTPS redirect is never reached by Cloudflare, so it cannot loop), Always Use HTTPS on, one Free-plan rate-limit rule per zone: `(http.request.method eq "POST" and starts_with(http.request.uri.path, "/api/v1/auth/"))` per IP.
+- nginx (`deploy/nginx/posbuzz.conf`, applied by hand to `/etc/nginx/sites-enabled/posbuzz`; test with `nginx -t`, keep the previous file): on the frontend hosts only, `Strict-Transport-Security: max-age=86400` (raise to 31536000 after a quiet week), an **enforced** low-risk CSP subset (`frame-ancestors`, `base-uri`, `object-src`, `form-action`) and a full CSP in **Report-Only** (violations show in the browser console, nothing is blocked). To enforce the full policy: click through staging with the console open, fix any violations, then rename the header to `Content-Security-Policy`. The API sets its own CSP/HSTS, so nginx skips `api.*`.
 
 ## Dependency security
 CI audits production dependencies of backend, consumer, admin and portfolio (high+ fails the build; the only exception list is `.github/audit-exceptions.json`). As of 2026-10-15 `npm audit` (including dev dependencies) reports 0 findings in all four apps: backend moved to Jest 30 (drops the vulnerable `braces`/`micromatch`), and `package.json` overrides pin `typed-rest-client`'s `qs` (Stryker) and the `js-yaml` used by `@istanbuljs/load-nyc-config` (Jest coverage; avoids `sprintf-js`, which has no patched release). Re-check those overrides when Stryker/Jest are next upgraded. The backend image is built from `npm ci --omit=dev` (prisma is a real dependency since the container runs `prisma migrate deploy`). GitHub Dependabot alerts are on (notifications only); version-update and security-update PRs are off.
