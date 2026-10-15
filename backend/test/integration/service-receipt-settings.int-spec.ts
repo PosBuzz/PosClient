@@ -51,7 +51,7 @@ describe('receipt preset persistence and tenant boundaries', () => {
     expect(error.message).toBe(message);
   };
 
-  it('[BE-RSET-100] {ReceiptPdfSettingService.initializeConsumerDefaults} idempotently creates the seven consumer defaults without changing custom JSON', async () => {
+  it('[BE-RSET-100] {ReceiptPdfSettingService.initializeConsumerDefaults} idempotently creates every consumer default without changing custom JSON', async () => {
     await service.initializeConsumerDefaults(cid(), w.tenant.adminUser.id);
     const defaults = await db.receiptPdfSetting.findMany({
       where: { consumer_id: cid() },
@@ -69,7 +69,7 @@ describe('receipt preset persistence and tenant boundaries', () => {
     await service.initializeConsumerDefaults(cid(), w.tenant.adminUser.id);
     expect(
       await db.receiptPdfSetting.count({ where: { consumer_id: cid() } }),
-    ).toBe(7);
+    ).toBe(Object.keys(PRESET_DEFAULTS).length);
     expect(
       await db.receiptPdfSetting.findUniqueOrThrow({
         where: { id: defaults[0].id },
