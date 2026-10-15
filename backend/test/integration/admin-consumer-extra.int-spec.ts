@@ -7,7 +7,7 @@ import { ConsumerPermission } from '../../src/auth/enums/consumerPermissions.enu
 import { ConsumerService } from '../../src/admin/consumer/services/consumer.service';
 import {
   ConsumerPurgeService,
-  SCOPE,
+  consumerScope,
 } from '../../src/admin/consumer/services/consumer-purge.service';
 
 describe('admin consumers and purge (extra, adversarial)', () => {
@@ -503,7 +503,7 @@ describe('admin consumers and purge (extra, adversarial)', () => {
     it('[BE-ADM-237] every SCOPE table is reachable, and every SCOPE predicate is valid SQL for a consumer id', async () => {
       const tables: any[] = await (purge as any).reachableTables(db);
       const names = new Set(tables.map((t) => t.name));
-      const entries = Object.entries(SCOPE);
+      const entries = Object.entries(consumerScope());
       expect(entries.length).toBeGreaterThan(20);
       for (const [table, where] of entries) {
         expect(where.length).toBeGreaterThan(10);
