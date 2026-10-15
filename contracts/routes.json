@@ -1433,6 +1433,45 @@
     ]
   },
   {
+    "method": "GET",
+    "path": "/api/v1/consumer/export/customers",
+    "controller": "ExportController",
+    "handler": "customers",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "customers"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/export/inventory",
+    "controller": "ExportController",
+    "handler": "inventory",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_batches"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/export/products",
+    "controller": "ExportController",
+    "handler": "products",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "view_product"
+    ]
+  },
+  {
     "method": "POST",
     "path": "/api/v1/consumer/import/:entity",
     "controller": "ImportController",
@@ -1467,6 +1506,16 @@
     "path": "/api/v1/consumer/import/:entity/template",
     "controller": "ImportController",
     "handler": "downloadTemplate",
+    "guards": [
+      "ClientAuthGuard"
+    ],
+    "permissions": []
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/import/status",
+    "controller": "ImportController",
+    "handler": "status",
     "guards": [
       "ClientAuthGuard"
     ],
@@ -1738,6 +1787,19 @@
     "path": "/api/v1/consumer/inventory/transfers/:id/complete",
     "controller": "InventoryTransferController",
     "handler": "completeTransfer",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "inventory_transfer"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/inventory/transfers/:id/pdf",
+    "controller": "InventoryTransferController",
+    "handler": "pdf",
     "guards": [
       "ClientAuthGuard",
       "PermissionsGuard"

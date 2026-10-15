@@ -44,6 +44,12 @@ async function upload(url: string, file: File | Blob): Promise<ImportResult> {
 }
 
 export const importApi = {
+  /** Whether the server has bulk import switched on */
+  getStatus: async (): Promise<{ enabled: boolean }> => {
+    const response = await axiosInstance.get(endpoints.importStatus);
+    return response.data;
+  },
+
   /** Column spec, so the dialog can describe the sheet it expects */
   getColumns: async (
     entity: ImportEntity,

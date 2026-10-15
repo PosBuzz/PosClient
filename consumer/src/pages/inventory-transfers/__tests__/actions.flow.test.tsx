@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { http } from "msw";
 import { expect, it } from "vitest";
 import { endpoints } from "../../../api/endpoints";
@@ -55,4 +55,46 @@ it("[CO-FLOW-INV-006] completes and cancels pending transfers only after confirm
   await user.click(await screen.findByRole("button", { name: "Yes, Cancel" }));
   await screen.findByText("Transfer cancelled successfully");
   expect(cancelled.calls).toHaveLength(1);
+});
+
+it("[CO-FLOW-INV-007] prints a transfer slip and a chalan slip from the row menu", async () => {
+  const pdfs: URL[] = [];
+  server.use(
+    http.get(`${API}${endpoints.inventoryTransfers}`, () =>
+      ok({
+        data: [
+          {
+            id: 91,
+            status: "pending",
+            source_branch: { name: "Branch 1" },
+            destination_branch: { name: "Branch 2" },
+            created_by_user: { name: "Tenant Admin" },
+            items: [{ quantity: 1 }],
+            created_at: "2026-03-14T12:00:00.000Z",
+          },
+        ],
+        meta: { total: 1, page: 1, limit: 10 },
+      }),
+    ),
+    http.get(`${API}${endpoints.getBranches}`, () =>
+      ok(responseContract("branches")),
+    ),
+    http.get(`${API}/consumer/inventory/transfers/91/pdf`, ({ request }) => {
+      pdfs.push(new URL(request.url));
+      return new Response("%PDF-1.4", {
+        headers: { "Content-Type": "application/pdf" },
+      });
+    }),
+  );
+  const { user } = renderWithProviders(<Transfers />);
+  const row = (await screen.findByText("#91")).closest("tr")!;
+  const open = async () =>
+    user.click(
+      within(row).getByRole("img", { name: "printer" }).closest("button")!,
+    );
+
+  await open();
+  await user.click(await screen.findByText("Transfer Slip"));
+  await waitFor(() => expect(pdfs).toHaveLength(1));
+  expect(pdfs[0].searchParams.get("type")).toBe("transfer_slip");
 });

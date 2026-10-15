@@ -20,6 +20,7 @@ import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ProductAuditModule } from 'src/product-audit/product-audit.module';
 import { ReceiptModule } from './receipt-pdf/receipt.module';
+import { ExportModule } from './export/export.module';
 import { ImportModule } from './import/import.module';
 import { OperationalCostsModule } from './operational-costs/operational-costs.module';
 import { SupportModule } from './support/support.module';
@@ -38,6 +39,7 @@ import { SupportModule } from './support/support.module';
     ProductModule,
     InventoryModule,
     ImportModule,
+    ExportModule,
     CustomerModule,
     SalesModule,
     ReturnsModule,

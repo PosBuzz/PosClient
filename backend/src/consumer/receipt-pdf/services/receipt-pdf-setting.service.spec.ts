@@ -15,6 +15,8 @@ const PRESETS = [
   ['Default Money Receipt', 'money_receipt'],
   ['Default Delivery Slip', 'delivery_slip'],
   ['Default Online Delivery Slip', 'online_delivery_slip'],
+  ['Default Transfer Slip', 'transfer_slip'],
+  ['Default Transfer Chalan', 'transfer_chalan'],
 ] as const;
 
 function setup() {
@@ -60,11 +62,11 @@ describe('ReceiptPdfSettingService (unit)', () => {
       const created = prisma.receiptPdfSetting.create.mock.calls.map(
         ([a]: any) => a.data,
       );
-      expect(created.filter((d: any) => d.consumer_id === 1)).toHaveLength(6);
+      expect(created.filter((d: any) => d.consumer_id === 1)).toHaveLength(8);
       expect(
         created.find((d: any) => d.consumer_id === 1 && d.type === 'receipt'),
       ).toBeUndefined();
-      expect(created.filter((d: any) => d.consumer_id === 2)).toHaveLength(7);
+      expect(created.filter((d: any) => d.consumer_id === 2)).toHaveLength(9);
     });
 
     it('[BE-MUT-221] each default has a pinned name, type, active flag, preset JSON and no branch', async () => {

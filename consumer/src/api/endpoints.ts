@@ -102,6 +102,8 @@ export const endpoints = {
   createInventoryTransfer: "/consumer/inventory/transfers",
   completeInventoryTransfer: (id: number) =>
     `/consumer/inventory/transfers/${id}/complete`,
+  inventoryTransferPdf: (id: number, type: string) =>
+    `/consumer/inventory/transfers/${id}/pdf?type=${type}`,
   cancelInventoryTransfer: (id: number) =>
     `/consumer/inventory/transfers/${id}/cancel`,
   branchBatches: (branchId: number) =>
@@ -135,6 +137,10 @@ export const endpoints = {
   getProductsForSale: "/consumer/sales/products",
   getProductByBarcode: "/consumer/sales/product-by-barcode",
   // Excel imports
+  exportProducts: "/consumer/export/products",
+  exportCustomers: "/consumer/export/customers",
+  exportInventory: "/consumer/export/inventory",
+  importStatus: "/consumer/import/status",
   importTemplate: (entity: string) => `/consumer/import/${entity}/template`,
   importColumns: (entity: string) => `/consumer/import/${entity}/columns`,
   importPreview: (entity: string) => `/consumer/import/${entity}/preview`,

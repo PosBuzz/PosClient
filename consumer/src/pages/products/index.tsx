@@ -30,7 +30,9 @@ import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { productApi } from "../../api/product-api";
+import ExportButton from "../../components/ExportButton";
 import ImportModal from "../../components/ImportModal";
+import { useImportEnabled } from "../../hooks/useImportEnabled";
 import PageTitle from "../../components/PageTitle";
 import { Permissions } from "../../constants/permissions";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
@@ -57,6 +59,7 @@ const ProductsTable = () => {
   const { messageApi } = useMessageStore();
   // Input state (tracks what the user is typing)
   const [importOpen, setImportOpen] = useState(false);
+  const importEnabled = useImportEnabled();
   const [searchText, setSearchText] = useState("");
   // Debounced state (used for actual API calls)
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
@@ -465,13 +468,16 @@ const ProductsTable = () => {
                   {productLimit.used} / {productLimit.max_products} products
                 </Tag>
               )}
-              <Button
-                icon={<UploadOutlined />}
-                onClick={() => setImportOpen(true)}
-                disabled={productLimit?.limit_reached}
-              >
-                Import Excel
-              </Button>
+              <ExportButton entity="products" />
+              {importEnabled && (
+                <Button
+                  icon={<UploadOutlined />}
+                  onClick={() => setImportOpen(true)}
+                  disabled={productLimit?.limit_reached}
+                >
+                  Import Excel
+                </Button>
+              )}
               {productLimit?.limit_reached ? (
                 <Tooltip
                   title={`Your ${productLimit.plan_name ?? "current"} plan allows ${productLimit.max_products} products. Upgrade your plan to add more.`}

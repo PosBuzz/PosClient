@@ -82,4 +82,12 @@ export interface ReceiptPdfData {
 
   isOnlineOrder: boolean;
   onlineOrderStatus: string | null;
+
+  /** Inventory transfer slips: the two branches shown instead of a customer. */
+  sourceBranchName?: string;
+  destinationBranchName?: string;
+  /** Label for the document number row; defaults to "Sale No:". */
+  numberLabel?: string;
+  /** Header of the SKU column; defaults to "SKU". */
+  codeHeader?: string;
 }

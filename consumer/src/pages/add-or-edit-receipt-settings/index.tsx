@@ -428,6 +428,12 @@ export default function ReceiptSettingsFormPage() {
                   <Select.Option value="delivery_slip">
                     Delivery Slip / Sticker
                   </Select.Option>
+                  <Select.Option value="transfer_slip">
+                    Inventory Transfer Slip
+                  </Select.Option>
+                  <Select.Option value="transfer_chalan">
+                    Transfer Chalan
+                  </Select.Option>
                 </Select>
               </Form.Item>
             </Col>
