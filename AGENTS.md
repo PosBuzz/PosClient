@@ -47,7 +47,7 @@ This project is indexed by GitNexus as **PosClient** (13383 symbols, 30979 relat
 # PosBuzz: system, testing, CI/CD
 
 Read `docs/SYSTEM.md` first: it summarises the system (apps, environments, branch flow, test layers, rules, standing decisions,
-known issues). Operations (servers, deploy, backups, alerts, access): `deploy/README.md`. The old test-plan documents were removed
+known issues). Operating the server (access, deploy/rollback, logs, restore, secrets, troubleshooting): `docs/OPERATIONS.md`; file-level deploy/backup/alert detail: `deploy/README.md`. The old test-plan documents were removed
 on 2026-10-16; the full text is in git history (`git show 840c2b3:docs/testing/<file>`).
 
 ## Environments and branch flow
