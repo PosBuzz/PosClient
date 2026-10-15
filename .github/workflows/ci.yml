@@ -1,0 +1,545 @@
+name: CI
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Lint & typecheck (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: matrix.app == 'backend'
+        run: npx prisma generate
+      - run: npm run lint:check
+      - run: npm run typecheck
+
+  dependency-audit:
+    name: Production dependency audit (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - name: Audit production dependencies with scoped exceptions
+        run: |
+          set +e
+          npm audit --audit-level=high --omit=dev --json > "$RUNNER_TEMP/audit.json"
+          audit_status=$?
+          set -e
+          node ../scripts/check-production-audit.mjs "$RUNNER_TEMP/audit.json" "$audit_status" "${{ matrix.app }}"
+
+  dependency-review:
+    name: PR dependency review (${{ matrix.app }})
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - name: Block new high or critical dependency findings
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git show "$PR_BASE_SHA:${{ matrix.app }}/package-lock.json" > "$RUNNER_TEMP/base-lock.json"
+          set +e
+          npm audit --json > "$RUNNER_TEMP/audit.json"
+          audit_status=$?
+          set -e
+          node ../scripts/check-production-audit.mjs "$RUNNER_TEMP/audit.json" "$audit_status" "${{ matrix.app }}" "$RUNNER_TEMP/base-lock.json" delta
+      - name: GitHub dependency graph review (when available)
+        if: vars.DEPENDENCY_REVIEW_ENABLED == 'true' && matrix.app == 'backend'
+        uses: actions/dependency-review-action@v5
+        with:
+          config-file: .github/dependency-review-config.yml
+
+  backend-unit:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - name: No masked client errors
+        working-directory: .
+        run: node --test scripts/check-masked-errors.test.mjs && node scripts/check-masked-errors.mjs
+      - run: npx prisma generate
+      - run: npm test -- --ci --runInBand --coverage
+        env:
+          TZ: UTC
+      - name: Coverage ratchet
+        working-directory: .
+        run: node scripts/coverage-ratchet.mjs --app backend
+
+  build:
+    name: Build (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: matrix.app == 'backend'
+        run: npx prisma generate
+      - run: npm run build
+
+  guardrail-tests:
+    name: Dependency gate regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node --test scripts/check-production-audit.test.mjs scripts/check-destructive-migrations.test.mjs scripts/coverage-ratchet.test.mjs
+
+  docker-build:
+    name: Docker image builds (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, consumer, admin]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if [ "${{ matrix.app }}" = "backend" ]; then
+            docker build -t posbuzz-backend:ci backend
+          else
+            docker build -f ${{ matrix.app }}/Dockerfile -t posbuzz-${{ matrix.app }}:ci .
+          fi
+
+  backend-integration:
+    name: Backend integration + e2e
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The destructive-migration guard compares against origin/main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - run: npx prisma generate
+      - run: npm run test:int -- --ci
+      - name: Destructive migration guard
+        run: node ../scripts/check-destructive-migrations.mjs
+      - name: Report reconciliation in the business time zone (Asia/Dhaka)
+        run: npm run test:int:tz -- --ci
+      - run: npm run test:e2e -- --ci
+      - name: Contract files were not rewritten by the tests
+        working-directory: .
+        run: git diff --exit-code -- contracts/
+
+  backend-optional-infra:
+    name: Backend optional infrastructure
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - run: npx prisma generate
+      - run: npm run test:infra -- --ci
+
+  consumer-tests:
+    name: Consumer tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - run: npm run test:cov
+      - name: Coverage ratchet
+        working-directory: .
+        run: node scripts/coverage-ratchet.mjs --app consumer
+
+  admin-tests:
+    name: Admin tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - name: Lockfiles stay unchanged
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - run: npm run test:cov
+      - name: Coverage ratchet
+        working-directory: .
+        run: node scripts/coverage-ratchet.mjs --app admin
+
+  contracts:
+    name: Cross-layer contracts (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/contracts/check-permissions.mjs
+      - run: node scripts/contracts/check-inline-paths.mjs
+      - run: node scripts/contracts/generate-response-types.mjs --check
+
+  e2e:
+    name: Full-stack E2E
+    runs-on: ubuntu-latest
+    needs: [backend-integration, consumer-tests, admin-tests]
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            e2e/package-lock.json
+            backend/package-lock.json
+            consumer/package-lock.json
+            admin/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node --test scripts/login-budget.test.mjs
+      - run: npm run prepare:stack -- --install
+      - run: npm test
+        env:
+          CI: "true"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 14
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # The gitleaks GitHub Action needs a paid license for organizations; the open-source binary does not.
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz -o gitleaks.tgz
+          echo "ba6dbb656933921c775ee5a2d1c13a91046e7952e9d919f9bac4cec61d628e7d  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+      # Only the commits this PR or push adds are scanned. Secrets already in history are tracked in
+      # KNOWN-ISSUES (KI-088) and need rotating by the owner; they are not waived here.
+      - name: Scan new commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --log-opts="-1"
+          else
+            ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --log-opts="$BASE_SHA..HEAD"
+          fi
+
+  tests-required:
+    name: Tests required
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Production changes need tests
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          src=$(git diff --name-only "$BASE_SHA"...HEAD | grep -E '^(backend/src|backend/prisma|consumer/src|admin/src)/' | grep -vE '\.(spec|test|int-spec|e2e-spec)\.tsx?$' || true)
+          tests=$(git diff --name-only "$BASE_SHA"...HEAD | grep -E '(\.spec\.ts|\.test\.tsx?|int-spec\.ts|e2e-spec\.ts|^contracts/|^e2e/)' || true)
+          if [ -n "$src" ] && [ -z "$tests" ]; then
+            if echo "$LABELS" | grep -q no-tests-needed && echo "$PR_BODY" | grep -q "No tests because:"; then
+              echo "Exempted by label no-tests-needed with a stated reason."
+            else
+              echo "::error::Production code changed without tests. Add tests, or label no-tests-needed and add a 'No tests because: ...' line to the PR body."
+              exit 1
+            fi
+          fi
+
+  consumer-mutation:
+    name: Consumer mutation (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - src/utils/calculate-totals.utils.ts
+          - src/utils/sale-item.utils.ts
+          - src/utils/promotion-validation.ts
+          - src/utils/promotion-helpers.utils.ts
+          - src/utils/formatters.ts
+          - src/utils/payment-provider.utils.ts
+          - src/utils/invalidate-sales-reports.ts
+          - src/api/axiosInstance.ts
+          - src/components/RequireAuth.tsx
+          - src/components/RequirePermission.tsx
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: consumer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            mutation:
+              - 'consumer/src/utils/calculate-totals.utils*'
+              - 'consumer/src/utils/sale-item.utils*'
+              - 'consumer/src/utils/promotion-validation*'
+              - 'consumer/src/utils/promotion-helpers.utils*'
+              - 'consumer/src/utils/formatters*'
+              - 'consumer/src/utils/payment-provider.utils*'
+              - 'consumer/src/utils/invalidate-sales-reports*'
+              - 'consumer/src/api/axiosInstance*'
+              - 'consumer/src/components/Require*'
+              - 'consumer/src/routes.test.tsx'
+              - 'consumer/src/utils/__contracts__/**'
+              - 'consumer/stryker.config.mjs'
+              - 'consumer/scripts/**'
+              - 'consumer/src/**'
+              - 'consumer/vitest.config.ts'
+              - 'consumer/tsconfig*.json'
+              - 'consumer/package*.json'
+              - 'contracts/**'
+              - '.github/workflows/ci.yml'
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: consumer/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm ci
+      - name: Lockfiles stay unchanged
+        if: steps.changes.outputs.mutation == 'true'
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            consumer/reports/stryker/*.json
+            consumer/reports/stryker/*.json.inputs
+          key: stryker-consumer-${{ matrix.target }}-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            stryker-consumer-${{ matrix.target }}-${{ github.head_ref || github.ref_name }}-
+            stryker-consumer-${{ matrix.target }}-main-
+      - if: steps.changes.outputs.mutation == 'true'
+        run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation -- ${{ matrix.target }}
+        env:
+          TZ: UTC
+          NODE_OPTIONS: --max-old-space-size=3072
+      - if: always() && steps.changes.outputs.mutation == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-mutation-report-${{ strategy.job-index }}
+          path: consumer/reports/stryker
+          retention-days: 14
+
+  backend-mutation-unit:
+    name: Backend mutation (unit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            mutation:
+              - 'backend/src/consumer/promotions/promotion-math*'
+              - 'backend/src/consumer/inventory/utils/**'
+              - 'backend/src/consumer/sales/utils/sale-pricing*'
+              - 'backend/src/common/services/subdomain-util*'
+              - 'backend/src/common/utils/error.util*'
+              - 'backend/src/common/errors/client-error*'
+              - 'backend/prisma-client-exception/**'
+              - 'backend/stryker.unit.config.mjs'
+              - 'backend/tsconfig*.json'
+              - 'backend/package*.json'
+              - '.github/workflows/ci.yml'
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm ci
+      - name: Lockfiles stay unchanged
+        if: steps.changes.outputs.mutation == 'true'
+        working-directory: .
+        run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
+      - if: steps.changes.outputs.mutation == 'true'
+        uses: actions/cache@v4
+        with:
+          path: backend/reports/stryker/unit-incremental.json
+          key: stryker-backend-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            stryker-backend-${{ github.head_ref || github.ref_name }}-
+            stryker-backend-main-
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npx prisma generate
+      - if: steps.changes.outputs.mutation == 'true'
+        run: npm run test:mutation:unit
+        env:
+          TZ: UTC
+          NODE_OPTIONS: --max-old-space-size=3072
+      - if: always() && steps.changes.outputs.mutation == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-mutation-unit-report
+          path: backend/reports/stryker
+          retention-days: 14
+
+  all-green:
+    name: All checks
+    if: always()
+    needs: [static, build, docker-build, dependency-audit, dependency-review, guardrail-tests, backend-unit, backend-integration, backend-optional-infra, consumer-tests, admin-tests, contracts, e2e, secret-scan, tests-required, consumer-mutation, backend-mutation-unit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful mandatory jobs
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node --input-type=module <<'JS'
+          const jobs = JSON.parse(process.env.JOB_RESULTS);
+          const pullRequestOnly = ['dependency-review', 'tests-required'];
+          for (const [name, job] of Object.entries(jobs)) {
+            const allowedSkip = pullRequestOnly.includes(name) && process.env.EVENT_NAME !== 'pull_request';
+            if (job.result !== 'success' && !(allowedSkip && job.result === 'skipped')) {
+              console.error(`${name}: ${job.result}`);
+              process.exitCode = 1;
+            }
+          }
+          JS

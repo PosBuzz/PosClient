@@ -2,7 +2,8 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePlanDto } from '../dto/create-plan.dto';
 import { UpdatePlanDto } from '../dto/update-plan.dto';
-import { errorMessage, errorStack } from '../../../common/utils/error.util';
+import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class PlanService {
@@ -27,6 +28,9 @@ export class PlanService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Plan creation failed', errorStack(error));
 
       throw new HttpException(
@@ -49,6 +53,9 @@ export class PlanService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching plans failed', errorStack(error));
 
       throw new HttpException(
@@ -77,11 +84,14 @@ export class PlanService {
 
       return plan;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Fetching plan ${id} failed`, errorStack(error));
 
       throw new HttpException(
-        errorMessage(error) || 'Failed to fetch plan',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to fetch plan',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -91,7 +101,8 @@ export class PlanService {
       return await this.prisma.$transaction(async (tx) => {
         const { permission_ids, ...rest } = data;
 
-        if (permission_ids?.length) {
+        // An empty list is a real request (remove every permission), not "no change"
+        if (permission_ids) {
           // Current permissions
           const currentPlanPermissions = await tx.planPermission.findMany({
             where: { plan_id: planId },
@@ -177,7 +188,7 @@ export class PlanService {
           }
 
           // Update plan
-          return await tx.plan.update({
+          return tx.plan.update({
             where: { id: planId },
             data: {
               ...rest,
@@ -191,12 +202,15 @@ export class PlanService {
         }
 
         // Update only basic info
-        return await tx.plan.update({
+        return tx.plan.update({
           where: { id: planId },
           data: { ...rest },
         });
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Updating plan ${planId} failed`, errorStack(error));
 
       throw new HttpException(
@@ -211,6 +225,9 @@ export class PlanService {
     try {
       return await this.prisma.permission.findMany({ orderBy: { id: 'asc' } });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching permissions failed', errorStack(error));
 
       throw new HttpException(
@@ -226,20 +243,13 @@ export class PlanService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Deleting plan ${id} failed`, errorStack(error));
 
-      if (error.code === 'P2025') {
-        throw new HttpException('Plan not found', HttpStatus.NOT_FOUND);
-      }
-
-      // Consumers reference their plan with onDelete: Restrict.
-      if (error.code === 'P2003') {
-        throw new HttpException(
-          'Cannot delete a plan that consumers are still subscribed to',
-          HttpStatus.CONFLICT,
-        );
-      }
-
+      // A missing plan (P2025) and subscribed consumers (P2003, onDelete: Restrict) are Prisma
+      // client errors, which isClientError above already passes to the Prisma filter.
       throw new HttpException(
         'Failed to delete plan',
         HttpStatus.INTERNAL_SERVER_ERROR,

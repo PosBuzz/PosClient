@@ -1,0 +1,202 @@
+{
+  "data": [
+    {
+      "batch_number": "BATCH10",
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "cost_price": "50",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 1,
+      "location": null,
+      "paid_amount": "5000",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 97,
+      "remaining_amount": 0,
+      "reserved_quantity": 0,
+      "total_cost": 5000,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 1,
+        "name": "Default",
+        "product": {
+          "id": 1,
+          "name": "Product 5"
+        }
+      },
+      "variant_id": 1,
+      "vendor": null,
+      "vendor_id": null
+    },
+    {
+      "batch_number": "BATCH11",
+      "branch": {
+        "id": 2,
+        "name": "Branch 2"
+      },
+      "branch_id": 2,
+      "cost_price": "50",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 2,
+      "location": null,
+      "paid_amount": "5000",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 99,
+      "remaining_amount": 0,
+      "reserved_quantity": 0,
+      "total_cost": 5000,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 1,
+        "name": "Default",
+        "product": {
+          "id": 1,
+          "name": "Product 5"
+        }
+      },
+      "variant_id": 1,
+      "vendor": null,
+      "vendor_id": null
+    },
+    {
+      "batch_number": "BATCH17",
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "cost_price": "125",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 3,
+      "location": null,
+      "paid_amount": "12500",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 99,
+      "remaining_amount": 0,
+      "reserved_quantity": 1,
+      "total_cost": 12500,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 2,
+        "name": "Default",
+        "product": {
+          "id": 2,
+          "name": "Product 12"
+        }
+      },
+      "variant_id": 2,
+      "vendor": null,
+      "vendor_id": null
+    },
+    {
+      "batch_number": "BATCH18",
+      "branch": {
+        "id": 2,
+        "name": "Branch 2"
+      },
+      "branch_id": 2,
+      "cost_price": "125",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 4,
+      "location": null,
+      "paid_amount": "12500",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 100,
+      "remaining_amount": 0,
+      "reserved_quantity": 0,
+      "total_cost": 12500,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 2,
+        "name": "Default",
+        "product": {
+          "id": 2,
+          "name": "Product 12"
+        }
+      },
+      "variant_id": 2,
+      "vendor": null,
+      "vendor_id": null
+    },
+    {
+      "batch_number": "BATCH24",
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "cost_price": "20",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 5,
+      "location": null,
+      "paid_amount": "2000",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 96,
+      "remaining_amount": 0,
+      "reserved_quantity": 0,
+      "total_cost": 2000,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 3,
+        "name": "Default",
+        "product": {
+          "id": 3,
+          "name": "Product 19"
+        }
+      },
+      "variant_id": 3,
+      "vendor": null,
+      "vendor_id": null
+    },
+    {
+      "batch_number": "BATCH25",
+      "branch": {
+        "id": 2,
+        "name": "Branch 2"
+      },
+      "branch_id": 2,
+      "cost_price": "20",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "expiry_date": null,
+      "id": 6,
+      "location": null,
+      "paid_amount": "2000",
+      "payment_status": "paid",
+      "purchasePayments": [],
+      "quantity": 100,
+      "remaining_amount": 0,
+      "reserved_quantity": 0,
+      "total_cost": 2000,
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "variant": {
+        "id": 3,
+        "name": "Default",
+        "product": {
+          "id": 3,
+          "name": "Product 19"
+        }
+      },
+      "variant_id": 3,
+      "vendor": null,
+      "vendor_id": null
+    }
+  ],
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 6,
+    "total_pages": 1
+  }
+}

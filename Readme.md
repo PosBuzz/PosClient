@@ -55,3 +55,7 @@ dependency overrides in place, with the reasoning for each.
 
 For support, email info@posbuzz.com 
 
+
+## Node runtime
+
+Use Node.js `>=22.22.1 <23` throughout the repo (`nvm install 22 && nvm use 22`). CI reads `.nvmrc`; all Node Docker build/runtime stages use `node:22-alpine`, including the images built by compose. `setup.sh` checks this range before installing dependencies.

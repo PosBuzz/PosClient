@@ -1,0 +1,300 @@
+{
+  "data": [
+    {
+      "adjustment_type": "return_in",
+      "batch": {
+        "batch_number": "BATCH24",
+        "branch_id": 1,
+        "cost_price": "20",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 5,
+        "location": null,
+        "paid_amount": "2000",
+        "payment_status": "paid",
+        "quantity": 96,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant": {
+          "alert_quantity": 0,
+          "barcode": "BAR23",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "daily_sale_objective": 0,
+          "id": 3,
+          "image": null,
+          "is_default": true,
+          "name": "Default",
+          "product": {
+            "id": 3,
+            "name": "Product 19"
+          },
+          "product_id": 3,
+          "purchase_unit_id": 3,
+          "regular_price": "40",
+          "sale_unit_id": 3,
+          "sku": "SKU22",
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "warranty_period": null,
+          "wholesale_price": null
+        },
+        "variant_id": 3,
+        "vendor_id": null
+      },
+      "batch_id": 5,
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "created_by_user_id": 1,
+      "id": 1,
+      "notes": "Return ID: RET-20260314-0001",
+      "quantity_change": 1,
+      "reason": "Return from sale SAL-20260314-0001",
+      "variant_id": 3
+    },
+    {
+      "adjustment_type": "return_in",
+      "batch": {
+        "batch_number": "BATCH24",
+        "branch_id": 1,
+        "cost_price": "20",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 5,
+        "location": null,
+        "paid_amount": "2000",
+        "payment_status": "paid",
+        "quantity": 96,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant": {
+          "alert_quantity": 0,
+          "barcode": "BAR23",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "daily_sale_objective": 0,
+          "id": 3,
+          "image": null,
+          "is_default": true,
+          "name": "Default",
+          "product": {
+            "id": 3,
+            "name": "Product 19"
+          },
+          "product_id": 3,
+          "purchase_unit_id": 3,
+          "regular_price": "40",
+          "sale_unit_id": 3,
+          "sku": "SKU22",
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "warranty_period": null,
+          "wholesale_price": null
+        },
+        "variant_id": 3,
+        "vendor_id": null
+      },
+      "batch_id": 5,
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "created_by_user_id": 1,
+      "id": 2,
+      "notes": "Return ID: RET-20260314-0002",
+      "quantity_change": 1,
+      "reason": "Return from sale SAL-20260313-0001",
+      "variant_id": 3
+    },
+    {
+      "adjustment_type": "return_in",
+      "batch": {
+        "batch_number": "BATCH24",
+        "branch_id": 1,
+        "cost_price": "20",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 5,
+        "location": null,
+        "paid_amount": "2000",
+        "payment_status": "paid",
+        "quantity": 96,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant": {
+          "alert_quantity": 0,
+          "barcode": "BAR23",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "daily_sale_objective": 0,
+          "id": 3,
+          "image": null,
+          "is_default": true,
+          "name": "Default",
+          "product": {
+            "id": 3,
+            "name": "Product 19"
+          },
+          "product_id": 3,
+          "purchase_unit_id": 3,
+          "regular_price": "40",
+          "sale_unit_id": 3,
+          "sku": "SKU22",
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "warranty_period": null,
+          "wholesale_price": null
+        },
+        "variant_id": 3,
+        "vendor_id": null
+      },
+      "batch_id": 5,
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "created_by_user_id": 1,
+      "id": 3,
+      "notes": "Return ID: RET-20260314-0003",
+      "quantity_change": 2,
+      "reason": "Return from sale SAL-20260314-0004",
+      "variant_id": 3
+    },
+    {
+      "adjustment_type": "exchange_out",
+      "batch": {
+        "batch_number": "BATCH10",
+        "branch_id": 1,
+        "cost_price": "50",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 1,
+        "location": null,
+        "paid_amount": "5000",
+        "payment_status": "paid",
+        "quantity": 98,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant": {
+          "alert_quantity": 0,
+          "barcode": "BAR9",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "daily_sale_objective": 5,
+          "id": 1,
+          "image": null,
+          "is_default": true,
+          "name": "Default",
+          "product": {
+            "id": 1,
+            "name": "Product 5"
+          },
+          "product_id": 1,
+          "purchase_unit_id": 1,
+          "regular_price": "100",
+          "sale_unit_id": 1,
+          "sku": "SKU8",
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "warranty_period": null,
+          "wholesale_price": null
+        },
+        "variant_id": 1,
+        "vendor_id": 1
+      },
+      "batch_id": 1,
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "created_by_user_id": 1,
+      "id": 4,
+      "notes": "Return ID: RET-20260314-0003",
+      "quantity_change": -1,
+      "reason": "Exchange from return RET-20260314-0003",
+      "variant_id": 1
+    },
+    {
+      "adjustment_type": "manual",
+      "batch": {
+        "batch_number": "BATCH10",
+        "branch_id": 1,
+        "cost_price": "50",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 1,
+        "location": null,
+        "paid_amount": "5000",
+        "payment_status": "paid",
+        "quantity": 98,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant": {
+          "alert_quantity": 0,
+          "barcode": "BAR9",
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "daily_sale_objective": 5,
+          "id": 1,
+          "image": null,
+          "is_default": true,
+          "name": "Default",
+          "product": {
+            "id": 1,
+            "name": "Product 5"
+          },
+          "product_id": 1,
+          "purchase_unit_id": 1,
+          "regular_price": "100",
+          "sale_unit_id": 1,
+          "sku": "SKU8",
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "warranty_period": null,
+          "wholesale_price": null
+        },
+        "variant_id": 1,
+        "vendor_id": 1
+      },
+      "batch_id": 1,
+      "branch": {
+        "id": 1,
+        "name": "Branch 1"
+      },
+      "branch_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_user": {
+        "id": 1,
+        "name": "Tenant Admin"
+      },
+      "created_by_user_id": 1,
+      "id": 5,
+      "notes": null,
+      "quantity_change": 1,
+      "reason": "Stock Count Correction",
+      "variant_id": 1
+    }
+  ],
+  "meta": {
+    "limit": 10,
+    "page": 1,
+    "total": 5,
+    "totalPages": 1
+  }
+}

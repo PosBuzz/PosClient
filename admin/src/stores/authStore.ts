@@ -8,7 +8,6 @@ type User = {
   role_id: number;
   email: string;
   name: string;
-  refresh_token: string;
   created_by_id: number | null;
   role: string;
   permissions: string[];

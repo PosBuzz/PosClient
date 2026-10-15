@@ -20,7 +20,7 @@ export class SpreadsheetService {
     const workbook = new ExcelJS.Workbook();
 
     try {
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(buffer);
     } catch {
       throw new BadRequestException(
         'The file could not be read. Upload the .xlsx template, not a PDF, image or password-protected workbook.',

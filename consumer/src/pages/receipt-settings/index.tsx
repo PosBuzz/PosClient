@@ -39,6 +39,7 @@ import PageTitle from "../../components/PageTitle";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -156,9 +157,7 @@ export default function ReceiptSettingsPage() {
       });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to activate setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to activate setting"));
     },
   });
 
@@ -173,9 +172,7 @@ export default function ReceiptSettingsPage() {
       });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to deactivate setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to deactivate setting"));
     },
   });
 
@@ -188,9 +185,7 @@ export default function ReceiptSettingsPage() {
       });
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to delete setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to delete setting"));
     },
   });
 
@@ -207,9 +202,7 @@ export default function ReceiptSettingsPage() {
       setCopyTargetBranch(undefined);
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to copy setting",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to copy setting"));
     },
   });
 
@@ -230,8 +223,8 @@ export default function ReceiptSettingsPage() {
         const url = URL.createObjectURL(blob);
         previewUrlRef.current = url;
         setPreviewUrl(url);
-      } catch {
-        messageApi?.error("Failed to generate preview");
+      } catch (error) {
+        messageApi?.error(getErrorMessage(error, "Failed to generate preview"));
         setPreviewVisible(false);
       } finally {
         setPreviewLoading(false);

@@ -11,6 +11,9 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateReturnDto } from '../dto/create-return.dto';
 import { RewardsService } from '../../rewards/services/rewards.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { lockDocumentNumbering } from '../../../common/utils/document-number-lock.util';
+import { takeAvailableStock } from '../../inventory/utils/stock-mutation.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class ReturnService {
@@ -97,6 +100,22 @@ export class ReturnService {
         if (totalReturned + returnItem.quantity > originalItem.quantity) {
           throw new BadRequestException(
             `Return quantity exceeds available quantity for item ${returnItem.sale_item_id}. Available: ${originalItem.quantity - totalReturned}, Requested: ${returnItem.quantity}`,
+          );
+        }
+
+        // Stock goes back to a batch of the variant that was actually sold,
+        // and only to a batch this tenant owns
+        if (returnItem.variant_id !== originalItem.variant_id) {
+          throw new BadRequestException(
+            `Return item ${returnItem.sale_item_id} does not match the sold product variant`,
+          );
+        }
+        if (returnItem.batch_id) {
+          await this.assertBatchOfVariant(
+            this.prisma,
+            returnItem.batch_id,
+            originalItem.variant_id,
+            consumerId,
           );
         }
       }
@@ -255,6 +274,21 @@ export class ReturnService {
 
       // Start transaction
       const result = await this.prisma.$transaction(async (prisma) => {
+        // Serializes this tenant's returns: keeps return numbers unique and
+        // makes the re-check below see every committed return
+        await lockDocumentNumbering(prisma, 'return', consumerId);
+
+        // Quantities and amounts were validated outside this transaction; a
+        // return committed since then would let this one over-refund
+        const returnsNow = await prisma.return.count({
+          where: { original_sale_id: dto.original_sale_id },
+        });
+        if (returnsNow !== existingReturns.length) {
+          throw new BadRequestException(
+            'Another return was recorded for this sale at the same time. Please reload the sale and try again.',
+          );
+        }
+
         // Generate return number
         const returnNumber = await this.generateReturnNumber(
           consumerId,
@@ -374,18 +408,17 @@ export class ReturnService {
               paymentDto.payment_method === 'CREDIT' &&
               originalSale.customer_id
             ) {
-              try {
-                await this.rewardsService.processCreditRefund(
-                  consumerId,
-                  originalSale.customer_id,
-                  Number(paymentDto.amount),
-                  originalSale.id,
-                  returnRecord.id,
-                  paymentDto.reference,
-                );
-              } catch (error) {
-                console.error('Failed to process CREDIT refund:', error);
-              }
+              // Same transaction as the return: points come back only if the
+              // return is recorded, and the return fails if they cannot
+              await this.rewardsService.processCreditRefund(
+                consumerId,
+                originalSale.customer_id,
+                Number(paymentDto.amount),
+                originalSale.id,
+                returnRecord.id,
+                paymentDto.reference,
+                prisma,
+              );
             }
 
             const returnPayment = await prisma.returnPayment.create({
@@ -442,16 +475,12 @@ export class ReturnService {
 
             // Create inventory adjustment to deduct exchanged items from stock
             if (exchangeDto.batch_id) {
-              // Verify sufficient stock exists
-              const batch = await prisma.inventoryBatch.findUnique({
-                where: { id: exchangeDto.batch_id },
-              });
-
-              if (!batch || batch.quantity < exchangeDto.quantity) {
-                throw new BadRequestException(
-                  `Insufficient stock for exchange item ${exchangeDto.variant_id}. Available: ${batch?.quantity || 0}, Required: ${exchangeDto.quantity}`,
-                );
-              }
+              await this.assertBatchOfVariant(
+                prisma,
+                exchangeDto.batch_id,
+                exchangeDto.variant_id,
+                consumerId,
+              );
 
               await prisma.inventoryAdjustment.create({
                 data: {
@@ -466,15 +495,21 @@ export class ReturnService {
                 },
               });
 
-              // Update batch quantity
-              const updatedBatch = await prisma.inventoryBatch.update({
-                where: { id: exchangeDto.batch_id },
-                data: {
-                  quantity: {
-                    decrement: exchangeDto.quantity,
-                  },
-                },
-              });
+              // Atomic check-and-update so concurrent requests cannot both
+              // take the last units
+              const updatedBatch = await takeAvailableStock(
+                prisma,
+                exchangeDto.batch_id,
+                exchangeDto.quantity,
+              );
+              if (!updatedBatch) {
+                const batch = await prisma.inventoryBatch.findUnique({
+                  where: { id: exchangeDto.batch_id },
+                });
+                throw new BadRequestException(
+                  `Insufficient stock for exchange item ${exchangeDto.variant_id}. Available: ${batch ? batch.quantity - batch.reserved_quantity : 0}, Required: ${exchangeDto.quantity}`,
+                );
+              }
 
               // Create EXCHANGE_OUT audit log
               await prisma.inventoryAuditLog.create({
@@ -518,7 +553,7 @@ export class ReturnService {
 
       return result;
     } catch (error) {
-      if (error instanceof HttpException) {
+      if (isClientError(error)) {
         throw error;
       }
 
@@ -597,7 +632,7 @@ export class ReturnService {
           customer_id: customerId,
           points: -points,
           description: `Points reversed - return #${returnNumber} against sale #${saleNumber}`,
-        } as any,
+        },
         userId,
       );
     } catch (error) {
@@ -661,13 +696,29 @@ export class ReturnService {
       if (search) {
         whereClause.OR = [
           { return_number: { contains: search, mode: 'insensitive' } },
-          { original_sale: { sale_number: { contains: search, mode: 'insensitive' } } },
-          { original_sale: { customer_name: { contains: search, mode: 'insensitive' } } },
+          {
+            original_sale: {
+              sale_number: { contains: search, mode: 'insensitive' },
+            },
+          },
+          {
+            original_sale: {
+              customer_name: { contains: search, mode: 'insensitive' },
+            },
+          },
         ];
       }
 
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const monthStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0,
+      );
 
       const [returns, total, summaryStats, thisMonthCount] = await Promise.all([
         this.prisma.return.findMany({
@@ -754,6 +805,9 @@ export class ReturnService {
         },
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching returns for consumer ${consumerId}`,
         errorStack(error),
@@ -844,6 +898,9 @@ export class ReturnService {
 
       return returnRecord;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error fetching return with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -851,6 +908,27 @@ export class ReturnService {
       throw new HttpException(
         'Failed to fetch return',
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async assertBatchOfVariant(
+    client: Prisma.TransactionClient,
+    batchId: number,
+    variantId: number,
+    consumerId: number,
+  ): Promise<void> {
+    const batch = await client.inventoryBatch.findFirst({
+      where: {
+        id: batchId,
+        variant_id: variantId,
+        branch: { consumer_id: consumerId },
+      },
+      select: { id: true },
+    });
+    if (!batch) {
+      throw new BadRequestException(
+        `Batch ${batchId} is not a batch of variant ${variantId}`,
       );
     }
   }
@@ -884,6 +962,9 @@ export class ReturnService {
 
       return `${prefix}-${String(sequenceNumber).padStart(4, '0')}`;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error generating return number for consumer ${consumerId}`,
         errorStack(error),

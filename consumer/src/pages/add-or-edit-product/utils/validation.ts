@@ -60,8 +60,17 @@ export const validateProductForm = (
     pushError(validation, "name", "Product name is required");
   }
 
-  if (formState.tax < 0 || formState.tax > 100) {
-    pushError(validation, "tax", "Tax rate must be between 0 and 100");
+  // Product.tax is stored as an integer percentage.
+  if (
+    !Number.isInteger(formState.tax) ||
+    formState.tax < 0 ||
+    formState.tax > 100
+  ) {
+    pushError(
+      validation,
+      "tax",
+      "Tax rate must be a whole number between 0 and 100",
+    );
   }
 
   if (variantEntries.length === 0) {

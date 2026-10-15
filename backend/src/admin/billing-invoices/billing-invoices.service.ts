@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 
 interface BillingLog {
   created_at: string | number | Date;
@@ -161,6 +162,9 @@ export class BillingInvoicesService {
 
       return Buffer.from(buffer);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to generate billing history Excel`,
         errorStack(error),

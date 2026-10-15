@@ -11,6 +11,8 @@ import { MakePurchasePaymentDto } from '../dto/make-purchase-payment.dto';
 import { PurchaseBatchesFiltersDto } from '../dto/purchase-batches-filters.dto';
 import { Prisma } from '@prisma/client';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
+import { purchasedQuantities } from '../../inventory/utils/purchased-quantity.util';
 
 @Injectable()
 export class PurchasePaymentsService {
@@ -112,8 +114,9 @@ export class PurchasePaymentsService {
       }),
     ]);
 
+    const purchased = await purchasedQuantities(this.prisma, batches);
     const batchesWithRemaining = batches.map((batch) => {
-      const totalCost = Number(batch.cost_price) * batch.quantity;
+      const totalCost = Number(batch.cost_price) * purchased.get(batch.id)!;
       const paidAmount = Number(batch.paid_amount);
       return {
         ...batch,
@@ -143,6 +146,9 @@ export class PurchasePaymentsService {
     try {
       return await this.findPurchaseBatches(filters, consumerId);
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error getting purchase payment batches for consumer ${consumerId}`,
         errorStack(error),
@@ -186,7 +192,8 @@ export class PurchasePaymentsService {
         throw new NotFoundException('Batch not found');
       }
 
-      const totalCost = Number(batch.cost_price) * batch.quantity;
+      const purchased = await purchasedQuantities(this.prisma, [batch]);
+      const totalCost = Number(batch.cost_price) * purchased.get(batch.id)!;
       const paidAmount = Number(batch.paid_amount);
 
       return {
@@ -195,7 +202,7 @@ export class PurchasePaymentsService {
         remaining_amount: totalCost - paidAmount,
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error getting batch for payment with ID ${batchId} for consumer ${consumerId}`,
         errorStack(error),
@@ -254,7 +261,10 @@ export class PurchasePaymentsService {
         throw new NotFoundException('Batch not found');
       }
 
-      if (batch.quantity <= 0) {
+      const purchasedQuantity = (
+        await purchasedQuantities(this.prisma, [batch])
+      ).get(batch.id)!;
+      if (purchasedQuantity <= 0) {
         throw new BadRequestException(
           'Cannot make a vendor payment for a batch with zero quantity',
         );
@@ -265,7 +275,7 @@ export class PurchasePaymentsService {
       }
 
       // Calculate remaining amount
-      const totalCost = Number(batch.cost_price) * batch.quantity;
+      const totalCost = Number(batch.cost_price) * purchasedQuantity;
       const paidAmount = Number(batch.paid_amount);
       const remainingAmount = totalCost - paidAmount;
 
@@ -279,11 +289,10 @@ export class PurchasePaymentsService {
       // Use transaction to ensure data consistency
       const result = await this.prisma.$transaction(async (prisma) => {
         // Claim the observed balance before writing payments. A concurrent
-        // stock or payment change must not allow a stale payment through.
+        // payment or price change must not allow a stale payment through.
         const claimed = await prisma.inventoryBatch.updateMany({
           where: {
             id: batch_id,
-            quantity: batch.quantity,
             paid_amount: batch.paid_amount,
             cost_price: batch.cost_price,
           },
@@ -344,7 +353,7 @@ export class PurchasePaymentsService {
 
       // Calculate remaining amount for response
       const updatedTotalCost =
-        Number(result.batch.cost_price) * result.batch.quantity;
+        Number(result.batch.cost_price) * purchasedQuantity;
       const remainingAfterPayment =
         updatedTotalCost - Number(result.batch.paid_amount);
 
@@ -357,7 +366,7 @@ export class PurchasePaymentsService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error making purchase payment for batch with ID ${paymentData.batch_id} for consumer ${consumerId}`,
         errorStack(error),
@@ -395,7 +404,7 @@ export class PurchasePaymentsService {
 
       return { payments };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error fetching purchase payments for batch ${batchId} for consumer ${consumerId}`,
         errorStack(error),

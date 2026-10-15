@@ -9,6 +9,9 @@ export const configValidationSchema = Joi.object({
   // Server
   PORT: Joi.number().default(80),
 
+  // IANA zone whose calendar days reports and sale numbers use (applied in src/timezone.ts)
+  BUSINESS_TIMEZONE: Joi.string().default('Asia/Dhaka'),
+
   // JWT
   JWT_SECRET_KEY: Joi.string().required(),
   JWT_ALGORITHM: Joi.string()
@@ -27,6 +30,11 @@ export const configValidationSchema = Joi.object({
   DB_USERNAME: Joi.string().required(),
   DB_PASSWORD: Joi.optional(),
   DB_NAME: Joi.string().required(),
+  // Optional infrastructure, off by default. docker-compose.with-ai.yml turns RabbitMQ on;
+  // no compose file runs Redis.
+  REDIS_ENABLED: Joi.boolean().default(false),
+  RABBITMQ_ENABLED: Joi.boolean().default(false),
+
   // Individual redis config
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),

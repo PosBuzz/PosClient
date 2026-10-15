@@ -84,12 +84,8 @@ export default function VariantForm({
   onVariantUpdate,
   onGenerateSKU,
   onGenerateBarcode,
-  onAddAttribute,
-  onUpdateAttribute,
-  onDeleteAttribute,
-  onAddSerial,
-  onUpdateSerial,
-  onDeleteSerial,
+  // Attribute/serial callbacks stay in VariantFormProps for callers; this form
+  // doesn't render attribute or serial editors yet, so they aren't destructured.
   onUpdateBatches,
 }: VariantFormProps) {
   const variant = formState.variants[variantId];

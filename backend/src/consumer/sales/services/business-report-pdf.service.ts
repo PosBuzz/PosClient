@@ -256,8 +256,7 @@ export class BusinessReportPdfService {
         label: 'NET OPERATING RESULT',
         value: this.money(report.summary.net_operating_result),
         sub: 'Net sales less operational costs',
-        color:
-          report.summary.net_operating_result >= 0 ? '#059669' : '#dc2626',
+        color: report.summary.net_operating_result >= 0 ? '#059669' : '#dc2626',
       },
       {
         label: 'TRANSACTIONS',
@@ -366,8 +365,12 @@ export class BusinessReportPdfService {
   }
 
   private refundTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
-    if (!report.return_payment_breakdown?.length && !report.summary.total_refund)
+    if (
+      !report.return_payment_breakdown?.length &&
+      !report.summary.total_refund
+    ) {
       return;
+    }
 
     this.section(doc, 'REFUNDS & RETURNS DISBURSED');
     const rows = report.return_payment_breakdown.map((item) => [
@@ -413,13 +416,15 @@ export class BusinessReportPdfService {
     if (!report.product_sales?.length) return;
 
     this.section(doc, 'TOP PRODUCT SALES BREAKDOWN');
-    const rows = report.product_sales.slice(0, 15).map((product) => [
-      product.product_name,
-      product.variant_name,
-      String(product.quantity_sold),
-      product.quantity_returned ? String(product.quantity_returned) : '-',
-      this.money(product.net_amount),
-    ]);
+    const rows = report.product_sales
+      .slice(0, 15)
+      .map((product) => [
+        product.product_name,
+        product.variant_name,
+        String(product.quantity_sold),
+        product.quantity_returned ? String(product.quantity_returned) : '-',
+        this.money(product.net_amount),
+      ]);
 
     this.table(
       doc,
@@ -446,9 +451,14 @@ export class BusinessReportPdfService {
       .font('Helvetica-Bold')
       .fontSize(7.5)
       .fillColor('#0f172a')
-      .text('ACCOUNTING DEFINITIONS & REPORT CLOSURE', this.left + 10, startY + 8, {
-        width: this.width - 20,
-      });
+      .text(
+        'ACCOUNTING DEFINITIONS & REPORT CLOSURE',
+        this.left + 10,
+        startY + 8,
+        {
+          width: this.width - 20,
+        },
+      );
 
     const colWidth = (this.width - 28) / 2;
     const col1X = this.left + 10;
@@ -681,8 +691,9 @@ export class BusinessReportPdfService {
     const upper = value.toUpperCase();
     if (upper === 'CREDIT') return 'Reward Points / Store Credit';
     if (upper === 'EXCHANGE') return 'Product Exchange';
-    if (upper === 'MFS' || upper === 'MOBILE_MONEY')
+    if (upper === 'MFS' || upper === 'MOBILE_MONEY') {
       return 'MFS (bKash / Nagad)';
+    }
     if (upper === 'CASH') return 'Cash';
     if (upper === 'CARD') return 'Card';
     if (upper === 'BANK_TRANSFER') return 'Bank Transfer';

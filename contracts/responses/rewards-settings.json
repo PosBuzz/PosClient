@@ -1,0 +1,16 @@
+{
+  "allow_partial_redemption": true,
+  "consumer_id": 1,
+  "created_at": "2026-03-14T12:00:00.000Z",
+  "earn_on_sale_only": true,
+  "id": 1,
+  "is_enabled": true,
+  "maximum_points_per_sale": null,
+  "maximum_redemption": null,
+  "minimum_purchase_amount": "0",
+  "minimum_redemption": 1,
+  "points_expire_days": null,
+  "points_per_currency": "1",
+  "redemption_value": "1",
+  "updated_at": "2026-03-14T12:00:00.000Z"
+}

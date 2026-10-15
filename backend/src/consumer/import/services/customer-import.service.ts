@@ -30,7 +30,7 @@ export class CustomerImportService {
     {
       header: 'Phone',
       required: true,
-      hint: 'Unique across the whole system. A customer who already exists with this phone is reported as an error, not overwritten.',
+      hint: 'Unique within your shop. A customer who already exists with this phone is reported as an error, not overwritten.',
       example: '+8801700000000',
     },
     {
@@ -77,14 +77,16 @@ export class CustomerImportService {
 
     const existing = phones.length
       ? await this.prisma.customer.findMany({
-          where: { phone: { in: phones } },
+          // Phone is unique per shop (@@unique([consumer_id, phone])), so
+          // another shop's customers must neither conflict nor be revealed
+          where: { consumer_id: consumerId, phone: { in: phones } },
           select: { phone: true },
         })
       : [];
     const takenPhones = new Set(existing.map((customer) => customer.phone));
 
-    // Phone is globally unique, so duplicates inside the file fail just as hard
-    // as duplicates against the database — catch them before the insert does.
+    // Phone is unique within the shop, so duplicates inside the file fail just as
+    // hard as duplicates against the database — catch them before the insert does.
     const seenInFile = new Map<string, number>();
 
     for (const row of rows) {

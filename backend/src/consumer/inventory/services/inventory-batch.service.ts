@@ -11,6 +11,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInventoryBatchDto } from '../dto/create-inventory-batch.dto';
 import { UpdateInventoryBatchDto } from '../dto/update-inventory-batch.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { priceChanged as pricesDiffer } from '../../product/utils/price.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class InventoryBatchService {
@@ -49,6 +51,8 @@ export class InventoryBatchService {
           throw new NotFoundException('Branch not found');
         }
       }
+
+      await this.assertVendorOwned(dto.vendor_id, consumerId);
 
       // Check if batch number already exists for this variant
       const existingBatch = await this.prisma.inventoryBatch.findFirst({
@@ -89,13 +93,14 @@ export class InventoryBatchService {
           dto.regular_price !== undefined ||
           dto.wholesale_price !== undefined
         ) {
-          const regularChanged =
-            dto.regular_price !== undefined &&
-            dto.regular_price !== variant.regular_price.toString();
-          const wholesaleChanged =
-            dto.wholesale_price !== undefined &&
-            dto.wholesale_price !==
-              (variant.wholesale_price?.toString() ?? undefined);
+          const regularChanged = pricesDiffer(
+            dto.regular_price,
+            variant.regular_price,
+          );
+          const wholesaleChanged = pricesDiffer(
+            dto.wholesale_price,
+            variant.wholesale_price,
+          );
 
           await prisma.productVariant.update({
             where: { id: dto.variant_id },
@@ -213,7 +218,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating inventory batch for consumer ${consumerId}`,
         errorStack(error),
@@ -222,6 +227,20 @@ export class InventoryBatchService {
         'Failed to create inventory batch',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  private async assertVendorOwned(
+    vendorId: number | null | undefined,
+    consumerId: number,
+  ) {
+    if (vendorId === undefined || vendorId === null) return;
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id: vendorId, consumer_id: consumerId },
+      select: { id: true },
+    });
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
     }
   }
 
@@ -318,7 +337,7 @@ export class InventoryBatchService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding all inventory batches for ${consumerId}`,
         errorStack(error),
@@ -367,7 +386,7 @@ export class InventoryBatchService {
 
       return batch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -382,6 +401,19 @@ export class InventoryBatchService {
   async update(id: number, consumerId: number, dto: UpdateInventoryBatchDto) {
     try {
       const _batch = await this.findOne(id, consumerId);
+
+      // Branch and vendor ids come from the client: they must belong to this
+      // tenant, or a batch could be moved into someone else's branch
+      if (dto.branch_id !== undefined) {
+        const branch = await this.prisma.branch.findFirst({
+          where: { id: dto.branch_id, consumer_id: consumerId },
+          select: { id: true },
+        });
+        if (!branch) {
+          throw new NotFoundException('Branch not found');
+        }
+      }
+      await this.assertVendorOwned(dto.vendor_id, consumerId);
 
       const updatedBatch = await this.prisma.inventoryBatch.update({
         where: { id },
@@ -406,13 +438,14 @@ export class InventoryBatchService {
             where: { id: _batch.variant_id },
             select: { regular_price: true, wholesale_price: true },
           });
-        const regularChanged =
-          dto.regular_price !== undefined &&
-          dto.regular_price !== currentVariant.regular_price.toString();
-        const wholesaleChanged =
-          dto.wholesale_price !== undefined &&
-          dto.wholesale_price !==
-            (currentVariant.wholesale_price?.toString() ?? undefined);
+        const regularChanged = pricesDiffer(
+          dto.regular_price,
+          currentVariant.regular_price,
+        );
+        const wholesaleChanged = pricesDiffer(
+          dto.wholesale_price,
+          currentVariant.wholesale_price,
+        );
 
         await this.prisma.productVariant.update({
           where: { id: _batch.variant_id },
@@ -438,7 +471,7 @@ export class InventoryBatchService {
 
       return updatedBatch;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -456,7 +489,7 @@ export class InventoryBatchService {
 
       if (batch.quantity > 0) {
         throw new BadRequestException(
-          'Cannot delete batch with remaining quantity. Use inventory adjustment to reduce quantity to 0 first.',
+          'Cannot delete a batch that still has stock. Reduce it to 0 with an inventory adjustment first; batches with history are kept for the audit trail.',
         );
       }
 
@@ -466,7 +499,7 @@ export class InventoryBatchService {
 
       return { success: true, message: 'Inventory batch deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting inventory batch ${id} for consumer ${consumerId}`,
         errorStack(error),

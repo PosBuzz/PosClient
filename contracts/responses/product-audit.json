@@ -1,0 +1,311 @@
+{
+  "batches": [
+    {
+      "batchInfo": {
+        "batch_number": "BATCH11",
+        "branch": {
+          "address": null,
+          "consumer_id": 1,
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "email": null,
+          "id": 2,
+          "is_main": false,
+          "is_warehouse": false,
+          "name": "Branch 2",
+          "phone": null,
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "vat_registration_number": null
+        },
+        "branch_id": 2,
+        "cost_price": "50",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 2,
+        "location": null,
+        "paid_amount": "5000",
+        "payment_status": "paid",
+        "quantity": 99,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant_id": 1,
+        "vendor": null,
+        "vendor_id": null
+      },
+      "events": [
+        {
+          "batch_id": 2,
+          "branch": {
+            "address": null,
+            "consumer_id": 1,
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "email": null,
+            "id": 2,
+            "is_main": false,
+            "is_warehouse": false,
+            "name": "Branch 2",
+            "phone": null,
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "vat_registration_number": null
+          },
+          "branch_id": 2,
+          "consumer_id": 1,
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "created_by": {
+            "id": 1,
+            "name": "Tenant Admin"
+          },
+          "created_by_user_id": 1,
+          "event_type": "PURCHASE_IN",
+          "id": 2,
+          "inventoryBatch": {
+            "batch_number": "BATCH11",
+            "branch": {
+              "address": null,
+              "consumer_id": 1,
+              "created_at": "2026-03-14T12:00:00.000Z",
+              "email": null,
+              "id": 2,
+              "is_main": false,
+              "is_warehouse": false,
+              "name": "Branch 2",
+              "phone": null,
+              "updated_at": "2026-03-14T12:00:00.000Z",
+              "vat_registration_number": null
+            },
+            "branch_id": 2,
+            "cost_price": "50",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "expiry_date": null,
+            "id": 2,
+            "location": null,
+            "paid_amount": "5000",
+            "payment_status": "paid",
+            "quantity": 99,
+            "reserved_quantity": 0,
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "variant_id": 1,
+            "vendor": null,
+            "vendor_id": null
+          },
+          "inventoryBatchId": 2,
+          "notes": "Purchase batch BATCH11 - Qty: 100",
+          "quantity_after": 100,
+          "quantity_delta": 100,
+          "reference_id": 2,
+          "reference_type": "inventory_batches",
+          "variant_id": 1
+        }
+      ],
+      "periodStartQty": -1
+    },
+    {
+      "batchInfo": {
+        "batch_number": "BATCH10",
+        "branch": {
+          "address": null,
+          "consumer_id": 1,
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "email": null,
+          "id": 1,
+          "is_main": true,
+          "is_warehouse": false,
+          "name": "Branch 1",
+          "phone": null,
+          "updated_at": "2026-03-14T12:00:00.000Z",
+          "vat_registration_number": null
+        },
+        "branch_id": 1,
+        "cost_price": "50",
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "expiry_date": null,
+        "id": 1,
+        "location": null,
+        "paid_amount": "5000",
+        "payment_status": "paid",
+        "quantity": 98,
+        "reserved_quantity": 0,
+        "updated_at": "2026-03-14T12:00:00.000Z",
+        "variant_id": 1,
+        "vendor": {
+          "address": null,
+          "consumer_id": 1,
+          "contact": null,
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "email": null,
+          "id": 1,
+          "name": "C4 vendor",
+          "phone": null,
+          "updated_at": "2026-03-14T12:00:00.000Z"
+        },
+        "vendor_id": 1
+      },
+      "events": [
+        {
+          "batch_id": 1,
+          "branch": {
+            "address": null,
+            "consumer_id": 1,
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "email": null,
+            "id": 1,
+            "is_main": true,
+            "is_warehouse": false,
+            "name": "Branch 1",
+            "phone": null,
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "vat_registration_number": null
+          },
+          "branch_id": 1,
+          "consumer_id": 1,
+          "created_at": "2026-03-14T12:00:00.000Z",
+          "created_by": {
+            "id": 1,
+            "name": "Tenant Admin"
+          },
+          "created_by_user_id": 1,
+          "event_type": "PURCHASE_IN",
+          "id": 1,
+          "inventoryBatch": {
+            "batch_number": "BATCH10",
+            "branch": {
+              "address": null,
+              "consumer_id": 1,
+              "created_at": "2026-03-14T12:00:00.000Z",
+              "email": null,
+              "id": 1,
+              "is_main": true,
+              "is_warehouse": false,
+              "name": "Branch 1",
+              "phone": null,
+              "updated_at": "2026-03-14T12:00:00.000Z",
+              "vat_registration_number": null
+            },
+            "branch_id": 1,
+            "cost_price": "50",
+            "created_at": "2026-03-14T12:00:00.000Z",
+            "expiry_date": null,
+            "id": 1,
+            "location": null,
+            "paid_amount": "5000",
+            "payment_status": "paid",
+            "quantity": 98,
+            "reserved_quantity": 0,
+            "updated_at": "2026-03-14T12:00:00.000Z",
+            "variant_id": 1,
+            "vendor": {
+              "address": null,
+              "consumer_id": 1,
+              "contact": null,
+              "created_at": "2026-03-14T12:00:00.000Z",
+              "email": null,
+              "id": 1,
+              "name": "C4 vendor",
+              "phone": null,
+              "updated_at": "2026-03-14T12:00:00.000Z"
+            },
+            "vendor_id": 1
+          },
+          "inventoryBatchId": 1,
+          "notes": "Purchase batch BATCH10 - Qty: 100",
+          "quantity_after": 100,
+          "quantity_delta": 100,
+          "reference_id": 1,
+          "reference_type": "inventory_batches",
+          "variant_id": 1
+        }
+      ],
+      "periodStartQty": -2
+    }
+  ],
+  "meta": {
+    "consumer": {
+      "address": null,
+      "business_category": null,
+      "company_name": "Shop 1",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "delete_reason": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "email": "tenant1@example.test",
+      "id": 1,
+      "logo": null,
+      "max_branch": 2,
+      "phone": null,
+      "plan_id": 1,
+      "secondary_email": null,
+      "subdomain": "tenant1",
+      "updated_at": "2026-03-14T12:00:00.000Z"
+    },
+    "generated_at": "2026-03-14T12:00:00.000Z",
+    "period": {
+      "end_date": "2026-03-14",
+      "start_date": "2026-02-13"
+    },
+    "variant": {
+      "alert_quantity": 0,
+      "barcode": "BAR9",
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "daily_sale_objective": 5,
+      "id": 1,
+      "image": null,
+      "is_default": true,
+      "name": "Default",
+      "product": {
+        "brand": null,
+        "brand_id": null,
+        "category": null,
+        "category_id": null,
+        "code": "PROD6",
+        "consumer_id": 1,
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "description": null,
+        "has_variants": false,
+        "id": 1,
+        "name": "Product 5",
+        "tax": 5,
+        "tax_method": "EXCLUSIVE",
+        "updated_at": "2026-03-14T12:00:00.000Z"
+      },
+      "product_id": 1,
+      "purchase_unit_id": 1,
+      "regular_price": "100",
+      "sale_unit": {
+        "consumer_id": 1,
+        "created_at": "2026-03-14T12:00:00.000Z",
+        "id": 1,
+        "name": "Unit 7",
+        "updated_at": "2026-03-14T12:00:00.000Z"
+      },
+      "sale_unit_id": 1,
+      "sku": "SKU8",
+      "updated_at": "2026-03-14T12:00:00.000Z",
+      "VariantAttribute": [],
+      "warranty_period": null,
+      "wholesale_price": null
+    }
+  },
+  "summary": {
+    "by_branch": [
+      {
+        "branch_id": 2,
+        "branch_name": "Branch 2",
+        "current_stock": 99,
+        "net_change": 100,
+        "opening_stock": -1,
+        "total_events": 1
+      },
+      {
+        "branch_id": 1,
+        "branch_name": "Branch 1",
+        "current_stock": 98,
+        "net_change": 100,
+        "opening_stock": -2,
+        "total_events": 1
+      }
+    ],
+    "current_stock": 197,
+    "net_change": 200,
+    "opening_stock": -3,
+    "total_events": 2
+  }
+}

@@ -36,6 +36,8 @@ import { MakePaymentForm } from "../../types/payment.types";
 import { PaymentMethod, SalePayment } from "../../types/sale.types";
 import { formatCurrency } from "../../utils/formatters";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -102,16 +104,12 @@ const MakePayment = () => {
     onSuccess: () => {
       messageApi?.success("Payment recorded successfully!");
       queryClient.invalidateQueries({ queryKey: [queryKeys.partialPayments] });
-      queryClient.invalidateQueries({ queryKey: [queryKeys.sales] });
-      queryClient.invalidateQueries({
-        queryKey: [queryKeys.sale, parseInt(id!)],
-      });
+      // Collected/due amounts feed the dashboard, EOD and sales reports
+      invalidateSalesReports(queryClient);
       navigate("/partial-payments");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error?.response?.data?.message || "Failed to record payment",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to record payment"));
     },
   });
 
@@ -175,8 +173,10 @@ const MakePayment = () => {
         paymentId,
       );
       saveAs(blob, `money-receipt-${sale?.sale_number}-${paymentId}.pdf`);
-    } catch {
-      messageApi?.error("Failed to download money receipt");
+    } catch (error) {
+      messageApi?.error(
+        getErrorMessage(error, "Failed to download money receipt"),
+      );
     } finally {
       setDownloadingPaymentId(null);
     }

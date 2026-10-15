@@ -1,13 +1,24 @@
 // test-receipt-variations.controller.ts
 
-import { Controller, Get, Param, ParseIntPipe, Res, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Res,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { SalesService } from '../../sales/services/sales.service';
 import { SalesPdfService } from '../services/sales-pdf.service';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import { ReceiptPdfData } from '../interfaces/receipt-pdf-data.interface';
 import { errorMessage } from '../../../common/utils/error.util';
+import { DevelopmentOnlyGuard } from '../../../common/guards/development-only.guard';
 
+// Local receipt-layout preview against seed data; never reachable outside development.
+@UseGuards(DevelopmentOnlyGuard)
 @Controller('test-receipts')
 export class TestReceiptVariationsController {
   private readonly CONSUMER_ID = 1;
@@ -289,9 +300,9 @@ export class TestReceiptVariationsController {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
     } catch (err) {
-      res
+      return res
         .status(500)
         .send(
           `PDF generation failed: ${errorMessage(err)}\n\nVariation: ${variation.name}`,

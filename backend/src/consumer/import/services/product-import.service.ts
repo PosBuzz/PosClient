@@ -370,7 +370,7 @@ export class ProductImportService {
         category_id: categoryId,
         brand_id: brandId,
         tax: tax ?? 0,
-        tax_method: (taxMethod ?? 'EXCLUSIVE') as TaxMethod,
+        tax_method: taxMethod ?? 'EXCLUSIVE',
         variants: [variant],
       });
     }

@@ -4,6 +4,7 @@ import {
   PlusOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
+import { getErrorMessage } from "../../../utils/api-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -167,9 +168,7 @@ export default function MasterDataSelector({
       }
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : `Failed to create ${label}`;
-      messageApi?.error(message);
+      messageApi?.error(getErrorMessage(error, `Failed to create ${label}`));
     },
   });
 
@@ -183,9 +182,7 @@ export default function MasterDataSelector({
       form.resetFields();
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : `Failed to update ${label}`;
-      messageApi?.error(message);
+      messageApi?.error(getErrorMessage(error, `Failed to update ${label}`));
     },
   });
 
@@ -203,9 +200,7 @@ export default function MasterDataSelector({
       }
     },
     onError: (error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : `Failed to delete ${label}`;
-      messageApi?.error(message);
+      messageApi?.error(getErrorMessage(error, `Failed to delete ${label}`));
     },
   });
 

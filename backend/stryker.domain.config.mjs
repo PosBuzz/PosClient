@@ -1,0 +1,131 @@
+import { globSync, readFileSync, statSync } from 'node:fs';
+const inventory = JSON.parse(
+  readFileSync(
+    new URL('./test/service-coverage/service-methods.json', import.meta.url),
+    'utf8',
+  ),
+);
+const tiers = JSON.parse(
+  readFileSync(
+    new URL('./test/service-coverage/tiers.json', import.meta.url),
+    'utf8',
+  ),
+);
+const tierFiles = [
+  ...new Set(
+    inventory
+      .filter((method) => (tiers[method.service] ?? 'A') !== 'C')
+      .map((method) => method.file),
+  ),
+];
+
+const targets = [
+  ...tierFiles,
+  'src/consumer/promotions/promotion-math.ts',
+  'src/consumer/inventory/services/inventory-adjustment.service.ts',
+  'src/consumer/rewards/services/rewards.service.ts',
+  'src/consumer/dashboard/services/dashboard.service.ts',
+  'src/auth/guards/*.ts',
+  'src/auth/*.strategy.ts',
+  'src/common/utils/document-number-lock.util.ts',
+  'src/common/utils/business-time.util.ts',
+  'src/common/guards/development-only.guard.ts',
+];
+
+// STRYKER_SHARD="i/N" (1-based) mutates a deterministic, size-balanced slice so the nightly can run
+// N parallel jobs; each writes its own report and the tier gate merges them. Unset = every file.
+const shard = process.env.STRYKER_SHARD?.match(/^(\d+)\/(\d+)$/);
+const [shardIndex, shardCount] = shard
+  ? [Number(shard[1]), Number(shard[2])]
+  : [1, 1];
+if (
+  process.env.STRYKER_SHARD &&
+  (!shard || shardIndex < 1 || shardIndex > shardCount)
+)
+  throw new Error(
+    'STRYKER_SHARD must look like "2/8" with 1 <= index <= count.',
+  );
+// Globs such as src/auth/guards/*.ts also match the unit specs next to the code; those are tests, not targets.
+const allFiles = [
+  ...new Set(
+    targets
+      .flatMap((pattern) => globSync(pattern))
+      .filter((file) => !file.endsWith('.spec.ts')),
+  ),
+].sort();
+// STRYKER_ROTATION="d/D" (1-based) keeps every D-th file starting at d, so D nights cover every file
+// once. STRYKER_CHANGED_FILES (newline or comma separated) always joins today's set, so a file that
+// was just edited is measured the same night whatever its rotation day. Unset = every file.
+const rotation = process.env.STRYKER_ROTATION?.match(/^(\d+)\/(\d+)$/);
+if (process.env.STRYKER_ROTATION && !rotation)
+  throw new Error('STRYKER_ROTATION must look like "3/7".');
+const changed = new Set(
+  (process.env.STRYKER_CHANGED_FILES ?? '')
+    .split(/[\n,]/)
+    .map((file) => file.trim().replace(/^backend\//, ''))
+    .filter(Boolean),
+);
+const files = rotation
+  ? allFiles.filter(
+      (file, index) =>
+        index % Number(rotation[2]) === Number(rotation[1]) - 1 ||
+        changed.has(file),
+    )
+  : allFiles;
+// A file bigger than SPLIT_BYTES is cut into line ranges (Stryker's "file:start-end") so one huge
+// service cannot be the shard that decides the nightly's duration.
+const SPLIT_BYTES = 18000;
+const units = files.flatMap((file) => {
+  const size = statSync(file).size;
+  const pieces = Math.ceil(size / SPLIT_BYTES);
+  if (pieces <= 1) return [{ target: file, size }];
+  const lines = readFileSync(file, 'utf8').split('\n').length;
+  const perPiece = Math.ceil(lines / pieces);
+  return Array.from({ length: pieces }, (_, i) => ({
+    target: `${file}:${i * perPiece + 1}-${Math.min(lines, (i + 1) * perPiece)}`,
+    size: size / pieces,
+  }));
+});
+const loads = Array.from({ length: shardCount }, () => 0);
+const slices = Array.from({ length: shardCount }, () => []);
+for (const unit of [...units].sort(
+  (a, b) => b.size - a.size || a.target.localeCompare(b.target),
+)) {
+  const lightest = loads.indexOf(Math.min(...loads));
+  slices[lightest].push(unit.target);
+  loads[lightest] += unit.size;
+}
+const suffix = shard ? `-shard-${shardIndex}` : '';
+
+// Reviewed A/B service inventory plus the B7 guard and pure-domain targets.
+export default {
+  packageManager: 'npm',
+  testRunner: 'jest',
+  jest: {
+    projectType: 'custom',
+    configFile: 'test/jest-stryker-domain.json',
+    enableFindRelatedTests: false,
+  },
+  checkers: ['typescript'],
+  tsconfigFile: 'tsconfig.json',
+  coverageAnalysis: 'perTest',
+  // Stryker splits this between type-check workers and test runners: 3 gave a single test runner, which left
+  // most of a 4-vCPU CI runner idle. 4 gives two runners; each recycles after 25 mutants (maxTestRunnerReuse).
+  concurrency: Number(process.env.STRYKER_CONCURRENCY) || 4,
+  // A mutant that loops forever is declared timed out after the normal test time plus 15 s.
+  timeoutMS: 15000,
+  // Restart Jest runners before Nest/Prisma state leaks into an out-of-memory crash.
+  maxTestRunnerReuse: 25,
+  plugins: ['@stryker-mutator/*', './stryker-plugins/ignore-logging.mjs'],
+  ignorers: ['logging'],
+  dryRunTimeoutMinutes: 30,
+  mutate: slices[shardIndex - 1],
+  ignoreStatic: true,
+  // The nightly gate (mutation-tier-gate.mjs) judges scores per file; a shard only fails on errors.
+  thresholds: { high: 80, low: 70, break: null },
+  incremental: true,
+  incrementalFile: `reports/stryker/domain-incremental${suffix}.json`,
+  reporters: ['clear-text', 'progress', 'html', 'json'],
+  htmlReporter: { fileName: `reports/stryker/domain${suffix}.html` },
+  jsonReporter: { fileName: `reports/stryker/domain${suffix}.mutation.json` },
+};

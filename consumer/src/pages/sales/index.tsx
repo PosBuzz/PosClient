@@ -48,6 +48,7 @@ import type {
 import { PaymentStatus } from "../../types/sale.types";
 import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -90,10 +91,7 @@ const SalesTable = () => {
       invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
-      showMessage(
-        error?.response?.data?.message || "Failed to delete sale",
-        "error",
-      );
+      showMessage(getErrorMessage(error, "Failed to delete sale"), "error");
     },
   });
 
@@ -104,10 +102,7 @@ const SalesTable = () => {
       invalidateSalesReports(queryClient);
     },
     onError: (error: any) => {
-      showMessage(
-        error?.response?.data?.message || "Failed to restore sale",
-        "error",
-      );
+      showMessage(getErrorMessage(error, "Failed to restore sale"), "error");
     },
   });
 
@@ -438,7 +433,7 @@ const SalesTable = () => {
       dataIndex: "total_amount",
       key: "total_amount",
       sorter: true,
-      render: (amount: number, record: Sale) => {
+      render: (_amount: number, record: Sale) => {
         // Use corrected total calculation instead of backend total
         const correctTotal = getCorrectTotal(record);
         return <Money value={correctTotal} />;
@@ -677,7 +672,10 @@ const SalesTable = () => {
             <Card>
               <Statistic
                 title="Total Received"
-                value={salesQuery.data.summary.total_received ?? salesQuery.data.summary.total_amount}
+                value={
+                  salesQuery.data.summary.total_received ??
+                  salesQuery.data.summary.total_amount
+                }
                 prefix={takaPrefix}
                 precision={2}
                 valueStyle={{ color: "#389e0d" }}

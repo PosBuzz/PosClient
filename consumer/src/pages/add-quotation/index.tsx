@@ -1,3 +1,4 @@
+import { toSalePayloadItems } from "../../utils/sale-payload.utils";
 import { formatCurrency } from "../../utils/formatters";
 import {
   DeleteOutlined,
@@ -56,6 +57,7 @@ import { calculateSaleTotals } from "../../utils/calculate-totals.utils";
 import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useSaleManager } from "../../hooks/useSaleManager";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -389,18 +391,7 @@ const NewQuotation = () => {
       customer_phone: selectedCustomer?.phone || values.customer_phone,
       customer_email: selectedCustomer?.email || values.customer_email,
       served_by_id: selectedServedByUser?.id || values.served_by_id,
-      items: totals.discountedItems.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sold_unit_price: item.sold_unit_price,
-        average_discount_amount: item.average_discount_amount,
-        special_discount_amount: item.special_discount_amount,
-        promotion_discount_amount: item.promotion_discount_amount,
-        applied_promotion_id: item.applied_promotion_id,
-        tax_amount: item.tax_amount,
-        line_total: item.line_total,
-      })),
+      items: toSalePayloadItems(totals.discountedItems),
       price_type: priceType,
       discount_amount: totals.finalDiscount,
       shipping_cost: totals.shippingCost,
@@ -418,9 +409,7 @@ const NewQuotation = () => {
       navigate(`/quotations/view/${createdQuotation.id}`);
     } catch (error: any) {
       console.error("Error creating quotation:", error);
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create quotation",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create quotation"));
     } finally {
       setLoading(false);
     }
@@ -624,7 +613,9 @@ const NewQuotation = () => {
             messageApi?.success("Customer created successfully");
           } catch (error) {
             console.error("Error creating customer:", error);
-            messageApi?.error("Failed to create customer");
+            messageApi?.error(
+              getErrorMessage(error, "Failed to create customer"),
+            );
           }
         }}
       />

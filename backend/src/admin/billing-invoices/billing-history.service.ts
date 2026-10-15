@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBillingHistoryDto } from './dto/create-billing-history.dto';
 import { UpdateBillingHistoryDto } from './dto/update-billing-history.dto';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 
 /**
  * CRUD for billing records. Replaces the generic /crud endpoint, so the query
@@ -62,6 +63,9 @@ export class BillingHistoryService {
         orderBy: { id: 'asc' },
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching billing history failed', errorStack(error));
 
       throw new HttpException(
@@ -94,17 +98,11 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error('Creating billing record failed', errorStack(error));
 
-      // @@unique([consumer_id, billing_date])
-      if (error.code === 'P2002') {
-        throw new HttpException(
-          'A billing record already exists for this consumer on that date',
-          HttpStatus.CONFLICT,
-        );
-      }
-
+      // @@unique([consumer_id, billing_date]) (P2002) is a Prisma client error that
+      // isClientError passes to the Prisma filter above.
       throw new HttpException(
         'Failed to create billing record',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -164,25 +162,11 @@ export class BillingHistoryService {
         },
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Updating billing record ${id} failed`,
         errorStack(error),
       );
-
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Billing record not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      if (error.code === 'P2002') {
-        throw new HttpException(
-          'A billing record already exists for this consumer on that date',
-          HttpStatus.CONFLICT,
-        );
-      }
 
       throw new HttpException(
         'Failed to update billing record',
@@ -197,17 +181,13 @@ export class BillingHistoryService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Deleting billing record ${id} failed`,
         errorStack(error),
       );
-
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Billing record not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
 
       throw new HttpException(
         'Failed to delete billing record',

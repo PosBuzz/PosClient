@@ -2,13 +2,13 @@ export interface RewardsSettings {
   id?: number;
   consumer_id: number;
   is_enabled: boolean;
-  points_per_currency: number;
-  minimum_purchase_amount: number;
-  maximum_points_per_sale?: number;
-  redemption_value: number;
+  points_per_currency: number | string;
+  minimum_purchase_amount: number | string;
+  maximum_points_per_sale?: number | string | null;
+  redemption_value: number | string;
   minimum_redemption: number;
-  maximum_redemption?: number;
-  points_expire_days?: number;
+  maximum_redemption?: number | null;
+  points_expire_days?: number | null;
   allow_partial_redemption: boolean;
   earn_on_sale_only: boolean;
   created_at?: string;
@@ -35,15 +35,15 @@ export interface CustomerRewardsPoints {
   total_points: number;
   lifetime_earned: number;
   lifetime_redeemed: number;
-  last_earned_at?: string;
-  last_redeemed_at?: string;
+  last_earned_at?: string | null;
+  last_redeemed_at?: string | null;
   created_at: string;
   updated_at: string;
   customer: {
     id: number;
     name: string;
-    email?: string;
-    phone?: string;
+    email?: string | null;
+    phone?: string | null;
   };
 }
 

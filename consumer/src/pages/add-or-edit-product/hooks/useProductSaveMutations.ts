@@ -8,22 +8,7 @@ import {
   mapStateToCreateProductPayload,
   mapStateToUpdateProductPayload,
 } from "../utils/payload-mappers";
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  const responseMessage = (
-    error as {
-      response?: { data?: { message?: string | string[] } };
-    }
-  )?.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage.join(", ");
-  }
-
-  return (
-    responseMessage || (error instanceof Error && error.message) || fallback
-  );
-};
+import { getErrorMessage } from "../../../utils/api-error";
 
 interface UseProductSaveMutationsParams {
   formState: ProductFormState;

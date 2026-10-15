@@ -133,8 +133,7 @@ const ReturnsTable = () => {
     {
       title: "Exchange Sale",
       key: "exchange_sale",
-      render: (record: Return) =>
-        record.exchange_sale?.sale_number || "-",
+      render: (record: Return) => record.exchange_sale?.sale_number || "-",
     },
     {
       title: "Return Date",
