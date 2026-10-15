@@ -114,12 +114,13 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
 112 defects were logged during the test work: 107 fixed, 1 resolved, 4 accepted by the owner (KI-018 dev dependencies in the PR delta audit,
 KI-088 old secrets in history, KI-106 and KI-109 mutation-score items). The old GitHub token, the broad Cloudflare token and the shared admin
 password were rotated or revoked on 2026-10-16, and Cloudflare SSL is on Full (strict). Still worth doing when convenient:
-- Raise HSTS from 1 day to 1 year (`deploy/nginx/posbuzz.conf`); promote the report-only CSP after a staging click-through with the console open.
+- Promote the report-only CSP to enforcing after a staging click-through with the browser console open (HSTS is already 1 year on the frontends).
 - Add Telegram to the Healthchecks and UptimeRobot alerts.
 - Rotate the GCP API key in `ai-service/.env.example` history and the secrets from the old `k8s/base/secrets.yaml` (KI-088).
 
-Coverage ratchet: CI runs `scripts/coverage-ratchet.mjs` for backend, consumer and admin against `scripts/coverage-baseline.json` (committed 2026-10-16:
-backend 100% of the files it measures, consumer 64.7% lines, admin 62.3% lines). A drop of more than 0.5 points fails CI; after raising coverage by more
-than 1 point, run the coverage then `node scripts/coverage-ratchet.mjs --update` and commit the file. Never lower the baseline to make CI pass.
+Coverage ratchet: CI runs `scripts/coverage-ratchet.mjs` for backend, consumer and admin against `scripts/coverage-baseline.json`. The owner set the floors on
+2026-10-16: backend 80, consumer 50, admin 50 (admin branches 45, because they measure 48.6% today). Today's real numbers are higher (backend 100% of the files it
+measures, consumer 64.7% lines, admin 62.3%), so a drop of more than 0.5 points below a floor fails CI, and "above the baseline" lines in the CI log are only reminders.
+To tighten a floor: run the coverage, then `node scripts/coverage-ratchet.mjs --update`, review, commit. Never lower a floor to make CI pass.
 
 New decisions and defects: record them in the PR description (what, why, how verified) and, if they change how the system works, edit this file.
