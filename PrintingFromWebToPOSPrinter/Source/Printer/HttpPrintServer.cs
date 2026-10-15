@@ -988,6 +988,12 @@ namespace Printer
                 // Extract payment info - handle both single payment and payments array
                 ParsePayments(json, receipt);
                 
+                // Return receipts carry isReturn=true (or documentType=RETURN)
+                string isReturnStr = GetFirstNonNull(ExtractJsonValue(json, "isReturn"), ExtractJsonValue(json, "is_return"));
+                bool isReturn;
+                receipt.IsReturn = (!string.IsNullOrEmpty(isReturnStr) && bool.TryParse(isReturnStr, out isReturn) && isReturn)
+                    || string.Equals(ExtractJsonString(json, "documentType"), "RETURN", StringComparison.OrdinalIgnoreCase);
+
                 // Extract items array (enhanced parsing)
                 ParseItems(json, receipt);
                 
