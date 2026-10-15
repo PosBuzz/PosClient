@@ -108,10 +108,33 @@ describe('CSRF and CORS', () => {
       );
     });
 
-    it('[BE-CORS-002] an unknown origin is never echoed (the current code answers with an error status)', async () => {
+    it('[BE-CORS-002] an unknown origin is never echoed and gets a clean 403 in the standard error shape', async () => {
       const response = await get('http://evil.com');
       expect(response.headers['access-control-allow-origin']).toBeUndefined();
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(403);
+      expect(response.body).toEqual({
+        statusCode: 403,
+        message: 'Origin not allowed.',
+        error: 'Forbidden',
+      });
+    });
+
+    it('[BE-CORS-006] a preflight from an unknown origin is refused with the same 403, and no CORS headers', async () => {
+      const response = await server()
+        .options('/api/v1/auth/login-user')
+        .set('Host', 'localhost')
+        .set('Origin', 'http://evil.com')
+        .set('Access-Control-Request-Method', 'POST');
+      expect(response.status).toBe(403);
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+      expect(response.body.message).toBe('Origin not allowed.');
+    });
+
+    it('[BE-CORS-007] a request without an Origin header (curl, mobile apps) is not affected', async () => {
+      const response = await server()
+        .get('/api/v1/health')
+        .set('Host', 'localhost');
+      expect(response.status).not.toBe(403);
     });
 
     it('[BE-CORS-003] the wildcard matches exactly one label', async () => {

@@ -95,7 +95,7 @@ Prisma schema and migrations are checked for an empty `migrate diff`, and a dest
 
 **Error contract** (every non-2xx JSON from `/api/v1/**`): `{ statusCode, message, error }` with `message` a readable string
 (capital letter, ≤200 chars, no field paths, enum names, Prisma/SQL text or stack frames), status matching the cause (400/401/403/404/409),
-generic 500 bodies, stable wording for messages the UI depends on. Validation adds `errors: [{ field, message }]`. On the client,
+generic 500 bodies, stable wording for messages the UI depends on. A request whose `Origin` is not on the CORS allow-list gets `403 { message: "Origin not allowed." }` (allowed: the exact entries and one-label wildcards such as `https://*.posbuzz.xyz` in `CORS_ORIGINS`; requests without an Origin header are unaffected). Validation adds `errors: [{ field, message }]`. On the client,
 `getErrorMessage(error, fallback)` (`consumer|admin/src/utils/api-error.ts`) is the only place errors become text; a `catch` that
 returns 500 must first pass client errors through `isClientError`. Enforced by `scripts/check-masked-errors.mjs` and the X-ERR tests.
 
