@@ -16,7 +16,11 @@ COPY --from=deps /app/consumer/node_modules ./node_modules
 COPY consumer/ .
 COPY contracts/ /app/contracts/
 COPY scripts/contracts/generate-response-types.mjs /app/scripts/contracts/generate-response-types.mjs
-COPY consumer/.env.docker .env
+# Public build-time values (embedded into the bundle by Vite).
+ENV VITE_API_BASE_URL=https://api.posbuzz.cloud/api/v1
+ENV VITE_CLOUD_NAME=ddluuftiq
+ENV VITE_UPLOAD_PRESET=test-preset
+ENV VITE_CLOUDINARY_API=https://api.cloudinary.com/v1_1/ddluuftiq/image/upload
 
 # Build the application
 RUN npm run typecheck && npm run build
