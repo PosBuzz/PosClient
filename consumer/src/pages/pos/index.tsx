@@ -1673,6 +1673,12 @@ const NewSale = () => {
                               {variant.locations.join(", ")}
                             </div>
                           ) : null}
+                          {variant.available_quantity !== undefined && (
+                            <div style={{ fontSize: 11, color: "#666" }}>
+                              Stock: {variant.available_quantity}{" "}
+                              {variant.unit_name}
+                            </div>
+                          )}
                           <div style={{ fontSize: 13, fontWeight: 700 }}>
                             <Money
                               value={
