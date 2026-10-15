@@ -112,12 +112,14 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
 ## 6. Known issues and owner actions
 
 112 defects were logged during the test work: 107 fixed, 1 resolved, 4 accepted by the owner (KI-018 dev dependencies in the PR delta audit,
-KI-088 old secrets in history, KI-106 and KI-109 mutation-score items). Still worth doing when convenient:
-- Revoke the old GitHub token that was in `pull.sh`, and the broad Cloudflare token pasted in chat; change the `testadmin` password.
-- Rotate the GCP API key in `ai-service/.env.example` history and the secrets from the old `k8s/base/secrets.yaml` (KI-088).
-- `scripts/coverage-ratchet.mjs` compares with `scripts/coverage-baseline.json`, which has never been committed, so that gate currently passes
-  with an empty baseline: generate it with `node scripts/coverage-ratchet.mjs --update` after a coverage run and commit it.
-- Raise HSTS from 1 day to 1 year after a quiet week; promote the report-only CSP after a staging click-through; Cloudflare SSL mode to Full (strict).
+KI-088 old secrets in history, KI-106 and KI-109 mutation-score items). The old GitHub token, the broad Cloudflare token and the shared admin
+password were rotated or revoked on 2026-10-16, and Cloudflare SSL is on Full (strict). Still worth doing when convenient:
+- Raise HSTS from 1 day to 1 year (`deploy/nginx/posbuzz.conf`); promote the report-only CSP after a staging click-through with the console open.
 - Add Telegram to the Healthchecks and UptimeRobot alerts.
+- Rotate the GCP API key in `ai-service/.env.example` history and the secrets from the old `k8s/base/secrets.yaml` (KI-088).
+
+Coverage ratchet: CI runs `scripts/coverage-ratchet.mjs` for backend, consumer and admin against `scripts/coverage-baseline.json` (committed 2026-10-16:
+backend 100% of the files it measures, consumer 64.7% lines, admin 62.3% lines). A drop of more than 0.5 points fails CI; after raising coverage by more
+than 1 point, run the coverage then `node scripts/coverage-ratchet.mjs --update` and commit the file. Never lower the baseline to make CI pass.
 
 New decisions and defects: record them in the PR description (what, why, how verified) and, if they change how the system works, edit this file.
