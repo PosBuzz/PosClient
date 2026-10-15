@@ -531,3 +531,9 @@ Type: DECISION
 Concern: will a GitHub runner finish the domain mutation shards? Measured facts: a cold shard ran 27-66 min for 330-690 mutants (about 5-6 s per mutant); a warm shard (v2 incremental cache) took 3-4 min. Each rotation day (r1..r7) has its own cache, so a cold pass happens once per day-of-week per shard; the worst estimated shard is about 1,000 mutants (rotation day 7, the large sales ranges), roughly 90-100 min once. The job timeout stays disabled (owner request), so a cold pass completes (GitHub's hard limit is 6 h).
 Change: `stryker.domain.config.mjs` concurrency 3 -> 4 (`STRYKER_CONCURRENCY` overrides). Stryker splits concurrency between type-check workers and test runners; 3 produced one test runner on a 4-vCPU runner, 4 produces two. Expected: cold passes close to halve. The unit specs added for KI-106 also make most mutants die in milliseconds instead of waiting for an integration test.
 Watch: first nightly after this change for OOM restarts (heap 3 GB per Jest worker, runners recycle every 25 mutants); revert to 3 if a shard fails on memory.
+
+## D-073 Product-audit period uses UTC days; timezone check covers product-audit (2026-10-15)
+Type: DECISION
+Concern: the audit period start/end were built with local `setHours`, so results depended on the server time zone (KI-112). Date-only inputs arrive as UTC midnight (same convention as D-004's calendar-date columns), so UTC day boundaries are the consistent choice.
+Change: `product-audit.service.ts` uses `setUTCHours`; `test:int:tz` runs `test/integration/product-audit` under Asia/Dhaka and America/New_York, in addition to the Dhaka report suite.
+Verification: CI run 38687491364 on `fix/known-issues` passed (all jobs, 15m44s), which includes the KI-110, KI-111 and KI-065 fixes and the consumer-purge SCOPE refactor.
