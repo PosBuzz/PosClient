@@ -208,6 +208,12 @@ namespace Printer
                 y += 2;
             }
 
+            if (receiptData.IsReturn)
+            {
+                y += this.DrawCenteredText(g, y, "*** RETURN RECEIPT ***", 10f, FontStyle.Bold);
+                y += 3;
+            }
+
             // Order information
             string saleNumberText = GetSaleNumberText();
             if (!string.IsNullOrEmpty(saleNumberText))
@@ -365,7 +371,7 @@ namespace Printer
             decimal totalToShow = receiptData.Total > 0 ? receiptData.Total : receiptData.TotalAmount;
             y += this.DrawTextColumns(
                 g, y,
-                new TextColumn("TOTAL:", 0.7f, StringAlignment.Near, 9f, FontStyle.Bold),
+                new TextColumn(receiptData.IsReturn ? "REFUND:" : "TOTAL:", 0.7f, StringAlignment.Near, 9f, FontStyle.Bold),
                 new TextColumn(FormatCurrency(totalToShow), 0.3f, StringAlignment.Far, 9f, FontStyle.Bold)
             );
 
@@ -386,7 +392,7 @@ namespace Printer
                     );
                 }
 
-                if (receiptData.Payment.AmountPaid > 0)
+                if (!receiptData.IsReturn && receiptData.Payment.AmountPaid > 0)
                 {
                     y += this.DrawTextColumns(
                         g, y,
@@ -395,7 +401,7 @@ namespace Printer
                     );
                 }
 
-                if (receiptData.Payment.Change > 0)
+                if (!receiptData.IsReturn && receiptData.Payment.Change > 0)
                 {
                     y += this.DrawTextColumns(
                         g, y,
