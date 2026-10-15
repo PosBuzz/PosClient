@@ -1,0 +1,6 @@
+[Unit]
+Description=Posbuzz health-check
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/posbuzz-health-check

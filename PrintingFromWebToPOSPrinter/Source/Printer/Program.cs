@@ -217,7 +217,7 @@ namespace Printer
       Console.WriteLine("Printer: " + config.PrinterName);
       Console.WriteLine("Currency: " + config.Currency);
       
-      Console.WriteLine("\nTo modify settings, edit the 'store-config.txt' file");
+      Console.WriteLine("\nTo modify settings, edit " + Printer.Services.ConfigManager.ConfigPath);
       Console.WriteLine(new string('=', 50) + "\n");
     }
     

@@ -8,7 +8,6 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   Popconfirm,
   Row,
   Select,
@@ -17,6 +16,7 @@ import {
   Table,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import dayjs, { Dayjs } from "dayjs";
 import { useState } from "react";
 import {

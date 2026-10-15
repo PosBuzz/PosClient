@@ -13,7 +13,6 @@ import {
   Descriptions,
   Divider,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
@@ -23,6 +22,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import { useEffect, useState } from "react";

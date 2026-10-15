@@ -1,5 +1,6 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Col, Input, InputNumber, Row, Select, Typography } from "antd";
+import { Button, Col, Input, Row, Select, Typography } from "antd";
+import InputNumber from "./NumberInput";
 import {
   getPaymentProviderOptions,
   getPaymentProviderPlaceholder,

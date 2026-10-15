@@ -63,3 +63,7 @@ export interface AgentReceiptData {
   notes?: string;
   openCashDrawer?: boolean;
 }
+
+/** Windows installer for the local print server, served by the app itself. */
+export const PRINT_SERVER_DOWNLOAD_URL =
+  "/print-server/PosBuzz-Print-Server.zip";

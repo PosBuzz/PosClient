@@ -8,6 +8,8 @@ export const RECEIPT_PRESET_TYPES = [
   'money_receipt',
   'delivery_slip',
   'online_delivery_slip',
+  'transfer_slip',
+  'transfer_chalan',
 ] as const;
 
 export type ReceiptPresetType = (typeof RECEIPT_PRESET_TYPES)[number];
@@ -627,6 +629,37 @@ export const DEFAULT_ONLINE_DELIVERY_SLIP_SETTINGS: ReceiptPdfSettings = {
   },
 };
 
+/**
+ * Inventory transfer slip: product code, name and quantity moving from the
+ * source branch to the destination branch. No money on it.
+ */
+export const DEFAULT_TRANSFER_SLIP_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_CHALAN_SETTINGS,
+  header: {
+    ...DEFAULT_CHALAN_SETTINGS.header,
+    text: 'INVENTORY TRANSFER SLIP',
+  },
+  storeInfo: { ...DEFAULT_CHALAN_SETTINGS.storeInfo, showBranchName: false },
+  customerInfo: {
+    show: true,
+    showName: true,
+    showPhone: false,
+    showEmail: false,
+    showAddress: false,
+    showRewardPoints: false,
+  },
+  items: { ...DEFAULT_CHALAN_SETTINGS.items, showVariantName: true },
+};
+
+/** Transfer chalan: the same transfer as a goods hand-over document. */
+export const DEFAULT_TRANSFER_CHALAN_SETTINGS: ReceiptPdfSettings = {
+  ...DEFAULT_TRANSFER_SLIP_SETTINGS,
+  header: {
+    ...DEFAULT_TRANSFER_SLIP_SETTINGS.header,
+    text: 'TRANSFER CHALAN',
+  },
+};
+
 export const PRESET_DEFAULTS: Record<ReceiptPresetType, ReceiptPdfSettings> = {
   receipt: DEFAULT_RECEIPT_SETTINGS,
   quotation: DEFAULT_QUOTATION_SETTINGS,
@@ -635,6 +668,8 @@ export const PRESET_DEFAULTS: Record<ReceiptPresetType, ReceiptPdfSettings> = {
   money_receipt: DEFAULT_MONEY_RECEIPT_SETTINGS,
   delivery_slip: DEFAULT_DELIVERY_SLIP_SETTINGS,
   online_delivery_slip: DEFAULT_ONLINE_DELIVERY_SLIP_SETTINGS,
+  transfer_slip: DEFAULT_TRANSFER_SLIP_SETTINGS,
+  transfer_chalan: DEFAULT_TRANSFER_CHALAN_SETTINGS,
 };
 
 /* ------------------------------------------------------------------ */

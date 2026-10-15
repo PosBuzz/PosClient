@@ -6,7 +6,17 @@ namespace Printer.Services
 {
     public class ConfigManager
     {
-        private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "store-config.txt");
+        private static readonly string[] LogoExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+
+        /// <summary>
+        /// Settings and logo live here, not next to Printer.exe, so updating the
+        /// program (delete the folder, extract a new zip) keeps the shop's setup.
+        /// </summary>
+        public static readonly string DataDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PosBuzz Print Server");
+
+        public static readonly string ConfigPath = Path.Combine(DataDirectory, "store-config.txt");
         private static StoreConfig _config;
 
         public static StoreConfig GetConfig()
@@ -27,6 +37,8 @@ namespace Printer.Services
         {
             try
             {
+                Directory.CreateDirectory(DataDirectory);
+
                 if (File.Exists(ConfigPath))
                 {
                     var lines = File.ReadAllLines(ConfigPath);
@@ -69,10 +81,13 @@ namespace Printer.Services
                     {
                         _config.BarcodePrinterName = "Gprinter GP-3120TUC";
                     }
+
+                    AdoptLogo();
                 }
                 else
                 {
                     _config = CreateDefaultConfig();
+                    AdoptLogo();
                     SaveConfig();
                 }
             }
@@ -81,6 +96,29 @@ namespace Printer.Services
                 Console.WriteLine("Error loading config: " + ex.Message);
                 _config = CreateDefaultConfig();
             }
+        }
+
+        /// <summary>
+        /// A saved logo path that no longer exists (file deleted, config from
+        /// another PC) falls back to the logo in the data folder, else no logo.
+        /// </summary>
+        private static void AdoptLogo()
+        {
+            if (!string.IsNullOrEmpty(_config.LogoPath) && File.Exists(_config.LogoPath))
+            {
+                return;
+            }
+            _config.LogoPath = FindLogo(DataDirectory) ?? "";
+        }
+
+        private static string FindLogo(string directory)
+        {
+            foreach (var extension in LogoExtensions)
+            {
+                string candidate = Path.Combine(directory, "logo" + extension);
+                if (File.Exists(candidate)) return candidate;
+            }
+            return null;
         }
 
         public static void SaveConfig()
@@ -181,7 +219,7 @@ namespace Printer.Services
             config.HeaderText = "Government of the People's Republic of Bangladesh\nNational Board of Revenue, \"Tax Invoice\": Musahk-6.3\n[See clauses (c) and (f) of Rule 40]";
             config.VatRegistrationNumber = "VAT-000123456-0202";
             config.FooterTerms = "Terms & Conditions:\n1. All sales are final\n2. No returns after 7 days\n3. Warranty claims require original receipt\n4. Customer is responsible for verifying items";
-            config.LogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+            config.LogoPath = "";
             config.PrinterName = "RONGTA 80mm Series Printer";
             config.BarcodePrinterName = "Gprinter GP-3120TUC";
             config.Currency = "\u09F3";

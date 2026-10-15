@@ -23,7 +23,11 @@ export default defineConfig({
         navigateFallback: null,
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === "navigate",
+            // The installer download is a navigation too; it must not be cached
+            // as the app shell.
+            urlPattern: ({ request, url }) =>
+              request.mode === "navigate" &&
+              !url.pathname.startsWith("/print-server/"),
             handler: "NetworkFirst",
             options: {
               cacheName: "app-shell",

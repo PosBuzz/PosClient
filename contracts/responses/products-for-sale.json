@@ -1,5 +1,6 @@
 [
   {
+    "available_quantity": 97,
     "barcode": "BAR9",
     "brand_id": null,
     "category_id": null,
@@ -17,6 +18,7 @@
     "wholesale_price": null
   },
   {
+    "available_quantity": 98,
     "barcode": "BAR16",
     "brand_id": null,
     "category_id": null,
@@ -34,6 +36,7 @@
     "wholesale_price": null
   },
   {
+    "available_quantity": 96,
     "barcode": "BAR23",
     "brand_id": null,
     "category_id": null,

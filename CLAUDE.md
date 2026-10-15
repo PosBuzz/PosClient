@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **PosClient** (13383 symbols, 30979 relationships, 317 execution flows).
+This project is indexed by GitNexus as **PosClient** (15253 symbols, 40154 relationships, 309 execution flows).
 
 > Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 
@@ -44,16 +44,36 @@ This project is indexed by GitNexus as **PosClient** (13383 symbols, 30979 relat
 <!-- gitnexus:end -->
 
 
-# Testing & CI (PosBuzz)
+# PosBuzz: system, testing, CI/CD
 
-The test and safety-net plan lives in `docs/testing/` — start at `docs/testing/README.md` (phase tracker),
-then `DECISIONS.md` (D-xxx), `KNOWN-ISSUES.md` (KI-xxx) and `OWNER-ACTIONS.md`.
+Read `docs/SYSTEM.md` first: it summarises the system (apps, environments, branch flow, test layers, rules, standing decisions,
+known issues). Operating the server (access, deploy/rollback, logs, restore, secrets, troubleshooting): `docs/OPERATIONS.md`; file-level deploy/backup/alert detail: `deploy/README.md`. The old test-plan documents were removed
+on 2026-10-16; the full text is in git history (`git show 840c2b3:docs/testing/<file>`).
 
-- Never lower an assertion, coverage floor or mutation threshold to make something pass; fix the code or add tests. Log defects as KI-xxx and decisions as D-xxx.
-- Backend: `npm test` (unit), `npm run test:int` (needs `docker compose -f docker-compose.test.yml up -d --wait`), `npm run test:mutation:unit`. Domain mutation is nightly-only (D-068): `STRYKER_ROTATION=d/7` picks a seventh of the files per night plus `STRYKER_CHANGED_FILES`, split by `STRYKER_SHARD=i/12` with Stryker's incremental cache restored per rotation day and shard (D-069) (`npm run test:mutation:shard`); `scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json` is the ratchet gate (strict floors without `--baseline`). The domain Jest run uses integration + unit specs, never e2e specs (KI-105).
+## Environments and branch flow
+- Two long-lived branches: `staging` (deploys staging, posbuzz.cloud) and `main` (deploys production, posbuzz.xyz). Branch from `staging`, PR into
+  `staging`, then PR `staging` -> `main`. Hotfix: PR into `main`, then merge `main` back into `staging`. Branch protection is intentionally not used (D-065).
+- One VPS hosts both stacks (`/opt/posbuzz` production, `/opt/posbuzz-staging` staging). Secrets live only on the server (`/opt/posbuzz*/env/`); GitHub
+  holds only the `DEPLOY_*` secrets. Never put secrets, tokens or `.env.docker` files in git. Do not change server, DNS, Cloudflare or nginx settings
+  without being asked; production deploys happen via the pipeline, not by hand.
+- `.github/workflows/deploy.yml` deploys after a green `All checks` (it picks staging or production from the branch, rebuilds only changed apps,
+  health-checks, rolls back on failure, smoke-tests). `refresh-staging.yml` replaces staging data with a copy of production (snapshotting staging first).
+  Staging and production data are separate databases: never copy data from staging to production.
+
+## Testing and CI rules
+- Never lower an assertion, coverage floor or mutation threshold to make something pass; fix the code or add tests. Fix confirmed defects now with a normal
+  passing regression test (no `it.failing`/skip). Record decisions in the PR description and, if they change how the system works, in `docs/SYSTEM.md`.
+- Backend: `npm test` (unit), `npm run test:int` (needs `docker compose -f docker-compose.test.yml up -d --wait`), `npm run test:mutation:unit`. Domain mutation is
+  nightly-only (D-068): `STRYKER_ROTATION=d/7` picks a seventh of the files per night plus `STRYKER_CHANGED_FILES`, split by `STRYKER_SHARD=i/12` with Stryker's
+  incremental cache restored per rotation day and shard (D-069) (`npm run test:mutation:shard`); `scripts/mutation-tier-gate.mjs --baseline backend/test/service-coverage/mutation-baseline.json`
+  is the ratchet gate (strict floors without `--baseline`). The domain Jest run uses integration + unit specs, never e2e specs (KI-105).
 - Consumer / admin: `npm test`, `npm run typecheck`, `npm run lint:check`. Consumer mutation: `npm run test:mutation -- <src file>` (one target per run).
-- `ci.yml` runs every job on every PR and push to `main`; `All checks` is the single aggregator the deploy workflow looks up. Path-filtering was tried and reverted — do not reintroduce it without asking. Branch protection is intentionally not used (D-065).
-- `nightly.yml` is not on `main` until the PR merges, so it cannot be dispatched with `gh workflow run`; to test it, push a throwaway branch with a temporary `push` trigger and delete it afterwards. It skips on schedule when there are no commits in the last 25 hours.
+- Test titles start with a stable ID (`[BE-SALE-004]`, `[CO-CALC-012]`, `[AD-AUTH-002]`, `[X-ERR-010]`, `[E2E-J1]`), never reused. Tests set `TZ` explicitly.
+- Errors: non-2xx JSON from `/api/v1/**` is `{statusCode, message, error}` with a readable `message` (see `docs/SYSTEM.md` section 4); the client turns errors into
+  text only through `getErrorMessage` in `consumer|admin/src/utils/api-error.ts`.
+- `ci.yml` runs every job on every PR and on pushes to `main` and `staging`; `All checks` is the single aggregator the deploy workflow looks up. Path-filtering was
+  tried and reverted — do not reintroduce it without asking. Dependencies: `npm audit` is at 0 in all four apps; the CI audit gates production dependencies (high+).
+- `nightly.yml` is not on the default branch until a PR merges, so it cannot be dispatched with `gh workflow run`; to test it, push a throwaway branch with a
+  temporary `push` trigger and delete it afterwards. It skips on schedule when there are no commits in the last 25 hours.
 - Do not push repeatedly while CI runs: a new push cancels the run in progress. Mutation and E2E jobs are expensive; the GitHub Actions budget has run out once (2026-10-14).
 - E2E (`e2e/`) logs in against a 5/min throttle; the login budget is persisted under `e2e/.cache`. Do not change the production throttle.
-- Deploy: merge a PR into `staging` to deploy staging (posbuzz.cloud); merge `staging` into `main` to deploy production (posbuzz.xyz). Both go through CI then `.github/workflows/deploy.yml` (`deploy/README.md`), which only ships commits with a green `All checks`. Deploy proofs wait for the owner.

@@ -9,13 +9,13 @@ import {
   Divider,
   Form,
   Input,
-  InputNumber,
   Modal,
   Row,
   Select,
   Space,
   Switch,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useState } from "react";
 import Barcode from "react-barcode";
 import { inventoryApi } from "../../api/inventory-api";

@@ -142,7 +142,7 @@ The `Distribution/PosBuzz-Print-Server/` folder contains everything needed for d
 PosBuzz-Print-Server/
 ├── Printer.exe                    # Main application (2.1MB)
 ├── Printer.exe.config             # Application configuration
-├── store-config.txt               # User settings (created on first run)
+(user settings and logo live in %LOCALAPPDATA%\PosBuzz Print Server)
 ├── Newtonsoft.Json.dll            # JSON processing library
 ├── zxing.dll                      # Barcode generation library
 ├── zxing.presentation.dll         # Barcode UI components

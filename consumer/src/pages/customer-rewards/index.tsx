@@ -10,7 +10,6 @@ import {
   Col,
   Form,
   Input,
-  InputNumber,
   Modal,
   Row,
   Space,
@@ -19,6 +18,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import type { TablePaginationConfig } from "antd";
 import React, { useEffect, useState } from "react";
 import { rewardsApi } from "../../api/rewards.api";

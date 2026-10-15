@@ -30,7 +30,7 @@ namespace Printer
             }
             
             Console.WriteLine();
-            Console.WriteLine("To use a specific printer, update the PrinterName in store-config.txt");
+            Console.WriteLine("To use a specific printer, update the PrinterName in " + Printer.Services.ConfigManager.ConfigPath);
             Console.WriteLine("Leave PrinterName empty to use the default printer");
         }
         

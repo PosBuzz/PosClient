@@ -5,13 +5,13 @@ import {
   Card,
   Col,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
   Switch,
   Typography,
 } from "antd";
+import InputNumber from "../../../components/NumberInput";
 import { TaxMethod } from "../../../types/product.types";
 import { ProductFormState, ValidationState } from "../types";
 import MasterDataSelector from "./MasterDataSelector";
@@ -180,14 +180,13 @@ export default function BasicInfoSection({
           <Col xs={24} sm={12}>
             <Text strong>Tax Rate (%)</Text>
             <InputNumber
-              type="number"
               style={{ width: "100%" }}
               min={0}
               max={100}
-              precision={2}
+              precision={0}
               value={formState.tax}
               status={getError(validationState, "tax").status}
-              onChange={(value) => onFieldUpdate("tax", value || 0)}
+              onChange={(value) => onFieldUpdate("tax", value ?? undefined)}
             />
             {getError(validationState, "tax").help && (
               <Text type="danger">{getError(validationState, "tax").help}</Text>

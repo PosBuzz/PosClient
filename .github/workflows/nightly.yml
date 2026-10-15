@@ -4,7 +4,7 @@ permissions:
 
 on:
   schedule:
-    - cron: "0 20 * * *" # 02:00 Asia/Dhaka
+    - cron: "17 20 * * *" # 02:17 Asia/Dhaka (off the busy :00 mark)
   workflow_dispatch:
     inputs:
       full_domain:

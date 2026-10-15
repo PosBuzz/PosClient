@@ -118,7 +118,8 @@ POST /print/barcode
 PosBuzz-Print-Server/
 ├── Printer.exe              # Main application
 ├── Printer.exe.config       # App configuration
-├── store-config.txt         # Your settings (created on first run)
+(your settings and logo are kept outside this folder, in
+ %LOCALAPPDATA%\PosBuzz Print Server — see Updating)
 ├── Newtonsoft.Json.dll      # JSON library
 ├── zxing.dll                # Barcode generation
 ├── zxing.presentation.dll   # Barcode presentation
@@ -166,6 +167,16 @@ Import `Documentation/PosBuzz_Print_Server.postman_collection.json` for ready-to
 ✅ **VAT Support** - Tax information on labels  
 ✅ **Error Handling** - Graceful printer error recovery  
 ✅ **Test Endpoints** - Built-in testing capabilities  
+
+## 🔄 Updating
+
+Your settings (`store-config.txt`) and logo are kept in
+`%LOCALAPPDATA%\PosBuzz Print Server`, outside the program folder. To update:
+quit the tray app, delete the old program folder, extract the new zip, run it.
+Nothing is lost.
+
+**First time on this version:** open the tray icon → Configuration and fill in
+the store details, printers and logo once. They are remembered from then on.
 
 ## 📞 Support
 

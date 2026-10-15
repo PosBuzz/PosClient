@@ -6,7 +6,7 @@ export async function navigate(page:Page,label:string){
   await page.getByRole('menuitem',{name:new RegExp(label)}).click();
 }
 export async function addToPos(page:Page,name:string,quantity=1){
-  if(page.url()===`${CONSUMER}/`) await page.getByRole('heading',{name:'Point of Sale'}).click();
+  if(page.url()===`${CONSUMER}/`) await page.getByRole('heading',{name:'Express Sale'}).click();
   else await page.goto(`${CONSUMER}/pos`);
   await expect(page).toHaveURL(/\/pos/);
   await page.waitForLoadState('networkidle');
