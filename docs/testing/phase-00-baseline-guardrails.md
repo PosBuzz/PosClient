@@ -285,7 +285,7 @@ P0 now includes the workflow and referenced audit/dependency configuration files
 
 - Original license-gate proposal (superseded by owner's no-restrictions policy in D-017): `.github/dependency-review-config.yml` sets `fail-on-severity: high` and the owner's reviewed `deny-licenses` list. Do not invent a license policy; configure it and test it before declaring this gate complete. Keep `allow-ghsas` empty: the accepted existing SPA finding is handled by the production audit gate, while new vulnerable additions stay blocked on PRs. The action reviews dependency changes across the PR, including workflows/development dependencies. Confirm dependency-graph/review support for the repository; if unavailable, document it and implement an equivalent PR delta/license gate before marking X3 complete. See the [action configuration](https://github.com/actions/dependency-review-action) for severity/license inputs.
 - Every job running `npm ci` checks `git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json` from the repo root immediately afterward. This includes later integration/frontend/e2e jobs; installed lockfile changes must fail, not be automatically committed.
-- Add `.github/dependabot.yml` with the weekly updates below (no automatic merging). The configuration is now implemented in `.github/dependabot.yml`.
+- Dependabot version updates were removed on 2026-10-15 (they opened ~30 PRs and queued CI runs against the Actions budget). Dependency updates are done by hand; `ci.yml` still audits production dependencies.
 
 ```yaml
 version: 2
