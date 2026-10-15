@@ -1,8 +1,4 @@
-import {
-  ArrowLeftOutlined,
-  FilePdfOutlined,
-  PrinterOutlined,
-} from "@ant-design/icons";
+import { ArrowLeftOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
@@ -10,7 +6,6 @@ import {
   Card,
   Col,
   Descriptions,
-  message,
   Row,
   Space,
   Table,
@@ -25,7 +20,6 @@ import PdfPreviewModal, {
   usePdfPreview,
 } from "../../components/PdfPreviewModal";
 import type { ReturnExchange, ReturnItem } from "../../types/return.types";
-import { printReturnThermalReceipt } from "../../utils/return-thermal-receipt";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 
 const { Text } = Typography;
@@ -157,22 +151,6 @@ export default function ViewReturn() {
       title: `Return ${returnNumber}`,
       fileName: `return-${returnNumber}.pdf`,
     });
-  const handleThermalPrint = async () => {
-    try {
-      await printReturnThermalReceipt(returnDetail, saleData?.sale_number);
-      message.success("Return receipt sent to printer!");
-    } catch (error: any) {
-      console.error("Print error:", error);
-      if (String(error?.message).includes("fetch")) {
-        message.error(
-          "Printing agent is not running. Please start the printing agent on your computer and try again.",
-        );
-      } else {
-        message.error("Failed to print return receipt: " + error?.message);
-      }
-    }
-  };
-
   return (
     <div>
       <PageTitle
@@ -198,9 +176,6 @@ export default function ViewReturn() {
           }
         >
           Preview Return Receipt
-        </Button>
-        <Button icon={<PrinterOutlined />} onClick={handleThermalPrint}>
-          Print Thermal Receipt
         </Button>
       </Space>
 
