@@ -241,7 +241,7 @@ namespace Printer
                 {
                     try
                     {
-                        string destPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo" + System.IO.Path.GetExtension(openFileDialog.FileName));
+                        string destPath = System.IO.Path.Combine(Printer.Services.ConfigManager.DataDirectory, "logo" + System.IO.Path.GetExtension(openFileDialog.FileName));
 
                         System.IO.File.Copy(openFileDialog.FileName, destPath, true);
 
