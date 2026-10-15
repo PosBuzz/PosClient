@@ -1,0 +1,78 @@
+[
+  {
+    "label": "profile",
+    "value": 1
+  },
+  {
+    "label": "users",
+    "value": 2
+  },
+  {
+    "label": "add_product",
+    "value": 3
+  },
+  {
+    "label": "edit_product",
+    "value": 4
+  },
+  {
+    "label": "view_product",
+    "value": 5
+  },
+  {
+    "label": "delete_product",
+    "value": 6
+  },
+  {
+    "label": "branches",
+    "value": 7
+  },
+  {
+    "label": "vendors",
+    "value": 8
+  },
+  {
+    "label": "customers",
+    "value": 9
+  },
+  {
+    "label": "inventory_batches",
+    "value": 10
+  },
+  {
+    "label": "inventory_transfer",
+    "value": 11
+  },
+  {
+    "label": "inventory_adjustment",
+    "value": 12
+  },
+  {
+    "label": "sales",
+    "value": 13
+  },
+  {
+    "label": "business_insights",
+    "value": 14
+  },
+  {
+    "label": "quotations",
+    "value": 15
+  },
+  {
+    "label": "companyProfile",
+    "value": 16
+  },
+  {
+    "label": "product_audit",
+    "value": 17
+  },
+  {
+    "label": "receipt_settings",
+    "value": 18
+  },
+  {
+    "label": "support",
+    "value": 19
+  }
+]

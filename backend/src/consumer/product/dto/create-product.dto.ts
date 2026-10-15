@@ -2,6 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
+  IsInt,
   IsNumber,
   IsBoolean,
   IsArray,
@@ -49,7 +50,7 @@ export class CreateProductDto {
   tax_method?: TaxMethod = TaxMethod.EXCLUSIVE;
 
   @IsOptional()
-  @IsNumber()
+  @IsInt({ message: 'tax must be a whole number percentage (0-100)' })
   @Min(0)
   @Max(100)
   tax?: number = 0;

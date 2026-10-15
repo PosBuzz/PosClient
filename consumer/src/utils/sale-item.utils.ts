@@ -60,11 +60,13 @@ export const upsertVariantInSaleItems = ({
   variant,
   quantityToAdd,
   priceType,
+  specialDiscountPerQuantity = false,
 }: {
   sourceItems: SaleItem[];
   variant: ProductVariantForSale;
   quantityToAdd: number;
   priceType: PriceType;
+  specialDiscountPerQuantity?: boolean;
 }) => {
   const existingItem = sourceItems.find(
     (item) => item.variant_id === variant.id,
@@ -85,6 +87,11 @@ export const upsertVariantInSaleItems = ({
         ? {
             ...item,
             quantity: newQuantity,
+            special_discount_amount: specialDiscountPerQuantity
+              ? ((Number(item.special_discount_amount) || 0) /
+                  Math.max(1, Number(item.quantity) || 1)) *
+                newQuantity
+              : item.special_discount_amount,
             unit_price: Number(price) || 0,
             tax_amount: Number(tax_amount) || 0,
             line_total: Number(line_total) || 0,
@@ -114,7 +121,7 @@ export const upsertVariantInSaleItems = ({
     product_name: variant.product_name,
     regular_price: Number(variant.regular_price || 0),
     wholesale_price: Number(variant.wholesale_price || 0),
-    image: variant.image,
+    image: variant.image ?? undefined,
     unit_name: variant.unit_name,
     tax_percentage: Number(variant.tax_percentage || 0),
     tax_method: variant.tax_method || "EXCLUSIVE",
@@ -156,6 +163,34 @@ export const updateSaleItemQuantity = ({
     };
   });
 };
+
+// Re-prices every line for the chosen price type so a sale never mixes retail and wholesale prices; lines whose variant is unknown keep their price.
+export const repriceSaleItems = ({
+  sourceItems,
+  variants,
+  priceType,
+}: {
+  sourceItems: SaleItem[];
+  variants: ProductVariantForSale[];
+  priceType: PriceType;
+}) =>
+  sourceItems.map((item) => {
+    const variant = variants.find((v) => v.id === item.variant_id);
+    if (!variant) return item;
+    const price = getVariantPriceForSale(variant, priceType);
+    const { line_total, tax_amount } = calculateTaxAndTotal(
+      price,
+      item.quantity,
+      Number(variant.tax_percentage) || 0,
+      variant.tax_method || "EXCLUSIVE",
+    );
+    return {
+      ...item,
+      unit_price: Number(price) || 0,
+      tax_amount: Number(tax_amount) || 0,
+      line_total: Number(line_total) || 0,
+    };
+  });
 
 // Removes a specific variant from the sale items array by its ID.
 export const removeSaleItem = (sourceItems: SaleItem[], variantId: number) => {

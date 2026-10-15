@@ -16,6 +16,7 @@ import { endpoints } from "../../api/endpoints";
 import { get } from "../../api/http";
 import { useMessageStore } from "../../stores/messageStore";
 import { describeError } from "./_errors";
+import { getErrorMessage } from "../../utils/api-error";
 
 interface PortfolioSettings {
   site_name: string;
@@ -53,7 +54,8 @@ export default function SettingsForm() {
       queryClient.invalidateQueries({ queryKey: ["portfolio-settings"] });
       messageApi?.success("Site settings saved");
     },
-    onError: () => messageApi?.error("Could not save site settings"),
+    onError: (error) =>
+      messageApi?.error(getErrorMessage(error, "Could not save site settings")),
   });
 
   if (isLoading) return <Skeleton active />;

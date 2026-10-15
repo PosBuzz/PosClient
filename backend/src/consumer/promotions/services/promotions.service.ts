@@ -1,3 +1,9 @@
+import { isClientError } from '../../../common/errors/client-error';
+import {
+  calculateDiscount,
+  calculateEffectiveQuantity,
+  calculateBaseWithQuantityLimit,
+} from '../promotion-math';
 import {
   BadRequestException,
   Injectable,
@@ -128,10 +134,15 @@ export class PromotionsService {
       return new Map<number, any>();
     }
 
+    // Same definition of a "use" as getPromotionUsage (what the server enforces):
+    // live sales only, never quotations, deleted or cancelled sales
     const grouped = await (this.prisma.sale as any).groupBy({
       by: ['promotion_id'],
       where: {
         promotion_id: { in: promotionIds },
+        sale_type: 'sale',
+        payment_status: { not: 'cancelled' },
+        deleted_at: null,
       },
       _count: {
         _all: true,
@@ -181,7 +192,9 @@ export class PromotionsService {
     }
 
     if (endDate && endDate < startDate) {
-      throw new BadRequestException('end_date must be after start_date');
+      throw new BadRequestException(
+        'The end date must be after the start date.',
+      );
     }
 
     const minQuantity = input.min_quantity ?? 1;
@@ -197,7 +210,7 @@ export class PromotionsService {
     if (capQuantity !== null && capQuantity !== undefined && capQuantity > 0) {
       if (capQuantity < minQuantity) {
         throw new BadRequestException(
-          'cap_quantity must be greater than or equal to min_quantity',
+          'The cap quantity must be at least the minimum quantity.',
         );
       }
     }
@@ -211,19 +224,19 @@ export class PromotionsService {
       capDiscountAmount > maxDiscountAmount
     ) {
       throw new BadRequestException(
-        'cap_discount_amount cannot be greater than max_discount_amount',
+        'The cap discount amount cannot be greater than the maximum discount amount.',
       );
     }
 
     if (limitPerCustomer && (!customerUsageLimit || customerUsageLimit < 1)) {
       throw new BadRequestException(
-        'customer_usage_limit is required when limit_per_customer is true',
+        'A customer usage limit is required when the promotion is limited per customer.',
       );
     }
 
     if (!limitPerCustomer && customerUsageDailyReset) {
       throw new BadRequestException(
-        'customer_usage_daily_reset requires limit_per_customer to be true',
+        'Daily reset of customer usage requires the promotion to be limited per customer.',
       );
     }
 
@@ -232,7 +245,7 @@ export class PromotionsService {
 
     if (input.branch_specific && branchIds.length === 0) {
       throw new BadRequestException(
-        'branch_ids is required when branch_specific is true',
+        'Select at least one branch for a branch-specific promotion.',
       );
     }
 
@@ -253,14 +266,12 @@ export class PromotionsService {
 
     if (input.scope === PromotionScope.BRAND) {
       if (!input.brand_id) {
-        throw new BadRequestException(
-          'brand_id is required for BRAND promotions',
-        );
+        throw new BadRequestException('Select a brand for a brand promotion.');
       }
 
       if (variantIds.length > 0) {
         throw new BadRequestException(
-          'variant_ids should not be provided for BRAND promotions',
+          'Brand promotions apply to a whole brand; remove the selected products.',
         );
       }
 
@@ -277,7 +288,7 @@ export class PromotionsService {
     } else {
       if (variantIds.length === 0) {
         throw new BadRequestException(
-          'variant_ids is required for SINGLE_PRODUCT or BUNDLE promotions',
+          'Select at least one product for a single-product or bundle promotion.',
         );
       }
 
@@ -389,10 +400,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([created.id]);
       return this.mapPromotion(created, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to create promotion');
@@ -419,10 +427,7 @@ export class PromotionsService {
         this.mapPromotion(promotion, summaryMap),
       );
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotions');
@@ -438,10 +443,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([promotion.id]);
       return this.mapPromotion(promotion, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotion');
@@ -579,10 +581,7 @@ export class PromotionsService {
       const summaryMap = await this.getPromotionSalesSummary([updated.id]);
       return this.mapPromotion(updated, summaryMap);
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to update promotion');
@@ -599,10 +598,7 @@ export class PromotionsService {
 
       return { success: true };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to delete promotion');
@@ -659,10 +655,7 @@ export class PromotionsService {
         })),
       };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -767,96 +760,13 @@ export class PromotionsService {
         this.mapPromotion(promotion, summaryMap),
       );
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
         'Failed to fetch active promotions',
       );
     }
-  }
-
-  private calculateDiscount(
-    discountType: string,
-    discountValue: number,
-    base: number,
-    eligibleQuantity: number,
-    capDiscountAmount?: number | null,
-  ) {
-    if (base <= 0 || eligibleQuantity <= 0) return 0;
-
-    let discount = 0;
-
-    if (discountType === PromotionDiscountType.PERCENTAGE) {
-      discount = (base * discountValue) / 100;
-    } else {
-      // Fixed amount promotions are applied per eligible unit.
-      discount = discountValue * eligibleQuantity;
-    }
-
-    if (
-      capDiscountAmount !== null &&
-      capDiscountAmount !== undefined &&
-      capDiscountAmount > 0
-    ) {
-      discount = Math.min(discount, capDiscountAmount);
-    }
-
-    return Math.min(base, discount);
-  }
-
-  private calculateEffectiveQuantity(
-    items: Array<{ quantity: number; subtotal: number }>,
-    quantityLimit?: number | null,
-  ) {
-    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-
-    if (!quantityLimit || quantityLimit <= 0) {
-      return totalQuantity;
-    }
-
-    return Math.min(totalQuantity, quantityLimit);
-  }
-
-  private calculateBaseWithQuantityLimit(
-    items: Array<{ quantity: number; subtotal: number }>,
-    quantityLimit?: number | null,
-  ) {
-    const totalBase = items.reduce((sum, item) => sum + item.subtotal, 0);
-
-    if (!quantityLimit || quantityLimit <= 0) {
-      return totalBase;
-    }
-
-    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    if (totalQuantity <= quantityLimit) {
-      return totalBase;
-    }
-
-    let remaining = quantityLimit;
-    let base = 0;
-
-    const sorted = [...items].sort((a, b) => {
-      const aPerUnit = a.quantity > 0 ? a.subtotal / a.quantity : 0;
-      const bPerUnit = b.quantity > 0 ? b.subtotal / b.quantity : 0;
-      return bPerUnit - aPerUnit;
-    });
-
-    for (const item of sorted) {
-      if (remaining <= 0) {
-        break;
-      }
-
-      const takeQty = Math.min(item.quantity, remaining);
-      const perUnit = item.quantity > 0 ? item.subtotal / item.quantity : 0;
-      base += perUnit * takeQty;
-      remaining -= takeQty;
-    }
-
-    return base;
   }
 
   private async getPromotionUsage(promotionId: number, consumerId: number) {
@@ -956,10 +866,7 @@ export class PromotionsService {
         });
       }
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -1211,16 +1118,16 @@ export class PromotionsService {
           } => Boolean(item),
         );
 
-      const discountBase = this.calculateBaseWithQuantityLimit(
+      const discountBase = calculateBaseWithQuantityLimit(
         matchedItems,
         effectiveQuantityLimit,
       );
-      const effectiveQuantity = this.calculateEffectiveQuantity(
+      const effectiveQuantity = calculateEffectiveQuantity(
         matchedItems,
         effectiveQuantityLimit,
       );
 
-      const computedDiscount = this.calculateDiscount(
+      const computedDiscount = calculateDiscount(
         promotion.discount_type,
         this.toNumber(promotion.discount_value),
         discountBase,
@@ -1277,15 +1184,15 @@ export class PromotionsService {
         };
       }
 
-      const discountBase = this.calculateBaseWithQuantityLimit(
+      const discountBase = calculateBaseWithQuantityLimit(
         [selected],
         effectiveQuantityLimit,
       );
-      const effectiveQuantity = this.calculateEffectiveQuantity(
+      const effectiveQuantity = calculateEffectiveQuantity(
         [selected],
         effectiveQuantityLimit,
       );
-      const computedDiscount = this.calculateDiscount(
+      const computedDiscount = calculateDiscount(
         promotion.discount_type,
         this.toNumber(promotion.discount_value),
         discountBase,
@@ -1345,16 +1252,16 @@ export class PromotionsService {
           Boolean(item),
       );
 
-    const discountBase = this.calculateBaseWithQuantityLimit(
+    const discountBase = calculateBaseWithQuantityLimit(
       matchedItems,
       effectiveQuantityLimit,
     );
-    const effectiveQuantity = this.calculateEffectiveQuantity(
+    const effectiveQuantity = calculateEffectiveQuantity(
       matchedItems,
       effectiveQuantityLimit,
     );
 
-    const computedDiscount = this.calculateDiscount(
+    const computedDiscount = calculateDiscount(
       promotion.discount_type,
       this.toNumber(promotion.discount_value),
       discountBase,
@@ -1414,10 +1321,7 @@ export class PromotionsService {
 
       return evaluation;
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -1442,6 +1346,8 @@ export class PromotionsService {
         consumer_id: consumerId,
         promotion_id: promotionId,
         sale_type: 'sale',
+        payment_status: { not: 'cancelled' },
+        deleted_at: null,
       };
 
       if (filters.date_from || filters.date_to) {
@@ -1508,10 +1414,7 @@ export class PromotionsService {
         },
       };
     } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (isClientError(error)) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to fetch promotion sales');

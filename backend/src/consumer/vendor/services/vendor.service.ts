@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -9,6 +10,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { UpdateVendorDto } from '../dto/update-vendor.dto';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
+import { purchasedQuantities } from '../../inventory/utils/purchased-quantity.util';
 
 @Injectable()
 export class VendorService {
@@ -29,6 +32,9 @@ export class VendorService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error creating vendor for consumer ${consumerId}`,
         errorStack(error),
@@ -60,6 +66,9 @@ export class VendorService {
 
       return vendor;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error finding vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -92,6 +101,9 @@ export class VendorService {
 
       return result;
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error updating vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -115,7 +127,7 @@ export class VendorService {
 
       if (batchCount > 0) {
         // Don't delete, just return an error
-        throw new Error(
+        throw new BadRequestException(
           `Cannot delete vendor with ${batchCount} associated batches`,
         );
       }
@@ -125,6 +137,9 @@ export class VendorService {
 
       return { success: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error deleting vendor with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -156,8 +171,9 @@ export class VendorService {
         },
       };
 
-      const page = options?.page || 1;
-      const limit = options?.limit || 50;
+      // Query-string values arrive as text; Prisma wants real numbers
+      const page = Math.max(1, Number(options?.page) || 1);
+      const limit = Math.min(200, Math.max(1, Number(options?.limit) || 50));
       const skip = (page - 1) * limit;
 
       // 3. Fetch batches and total count
@@ -184,9 +200,10 @@ export class VendorService {
         this.prismaService.inventoryBatch.count({ where: whereClause }),
       ]);
 
-      // 4. Compute aggregates
+      // 4. Compute aggregates (owed on the quantity bought, not what is left)
+      const purchased = await purchasedQuantities(this.prismaService, batches);
       const totalCost = batches.reduce(
-        (sum, b) => sum + Number(b.cost_price) * b.quantity,
+        (sum, b) => sum + Number(b.cost_price) * purchased.get(b.id)!,
         0,
       );
       const totalPaid = batches.reduce(
@@ -209,9 +226,10 @@ export class VendorService {
       // 6. Add computed fields to batches
       const batchesWithTotals = batches.map((batch) => ({
         ...batch,
-        total_cost: Number(batch.cost_price) * batch.quantity,
+        total_cost: Number(batch.cost_price) * purchased.get(batch.id)!,
         remaining_amount:
-          Number(batch.cost_price) * batch.quantity - Number(batch.paid_amount),
+          Number(batch.cost_price) * purchased.get(batch.id)! -
+          Number(batch.paid_amount),
       }));
 
       return {
@@ -231,7 +249,7 @@ export class VendorService {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error getting vendor details for ID ${id} for consumer ${consumerId}`,
         errorStack(error),

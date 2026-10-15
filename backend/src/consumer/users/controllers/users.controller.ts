@@ -57,8 +57,13 @@ export class UsersController {
   updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserDto,
+    @Req() req: Request,
   ) {
-    return this.usersService.updateUser(id, dto);
+    return this.usersService.updateUser(
+      id,
+      dto,
+      Number(req?.user?.consumer_id),
+    );
   }
 
   @Delete(':id')
@@ -85,8 +90,13 @@ export class UsersController {
   updateRole(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoleDto,
+    @Req() req: Request,
   ) {
-    return this.usersService.updateRole(id, dto);
+    return this.usersService.updateRole(
+      id,
+      dto,
+      Number(req?.user?.consumer_id),
+    );
   }
 
   @Delete('roles/:id')

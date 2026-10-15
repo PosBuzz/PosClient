@@ -1,0 +1,119 @@
+# Production stack. Runs on the VPS from /opt/posbuzz; images are built in CI
+# and pulled from GHCR, so the server never builds. Every published port is
+# bound to 127.0.0.1: host nginx is the only public entry point.
+name: posclient
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: posbuzz-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: posbuzz
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d posbuzz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 2g
+    logging: *logging
+    networks: [posbuzz-network]
+
+  backend:
+    image: ${IMAGE_PREFIX:?}-backend:${TAG:?}
+    container_name: posbuzz-backend
+    restart: unless-stopped
+    env_file: [./env/backend.env]
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/posbuzz?schema=public
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/receipts:/app/receipts
+      - ./data/temp:/app/temp
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres: { condition: service_healthy }
+    command: sh -c "npx prisma migrate deploy && npm run start:prod"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8000/api/v1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    mem_limit: 1536m
+    logging: *logging
+    networks: [posbuzz-network]
+
+  admin:
+    image: ${IMAGE_PREFIX}-admin:${TAG}
+    container_name: posbuzz-admin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    mem_limit: 128m
+    logging: *logging
+    networks: [posbuzz-network]
+
+  consumer:
+    image: ${IMAGE_PREFIX}-consumer:${TAG}
+    container_name: posbuzz-consumer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    mem_limit: 128m
+    logging: *logging
+    networks: [posbuzz-network]
+
+  portfolio:
+    image: ${IMAGE_PREFIX}-portfolio:${TAG}
+    container_name: posbuzz-portfolio
+    restart: unless-stopped
+    env_file: [./env/portfolio.env]
+    ports:
+      - "127.0.0.1:3002:3000"
+    depends_on:
+      backend: { condition: service_healthy }
+    # The image's own HEALTHCHECK probes "localhost", which resolves to ::1
+    # while Next listens on IPv4 only, so it reported unhealthy forever.
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 512m
+    logging: *logging
+    networks: [posbuzz-network]
+
+networks:
+  posbuzz-network:
+    driver: bridge
+
+volumes:
+  # Existing production data: created by the old stack, reused as-is.
+  postgres_data:
+    name: posclient_postgres_data
+    external: true

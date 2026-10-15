@@ -103,8 +103,20 @@ export interface ProductListFilters {
   tagIds?: number[];
 }
 
+export interface ProductVariantSummary extends Omit<
+  ProductVariantDetailed,
+  "inventory_items"
+> {
+  inventory_items?: {
+    quantity: number;
+    branch?: { id: number; name: string };
+  }[];
+}
+export interface ProductListItem extends Omit<Product, "variants"> {
+  variants: ProductVariantSummary[];
+}
 export interface ProductListResponse {
-  data: Product[];
+  data: ProductListItem[];
   meta: {
     total: number;
     page: number;
@@ -117,9 +129,9 @@ export interface Product {
   id: number;
   name: string;
   code?: string;
-  description?: string;
-  category_id?: number;
-  brand_id?: number;
+  description?: string | null;
+  category_id?: number | null;
+  brand_id?: number | null;
   has_variants: boolean;
   tax_method: string;
   tax: number;
@@ -131,12 +143,12 @@ export interface Product {
   category?: {
     id: number;
     name: string;
-  };
+  } | null;
   brand?: {
     id: number;
     name: string;
-    logo?: string;
-  };
+    logo?: string | null;
+  } | null;
   consumer?: {
     id: number;
     company_name: string;
@@ -168,8 +180,10 @@ export interface Product {
 
 export interface ProductVariantDetailed extends Omit<
   ProductVariant,
-  "serials"
+  "serials" | "attributes" | "warranty_period"
 > {
+  attributes?: ProductAttribute[];
+  warranty_period?: number | null;
   // Unit information
   sale_unit?: {
     id: number;
@@ -187,7 +201,7 @@ export interface ProductVariantDetailed extends Omit<
       id: number;
       name: string;
       is_main: boolean;
-      address?: string;
+      address?: string | null;
     };
     vendor?: {
       id: number;
@@ -195,9 +209,9 @@ export interface ProductVariantDetailed extends Omit<
       contact?: string;
       phone?: string;
       email?: string;
-    };
+    } | null;
     created_at: string;
-    expiry_date?: string;
+    expiry_date?: string | null;
     batch_number?: string;
   }[];
 
@@ -213,7 +227,7 @@ export interface ProductVariantDetailed extends Omit<
     batch?: {
       id: number;
       batch_number: string;
-      expiry_date?: string;
+      expiry_date?: string | null;
     };
   }[];
 
@@ -235,12 +249,12 @@ export interface ProductVariantDetailed extends Omit<
     promotion: {
       id: number;
       name: string;
-      description?: string;
+      description?: string | null;
       discount_type: string;
-      discount_value: number;
+      discount_value: number | string;
       start_date: string;
       end_date?: string;
-      min_purchase?: number;
+      min_purchase?: number | null;
       branch_specific: boolean;
       branches?: {
         branch: {
@@ -260,7 +274,7 @@ export interface ProductVariantDetailed extends Omit<
   sold_serials_count?: number;
   defective_serials_count?: number;
   returned_serials_count?: number;
-  price_change_percentage?: number;
+  price_change_percentage?: number | null;
   has_expiring_inventory?: boolean;
   expiring_inventory_count?: number;
   expiring_inventory?: {

@@ -21,6 +21,35 @@
  */
 
 const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+const CHUNK_RELOAD_KEY = "chunk-reload-at";
+const CHUNK_RELOAD_COOLDOWN = 10_000;
+
+/**
+ * A tab opened before a deploy still references the previous build's hashed
+ * chunks, which no longer exist on the server once the new containers are up.
+ * Opening a not-yet-visited lazy route then fails to import and the page hangs
+ * on its Suspense fallback. Reload once to pick up the current build; the
+ * cooldown stops a reload loop if the chunk is genuinely unreachable (offline).
+ */
+export function registerChunkErrorReload() {
+  window.addEventListener("vite:preloadError", (event) => {
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY)) || 0;
+    } catch {
+      // storage unavailable - still reload, the cooldown is best effort
+    }
+    if (Date.now() - last < CHUNK_RELOAD_COOLDOWN) return;
+
+    event.preventDefault();
+    try {
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+    } catch {
+      // ignore
+    }
+    window.location.reload();
+  });
+}
 
 export function registerSWUpdateHandler() {
   if (!("serviceWorker" in navigator)) return;

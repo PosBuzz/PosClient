@@ -2,20 +2,19 @@
 import { create } from "zustand";
 import axiosInstance from "../api/axiosInstance";
 import { endpoints } from "../api/endpoints";
+import { isIPv4Host } from "../utils/host.utils";
 
 type User = {
   id: number;
   role_id: number;
   email: string;
   name: string;
-  refresh_token: string;
-  created_by_id: number | null;
   company_name: string;
   company_email: string;
-  secondary_email: string;
-  logo: string;
-  phone: string;
-  address: string;
+  secondary_email: string | null;
+  logo: string | null;
+  phone: string | null;
+  address: string | null;
   role: string;
   permissions: string[];
   branches: Array<{
@@ -119,7 +118,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       let currentSubdomain: string | null = null;
 
       // Handle localhost development (tenant.localhost)
-      if (host === "localhost") {
+      if (host === "localhost" || isIPv4Host(host)) {
         needsValidation = false;
       } else if (parts.length === 2 && parts[1].toLowerCase() === "localhost") {
         const candidate = parts[0];

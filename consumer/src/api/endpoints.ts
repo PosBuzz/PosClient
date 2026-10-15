@@ -95,7 +95,6 @@ export const endpoints = {
   inventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
   createInventoryBatch: "/consumer/inventory/batches",
   updateInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
-  deleteInventoryBatch: (id: number) => `/consumer/inventory/batches/${id}`,
 
   // Transfer Management
   inventoryTransfers: "/consumer/inventory/transfers",
@@ -179,15 +178,6 @@ export const endpoints = {
   getReturn: (id: number) => `/consumer/returns/${id}`,
   createReturn: "/consumer/returns",
   downloadReturnPdf: (id: number) => `/consumer/returns/${id}/pdf`,
-
-  // Thermal Printer Management
-  prepareReceipt: (saleId: number) =>
-    `/consumer/thermal-printer/prepare-receipt/${saleId}`,
-  previewReceipt: (saleId: number) =>
-    `/consumer/thermal-printer/preview-receipt/${saleId}`,
-  getTestReceiptData: "/consumer/thermal-printer/test-data",
-  getPrinterSettings: "/consumer/thermal-printer/settings",
-  updatePrinterSettings: "/consumer/thermal-printer/settings",
 
   // Rewards Management
   getRewardsSettings: "/consumer/rewards/settings",

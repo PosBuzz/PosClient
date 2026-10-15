@@ -1,0 +1,45 @@
+{
+  "customer": {
+    "address": null,
+    "birthday": null,
+    "created_at": "2026-03-14T12:00:00.000Z",
+    "customer_type": "regular",
+    "email": null,
+    "id": 1,
+    "name": "C1",
+    "phone": "01700000004"
+  },
+  "recent_sales": [
+    {
+      "branch": {
+        "name": "Branch 1"
+      },
+      "id": 3,
+      "payment_status": "paid",
+      "received_amount": 230,
+      "sale_date": "2026-03-14T10:30:00.000Z",
+      "sale_number": "SAL-20260314-0002",
+      "total_amount": 230
+    }
+  ],
+  "returns": {
+    "count": 0,
+    "exchanged_amount": 0,
+    "last_return_at": null,
+    "refunded_amount": 0
+  },
+  "rewards": {
+    "last_earned_at": "2026-03-14T10:30:00.000Z",
+    "last_redeemed_at": null,
+    "lifetime_earned": 230,
+    "lifetime_redeemed": 0,
+    "total_points": 230
+  },
+  "sales": {
+    "count": 1,
+    "gross_amount": 230,
+    "last_sale_at": "2026-03-14T10:30:00.000Z",
+    "outstanding_amount": 0,
+    "paid_amount": 230
+  }
+}

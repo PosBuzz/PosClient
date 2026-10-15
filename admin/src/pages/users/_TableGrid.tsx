@@ -20,6 +20,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteApi, get } from "../../api/http";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function TableGrid({ model, onClickEdit, roleOptions = [] }) {
   const [searchText, setSearchText] = useState("");
@@ -65,8 +66,8 @@ export default function TableGrid({ model, onClickEdit, roleOptions = [] }) {
       messageApi?.success("Deleted Successfully");
       refetch();
     },
-    onError: () => {
-      messageApi?.error("Something went wrong");
+    onError: (error) => {
+      messageApi?.error(getErrorMessage(error, "Something went wrong"));
     },
   });
 

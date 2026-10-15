@@ -16,7 +16,7 @@ export class ClientAuthGuard extends PassportAuthGuard('jwt-client') {
     super();
   }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  override async canActivate(context: ExecutionContext): Promise<boolean> {
     // First, run passport JWT authentication
     const authenticated = await super.canActivate(context);
 

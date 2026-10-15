@@ -30,6 +30,7 @@ import { PaymentMethod } from "../../types/sale.types";
 import { PAYMENT_METHODS_REQUIRING_PROVIDER } from "../../utils/payment-provider.utils";
 import { formatCurrency } from "../../utils/formatters";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Text } = Typography;
 
@@ -113,9 +114,7 @@ const MakePurchasePayment = () => {
       navigate("/purchase-payments");
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error?.response?.data?.message || "Failed to record payment",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to record payment"));
     },
   });
 

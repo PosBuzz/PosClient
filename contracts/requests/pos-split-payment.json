@@ -1,0 +1,46 @@
+{
+  "method": "POST",
+  "path": "/consumer/sales",
+  "auth": "client",
+  "body": {
+    "branch_id": 1,
+    "average_discount_amount": 0,
+    "shipping_cost": 0,
+    "items": [
+      {
+        "variant_id": 2,
+        "quantity": 1,
+        "unit_price": 250,
+        "sold_unit_price": 250,
+        "average_discount_amount": 0,
+        "special_discount_amount": 0,
+        "promotion_discount_amount": 0,
+        "tax_amount": 32.61,
+        "line_total": 250
+      }
+    ],
+    "price_type": "regular",
+    "discount_amount": 0,
+    "payment_status": "paid",
+    "received_amount": 250,
+    "payments": [
+      {
+        "payment_method": "CASH",
+        "amount": 100,
+        "reference": ""
+      },
+      {
+        "payment_method": "MFS",
+        "amount": 150,
+        "reference": "",
+        "payment_type": "BKASH"
+      }
+    ]
+  },
+  "expect": {
+    "subtotal": "217.39",
+    "tax_amount": "32.61",
+    "discount_amount": "0.00",
+    "total_amount": "250.00"
+  }
+}

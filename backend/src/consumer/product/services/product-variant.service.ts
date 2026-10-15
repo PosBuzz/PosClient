@@ -11,6 +11,8 @@ import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from '../dto/update-product-variant.dto';
 import { Prisma } from '@prisma/client';
 import { errorStack } from '../../../common/utils/error.util';
+import { priceChanged as pricesDiffer } from '../utils/price.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class ProductVariantService {
@@ -181,9 +183,9 @@ export class ProductVariantService {
         return variant;
       }
 
-      return this.findOne(variant.id);
+      return await this.findOne(variant.id);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating product variant for ${productId}`,
         errorStack(error),
@@ -210,8 +212,8 @@ export class ProductVariantService {
         }
       }
 
-      const variant = await this.prisma.productVariant.findUnique({
-        where: { id },
+      const variant = await this.prisma.productVariant.findFirst({
+        where: { id, product: { consumer_id: consumerId } },
         include: {
           sale_unit: true,
           purchase_unit: true,
@@ -251,10 +253,11 @@ export class ProductVariantService {
         (sum, item) => sum + item.quantity,
         0,
       );
-      const isLowStock =
+      const isLowStock = Boolean(
         variant.alert_quantity &&
-        variant.alert_quantity > 0 &&
-        totalStock <= variant.alert_quantity;
+          variant.alert_quantity > 0 &&
+          totalStock <= variant.alert_quantity,
+      );
 
       return {
         ...variant,
@@ -265,7 +268,7 @@ export class ProductVariantService {
         ).length,
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error finding product variant with ID ${id} for consumer ${consumerId}`,
         errorStack(error),
@@ -293,7 +296,7 @@ export class ProductVariantService {
         throw new NotFoundException(`Product variant with ID ${id} not found`);
       }
 
-      const _updatedVariant = await this.prisma.productVariant.update({
+      await this.prisma.productVariant.update({
         where: { id },
         data: {
           name: dto.name,
@@ -312,13 +315,8 @@ export class ProductVariantService {
       });
 
       const priceChanged =
-        (dto.regular_price &&
-          dto.regular_price !== currentVariant.regular_price.toString()) ||
-        (dto.wholesale_price &&
-          dto.wholesale_price !==
-            (currentVariant.wholesale_price
-              ? currentVariant.wholesale_price.toString()
-              : undefined));
+        pricesDiffer(dto.regular_price, currentVariant.regular_price) ||
+        pricesDiffer(dto.wholesale_price, currentVariant.wholesale_price);
 
       if (priceChanged) {
         await this.prisma.priceHistory.create({
@@ -377,8 +375,9 @@ export class ProductVariantService {
           if (serialsWithId.length > 0) {
             await Promise.all(
               serialsWithId.map((serialDto) =>
-                this.prisma.productSerial.update({
-                  where: { id: serialDto.id },
+                this.prisma.productSerial.updateMany({
+                  // Only this variant's own serials may be rewritten
+                  where: { id: serialDto.id, variant_id: id },
                   data: {
                     serial_number: serialDto.serial_number,
                     status: serialDto.status || 'available',
@@ -434,17 +433,9 @@ export class ProductVariantService {
         }
       }
 
-      const _variant = await this.prisma.productVariant.findUnique({
-        where: { id },
-        select: {
-          product_id: true,
-          product: { select: { consumer_id: true } },
-        },
-      });
-
-      return this.findOne(id);
+      return await this.findOne(id);
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating product variant with ID ${id}`,
         errorStack(error),
@@ -476,7 +467,7 @@ export class ProductVariantService {
 
       return { success: true, message: 'Variant deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error deleting product variant with ID ${id}`,
         errorStack(error),

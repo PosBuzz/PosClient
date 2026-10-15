@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/consumer/payments/make-payment",
+  "auth": "client",
+  "body": {
+    "sale_id": 4,
+    "payments": [
+      {
+        "payment_method": "CASH",
+        "amount": 20,
+        "reference": ""
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuthStore();
@@ -27,9 +28,7 @@ export default function LoginPage() {
         (location.state as { from?: Location })?.from?.pathname || "/";
       navigate(from);
     } catch (err) {
-      messageApi?.error(
-        (err as any)?.response?.data?.message || "Login failed",
-      );
+      messageApi?.error(getErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

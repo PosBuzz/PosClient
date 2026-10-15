@@ -16,7 +16,7 @@ export function errorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
 
   try {
-    return JSON.stringify(error);
+    return JSON.stringify(error) ?? String(error);
   } catch {
     return String(error);
   }

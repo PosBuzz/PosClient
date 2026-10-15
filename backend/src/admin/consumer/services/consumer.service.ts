@@ -13,6 +13,7 @@ import { CreateConsumerDto } from '../dto/create-consumer.dto';
 import { UpdateConsumerDto } from '../dto/update-consumer.dto';
 import { ReceiptPdfSettingService } from 'src/consumer/receipt-pdf/services/receipt-pdf-setting.service';
 import { errorStack } from '../../../common/utils/error.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class ConsumerService {
@@ -136,7 +137,7 @@ export class ConsumerService {
         };
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error creating consumer for ${data.email}`,
         errorStack(error),
@@ -214,7 +215,7 @@ export class ConsumerService {
         message: 'Consumer, admin user, and permissions updated successfully',
       };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error updating consumer for ${consumerId}`,
         errorStack(error),
@@ -298,6 +299,9 @@ export class ConsumerService {
         };
       });
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error('Fetching consumers failed', errorStack(error));
 
       throw new HttpException(
@@ -333,6 +337,9 @@ export class ConsumerService {
 
       return { success: true, soft_deleted: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Deleting consumer ${id} failed`, errorStack(error));
 
       throw new HttpException(
@@ -360,6 +367,9 @@ export class ConsumerService {
 
       return { success: true, restored: true };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(`Restoring consumer ${id} failed`, errorStack(error));
 
       throw new HttpException(
@@ -377,6 +387,9 @@ export class ConsumerService {
       });
       return { available: !exists };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Error checking subdomain availability for ${value}`,
         errorStack(error),

@@ -118,7 +118,7 @@ const AppLayout = () => {
               />
             </Tooltip>
             <Tooltip title="Logout">
-              <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
+              <Button type="text" data-testid="logout-button" icon={<LogoutOutlined />} onClick={logout} />
             </Tooltip>
           </div>
         </Header>

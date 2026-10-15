@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 import {
   Table,
   Tag,
@@ -27,6 +28,7 @@ import { Sale } from "../../types/sale.types";
 import { EyeOutlined, SyncOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { setPageTitle } from "../../utils/setPageTitle";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -76,8 +78,10 @@ const OnlineOrders = () => {
       link.download = `online-delivery-slip-${order.sale_number}.pdf`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch {
-      messageApi?.error("Failed to generate online delivery slip");
+    } catch (error) {
+      messageApi?.error(
+        getErrorMessage(error, "Failed to generate online delivery slip"),
+      );
     } finally {
       setPrintingOrderId(null);
     }
@@ -157,6 +161,7 @@ const OnlineOrders = () => {
         values.delivery_partner?.trim() || null,
       );
       queryClient.invalidateQueries({ queryKey: ["online-order-stats"] });
+      invalidateSalesReports(queryClient);
 
       messageApi?.success("Order updated successfully");
       setStatusModalVisible(false);
@@ -164,7 +169,9 @@ const OnlineOrders = () => {
       form.resetFields();
       refetch();
     } catch (error: any) {
-      messageApi?.error(error.message || "Failed to update order status");
+      messageApi?.error(
+        getErrorMessage(error, "Failed to update order status"),
+      );
     } finally {
       setUpdatingStatus(false);
     }

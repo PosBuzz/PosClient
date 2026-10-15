@@ -25,6 +25,7 @@ describe('vendor payment guards', () => {
       inventoryBatch: {
         findFirst: jest.fn().mockResolvedValue({ ...batch, ...overrides }),
       },
+      inventoryAuditLog: { groupBy: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn(async (callback) => callback(tx)),
     };
     return { service: new PurchasePaymentsService(prisma as any), prisma, tx };
@@ -55,7 +56,7 @@ describe('vendor payment guards', () => {
     const { service, tx } = setup();
     const result = await service.makePayment(payment, 7);
     expect(tx.inventoryBatch.updateMany).toHaveBeenCalledWith({
-      where: { id: 1, quantity: 2, paid_amount: '0', cost_price: '10' },
+      where: { id: 1, paid_amount: '0', cost_price: '10' },
       data: { paid_amount: 5 },
     });
     expect(tx.purchasePayment.create).toHaveBeenCalledTimes(1);

@@ -1,4 +1,4 @@
-import { PaymentMethod, PaymentType } from "./sale.types";
+import { PaymentMethod, PaymentType, SaleResponseItem } from "./sale.types";
 
 export interface ReturnItem {
   id?: number;
@@ -9,9 +9,9 @@ export interface ReturnItem {
   batch_id?: number;
   batch_number?: string;
   quantity: number;
-  refund_amount: number;
-  unit_price?: number;
-  line_total?: number;
+  refund_amount?: number | string;
+  unit_price?: number | string;
+  line_total?: number | string;
   unit_name?: string;
   image?: string;
   // Nested relations from backend
@@ -32,9 +32,9 @@ export interface ReturnItem {
 export interface ReturnPayment {
   id?: number;
   payment_method: PaymentMethod;
-  amount: number;
-  reference?: string;
-  notes?: string;
+  amount: number | string;
+  reference?: string | null;
+  notes?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -47,8 +47,8 @@ export interface ReturnExchange {
   batch_id?: number;
   batch_number?: string;
   quantity: number;
-  unit_price: number;
-  line_total: number;
+  unit_price: number | string;
+  line_total: number | string;
   unit_name?: string;
   image?: string;
   // Nested relations from backend
@@ -70,7 +70,7 @@ export interface Return {
   id: number;
   return_number: string;
   original_sale_id: number;
-  exchange_sale_id?: number;
+  exchange_sale_id?: number | null;
   consumer_id?: number;
   branch_id: number;
   branch_name?: string;
@@ -85,33 +85,21 @@ export interface Return {
     name: string;
   };
   return_date: string;
-  total_refund: number;
-  total_exchange: number;
-  reason?: string;
-  notes?: string;
+  total_refund: number | string;
+  total_exchange: number | string;
+  reason?: string | null;
+  notes?: string | null;
   original_sale?: {
     id: number;
     sale_number: string;
-    customer_name?: string;
-    total_amount: number;
-    items: Array<{
-      id: number;
-      variant_id: number;
-      variant_name: string;
-      product_name: string;
-      quantity: number;
-      unit_price: number;
-      line_total: number;
-      batch_id?: number;
-      batch_number?: string;
-      unit_name?: string;
-      image?: string;
-    }>;
+    customer_name?: string | null;
+    total_amount?: number | string;
+    items?: SaleResponseItem[];
   };
   exchange_sale?: {
     id: number;
     sale_number: string;
-  };
+  } | null;
   items: ReturnItem[];
   payments: ReturnPayment[];
   exchanges: ReturnExchange[];
@@ -192,48 +180,35 @@ export interface ReturnListResponse {
 export interface SaleForReturn {
   id: number;
   sale_number: string;
-  customer_name?: string;
-  customer_phone?: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
   sale_date: string;
-  total_amount: number;
+  total_amount: number | string;
   branch_id: number;
   branch_name?: string;
-  subtotal?: number;
-  discount_amount?: number;
-  shipping_cost?: number;
+  subtotal?: number | string;
+  discount_amount?: number | string;
+  shipping_cost?: number | string;
   payments?: Array<{
     payment_method: string;
-    amount: number;
+    amount: number | string;
   }>;
   return_summary?: {
     total_returned: number;
     total_refunded: number;
     total_exchanged: number;
     total_already_returned: number;
-    available_amount: number;
+    available_amount: number | string;
     shipping_refunded?: number;
     available_shipping_refund?: number;
     returns: Array<{
       id: number;
       return_number: string;
       return_date: string;
-      total_refund: number;
-      total_exchange: number;
-      reason?: string;
+      total_refund: number | string;
+      total_exchange: number | string;
+      reason?: string | null;
     }>;
   };
-  items: Array<{
-    id: number;
-    variant_id: number;
-    variant_name: string;
-    product_name: string;
-    quantity: number;
-    unit_price: number;
-    line_total: number;
-    batch_id?: number;
-    batch_number?: string;
-    unit_name?: string;
-    image?: string;
-    available_for_return: number; // Calculated field: original quantity - already returned
-  }>;
+  items: Array<SaleResponseItem & { id: number; available_for_return: number }>;
 }

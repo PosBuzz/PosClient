@@ -70,12 +70,13 @@ async def startup_event():
         logger.info(f"Environment: {settings.ENVIRONMENT}")
         logger.info("=" * 50)
         
-        # Connect to RabbitMQ
-        await rabbitmq_manager.connect()
-
-        # Register message handlers
-        rabbitmq_manager.register_handler(
-            "generate_description", handle_generate_description)
+        # RabbitMQ is optional (RABBITMQ_ENABLED); the HTTP endpoint works without it
+        if settings.RABBITMQ_ENABLED:
+            await rabbitmq_manager.connect()
+            rabbitmq_manager.register_handler(
+                "generate_description", handle_generate_description)
+        else:
+            logger.info("RabbitMQ disabled; serving descriptions over HTTP only")
 
         # Initialize all services
         await description_cache.connect()
@@ -107,4 +108,5 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up resources on shutdown"""
-    await rabbitmq_manager.close()
+    if settings.RABBITMQ_ENABLED:
+        await rabbitmq_manager.close()

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { Algorithm } from 'jsonwebtoken';
@@ -10,7 +10,7 @@ import { JwtPayload } from './jwt-payload.interface';
 export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       jwtFromRequest: (req: { cookies: { [x: string]: any } }) =>
@@ -38,10 +38,12 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       },
     });
 
-    if (!admin) throw new Error('SuperAdmin not found');
+    // A plain Error would surface as a 500; an unknown account is a 401
+    if (!admin) throw new UnauthorizedException('SuperAdmin not found');
 
     const {
       password: _password,
+      refresh_token: _refreshToken,
       created_at: _created_at,
       updated_at: _updated_at,
       ...rest

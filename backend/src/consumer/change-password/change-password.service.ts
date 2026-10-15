@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcryptjs from 'bcryptjs';
 import { errorStack } from '../../common/utils/error.util';
+import { isClientError } from '../../common/errors/client-error';
 
 @Injectable()
 export class ChangePasswordService {
@@ -39,13 +40,13 @@ export class ChangePasswordService {
       const hashedNewPassword = await bcryptjs.hash(new_password, 10);
 
       // Update the user's password
-      return this.prisma.user.update({
+      return await this.prisma.user.update({
         where: { id },
         data: { password: hashedNewPassword },
         select: { id: true, email: true, name: true },
       });
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      if (isClientError(error)) throw error;
       this.logger.error(
         `Error changing password with ID ${id}`,
         errorStack(error),

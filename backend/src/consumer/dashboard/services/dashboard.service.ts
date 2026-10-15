@@ -13,6 +13,8 @@ import {
   SalesTrendPoint,
 } from '../dto/dashboard-analytics.dto';
 import { InventoryService } from '../../inventory/services/inventory.service';
+import { businessTimeZone } from '../../../common/utils/business-time.util';
+import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
 export class DashboardService {
@@ -30,56 +32,57 @@ export class DashboardService {
     try {
       const now = new Date();
 
+      // Day/week/month windows in business-local time (see business-time.util)
       const todayStart = new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          0,
-          0,
-          0,
-          0,
-        ),
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+        0,
       );
 
       const todayEnd = new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          23,
-          59,
-          59,
-          999,
-        ),
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999,
       );
 
-      // Saturday–Friday week window in UTC.
-      const weekStart = new Date(now);
-      const dayOfWeek = weekStart.getUTCDay(); // 0=Sun … 6=Sat
+      // Saturday–Friday week window.
+      const weekStart = new Date(todayStart);
+      const dayOfWeek = weekStart.getDay(); // 0=Sun … 6=Sat
       // Distance back to most-recent Saturday
       const saturdayOffset = dayOfWeek === 6 ? 0 : -(dayOfWeek + 1);
-      weekStart.setUTCDate(weekStart.getUTCDate() + saturdayOffset);
-      weekStart.setUTCHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() + saturdayOffset);
+      weekStart.setHours(0, 0, 0, 0);
 
       const weekEnd = new Date(weekStart);
-      weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
-      weekEnd.setUTCHours(23, 59, 59, 999);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
 
       // Monthly date range (1st of current month to end of current month)
       const monthStart = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0,
       );
       const monthEnd = new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999,
-        ),
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
       );
 
       // Helper function to get date range based on period
@@ -102,8 +105,11 @@ export class DashboardService {
       const returnPaymentDateRange = getDateRange(returnPaymentPeriod);
       const topProductsDateRange = getDateRange(topProductsPeriod);
 
+      // Timestamps are stored in UTC; group them by business-local day
+      const tz = businessTimeZone();
+
       const expiringUntil = new Date(todayEnd);
-      expiringUntil.setUTCDate(expiringUntil.getUTCDate() + 30);
+      expiringUntil.setDate(expiringUntil.getDate() + 30);
 
       const branchFilter = query.branch_id
         ? { branch_id: query.branch_id }
@@ -148,20 +154,6 @@ export class DashboardService {
         variant: { product: { consumer_id: consumerId } },
         expiry_date: { gte: todayStart, lte: expiringUntil },
         quantity: { gt: 0 },
-        ...branchFilter,
-      };
-
-      const paymentWhere = {
-        ...baseWhere,
-        sale_date: { gte: paymentDateRange.start, lte: paymentDateRange.end },
-      };
-
-      const returnPaymentWhere = {
-        consumer_id: consumerId,
-        return_date: {
-          gte: returnPaymentDateRange.start,
-          lte: returnPaymentDateRange.end,
-        },
         ...branchFilter,
       };
 
@@ -237,13 +229,13 @@ export class DashboardService {
           Array<{ date: string; return_count: bigint; total_refund: number }>
         >`
           SELECT
-            DATE(return_date)::text        AS date,
+            DATE((return_date AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::text AS date,
             COUNT(*)                       AS return_count,
             COALESCE(SUM(total_refund), 0) AS total_refund
           FROM "returns"
           WHERE ${rawReturnWhereClause}
-          GROUP BY DATE(return_date)
-          ORDER BY DATE(return_date) ASC
+          GROUP BY 1
+          ORDER BY 1 ASC
         `,
 
         // DB-side groupBy on date string avoids pulling every row
@@ -251,13 +243,13 @@ export class DashboardService {
           Array<{ date: string; sales_count: bigint; total_amount: number }>
         >`
           SELECT
-            DATE(sale_date)::text          AS date,
+            DATE((sale_date AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::text AS date,
             COUNT(*)                       AS sales_count,
             COALESCE(SUM(total_amount), 0) AS total_amount
           FROM "sales"
           WHERE ${rawWhereClause}
-          GROUP BY DATE(sale_date)
-          ORDER BY DATE(sale_date) ASC
+          GROUP BY 1
+          ORDER BY 1 ASC
         `,
 
         this.prisma.salePayment.groupBy({
@@ -484,6 +476,9 @@ export class DashboardService {
         expiring_items: expiringItems,
       };
     } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
       if (error instanceof ForbiddenException) throw error;
 
       this.logger.error(

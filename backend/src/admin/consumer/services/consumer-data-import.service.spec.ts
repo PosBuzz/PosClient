@@ -29,7 +29,7 @@ describe('ConsumerDataImportService', () => {
     $transaction: jest.fn(),
   });
 
-  it('rejects importing an account into itself', async () => {
+  it('{ConsumerDataImportService.preview} rejects importing an account into itself', async () => {
     const prisma = makePrisma();
     const service = new ConsumerDataImportService(prisma as any);
 
@@ -43,7 +43,7 @@ describe('ConsumerDataImportService', () => {
     expect(prisma.consumer.findFirst).not.toHaveBeenCalled();
   });
 
-  it('requires the destination subdomain before creating an audit job', async () => {
+  it('{ConsumerDataImportService.run} requires the destination subdomain before creating an audit job', async () => {
     const prisma = makePrisma();
     prisma.consumer.findFirst
       .mockResolvedValueOnce(activeSource)
@@ -62,7 +62,7 @@ describe('ConsumerDataImportService', () => {
     expect(prisma.consumerDataImport.create).not.toHaveBeenCalled();
   });
 
-  it('records a failed all-or-nothing transaction in import history', async () => {
+  it('{ConsumerDataImportService.run} records a failed all-or-nothing transaction in import history', async () => {
     const prisma = makePrisma();
     prisma.consumer.findFirst
       .mockResolvedValueOnce(activeSource)

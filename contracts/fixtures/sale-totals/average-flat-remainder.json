@@ -1,0 +1,51 @@
+{
+  "id": "X-TOT-003",
+  "description": "flat 10 over three 10.00 lines: shares 3.33/3.33/3.34",
+  "variants": [
+    {
+      "key": "A",
+      "price": 10,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "B",
+      "price": 10,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "C",
+      "price": 10,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "A",
+      "qty": 1
+    },
+    {
+      "variant": "B",
+      "qty": 1
+    },
+    {
+      "variant": "C",
+      "qty": 1
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 10
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [],
+  "expected": {
+    "subtotal": "30.00",
+    "tax_amount": "0.00",
+    "discount_amount": "10.00",
+    "total_amount": "20.00"
+  }
+}

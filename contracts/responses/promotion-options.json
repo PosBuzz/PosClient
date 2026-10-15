@@ -1,0 +1,42 @@
+{
+  "branches": [
+    {
+      "id": 1,
+      "name": "Branch 1"
+    },
+    {
+      "id": 2,
+      "name": "Branch 2"
+    }
+  ],
+  "brands": [],
+  "variants": [
+    {
+      "brand_id": null,
+      "id": 1,
+      "name": "Default",
+      "product_id": 1,
+      "product_name": "Product 5",
+      "regular_price": 100,
+      "sku": "SKU8"
+    },
+    {
+      "brand_id": null,
+      "id": 2,
+      "name": "Default",
+      "product_id": 2,
+      "product_name": "Product 12",
+      "regular_price": 250,
+      "sku": "SKU15"
+    },
+    {
+      "brand_id": null,
+      "id": 3,
+      "name": "Default",
+      "product_id": 3,
+      "product_name": "Product 19",
+      "regular_price": 40,
+      "sku": "SKU22"
+    }
+  ]
+}

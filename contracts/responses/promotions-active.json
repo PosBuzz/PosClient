@@ -1,0 +1,45 @@
+[
+  {
+    "auto_apply": false,
+    "branch_ids": [],
+    "branch_specific": false,
+    "branches": [],
+    "brand": null,
+    "brand_id": null,
+    "cap_discount_amount": null,
+    "cap_quantity": null,
+    "created_at": "2026-03-14T12:00:00.000Z",
+    "customer_usage_daily_reset": false,
+    "customer_usage_limit": null,
+    "description": null,
+    "discount_type": "percentage",
+    "discount_value": 10,
+    "end_date": "2040-01-01T00:00:00.000Z",
+    "id": 1,
+    "is_active": true,
+    "limit_per_customer": false,
+    "max_discount_amount": null,
+    "member_only": false,
+    "min_purchase": null,
+    "min_quantity": 1,
+    "name": "Promotion 26",
+    "products": [
+      {
+        "product_id": 1,
+        "product_name": "Product 5",
+        "variant_id": 1,
+        "variant_name": "Default"
+      }
+    ],
+    "sales_count": 1,
+    "scope": "SINGLE_PRODUCT",
+    "start_date": "2020-01-01T00:00:00.000Z",
+    "total_discount_given": 10,
+    "total_discounted_sales": 95,
+    "updated_at": "2026-03-14T12:00:00.000Z",
+    "usage_limit": null,
+    "variant_ids": [
+      1
+    ]
+  }
+]

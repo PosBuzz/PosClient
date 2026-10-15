@@ -1,0 +1,51 @@
+{
+  "id": "X-TOT-011",
+  "description": "promotion 20 on P1, special 10 on P2, flat average 15 (10.00/5.00)",
+  "variants": [
+    {
+      "key": "P1",
+      "price": 100,
+      "taxPct": 10,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "P2",
+      "price": 50,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "P1",
+      "qty": 2
+    },
+    {
+      "variant": "P2",
+      "qty": 2
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 15
+  },
+  "specialDiscounts": {
+    "P2": 10
+  },
+  "shipping": 0,
+  "promotions": [
+    {
+      "id": 1,
+      "scope": "SINGLE_PRODUCT",
+      "products": [
+        "P1"
+      ]
+    }
+  ],
+  "expected": {
+    "subtotal": "300.00",
+    "tax_amount": "20.00",
+    "discount_amount": "45.00",
+    "total_amount": "275.00"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "X-TOT-002",
+  "description": "EXCL 10% (110/10) + INCL 15% (115/15) + untaxed 2x50: subtotal 100+100+100, tax 25",
+  "variants": [
+    {
+      "key": "A",
+      "price": 100,
+      "taxPct": 10,
+      "method": "EXCLUSIVE"
+    },
+    {
+      "key": "B",
+      "price": 115,
+      "taxPct": 15,
+      "method": "INCLUSIVE"
+    },
+    {
+      "key": "C",
+      "price": 50,
+      "taxPct": 0,
+      "method": "EXCLUSIVE"
+    }
+  ],
+  "lines": [
+    {
+      "variant": "A",
+      "qty": 1
+    },
+    {
+      "variant": "B",
+      "qty": 1
+    },
+    {
+      "variant": "C",
+      "qty": 2
+    }
+  ],
+  "averageDiscount": {
+    "type": "FLAT",
+    "amount": 0
+  },
+  "specialDiscounts": {},
+  "shipping": 0,
+  "promotions": [],
+  "expected": {
+    "subtotal": "300.00",
+    "tax_amount": "25.00",
+    "discount_amount": "0.00",
+    "total_amount": "325.00"
+  }
+}

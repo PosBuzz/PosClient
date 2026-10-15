@@ -1,0 +1,61 @@
+{
+  "user": {
+    "address": null,
+    "branches": [
+      {
+        "id": 1,
+        "is_main": true,
+        "is_warehouse": false,
+        "name": "Branch 1"
+      },
+      {
+        "id": 2,
+        "is_main": false,
+        "is_warehouse": false,
+        "name": "Branch 2"
+      }
+    ],
+    "company_email": "tenant1@example.test",
+    "company_name": "Shop 1",
+    "consumer_id": 1,
+    "consumer_subdomain": "tenant1",
+    "cv_url": null,
+    "date_of_birth": null,
+    "date_of_joining": null,
+    "email": "admin1@example.test",
+    "employee_id": null,
+    "employment_status": "ACTIVE",
+    "id": 1,
+    "logo": null,
+    "name": "Tenant Admin",
+    "nid_document_url": null,
+    "nid_number": null,
+    "permissions": [
+      "profile",
+      "users",
+      "add_product",
+      "edit_product",
+      "view_product",
+      "delete_product",
+      "branches",
+      "vendors",
+      "customers",
+      "inventory_batches",
+      "inventory_transfer",
+      "inventory_adjustment",
+      "sales",
+      "business_insights",
+      "quotations",
+      "companyProfile",
+      "product_audit",
+      "receipt_settings",
+      "support"
+    ],
+    "phone": null,
+    "photo_url": null,
+    "plan_id": 1,
+    "role": "Admin",
+    "role_id": 1,
+    "secondary_email": null
+  }
+}

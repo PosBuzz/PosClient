@@ -178,7 +178,7 @@ export default function PaymentMethodSection({
                   size={size}
                   value={payment.amount}
                   onChange={(value) =>
-                    updatePayment(index, "amount", value || 0)
+                    updatePayment(index, "amount", value as number)
                   }
                   min={0}
                   precision={2}

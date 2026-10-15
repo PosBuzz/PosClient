@@ -1,0 +1,17 @@
+title = "PosClient gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "D-010: committed .env.docker values were rotated on the VM (KI-012). Test-only values say test/e2e/not-for-prod."
+paths = [
+  '''(^|/)\.env\.docker$''',
+  '''^backend/test/setup/test-env\.ts$''',
+  '''^e2e/\.env\.e2e$''',
+  # Placeholder values in examples and in the testing plan documents.
+  '''(^|/)\.env(\.docker)?\.example$''',
+  '''^backend/README\.md$''',
+  '''^docs/testing/phase-X2-full-stack-e2e\.md$''',
+  '''^backend/docs/testing/phase-1-test-harness\.md$''',
+]

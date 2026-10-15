@@ -10,6 +10,7 @@ import { deleteApi, get } from "../../api/crud-api";
 import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
+import { getErrorMessage } from "../../utils/api-error";
 
 export default function TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
@@ -35,9 +36,7 @@ export default function TableGrid({ onClickEdit }) {
       refetch();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to delete branch",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to delete branch"));
     },
   });
 

@@ -1,0 +1,18 @@
+{
+  "consumer_id": 1,
+  "created_at": "2026-03-14T12:00:00.000Z",
+  "customer": {
+    "email": null,
+    "id": 1,
+    "name": "C1",
+    "phone": "01700000004"
+  },
+  "customer_id": 1,
+  "id": 1,
+  "last_earned_at": "2026-03-14T10:30:00.000Z",
+  "last_redeemed_at": null,
+  "lifetime_earned": 230,
+  "lifetime_redeemed": 0,
+  "total_points": 230,
+  "updated_at": "2026-03-14T12:00:00.000Z"
+}

@@ -1,6 +1,6 @@
 // sales-pdf.service.ts
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { ReceiptPdfSettingService } from './receipt-pdf-setting.service';
 import {
@@ -17,7 +17,7 @@ import {
 
 @Injectable()
 export class SalesPdfService {
-  private readonly logger = new Logger(SalesPdfService.name);
+  // private readonly logger = new Logger(SalesPdfService.name);
 
   constructor(
     private readonly receiptPdfService: ReceiptPdfService,

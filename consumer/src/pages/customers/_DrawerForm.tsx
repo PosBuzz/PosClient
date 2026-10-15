@@ -7,6 +7,7 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys } from "../../constants/queryKeys";
 import { Customer, CustomerType } from "../../types/customer.types";
+import { getErrorMessage } from "../../utils/api-error";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -40,9 +41,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to create customer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to create customer"));
     },
   });
 
@@ -56,9 +55,7 @@ export default function DrawerForm({
       onSubmitSuccess();
     },
     onError: (error: any) => {
-      messageApi?.error(
-        error.response?.data?.message || "Failed to update customer",
-      );
+      messageApi?.error(getErrorMessage(error, "Failed to update customer"));
     },
   });
 

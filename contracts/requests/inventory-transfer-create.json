@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/consumer/inventory/transfers",
+  "auth": "client",
+  "body": {
+    "source_branch_id": 1,
+    "destination_branch_id": 2,
+    "items": [
+      {
+        "batch_id": 1,
+        "quantity": 1
+      }
+    ]
+  }
+}
