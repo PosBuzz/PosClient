@@ -14,6 +14,18 @@ services:
     image: postgres:17-alpine
     container_name: posbuzz-postgres
     restart: unless-stopped
+    # Modest tuning for a 16 GB host shared with the apps, and a slow-query log
+    # (anything over 500 ms) so slow pages can be traced to a statement.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - log_min_duration_statement=500
     environment:
       POSTGRES_DB: posbuzz
       POSTGRES_USER: postgres
