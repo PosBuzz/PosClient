@@ -51,3 +51,9 @@ test('[X-DEP-003] a newly introduced vulnerable parent is blocked', () => {
   f.report.vulnerabilities['react-router-dom'] = { severity: 'high', nodes: ['node_modules/react-router-dom'], via: ['react-router'] };
   assert.ok(evaluateAudit(f).problems.length);
 });
+test('[X-DEP-004] portfolio is audited, clean passes, and no exception applies to it', () => {
+  const f = fixture(); f.app = 'portfolio';
+  assert.ok(evaluateAudit(f).problems.length, 'the consumer react-router exception must not cover portfolio');
+  const clean = { app: 'portfolio', status: 0, today: '2026-10-15', source: '', lock: { lockfileVersion: 3, packages: {} }, exceptions: [], report: { auditReportVersion: 2, metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 } }, vulnerabilities: {} } };
+  assert.equal(evaluateAudit(clean).problems.length, 0);
+});
