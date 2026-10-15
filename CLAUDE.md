@@ -56,4 +56,4 @@ then `DECISIONS.md` (D-xxx), `KNOWN-ISSUES.md` (KI-xxx) and `OWNER-ACTIONS.md`.
 - `nightly.yml` is not on `main` until the PR merges, so it cannot be dispatched with `gh workflow run`; to test it, push a throwaway branch with a temporary `push` trigger and delete it afterwards. It skips on schedule when there are no commits in the last 25 hours.
 - Do not push repeatedly while CI runs: a new push cancels the run in progress. Mutation and E2E jobs are expensive; the GitHub Actions budget has run out once (2026-10-14).
 - E2E (`e2e/`) logs in against a 5/min throttle; the login budget is persisted under `e2e/.cache`. Do not change the production throttle.
-- Deploy: `pull.sh` pulls the latest `main` (accepted for now); the deploy workflow requires a green `All checks` on the commit. Deploy proofs wait for the owner.
+- Deploy: pushing to `main` runs CI, then `.github/workflows/deploy.yml` builds images to GHCR and rolls them out to the VPS (`deploy/README.md`); it only ships commits with a green `All checks`. Deploy proofs wait for the owner.
