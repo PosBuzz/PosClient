@@ -79,7 +79,7 @@ jobs:
       # Bump the key prefix (v2) whenever saved results are invalid: Stryker reuses every non-killed status, errors
       # included, and harness fixes do not invalidate them (v1 held KI-108's no-database RuntimeErrors).
       - name: Restore incremental mutation results
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
           key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
@@ -100,7 +100,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=3072
       - name: Save incremental mutation results
         if: always() && hashFiles(format('backend/reports/stryker/domain-incremental-shard-{0}.json', matrix.shard)) != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
           key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}

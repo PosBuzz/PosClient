@@ -438,7 +438,7 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - if: steps.changes.outputs.mutation == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             consumer/reports/stryker/*.json
@@ -500,7 +500,7 @@ jobs:
         working-directory: .
         run: git diff --exit-code HEAD -- backend/package-lock.json consumer/package-lock.json admin/package-lock.json
       - if: steps.changes.outputs.mutation == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: backend/reports/stryker/unit-incremental.json
           key: stryker-backend-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
