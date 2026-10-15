@@ -1,8 +1,8 @@
-# Production stack. Runs on the VPS from /opt/posbuzz; images are built in CI
+# Stack for BOTH environments (production in /opt/posbuzz, staging in
+# /opt/posbuzz-staging). Defaults below are production; staging overrides them
+# in its env/stack.env (CN, PORT_*, PG_VOLUME). Runs on the VPS; images are built in CI
 # and pulled from GHCR, so the server never builds. Every published port is
 # bound to 127.0.0.1: host nginx is the only public entry point.
-name: posclient
-
 x-logging: &logging
   driver: json-file
   options:
@@ -12,8 +12,20 @@ x-logging: &logging
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: posbuzz-postgres
+    container_name: ${CN:-posbuzz}-postgres
     restart: unless-stopped
+    # Modest tuning for a 16 GB host shared with the apps, and a slow-query log
+    # (anything over 500 ms) so slow pages can be traced to a statement.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - log_min_duration_statement=500
     environment:
       POSTGRES_DB: posbuzz
       POSTGRES_USER: postgres
@@ -32,7 +44,7 @@ services:
 
   backend:
     image: ${IMAGE_PREFIX:?}-backend:${TAG:?}
-    container_name: posbuzz-backend
+    container_name: ${CN:-posbuzz}-backend
     restart: unless-stopped
     env_file: [./env/backend.env]
     environment:
@@ -43,7 +55,7 @@ services:
       - ./data/receipts:/app/receipts
       - ./data/temp:/app/temp
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${PORT_BACKEND:-8000}:8000"
     depends_on:
       postgres: { condition: service_healthy }
     command: sh -c "npx prisma migrate deploy && npm run start:prod"
@@ -58,11 +70,11 @@ services:
     networks: [posbuzz-network]
 
   admin:
-    image: ${IMAGE_PREFIX}-admin:${TAG}
-    container_name: posbuzz-admin
+    image: ${IMAGE_PREFIX}-admin:${FRONT_TAG:?}
+    container_name: ${CN:-posbuzz}-admin
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:80"
+      - "127.0.0.1:${PORT_ADMIN:-3001}:80"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 15s
@@ -73,11 +85,11 @@ services:
     networks: [posbuzz-network]
 
   consumer:
-    image: ${IMAGE_PREFIX}-consumer:${TAG}
-    container_name: posbuzz-consumer
+    image: ${IMAGE_PREFIX}-consumer:${FRONT_TAG:?}
+    container_name: ${CN:-posbuzz}-consumer
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:${PORT_CONSUMER:-3000}:80"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 15s
@@ -89,11 +101,11 @@ services:
 
   portfolio:
     image: ${IMAGE_PREFIX}-portfolio:${TAG}
-    container_name: posbuzz-portfolio
+    container_name: ${CN:-posbuzz}-portfolio
     restart: unless-stopped
     env_file: [./env/portfolio.env]
     ports:
-      - "127.0.0.1:3002:3000"
+      - "127.0.0.1:${PORT_PORTFOLIO:-3002}:3000"
     depends_on:
       backend: { condition: service_healthy }
     # The image's own HEALTHCHECK probes "localhost", which resolves to ::1
@@ -115,5 +127,5 @@ networks:
 volumes:
   # Existing production data: created by the old stack, reused as-is.
   postgres_data:
-    name: posclient_postgres_data
+    name: ${PG_VOLUME:-posclient_postgres_data}
     external: true
