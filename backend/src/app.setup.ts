@@ -35,6 +35,26 @@ function createCsrfToken(secret: string): { token: string; signature: string } {
   };
 }
 
+/**
+ * Whether a browser Origin header matches the configured allow-list: an exact
+ * match, or a wildcard entry such as `https://*.example.com` where `*` stands for
+ * exactly one DNS label.
+ */
+export function isOriginAllowed(
+  origin: string,
+  allowedOrigins: string[],
+): boolean {
+  return allowedOrigins.some((allowedOrigin) => {
+    if (allowedOrigin === origin) return true;
+    if (!allowedOrigin.includes('*')) return false;
+    // Escape special regex characters except *, then let * match one label.
+    const pattern = allowedOrigin
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '[a-zA-Z0-9-]+');
+    return new RegExp(`^${pattern}$`).test(origin);
+  });
+}
+
 export function configureApp(
   app: NestExpressApplication,
   configService: ConfigService,
@@ -62,42 +82,34 @@ export function configureApp(
     }),
   );
 
+  // A browser origin that is not on the allow-list gets a clean 403 in the standard
+  // error shape (before this, the cors library turned it into an unexplained 500).
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    if (origin && !isOriginAllowed(origin, configService.corsOrigins)) {
+      logger.warn(`CORS: Origin ${origin} not allowed`);
+      res.status(403).json({
+        statusCode: 403,
+        message: 'Origin not allowed.',
+        error: 'Forbidden',
+      });
+      return;
+    }
+    next();
+  });
+
   // Dynamic CORS Configuration for multi-tenant subdomains
   const options = {
     origin: (
       origin: string,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Check if origin matches allowed patterns
-      const allowedOrigins = configService.corsOrigins;
-      const isAllowed = allowedOrigins.some((allowedOrigin) => {
-        // Exact match
-        if (allowedOrigin === origin) return true;
-
-        // Wildcard subdomain support (e.g., *.example.com or https://*.example.com)
-        if (allowedOrigin.includes('*')) {
-          // Escape special regex characters except *
-          const pattern = allowedOrigin
-            .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-            .replace(/\*/g, '[a-zA-Z0-9-]+');
-          const regex = new RegExp(`^${pattern}$`);
-          return regex.test(origin);
-        }
-
-        return false;
-      });
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        logger.warn(`CORS: Origin ${origin} not allowed`);
-        callback(new Error('Not allowed by CORS'));
-      }
+      // Requests with no origin (mobile apps, curl) are allowed; any other origin
+      // reaching this point already passed the 403 check above.
+      callback(
+        null,
+        !origin || isOriginAllowed(origin, configService.corsOrigins),
+      );
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     preflightContinue: false,
