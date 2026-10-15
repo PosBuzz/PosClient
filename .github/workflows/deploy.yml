@@ -139,7 +139,7 @@ jobs:
           [ "$(code https://api.posbuzz.cloud/api/v1)" = 200 ]
           [ "$(code https://admin.posbuzz.cloud/)" = 200 ]
           [ "$(code https://posbuzz.cloud/)" = 200 ]
-          [ "$(code https://posbuzz.com/)" = 200 ]
+          [ "$(code https://portfolio.posbuzz.cloud/)" = 200 ]
           # A plain refresh must pick up a deploy: the entry point and the
           # service worker may never be cached, hashed assets may be.
           header https://posbuzz.cloud/ cache-control | grep -q 'no-cache'
