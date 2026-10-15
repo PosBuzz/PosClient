@@ -1,6 +1,9 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 
+// Dates in tests are written in UTC; pin it so bare `vitest` matches `npm test`
+process.env.TZ = "UTC";
+
 export default defineConfig({
   plugins: [react()],
   test: {
