@@ -3,8 +3,8 @@
 The one summary document for people and AI agents. Last updated 2026-10-16.
 How to operate the server day to day (log in, deploy/rollback, logs, restore, rotate secrets, troubleshooting): [`docs/OPERATIONS.md`](OPERATIONS.md).
 File-level detail of the deploy, backup and alert setup: [`deploy/README.md`](../deploy/README.md).
-Other references: [`SECURITY-NOTES.md`](../SECURITY-NOTES.md), [`contracts/README.md`](../contracts/README.md),
-[`PRINTING_SETUP.md`](../PRINTING_SETUP.md), [`docs/account-data-imports.md`](account-data-imports.md).
+Other references: [`SECURITY-NOTES.md`](SECURITY-NOTES.md), [`contracts/README.md`](../contracts/README.md),
+[`PRINTING_SETUP.md`](PRINTING_SETUP.md), [`docs/account-data-imports.md`](account-data-imports.md).
 
 The long test-plan documents (phases P0–X4, the decision log D-001…D-075, the known-issue log KI-001…KI-112)
 were removed on 2026-10-16 and summarised here. Full text is in git: `git show 840c2b3:docs/testing/<file>`
