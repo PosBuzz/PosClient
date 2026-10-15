@@ -80,7 +80,7 @@ export interface ProductPayloadVariant {
   warranty_period?: number;
   image?: string | null;
   is_default?: boolean;
-  alert_quantity?: number;
+  alert_quantity: number;
   daily_sale_objective?: number;
   attributes: FormAttribute[];
   serials: FormSerial[];
