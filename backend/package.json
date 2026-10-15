@@ -80,7 +80,7 @@
     "@types/amqplib": "^0.10.8",
     "@types/bwip-js": "^3.2.3",
     "@types/cookie-parser": "^1.4.10",
-    "@types/express": "^5.0.0",
+    "@types/express": "^5.0.6",
     "@types/jest": "^29.5.14",
     "@types/multer": "^2.3.0",
     "@types/node": "^22.19.1",
