@@ -108,6 +108,7 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
   points; a return item without a batch does not restock; a batch created without payments counts as fully paid (D-040).
 - **Branch protection not used** (D-065). Tracked deployment credentials were removed from git and history on 2026-10-15 (D-067 superseded).
 - **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports (Excel and PDF of products, customers, inventory) are always available.
+- **Print server download:** the consumer app serves the Windows installer at `/print-server/PosBuzz-Print-Server.zip` (shown as Download Print Server on Receipt Settings). After rebuilding `PrintingFromWebToPOSPrinter`, copy `Distribution/PosBuzz-Print-Server.zip` to `consumer/public/print-server/`; a consumer test fails if the two differ.
 - **Delivery:** CD to the VPS from GHCR images, staging then production by branch (D-074, D-075).
 
 ## 6. Known issues and owner actions
