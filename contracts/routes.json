@@ -1513,16 +1513,6 @@
   },
   {
     "method": "GET",
-    "path": "/api/v1/consumer/import/status",
-    "controller": "ImportController",
-    "handler": "status",
-    "guards": [
-      "ClientAuthGuard"
-    ],
-    "permissions": []
-  },
-  {
-    "method": "GET",
     "path": "/api/v1/consumer/inventory/adjustments",
     "controller": "InventoryAdjustmentController",
     "handler": "findAll",

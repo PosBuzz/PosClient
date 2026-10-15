@@ -1,6 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { ConsumerPermission } from '../../auth/enums/consumerPermissions.enum';
-import { ImportController } from './import.controller';
+import { ImportController, isImportEnabled } from './import.controller';
 
 const req: any = {
   user: {
@@ -25,14 +25,13 @@ describe('ImportController feature switch', () => {
     return { controller: new ImportController(importService), importService };
   };
 
-  it('[BE-IMPORT-001] reports off unless IMPORT_ENABLED is exactly "true"', () => {
-    const { controller } = build();
+  it('[BE-IMPORT-001] is on only when IMPORT_ENABLED is exactly "true"', () => {
     delete process.env.IMPORT_ENABLED;
-    expect(controller.status()).toEqual({ enabled: false });
+    expect(isImportEnabled()).toBe(false);
     process.env.IMPORT_ENABLED = 'yes';
-    expect(controller.status()).toEqual({ enabled: false });
+    expect(isImportEnabled()).toBe(false);
     process.env.IMPORT_ENABLED = 'true';
-    expect(controller.status()).toEqual({ enabled: true });
+    expect(isImportEnabled()).toBe(true);
   });
 
   it('[BE-IMPORT-002] is refused while import is off', () => {

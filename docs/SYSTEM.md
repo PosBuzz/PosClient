@@ -107,7 +107,7 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
 - **Characterizations kept** (confirm intent before changing): sales never split a line across batches; settling a due sale later earns no reward
   points; a return item without a batch does not restock; a batch created without payments counts as fully paid (D-040).
 - **Branch protection not used** (D-065). Tracked deployment credentials were removed from git and history on 2026-10-15 (D-067 superseded).
-- **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it and the import buttons are hidden while off. Exports (Excel and PDF of products, customers, inventory) are always available.
+- **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports (Excel and PDF of products, customers, inventory) are always available.
 - **Delivery:** CD to the VPS from GHCR images, staging then production by branch (D-074, D-075).
 
 ## 6. Known issues and owner actions

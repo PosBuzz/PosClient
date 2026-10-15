@@ -140,7 +140,6 @@ export const endpoints = {
   exportProducts: "/consumer/export/products",
   exportCustomers: "/consumer/export/customers",
   exportInventory: "/consumer/export/inventory",
-  importStatus: "/consumer/import/status",
   importTemplate: (entity: string) => `/consumer/import/${entity}/template`,
   importColumns: (entity: string) => `/consumer/import/${entity}/columns`,
   importPreview: (entity: string) => `/consumer/import/${entity}/preview`,
