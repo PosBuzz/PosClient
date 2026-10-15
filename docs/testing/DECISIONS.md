@@ -537,3 +537,10 @@ Type: DECISION
 Concern: the audit period start/end were built with local `setHours`, so results depended on the server time zone (KI-112). Date-only inputs arrive as UTC midnight (same convention as D-004's calendar-date columns), so UTC day boundaries are the consistent choice.
 Change: `product-audit.service.ts` uses `setUTCHours`; `test:int:tz` runs `test/integration/product-audit` under Asia/Dhaka and America/New_York, in addition to the Dhaka report suite.
 Verification: CI run 38687491364 on `fix/known-issues` passed (all jobs, 15m44s), which includes the KI-110, KI-111 and KI-065 fixes and the consumer-purge SCOPE refactor.
+
+## D-074 Continuous delivery to the VPS from main via GHCR images (2026-10-15)
+Type: DECISION
+Concern: deploys were a manual workflow that ran `git pull` with a token committed in `pull.sh` and built images on the production box (`prisma db push --accept-data-loss` in one compose file). Pages also needed a hard refresh after a deploy.
+Change: `deploy.yml` runs after a green `All checks` on a push to `main` (or by hand): builds backend/admin/consumer/portfolio into `ghcr.io/posbuzz/posclient-*:<sha>`, deploys over a forced-command SSH key (`deploy/deploy-entry.sh`), waits for container health, rolls back to the last good sha, smoke-tests the live site (status codes plus `index.html` no-cache / `sw.js` no-store) and prunes old image versions (keeps 10). Stack: `deploy/docker-compose.prod.yml` (ports bound to 127.0.0.1, Postgres on the existing volume, migrations via `prisma migrate deploy`). Redis and RabbitMQ are not deployed (both optional in the backend). Host: UFW (22222/80/443), key-only SSH, fail2ban, unattended upgrades. Dependabot version updates removed (they queued about 30 CI runs).
+Verification: first deploy failed health (server env lacked `FASTAPI_URL`; fixed by hand, no rollback target on a first deploy); the second deploy (run after PR #95) passed all jobs including the live smoke test.
+Open: Postgres password predates the rebuild and was committed in git (rotate); `posbuzz.com` has no DNS A record; committed `*.env.docker` files hold secrets and should leave git history.
