@@ -32,7 +32,7 @@ export interface VariantFormState {
   warranty_period?: number;
   image?: string | null;
   is_default?: boolean;
-  alert_quantity: number;
+  alert_quantity?: number;
   daily_sale_objective?: number;
   attributes: FormAttribute[];
   serials: FormSerial[];
@@ -49,7 +49,7 @@ export interface ProductFormState {
   tag_ids: number[];
   has_variants: boolean;
   tax_method: TaxMethod;
-  tax: number;
+  tax?: number;
   original_has_variants: boolean;
   variants: Record<string, VariantFormState>;
   deletedVariantIds: number[];
@@ -80,7 +80,7 @@ export interface ProductPayloadVariant {
   warranty_period?: number;
   image?: string | null;
   is_default?: boolean;
-  alert_quantity: number;
+  alert_quantity?: number;
   daily_sale_objective?: number;
   attributes: FormAttribute[];
   serials: FormSerial[];

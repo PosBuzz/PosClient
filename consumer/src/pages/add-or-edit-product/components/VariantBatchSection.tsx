@@ -11,15 +11,17 @@ import {
   Col,
   DatePicker,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
   Typography,
 } from "antd";
+import InputNumber from "../../../components/NumberInput";
 import dayjs from "dayjs";
 import { ValidationState, VariantBatchInput } from "../types";
 import VendorSelector from "./VendorSelector";
+import ProfitInput from "./ProfitInput";
+import { priceFromProfit, profitFromPrice } from "../../../utils/number";
 import PaymentMethodSection from "../../../components/PaymentMethodSection";
 import { PurchasePayment } from "../../../types/purchase-payment.types";
 import { PaymentMethod } from "../../../types/sale.types";
@@ -41,8 +43,8 @@ interface VariantBatchSectionProps {
   regularPrice: number | string | null;
   wholesalePrice?: number | string | null;
   onPriceChange: (prices: {
-    regular_price?: number;
-    wholesale_price?: number;
+    regular_price?: number | null;
+    wholesale_price?: number | null;
   }) => void;
   validationState: ValidationState;
   onChange: (batches: VariantBatchInput[]) => void;
@@ -167,24 +169,32 @@ export default function VariantBatchSection({
         const cost = Number(batch.cost_price);
         const regular = Number(regularPrice);
         const wholesale = Number(wholesalePrice);
+        const profitOf = (price: number) => profitFromPrice(price, cost);
         const regularProfit =
-          cost > 0 && Number.isFinite(regular)
-            ? ((regular - cost) / cost) * 100
+          regularPrice !== null &&
+          regularPrice !== undefined &&
+          regularPrice !== "" &&
+          Number.isFinite(regular)
+            ? profitOf(regular)
             : undefined;
         const wholesaleProfit =
-          cost > 0 &&
           wholesalePrice !== null &&
           wholesalePrice !== undefined &&
           wholesalePrice !== "" &&
           Number.isFinite(wholesale)
-            ? ((wholesale - cost) / cost) * 100
+            ? profitOf(wholesale)
             : undefined;
         const updatePriceFromProfit = (
           field: "regular_price" | "wholesale_price",
           value: number | null,
         ) => {
-          if (cost <= 0 || value === null || !Number.isFinite(value)) return;
-          onPriceChange({ [field]: cost * (1 + value / 100) });
+          if (cost <= 0) return;
+          // Cleared box clears the price; otherwise price is cost + profit, in whole paisa
+          if (value === null || !Number.isFinite(value)) {
+            onPriceChange({ [field]: null });
+            return;
+          }
+          onPriceChange({ [field]: priceFromProfit(value, cost) });
         };
 
         return (
@@ -262,7 +272,6 @@ export default function VariantBatchSection({
                 <Text strong>Quantity *</Text>
                 <InputNumber
                   style={{ width: "100%" }}
-                  type="number"
                   placeholder="0"
                   min={1}
                   precision={0}
@@ -290,7 +299,6 @@ export default function VariantBatchSection({
                 <Text strong>Cost Price *</Text>
                 <InputNumber
                   style={{ width: "100%" }}
-                  type="number"
                   placeholder="0.00"
                   min={0}
                   precision={2}
@@ -327,11 +335,7 @@ export default function VariantBatchSection({
 
               <Col xs={24} md={3} style={{ minWidth: 0 }}>
                 <Text strong>Profit % (Regular)</Text>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={-100}
-                  precision={2}
-                  suffix="%"
+                <ProfitInput
                   disabled={cost <= 0}
                   value={regularProfit}
                   onChange={(value) =>
@@ -342,11 +346,7 @@ export default function VariantBatchSection({
 
               <Col xs={24} md={3} style={{ minWidth: 0 }}>
                 <Text strong>Profit % (Wholesale)</Text>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  min={-100}
-                  precision={2}
-                  suffix="%"
+                <ProfitInput
                   disabled={cost <= 0}
                   value={wholesaleProfit}
                   onChange={(value) =>

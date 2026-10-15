@@ -114,8 +114,8 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
       form.setFieldsValue({
         branch_id: defaultBranch.id,
         price_type: PriceType.REGULAR,
-        average_discount_amount: 0,
-        shipping_cost: 0,
+        average_discount_amount: undefined,
+        shipping_cost: undefined,
       });
     }
   }, [form, selectedBranch, userBranches]);
@@ -162,7 +162,10 @@ export const useSaleManager = ({ form, user }: UseSaleManagerArgs) => {
     setSelectedItems([]);
     setProductSearch("");
     setAverageDiscountType(DiscountType.FLAT);
-    form.setFieldsValue({ branch_id: branchId, average_discount_amount: 0 });
+    form.setFieldsValue({
+      branch_id: branchId,
+      average_discount_amount: undefined,
+    });
   };
 
   return {

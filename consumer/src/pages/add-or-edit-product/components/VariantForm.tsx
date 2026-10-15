@@ -5,17 +5,8 @@ import {
   BarcodeOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
-import {
-  Button,
-  Card,
-  Col,
-  Input,
-  InputNumber,
-  Row,
-  Space,
-  Tabs,
-  Typography,
-} from "antd";
+import { Button, Card, Col, Input, Row, Space, Tabs, Typography } from "antd";
+import InputNumber from "../../../components/NumberInput";
 import { FormAttribute, FormSerial } from "../../../types/product.types";
 import ImageInput from "../../../components/ImageInput";
 import { ProductFormState, ValidationState, VariantBatchInput } from "../types";
@@ -162,7 +153,6 @@ export default function VariantForm({
             <Text strong>Regular Price *</Text>
             <InputNumber
               style={{ width: "100%" }}
-              type="number"
               placeholder="0.00"
               min={0}
               precision={2}
@@ -189,7 +179,6 @@ export default function VariantForm({
             <Text strong>Wholesale Price</Text>
             <InputNumber
               style={{ width: "100%" }}
-              type="number"
               placeholder="0.00"
               min={0}
               precision={2}
@@ -262,13 +251,12 @@ export default function VariantForm({
             </Text>
             <InputNumber
               style={{ width: "100%" }}
-              type="number"
               placeholder="10"
               min={0}
               value={variant.alert_quantity}
               onChange={(value) =>
                 onVariantUpdate(variantId, {
-                  alert_quantity: Number(value || 0),
+                  alert_quantity: value ?? undefined,
                 })
               }
             />
@@ -282,13 +270,12 @@ export default function VariantForm({
             </Text>
             <InputNumber
               style={{ width: "100%" }}
-              type="number"
               placeholder="0"
               min={0}
               value={variant.daily_sale_objective}
               onChange={(value) =>
                 onVariantUpdate(variantId, {
-                  daily_sale_objective: Number(value || 0),
+                  daily_sale_objective: value ?? undefined,
                 })
               }
             />
@@ -297,7 +284,6 @@ export default function VariantForm({
             <Text strong>Warranty (months)</Text>
             <InputNumber
               style={{ width: "100%" }}
-              type="number"
               placeholder="12"
               min={0}
               max={120}
