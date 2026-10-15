@@ -16,7 +16,9 @@ COPY --from=deps /app/admin/node_modules ./node_modules
 COPY admin/ .
 COPY contracts/ /app/contracts/
 COPY scripts/contracts/generate-response-types.mjs /app/scripts/contracts/generate-response-types.mjs
-COPY admin/.env.docker .env
+# Public build-time values (embedded into the bundle by Vite).
+ENV VITE_API_BASE_URL=https://api.posbuzz.cloud/api/v1
+ENV VITE_Root_Admin=superadmin@posbuzz.cloud
 
 # Build the application
 RUN npm run typecheck && npm run build

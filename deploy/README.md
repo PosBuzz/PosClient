@@ -23,7 +23,7 @@ Re-deploy or roll forward manually: Actions → Deploy → Run workflow (optiona
 - Backups before the rebuild: `pg_dump -Fc` of `posbuzz` (see docs/testing).
 
 ## Env files in git
-The `.env.docker` files with secrets (root, `backend/`, `portfolio/`, `ai-service/`) and the root `docker-compose.yml` were removed (2026-10-15); their values live only on the server. `admin/.env.docker` and `consumer/.env.docker` stay: they hold public build-time Vite values that the Docker image builds copy in. Their old contents remain in git history; the JWT/CSRF/revalidate secrets were regenerated, so only the history copy is stale.
+No `.env.docker` or `.env.docker.example` files are tracked (removed 2026-10-15) and the root `docker-compose.yml` is gone. Secrets live only on the server. The public frontend build values (API URL, root admin email, Cloudinary cloud name and preset) are `ENV` lines in `admin/Dockerfile` and `consumer/Dockerfile`. Old values remain in git history; the JWT/CSRF/revalidate secrets were regenerated and the DB password rotated, so only the history copy is stale.
 
 ## Not covered yet
 - Redis and RabbitMQ are not deployed (the backend treats both as optional and off by default).
