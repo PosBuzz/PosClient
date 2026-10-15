@@ -25,6 +25,15 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Production-only dependencies: the test/lint toolchain (Jest, ts-jest, eslint, ...)
+# stays out of the runtime image. prisma is a real dependency because the
+# container runs `prisma migrate deploy` on start.
+FROM base AS prod-deps
+WORKDIR /app
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci --omit=dev && npx prisma generate
+
 # Production stage
 FROM base AS runner
 WORKDIR /app
@@ -40,7 +49,7 @@ RUN adduser --system --uid 1001 nestjs
 
 # Copy necessary files
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 
