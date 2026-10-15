@@ -14,13 +14,13 @@ import {
   Divider,
   Form,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
   Spin,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";

@@ -7,12 +7,12 @@ import {
   Col,
   Divider,
   Form,
-  InputNumber,
   Row,
   Space,
   Switch,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import React, { useEffect, useState } from "react";
 import { rewardsApi } from "../../api/rewards.api";
 import PageTitle from "../../components/PageTitle";

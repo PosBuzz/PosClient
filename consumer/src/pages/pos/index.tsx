@@ -31,7 +31,6 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   List,
   Radio,
   Row,
@@ -42,6 +41,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { BsCash } from "react-icons/bs";
@@ -84,6 +84,7 @@ import { usePromotionManager } from "../../hooks/usePromotionManager";
 import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useModalStore } from "../../stores/modalStore";
+import { blankIfZero, round2 } from "../../utils/number";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
@@ -234,8 +235,8 @@ const NewSale = () => {
       branch_id: currentBranchId,
       served_by_id: currentServedById,
       customer_id: undefined,
-      average_discount_amount: 0,
-      shipping_cost: 0,
+      average_discount_amount: undefined,
+      shipping_cost: undefined,
       notes: "",
     });
 
@@ -577,6 +578,8 @@ const NewSale = () => {
 
     const saleData: SaleFormData = {
       ...values,
+      // A blank box means 0; the API always gets a number
+      average_discount_amount: Number(values.average_discount_amount) || 0,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
@@ -644,8 +647,8 @@ const NewSale = () => {
       form.setFieldsValue({
         customer_id: undefined,
         served_by_id: undefined,
-        average_discount_amount: 0,
-        shipping_cost: 0,
+        average_discount_amount: undefined,
+        shipping_cost: undefined,
         notes: "",
         // Keep branch_id as is
       });
@@ -813,10 +816,13 @@ const NewSale = () => {
       render: (record: SaleItem) => {
         const totalSpecialDiscount =
           Number(record.special_discount_amount) || 0;
-        const displayedSpecialDiscount =
-          specialDiscountModes[record.variant_id] === "quantity"
-            ? totalSpecialDiscount / Math.max(1, Number(record.quantity) || 1)
-            : totalSpecialDiscount;
+        const displayedSpecialDiscount = blankIfZero(
+          round2(
+            specialDiscountModes[record.variant_id] === "quantity"
+              ? totalSpecialDiscount / Math.max(1, Number(record.quantity) || 1)
+              : totalSpecialDiscount,
+          ),
+        );
         const percent = discountPercentSuffix(
           totalSpecialDiscount,
           record.line_total,

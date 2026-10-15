@@ -5,11 +5,11 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   Select,
   Space,
   Switch,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import dayjs from "dayjs";
 import { useEffect, useMemo } from "react";
 import { promotionApi } from "../../api/promotion-api";
