@@ -69,8 +69,8 @@ const AppLayout = () => {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <SideBar />
         </div>
-        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70">
-          Powered by PosBuzz
+        <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70 truncate select-none border-t border-white/5">
+          {collapsed ? "PB" : "Powered by PosBuzz"}
         </div>
       </Sider>
 
