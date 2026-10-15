@@ -1,0 +1,8 @@
+[Unit]
+Description=Run the Postgres backup every night (02:30 Dhaka = 20:30 UTC)
+[Timer]
+OnCalendar=*-*-* 20:30:00 UTC
+RandomizedDelaySec=300
+Persistent=true
+[Install]
+WantedBy=timers.target

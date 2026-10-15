@@ -1,0 +1,6 @@
+[Unit]
+Description=Nightly Postgres backup to Cloudflare R2
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/posbuzz-backup-db
