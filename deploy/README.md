@@ -11,7 +11,7 @@ Re-deploy or roll forward manually: Actions → Deploy → Run workflow (optiona
 
 ## Server layout (`/opt/posbuzz`, VPS 195.35.45.101, ssh port 22222)
 - `docker-compose.prod.yml`, `deploy.sh`: copied from the repo on every deploy.
-- `env/stack.env` (DB password), `env/backend.env`, `env/portfolio.env`: server-only secrets, never in git.
+- `env/stack.env` (DB password), `env/backend.env`, `env/portfolio.env`: server-only secrets, never in git. The Postgres password was rotated on 2026-10-15 (the old one had been committed). To rotate again: `ALTER USER postgres PASSWORD '…'` in the running container, update `DB_PASSWORD` in `stack.env` and `backend.env`, then `docker compose --env-file env/stack.env -f docker-compose.prod.yml up -d postgres backend` with `TAG=$(cat last-good-tag)`.
 - `data/`: backend uploads, receipts, temp. `last-good-tag`: rollback target.
 - Postgres uses the pre-existing volume `posclient_postgres_data`.
 - Host nginx (`/etc/nginx/sites-enabled/posbuzz`) proxies to containers bound on 127.0.0.1:3000/3001/3002/8000.
@@ -22,7 +22,10 @@ Re-deploy or roll forward manually: Actions → Deploy → Run workflow (optiona
 - `testadmin` logs in with a key only. Password SSH, root login are off; UFW allows 22222/80/443; fail2ban watches sshd.
 - Backups before the rebuild: `pg_dump -Fc` of `posbuzz` (see docs/testing).
 
+## Env files in git
+The `.env.docker` files with secrets (root, `backend/`, `portfolio/`, `ai-service/`) and the root `docker-compose.yml` were removed (2026-10-15); their values live only on the server. `admin/.env.docker` and `consumer/.env.docker` stay: they hold public build-time Vite values that the Docker image builds copy in. Their old contents remain in git history; the JWT/CSRF/revalidate secrets were regenerated, so only the history copy is stale.
+
 ## Not covered yet
 - Redis and RabbitMQ are not deployed (the backend treats both as optional and off by default).
-- The Postgres password predates the rebuild and is still the one that was committed in git; rotate it.
+- `posbuzz.com` has no DNS A record (left as is by the owner); the smoke test probes `portfolio.posbuzz.cloud` instead.
 - Database rollback: the deploy rolls images back, not migrations.
