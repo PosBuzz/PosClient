@@ -133,7 +133,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: node --test scripts/mutation-tier-gate.test.mjs
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: backend-domain-mutation-shard-*
           path: backend/reports/shards
