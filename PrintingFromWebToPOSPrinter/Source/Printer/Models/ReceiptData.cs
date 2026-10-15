@@ -30,6 +30,7 @@ namespace Printer.Models
         public string PaymentStatus { get; set; }
         public string Notes { get; set; }
         public bool OpenCashDrawer { get; set; }
+        public bool IsReturn { get; set; }
 
         public ReceiptData()
         {

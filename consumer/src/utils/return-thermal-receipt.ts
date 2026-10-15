@@ -18,9 +18,8 @@ const num = (value: unknown) => Number(value) || 0;
 
 /**
  * Builds the payload for the local printing agent's /print endpoint.
- * The agent has no dedicated return layout, so the return is sent in the
- * receipt shape: returned items as lines, the refund as the total, and a
- * "RETURN RECEIPT" marker in the order id and notes.
+ * The return is sent in the receipt shape with isReturn set, so the agent
+ * prints a "RETURN RECEIPT" title and a REFUND total instead of TOTAL/Paid/Change.
  */
 export function buildReturnThermalReceipt(ret: Return, saleNumber?: string) {
   const originalSale = saleNumber || ret.original_sale?.sale_number || "";
@@ -72,7 +71,6 @@ export function buildReturnThermalReceipt(ret: Return, saleNumber?: string) {
   });
 
   const noteParts = [
-    "*** RETURN RECEIPT ***",
     originalSale ? `Original sale: ${originalSale}` : "",
     ret.reason ? `Reason: ${ret.reason}` : "",
     ret.notes || "",
@@ -82,7 +80,9 @@ export function buildReturnThermalReceipt(ret: Return, saleNumber?: string) {
   const netRefund = Math.max(0, refund - exchange);
 
   return {
-    orderId: `RETURN ${ret.return_number}`,
+    isReturn: true,
+    documentType: "RETURN",
+    orderId: ret.return_number,
     receiptNumber: ret.return_number,
     saleNumber: ret.return_number,
     sale_number: ret.return_number,
