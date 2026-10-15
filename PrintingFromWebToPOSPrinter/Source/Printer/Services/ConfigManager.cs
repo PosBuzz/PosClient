@@ -17,9 +17,6 @@ namespace Printer.Services
             "PosBuzz Print Server");
 
         public static readonly string ConfigPath = Path.Combine(DataDirectory, "store-config.txt");
-
-        // Where older versions kept the file (next to the exe)
-        private static readonly string LegacyConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "store-config.txt");
         private static StoreConfig _config;
 
         public static StoreConfig GetConfig()
@@ -41,13 +38,6 @@ namespace Printer.Services
             try
             {
                 Directory.CreateDirectory(DataDirectory);
-
-                // First run of this version: carry the old settings over
-                if (!File.Exists(ConfigPath) && File.Exists(LegacyConfigPath))
-                {
-                    File.Copy(LegacyConfigPath, ConfigPath);
-                    Console.WriteLine("Migrated settings from " + LegacyConfigPath);
-                }
 
                 if (File.Exists(ConfigPath))
                 {
@@ -109,41 +99,16 @@ namespace Printer.Services
         }
 
         /// <summary>
-        /// Keeps the logo in the data folder: a logo that sits elsewhere (next to
-        /// the exe, or a path from another PC) is copied in, so it survives an
-        /// update. A shop with no logo of its own still prints none.
+        /// A saved logo path that no longer exists (file deleted, config from
+        /// another PC) falls back to the logo in the data folder, else no logo.
         /// </summary>
         private static void AdoptLogo()
         {
-            try
+            if (!string.IsNullOrEmpty(_config.LogoPath) && File.Exists(_config.LogoPath))
             {
-                string source = null;
-                if (!string.IsNullOrEmpty(_config.LogoPath) && File.Exists(_config.LogoPath))
-                {
-                    source = _config.LogoPath;
-                }
-                else
-                {
-                    source = FindLogo(DataDirectory);
-                }
-
-                if (source == null)
-                {
-                    _config.LogoPath = "";
-                    return;
-                }
-
-                string inDataDir = Path.Combine(DataDirectory, "logo" + Path.GetExtension(source).ToLowerInvariant());
-                if (!string.Equals(Path.GetFullPath(source), Path.GetFullPath(inDataDir), StringComparison.OrdinalIgnoreCase))
-                {
-                    File.Copy(source, inDataDir, true);
-                }
-                _config.LogoPath = inDataDir;
+                return;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error adopting logo: " + ex.Message);
-            }
+            _config.LogoPath = FindLogo(DataDirectory) ?? "";
         }
 
         private static string FindLogo(string directory)

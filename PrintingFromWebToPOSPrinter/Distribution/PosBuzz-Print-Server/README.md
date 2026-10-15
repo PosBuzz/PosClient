@@ -175,10 +175,8 @@ Your settings (`store-config.txt`) and logo are kept in
 quit the tray app, delete the old program folder, extract the new zip, run it.
 Nothing is lost.
 
-**First update from an older version only:** older versions kept the settings
-inside the program folder. Before deleting it, copy `store-config.txt` and your
-`logo.*` file into the new folder, then run the new `Printer.exe` once — it moves
-them to the permanent location by itself. After that, updates are as above.
+**First time on this version:** open the tray icon → Configuration and fill in
+the store details, printers and logo once. They are remembered from then on.
 
 ## 📞 Support
 
