@@ -61,11 +61,8 @@ export const validateProductForm = (
   }
 
   // Product.tax is stored as an integer percentage.
-  if (
-    !Number.isInteger(formState.tax) ||
-    formState.tax < 0 ||
-    formState.tax > 100
-  ) {
+  const tax = formState.tax ?? 0;
+  if (!Number.isInteger(tax) || tax < 0 || tax > 100) {
     pushError(
       validation,
       "tax",

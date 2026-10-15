@@ -14,13 +14,13 @@ import {
   Divider,
   Form,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
   Table,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

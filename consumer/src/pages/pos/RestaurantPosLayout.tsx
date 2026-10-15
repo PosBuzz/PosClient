@@ -18,13 +18,13 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   Radio,
   Row,
   Select,
   Space,
   Tag,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useMemo, useState } from "react";
 import { Money, takaPrefix } from "../../components/Currency";
 import {

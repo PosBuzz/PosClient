@@ -13,13 +13,13 @@ import {
   Col,
   Form,
   Input,
-  InputNumber,
   Radio,
   Row,
   Select,
   Space,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useNavigate } from "react-router-dom";
 import { CreateAdjustmentData, inventoryApi } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
