@@ -728,6 +728,30 @@
     "consumerId": false
   },
   {
+    "service": "ExportService",
+    "method": "export",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 28,
+    "throws": 0,
+    "consumerId": true
+  },
+  {
+    "service": "ExportService",
+    "method": "parseFormat",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 18,
+    "throws": 1,
+    "consumerId": false
+  },
+  {
+    "service": "ExportService",
+    "method": "toPdf",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 172,
+    "throws": 0,
+    "consumerId": false
+  },
+  {
     "service": "ImportService",
     "method": "assertKnownEntity",
     "file": "src/consumer/import/services/import.service.ts",
@@ -1731,7 +1755,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "copyToBranch",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 432,
+    "line": 434,
     "throws": 1,
     "consumerId": true
   },
@@ -1739,7 +1763,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "createSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 214,
+    "line": 216,
     "throws": 1,
     "consumerId": false
   },
@@ -1747,7 +1771,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "deactivateSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 291,
+    "line": 293,
     "throws": 2,
     "consumerId": true
   },
@@ -1755,7 +1779,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "deleteSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 412,
+    "line": 414,
     "throws": 2,
     "consumerId": true
   },
@@ -1763,7 +1787,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getActiveSettings",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 120,
+    "line": 122,
     "throws": 0,
     "consumerId": true
   },
@@ -1771,7 +1795,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getBrandingData",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 160,
+    "line": 162,
     "throws": 2,
     "consumerId": true
   },
@@ -1779,7 +1803,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getConsumerOnlyBrandingData",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 501,
+    "line": 503,
     "throws": 1,
     "consumerId": true
   },
@@ -1787,7 +1811,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getSettingById",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 312,
+    "line": 314,
     "throws": 1,
     "consumerId": true
   },
@@ -1795,7 +1819,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "initializeConsumerDefaults",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 96,
+    "line": 98,
     "throws": 0,
     "consumerId": true
   },
@@ -1803,7 +1827,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "listAllByType",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 355,
+    "line": 357,
     "throws": 0,
     "consumerId": true
   },
@@ -1811,7 +1835,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "listSettings",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 332,
+    "line": 334,
     "throws": 0,
     "consumerId": true
   },
@@ -1819,7 +1843,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "setActive",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 266,
+    "line": 268,
     "throws": 1,
     "consumerId": true
   },
@@ -1827,7 +1851,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "updateSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 373,
+    "line": 375,
     "throws": 1,
     "consumerId": true
   },
@@ -1995,7 +2019,7 @@
     "service": "SalesService",
     "method": "cancelPendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3874,
+    "line": 3879,
     "throws": 2,
     "consumerId": true
   },
@@ -2003,7 +2027,7 @@
     "service": "SalesService",
     "method": "completePendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3813,
+    "line": 3818,
     "throws": 3,
     "consumerId": true
   },
@@ -2011,7 +2035,7 @@
     "service": "SalesService",
     "method": "convertQuotationToSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2694,
+    "line": 2699,
     "throws": 8,
     "consumerId": true
   },
@@ -2019,7 +2043,7 @@
     "service": "SalesService",
     "method": "create",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 200,
+    "line": 203,
     "throws": 15,
     "consumerId": true
   },
@@ -2027,7 +2051,7 @@
     "service": "SalesService",
     "method": "findAll",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 683,
+    "line": 686,
     "throws": 1,
     "consumerId": true
   },
@@ -2035,7 +2059,7 @@
     "service": "SalesService",
     "method": "findAllOnlineOrders",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3489,
+    "line": 3494,
     "throws": 1,
     "consumerId": true
   },
@@ -2043,7 +2067,7 @@
     "service": "SalesService",
     "method": "findAllQuotations",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2514,
+    "line": 2519,
     "throws": 1,
     "consumerId": true
   },
@@ -2051,7 +2075,7 @@
     "service": "SalesService",
     "method": "findBySaleNumber",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1285,
+    "line": 1288,
     "throws": 2,
     "consumerId": true
   },
@@ -2059,7 +2083,7 @@
     "service": "SalesService",
     "method": "findOne",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 825,
+    "line": 828,
     "throws": 2,
     "consumerId": true
   },
@@ -2067,7 +2091,7 @@
     "service": "SalesService",
     "method": "findOneQuotation",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2637,
+    "line": 2642,
     "throws": 2,
     "consumerId": true
   },
@@ -2075,7 +2099,7 @@
     "service": "SalesService",
     "method": "getDailyTargetReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3907,
+    "line": 3912,
     "throws": 0,
     "consumerId": true
   },
@@ -2083,7 +2107,7 @@
     "service": "SalesService",
     "method": "getEODReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1719,
+    "line": 1724,
     "throws": 1,
     "consumerId": true
   },
@@ -2091,7 +2115,7 @@
     "service": "SalesService",
     "method": "getOnlineOrderStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3684,
+    "line": 3689,
     "throws": 1,
     "consumerId": true
   },
@@ -2099,7 +2123,7 @@
     "service": "SalesService",
     "method": "getPendingDeliveries",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3770,
+    "line": 3775,
     "throws": 0,
     "consumerId": true
   },
@@ -2107,7 +2131,7 @@
     "service": "SalesService",
     "method": "getProductByBarcode",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1528,
+    "line": 1532,
     "throws": 1,
     "consumerId": true
   },
@@ -2115,7 +2139,7 @@
     "service": "SalesService",
     "method": "getProductsForSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1448,
+    "line": 1451,
     "throws": 1,
     "consumerId": true
   },
@@ -2123,7 +2147,7 @@
     "service": "SalesService",
     "method": "getSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1595,
+    "line": 1600,
     "throws": 1,
     "consumerId": true
   },
@@ -2131,7 +2155,7 @@
     "service": "SalesService",
     "method": "getUserSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3344,
+    "line": 3349,
     "throws": 1,
     "consumerId": true
   },
@@ -2139,7 +2163,7 @@
     "service": "SalesService",
     "method": "getUsersSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3241,
+    "line": 3246,
     "throws": 0,
     "consumerId": true
   },
@@ -2147,7 +2171,7 @@
     "service": "SalesService",
     "method": "getVariantSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3028,
+    "line": 3033,
     "throws": 2,
     "consumerId": true
   },
@@ -2155,7 +2179,7 @@
     "service": "SalesService",
     "method": "getVariantSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2883,
+    "line": 2888,
     "throws": 1,
     "consumerId": true
   },
@@ -2163,7 +2187,7 @@
     "service": "SalesService",
     "method": "restore",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1157,
+    "line": 1160,
     "throws": 5,
     "consumerId": true
   },
@@ -2171,7 +2195,7 @@
     "service": "SalesService",
     "method": "softDelete",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1014,
+    "line": 1017,
     "throws": 7,
     "consumerId": true
   },
@@ -2179,7 +2203,7 @@
     "service": "SalesService",
     "method": "updateNote",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 908,
+    "line": 911,
     "throws": 2,
     "consumerId": true
   },
@@ -2187,7 +2211,7 @@
     "service": "SalesService",
     "method": "updateOnlineOrderStatus",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3620,
+    "line": 3625,
     "throws": 2,
     "consumerId": true
   },
@@ -2349,6 +2373,14 @@
     "file": "src/consumer/tag/services/tag.service.ts",
     "line": 72,
     "throws": 1,
+    "consumerId": true
+  },
+  {
+    "service": "TransferPdfService",
+    "method": "generateTransferPdf",
+    "file": "src/consumer/receipt-pdf/services/transfer-pdf.service.ts",
+    "line": 20,
+    "throws": 0,
     "consumerId": true
   },
   {

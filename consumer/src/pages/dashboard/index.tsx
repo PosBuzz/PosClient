@@ -235,7 +235,7 @@ function Dashboard() {
                     style={{ fontSize: "3rem", marginBottom: "16px" }}
                   />
                   <h3 style={{ color: "white", marginBottom: "8px" }}>
-                    Point of Sale
+                    Express Sale
                   </h3>
                   <p style={{ color: "rgba(255,255,255,0.8)", margin: 0 }}>
                     Sale with our POS interface

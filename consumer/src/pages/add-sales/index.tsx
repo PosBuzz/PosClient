@@ -18,7 +18,6 @@ import {
   FloatButton,
   Form,
   Input,
-  InputNumber,
   List,
   Radio,
   Row,
@@ -28,6 +27,7 @@ import {
   Tag,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { post } from "../../api/crud-api";
@@ -70,6 +70,7 @@ import {
   PAYMENT_METHODS_REQUIRING_PROVIDER,
   paymentMethodRequiresProvider,
 } from "../../utils/payment-provider.utils";
+import { blankIfZero, round2 } from "../../utils/number";
 import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getErrorMessage } from "../../utils/api-error";
 
@@ -536,6 +537,8 @@ const NewSale = () => {
 
     const saleData: SaleFormData = {
       ...values,
+      // A blank box means 0; the API always gets a number
+      average_discount_amount: Number(values.average_discount_amount) || 0,
       customer_id: selectedCustomer?.id,
       customer_name: selectedCustomer?.name || values.customer_name,
       customer_phone: selectedCustomer?.phone || values.customer_phone,
@@ -761,10 +764,13 @@ const NewSale = () => {
       render: (record: SaleItem) => {
         const totalDiscount = Number(record.special_discount_amount) || 0;
         const mode = specialDiscountModes[record.variant_id] || "overall";
-        const value =
-          mode === "quantity"
-            ? totalDiscount / Math.max(1, Number(record.quantity) || 1)
-            : totalDiscount;
+        const value = blankIfZero(
+          round2(
+            mode === "quantity"
+              ? totalDiscount / Math.max(1, Number(record.quantity) || 1)
+              : totalDiscount,
+          ),
+        );
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <Radio.Group
@@ -1128,6 +1134,11 @@ const NewSale = () => {
                         <EnvironmentOutlined /> {variant.locations.join(", ")}
                       </div>
                     ) : null}
+                    {variant.available_quantity !== undefined && (
+                      <div style={{ fontSize: 11, color: "#666" }}>
+                        Stock: {variant.available_quantity} {variant.unit_name}
+                      </div>
+                    )}
                     <div style={{ fontSize: 11, color: "#666" }}>
                       <Money
                         value={

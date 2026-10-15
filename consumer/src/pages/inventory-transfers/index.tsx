@@ -3,6 +3,7 @@ import {
   CheckOutlined,
   CloseOutlined,
   EyeOutlined,
+  PrinterOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -12,6 +13,7 @@ import {
   Button,
   Card,
   Col,
+  Dropdown,
   Input,
   Popconfirm,
   Row,
@@ -30,6 +32,9 @@ import { useNavigate } from "react-router-dom";
 import { inventoryApi, InventoryTransfer } from "../../api/inventory-api";
 import CenterLoader from "../../components/CenterLoader";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { useMessageStore } from "../../stores/messageStore";
 import { useModalStore } from "../../stores/modalStore";
@@ -41,6 +46,7 @@ const { Option } = Select;
 
 export default function InventoryTransfersPage() {
   const navigate = useNavigate();
+  const { preview, previewProps } = usePdfPreview();
   const queryClient = useQueryClient();
 
   const { modal } = useModalStore();
@@ -324,9 +330,33 @@ export default function InventoryTransfersPage() {
       title: "Actions",
       key: "actions",
       fixed: "right",
-      width: 150,
+      width: 190,
       render: (_, record) => (
         <Space size="small">
+          <Dropdown
+            menu={{
+              items: [
+                { key: "transfer_slip", label: "Transfer Slip" },
+                { key: "transfer_chalan", label: "Chalan Slip" },
+              ],
+              onClick: ({ key }) => {
+                const type = key as "transfer_slip" | "transfer_chalan";
+                const label =
+                  type === "transfer_slip" ? "Transfer Slip" : "Chalan Slip";
+                preview(
+                  () => inventoryApi.downloadTransferPdf(record.id, type),
+                  {
+                    title: `${label} #${record.id}`,
+                    fileName: `${type}-TR-${record.id}.pdf`,
+                  },
+                );
+              },
+            }}
+          >
+            <Tooltip title="Print Slip">
+              <Button type="text" size="small" icon={<PrinterOutlined />} />
+            </Tooltip>
+          </Dropdown>
           <Tooltip title="View Details">
             <Button
               type="text"
@@ -492,6 +522,7 @@ export default function InventoryTransfersPage() {
           scroll={{ x: 1200 }}
         />
       </Card>
+      <PdfPreviewModal {...previewProps} />
     </>
   );
 }

@@ -11,7 +11,6 @@ import {
   Form,
   FormInstance,
   Input,
-  InputNumber,
   Modal,
   Row,
   Select,
@@ -20,6 +19,7 @@ import {
   Switch,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { inventoryApi } from "../../api/inventory-api";
@@ -427,6 +427,12 @@ export default function ReceiptSettingsFormPage() {
                   </Select.Option>
                   <Select.Option value="delivery_slip">
                     Delivery Slip / Sticker
+                  </Select.Option>
+                  <Select.Option value="transfer_slip">
+                    Inventory Transfer Slip
+                  </Select.Option>
+                  <Select.Option value="transfer_chalan">
+                    Transfer Chalan
                   </Select.Option>
                 </Select>
               </Form.Item>

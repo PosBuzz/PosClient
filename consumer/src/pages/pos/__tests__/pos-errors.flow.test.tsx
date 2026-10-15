@@ -110,9 +110,7 @@ describe("POS checkout errors", () => {
       route: "/pos",
       path: "/pos",
     });
-    await user.click(
-      await screen.findByRole("button", { name: /^plus$/ }),
-    );
+    await user.click(await screen.findByRole("button", { name: /^plus$/ }));
     await user.type(
       await screen.findByPlaceholderText("Enter customer name"),
       "Rahim",

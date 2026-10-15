@@ -79,6 +79,8 @@ const TYPE_OPTIONS: {
     color: "purple",
   },
   { label: "Delivery Slip", value: "delivery_slip", color: "magenta" },
+  { label: "Transfer Slip", value: "transfer_slip", color: "geekblue" },
+  { label: "Transfer Chalan", value: "transfer_chalan", color: "lime" },
 ];
 
 const TYPE_LABELS: Record<ReceiptPresetType, string> = {
@@ -89,6 +91,8 @@ const TYPE_LABELS: Record<ReceiptPresetType, string> = {
   money_receipt: "Money Receipt",
   delivery_slip: "Delivery Slip / Sticker",
   online_delivery_slip: "Online Delivery Slip",
+  transfer_slip: "Inventory Transfer Slip",
+  transfer_chalan: "Transfer Chalan",
 };
 
 export default function ReceiptSettingsPage() {

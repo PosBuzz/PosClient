@@ -12,7 +12,6 @@ import {
   Card,
   Col,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
@@ -21,6 +20,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import InputNumber from "../../components/NumberInput";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";

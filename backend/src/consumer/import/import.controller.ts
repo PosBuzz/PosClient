@@ -26,6 +26,13 @@ const PERMISSION_BY_ENTITY: Record<ImportEntity, ConsumerPermission> = {
   customers: ConsumerPermission.customers,
 };
 
+/**
+ * Bulk import is off unless the server sets IMPORT_ENABLED=true. Read on every
+ * request so it can be switched from the env file with a restart only.
+ */
+export const isImportEnabled = (): boolean =>
+  process.env.IMPORT_ENABLED === 'true';
+
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 /** Shape of a memory-storage upload; @types/multer is not installed */
@@ -109,6 +116,11 @@ export class ImportController {
   }
 
   private resolveEntity(entity: string, req: Request): ImportEntity {
+    if (!isImportEnabled()) {
+      throw new ForbiddenException(
+        'Bulk import is turned off for this system. Ask support to enable it.',
+      );
+    }
     this.importService.assertKnownEntity(entity);
 
     const required = PERMISSION_BY_ENTITY[entity];
