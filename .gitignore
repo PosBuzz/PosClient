@@ -53,3 +53,9 @@ coverage/
 *.lcov
 .vs/
 packages/
+
+# Secrets-bearing docker env files live only on the server (admin/ and consumer/ keep public build-time values)
+/.env.docker
+/backend/.env.docker
+/portfolio/.env.docker
+/ai-service/.env.docker
