@@ -146,3 +146,22 @@ jobs:
           header https://admin.posbuzz.cloud/ cache-control | grep -q 'no-cache'
           header https://posbuzz.cloud/sw.js cache-control | grep -q 'no-store'
           echo "live site OK"
+
+  prune:
+    name: Prune old images (${{ matrix.app }})
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, admin, consumer, portfolio]
+    steps:
+      # Keep the 10 newest versions per image: plenty of rollback targets
+      # without letting GHCR grow forever. Only runs after a verified deploy.
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: posclient-${{ matrix.app }}
+          package-type: container
+          min-versions-to-keep: 10
