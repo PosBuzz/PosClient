@@ -86,7 +86,7 @@ Changing `JWT_SECRET_KEY` logs everyone out. After any secret change, make a fre
 | **502 / 504** from nginx | a container is down or restarting | `sudo posbuzz-ctl status`, `logs prod backend`, `restart prod backend` |
 | Deploy workflow red | image build, SSH, or health check failed | open the failed job in Actions; the log of the unhealthy container is printed at the end of the deploy step |
 | Deploy red at "Resolve commit" | CI was not green or was cancelled for that commit | fix CI, or re-run CI; do not bypass |
-| Users cannot log in, many attempts | the Cloudflare rate-limit rule is blocking an IP for a short time | wait a minute, or relax the rule in Cloudflare |
+| Browser shows a CORS error on `/auth/…` with status 429 | Cloudflare's rate-limit rule (`server: cloudflare`, `error code: 1015`), not the app: it answers without CORS headers | wait 10 s; the rule only covers `/auth/login*` (10 per 10 s per IP); check or loosen it in Cloudflare -> Security -> WAF -> Rate limiting rules |
 | Page still shows an old version | should not happen: `index.html` and `sw.js` are never cached | hard refresh once, check `curl -I https://posbuzz.xyz/sw.js` shows `no-store` |
 | Disk filling | old images/dumps | `docker image prune -af --filter until=72h`; check `/opt/*/predeploy`, `/root/manual-dumps` |
 
