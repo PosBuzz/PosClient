@@ -728,6 +728,30 @@
     "consumerId": false
   },
   {
+    "service": "ExportService",
+    "method": "export",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 28,
+    "throws": 0,
+    "consumerId": true
+  },
+  {
+    "service": "ExportService",
+    "method": "parseFormat",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 18,
+    "throws": 1,
+    "consumerId": false
+  },
+  {
+    "service": "ExportService",
+    "method": "toPdf",
+    "file": "src/consumer/export/services/export.service.ts",
+    "line": 172,
+    "throws": 0,
+    "consumerId": false
+  },
+  {
     "service": "ImportService",
     "method": "assertKnownEntity",
     "file": "src/consumer/import/services/import.service.ts",
@@ -1731,7 +1755,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "copyToBranch",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 432,
+    "line": 434,
     "throws": 1,
     "consumerId": true
   },
@@ -1739,7 +1763,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "createSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 214,
+    "line": 216,
     "throws": 1,
     "consumerId": false
   },
@@ -1747,7 +1771,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "deactivateSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 291,
+    "line": 293,
     "throws": 2,
     "consumerId": true
   },
@@ -1755,7 +1779,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "deleteSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 412,
+    "line": 414,
     "throws": 2,
     "consumerId": true
   },
@@ -1763,7 +1787,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getActiveSettings",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 120,
+    "line": 122,
     "throws": 0,
     "consumerId": true
   },
@@ -1771,7 +1795,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getBrandingData",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 160,
+    "line": 162,
     "throws": 2,
     "consumerId": true
   },
@@ -1779,7 +1803,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getConsumerOnlyBrandingData",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 501,
+    "line": 503,
     "throws": 1,
     "consumerId": true
   },
@@ -1787,7 +1811,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "getSettingById",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 312,
+    "line": 314,
     "throws": 1,
     "consumerId": true
   },
@@ -1795,7 +1819,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "initializeConsumerDefaults",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 96,
+    "line": 98,
     "throws": 0,
     "consumerId": true
   },
@@ -1803,7 +1827,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "listAllByType",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 355,
+    "line": 357,
     "throws": 0,
     "consumerId": true
   },
@@ -1811,7 +1835,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "listSettings",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 332,
+    "line": 334,
     "throws": 0,
     "consumerId": true
   },
@@ -1819,7 +1843,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "setActive",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 266,
+    "line": 268,
     "throws": 1,
     "consumerId": true
   },
@@ -1827,7 +1851,7 @@
     "service": "ReceiptPdfSettingService",
     "method": "updateSetting",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf-setting.service.ts",
-    "line": 373,
+    "line": 375,
     "throws": 1,
     "consumerId": true
   },
@@ -2349,6 +2373,14 @@
     "file": "src/consumer/tag/services/tag.service.ts",
     "line": 72,
     "throws": 1,
+    "consumerId": true
+  },
+  {
+    "service": "TransferPdfService",
+    "method": "generateTransferPdf",
+    "file": "src/consumer/receipt-pdf/services/transfer-pdf.service.ts",
+    "line": 20,
+    "throws": 0,
     "consumerId": true
   },
   {

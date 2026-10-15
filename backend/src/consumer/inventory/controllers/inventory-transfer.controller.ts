@@ -9,12 +9,15 @@ import {
   ParseIntPipe,
   Query,
   Req,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
 import { InventoryTransferService } from '../services/inventory-transfer.service';
 import { CreateInventoryTransferDto } from '../dto/create-inventory-transfer.dto';
 import { InventoryQueryDto } from '../dto/inventory-query.dto';
 import { ClientAuthGuard } from '../../../auth/guards/client.auth.guard';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { TransferPdfService } from '../../receipt-pdf/services/transfer-pdf.service';
 import { PermissionsGuard } from 'src/auth/guards/permissions.guard';
 import { HasPermissions } from 'src/decorators/hasPermissions.decorator';
 import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
@@ -25,6 +28,7 @@ import { ConsumerPermission } from 'src/auth/enums/consumerPermissions.enum';
 export class InventoryTransferController {
   constructor(
     private readonly inventoryTransferService: InventoryTransferService,
+    private readonly transferPdfService: TransferPdfService,
   ) {}
 
   @Post()
@@ -45,6 +49,36 @@ export class InventoryTransferController {
       Number(req?.user.consumer_id),
       query,
     );
+  }
+
+  /** ?type=transfer_slip (default) or transfer_chalan */
+  @Get(':id/pdf')
+  async pdf(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id', ParseIntPipe) id: number,
+    @Query('type') type = 'transfer_slip',
+  ) {
+    if (type !== 'transfer_slip' && type !== 'transfer_chalan') {
+      throw new BadRequestException(`Unsupported transfer document: ${type}`);
+    }
+    const consumerId = Number(req.user.consumer_id);
+    const transfer = await this.inventoryTransferService.findOne(
+      id,
+      consumerId,
+    );
+    const buffer = await this.transferPdfService.generateTransferPdf(
+      transfer,
+      consumerId,
+      type,
+    );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${type}-TR-${id}.pdf"`,
+    );
+    return res.send(buffer);
   }
 
   @Get(':id')

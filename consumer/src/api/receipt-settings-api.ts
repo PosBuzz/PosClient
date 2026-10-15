@@ -15,7 +15,9 @@ export type ReceiptPresetType =
   | "chalan"
   | "money_receipt"
   | "delivery_slip"
-  | "online_delivery_slip";
+  | "online_delivery_slip"
+  | "transfer_slip"
+  | "transfer_chalan";
 
 /**
  * Extra documents that can be printed off an existing sale. Same sale data,

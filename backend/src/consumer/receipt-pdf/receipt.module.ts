@@ -7,6 +7,7 @@ import { SalesPdfService } from './services/sales-pdf.service';
 import { SalesModule } from '../sales/sales.module';
 import { ReturnPdfService } from './services/return-pdf.service';
 import { QuotationPdfService } from './services/quotation-pdf.service';
+import { TransferPdfService } from './services/transfer-pdf.service';
 
 @Module({
   imports: [forwardRef(() => SalesModule)],
@@ -17,11 +18,13 @@ import { QuotationPdfService } from './services/quotation-pdf.service';
     ReceiptPdfSettingService,
     ReturnPdfService,
     QuotationPdfService,
+    TransferPdfService,
   ],
   exports: [
     SalesPdfService,
     QuotationPdfService,
     ReturnPdfService,
+    TransferPdfService,
     ReceiptPdfSettingService,
   ],
 })
