@@ -41,6 +41,9 @@ No `.env.docker` or `.env.docker.example` files are tracked (removed 2026-10-15)
 `backup-db.timer` runs `/usr/local/sbin/posbuzz-backup-db` (this repo: `deploy/backup-db.sh`) every night at 02:30 Dhaka: `pg_dump` -> gzip -> `age` (public key only on the server) -> Cloudflare R2 bucket `posbuzz`, prefix `daily/`, 14 days kept. Config and R2 keys: `/opt/posbuzz/env/backup.env` (root only). The private age key is held by the owner (password manager), never on the server. Install/update on the server: copy the script to `/usr/local/sbin/posbuzz-backup-db` (root, 700) and `backup-db.service`/`.timer` to `/etc/systemd/system/`, then `systemctl enable --now backup-db.timer`.
 Restore: `rclone copyto R2:posbuzz/daily/<file> f.age; age -d -i key.txt f.age | gunzip | psql -U postgres -d <db>`. A first backup was restored into a scratch database on 2026-10-15 (74 tables, matching production).
 
+## Dependency security
+CI audits production dependencies of backend, consumer, admin and portfolio (high+ fails the build; the only exception list is `.github/audit-exceptions.json`). As of 2026-10-15 `npm audit` (including dev dependencies) reports 0 findings in all four apps: backend moved to Jest 30 (drops the vulnerable `braces`/`micromatch`), and `package.json` overrides pin `typed-rest-client`'s `qs` (Stryker) and the `js-yaml` used by `@istanbuljs/load-nyc-config` (Jest coverage; avoids `sprintf-js`, which has no patched release). Re-check those overrides when Stryker/Jest are next upgraded. The backend image is built from `npm ci --omit=dev` (prisma is a real dependency since the container runs `prisma migrate deploy`). GitHub Dependabot alerts are on (notifications only); version-update and security-update PRs are off.
+
 ## Not covered yet
 - Redis and RabbitMQ are not deployed (the backend treats both as optional and off by default).
 - `posbuzz.com` has no DNS A record (left as is by the owner); the smoke test probes `portfolio.posbuzz.cloud` instead.

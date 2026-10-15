@@ -8,7 +8,7 @@ const high = (severity) => ['high', 'critical'].includes(severity);
 const severities = ['info', 'low', 'moderate', 'high', 'critical'];
 
 export function evaluateAudit({ report, status, app, lock, exceptions = [], source = '', today = new Date().toISOString().slice(0, 10), baseLock, deltaOnly = false }) {
-  if (!['backend', 'consumer', 'admin'].includes(app)) throw new Error('Unknown application');
+  if (!['backend', 'consumer', 'admin', 'portfolio'].includes(app)) throw new Error('Unknown application');
   if (![0, 1].includes(status) || !object(report) || report.error || report.auditReportVersion !== 2 || !object(report.vulnerabilities) || !object(report.metadata?.vulnerabilities)) {
     throw new Error('Audit failed or returned an unsupported/malformed report');
   }
