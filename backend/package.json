@@ -52,7 +52,7 @@
     "cookie-parser": "^1.4.7",
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
-    "helmet": "^8.1.0",
+    "helmet": "^8.3.0",
     "joi": "^17.13.3",
     "nest-cache-redis": "^1.0.0",
     "node-thermal-printer": "^4.5.0",
