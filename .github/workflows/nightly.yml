@@ -105,7 +105,7 @@ jobs:
           path: backend/reports/stryker/domain-incremental-shard-${{ matrix.shard }}.json
           key: stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-${{ github.run_id }}
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-domain-mutation-shard-${{ matrix.shard }}
           path: backend/reports/stryker
@@ -151,7 +151,7 @@ jobs:
             node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
           fi
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-mutation-baseline-candidate
           path: backend/reports/mutation-baseline.candidate.json
@@ -204,7 +204,7 @@ jobs:
       - run: rm -rf reports/stryker
       - run: node --test scripts/mutation-cache.test.mjs && npm run test:mutation -- ${{ matrix.target }}
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: consumer-mutation-report-${{ strategy.job-index }}
           path: consumer/reports/stryker
@@ -288,7 +288,7 @@ jobs:
         env:
           CI: "true"
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-nightly
           path: e2e/playwright-report
