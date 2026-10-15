@@ -1,0 +1,148 @@
+name: Deploy
+
+# Continuous delivery: every push to main that passes CI ("All checks") is built
+# into images, pushed to GHCR and rolled out to the VPS. Failed health checks
+# roll back to the last good commit (deploy/deploy.sh).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit to (re)deploy; must have passed CI. Defaults to the branch head.
+        required: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  checks: read
+
+jobs:
+  guard:
+    name: Resolve commit
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = workflow_run ]; then
+            [ "$RUN_CONCLUSION" = success ] || { echo "CI did not succeed ($RUN_CONCLUSION): not deploying"; exit 1; }
+            [ "$RUN_EVENT" = push ] || { echo "CI ran for $RUN_EVENT, not a push to main: not deploying"; exit 1; }
+            sha="$RUN_SHA"
+          else
+            sha="${INPUT_SHA:-$(gh api repos/${{ github.repository }}/commits/main --jq .sha)}"
+          fi
+          # Never ship a commit without a green aggregate check.
+          conclusion=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs?check_name=All%20checks" \
+            --jq '.check_runs | sort_by(.completed_at) | last | .conclusion')
+          echo "All checks on $sha: $conclusion"
+          [ "$conclusion" = success ] || { echo "::error::CI is not green for $sha"; exit 1; }
+          # Only commits on main are deployable.
+          git_status=$(gh api "repos/${{ github.repository }}/compare/main...$sha" --jq .status)
+          case "$git_status" in identical|behind) ;; *) echo "::error::$sha is not on main ($git_status)"; exit 1;; esac
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build image (${{ matrix.app }})
+    needs: guard
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        app: [backend, admin, consumer, portfolio]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Context and Dockerfile
+        id: ctx
+        run: |
+          case "${{ matrix.app }}" in
+            backend)   echo "context=backend"   >> "$GITHUB_OUTPUT"; echo "file=backend/Dockerfile"   >> "$GITHUB_OUTPUT";;
+            portfolio) echo "context=portfolio" >> "$GITHUB_OUTPUT"; echo "file=portfolio/Dockerfile" >> "$GITHUB_OUTPUT";;
+            *)         echo "context=."         >> "$GITHUB_OUTPUT"; echo "file=${{ matrix.app }}/Dockerfile" >> "$GITHUB_OUTPUT";;
+          esac
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.ctx.outputs.context }}
+          file: ${{ steps.ctx.outputs.file }}
+          push: true
+          # Next.js prerenders against live CMS content when this is reachable.
+          build-args: |
+            BACKEND_API_URL=https://api.posbuzz.cloud/api/v1
+          tags: |
+            ghcr.io/posbuzz/posclient-${{ matrix.app }}:${{ needs.guard.outputs.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.guard.outputs.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    name: Deploy to VPS
+    needs: [guard, build]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
+      - name: Roll out
+        env:
+          SHA: ${{ needs.guard.outputs.sha }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          { printf '%s\n' "$GHCR_TOKEN"; tar -c -C deploy docker-compose.prod.yml deploy.sh; } \
+            | ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes \
+                "$DEPLOY_USER@$HOST" "deploy $SHA"
+
+  verify:
+    name: Verify live site
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1"; }
+          header() { curl -sI --max-time 20 "$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2- | tr 'A-Z' 'a-z'; }
+          [ "$(code https://api.posbuzz.cloud/api/v1)" = 200 ]
+          [ "$(code https://admin.posbuzz.cloud/)" = 200 ]
+          [ "$(code https://posbuzz.cloud/)" = 200 ]
+          [ "$(code https://posbuzz.com/)" = 200 ]
+          # A plain refresh must pick up a deploy: the entry point and the
+          # service worker may never be cached, hashed assets may be.
+          header https://posbuzz.cloud/ cache-control | grep -q 'no-cache'
+          header https://admin.posbuzz.cloud/ cache-control | grep -q 'no-cache'
+          header https://posbuzz.cloud/sw.js cache-control | grep -q 'no-store'
+          echo "live site OK"
