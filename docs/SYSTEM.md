@@ -42,7 +42,7 @@ Redis and RabbitMQ are **optional and off by default** (`REDIS_ENABLED`, `RABBIT
 | Database | volume `posclient_postgres_data` (the real data) | `posclient_stg_postgres_data` (copy of production on demand) |
 
 One Hostinger VPS (`195.35.45.101`, Mumbai, Ubuntu 24.04) hosts both. Cloudflare is in front (SSL mode Full, Always Use
-HTTPS, one Free rate-limit rule per zone on `POST /api/v1/auth/*`). Host nginx (`deploy/nginx/posbuzz.conf`) routes by
+HTTPS, one Free rate-limit rule per zone on `POST …/auth/login*`, 10 per 10 s). Host nginx (`deploy/nginx/posbuzz.conf`) routes by
 hostname and sets HSTS plus a CSP (enforced low-risk subset, full policy in report-only). `posbuzz.com` has no DNS record yet.
 Nothing else is reachable from outside: UFW allows only 22222 (SSH, key only), 80 and 443; fail2ban watches SSH.
 Secrets live only on the server (`/opt/posbuzz*/env/`); GitHub holds just the `DEPLOY_*` secrets.
