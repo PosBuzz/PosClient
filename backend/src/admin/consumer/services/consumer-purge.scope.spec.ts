@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { SCOPE } from './consumer-purge.service';
+import { consumerScope } from './consumer-purge.service';
 
 /**
  * The purge refuses to run when a tenant-owned table cannot be scoped to a
@@ -83,7 +83,7 @@ const reachableFromConsumer = (models: Model[]): Model[] => {
   return models.filter((model) => seen.has(model.name));
 };
 
-describe('consumer purge SCOPE', () => {
+describe('consumer purge scope', () => {
   const models = parseModels();
   const reachable = reachableFromConsumer(models);
 
@@ -113,7 +113,7 @@ describe('consumer purge SCOPE', () => {
 
   it('[BE-UTIL-003] scopes every tenant-owned table that has no consumer_id', () => {
     const unmapped = reachable
-      .filter((model) => !model.hasConsumerId && !SCOPE[model.table])
+      .filter((model) => !model.hasConsumerId && !consumerScope()[model.table])
       .map((model) => model.table);
 
     expect(unmapped).toEqual([]);
@@ -124,7 +124,9 @@ describe('consumer purge SCOPE', () => {
       reachable.filter((m) => !m.hasConsumerId).map((m) => m.table),
     );
 
-    const stale = Object.keys(SCOPE).filter((table) => !needsScope.has(table));
+    const stale = Object.keys(consumerScope()).filter(
+      (table) => !needsScope.has(table),
+    );
 
     expect(stale).toEqual([]);
   });

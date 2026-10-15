@@ -664,11 +664,11 @@ describe('admin consumers and purge (detail)', () => {
       expect(byName.has('plans')).toBe(false);
       expect(byName.has('consumers')).toBe(false);
       // every table the purge cannot scope by consumer_id has a SCOPE entry
-      const { SCOPE } = await import(
+      const { consumerScope } = await import(
         '../../src/admin/consumer/services/consumer-purge.service'
       );
       for (const t of tables) {
-        if (!t.hasConsumerId) expect(SCOPE[t.name]).toBeDefined();
+        if (!t.hasConsumerId) expect(consumerScope()[t.name]).toBeDefined();
       }
     });
 
