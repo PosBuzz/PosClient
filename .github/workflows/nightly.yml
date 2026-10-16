@@ -96,6 +96,8 @@ jobs:
             timeout --signal=INT --kill-after=10m 300m npm run test:mutation:shard || rc=$?
             if [ "$rc" -eq 124 ] || [ "$rc" -eq 130 ] || [ "$rc" -eq 137 ]; then
               echo "::warning::Shard ${{ matrix.shard }} hit its 5h budget; partial results are cached and the next run resumes from them."
+              # A stopped shard writes no mutation.json; the marker tells the gate tonight's measurement is incomplete.
+              mkdir -p reports/stryker && touch reports/stryker/budget-hit
               rc=0
             fi
             exit "$rc"
@@ -152,11 +154,16 @@ jobs:
           test "${{ needs.backend-mutation-domain.result }}" = success
           shopt -s nullglob
           reports=(reports/shards/*/*.mutation.json)
+          stopped=(reports/shards/*/budget-hit)
+          if [ ${#stopped[@]} -gt 0 ]; then
+            echo "::warning::${#stopped[@]} shard(s) hit the 5h budget and reported nothing tonight; their files are judged once a run finishes them."
+          fi
           if [ ${#reports[@]} -eq 0 ]; then echo "No shard measured anything tonight."; exit 0; fi
-          if [ "${{ inputs.full_domain }}" = "true" ]; then
+          if [ "${{ inputs.full_domain }}" = "true" ] && [ ${#stopped[@]} -eq 0 ]; then
             # Every file was measured, so judge the strict Tier A 75 / Tier B 60 floors (BE-COV-020)
             node scripts/mutation-tier-gate.mjs "${reports[@]}"
           else
+            # Rotating nights, and full runs a stopped shard left incomplete: measured files may not fall below their baseline
             node scripts/mutation-tier-gate.mjs --baseline test/service-coverage/mutation-baseline.json --candidate reports/mutation-baseline.candidate.json "${reports[@]}"
           fi
       - if: always()
