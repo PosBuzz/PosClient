@@ -32,8 +32,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
-    # A shard's first (cold) pass can take over an hour; the incremental cache makes later nights take minutes.
-    # timeout-minutes: 120  # disabled for now (owner request): let cold passes run to completion
+    # A shard's first (cold) pass can take hours; the incremental cache makes later nights take minutes.
+    # GitHub kills a job at 6h without running any later step, so the mutate step stops itself at 5h (below),
+    # which lets Stryker save a partial report and the cache step store it. The next night resumes from there.
+    timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
@@ -86,10 +88,17 @@ jobs:
           restore-keys: |
             stryker-domain-v2-${{ env.STRYKER_ROTATION_KEY }}-s${{ matrix.shard }}-
       - name: Mutate this shard's files
-        # timeout-minutes: 110  # disabled for now (owner request)
         run: |
           if node --input-type=module -e "const c = (await import('./stryker.domain.config.mjs')).default; process.exit(c.mutate.length ? 0 : 3)"; then
-            npm run test:mutation:shard
+            # SIGINT after 5h makes Stryker write a partial incremental report (mutants finished so far); a
+            # partial run is not a failure: tonight's results are cached and the next night finishes the rest.
+            rc=0
+            timeout --signal=INT --kill-after=10m 300m npm run test:mutation:shard || rc=$?
+            if [ "$rc" -eq 124 ] || [ "$rc" -eq 130 ] || [ "$rc" -eq 137 ]; then
+              echo "::warning::Shard ${{ matrix.shard }} hit its 5h budget; partial results are cached and the next run resumes from them."
+              rc=0
+            fi
+            exit "$rc"
           else
             echo "Nothing is assigned to this shard tonight."
           fi
