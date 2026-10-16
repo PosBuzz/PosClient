@@ -708,6 +708,29 @@ describe("POS checkout", () => {
       expect(invalidated).toContain(key);
     }
   });
+
+  it("[CO-FLOW-POS-CUST-001] typing in the customer box searches customers on the server, so anyone past the first 100 can be found", async () => {
+    const searches: string[] = [];
+    server.use(
+      http.get(`${API}${endpoints.getCustomers}`, ({ request }) => {
+        const search = new URL(request.url).searchParams.get("search") ?? "";
+        searches.push(search);
+        return ok({
+          data: search
+            ? [{ id: 501, name: "Zed Far", phone: "0170000501" }]
+            : [{ id: 1, name: "First Customer", phone: "0171" }],
+        });
+      }),
+    );
+    const { user } = mount();
+    const placeholder = await screen.findByText("Walk-in customer");
+    const box = within(
+      placeholder.closest(".ant-select") as HTMLElement,
+    ).getByRole("combobox");
+    await user.type(box, "zed");
+    expect(await screen.findByText(/Zed Far/)).toBeInTheDocument();
+    expect(searches).toContain("zed");
+  });
 });
 
 afterEach(() => vi.useRealTimers());
