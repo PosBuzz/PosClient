@@ -91,6 +91,8 @@ Prisma schema and migrations are checked for an empty `migrate diff`, and a dest
 - A confirmed defect found while testing is fixed now with a normal passing regression test. No `it.failing`, `skip` or similar markers.
 - Domain mutation is nightly-only: a seventh of the files per night (`STRYKER_ROTATION=d/7`) plus recently changed files, split into shards,
   judged by the ratchet `scripts/mutation-tier-gate.mjs --baseline backend/test/service-coverage/mutation-baseline.json`.
+  A shard stops itself at 5h, caches its partial results for the next run and reports nothing that night (it leaves a `budget-hit` marker).
+  A `full_domain` run judges the strict Tier A/B floors only when no shard stopped; otherwise it falls back to the ratchet and warns.
 - Mutation and e2e jobs are expensive. Keep CI runs few.
 
 **Error contract** (every non-2xx JSON from `/api/v1/**`): `{ statusCode, message, error }` with `message` a readable string
