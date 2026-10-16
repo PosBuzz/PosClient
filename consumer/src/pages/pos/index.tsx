@@ -1453,7 +1453,9 @@ const NewSale = () => {
                       showSearch
                       allowClear
                       size="small"
-                      optionFilterProp="children"
+                      filterOption={false}
+                      onSearch={setCustomerSearch}
+                      onClear={() => setCustomerSearch("")}
                       value={selectedCustomer?.id}
                       onChange={(value) => {
                         const customer = customers.find((c) => c.id === value);
@@ -1468,13 +1470,11 @@ const NewSale = () => {
                         }, 0);
                       }}
                       style={{ flex: 1, minWidth: 0 }}
-                    >
-                      {customers.map((customer) => (
-                        <Option key={customer.id} value={customer.id}>
-                          {customer.name} • {customer.phone}
-                        </Option>
-                      ))}
-                    </Select>
+                      options={customers.map((customer) => ({
+                        value: customer.id,
+                        label: `${customer.name}${customer.phone ? ` • ${customer.phone}` : ""}`,
+                      }))}
+                    />
                     <Tooltip title="Add customer">
                       <Button
                         icon={<PlusOutlined />}

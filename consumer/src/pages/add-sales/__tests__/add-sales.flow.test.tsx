@@ -242,4 +242,31 @@ describe("Add sale", () => {
       line_total: 315,
     });
   });
+
+  it("[CO-FLOW-SALE-CUST-001] typing in the customer box searches customers on the server, so anyone past the first 100 can be found", async () => {
+    const searches: string[] = [];
+    server.use(
+      http.get(`${API}${endpoints.getCustomers}`, ({ request }) => {
+        const search = new URL(request.url).searchParams.get("search") ?? "";
+        searches.push(search);
+        return ok({
+          data: search
+            ? [{ id: 501, name: "Zed Far", phone: "0170000501" }]
+            : [{ id: 1, name: "First Customer", phone: "0171" }],
+        });
+      }),
+    );
+    const { user } = renderWithProviders(<AddSale />, {
+      route: "/sales/new",
+      path: "/sales/new",
+      permissions: [Permissions.sales],
+    });
+    const placeholder = await screen.findByText("Select customer");
+    const box = within(
+      placeholder.closest(".ant-select") as HTMLElement,
+    ).getByRole("combobox");
+    await user.type(box, "zed");
+    expect(await screen.findByText(/Zed Far/)).toBeInTheDocument();
+    expect(searches).toContain("zed");
+  });
 });
