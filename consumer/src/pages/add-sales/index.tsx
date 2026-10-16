@@ -98,6 +98,7 @@ const NewSale = () => {
     setSelectedItems,
     customers,
     setCustomers,
+    setCustomerSearch,
     servedByUsers,
     filteredVariants,
     setProductSearch,
@@ -987,7 +988,9 @@ const NewSale = () => {
                     placeholder="Select customer"
                     showSearch
                     allowClear
-                    optionFilterProp="children"
+                    filterOption={false}
+                    onSearch={setCustomerSearch}
+                    onClear={() => setCustomerSearch("")}
                     value={selectedCustomer?.id}
                     onChange={(value) => {
                       const customer = customers.find((c) => c.id === value);
@@ -995,13 +998,11 @@ const NewSale = () => {
                       form.setFieldsValue({ customer_id: value });
                     }}
                     style={{ flex: 1 }}
-                  >
-                    {customers.map((customer) => (
-                      <Option key={customer.id} value={customer.id}>
-                        {customer.name} ({customer.phone})
-                      </Option>
-                    ))}
-                  </Select>
+                    options={customers.map((customer) => ({
+                      value: customer.id,
+                      label: `${customer.name}${customer.phone ? ` (${customer.phone})` : ""}`,
+                    }))}
+                  />
                   <Button
                     icon={<PlusOutlined />}
                     onClick={() => setCustomerModalOpen(true)}
