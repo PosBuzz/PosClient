@@ -2,10 +2,11 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { Button, Layout, Tooltip } from "antd";
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import CacheInvalidationButton from "./components/CacheInvalidationButton";
 import ThemeDropdown from "./components/ThemeDropdown";
 import useDarkMode from "./hooks/useDarkMode";
@@ -15,6 +16,8 @@ import { useAuthStore } from "./stores/authStore";
 const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
+  const navigate = useNavigate();
+
   const { logout } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -42,7 +45,7 @@ const AppLayout = () => {
   };
 
   return (
-    <Layout className="max-h-screen">
+    <Layout className="h-screen max-h-screen overflow-hidden">
       {/* Sidebar - Fixed position */}
       <Sider
         trigger={null}
@@ -58,7 +61,18 @@ const AppLayout = () => {
           display: isMobile && collapsed ? "none" : "block",
         }}
       >
-        <div className="flex h-[65px] shrink-0 items-center justify-center px-3">
+        {/* Logo Area - Fixed at top, won't scroll away */}
+        <div
+          style={{
+            height: 65,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            padding: "0 12px",
+            flexShrink: 0,
+          }}
+        >
           <img
             src="/favicon.ico"
             alt="PosBuzz logo"
@@ -66,7 +80,7 @@ const AppLayout = () => {
           />
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="sidebar-scroll-container">
           <SideBar />
         </div>
         <div className="shrink-0 px-3 py-3 text-center text-xs opacity-70 truncate select-none border-t border-white/5">
@@ -87,18 +101,27 @@ const AppLayout = () => {
           }}
           className="shadow-sm flex items-center justify-between"
         >
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 gap-2">
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={toggleSidebar}
               className="w-16 h-16 text-lg"
             />
-            <h2 className="m-0 text-lg hidden md:block">Admin Panel</h2>
+            <h2 className="m-0 text-lg hidden md:block truncate">
+              Admin Panel
+            </h2>
           </div>
           <div className="flex">
             <CacheInvalidationButton />
             <ThemeDropdown />
+            <Tooltip title="Account and Security">
+              <Button
+                type="text"
+                icon={<UserOutlined />}
+                onClick={() => navigate("/account&security")}
+              />
+            </Tooltip>
             <Tooltip title="Logout">
               <Button type="text" icon={<LogoutOutlined />} onClick={logout} />
             </Tooltip>
