@@ -85,6 +85,26 @@ describe('promotion math', () => {
       ),
     ).toBe(0);
   });
+  it('[BE-PROMO-012] a cart exactly at the quantity limit keeps its exact subtotal (no per-unit rounding drift)', () => {
+    // 1 / 49 * 49 is 0.9999999999999999 in floating point, so the early return must be taken at the limit
+    expect(base([{ quantity: 49, subtotal: 1 }], 49)).toBe(1);
+    expect(base([{ quantity: 49, subtotal: 1 }], 50)).toBe(1);
+  });
+  it('[BE-PROMO-013] a zero-quantity line with a subtotal is never priced per unit, in any position', () => {
+    const empty = { quantity: 0, subtotal: 50 };
+    const line = { quantity: 2, subtotal: 100 };
+    expect(base([empty, line], 1)).toBe(50);
+    expect(base([line, empty], 1)).toBe(50);
+    expect(base([empty, line, { ...empty }], 1)).toBe(50);
+  });
+  it('[BE-PROMO-014] stops once the quantity limit is used up even if later lines have odd quantities', () => {
+    const rows = [
+      { quantity: 1, subtotal: 100 },
+      { quantity: -2, subtotal: 0 },
+      { quantity: 3, subtotal: -30 },
+    ];
+    expect(base(rows, 1)).toBe(100);
+  });
   it('[BE-PROMO-P01] valid discounts stay within the base', () =>
     fc.assert(
       fc.property(
