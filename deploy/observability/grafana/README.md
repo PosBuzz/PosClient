@@ -19,7 +19,7 @@ Alerting > Alert rules > New alert rule, data source `grafanacloud-bravereef185-
 | Backend errors, production | `sum(count_over_time({stack="posclient", service="backend"} \|~ `\bERROR\b` [5m]))` | is above 5 | 5m |
 | Backend errors, staging | same with `stack="posclient-stg"` | is above 20 | 10m |
 | Postgres errors, production | `sum(count_over_time({stack="posclient", service="postgres"} \|~ `\bERROR\b` [5m]))` | is above 5 | 5m |
-| Alloy not shipping | `sum(count_over_time({stack="posclient", service="backend"}[30m]))` | has no data / equals 0 | 30m |
+| Logs stopped arriving (whole host) | `sum(count_over_time({stack=~"posclient.*"}[30m]))` | is below 1 | 30m |
 
-Set "No data" to Alerting for the last rule only. Contact point: Alerting > Contact points (email, or Telegram like the Healthchecks.io
+Set "No data" to Alerting for the last rule only. It watches every container, not one service: production's backend is silent when idle (it logged nothing for 2 hours on 2026-10-17 and a per-service rule fired falsely). Contact point: Alerting > Contact points (email, or Telegram like the Healthchecks.io
 checks). Tune the thresholds after a week of normal traffic.
