@@ -1,0 +1,60 @@
+/* Phones and small tablets: the classic POS stacks into one scrolling column instead of fixed side-by-side panels */
+@media (max-width: 767px) {
+  .pos-classic__body {
+    flex-direction: column;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding: 6px !important;
+  }
+
+  .pos-classic__main {
+    flex: none !important;
+    overflow: visible !important;
+  }
+
+  .pos-classic__cards {
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+
+  .pos-classic__card.ant-card {
+    flex: none !important;
+    width: 100%;
+    min-width: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .pos-classic__card .ant-card-body {
+    overflow: visible !important;
+  }
+
+  .pos-classic__cart {
+    flex: none !important;
+    min-height: 320px;
+    overflow: visible !important;
+  }
+
+  /* Seven numeric columns do not fit in 390px: keep them readable and scroll sideways */
+  .pos-classic__cart .ant-table-content,
+  .pos-classic__cart .ant-table-header,
+  .pos-classic__cart .ant-table-body {
+    overflow-x: auto !important;
+  }
+
+  .pos-classic__cart .ant-table table {
+    min-width: 760px;
+  }
+
+  .pos-classic__side {
+    width: 100% !important;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .pos-classic__header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

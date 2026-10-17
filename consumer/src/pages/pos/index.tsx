@@ -89,6 +89,7 @@ import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
+import "./pos-mobile.css";
 import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 
 const { Option } = Select;
@@ -968,7 +969,7 @@ const NewSale = () => {
           title="Available Promotions"
           open={promotionDrawerOpen}
           onClose={() => setPromotionDrawerOpen(false)}
-          width={460}
+          width={Math.min(460, window.innerWidth)}
         >
           <List
             loading={activePromotionsQuery.isLoading}
@@ -1164,7 +1165,7 @@ const NewSale = () => {
         title="Available Promotions"
         open={promotionDrawerOpen}
         onClose={() => setPromotionDrawerOpen(false)}
-        width={460}
+        width={Math.min(460, window.innerWidth)}
       >
         <List
           loading={activePromotionsQuery.isLoading}
@@ -1251,6 +1252,7 @@ const NewSale = () => {
 
       {/* POS Header Bar */}
       <div
+        className="pos-classic__header"
         style={{
           padding: "6px 12px",
           display: "flex",
@@ -1347,6 +1349,7 @@ const NewSale = () => {
         }}
       >
         <div
+          className="pos-classic__body"
           style={{
             flex: 1,
             display: "flex",
@@ -1357,6 +1360,7 @@ const NewSale = () => {
           }}
         >
           <div
+            className="pos-classic__main"
             style={{
               flex: 1,
               display: "flex",
@@ -1367,6 +1371,7 @@ const NewSale = () => {
             }}
           >
             <div
+              className="pos-classic__cards"
               style={{
                 width: "100%",
                 flexShrink: 0,
@@ -1381,6 +1386,7 @@ const NewSale = () => {
             >
               {/* Card for selecting Branch, Customer, Served By, and Pricing Type */}
               <Card
+                className="pos-classic__card"
                 size="small"
                 style={{
                   flex: "1 1 240px",
@@ -1567,6 +1573,7 @@ const NewSale = () => {
 
               {/* Card for Adding Products and applying Discounts & Charges */}
               <Card
+                className="pos-classic__card"
                 size="small"
                 style={{
                   flex: "1 1 300px",
@@ -1815,6 +1822,7 @@ const NewSale = () => {
 
               {/* Card for managing Payments and Payment Methods */}
               <Card
+                className="pos-classic__card"
                 size="small"
                 style={{
                   flex: "1 1 480px",
@@ -2054,6 +2062,7 @@ const NewSale = () => {
             </div>
 
             <div
+              className="pos-classic__cart"
               style={{
                 flex: 1,
                 display: "flex",
@@ -2178,6 +2187,7 @@ const NewSale = () => {
           </div>
 
           <div
+            className="pos-classic__side"
             style={{
               width: 280,
               flexShrink: 0,
