@@ -1,0 +1,28 @@
+# Grafana Alloy: ships container logs to Grafana Cloud (Loki). Not part of the app deploy
+# pipeline; started by hand (see deploy/observability/README.md). The credentials live only
+# in the server env file named by ALLOY_ENV, never in git.
+services:
+  alloy:
+    image: grafana/alloy:v1.10.0
+    container_name: posbuzz-alloy
+    restart: unless-stopped
+    env_file: ${ALLOY_ENV:?set ALLOY_ENV to the server-only alloy.env}
+    command:
+      - run
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=127.0.0.1:12345
+      - /etc/alloy/config.alloy
+    network_mode: host
+    mem_limit: 256m
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  alloy_data:
