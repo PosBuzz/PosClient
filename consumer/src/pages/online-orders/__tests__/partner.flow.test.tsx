@@ -1,6 +1,6 @@
-import { screen, within } from "@testing-library/react";
-import { http } from "msw";
-import { beforeEach, expect, it } from "vitest";
+import { screen, waitFor, within } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { beforeEach, expect, it, vi } from "vitest";
 import { endpoints } from "../../../api/endpoints";
 import { responseContract } from "../../../test/contracts/load";
 import { selectAntdOption } from "../../../test/antd";
@@ -105,4 +105,31 @@ it("[CO-DP-032] collecting more than the customer owes is refused before sending
   await user.click(within(dialog).getByRole("button", { name: "OK" }));
   await screen.findByText(/The customer owes/);
   expect(captured.calls).toHaveLength(0);
+});
+
+it("[CO-DP-033] the online delivery slip opens in the PDF preview instead of downloading", async () => {
+  const requested: URL[] = [];
+  server.use(
+    http.get(`${API}/consumer/sales/receipt/${order.id}`, ({ request }) => {
+      requested.push(new URL(request.url));
+      return new HttpResponse(new Uint8Array([37, 80, 68, 70]), {
+        headers: { "content-type": "application/pdf" },
+      });
+    }),
+  );
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click");
+  const view = renderWithProviders(<OnlineOrders />);
+  const cell = await view.findAllByText(order.sale_number);
+  await view.user.click(
+    within(cell[0].closest("tr")!).getByRole("button", {
+      name: /Online Delivery Slip/,
+    }),
+  );
+  const dialog = await screen.findByRole("dialog");
+  expect(
+    within(dialog).getByText(`Online Delivery Slip - ${order.sale_number}`),
+  ).toBeInTheDocument();
+  await waitFor(() => expect(requested).toHaveLength(1));
+  expect(requested[0].searchParams.get("type")).toBe("online_delivery_slip");
+  expect(click).not.toHaveBeenCalled();
 });
