@@ -309,6 +309,7 @@ describe('SalesService.getEODReport (unit)', () => {
       digital_sales: 40,
       reward_point_sales: 20,
       exchange_sales: 15,
+      delivery_partner_collected: 0,
       total_exchange_return: 17,
       unique_exchanges: 22,
       non_cash_sales: 140,

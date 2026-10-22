@@ -10,7 +10,7 @@ listPageSmoke({
   rowsKey: "data",
   rowLabel: (r) => r.sale_number,
   dependencies: {
-    [endpoints.getVendors]: [],
+    "/consumer/delivery-partners": responseContract("delivery-partners-list"),
     [`${endpoints.getSales}/online-orders/stats`]: responseContract(
       "online-orders-stats",
     ),

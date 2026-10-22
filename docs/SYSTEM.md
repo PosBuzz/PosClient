@@ -112,6 +112,15 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
 - **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports (Excel and PDF of products, customers, inventory) are always available.
 - **Print server download:** the consumer app serves the Windows installer at `/print-server/PosBuzz-Print-Server.zip` (shown as Download Print Server on Receipt Settings). After rebuilding `PrintingFromWebToPOSPrinter`, copy `Distribution/PosBuzz-Print-Server.zip` to `consumer/public/print-server/`; a consumer test fails if the two differ.
 - **Delivery:** CD to the VPS from GHCR images, staging then production by branch (D-074, D-075).
+- **Delivery partners (D-076, 2026-10-22):** online orders link to a partner record (`delivery_partners`), with cash to collect, a delivery
+  (or return) charge and a COD fee per order. The partner ledger (`delivery_partner_transactions`) is append-only: a change posts a correcting
+  row, and a partner's balance is the sum of its rows (> 0 means the partner owes the shop). An order's rows are derived from its status and
+  amounts by `syncPartnerOrder`, so status edits, partner moves, deletes and restores post only the difference. Marking an order delivered
+  records the collected cash as a customer payment with the system-only method `DELIVERY_PARTNER`, so the customer's due clears then; the
+  business report counts it as collected but not as cash or digital money (`delivery_partner_collected`). Payouts and payments to a partner
+  are `delivery_partner_settlements`; one can settle chosen orders (which then lock until the payout is voided) and write off the gap as an
+  adjustment. Payouts are not yet part of the business report's cash figures. The migration turned existing free-text partner names into
+  partners per shop (case-insensitive) without inventing balances for old orders. These endpoints use the `sales` permission.
 
 ## 6. Known issues and owner actions
 

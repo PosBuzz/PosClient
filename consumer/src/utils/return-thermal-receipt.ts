@@ -12,6 +12,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   MFS: "MFS",
   CREDIT: "Credit",
   EXCHANGE: "Exchange",
+  DELIVERY_PARTNER: "Courier COD",
 };
 
 const num = (value: unknown) => Number(value) || 0;

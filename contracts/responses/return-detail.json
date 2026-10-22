@@ -98,6 +98,8 @@
   "notes": null,
   "original_sale": {
     "branch_id": 1,
+    "cod_amount": "0",
+    "cod_fee": "0",
     "consumer_id": 1,
     "converted_at": null,
     "converted_to_sale_id": null,
@@ -110,7 +112,9 @@
     "deleted_at": null,
     "deleted_by_id": null,
     "delivered_at": null,
+    "delivery_charge": "0",
     "delivery_partner": null,
+    "delivery_partner_id": null,
     "delivery_status": null,
     "discount_amount": "0",
     "id": 2,
@@ -194,6 +198,7 @@
     ],
     "notes": null,
     "online_order_status": null,
+    "partner_settlement_id": null,
     "payment_status": "paid",
     "payments": [
       {

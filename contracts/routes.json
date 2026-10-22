@@ -1434,6 +1434,162 @@
   },
   {
     "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners",
+    "controller": "DeliveryPartnersController",
+    "handler": "findAll",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/delivery-partners",
+    "controller": "DeliveryPartnersController",
+    "handler": "create",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/consumer/delivery-partners/:id",
+    "controller": "DeliveryPartnersController",
+    "handler": "remove",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners/:id",
+    "controller": "DeliveryPartnersController",
+    "handler": "findOne",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/consumer/delivery-partners/:id",
+    "controller": "DeliveryPartnersController",
+    "handler": "update",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/delivery-partners/:id/adjustments",
+    "controller": "DeliveryPartnersController",
+    "handler": "createAdjustment",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners/:id/ledger",
+    "controller": "DeliveryPartnersController",
+    "handler": "ledger",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners/:id/orders",
+    "controller": "DeliveryPartnersController",
+    "handler": "orders",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners/:id/settlements",
+    "controller": "DeliveryPartnersController",
+    "handler": "settlements",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/delivery-partners/:id/settlements",
+    "controller": "DeliveryPartnersController",
+    "handler": "createSettlement",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/consumer/delivery-partners/:id/settlements/:settlementId/void",
+    "controller": "DeliveryPartnersController",
+    "handler": "voidSettlement",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/consumer/delivery-partners/:id/summary",
+    "controller": "DeliveryPartnersController",
+    "handler": "summary",
+    "guards": [
+      "ClientAuthGuard",
+      "PermissionsGuard"
+    ],
+    "permissions": [
+      "sales"
+    ]
+  },
+  {
+    "method": "GET",
     "path": "/api/v1/consumer/export/customers",
     "controller": "ExportController",
     "handler": "customers",

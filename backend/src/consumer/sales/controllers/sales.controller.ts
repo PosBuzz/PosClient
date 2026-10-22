@@ -448,9 +448,9 @@ export class SalesController {
   ) {
     return this.salesService.updateOnlineOrderStatus(
       id,
-      updateStatusDto.status,
+      updateStatusDto,
       req.user.consumer_id!,
-      updateStatusDto.delivery_partner,
+      req.user.id,
     );
   }
 

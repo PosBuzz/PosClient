@@ -217,6 +217,7 @@
     "average_transaction_value": 213,
     "cash_refunds": 80,
     "cash_sales": 625,
+    "delivery_partner_collected": 0,
     "digital_refunds": 0,
     "digital_sales": 470,
     "due_collected": 50,

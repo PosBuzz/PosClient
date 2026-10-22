@@ -145,6 +145,8 @@ function Dashboard() {
         return "Reward Points / Credit";
       case "EXCHANGE":
         return "Product Exchange";
+      case "DELIVERY_PARTNER":
+        return "Collected by Delivery Partner";
       case "CHEQUE":
         return "Cheque";
       case "BANK_TRANSFER":

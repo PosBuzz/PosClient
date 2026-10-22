@@ -1,0 +1,36 @@
+{
+  "balance": -56.05,
+  "last_settlement": {
+    "amount": 100,
+    "direction": "RECEIVED",
+    "id": 1,
+    "settlement_date": "2026-03-14T00:00:00.000Z"
+  },
+  "partner": {
+    "consumer_id": 1,
+    "contact": null,
+    "created_at": "2026-03-14T12:00:00.000Z",
+    "default_cod_fee_percent": 1,
+    "default_delivery_charge": 60,
+    "id": 1,
+    "is_active": true,
+    "name": "C4 courier",
+    "notes": null,
+    "phone": "01700000099",
+    "updated_at": "2026-03-14T12:00:00.000Z"
+  },
+  "totals": {
+    "adjustments": 0,
+    "cod_collected": 105,
+    "cod_fees": 1.05,
+    "delivery_charges": 60,
+    "payments_made": 0,
+    "payouts_received": 100,
+    "return_charges": 0,
+    "voided": 0
+  },
+  "unsettled": {
+    "net": 43.95,
+    "orders": 1
+  }
+}

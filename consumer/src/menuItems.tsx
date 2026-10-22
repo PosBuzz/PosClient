@@ -192,6 +192,11 @@ export const MENU_ITEMS: MenuItem[] = [
         permissions: [Permissions.sales],
       },
       {
+        label: <span title="Delivery Partners">Delivery Partners</span>,
+        key: "/delivery-partners",
+        permissions: [Permissions.sales],
+      },
+      {
         label: <span title="Pending Deliveries">Pending Deliveries</span>,
         key: "/pending-deliveries",
         permissions: [Permissions.sales],
