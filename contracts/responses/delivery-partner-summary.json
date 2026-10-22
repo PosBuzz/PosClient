@@ -4,7 +4,7 @@
     "amount": 100,
     "direction": "RECEIVED",
     "id": 1,
-    "settlement_date": "2026-03-14T00:00:00.000Z"
+    "settlement_date": "2026-03-14T12:00:00.000Z"
   },
   "partner": {
     "consumer_id": 1,
