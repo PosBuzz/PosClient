@@ -11,6 +11,13 @@ const RULES: Array<[RegExp, Record<string, Resolve>]> = [
   [/^consumer\/units\/:id/, { id: (s) => s.ids.unit }],
   [/^consumer\/customers\/:id/, { id: (s) => s.ids.customer }],
   [/^consumer\/vendors\/:id/, { id: (s) => s.ids.vendor }],
+  [
+    /^consumer\/delivery-partners\/:id/,
+    {
+      id: (s) => s.ids.deliveryPartner,
+      settlementId: (s) => s.ids.partnerSettlement,
+    },
+  ],
   [/^consumer\/products\/:id/, { id: (s) => s.ids.product }],
   [/^consumer\/promotions\/:id/, { id: (s) => s.ids.promotion }],
   [/^consumer\/operational-costs\/:id/, { id: (s) => s.ids.cost }],

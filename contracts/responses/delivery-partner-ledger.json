@@ -1,0 +1,83 @@
+{
+  "data": [
+    {
+      "amount": -100,
+      "balance_after": -56.05,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_id": 1,
+      "id": 4,
+      "note": "Payout #1 (ref C4-PAYOUT)",
+      "partner_id": 1,
+      "sale": null,
+      "sale_id": null,
+      "settlement": {
+        "direction": "RECEIVED",
+        "id": 1,
+        "voided_at": null
+      },
+      "settlement_id": 1,
+      "type": "PAYOUT_RECEIVED"
+    },
+    {
+      "amount": -60,
+      "balance_after": 43.95,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_id": 1,
+      "id": 3,
+      "note": "Delivery charge for order #SAL-20260314-0007",
+      "partner_id": 1,
+      "sale": {
+        "id": 9,
+        "sale_number": "SAL-20260314-0007"
+      },
+      "sale_id": 9,
+      "settlement": null,
+      "settlement_id": null,
+      "type": "DELIVERY_CHARGE"
+    },
+    {
+      "amount": -1.05,
+      "balance_after": 103.95,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_id": 1,
+      "id": 2,
+      "note": "COD fee for order #SAL-20260314-0007",
+      "partner_id": 1,
+      "sale": {
+        "id": 9,
+        "sale_number": "SAL-20260314-0007"
+      },
+      "sale_id": 9,
+      "settlement": null,
+      "settlement_id": null,
+      "type": "COD_FEE"
+    },
+    {
+      "amount": 105,
+      "balance_after": 105,
+      "consumer_id": 1,
+      "created_at": "2026-03-14T12:00:00.000Z",
+      "created_by_id": 1,
+      "id": 1,
+      "note": "Cash collected for order #SAL-20260314-0007",
+      "partner_id": 1,
+      "sale": {
+        "id": 9,
+        "sale_number": "SAL-20260314-0007"
+      },
+      "sale_id": 9,
+      "settlement": null,
+      "settlement_id": null,
+      "type": "COD_COLLECTED"
+    }
+  ],
+  "meta": {
+    "limit": 20,
+    "page": 1,
+    "total": 4,
+    "total_pages": 1
+  }
+}

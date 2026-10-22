@@ -2,6 +2,7 @@ import { Money, takaPrefix } from "../../components/Currency";
 import { AuditOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -17,6 +18,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -95,6 +97,7 @@ const EODReport = () => {
       MFS: "MFS (bKash/Nagad)",
       CREDIT: "Reward Points / Store Credit",
       EXCHANGE: "Product Exchange",
+      DELIVERY_PARTNER: "Collected by Delivery Partner",
     };
     return displays[method] || method;
   };
@@ -109,6 +112,7 @@ const EODReport = () => {
       MFS: "magenta",
       CREDIT: "gold",
       EXCHANGE: "geekblue",
+      DELIVERY_PARTNER: "volcano",
     };
     return colors[method] || "default";
   };
@@ -511,6 +515,22 @@ const EODReport = () => {
               </Card>
             </Col>
           </Row>
+          {Number(eodData.summary.delivery_partner_collected || 0) > 0 && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                <span>
+                  <Money value={eodData.summary.delivery_partner_collected} />{" "}
+                  was paid by customers to delivery partners. It is not in the
+                  cash or digital totals: it reaches you with the partner&apos;s
+                  payout.{" "}
+                  <Link to="/delivery-partners">See what partners owe</Link>
+                </span>
+              }
+            />
+          )}
 
           {/* Cash Drawer & Operational Costs */}
           <Row gutter={16} style={{ marginBottom: 16 }}>

@@ -49,6 +49,8 @@
   "/user-sales-stats": "business_insights",
   "/user-sales-stats/:userId": "business_insights",
   "/online-orders": "sales",
+  "/delivery-partners": "sales",
+  "/delivery-partners/view/:id": "sales",
   "/pending-deliveries": "sales",
   "/quotations": "quotations",
   "/add-quotation": "quotations",

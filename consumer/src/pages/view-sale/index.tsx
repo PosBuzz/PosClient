@@ -6,6 +6,10 @@ import {
   FileTextOutlined,
   PrinterOutlined,
 } from "@ant-design/icons";
+import {
+  PARTNER_PAYMENT_LABEL,
+  PARTNER_PAYMENT_METHOD,
+} from "../../utils/delivery-partner.utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
@@ -180,7 +184,9 @@ const SaleDetail: React.FC = () => {
       case PaymentMethod.CREDIT:
         return "red";
       default:
-        return "default";
+        return (method as string) === PARTNER_PAYMENT_METHOD
+          ? "volcano"
+          : "default";
     }
   };
 
@@ -201,7 +207,9 @@ const SaleDetail: React.FC = () => {
       case PaymentMethod.CREDIT:
         return "Credit";
       default:
-        return method;
+        return (method as string) === PARTNER_PAYMENT_METHOD
+          ? PARTNER_PAYMENT_LABEL
+          : method;
     }
   };
 

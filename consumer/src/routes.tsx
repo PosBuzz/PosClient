@@ -56,6 +56,8 @@ const ViewUserSalesStats = lazy(
   () => import("./pages/user-sales-stats/view-user-sales-stats"),
 );
 const OnlineOrders = lazy(() => import("./pages/online-orders"));
+const DeliveryPartners = lazy(() => import("./pages/delivery-partners"));
+const ViewDeliveryPartner = lazy(() => import("./pages/view-delivery-partner"));
 const PendingDeliveries = lazy(() => import("./pages/pending-deliveries"));
 const DailyTargetReport = lazy(() => import("./pages/daily-target"));
 const BusinessReport = lazy(() => import("./pages/eod"));
@@ -429,6 +431,22 @@ export const routes = [
         element: (
           <RequirePermission permission={Permissions.sales}>
             <OnlineOrders />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "delivery-partners",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <DeliveryPartners />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "delivery-partners/view/:id",
+        element: (
+          <RequirePermission permission={Permissions.sales}>
+            <ViewDeliveryPartner />
           </RequirePermission>
         ),
       },

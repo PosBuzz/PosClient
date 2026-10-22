@@ -16,6 +16,10 @@ import {
   iso,
 } from '../../integration/reports/scenario';
 import { normalize } from './normalize';
+import { DeliveryPartnersService } from '../../../src/consumer/delivery-partners/services/delivery-partners.service';
+import { SettlementPaymentMethod } from '../../../src/consumer/delivery-partners/dto/settlement.dto';
+import { SalesService } from '../../../src/consumer/sales/services/sales.service';
+import { saleDto } from '../../helpers/domain';
 
 const DIR = resolve(__dirname, '../../../../contracts/responses');
 
@@ -261,6 +265,12 @@ const CALLS: Call[] = [
     as: 'tenant',
     path: () => '/consumer/rewards/settings',
   },
+  // Filled in by collect(): the partner is created right before the first of these
+  { name: 'delivery-partners-list', as: 'tenant', path: () => '' },
+  { name: 'delivery-partner-summary', as: 'tenant', path: () => '' },
+  { name: 'delivery-partner-orders', as: 'tenant', path: () => '' },
+  { name: 'delivery-partner-ledger', as: 'tenant', path: () => '' },
+  { name: 'delivery-partner-settlements', as: 'tenant', path: () => '' },
 ];
 
 describe('response contracts for the canonical business day', () => {
@@ -288,6 +298,7 @@ describe('response contracts for the canonical business day', () => {
     const admin = await createAdmin(db);
     const out: Record<string, unknown> = {};
     let vendorId: number;
+    let partnerId: number;
     let receiptSettingId: number;
     for (const call of CALLS) {
       if (call.name === 'admin-support-populated') {
@@ -336,6 +347,59 @@ describe('response contracts for the canonical business day', () => {
         });
         receiptSettingId = setting.id;
       }
+      if (call.name === 'delivery-partners-list') {
+        const partner = await boot.get(DeliveryPartnersService).create(
+          {
+            name: 'C4 courier',
+            phone: '01700000099',
+            default_delivery_charge: 60,
+            default_cod_fee_percent: 1,
+          },
+          scenario.tenant.consumer.id,
+        );
+        partnerId = partner.id;
+        // An unpaid online order of the business day, delivered by the partner
+        const order = (await at(iso('16:30'), () =>
+          boot.get(SalesService).create(
+            saleDto(
+              scenario.tenant,
+              [{ variant: scenario.p1.variant, qty: 1 }],
+              {
+                branch_id: scenario.main.id,
+                is_online_order: true,
+                customer_name: 'C4 online customer',
+              } as any,
+              null,
+            ),
+            scenario.tenant.consumer.id,
+            scenario.tenant.adminUser.id,
+          ),
+        )) as { id: number };
+        // The database stamps sale_date; pin it like the scenario's own sales
+        await db.$executeRaw`UPDATE sales SET sale_date = ${new Date(iso('16:30'))}, created_at = ${new Date(iso('16:30'))} WHERE id = ${order.id}`;
+        await boot
+          .get(SalesService)
+          .updateOnlineOrderStatus(
+            order.id,
+            { status: 'DELIVERED', delivery_partner_id: partner.id } as any,
+            scenario.tenant.consumer.id,
+            scenario.tenant.adminUser.id,
+          );
+        await boot
+          .get(DeliveryPartnersService)
+          .createSettlement(
+            partner.id,
+            scenario.tenant.consumer.id,
+            scenario.tenant.adminUser.id,
+            {
+              direction: 'RECEIVED',
+              amount: 100,
+              payment_method: SettlementPaymentMethod.BANK_TRANSFER,
+              reference: 'C4-PAYOUT',
+              settlement_date: '2026-03-14',
+            },
+          );
+      }
       if (call.name === 'daily-target') {
         await db.productVariant.update({
           where: { id: scenario.p1.variant.id },
@@ -352,8 +416,16 @@ describe('response contracts for the canonical business day', () => {
         call.as === 'admin'
           ? api(boot.app).asAdmin(admin)
           : api(boot.app).as(scenario.tenant.adminUser);
-      const callPath =
-        call.name === 'vendor-detail'
+      const partnerPaths: Record<string, string> = {
+        'delivery-partners-list': '/consumer/delivery-partners',
+        'delivery-partner-summary': `/consumer/delivery-partners/${partnerId!}/summary`,
+        'delivery-partner-orders': `/consumer/delivery-partners/${partnerId!}/orders?settlement=unsettled`,
+        'delivery-partner-ledger': `/consumer/delivery-partners/${partnerId!}/ledger`,
+        'delivery-partner-settlements': `/consumer/delivery-partners/${partnerId!}/settlements`,
+      };
+      const callPath = partnerPaths[call.name]
+        ? partnerPaths[call.name]
+        : call.name === 'vendor-detail'
           ? `/consumer/vendors/${vendorId!}/details`
           : call.name === 'receipt-setting-detail'
             ? `/receipt-settings/${receiptSettingId!}`

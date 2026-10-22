@@ -32,6 +32,19 @@ export function bodyFor(
       { status: 'CONFIRMED' },
     ],
     [/^POST consumer\/support\/tickets\/:id\/messages$/, { body: 'hijacked' }],
+    [/^PATCH consumer\/delivery-partners\/:id$/, named],
+    [
+      /^POST consumer\/delivery-partners\/:id\/settlements$/,
+      { direction: 'RECEIVED', amount: 1, payment_method: 'CASH' },
+    ],
+    [
+      /^POST consumer\/delivery-partners\/:id\/settlements\/:settlementId\/void$/,
+      { reason: 'hijacked' },
+    ],
+    [
+      /^POST consumer\/delivery-partners\/:id\/adjustments$/,
+      { amount: 1, note: 'hijacked' },
+    ],
     [
       /^POST consumer\/rewards\/customers\/:id\/adjust$/,
       { customer_id: seed.ids.customer, points: 7, description: 'hijacked' },
