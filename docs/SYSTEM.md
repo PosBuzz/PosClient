@@ -119,7 +119,8 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
   records the collected cash as a customer payment with the system-only method `DELIVERY_PARTNER`, so the customer's due clears then; the
   business report counts it as collected but not as cash or digital money (`delivery_partner_collected`). Payouts and payments to a partner
   are `delivery_partner_settlements`; one can settle chosen orders (which then lock until the payout is voided) and write off the gap as an
-  adjustment. Payouts are not yet part of the business report's cash figures. The migration turned existing free-text partner names into
+  adjustment. In the business report (all-branches view only, since payouts have no branch) payouts received count as real money
+  collected, cash ones also as drawer cash, and payments to partners come off both; a voided payout drops out. The migration turned existing free-text partner names into
   partners per shop (case-insensitive) without inventing balances for old orders. These endpoints use the `sales` permission.
 
 ## 6. Known issues and owner actions

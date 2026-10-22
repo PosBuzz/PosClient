@@ -507,6 +507,10 @@ export interface EODSummary {
   exchange_sales?: number;
   /** Paid by customers to a delivery partner; arrives with the partner's payout */
   delivery_partner_collected?: number;
+  partner_payouts_received?: number;
+  partner_payouts_cash?: number;
+  partner_payments_made?: number;
+  partner_payments_cash?: number;
   total_exchange_return?: number;
   unique_exchanges?: number;
   non_cash_sales: number;
