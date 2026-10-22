@@ -197,7 +197,9 @@ export class BusinessReportPdfService {
           report.summary.real_money_collected ??
             report.summary.cash_sales + (report.summary.digital_sales || 0),
         ),
-        sub: 'Cash & digital bank inflow',
+        sub: report.summary.partner_payouts_received
+          ? `Incl. ${this.money(report.summary.partner_payouts_received)} delivery partner payouts`
+          : 'Cash & digital bank inflow',
         color: '#059669',
       },
       {
@@ -221,7 +223,11 @@ export class BusinessReportPdfService {
       {
         label: 'CASH IN DRAWER',
         value: this.money(report.summary.net_cash_sales),
-        sub: 'Net physical drawer cash',
+        sub:
+          report.summary.partner_payouts_cash ||
+          report.summary.partner_payments_cash
+            ? 'Net drawer cash, incl. partner cash'
+            : 'Net physical drawer cash',
         color: '#059669',
       },
       {

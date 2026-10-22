@@ -12,7 +12,7 @@
       "partner_id": 1,
       "payment_method": "BANK_TRANSFER",
       "reference": "C4-PAYOUT",
-      "settlement_date": "2026-03-14T00:00:00.000Z",
+      "settlement_date": "2026-03-14T12:00:00.000Z",
       "updated_at": "2026-03-14T12:00:00.000Z",
       "void_reason": null,
       "voided_at": null,

@@ -2241,10 +2241,38 @@ export class SalesService {
         }
       });
 
-      // Liquid money received (Physical Cash + Digital Card/MFS/Bank)
-      const realMoneyCollected = cashSales + digitalSales;
+      // Money delivery partners paid the shop (or the shop paid them) in the period.
+      // Payouts belong to no branch, so a single-branch report leaves them out.
+      const partnerMoney = eodDto.branch_id
+        ? []
+        : await this.prisma.deliveryPartnerSettlement.groupBy({
+            by: ['direction', 'payment_method'],
+            where: {
+              consumer_id: consumerId,
+              voided_at: null,
+              settlement_date: { gte: startOfDay, lte: endOfDay },
+            },
+            _sum: { amount: true },
+          });
+      const partnerSum = (direction: string, cashOnly: boolean) =>
+        (partnerMoney ?? [])
+          .filter(
+            (row) =>
+              row.direction === direction &&
+              (!cashOnly || row.payment_method === 'CASH'),
+          )
+          .reduce((sum, row) => sum + Number(row._sum.amount ?? 0), 0);
+      const partnerPayoutsReceived = partnerSum('RECEIVED', false);
+      const partnerPayoutsCash = partnerSum('RECEIVED', true);
+      const partnerPaymentsMade = partnerSum('PAID', false);
+      const partnerPaymentsCash = partnerSum('PAID', true);
+
+      // Liquid money received from sales (Physical Cash + Digital Card/MFS/Bank)
+      const salesMoneyCollected = cashSales + digitalSales;
+      // ... plus what partners paid over for cash they collected on the shop's behalf
+      const realMoneyCollected = salesMoneyCollected + partnerPayoutsReceived;
       const totalCollected =
-        realMoneyCollected +
+        salesMoneyCollected +
         rewardPointSales +
         exchangeSales +
         partnerCollected;
@@ -2272,8 +2300,10 @@ export class SalesService {
           ?.total_amount || 0;
       const digitalRefunds = totalRefund - cashRefunds;
 
-      const netCashSales = cashSales - cashRefunds;
-      const netMoneyCollected = realMoneyCollected - totalRefund;
+      const netCashSales =
+        cashSales - cashRefunds + partnerPayoutsCash - partnerPaymentsCash;
+      const netMoneyCollected =
+        realMoneyCollected - totalRefund - partnerPaymentsMade;
       const netOperatingCashFlow = netMoneyCollected - totalOperationalCosts;
 
       const summary: EODSummary = {
@@ -2295,6 +2325,10 @@ export class SalesService {
         reward_point_sales: rewardPointSales,
         exchange_sales: exchangeSales,
         delivery_partner_collected: partnerCollected,
+        partner_payouts_received: partnerPayoutsReceived,
+        partner_payouts_cash: partnerPayoutsCash,
+        partner_payments_made: partnerPaymentsMade,
+        partner_payments_cash: partnerPaymentsCash,
         total_exchange_return: totalExchangeReturn,
         unique_exchanges: uniqueExchanges,
         non_cash_sales: nonCashSales,

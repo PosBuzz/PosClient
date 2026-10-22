@@ -62,6 +62,18 @@ export const unsettledOrderWhere = (
       }),
 });
 
+/**
+ * A date-only payout date ("2026-10-22") is stored at noon of that business day, so it
+ * falls inside the day in the business report whatever the server's time zone.
+ */
+export function settlementDate(value?: string): Date {
+  if (!value) return new Date();
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return day
+    ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]), 12)
+    : new Date(value);
+}
+
 @Injectable()
 export class DeliveryPartnersService {
   private readonly logger = new Logger(DeliveryPartnersService.name);
@@ -518,9 +530,7 @@ export class DeliveryPartnersService {
             payment_method: dto.payment_method,
             reference: dto.reference?.trim() || null,
             note: dto.note?.trim() || null,
-            settlement_date: dto.settlement_date
-              ? new Date(dto.settlement_date)
-              : new Date(),
+            settlement_date: settlementDate(dto.settlement_date),
             created_by_id: userId,
           },
         });

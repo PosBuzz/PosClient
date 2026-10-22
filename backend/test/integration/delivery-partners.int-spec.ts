@@ -728,4 +728,67 @@ describe('delivery partners: dues, payouts and the online-order ledger', () => {
       ),
     ).toMatchObject({ total_amount: 400, transaction_count: 1 });
   });
+
+  it('[BE-DP-051] {SalesService.getEODReport} {DeliveryPartnersService.createSettlement} (happy-path) payouts from partners are real money (cash ones in the drawer), payments to partners go out, voided payouts and single-branch reports leave them out', async () => {
+    const p = await partner();
+    const sale = await order();
+    await edit(sale.id, { status: 'DELIVERED', delivery_partner_id: p.id });
+    const today = new Date().toISOString().slice(0, 10);
+    const pay = (over: object) =>
+      partners.createSettlement(p.id, cid(), uid(), {
+        settlement_date: today,
+        ...over,
+      } as any);
+    await pay({
+      direction: 'RECEIVED',
+      amount: 300,
+      payment_method: SettlementPaymentMethod.CASH,
+    });
+    await pay({
+      direction: 'RECEIVED',
+      amount: 135,
+      payment_method: SettlementPaymentMethod.BANK_TRANSFER,
+    });
+    await pay({
+      direction: 'PAID',
+      amount: 20,
+      payment_method: SettlementPaymentMethod.MFS,
+    });
+    const voided = await pay({
+      direction: 'RECEIVED',
+      amount: 999,
+      payment_method: SettlementPaymentMethod.CASH,
+    });
+    await partners.voidSettlement(p.id, voided.id, cid(), uid(), {
+      reason: 'typo',
+    });
+    const all: any = await sales.getEODReport(cid(), { date: today });
+    expect(all.summary).toMatchObject({
+      delivery_partner_collected: 500,
+      partner_payouts_received: 435,
+      partner_payouts_cash: 300,
+      partner_payments_made: 20,
+      partner_payments_cash: 0,
+      cash_sales: 0,
+      real_money_collected: 435,
+      net_cash_sales: 300,
+      net_money_collected: 415,
+      // Sales collections are unchanged: the customer paid via the partner once
+      total_collected: 500,
+    });
+    const branch: any = await sales.getEODReport(cid(), {
+      date: today,
+      branch_id: sale.branch_id,
+    });
+    expect(branch.summary).toMatchObject({
+      partner_payouts_received: 0,
+      real_money_collected: 0,
+      net_cash_sales: 0,
+    });
+    // Another day's report does not see today's payouts
+    const yesterday: any = await sales.getEODReport(cid(), {
+      date: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
+    });
+    expect(yesterday.summary.partner_payouts_received).toBe(0);
+  });
 });
