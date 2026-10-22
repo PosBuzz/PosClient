@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { expectGenericWrapping } from '../../../../../test/helpers/error-wrapping';
 import { setupSales } from '../../../../../test/helpers/sales-service-setup';
+import * as orderUpdate from '../../../delivery-partners/ledger/order-update';
 
 afterEach(() => {
   jest.useRealTimers();
@@ -135,45 +136,33 @@ describe('SalesService online orders (unit)', () => {
     });
   });
 
-  it('[BE-MUT-803] updating an order status is tenant scoped, trims or clears the partner and returns the order', async () => {
+  it('[BE-MUT-803] updating an order runs the edit in one transaction for the shop and user, then returns the order with the pinned includes', async () => {
     const { prisma, service } = arrange();
-    prisma.sale.findFirst.mockResolvedValue({ id: 1 });
-    prisma.sale.update.mockResolvedValue({
-      id: 1,
-      online_order_status: 'READY',
-    });
+    const apply = jest
+      .spyOn(orderUpdate, 'applyOnlineOrderUpdate')
+      .mockResolvedValue(undefined);
+    prisma.sale.findUniqueOrThrow = jest
+      .fn()
+      .mockResolvedValue({ id: 1, online_order_status: 'READY' });
+    const dto = { status: 'READY', delivery_partner_id: 3 } as any;
     await expect(
-      service.updateOnlineOrderStatus(1, 'READY', 5, ' Courier '),
-    ).resolves.toEqual({
-      id: 1,
-      online_order_status: 'READY',
-    });
-    expect(prisma.sale.findFirst).toHaveBeenCalledWith({
-      where: { id: 1, consumer_id: 5, is_online_order: true, deleted_at: null },
-    });
-    expect(prisma.sale.update).toHaveBeenCalledWith({
+      service.updateOnlineOrderStatus(1, dto, 5, 9),
+    ).resolves.toEqual({ id: 1, online_order_status: 'READY' });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(apply).toHaveBeenCalledWith(expect.anything(), 1, 5, 9, dto);
+    expect(prisma.sale.findUniqueOrThrow).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: { online_order_status: 'READY', delivery_partner: 'Courier' },
       include: orderInclude,
     });
-    for (const [partner, expected] of [
-      [undefined, undefined],
-      [null, null],
-      ['   ', null],
-    ] as const) {
-      await service.updateOnlineOrderStatus(1, 'READY', 5, partner);
-      expect(prisma.sale.update.mock.lastCall![0].data.delivery_partner).toBe(
-        expected,
-      );
-    }
   });
 
   it('[BE-MUT-804] an unknown order is a 404; order failures are hidden behind generic 500s', async () => {
-    const { prisma, service } = arrange();
-    prisma.sale.findFirst.mockResolvedValue(null);
+    const { prisma, service, tx } = arrange();
+    tx.$queryRaw.mockResolvedValue([]);
     await expect(
-      service.updateOnlineOrderStatus(1, 'READY', 5),
+      service.updateOnlineOrderStatus(1, { status: 'READY' } as any, 5),
     ).rejects.toThrow(new NotFoundException('Online order not found'));
+    expect(tx.sale.update).not.toHaveBeenCalled();
     expect(prisma.sale.update).not.toHaveBeenCalled();
     await expectGenericWrapping({
       run: (f) => {
@@ -187,8 +176,12 @@ describe('SalesService online orders (unit)', () => {
     await expectGenericWrapping({
       run: (f) => {
         const ctx = arrange();
-        ctx.prisma.sale.findFirst.mockRejectedValue(f);
-        return ctx.service.updateOnlineOrderStatus(1, 'READY', 5);
+        ctx.tx.$queryRaw.mockRejectedValue(f);
+        return ctx.service.updateOnlineOrderStatus(
+          1,
+          { status: 'READY' } as any,
+          5,
+        );
       },
       message: 'Error updating online order status',
       logged: ['Error updating online order status for consumer 5 and order 1'],

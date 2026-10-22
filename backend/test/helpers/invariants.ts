@@ -177,6 +177,43 @@ export async function findViolations(db: PrismaClient): Promise<Violation[]> {
        WHERE p.consumer_id <> r.consumer_id`,
     ),
   );
+  // INV-14 delivery-partner ledger: rows, orders and payouts agree on tenant and partner,
+  // and the cash a partner collected is exactly what its order says
+  add(
+    'INV-14',
+    await q(
+      db,
+      `SELECT t.id AS transaction_id FROM delivery_partner_transactions t
+       JOIN delivery_partners p ON p.id = t.partner_id
+       LEFT JOIN sales s ON s.id = t.sale_id
+       LEFT JOIN delivery_partner_settlements st ON st.id = t.settlement_id
+       WHERE p.consumer_id <> t.consumer_id
+          OR (s.id IS NOT NULL AND s.consumer_id <> t.consumer_id)
+          OR (st.id IS NOT NULL AND st.partner_id <> t.partner_id)`,
+    ),
+  );
+  add(
+    'INV-14',
+    await q(
+      db,
+      `SELECT s.id AS sale_id FROM sales s
+       JOIN delivery_partner_settlements st ON st.id = s.partner_settlement_id
+       WHERE st.partner_id IS DISTINCT FROM s.delivery_partner_id OR st.voided_at IS NOT NULL`,
+    ),
+  );
+  add(
+    'INV-14',
+    await q(
+      db,
+      `SELECT s.id AS sale_id, s.cod_amount, COALESCE(p.paid, 0) AS partner_paid FROM sales s
+       LEFT JOIN (SELECT sale_id, SUM(amount) AS paid FROM sale_payments
+                  WHERE payment_method = 'DELIVERY_PARTNER' GROUP BY sale_id) p ON p.sale_id = s.id
+       WHERE (s.deleted_at IS NULL AND s.online_order_status = 'DELIVERED' AND s.delivery_partner_id IS NOT NULL
+              AND ABS(s.cod_amount - COALESCE(p.paid, 0)) > ${cents})
+          OR (NOT (s.deleted_at IS NULL AND s.online_order_status = 'DELIVERED' AND s.delivery_partner_id IS NOT NULL)
+              AND COALESCE(p.paid, 0) <> 0)`,
+    ),
+  );
   return out;
 }
 

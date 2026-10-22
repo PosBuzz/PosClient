@@ -1,0 +1,18 @@
+[
+  {
+    "balance": -56.05,
+    "consumer_id": 1,
+    "contact": null,
+    "created_at": "2026-03-14T12:00:00.000Z",
+    "default_cod_fee_percent": 1,
+    "default_delivery_charge": 60,
+    "id": 1,
+    "is_active": true,
+    "name": "C4 courier",
+    "notes": null,
+    "phone": "01700000099",
+    "unsettled_net": 43.95,
+    "unsettled_orders": 1,
+    "updated_at": "2026-03-14T12:00:00.000Z"
+  }
+]

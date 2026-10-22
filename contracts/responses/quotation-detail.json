@@ -13,6 +13,8 @@
     "vat_registration_number": null
   },
   "branch_id": 1,
+  "cod_amount": "0",
+  "cod_fee": "0",
   "consumer": {
     "address": null,
     "business_category": null,
@@ -44,7 +46,9 @@
   "deleted_at": null,
   "deleted_by_id": null,
   "delivered_at": null,
+  "delivery_charge": "0",
   "delivery_partner": null,
+  "delivery_partner_id": null,
   "delivery_status": null,
   "discount_amount": "0",
   "id": 6,
@@ -108,6 +112,7 @@
   ],
   "notes": null,
   "online_order_status": null,
+  "partner_settlement_id": null,
   "payment_status": "due",
   "price_type": "regular",
   "promotion": null,

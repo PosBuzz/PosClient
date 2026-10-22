@@ -18,6 +18,7 @@
   "CustomerImportService": "A",
   "CustomerService": "B",
   "DashboardService": "A",
+  "DeliveryPartnersService": "A",
   "DescriptionService": "C",
   "ImportService": "A",
   "InventoryAdjustmentService": "A",

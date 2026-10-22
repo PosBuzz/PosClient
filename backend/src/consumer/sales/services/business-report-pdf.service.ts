@@ -691,6 +691,7 @@ export class BusinessReportPdfService {
     const upper = value.toUpperCase();
     if (upper === 'CREDIT') return 'Reward Points / Store Credit';
     if (upper === 'EXCHANGE') return 'Product Exchange';
+    if (upper === 'DELIVERY_PARTNER') return 'Collected by Delivery Partner';
     if (upper === 'MFS' || upper === 'MOBILE_MONEY') {
       return 'MFS (bKash / Nagad)';
     }

@@ -568,6 +568,42 @@ export const BODY_CASES: BodyCase[] = [
     ],
   },
   {
+    name: 'PATCH /consumer/sales/online-orders/:id/status',
+    method: 'PATCH',
+    path: (a) => `/consumer/sales/online-orders/${a.ids.onlineSale}/status`,
+    valid: (a) => ({
+      status: 'CONFIRMED',
+      delivery_partner_id: a.ids.deliveryPartner,
+    }),
+    swaps: [
+      {
+        field: 'delivery_partner_id',
+        body: (_a, b) => ({
+          status: 'CONFIRMED',
+          delivery_partner_id: b.ids.deliveryPartner,
+        }),
+      },
+    ],
+  },
+  {
+    name: 'POST /consumer/delivery-partners/:id/settlements',
+    method: 'POST',
+    path: (a) =>
+      `/consumer/delivery-partners/${a.ids.deliveryPartner}/settlements`,
+    valid: () => ({ direction: 'RECEIVED', amount: 1, payment_method: 'CASH' }),
+    swaps: [
+      {
+        field: 'sale_ids',
+        body: (_a, b) => ({
+          direction: 'RECEIVED',
+          amount: 1,
+          payment_method: 'CASH',
+          sale_ids: [b.ids.onlineSale],
+        }),
+      },
+    ],
+  },
+  {
     name: 'POST /consumer/support/tickets/:id/messages',
     method: 'POST',
     path: (a) => `/consumer/support/tickets/${a.ids.ticket}/messages`,

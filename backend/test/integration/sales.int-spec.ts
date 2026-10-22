@@ -395,7 +395,7 @@ describe('sales: create', () => {
     expect(sale.online_order_status).toBe('PENDING');
     await sales.updateOnlineOrderStatus(
       sale.id,
-      'CONFIRMED',
+      { status: 'CONFIRMED' } as any,
       w.tenant.consumer.id,
     );
     expect(

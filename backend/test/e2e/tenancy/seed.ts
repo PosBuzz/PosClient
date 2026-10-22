@@ -142,6 +142,46 @@ export async function seedTenant(db: PrismaClient, boot: Boot, marker: string) {
     cid,
     admin,
   );
+  const onlineSale: any = await sales.create(
+    saleDto(
+      tenant,
+      [{ variant: variantRow, qty: 1 }],
+      {
+        is_online_order: true,
+        customer_name: `Online ${marker}`,
+      },
+      null,
+    ),
+    cid,
+    admin,
+  );
+  const deliveryPartner = await db.deliveryPartner.create({
+    data: {
+      consumer_id: cid,
+      name: `Partner ${marker}`,
+      notes: `Partner note ${marker}`,
+    },
+  });
+  const partnerSettlement = await db.deliveryPartnerSettlement.create({
+    data: {
+      consumer_id: cid,
+      partner_id: deliveryPartner.id,
+      direction: 'RECEIVED',
+      amount: 1,
+      payment_method: 'CASH',
+      note: `Payout ${marker}`,
+    },
+  });
+  await db.deliveryPartnerTransaction.create({
+    data: {
+      consumer_id: cid,
+      partner_id: deliveryPartner.id,
+      settlement_id: partnerSettlement.id,
+      type: 'PAYOUT_RECEIVED',
+      amount: -1,
+      note: `Payout ${marker}`,
+    },
+  });
   const saleItem = await db.saleItem.findFirstOrThrow({
     where: { sale_id: sale.id },
   });
@@ -241,6 +281,9 @@ export async function seedTenant(db: PrismaClient, boot: Boot, marker: string) {
       user: user.id,
       role: role.id,
       receiptSetting: receiptSetting.id,
+      onlineSale: onlineSale.id,
+      deliveryPartner: deliveryPartner.id,
+      partnerSettlement: partnerSettlement.id,
     },
     variantRow,
   };
