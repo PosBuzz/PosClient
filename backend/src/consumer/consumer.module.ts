@@ -18,6 +18,7 @@ import { TagModule } from './tag/tag.module';
 import { UnitModule } from './unit/unit.module';
 import { UsersModule } from './users/users.module';
 import { VendorModule } from './vendor/vendor.module';
+import { DeliveryPartnersModule } from './delivery-partners/delivery-partners.module';
 import { ProductAuditModule } from 'src/product-audit/product-audit.module';
 import { ReceiptModule } from './receipt-pdf/receipt.module';
 import { ExportModule } from './export/export.module';
@@ -36,6 +37,7 @@ import { SupportModule } from './support/support.module';
     BrandModule,
     BranchModule,
     VendorModule,
+    DeliveryPartnersModule,
     ProductModule,
     InventoryModule,
     ImportModule,

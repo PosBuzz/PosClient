@@ -54,6 +54,15 @@ export interface EODSummary {
   digital_sales: number;
   reward_point_sales: number;
   exchange_sales: number;
+  /** Paid by customers to a delivery partner; reaches the shop with the partner's payout */
+  delivery_partner_collected: number;
+  /** Payouts from delivery partners in the period (all branches only); part of real money collected */
+  partner_payouts_received: number;
+  /** ... of which paid in cash, so in the drawer */
+  partner_payouts_cash: number;
+  /** Payments the shop made to delivery partners in the period; out of the money collected */
+  partner_payments_made: number;
+  partner_payments_cash: number;
   total_exchange_return: number;
   unique_exchanges: number;
   non_cash_sales: number;

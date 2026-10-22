@@ -49,6 +49,10 @@ import {
   takeReservedStock,
 } from '../../inventory/utils/stock-mutation.util';
 import { isClientError } from '../../../common/errors/client-error';
+import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dto';
+import { applyOnlineOrderUpdate } from '../../delivery-partners/ledger/order-update';
+import { syncPartnerOrder } from '../../delivery-partners/ledger/partner-ledger';
+import { unsettledOrderWhere } from '../../delivery-partners/services/delivery-partners.service';
 
 @Injectable()
 export class SalesService {
@@ -1070,6 +1074,12 @@ export class SalesService {
       );
     }
 
+    if (sale.partner_settlement_id) {
+      throw new BadRequestException(
+        `This order is settled with its delivery partner in payout #${sale.partner_settlement_id}. Void that payout first.`,
+      );
+    }
+
     try {
       await this.prisma.$transaction(async (tx) => {
         // Claim the delete first: a concurrent delete of the same sale must not
@@ -1085,6 +1095,8 @@ export class SalesService {
         if (claimed.count !== 1) {
           throw new BadRequestException('Sale has already been deleted');
         }
+        // A deleted online order no longer counts in its delivery partner's balance
+        if (sale.is_online_order) await syncPartnerOrder(tx, sale.id, userId);
 
         for (const item of sale.items) {
           if (!item.batch_id) continue;
@@ -1226,6 +1238,7 @@ export class SalesService {
         if (claimed.count !== 1) {
           throw new BadRequestException('Sale has already been restored');
         }
+        if (sale.is_online_order) await syncPartnerOrder(tx, sale.id, userId);
 
         for (const item of batchedItems) {
           if (isCancelledDelivery) continue;
@@ -1980,6 +1993,7 @@ export class SalesService {
       let digitalSales = 0;
       let rewardPointSales = 0;
       let exchangeSales = 0;
+      let partnerCollected = 0;
       let periodSalesCollected = 0;
       let dueCollected = 0;
 
@@ -2002,6 +2016,9 @@ export class SalesService {
           rewardPointSales += amt;
         } else if (method === 'EXCHANGE') {
           exchangeSales += amt;
+        } else if (method === 'DELIVERY_PARTNER') {
+          // The customer has paid, but the money is still with the partner
+          partnerCollected += amt;
         } else {
           digitalSales += amt;
         }
@@ -2224,10 +2241,41 @@ export class SalesService {
         }
       });
 
-      // Liquid money received (Physical Cash + Digital Card/MFS/Bank)
-      const realMoneyCollected = cashSales + digitalSales;
+      // Money delivery partners paid the shop (or the shop paid them) in the period.
+      // Payouts belong to no branch, so a single-branch report leaves them out.
+      const partnerMoney = eodDto.branch_id
+        ? []
+        : await this.prisma.deliveryPartnerSettlement.groupBy({
+            by: ['direction', 'payment_method'],
+            where: {
+              consumer_id: consumerId,
+              voided_at: null,
+              settlement_date: { gte: startOfDay, lte: endOfDay },
+            },
+            _sum: { amount: true },
+          });
+      const partnerSum = (direction: string, cashOnly: boolean) =>
+        (partnerMoney ?? [])
+          .filter(
+            (row) =>
+              row.direction === direction &&
+              (!cashOnly || row.payment_method === 'CASH'),
+          )
+          .reduce((sum, row) => sum + Number(row._sum.amount ?? 0), 0);
+      const partnerPayoutsReceived = partnerSum('RECEIVED', false);
+      const partnerPayoutsCash = partnerSum('RECEIVED', true);
+      const partnerPaymentsMade = partnerSum('PAID', false);
+      const partnerPaymentsCash = partnerSum('PAID', true);
+
+      // Liquid money received from sales (Physical Cash + Digital Card/MFS/Bank)
+      const salesMoneyCollected = cashSales + digitalSales;
+      // ... plus what partners paid over for cash they collected on the shop's behalf
+      const realMoneyCollected = salesMoneyCollected + partnerPayoutsReceived;
       const totalCollected =
-        realMoneyCollected + rewardPointSales + exchangeSales;
+        salesMoneyCollected +
+        rewardPointSales +
+        exchangeSales +
+        partnerCollected;
 
       // Standalone return exchanges that were not already counted as an exchange payment on a sale in this period
       let standaloneReturnExchanges = 0;
@@ -2252,8 +2300,10 @@ export class SalesService {
           ?.total_amount || 0;
       const digitalRefunds = totalRefund - cashRefunds;
 
-      const netCashSales = cashSales - cashRefunds;
-      const netMoneyCollected = realMoneyCollected - totalRefund;
+      const netCashSales =
+        cashSales - cashRefunds + partnerPayoutsCash - partnerPaymentsCash;
+      const netMoneyCollected =
+        realMoneyCollected - totalRefund - partnerPaymentsMade;
       const netOperatingCashFlow = netMoneyCollected - totalOperationalCosts;
 
       const summary: EODSummary = {
@@ -2274,6 +2324,11 @@ export class SalesService {
         digital_sales: digitalSales,
         reward_point_sales: rewardPointSales,
         exchange_sales: exchangeSales,
+        delivery_partner_collected: partnerCollected,
+        partner_payouts_received: partnerPayoutsReceived,
+        partner_payouts_cash: partnerPayoutsCash,
+        partner_payments_made: partnerPaymentsMade,
+        partner_payments_cash: partnerPaymentsCash,
         total_exchange_return: totalExchangeReturn,
         unique_exchanges: uniqueExchanges,
         non_cash_sales: nonCashSales,
@@ -3499,6 +3554,8 @@ export class SalesService {
         search,
         branch_id,
         status,
+        delivery_partner_id,
+        settlement,
         date_from,
         date_to,
         sort_by = 'created_at',
@@ -3532,6 +3589,24 @@ export class SalesService {
 
       if (status) {
         where.online_order_status = status;
+      }
+
+      const partnerFilter = Number(delivery_partner_id);
+      if (Number.isInteger(partnerFilter) && partnerFilter > 0) {
+        where.delivery_partner_id = partnerFilter;
+      }
+
+      // Settled = included in a payout; unsettled = finished, owing, no payout yet
+      if (settlement === 'settled') {
+        where.partner_settlement_id = { not: null };
+      } else if (settlement === 'unsettled') {
+        Object.assign(
+          where,
+          unsettledOrderWhere(
+            consumerId,
+            where.delivery_partner_id as number | undefined,
+          ),
+        );
       }
 
       if (date_from || date_to) {
@@ -3624,35 +3699,17 @@ export class SalesService {
 
   async updateOnlineOrderStatus(
     id: number,
-    status: string,
+    dto: UpdateOnlineOrderStatusDto,
     consumerId: number,
-    deliveryPartner?: string | null,
+    userId: number | null = null,
   ) {
     try {
-      // Verify the sale exists and is an online order
-      const sale = await this.prisma.sale.findFirst({
-        where: {
-          id,
-          consumer_id: consumerId,
-          is_online_order: true,
-          deleted_at: null,
-        },
-      });
+      await this.prisma.$transaction((tx) =>
+        applyOnlineOrderUpdate(tx, id, consumerId, userId, dto),
+      );
 
-      if (!sale) {
-        throw new NotFoundException('Online order not found');
-      }
-
-      // Update the order status
-      const updatedSale = await this.prisma.sale.update({
+      return await this.prisma.sale.findUniqueOrThrow({
         where: { id },
-        data: {
-          online_order_status: status,
-          delivery_partner:
-            deliveryPartner === undefined
-              ? undefined
-              : deliveryPartner?.trim() || null,
-        },
         include: {
           customer: true,
           branch: true,
@@ -3671,8 +3728,6 @@ export class SalesService {
           },
         },
       });
-
-      return updatedSale;
     } catch (error) {
       if (isClientError(error)) throw error;
       this.logger.error(

@@ -19,7 +19,7 @@ Alerting > Alert rules > New alert rule, data source `grafanacloud-bravereef185-
 | Backend errors, production | `sum(count_over_time({stack="posclient", service="backend"} \|~ `\bERROR\b` [5m]))` | is above 5 | 5m |
 | Backend errors, staging | same with `stack="posclient-stg"` | is above 20 | 10m |
 | Postgres errors, production | `sum(count_over_time({stack="posclient", service="postgres"} \|~ `\bERROR\b` [5m]))` | is above 5 | 5m |
-| Alloy not shipping | `sum(count_over_time({stack="posclient", service="backend"}[30m]))` | has no data / equals 0 | 30m |
+| Logs stopped arriving (whole host) | `sum(count_over_time({stack=~"posclient.*"}[3h]))` | is below 1 | 15m |
 
-Set "No data" to Alerting for the last rule only. Contact point: Alerting > Contact points (email, or Telegram like the Healthchecks.io
+Set "No data" to Alerting for the last rule only. It watches every container, not one service: production's backend is silent when idle (it logged nothing for 2 hours on 2026-10-17 and a per-service rule fired falsely). The window is 3h because a quiet night also tripped a 30m window (fired about 2026-10-17 to 10-19 while Alloy was shipping fine: 0 drops, all pushes 204). If you ever need a faster signal, alert on Alloy's `loki_write_sent_entries_total` instead of log content. Contact point: Alerting > Contact points (email, or Telegram like the Healthchecks.io
 checks). Tune the thresholds after a week of normal traffic.

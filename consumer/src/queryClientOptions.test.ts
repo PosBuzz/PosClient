@@ -48,6 +48,8 @@ const KNOWN_MUTATION_FILES = [
   "pages/create-inventory-transfer/index.tsx",
   "pages/customers/_DrawerForm.tsx",
   "pages/customers/_TableGrid.tsx",
+  "pages/delivery-partners/_PartnerDrawer.tsx",
+  "pages/delivery-partners/index.tsx",
   "pages/inventory-transfers/index.tsx",
   "pages/inventory/index.tsx",
   "pages/operational-costs/index.tsx",
@@ -72,6 +74,9 @@ const KNOWN_MUTATION_FILES = [
   "pages/users/_TableGrid.tsx",
   "pages/vendors/_DrawerForm.tsx",
   "pages/vendors/_TableGrid.tsx",
+  "pages/view-delivery-partner/_AdjustmentModal.tsx",
+  "pages/view-delivery-partner/_SettlementModal.tsx",
+  "pages/view-delivery-partner/index.tsx",
   "pages/view-sale/index.tsx",
 ];
 

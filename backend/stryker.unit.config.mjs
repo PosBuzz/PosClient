@@ -19,6 +19,7 @@ export default {
     'src/consumer/inventory/utils/batch-location.util.ts',
     'src/consumer/inventory/utils/validate-purchase.util.ts',
     'src/consumer/sales/utils/sale-pricing.util.ts',
+    'src/consumer/delivery-partners/ledger/ledger-rules.ts',
     'src/common/services/subdomain-util.service.ts',
     'src/common/utils/error.util.ts',
     'src/common/errors/client-error.ts',

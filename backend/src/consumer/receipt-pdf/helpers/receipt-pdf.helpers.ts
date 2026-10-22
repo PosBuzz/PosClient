@@ -39,6 +39,7 @@ export function humanPaymentMethod(m: string): string {
     MFS: 'MFS',
     CREDIT: 'Credit',
     EXCHANGE: 'Exchange',
+    DELIVERY_PARTNER: 'Delivery Partner (COD)',
   };
   return map[m] ?? m;
 }

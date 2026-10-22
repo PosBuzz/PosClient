@@ -359,13 +359,19 @@ export const salesApi = {
   // Update online order status
   updateOnlineOrderStatus: async (
     id: number,
-    status: OnlineOrderStatus,
-    delivery_partner?: string | null,
+    data: {
+      status: OnlineOrderStatus;
+      /** null removes the partner; omit to keep it */
+      delivery_partner_id?: number | null;
+      cod_amount?: number;
+      delivery_charge?: number;
+      cod_fee?: number;
+    },
   ): Promise<Sale> => {
-    return await patch(`${endpoints.getSales}/online-orders/${id}/status`, {
-      status,
-      delivery_partner,
-    });
+    return await patch(
+      `${endpoints.getSales}/online-orders/${id}/status`,
+      data,
+    );
   },
 
   getPendingDeliveries: (filters: any): Promise<SaleListResponse> =>

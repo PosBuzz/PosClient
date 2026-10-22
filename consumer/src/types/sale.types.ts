@@ -162,6 +162,11 @@ export interface Sale {
   }>;
   is_online_order?: boolean;
   delivery_partner?: string | null;
+  delivery_partner_id?: number | null;
+  cod_amount?: number | string;
+  delivery_charge?: number | string;
+  cod_fee?: number | string;
+  partner_settlement_id?: number | null;
   online_order_status?: OnlineOrderStatus | string | null;
   is_delivery_later?: boolean;
   delivery_status?: "PENDING" | "DELIVERED" | "CANCELLED" | null;
@@ -500,6 +505,12 @@ export interface EODSummary {
   digital_sales?: number;
   reward_point_sales?: number;
   exchange_sales?: number;
+  /** Paid by customers to a delivery partner; arrives with the partner's payout */
+  delivery_partner_collected?: number;
+  partner_payouts_received?: number;
+  partner_payouts_cash?: number;
+  partner_payments_made?: number;
+  partner_payments_cash?: number;
   total_exchange_return?: number;
   unique_exchanges?: number;
   non_cash_sales: number;

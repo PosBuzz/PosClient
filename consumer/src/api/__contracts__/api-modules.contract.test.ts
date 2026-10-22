@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 import { aiApi } from "../ai-api";
+import { deliveryPartnersApi } from "../delivery-partners-api";
 import { exportApi } from "../export-api";
 import { importApi } from "../import-api";
 import { inventoryApi } from "../inventory-api";
@@ -323,11 +324,124 @@ const CASES: Case[] = [
   ],
   [
     "salesApi.updateOnlineOrderStatus",
-    () => salesApi.updateOnlineOrderStatus(5, "CONFIRMED" as never, "Pathao"),
+    () =>
+      salesApi.updateOnlineOrderStatus(5, {
+        status: "DELIVERED" as never,
+        delivery_partner_id: 3,
+        cod_amount: 500,
+        delivery_charge: 60,
+        cod_fee: 5,
+      }),
     {
       method: "PATCH",
       path: "/consumer/sales/online-orders/5/status",
-      body: { status: "CONFIRMED", delivery_partner: "Pathao" },
+      body: {
+        status: "DELIVERED",
+        delivery_partner_id: 3,
+        cod_amount: 500,
+        delivery_charge: 60,
+        cod_fee: 5,
+      },
+    },
+  ],
+  [
+    "deliveryPartnersApi.list",
+    () => deliveryPartnersApi.list(),
+    { method: "GET", path: "/consumer/delivery-partners" },
+  ],
+  [
+    "deliveryPartnersApi.get",
+    () => deliveryPartnersApi.get(3),
+    { method: "GET", path: "/consumer/delivery-partners/3" },
+  ],
+  [
+    "deliveryPartnersApi.create",
+    () => deliveryPartnersApi.create({ name: "Pathao" }),
+    {
+      method: "POST",
+      path: "/consumer/delivery-partners",
+      body: { name: "Pathao" },
+    },
+  ],
+  [
+    "deliveryPartnersApi.update",
+    () => deliveryPartnersApi.update(3, { is_active: false }),
+    {
+      method: "PATCH",
+      path: "/consumer/delivery-partners/3",
+      body: { is_active: false },
+    },
+  ],
+  [
+    "deliveryPartnersApi.remove",
+    () => deliveryPartnersApi.remove(3),
+    { method: "DELETE", path: "/consumer/delivery-partners/3" },
+  ],
+  [
+    "deliveryPartnersApi.summary",
+    () => deliveryPartnersApi.summary(3),
+    { method: "GET", path: "/consumer/delivery-partners/3/summary" },
+  ],
+  [
+    "deliveryPartnersApi.ledger",
+    () => deliveryPartnersApi.ledger(3, { page: 2, limit: 50 }),
+    {
+      method: "GET",
+      path: "/consumer/delivery-partners/3/ledger",
+      query: { page: "2", limit: "50" },
+    },
+  ],
+  [
+    "deliveryPartnersApi.orders",
+    () => deliveryPartnersApi.orders(3, { settlement: "unsettled" }),
+    {
+      method: "GET",
+      path: "/consumer/delivery-partners/3/orders",
+      query: { settlement: "unsettled" },
+    },
+  ],
+  [
+    "deliveryPartnersApi.settlements",
+    () => deliveryPartnersApi.settlements(3),
+    { method: "GET", path: "/consumer/delivery-partners/3/settlements" },
+  ],
+  [
+    "deliveryPartnersApi.createSettlement",
+    () =>
+      deliveryPartnersApi.createSettlement(3, {
+        direction: "RECEIVED",
+        amount: 435,
+        payment_method: "BANK_TRANSFER",
+        sale_ids: [7],
+      }),
+    {
+      method: "POST",
+      path: "/consumer/delivery-partners/3/settlements",
+      body: {
+        direction: "RECEIVED",
+        amount: 435,
+        payment_method: "BANK_TRANSFER",
+        sale_ids: [7],
+      },
+    },
+  ],
+  [
+    "deliveryPartnersApi.voidSettlement",
+    () => deliveryPartnersApi.voidSettlement(3, 9, "typo"),
+    {
+      method: "POST",
+      path: "/consumer/delivery-partners/3/settlements/9/void",
+      body: { reason: "typo" },
+    },
+  ],
+  [
+    "deliveryPartnersApi.createAdjustment",
+    () =>
+      deliveryPartnersApi.createAdjustment(3, { amount: -15, note: "claim" }),
+    {
+      method: "POST",
+      path: "/consumer/delivery-partners/3/adjustments",
+      body: { amount: -15, note: "claim" },
     },
   ],
   [
@@ -1030,6 +1144,7 @@ const CASES: Case[] = [
 
 const MODULES: Record<string, object> = {
   salesApi,
+  deliveryPartnersApi,
   returnsApi,
   paymentsApi,
   purchasePaymentsApi,

@@ -72,6 +72,9 @@ export const endpoints = {
   deleteVendor: (id: number) => `/consumer/vendors/${id}`,
   getVendorDetails: (id: number) => `/consumer/vendors/${id}/details`,
 
+  // Delivery partners (online-order couriers) and their ledger
+  deliveryPartners: "/consumer/delivery-partners",
+
   // Customer management
   getCustomers: "/consumer/customers",
   getCustomer: (id: number) => `/consumer/customers/${id}`,

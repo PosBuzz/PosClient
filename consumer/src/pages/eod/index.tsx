@@ -2,6 +2,7 @@ import { Money, takaPrefix } from "../../components/Currency";
 import { AuditOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -17,6 +18,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -95,6 +97,7 @@ const EODReport = () => {
       MFS: "MFS (bKash/Nagad)",
       CREDIT: "Reward Points / Store Credit",
       EXCHANGE: "Product Exchange",
+      DELIVERY_PARTNER: "Collected by Delivery Partner",
     };
     return displays[method] || method;
   };
@@ -109,6 +112,7 @@ const EODReport = () => {
       MFS: "magenta",
       CREDIT: "gold",
       EXCHANGE: "geekblue",
+      DELIVERY_PARTNER: "volcano",
     };
     return colors[method] || "default";
   };
@@ -397,6 +401,13 @@ const EODReport = () => {
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   Physical Cash & Digital Banking
+                  {Number(eodData.summary.partner_payouts_received || 0) > 0 ? (
+                    <>
+                      {" "}
+                      · Partner payouts:{" "}
+                      <Money value={eodData.summary.partner_payouts_received} />
+                    </>
+                  ) : null}
                   {eodData.summary.due_collected ? (
                     <>
                       {" "}
@@ -511,6 +522,56 @@ const EODReport = () => {
               </Card>
             </Col>
           </Row>
+          {(Number(eodData.summary.delivery_partner_collected || 0) > 0 ||
+            Number(eodData.summary.partner_payouts_received || 0) > 0 ||
+            Number(eodData.summary.partner_payments_made || 0) > 0) && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                <div>
+                  {Number(eodData.summary.delivery_partner_collected || 0) >
+                    0 && (
+                    <div>
+                      <Money
+                        value={eodData.summary.delivery_partner_collected}
+                      />{" "}
+                      was paid by customers to delivery partners. It counts as
+                      money only when the partner pays it over.
+                    </div>
+                  )}
+                  {Number(eodData.summary.partner_payouts_received || 0) >
+                    0 && (
+                    <div>
+                      Delivery partners paid you{" "}
+                      <Money value={eodData.summary.partner_payouts_received} />{" "}
+                      (<Money value={eodData.summary.partner_payouts_cash} /> in
+                      cash). It is in Real Money Collected, and the cash part is
+                      in the drawer.
+                    </div>
+                  )}
+                  {Number(eodData.summary.partner_payments_made || 0) > 0 && (
+                    <div>
+                      You paid delivery partners{" "}
+                      <Money value={eodData.summary.partner_payments_made} /> (
+                      <Money
+                        value={eodData.summary.partner_payments_cash}
+                      />{" "}
+                      from the drawer).
+                    </div>
+                  )}
+                  {selectedBranch ? (
+                    <div>
+                      Partner payouts belong to no branch, so this branch report
+                      leaves them out.
+                    </div>
+                  ) : null}{" "}
+                  <Link to="/delivery-partners">See what partners owe</Link>
+                </div>
+              }
+            />
+          )}
 
           {/* Cash Drawer & Operational Costs */}
           <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -541,7 +602,10 @@ const EODReport = () => {
                   precision={2}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Cash sales minus cash refunds
+                  {eodData.summary.partner_payouts_cash ||
+                  eodData.summary.partner_payments_cash
+                    ? "Cash sales minus cash refunds, plus partner cash"
+                    : "Cash sales minus cash refunds"}
                 </Text>
               </Card>
             </Col>

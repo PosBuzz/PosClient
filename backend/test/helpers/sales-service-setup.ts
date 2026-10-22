@@ -61,6 +61,7 @@ export function setupSales() {
     ),
     inventoryBatch: mk('findMany', 'findFirst', 'aggregate'),
     operationalCost: mk('findMany', 'aggregate'),
+    deliveryPartnerSettlement: mk('groupBy'),
     expense: mk('findMany'),
     $transaction: jest.fn((fn: (t: unknown) => unknown) => fn(tx)),
     $queryRaw: jest.fn(),
@@ -77,6 +78,7 @@ export function setupSales() {
     'assertAndCalculateDiscount',
     'closePromotionIfExhausted',
   );
+  prisma.deliveryPartnerSettlement.groupBy.mockResolvedValue([]);
   const service = new SalesService(prisma, rewards, {} as any, promotions);
   return { prisma, tx, rewards, promotions, service };
 }

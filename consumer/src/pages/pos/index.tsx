@@ -391,6 +391,7 @@ const NewSale = () => {
             MFS: "MFS",
             CREDIT: "Credit",
             EXCHANGE: "Exchange",
+            DELIVERY_PARTNER: "Courier COD",
           };
           return map[method] || method;
         };
