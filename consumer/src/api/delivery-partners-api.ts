@@ -1,4 +1,5 @@
 import { deleteApi, get, patch, post } from "./crud-api";
+import { endpoints } from "./endpoints";
 import type {
   DeliveryPartner,
   DeliveryPartnerInput,
@@ -11,7 +12,7 @@ import type {
   SettlementInput,
 } from "../types/delivery-partner.types";
 
-const base = "/consumer/delivery-partners";
+const base = endpoints.deliveryPartners;
 
 export const deliveryPartnersApi = {
   list: (): Promise<DeliveryPartnerListItem[]> => get(base),
