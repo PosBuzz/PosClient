@@ -135,8 +135,13 @@ const PdfPreviewModal = ({
       styles={{ body: { padding: 0, background: "#525659" } }}
       destroyOnHidden
       footer={
-        <Space>
-          <Text type="secondary" style={{ marginRight: 8 }}>
+        // Wraps on a phone instead of squeezing the file name into a narrow column
+        <Space wrap style={{ justifyContent: "flex-end", width: "100%" }}>
+          <Text
+            type="secondary"
+            ellipsis={{ tooltip: fileName }}
+            style={{ marginRight: 8, maxWidth: "min(360px, 100%)" }}
+          >
             A4 · {fileName}
           </Text>
           <Button icon={<CloseOutlined />} onClick={onClose}>
