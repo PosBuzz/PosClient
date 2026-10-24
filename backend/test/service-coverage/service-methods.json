@@ -43,7 +43,7 @@
     "service": "AdminUsersService",
     "method": "changePassword",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 294,
+    "line": 295,
     "throws": 3,
     "consumerId": false
   },
@@ -59,7 +59,7 @@
     "service": "AdminUsersService",
     "method": "createUser",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 183,
+    "line": 184,
     "throws": 1,
     "consumerId": false
   },
@@ -67,7 +67,7 @@
     "service": "AdminUsersService",
     "method": "findAllPermissions",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 344,
+    "line": 345,
     "throws": 1,
     "consumerId": false
   },
@@ -99,7 +99,7 @@
     "service": "AdminUsersService",
     "method": "findOneUser",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 149,
+    "line": 150,
     "throws": 1,
     "consumerId": false
   },
@@ -107,7 +107,7 @@
     "service": "AdminUsersService",
     "method": "removeRole",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 389,
+    "line": 390,
     "throws": 3,
     "consumerId": false
   },
@@ -115,7 +115,7 @@
     "service": "AdminUsersService",
     "method": "removeUser",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 364,
+    "line": 365,
     "throws": 2,
     "consumerId": false
   },
@@ -123,7 +123,7 @@
     "service": "AdminUsersService",
     "method": "updateRole",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 217,
+    "line": 218,
     "throws": 1,
     "consumerId": false
   },
@@ -131,7 +131,7 @@
     "service": "AdminUsersService",
     "method": "updateUser",
     "file": "src/admin/users/services/users.service.ts",
-    "line": 257,
+    "line": 258,
     "throws": 1,
     "consumerId": false
   },
@@ -531,7 +531,7 @@
     "service": "ConsumerUsersService",
     "method": "createRole",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 151,
+    "line": 167,
     "throws": 1,
     "consumerId": true
   },
@@ -539,7 +539,7 @@
     "service": "ConsumerUsersService",
     "method": "createUser",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 252,
+    "line": 268,
     "throws": 1,
     "consumerId": true
   },
@@ -548,14 +548,14 @@
     "method": "deleteRole",
     "file": "src/consumer/users/services/users.service.ts",
     "line": 130,
-    "throws": 1,
+    "throws": 4,
     "consumerId": true
   },
   {
     "service": "ConsumerUsersService",
     "method": "deleteUser",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 231,
+    "line": 247,
     "throws": 1,
     "consumerId": true
   },
@@ -571,7 +571,7 @@
     "service": "ConsumerUsersService",
     "method": "getUsers",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 188,
+    "line": 204,
     "throws": 1,
     "consumerId": true
   },
@@ -587,7 +587,7 @@
     "service": "ConsumerUsersService",
     "method": "updateRole",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 337,
+    "line": 353,
     "throws": 1,
     "consumerId": true
   },
@@ -595,7 +595,7 @@
     "service": "ConsumerUsersService",
     "method": "updateUser",
     "file": "src/consumer/users/services/users.service.ts",
-    "line": 381,
+    "line": 397,
     "throws": 2,
     "consumerId": true
   },
@@ -899,7 +899,7 @@
     "service": "InventoryAdjustmentService",
     "method": "findOne",
     "file": "src/consumer/inventory/services/inventory-adjustment.service.ts",
-    "line": 244,
+    "line": 260,
     "throws": 2,
     "consumerId": true
   },
@@ -915,7 +915,7 @@
     "service": "InventoryBatchService",
     "method": "findAll",
     "file": "src/consumer/inventory/services/inventory-batch.service.ts",
-    "line": 247,
+    "line": 238,
     "throws": 1,
     "consumerId": true
   },
@@ -923,7 +923,7 @@
     "service": "InventoryBatchService",
     "method": "findOne",
     "file": "src/consumer/inventory/services/inventory-batch.service.ts",
-    "line": 352,
+    "line": 343,
     "throws": 2,
     "consumerId": true
   },
@@ -931,7 +931,7 @@
     "service": "InventoryBatchService",
     "method": "remove",
     "file": "src/consumer/inventory/services/inventory-batch.service.ts",
-    "line": 486,
+    "line": 477,
     "throws": 2,
     "consumerId": true
   },
@@ -939,7 +939,7 @@
     "service": "InventoryBatchService",
     "method": "update",
     "file": "src/consumer/inventory/services/inventory-batch.service.ts",
-    "line": 401,
+    "line": 392,
     "throws": 2,
     "consumerId": true
   },
@@ -1075,7 +1075,7 @@
     "service": "InventoryTransferService",
     "method": "cancelTransfer",
     "file": "src/consumer/inventory/services/inventory-transfer.service.ts",
-    "line": 533,
+    "line": 563,
     "throws": 3,
     "consumerId": true
   },
@@ -1083,7 +1083,7 @@
     "service": "InventoryTransferService",
     "method": "completeTransfer",
     "file": "src/consumer/inventory/services/inventory-transfer.service.ts",
-    "line": 314,
+    "line": 344,
     "throws": 5,
     "consumerId": true
   },
@@ -1107,7 +1107,7 @@
     "service": "InventoryTransferService",
     "method": "findOne",
     "file": "src/consumer/inventory/services/inventory-transfer.service.ts",
-    "line": 254,
+    "line": 284,
     "throws": 2,
     "consumerId": true
   },
@@ -1659,7 +1659,7 @@
     "service": "ProductVariantService",
     "method": "findOne",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 200,
+    "line": 191,
     "throws": 3,
     "consumerId": true
   },
@@ -1667,7 +1667,7 @@
     "service": "ProductVariantService",
     "method": "remove",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 450,
+    "line": 441,
     "throws": 2,
     "consumerId": false
   },
@@ -1675,7 +1675,7 @@
     "service": "ProductVariantService",
     "method": "update",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 283,
+    "line": 274,
     "throws": 3,
     "consumerId": false
   },
@@ -1987,7 +1987,7 @@
     "service": "RewardsService",
     "method": "adjustPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 368,
+    "line": 388,
     "throws": 1,
     "consumerId": true
   },
@@ -1995,7 +1995,7 @@
     "service": "RewardsService",
     "method": "calculateRedemptionValue",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 710,
+    "line": 730,
     "throws": 0,
     "consumerId": false
   },
@@ -2003,7 +2003,7 @@
     "service": "RewardsService",
     "method": "canRedeemPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 718,
+    "line": 738,
     "throws": 1,
     "consumerId": true
   },
@@ -2011,7 +2011,7 @@
     "service": "RewardsService",
     "method": "createOrUpdateSettings",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 71,
+    "line": 91,
     "throws": 1,
     "consumerId": true
   },
@@ -2019,15 +2019,23 @@
     "service": "RewardsService",
     "method": "earnPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 236,
+    "line": 256,
     "throws": 1,
+    "consumerId": true
+  },
+  {
+    "service": "RewardsService",
+    "method": "expireIfDue",
+    "file": "src/consumer/rewards/services/rewards.service.ts",
+    "line": 38,
+    "throws": 0,
     "consumerId": true
   },
   {
     "service": "RewardsService",
     "method": "expirePoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 620,
+    "line": 640,
     "throws": 1,
     "consumerId": true
   },
@@ -2035,7 +2043,7 @@
     "service": "RewardsService",
     "method": "getCustomerPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 103,
+    "line": 123,
     "throws": 2,
     "consumerId": true
   },
@@ -2043,7 +2051,7 @@
     "service": "RewardsService",
     "method": "getCustomersWithPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 166,
+    "line": 186,
     "throws": 1,
     "consumerId": true
   },
@@ -2051,7 +2059,7 @@
     "service": "RewardsService",
     "method": "getPointTransactions",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 505,
+    "line": 525,
     "throws": 2,
     "consumerId": true
   },
@@ -2059,7 +2067,7 @@
     "service": "RewardsService",
     "method": "getSettings",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 32,
+    "line": 52,
     "throws": 1,
     "consumerId": true
   },
@@ -2067,7 +2075,7 @@
     "service": "RewardsService",
     "method": "processCreditPayment",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 842,
+    "line": 862,
     "throws": 2,
     "consumerId": true
   },
@@ -2075,7 +2083,7 @@
     "service": "RewardsService",
     "method": "processCreditRefund",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 896,
+    "line": 916,
     "throws": 1,
     "consumerId": true
   },
@@ -2083,7 +2091,7 @@
     "service": "RewardsService",
     "method": "redeemPoints",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 304,
+    "line": 324,
     "throws": 5,
     "consumerId": true
   },
@@ -2091,7 +2099,7 @@
     "service": "RewardsService",
     "method": "validateCreditPayment",
     "file": "src/consumer/rewards/services/rewards.service.ts",
-    "line": 770,
+    "line": 790,
     "throws": 1,
     "consumerId": true
   },
@@ -2115,7 +2123,7 @@
     "service": "SalesService",
     "method": "cancelPendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3934,
+    "line": 3965,
     "throws": 2,
     "consumerId": true
   },
@@ -2123,7 +2131,7 @@
     "service": "SalesService",
     "method": "completePendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3873,
+    "line": 3904,
     "throws": 3,
     "consumerId": true
   },
@@ -2131,7 +2139,7 @@
     "service": "SalesService",
     "method": "convertQuotationToSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2754,
+    "line": 2785,
     "throws": 8,
     "consumerId": true
   },
@@ -2140,14 +2148,14 @@
     "method": "create",
     "file": "src/consumer/sales/services/sales.service.ts",
     "line": 207,
-    "throws": 15,
+    "throws": 16,
     "consumerId": true
   },
   {
     "service": "SalesService",
     "method": "findAll",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 690,
+    "line": 721,
     "throws": 1,
     "consumerId": true
   },
@@ -2155,7 +2163,7 @@
     "service": "SalesService",
     "method": "findAllOnlineOrders",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3549,
+    "line": 3580,
     "throws": 1,
     "consumerId": true
   },
@@ -2163,7 +2171,7 @@
     "service": "SalesService",
     "method": "findAllQuotations",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2574,
+    "line": 2605,
     "throws": 1,
     "consumerId": true
   },
@@ -2171,7 +2179,7 @@
     "service": "SalesService",
     "method": "findBySaleNumber",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1301,
+    "line": 1332,
     "throws": 2,
     "consumerId": true
   },
@@ -2179,7 +2187,7 @@
     "service": "SalesService",
     "method": "findOne",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 832,
+    "line": 863,
     "throws": 2,
     "consumerId": true
   },
@@ -2187,7 +2195,7 @@
     "service": "SalesService",
     "method": "findOneQuotation",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2697,
+    "line": 2728,
     "throws": 2,
     "consumerId": true
   },
@@ -2195,7 +2203,7 @@
     "service": "SalesService",
     "method": "getDailyTargetReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3967,
+    "line": 3998,
     "throws": 0,
     "consumerId": true
   },
@@ -2203,7 +2211,7 @@
     "service": "SalesService",
     "method": "getEODReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1737,
+    "line": 1768,
     "throws": 1,
     "consumerId": true
   },
@@ -2211,7 +2219,7 @@
     "service": "SalesService",
     "method": "getOnlineOrderStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3744,
+    "line": 3775,
     "throws": 1,
     "consumerId": true
   },
@@ -2219,7 +2227,7 @@
     "service": "SalesService",
     "method": "getPendingDeliveries",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3830,
+    "line": 3861,
     "throws": 0,
     "consumerId": true
   },
@@ -2227,7 +2235,7 @@
     "service": "SalesService",
     "method": "getProductByBarcode",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1545,
+    "line": 1576,
     "throws": 1,
     "consumerId": true
   },
@@ -2235,7 +2243,7 @@
     "service": "SalesService",
     "method": "getProductsForSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1464,
+    "line": 1495,
     "throws": 1,
     "consumerId": true
   },
@@ -2243,7 +2251,7 @@
     "service": "SalesService",
     "method": "getSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1613,
+    "line": 1644,
     "throws": 1,
     "consumerId": true
   },
@@ -2251,7 +2259,7 @@
     "service": "SalesService",
     "method": "getUserSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3404,
+    "line": 3435,
     "throws": 1,
     "consumerId": true
   },
@@ -2259,7 +2267,7 @@
     "service": "SalesService",
     "method": "getUsersSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3301,
+    "line": 3332,
     "throws": 0,
     "consumerId": true
   },
@@ -2267,7 +2275,7 @@
     "service": "SalesService",
     "method": "getVariantSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3088,
+    "line": 3119,
     "throws": 2,
     "consumerId": true
   },
@@ -2275,7 +2283,7 @@
     "service": "SalesService",
     "method": "getVariantSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2943,
+    "line": 2974,
     "throws": 1,
     "consumerId": true
   },
@@ -2283,7 +2291,7 @@
     "service": "SalesService",
     "method": "restore",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1172,
+    "line": 1203,
     "throws": 5,
     "consumerId": true
   },
@@ -2291,7 +2299,7 @@
     "service": "SalesService",
     "method": "softDelete",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1021,
+    "line": 1052,
     "throws": 8,
     "consumerId": true
   },
@@ -2299,7 +2307,7 @@
     "service": "SalesService",
     "method": "updateNote",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 915,
+    "line": 946,
     "throws": 2,
     "consumerId": true
   },
@@ -2307,7 +2315,7 @@
     "service": "SalesService",
     "method": "updateOnlineOrderStatus",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3700,
+    "line": 3731,
     "throws": 1,
     "consumerId": true
   },

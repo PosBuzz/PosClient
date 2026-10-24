@@ -237,8 +237,8 @@ export class BillingInvoicesService {
         )
         .text(`Created At: ${formatDate(billing.created_at)}`)
         .text(`Plan: ${billing.plan.name}`)
-        .text(`Plan Price: $${billing.plan.price}`)
-        .text(`Amount Charged: $${billing.amount}`);
+        .text(`Plan Price: BDT ${billing.plan.price}`)
+        .text(`Amount Charged: BDT ${billing.amount}`);
 
       doc.moveDown(1.5);
 
@@ -463,7 +463,7 @@ export class BillingInvoicesService {
         });
       const period = `${formatPeriodDate(log.billing_from)} - ${formatPeriodDate(log.billing_till)}`;
 
-      const amount = `$${log.amount.toFixed(2)}`;
+      const amount = `BDT ${log.amount.toFixed(2)}`;
 
       this.drawTableRow(
         doc,
@@ -496,7 +496,7 @@ export class BillingInvoicesService {
     doc
       .font('Helvetica-Bold')
       .text('Total Amount:', tableRight - 200, currentY)
-      .text(`$${total.toFixed(2)}`, tableRight - 100, currentY, {
+      .text(`BDT ${total.toFixed(2)}`, tableRight - 100, currentY, {
         width: 100,
         align: 'right',
       });

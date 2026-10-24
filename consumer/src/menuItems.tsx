@@ -1,7 +1,6 @@
 import {
   CustomerServiceOutlined,
   DashboardOutlined,
-  DollarOutlined,
   ProductOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
@@ -10,6 +9,7 @@ import {
 } from "@ant-design/icons";
 import React from "react";
 import { MdOutlineInventory } from "react-icons/md";
+import { TbCurrencyTaka } from "react-icons/tb";
 import { Permissions } from "./constants/permissions";
 
 // Define menu items with required permissions
@@ -217,7 +217,7 @@ export const MENU_ITEMS: MenuItem[] = [
   {
     label: <span title="Operational Costs">Operational Costs</span>,
     key: "/operational-costs",
-    icon: <DollarOutlined />,
+    icon: <TbCurrencyTaka />,
     permissions: [Permissions.business_insights],
   },
   {
@@ -286,7 +286,6 @@ export const MENU_ITEMS: MenuItem[] = [
         permissions: [Permissions.users],
       },
     ],
-    permissions: [Permissions.users],
   },
   {
     key: "/support",

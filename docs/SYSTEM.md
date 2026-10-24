@@ -3,6 +3,7 @@
 The one summary document for people and AI agents. Last updated 2026-10-16.
 How to operate the server day to day (log in, deploy/rollback, logs, restore, rotate secrets, troubleshooting): [`docs/OPERATIONS.md`](OPERATIONS.md).
 File-level detail of the deploy, backup and alert setup: [`deploy/README.md`](../deploy/README.md).
+User manuals (shop app and admin panel, PDF download from each app's top bar): [`docs/manual/README.md`](manual/README.md).
 Other references: [`SECURITY-NOTES.md`](SECURITY-NOTES.md), [`contracts/README.md`](../contracts/README.md),
 [`PRINTING_SETUP.md`](PRINTING_SETUP.md), [`docs/account-data-imports.md`](account-data-imports.md).
 

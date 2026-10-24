@@ -157,6 +157,7 @@ describe('super-admin users and roles (detail)', () => {
       'id',
       'name',
       'role',
+      'role_id',
     ]);
     expect(row.role.id).toBe(r1.id);
     expect(row.role.permissions).toHaveLength(2);

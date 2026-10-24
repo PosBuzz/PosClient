@@ -306,6 +306,7 @@ export const inventoryApi = {
     limit?: number;
     status?: string;
     branch_id?: number;
+    search?: string;
   }): Promise<PaginatedResponse<InventoryTransfer>> => {
     return get(endpoints.inventoryTransfers, params);
   },
@@ -345,6 +346,7 @@ export const inventoryApi = {
     limit?: number;
     variant_id?: number;
     branch_id?: number;
+    search?: string;
   }): Promise<PaginatedResponse<InventoryAdjustment>> => {
     return get(endpoints.inventoryAdjustments, params);
   },

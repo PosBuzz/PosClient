@@ -827,17 +827,17 @@ describe('RewardsService helpers (unit)', () => {
     });
     await expect(credit({}, 250.01)).resolves.toEqual({
       isValid: false,
-      reason: 'Insufficient points. Maximum credit available: $250.00',
+      reason: 'Insufficient points. Maximum credit available: ৳250.00',
       maxCreditAmount: 250,
     });
     await expect(credit({}, 49)).resolves.toEqual({
       isValid: false,
-      reason: 'Minimum credit amount is $50.00',
+      reason: 'Minimum credit amount is ৳50.00',
       maxCreditAmount: 250,
     });
     await expect(credit({ maximum_redemption: 300 }, 160)).resolves.toEqual({
       isValid: false,
-      reason: 'Maximum credit amount is $150.00',
+      reason: 'Maximum credit amount is ৳150.00',
       maxCreditAmount: 150,
     });
     await expect(credit({}, 250)).resolves.toEqual({
@@ -856,7 +856,7 @@ describe('RewardsService helpers (unit)', () => {
       credit({ maximum_redemption: 300 }, 160, 100),
     ).resolves.toMatchObject({
       isValid: false,
-      reason: 'Insufficient points. Maximum credit available: $50.00',
+      reason: 'Insufficient points. Maximum credit available: ৳50.00',
     });
   });
 
@@ -910,7 +910,7 @@ describe('RewardsService helpers (unit)', () => {
       type: 'REDEEM',
       points: -34,
       sale_id: 77,
-      description: 'Redeemed 34 points for $10.00 credit',
+      description: 'Redeemed 34 points for ৳10.00 credit',
       reference: 'CREDIT-SALE-77',
     });
     await service.processCreditPayment(5, 8, 10, 77, 'MY-REF', client);
@@ -954,7 +954,7 @@ describe('RewardsService helpers (unit)', () => {
       type: 'ADJUSTMENT',
       points: 33,
       sale_id: undefined,
-      description: 'Refunded 33 points for $10.00 credit return',
+      description: 'Refunded 33 points for ৳10.00 credit return',
       reference: 'CREDIT-REFUND-12',
       notes: 'Return ID: 12, Original Sale ID: 77',
     });
@@ -983,5 +983,29 @@ describe('RewardsService helpers (unit)', () => {
         'Error processing credit refund with customer 8 amount 10 for consumer 5',
       ],
     });
+  });
+});
+
+describe('RewardsService.expireIfDue (unit)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('[BE-RWD-101] {RewardsService.expireIfDue} expiry runs when points are looked at, at most once a minute per shop, and a failure never reaches the caller', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-24T10:00:00Z'));
+    const { service } = setup();
+    const expire = jest
+      .spyOn(service, 'expirePoints')
+      .mockResolvedValue({ expired: 0 });
+
+    await service.expireIfDue(5);
+    await service.expireIfDue(5);
+    expect(expire).toHaveBeenCalledTimes(1);
+
+    await service.expireIfDue(6);
+    expect(expire).toHaveBeenCalledTimes(2);
+
+    jest.setSystemTime(new Date('2026-10-24T10:01:01Z'));
+    expire.mockRejectedValue(new Error('db down'));
+    await expect(service.expireIfDue(5)).resolves.toBeUndefined();
+    expect(expire).toHaveBeenCalledTimes(3);
   });
 });

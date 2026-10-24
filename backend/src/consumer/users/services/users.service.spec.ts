@@ -122,6 +122,10 @@ describe('UsersService (unit)', () => {
 
   it('[BE-MUT-374] deleteRole and deleteUser are tenant scoped', async () => {
     const { prisma, service } = setup();
+    prisma.role.findFirst.mockResolvedValue({
+      is_admin: false,
+      _count: { users: 0 },
+    });
     prisma.role.delete.mockResolvedValue({ id: 1 });
     prisma.user.delete.mockResolvedValue({ id: 2 });
     await expect(service.deleteRole(1, 5)).resolves.toEqual({ id: 1 });
@@ -132,6 +136,31 @@ describe('UsersService (unit)', () => {
     expect(prisma.user.delete).toHaveBeenCalledWith({
       where: { consumer_id: 5, id: 2 },
     });
+  });
+
+  it('[BE-USR-012] a role that still has users, the Admin role, or a role of another shop is never deleted', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findFirst.mockResolvedValue({
+      is_admin: false,
+      _count: { users: 2 },
+    });
+    await expect(service.deleteRole(1, 5)).rejects.toThrow(
+      'This role is still assigned to 2 user(s). Move them to another role first.',
+    );
+    prisma.role.findFirst.mockResolvedValue({
+      is_admin: true,
+      _count: { users: 0 },
+    });
+    await expect(service.deleteRole(1, 5)).rejects.toThrow(
+      'The Admin role cannot be deleted',
+    );
+    prisma.role.findFirst.mockResolvedValue(null);
+    await expect(service.deleteRole(9, 5)).rejects.toThrow('Role not found');
+    expect(prisma.role.findFirst).toHaveBeenLastCalledWith({
+      where: { consumer_id: 5, id: 9 },
+      select: { is_admin: true, _count: { select: { users: true } } },
+    });
+    expect(prisma.role.delete).not.toHaveBeenCalled();
   });
 
   describe('getUsers', () => {
@@ -514,7 +543,13 @@ describe('UsersService (unit)', () => {
       'Error fetching roles for consumer 5',
     );
     await wrap(
-      (c, f) => c.prisma.role.delete.mockRejectedValue(f),
+      (c, f) => {
+        c.prisma.role.findFirst.mockResolvedValue({
+          is_admin: false,
+          _count: { users: 0 },
+        });
+        c.prisma.role.delete.mockRejectedValue(f);
+      },
       (s) => s.deleteRole(1, 5),
       'Failed to delete role',
       'Error deleting role with ID 1 for consumer 5',

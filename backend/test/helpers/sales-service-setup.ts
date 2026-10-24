@@ -73,7 +73,13 @@ export function setupSales() {
     'processCreditPayment',
     'processCreditRefund',
     'validateCreditPayment',
+    'getSettings',
+    'expireIfDue',
   );
+  rewards.getSettings.mockResolvedValue({
+    allow_partial_redemption: true,
+    earn_on_sale_only: true,
+  });
   const promotions: any = mk(
     'assertAndCalculateDiscount',
     'closePromotionIfExhausted',

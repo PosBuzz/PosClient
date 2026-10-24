@@ -63,7 +63,9 @@ it("[CO-DP-030] choosing a partner fills in the cash to collect and its charges,
     Number(partner.default_delivery_charge).toFixed(2),
   );
   await pickStatus(user, status, "Delivered");
-  await screen.findByText(/Once delivered, the partner owes you/);
+  await screen.findByText(
+    /Once delivered, (the partner owes you|you owe the partner)/,
+  );
   await user.click(within(dialog).getByRole("button", { name: "OK" }));
   await screen.findByText("Order updated successfully");
   expect(captured.calls).toHaveLength(1);

@@ -1,4 +1,12 @@
-import { IsOptional, IsDateString, IsInt, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DailyTargetReportDto {
@@ -22,6 +30,16 @@ export class DailyTargetReportDto {
   @Min(1)
   @Type(() => Number)
   limit?: number = 20;
+
+  /** Matches product name, variant name or SKU */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @IsIn(['achieved', 'not_achieved'])
+  target_status?: 'achieved' | 'not_achieved';
 }
 
 export interface DailyTargetRow {

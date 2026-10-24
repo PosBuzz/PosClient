@@ -68,7 +68,7 @@ describe('credit rewards and import history subjects', () => {
       }),
     ).toMatchObject({
       points: -11,
-      description: 'Redeemed 11 points for $21.00 credit',
+      description: 'Redeemed 11 points for ৳21.00 credit',
     });
     expect(
       await db.customerRewardsPoints.findFirstOrThrow({
@@ -92,7 +92,7 @@ describe('credit rewards and import history subjects', () => {
     expect(tooMuch).toBeInstanceOf(BadRequestException);
     expect(tooMuch.getStatus()).toBe(400);
     expect(tooMuch.message).toBe(
-      'Insufficient points. Maximum credit available: $178.00',
+      'Insufficient points. Maximum credit available: ৳178.00',
     );
     expect(await db.rewardsPointTransaction.count()).toBe(count);
     expect(

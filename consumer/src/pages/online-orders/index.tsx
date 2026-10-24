@@ -625,18 +625,23 @@ const OnlineOrders = () => {
                   </Row>
                   <Typography.Text type="secondary">
                     {status === "DELIVERED" ? (
-                      <>
-                        Once delivered, the partner owes you{" "}
-                        <Money
-                          value={deliveredNet({
-                            cod_amount: getFieldValue("cod_amount"),
-                            delivery_charge: getFieldValue("delivery_charge"),
-                            cod_fee: getFieldValue("cod_fee"),
-                          })}
-                        />{" "}
-                        for this order, and the customer&apos;s due is marked
-                        paid.
-                      </>
+                      (() => {
+                        const net = deliveredNet({
+                          cod_amount: getFieldValue("cod_amount"),
+                          delivery_charge: getFieldValue("delivery_charge"),
+                          cod_fee: getFieldValue("cod_fee"),
+                        });
+                        return (
+                          <>
+                            Once delivered,{" "}
+                            {net < 0
+                              ? "you owe the partner "
+                              : "the partner owes you "}
+                            <Money value={Math.abs(net)} /> for this order, and
+                            the customer&apos;s due is marked paid.
+                          </>
+                        );
+                      })()
                     ) : status === "RETURNED" ? (
                       <>A returned order costs you the return charge only.</>
                     ) : (

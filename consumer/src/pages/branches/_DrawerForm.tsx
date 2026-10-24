@@ -120,8 +120,8 @@ export default function DrawerForm({
       <Form
         form={form}
         name="branch-form"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
+        labelCol={{ span: 10 }}
+        wrapperCol={{ span: 14 }}
         labelAlign="right"
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
@@ -183,7 +183,7 @@ export default function DrawerForm({
           <Switch />
         </Form.Item>
 
-        <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+        <Form.Item wrapperCol={{ offset: 10, span: 14 }}>
           <Button
             type="primary"
             htmlType="submit"

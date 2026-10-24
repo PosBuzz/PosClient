@@ -234,7 +234,7 @@ export class ReturnService {
 
       if (shippingRefundAmount > availableShippingRefund + 0.01) {
         throw new BadRequestException(
-          `Shipping refund amount ($${shippingRefundAmount.toFixed(2)}) exceeds remaining refundable shipping ($${availableShippingRefund.toFixed(2)})`,
+          `Shipping refund amount (৳${shippingRefundAmount.toFixed(2)}) exceeds remaining refundable shipping (৳${availableShippingRefund.toFixed(2)})`,
         );
       }
 
@@ -255,20 +255,20 @@ export class ReturnService {
 
       if (selectedReturnAmount > availableAmount + 0.01) {
         throw new BadRequestException(
-          `Selected return value ($${selectedReturnAmount.toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)})`,
+          `Selected return value (৳${selectedReturnAmount.toFixed(2)}) exceeds available amount (৳${availableAmount.toFixed(2)})`,
         );
       }
 
       if (Math.abs(totalPayments - selectedReturnAmount) > 0.01) {
         throw new BadRequestException(
-          `Total payment amount must exactly match selected return value. Expected $${selectedReturnAmount.toFixed(2)}, got $${totalPayments.toFixed(2)}`,
+          `Total payment amount must exactly match selected return value. Expected ৳${selectedReturnAmount.toFixed(2)}, got ৳${totalPayments.toFixed(2)}`,
         );
       }
 
       // Validate that total refund + exchange doesn't exceed available amount
       if (totalRefund + totalExchange > availableAmount) {
         throw new BadRequestException(
-          `Total refund and exchange amount ($${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount ($${availableAmount.toFixed(2)}). Already returned: $${totalAlreadyReturned.toFixed(2)}`,
+          `Total refund and exchange amount (৳${(totalRefund + totalExchange).toFixed(2)}) exceeds available amount (৳${availableAmount.toFixed(2)}). Already returned: ৳${totalAlreadyReturned.toFixed(2)}`,
         );
       }
 

@@ -236,7 +236,7 @@ describe('ReturnService.create validation (unit)', () => {
       }),
     );
     expect(tooMuch.message).toBe(
-      'Shipping refund amount ($10.02) exceeds remaining refundable shipping ($10.00)',
+      'Shipping refund amount (৳10.02) exceeds remaining refundable shipping (৳10.00)',
     );
     prisma.return.findMany.mockResolvedValue([
       {
@@ -255,7 +255,7 @@ describe('ReturnService.create validation (unit)', () => {
       }),
     );
     expect(again.message).toBe(
-      'Shipping refund amount ($5.00) exceeds remaining refundable shipping ($0.00)',
+      'Shipping refund amount (৳5.00) exceeds remaining refundable shipping (৳0.00)',
     );
     expect(prisma.return.findMany).toHaveBeenCalledWith({
       where: { original_sale_id: 1 },
@@ -280,7 +280,7 @@ describe('ReturnService.create validation (unit)', () => {
       }),
     );
     expect(error.message).toBe(
-      'Selected return value ($190.00) exceeds available amount ($60.00)',
+      'Selected return value (৳190.00) exceeds available amount (৳60.00)',
     );
   });
 
@@ -295,7 +295,7 @@ describe('ReturnService.create validation (unit)', () => {
       dto({ payments: [{ payment_method: 'CASH', amount: 1 }] }),
     );
     expect(mismatch.message).toBe(
-      'Total payment amount must exactly match selected return value. Expected $50.00, got $1.00',
+      'Total payment amount must exactly match selected return value. Expected ৳50.00, got ৳1.00',
     );
   });
 
@@ -307,7 +307,7 @@ describe('ReturnService.create validation (unit)', () => {
         dto({ payments: [{ payment_method: 'CASH', amount }] }),
       );
       expect(error.message).toContain(
-        `Total payment amount must exactly match selected return value. Expected $50.00, got $${amount.toFixed(2)}`,
+        `Total payment amount must exactly match selected return value. Expected ৳50.00, got ৳${amount.toFixed(2)}`,
       );
     }
     for (const amount of [49.995, 50.005]) {
@@ -337,7 +337,7 @@ describe('ReturnService.create validation (unit)', () => {
       }),
     );
     expect(error.message).toBe(
-      'Total refund and exchange amount ($200.01) exceeds available amount ($200.00). Already returned: $0.00',
+      'Total refund and exchange amount (৳200.01) exceeds available amount (৳200.00). Already returned: ৳0.00',
     );
   });
 });
