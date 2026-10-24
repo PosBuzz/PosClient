@@ -118,6 +118,7 @@ export class UsersService {
           id: true,
           email: true,
           name: true,
+          role_id: true,
           role: {
             include: {
               permissions: {

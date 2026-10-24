@@ -155,11 +155,11 @@ const RewardsSettingsPage: React.FC = () => {
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="points_per_currency"
-                    label="Points per Dollar Spent"
+                    label="Points per ৳1 Spent"
                     rules={[
                       {
                         required: true,
-                        message: "Please enter points per dollar",
+                        message: "Please enter points per taka",
                       },
                       {
                         validator: (_, value) => {
@@ -169,7 +169,7 @@ const RewardsSettingsPage: React.FC = () => {
                             value === ""
                           ) {
                             return Promise.reject(
-                              new Error("Please enter points per dollar"),
+                              new Error("Please enter points per taka"),
                             );
                           }
                           const numValue = Number(value);
@@ -268,7 +268,7 @@ const RewardsSettingsPage: React.FC = () => {
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="redemption_value"
-                    label="Dollar Value per Point"
+                    label="Taka Value per Point"
                     rules={[
                       {
                         required: true,
@@ -378,20 +378,20 @@ const RewardsSettingsPage: React.FC = () => {
                     <Switch checkedChildren="Yes" unCheckedChildren="No" />
                   </Form.Item>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Allow customers to use points for partial payment
+                    On: points can pay part of a sale and the rest is paid another way. Off: points must pay the whole sale.
                   </Text>
                 </Col>
 
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="earn_on_sale_only"
-                    label="Earn Points on Sales Only"
+                    label="Earn Points on Fully Paid Sales Only"
                     valuePropName="checked"
                   >
                     <Switch checkedChildren="Yes" unCheckedChildren="No" />
                   </Form.Item>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Only award points for completed sales (not quotations)
+                    On: points are earned only on fully paid sales. Off: part-paid sales also earn, on the amount already received. Quotations never earn points.
                   </Text>
                 </Col>
               </Row>

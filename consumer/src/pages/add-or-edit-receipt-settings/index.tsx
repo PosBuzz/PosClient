@@ -508,9 +508,8 @@ export default function ReceiptSettingsFormPage() {
                       >
                         <Select>
                           <Select.Option value="৳">৳</Select.Option>
-                          <Select.Option value="$">$</Select.Option>
-                          <Select.Option value="€">€</Select.Option>
-                          <Select.Option value="£">£</Select.Option>
+                          <Select.Option value="Tk">Tk</Select.Option>
+                          <Select.Option value="BDT">BDT</Select.Option>
                         </Select>
                       </Form.Item>
                     </Col>

@@ -123,25 +123,19 @@ export class InventoryBatchService {
           }
         }
 
-        // Determine payment status and paid amount
+        // A purchase is only paid up to what was actually paid: no payment
+        // means due. A free batch (zero cost) has nothing to pay.
         const totalCost = Number(dto.cost_price) * dto.quantity;
-        let paidAmount = 0;
-        let paymentStatus = 'paid';
-
-        if (dto.payments && dto.payments.length > 0) {
-          paidAmount = dto.payments.reduce(
-            (sum, p) => sum + Number(p.amount),
-            0,
-          );
-          if (paidAmount >= totalCost) {
-            paymentStatus = 'paid';
-          } else if (paidAmount > 0) {
-            paymentStatus = 'partial';
-          } else {
-            paymentStatus = 'due';
-          }
-        }
-        // If no payments provided, default to fully paid (backward compatible)
+        const paidAmount = (dto.payments ?? []).reduce(
+          (sum, p) => sum + Number(p.amount),
+          0,
+        );
+        const paymentStatus =
+          totalCost <= 0 || paidAmount >= totalCost
+            ? 'paid'
+            : paidAmount > 0
+              ? 'partial'
+              : 'due';
 
         const newBatch = await prisma.inventoryBatch.create({
           data: {
@@ -154,10 +148,7 @@ export class InventoryBatchService {
             location: dto.location?.trim() || null,
             expiry_date: dto.expiry_date ? new Date(dto.expiry_date) : null,
             payment_status: paymentStatus,
-            paid_amount:
-              paymentStatus === 'paid' && !dto.payments?.length
-                ? totalCost
-                : paidAmount,
+            paid_amount: paidAmount,
           },
           include: {
             variant: {

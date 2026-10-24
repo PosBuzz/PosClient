@@ -29,6 +29,26 @@ export class RewardsService {
   constructor(private prisma: PrismaService) {}
 
   // Settings Management
+  private readonly lastExpiryRun = new Map<number, number>();
+
+  /**
+   * Nothing schedules point expiry, so it is applied when points are looked at
+   * or spent. Runs at most once a minute per shop so a busy till stays quick.
+   */
+  async expireIfDue(consumerId: number) {
+    const last = this.lastExpiryRun.get(consumerId) ?? 0;
+    if (Date.now() - last < 60_000) return;
+    this.lastExpiryRun.set(consumerId, Date.now());
+    try {
+      await this.expirePoints(consumerId);
+    } catch (error) {
+      this.logger.error(
+        `Lazy point expiry failed for consumer ${consumerId}`,
+        errorStack(error),
+      );
+    }
+  }
+
   async getSettings(consumerId: number) {
     try {
       const settings = await this.prisma.rewardsSettings.findUnique({
@@ -791,7 +811,7 @@ export class RewardsService {
       if (creditAmount > maxCreditAmount) {
         return {
           isValid: false,
-          reason: `Insufficient points. Maximum credit available: $${maxCreditAmount.toFixed(2)}`,
+          reason: `Insufficient points. Maximum credit available: ৳${maxCreditAmount.toFixed(2)}`,
           maxCreditAmount,
         };
       }
@@ -804,7 +824,7 @@ export class RewardsService {
       if (requiredPoints < settings.minimum_redemption) {
         return {
           isValid: false,
-          reason: `Minimum credit amount is $${(settings.minimum_redemption * Number(settings.redemption_value)).toFixed(2)}`,
+          reason: `Minimum credit amount is ৳${(settings.minimum_redemption * Number(settings.redemption_value)).toFixed(2)}`,
           maxCreditAmount,
         };
       }
@@ -817,7 +837,7 @@ export class RewardsService {
           settings.maximum_redemption * Number(settings.redemption_value);
         return {
           isValid: false,
-          reason: `Maximum credit amount is $${maxCredit.toFixed(2)}`,
+          reason: `Maximum credit amount is ৳${maxCredit.toFixed(2)}`,
           maxCreditAmount: Math.min(maxCreditAmount, maxCredit),
         };
       }
@@ -869,7 +889,7 @@ export class RewardsService {
           type: RewardsTransactionType.REDEEM,
           points: -requiredPoints,
           sale_id: saleId,
-          description: `Redeemed ${requiredPoints} points for $${creditAmount.toFixed(2)} credit`,
+          description: `Redeemed ${requiredPoints} points for ৳${creditAmount.toFixed(2)} credit`,
           reference: reference || `CREDIT-SALE-${saleId}`,
         },
         consumerId,
@@ -920,7 +940,7 @@ export class RewardsService {
           type: RewardsTransactionType.ADJUSTMENT,
           points: pointsToAdd,
           sale_id: undefined, // Don't link to sale for refunds
-          description: `Refunded ${pointsToAdd} points for $${refundAmount.toFixed(2)} credit return`,
+          description: `Refunded ${pointsToAdd} points for ৳${refundAmount.toFixed(2)} credit return`,
           reference: reference || `CREDIT-REFUND-${returnId || originalSaleId}`,
           notes: returnId
             ? `Return ID: ${returnId}, Original Sale ID: ${originalSaleId}`

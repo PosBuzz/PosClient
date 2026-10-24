@@ -434,8 +434,7 @@ const CustomerRewardsPage: React.FC = () => {
                 ]}
               >
                 <InputNumber
-                  min={1}
-                  max={selectedCustomer.total_points}
+                  precision={0}
                   style={{ width: "100%" }}
                   placeholder="Enter points to redeem"
                 />

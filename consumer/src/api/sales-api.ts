@@ -200,6 +200,8 @@ export const salesApi = {
       branch_id?: number;
       page?: number;
       limit?: number;
+      search?: string;
+      target_status?: "achieved" | "not_achieved";
     } = {},
   ): Promise<DailyTargetReportResponse> => {
     const cleanParams: {
@@ -207,7 +209,17 @@ export const salesApi = {
       branch_id?: number;
       page?: number;
       limit?: number;
+      search?: string;
+      target_status?: "achieved" | "not_achieved";
     } = {};
+
+    if (params.search?.trim()) {
+      cleanParams.search = params.search.trim();
+    }
+
+    if (params.target_status) {
+      cleanParams.target_status = params.target_status;
+    }
 
     if (params.date) {
       cleanParams.date = params.date;

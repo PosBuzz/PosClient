@@ -129,6 +129,22 @@ export class UsersService {
   }
   async deleteRole(id: number, consumer_id: number) {
     try {
+      // Users of a deleted role would be deleted with it, so a role that is
+      // still in use, and the shop's Admin role, are never deleted.
+      const role = await this.prisma.role.findFirst({
+        where: { consumer_id, id },
+        select: { is_admin: true, _count: { select: { users: true } } },
+      });
+      if (!role) throw new NotFoundException('Role not found');
+      if (role.is_admin) {
+        throw new BadRequestException('The Admin role cannot be deleted');
+      }
+      if (role._count.users > 0) {
+        throw new BadRequestException(
+          `This role is still assigned to ${role._count.users} user(s). Move them to another role first.`,
+        );
+      }
+
       const result = await this.prisma.role.delete({
         where: { consumer_id, id },
       });

@@ -93,24 +93,18 @@ export class ProductVariantService {
       if (dto.batches && dto.batches.length > 0) {
         for (const batchDto of dto.batches) {
           try {
-            // Determine payment status and paid amount
+            // No payment means due; a free batch (zero cost) has nothing to pay
             const totalCost = Number(batchDto.cost_price) * batchDto.quantity;
-            let paidAmount = 0;
-            let paymentStatus = 'paid';
-
-            if (batchDto.payments && batchDto.payments.length > 0) {
-              paidAmount = batchDto.payments.reduce(
-                (sum, p) => sum + Number(p.amount),
-                0,
-              );
-              if (paidAmount >= totalCost) {
-                paymentStatus = 'paid';
-              } else if (paidAmount > 0) {
-                paymentStatus = 'partial';
-              } else {
-                paymentStatus = 'due';
-              }
-            }
+            const paidAmount = (batchDto.payments ?? []).reduce(
+              (sum, p) => sum + Number(p.amount),
+              0,
+            );
+            const paymentStatus =
+              totalCost <= 0 || paidAmount >= totalCost
+                ? 'paid'
+                : paidAmount > 0
+                  ? 'partial'
+                  : 'due';
 
             // 1. Create the batch and capture the result
             const newBatch = await prisma.inventoryBatch.create({
@@ -126,10 +120,7 @@ export class ProductVariantService {
                   ? new Date(batchDto.expiry_date)
                   : null,
                 payment_status: paymentStatus,
-                paid_amount:
-                  paymentStatus === 'paid' && !batchDto.payments?.length
-                    ? totalCost
-                    : paidAmount,
+                paid_amount: paidAmount,
               },
             });
 

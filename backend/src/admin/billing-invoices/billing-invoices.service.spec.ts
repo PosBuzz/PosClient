@@ -78,7 +78,7 @@ describe('billing exports', () => {
     expect(text).toContain('My company');
     expect(text).toContain('OLD-BILL');
     expect(text).toContain('Starter');
-    expect(text).toContain('$123.45');
+    expect(text).toContain('BDT 123.45');
   });
 
   it('[BE-BILL-102] {BillingInvoicesService.generateBillingHistoryPdf} renders both invoices and their exact combined amount', async () => {
@@ -86,9 +86,9 @@ describe('billing exports', () => {
     expect(text).toContain('My company');
     expect(text).toContain('OLD-BILL');
     expect(text).toContain('NEW-BILL');
-    expect(text).toContain('$123.45');
-    expect(text).toContain('$200.25');
-    expect(text).toContain('$323.70');
+    expect(text).toContain('BDT 123.45');
+    expect(text).toContain('BDT 200.25');
+    expect(text).toContain('BDT 323.70');
   });
 
   it('[BE-BILL-103] {BillingInvoicesService.generateBillingHistoryExcel} invalid export input becomes the pinned generic 500 without source internals', async () => {

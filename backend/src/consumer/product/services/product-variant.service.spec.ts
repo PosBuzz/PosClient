@@ -161,7 +161,7 @@ describe('ProductVariantService.create (unit)', () => {
     expect(prisma.productSerial.createMany).not.toHaveBeenCalled();
   });
 
-  it('[BE-MUT-404] an unpaid-by-record batch is treated as fully paid and gets an audit entry', async () => {
+  it('[BE-MUT-404] a batch with no payment is due and gets an audit entry', async () => {
     const { prisma, service } = setup();
     await service.create(
       7,
@@ -180,8 +180,8 @@ describe('ProductVariantService.create (unit)', () => {
         cost_price: '25',
         vendor_id: 9,
         expiry_date: new Date('2027-01-01'),
-        payment_status: 'paid',
-        paid_amount: 100,
+        payment_status: 'due',
+        paid_amount: 0,
       },
     });
     expect(prisma.inventoryAuditLog.create).toHaveBeenCalledWith({

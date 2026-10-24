@@ -157,7 +157,7 @@ describe('InventoryBatchService.create (unit)', () => {
     expect(same.prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('[BE-MUT-464] a batch with no payments is fully paid, stores the trimmed location and expiry, and is written with its relations', async () => {
+  it('[BE-MUT-464] a batch with no payments is due, stores the trimmed location and expiry, and is written with its relations', async () => {
     const { tx, service } = arrange();
     await service.create(
       5,
@@ -174,8 +174,8 @@ describe('InventoryBatchService.create (unit)', () => {
         vendor_id: 9,
         location: 'A-3',
         expiry_date: new Date('2027-01-01'),
-        payment_status: 'paid',
-        paid_amount: 100,
+        payment_status: 'due',
+        paid_amount: 0,
       },
       include: batchInclude,
     });
@@ -235,6 +235,23 @@ describe('InventoryBatchService.create (unit)', () => {
     expect(part.tx.inventoryBatch.create.mock.calls[0][0].data).toMatchObject({
       payment_status: 'partial',
       paid_amount: 30,
+    });
+  });
+
+  it('[BE-INV-265] a purchase with no payment, or an empty payment list, is due with nothing paid; a free batch has nothing to pay', async () => {
+    for (const body of [{}, { payments: [] }]) {
+      const { tx, service } = arrange();
+      await service.create(5, 8, dto(body));
+      expect(tx.inventoryBatch.create.mock.calls[0][0].data).toMatchObject({
+        payment_status: 'due',
+        paid_amount: 0,
+      });
+    }
+    const free = arrange();
+    await free.service.create(5, 8, dto({ cost_price: '0' }));
+    expect(free.tx.inventoryBatch.create.mock.calls[0][0].data).toMatchObject({
+      payment_status: 'paid',
+      paid_amount: 0,
     });
   });
 

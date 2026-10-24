@@ -239,4 +239,20 @@ describe("menu against routes", () => {
     );
     expect(keys).toEqual(["/", "/support"]);
   });
+
+  it("[CO-MENU-005] the Settings group shows for anyone allowed one of its pages, not only for Users and Roles", () => {
+    const settingsChildren = (permissions: string[]) =>
+      visibleMenuItems(MENU_ITEMS, permissions)
+        .find((item) => item.key === "/settings")
+        ?.children?.map((child) => child.key);
+    expect(settingsChildren([Permissions.branches])).toEqual(["/branches"]);
+    expect(settingsChildren([Permissions.receipt_settings])).toEqual([
+      "/printer-settings",
+    ]);
+    expect(settingsChildren([Permissions.sales])).toEqual([
+      "/rewards-settings",
+      "/pos-layout-settings",
+    ]);
+    expect(settingsChildren([Permissions.support])).toBeUndefined();
+  });
 });
