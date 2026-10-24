@@ -1,0 +1,19 @@
+{
+  "name": "posbuzz-manual",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Shop App and Admin Panel user manuals (Markdown to PDF).",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check"
+  },
+  "devDependencies": {
+    "marked": "^15.0.12",
+    "playwright": "^1.64.0",
+    "sharp": "^0.34.2"
+  },
+  "engines": {
+    "node": ">=22.22.1 <23"
+  }
+}
