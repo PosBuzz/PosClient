@@ -32,6 +32,13 @@ Copy the **exact** printer names into the configuration.
 - **Barcode**: Label printers (Gprinter GP-3120TUC, Zebra, DYMO, Brother QL)
 - **Cash Drawer**: Connected via thermal printer (RJ11/RJ12)
 
+### Barcode Label Size
+Labels are laid out on the label size selected in the printer driver, so set it once:
+**Printers → barcode printer → Printing Preferences → Page Setup → Stock**, pick (or create with **New...**)
+a stock with the exact width and height of the labels in the printer, and click **OK**.
+Text wraps and resizes to fit that label. If the print sits off to one side, adjust
+**Advanced Options... → Horizontal Offset** in the same window.
+
 ## 🌐 API Usage
 
 **Base URL**: `http://localhost:8080`
@@ -76,6 +83,7 @@ POST /print/barcode
 
 - **Store Info**: Name, address, phone, email
 - **Thermal Printer**: Receipt printer name
+- **Logo**: a PNG/JPG file on this PC, printed at the top of receipts fitted inside 50 × 25 mm (never stretched). Black on white prints best, and a wide (about 2:1) logo uses the space fully
 - **Barcode Printer**: Label printer name
 - **Port**: Server port (default: 8080)
 - **Currency**: Price symbol ($, €, £)

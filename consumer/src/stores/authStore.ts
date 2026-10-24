@@ -13,6 +13,8 @@ type User = {
   company_email: string;
   secondary_email: string | null;
   logo: string | null;
+  /** Optional square mark for small spots; falls back to logo. */
+  logo_icon?: string | null;
   phone: string | null;
   address: string | null;
   role: string;

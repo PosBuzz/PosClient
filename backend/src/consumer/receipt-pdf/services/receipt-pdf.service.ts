@@ -5,6 +5,10 @@ import * as path from 'path';
 import * as bwipjs from 'bwip-js';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
 import {
+  PDF_LOGO_TRANSFORMATION,
+  cloudinaryVariant,
+} from '../../../common/utils/cloudinary-image.util';
+import {
   ReceiptPdfData,
   ReceiptPdfItem,
 } from '../interfaces/receipt-pdf-data.interface';
@@ -41,7 +45,7 @@ export class ReceiptPdfService {
     s: ReceiptPdfSettings,
   ): Promise<Buffer> {
     const [logoBuffer, barcodeBuffer] = await Promise.all([
-      this.loadImage(data.logoPath),
+      this.loadLogo(data.logoPath),
       s.footer.showBarcode && data.saleNumber
         ? this.generateBarcodeBuffer(data.saleNumber)
         : Promise.resolve(null),
@@ -161,6 +165,16 @@ export class ReceiptPdfService {
   /* ================================================================== */
   /*  IMAGE HELPERS                                                     */
   /* ================================================================== */
+
+  /** The logo trimmed and as PNG when it is on Cloudinary; the original if that variant fails. */
+  private async loadLogo(pathOrUrl: string): Promise<Buffer | null> {
+    const variant = cloudinaryVariant(pathOrUrl, PDF_LOGO_TRANSFORMATION);
+    if (variant !== pathOrUrl) {
+      const buffer = await this.loadImage(variant);
+      if (buffer) return buffer;
+    }
+    return this.loadImage(pathOrUrl);
+  }
 
   private async loadImage(pathOrUrl: string): Promise<Buffer | null> {
     if (!pathOrUrl) return null;

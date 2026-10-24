@@ -13,7 +13,26 @@ interface ImageInputProps {
   required?: boolean;
   useForm?: boolean; // Whether to use Form.Item wrapper
   listType?: "text" | "picture-circle" | "picture-card" | "picture";
+  /** Help shown under the field (Form.Item extra). */
+  extra?: React.ReactNode;
+  /** Returns a warning for the chosen image's pixel size; the upload still goes ahead. */
+  checkImage?: (width: number, height: number) => string | null;
 }
+
+const readImageSize = (file: Blob) =>
+  new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      reject(new Error("unreadable image"));
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
 
 const ImageInput: React.FC<ImageInputProps> = ({
   name,
@@ -24,6 +43,8 @@ const ImageInput: React.FC<ImageInputProps> = ({
   required = false,
   useForm = true,
   listType = "picture-card",
+  extra,
+  checkImage,
 }) => {
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
@@ -81,6 +102,15 @@ const ImageInput: React.FC<ImageInputProps> = ({
     if (!isLessThan10MB) {
       messageApi?.error("Image must be smaller than 10MB!");
       return false;
+    }
+
+    if (checkImage) {
+      readImageSize(file)
+        .then(({ width, height }) => {
+          const advice = checkImage(width, height);
+          if (advice) messageApi?.warning(advice, 8);
+        })
+        .catch(() => undefined);
     }
 
     return true;
@@ -195,6 +225,7 @@ const ImageInput: React.FC<ImageInputProps> = ({
       <Form.Item
         label={l ?? ""}
         name={name}
+        extra={extra}
         valuePropName="fileList"
         getValueFromEvent={normFile}
         rules={[

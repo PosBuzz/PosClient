@@ -8,7 +8,7 @@ const setup = () => {
 };
 
 describe('ProfileService (unit)', () => {
-  it('[BE-MUT-210] only the five allowed fields reach the update, and the returned columns are pinned', async () => {
+  it('[BE-MUT-210] only the six allowed fields reach the update, and the returned columns are pinned', async () => {
     const { service, consumer } = setup();
     consumer.update.mockResolvedValue({ id: 4 });
     await expect(
@@ -18,6 +18,7 @@ describe('ProfileService (unit)', () => {
         address: 'Road 1',
         company_name: 'Shop',
         logo: 'logo.png',
+        logo_icon: 'icon.png',
         email: 'attacker@x.io',
         plan_id: 99,
         id: 1,
@@ -31,6 +32,7 @@ describe('ProfileService (unit)', () => {
         address: 'Road 1',
         company_name: 'Shop',
         logo: 'logo.png',
+        logo_icon: 'icon.png',
       },
       select: {
         id: true,
@@ -40,6 +42,7 @@ describe('ProfileService (unit)', () => {
         phone: true,
         address: true,
         logo: true,
+        logo_icon: true,
       },
     });
   });

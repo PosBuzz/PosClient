@@ -1,14 +1,22 @@
 import { useState } from "react";
 import { theme } from "antd";
 import { useAuthStore } from "../stores/authStore";
+import { appIconUrl } from "../utils/brand-image";
 
-/** Shared company branding, including a fallback for missing or broken uploads. */
+/**
+ * Shared company branding for small square spots: the app icon if uploaded, else the logo,
+ * trimmed and sized for the spot. Falls back to the original image, then to initials.
+ */
 export default function CompanyLogo({ size = 36 }: { size?: number }) {
   const user = useAuthStore((state) => state.user);
   const { token } = theme.useToken();
-  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string[]>([]);
   const name = user?.company_name?.trim() || "PosBuzz";
-  const source = user?.logo?.trim();
+  const original = user?.logo_icon?.trim() || user?.logo?.trim();
+  const candidates = original
+    ? Array.from(new Set([appIconUrl(original, size), original]))
+    : [];
+  const source = candidates.find((url) => !failed.includes(url));
   const initials =
     name === "PosBuzz"
       ? "PB"
@@ -39,12 +47,12 @@ export default function CompanyLogo({ size = 36 }: { size?: number }) {
         lineHeight: 1,
       }}
     >
-      {source && source !== failedSource ? (
+      {source ? (
         <img
           key={source}
           src={source}
           alt={`${name} logo`}
-          onError={() => setFailedSource(source)}
+          onError={() => setFailed((list) => [...list, source])}
           style={{
             width: "100%",
             height: "100%",
