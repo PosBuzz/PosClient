@@ -27,6 +27,7 @@
     "employment_status": "ACTIVE",
     "id": 1,
     "logo": null,
+    "logo_icon": null,
     "name": "Tenant Admin",
     "nid_document_url": null,
     "nid_number": null,

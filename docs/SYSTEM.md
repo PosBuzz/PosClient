@@ -111,6 +111,11 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
 - **Branch protection not used** (D-065). Tracked deployment credentials were removed from git and history on 2026-10-15 (D-067 superseded).
 - **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports of products, customers and inventory are always available as PDF; the Excel option is commented out in `consumer/src/components/ExportButton.tsx` (the backend still serves `format=xlsx`).
 - **Print server download:** the consumer app serves the Windows installer at `/print-server/PosBuzz-Print-Server.zip` (shown as Download Print Server on Receipt Settings). After rebuilding `PrintingFromWebToPOSPrinter`, copy `Distribution/PosBuzz-Print-Server.zip` to `consumer/public/print-server/`; a consumer test fails if the two differ.
+- **Brand images (2026-10-24):** a shop uploads a full logo (`consumers.logo`) and optionally a square app icon (`consumers.logo_icon`) on the
+  Profile page, which explains what each needs and previews both. Both are stored once as Cloudinary originals; each place asks Cloudinary for its own
+  variant by inserting a transformation into the URL (`consumer/src/utils/brand-image.ts`, `backend/src/common/utils/cloudinary-image.util.ts`).
+  Sidebar/POS headers use the icon, else the logo, trimmed and sized at 2x; every PDF fetches the logo trimmed as PNG (pdfkit reads PNG/JPEG only) and
+  falls back to the original if that fails. The print server's own receipt logo (a local file) is fitted into 50 x 25 mm without stretching.
 - **Delivery:** CD to the VPS from GHCR images, staging then production by branch (D-074, D-075).
 - **Delivery partners (D-076, 2026-10-22):** online orders link to a partner record (`delivery_partners`), with cash to collect, a delivery
   (or return) charge and a COD fee per order. The partner ledger (`delivery_partner_transactions`) is append-only: a change posts a correcting

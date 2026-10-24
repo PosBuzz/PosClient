@@ -83,6 +83,7 @@ POST /print/barcode
 
 - **Store Info**: Name, address, phone, email
 - **Thermal Printer**: Receipt printer name
+- **Logo**: a PNG/JPG file on this PC, printed at the top of receipts fitted inside 50 × 25 mm (never stretched). Black on white prints best, and a wide (about 2:1) logo uses the space fully
 - **Barcode Printer**: Label printer name
 - **Port**: Server port (default: 8080)
 - **Currency**: Price symbol ($, €, £)

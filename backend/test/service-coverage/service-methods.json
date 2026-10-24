@@ -1843,7 +1843,7 @@
     "service": "ReceiptPdfService",
     "method": "generatePdf",
     "file": "src/consumer/receipt-pdf/services/receipt-pdf.service.ts",
-    "line": 39,
+    "line": 43,
     "throws": 0,
     "consumerId": false
   },

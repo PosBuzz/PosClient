@@ -114,16 +114,18 @@ namespace Printer
                 y += 3;
             }
 
-            // Print logo if available with fixed dimensions
+            // Print logo if available, fitted inside a 50 x 25 mm box without stretching
             if (!string.IsNullOrEmpty(config.LogoPath) && File.Exists(config.LogoPath))
             {
                 try
                 {
                     using (Image logoImage = Image.FromFile(config.LogoPath))
                     {
-                        // Fixed dimensions for logo
-                        float logoWidth = 50; // Fixed width in mm
-                        float logoHeight = 25; // Fixed height in mm
+                        const float maxLogoWidth = 50;  // mm
+                        const float maxLogoHeight = 25; // mm
+                        float fit = Math.Min(maxLogoWidth / logoImage.Width, maxLogoHeight / logoImage.Height);
+                        float logoWidth = logoImage.Width * fit;
+                        float logoHeight = logoImage.Height * fit;
                         float logoX = (this.width - logoWidth) / 2;
 
                         g.DrawImage(logoImage, logoX, y, logoWidth, logoHeight);
