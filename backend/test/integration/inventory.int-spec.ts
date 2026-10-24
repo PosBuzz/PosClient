@@ -80,7 +80,7 @@ describe('inventory', () => {
       expect(part.payment_status).toBe('partial');
       expect(Number(part.paid_amount)).toBe(50);
       const unpaid: any = await batches.create(cid(), uid(), dto(v.id));
-      expect(unpaid.payment_status).toBe('paid'); // no payments given: backward compatible, treated as paid
+      expect(unpaid.payment_status).toBe('due'); // no payment given: the purchase is due
       expect(
         await db.inventoryAuditLog.count({
           where: { variant_id: v.id, event_type: 'PURCHASE_IN' },

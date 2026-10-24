@@ -1300,9 +1300,9 @@ const ALL_VARIATIONS: {
   // ── BRANDING ──────────────────────────────────────────────
   {
     category: 'Branding',
-    name: 'Currency After (USD $)',
+    name: 'Currency After (BDT ৳)',
     dataOverrides: {
-      currencySymbol: '$',
+      currencySymbol: '৳',
       currencyPosition: 'after',
     },
   },
@@ -1334,7 +1334,7 @@ const ALL_VARIATIONS: {
       },
     },
     dataOverrides: {
-      currencySymbol: '$',
+      currencySymbol: '৳',
       currencyPosition: 'before',
       footerTerms: TERMS_SINGLE_LINE,
     },

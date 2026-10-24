@@ -92,6 +92,7 @@ export default function InventoryTransfersPage() {
         limit: pageSize,
         status: statusFilter,
         branch_id: branchFilter,
+        search: debouncedSearchText || undefined,
       }),
     staleTime: queryStaleTimeMap[queryKeys.transfers],
   });

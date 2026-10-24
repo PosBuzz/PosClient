@@ -170,6 +170,7 @@ export class InventoryAdjustmentService {
       limit?: number;
       variant_id?: number;
       branch_id?: number;
+      search?: string;
     } = {},
   ) {
     try {
@@ -192,6 +193,21 @@ export class InventoryAdjustmentService {
 
       if (branch_id) {
         whereClause.branch_id = branch_id;
+      }
+
+      const search = options.search?.trim();
+      if (search) {
+        const contains = { contains: search, mode: 'insensitive' as const };
+        whereClause.OR = [
+          { reason: contains },
+          { notes: contains },
+          { branch: { name: contains } },
+          { created_by_user: { name: contains } },
+          { batch: { batch_number: contains } },
+          { variant: { name: contains } },
+          { variant: { sku: contains } },
+          { variant: { product: { name: contains } } },
+        ];
       }
 
       const [adjustments, total] = await Promise.all([

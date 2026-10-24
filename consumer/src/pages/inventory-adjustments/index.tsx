@@ -70,6 +70,7 @@ export default function InventoryAdjustmentsPage() {
       queryKeys.adjustments,
       currentPage,
       pageSize,
+      debouncedSearchText,
       variantFilter,
       branchFilter,
     ],
@@ -79,6 +80,7 @@ export default function InventoryAdjustmentsPage() {
         limit: pageSize,
         variant_id: variantFilter,
         branch_id: branchFilter,
+        search: debouncedSearchText || undefined,
       }),
     staleTime: queryStaleTimeMap[queryKeys.adjustments],
   });

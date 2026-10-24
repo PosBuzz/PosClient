@@ -638,7 +638,7 @@ const BarcodePrinting = () => {
                   color: "#000000",
                 }}
               >
-                ${previewData.Price}
+                ৳{previewData.Price}
                 {previewData.VatIncluded !== undefined && (
                   <span>
                     {" "}

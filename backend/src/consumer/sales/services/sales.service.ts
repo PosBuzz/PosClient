@@ -247,6 +247,9 @@ export class SalesService {
           );
         }
 
+        if (creditPayments.length > 0) {
+          await this.rewardsService.expireIfDue(consumerId);
+        }
         for (const creditPayment of creditPayments) {
           const validation = await this.rewardsService.validateCreditPayment(
             consumerId,
@@ -549,6 +552,23 @@ export class SalesService {
         // Redeem CREDIT (reward points) in the same transaction, so a sale is
         // never recorded as paid by points the customer was not charged
         if (createSaleDto.customer_id && createSaleDto.payments) {
+          const creditTotal = createSaleDto.payments
+            .filter((payment) => payment.payment_method === 'CREDIT')
+            .reduce((sum, payment) => sum + Number(payment.amount), 0);
+          if (creditTotal > 0) {
+            const rewardSettings =
+              await this.rewardsService.getSettings(consumerId);
+            // With partial redemption off, points must pay the whole sale
+            if (
+              !rewardSettings.allow_partial_redemption &&
+              Math.round(creditTotal * 100) <
+                Math.round(Number(sale.total_amount) * 100)
+            ) {
+              throw new BadRequestException(
+                'Partial redemption is turned off: reward points must cover the whole sale',
+              );
+            }
+          }
           for (const payment of createSaleDto.payments) {
             if (payment.payment_method !== 'CREDIT') continue;
             await this.rewardsService.processCreditPayment(
@@ -640,19 +660,30 @@ export class SalesService {
       // Award rewards points if sale is completed and customer is provided
       if (
         result.customer_id &&
-        result.payment_status === 'paid' &&
-        result.sale_type === 'sale'
+        result.sale_type === 'sale' &&
+        (result.payment_status === 'paid' ||
+          result.payment_status === 'partial')
       ) {
         try {
+          const rewardSettings =
+            await this.rewardsService.getSettings(consumerId);
+          // "Earn points on sales only" earns on fully paid sales. With it off,
+          // a part-paid sale also earns, on the amount already received.
+          const earnsOnThisSale =
+            result.payment_status === 'paid' ||
+            !rewardSettings.earn_on_sale_only;
           const creditPaymentAmount =
             createSaleDto.payments
               ?.filter((payment) => payment.payment_method === 'CREDIT')
               .reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
 
-          const rewardEligibleAmount =
-            Number(result.total_amount) - creditPaymentAmount;
+          const earningBase =
+            result.payment_status === 'paid'
+              ? Number(result.total_amount)
+              : Number(result.received_amount);
+          const rewardEligibleAmount = earningBase - creditPaymentAmount;
 
-          if (rewardEligibleAmount > 0) {
+          if (earnsOnThisSale && rewardEligibleAmount > 0) {
             await this.rewardsService.earnPoints(
               consumerId,
               result.customer_id,
@@ -4102,8 +4133,23 @@ export class SalesService {
         ? Math.round((total_sold / total_target) * 10000) / 100
         : 0;
 
-    const total = rows.length;
-    const paginatedRows = rows.slice(skip, skip + limit);
+    // Filters narrow the table; the summary above always covers the whole day
+    const search = dailyTargetDto.search?.trim().toLowerCase();
+    const visibleRows = rows.filter((row) => {
+      if (dailyTargetDto.target_status === 'achieved') {
+        if (row.achievement_pct < 100) return false;
+      } else if (dailyTargetDto.target_status === 'not_achieved') {
+        if (row.achievement_pct >= 100) return false;
+      }
+      return (
+        !search ||
+        row.product_name.toLowerCase().includes(search) ||
+        row.variant_name.toLowerCase().includes(search) ||
+        (row.sku ?? '').toLowerCase().includes(search)
+      );
+    });
+    const total = visibleRows.length;
+    const paginatedRows = visibleRows.slice(skip, skip + limit);
 
     return {
       date: toLocalDateString(reportDate),

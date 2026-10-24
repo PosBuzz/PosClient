@@ -114,7 +114,6 @@ const SideBar: React.FC = () => {
           permissions: [AdminPermission.backupRestore],
         },
       ],
-      permissions: [AdminPermission.profile, AdminPermission.backupRestore],
     },
   ];
 
@@ -123,6 +122,7 @@ const SideBar: React.FC = () => {
     return required.some((perm) => user?.permissions?.includes(perm));
   };
 
+  // A group is shown when at least one of its entries is allowed
   const filteredMenuItems = menuItems
     .filter((item) => hasPermission(item.permissions))
     .map((item) => ({
@@ -130,7 +130,8 @@ const SideBar: React.FC = () => {
       children: item.children
         ? item.children.filter((child) => hasPermission(child.permissions))
         : undefined,
-    }));
+    }))
+    .filter((item) => !item.children || item.children.length > 0);
 
   return (
     <Menu

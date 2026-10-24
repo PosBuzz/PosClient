@@ -8,6 +8,7 @@ import { endpoints } from "../../api/endpoints";
 import { useMessageStore } from "../../stores/messageStore";
 import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import { getErrorMessage } from "../../utils/api-error";
+import { formatPermissionLabel } from "./_DrawerForm";
 
 export default function _TableGrid({ onClickEdit }) {
   const { messageApi } = useMessageStore();
@@ -46,7 +47,7 @@ export default function _TableGrid({ onClickEdit }) {
         <>
           {record.permissions?.map((p: any) => (
             <Tag color="blue" key={p.permission_id}>
-              {p.permission?.action}
+              {formatPermissionLabel(p.permission?.action)}
             </Tag>
           ))}
         </>

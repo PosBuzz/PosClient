@@ -40,3 +40,27 @@ it("[CO-SMOKE-customer-rewards] renders empty and populated rewards then redeems
   expect(redeemed.calls[0].body).toMatchObject({ points: 100 });
   expect(errors).not.toHaveBeenCalled();
 });
+
+it("[CO-REWARD-001] asking to redeem more points than the customer has shows the limit and sends nothing, instead of redeeming everything", async () => {
+  const data = responseContract<any>("customers-with-points");
+  server.use(
+    http.get(`${API}${endpoints.getCustomersWithPoints}`, () => ok(data)),
+  );
+  const customer = data.data[0];
+  const redeemed = captureRequests(
+    "post",
+    endpoints.redeemCustomerPoints(customer.customer_id),
+  );
+  const { user } = renderWithProviders(<Page />);
+  const row = (await screen.findByText(customer.customer.name)).closest("tr")!;
+  await user.click(
+    within(row).getByRole("img", { name: "minus" }).closest("button")!,
+  );
+  await user.type(
+    await screen.findByPlaceholderText("Enter points to redeem"),
+    String(customer.total_points + 5000),
+  );
+  await user.click(screen.getByRole("button", { name: "Redeem Points" }));
+  await screen.findByText(`Must be between 1 and ${customer.total_points}`);
+  expect(redeemed.calls).toHaveLength(0);
+});

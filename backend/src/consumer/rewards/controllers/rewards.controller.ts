@@ -85,6 +85,7 @@ export class RewardsController {
     @Req() req: Request,
     @Query() filters: RewardsFiltersDto,
   ) {
+    await this.rewardsService.expireIfDue(Number(req.user.consumer_id));
     return this.rewardsService.getCustomersWithPoints(
       Number(req.user.consumer_id),
       filters,
@@ -96,6 +97,7 @@ export class RewardsController {
     @Req() req: Request,
     @Param('id', ParseIntPipe) customerId: number,
   ) {
+    await this.rewardsService.expireIfDue(Number(req.user.consumer_id));
     return this.rewardsService.getCustomerPoints(
       Number(req.user.consumer_id),
       customerId,
@@ -108,6 +110,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Body() dto: Omit<RedeemPointsDto, 'customer_id'>,
   ) {
+    await this.rewardsService.expireIfDue(Number(req.user.consumer_id));
     return this.rewardsService.redeemPoints(
       Number(req.user.consumer_id),
       { ...dto, customer_id: customerId },
@@ -198,6 +201,7 @@ export class RewardsController {
     @Param('id', ParseIntPipe) customerId: number,
     @Param('amount') amount: string,
   ) {
+    await this.rewardsService.expireIfDue(Number(req.user.consumer_id));
     const creditAmount = parseFloat(amount);
     if (isNaN(creditAmount) || creditAmount <= 0) {
       return { isValid: false, reason: 'Invalid credit amount' };

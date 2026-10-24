@@ -130,6 +130,18 @@ const permissionGuide = {
       "Lets users configure receipt templates and printer/PDF receipt settings.",
     gives: ["Printer settings", "Receipt settings"],
   },
+  [Permissions.business_insights]: {
+    title: "Business Insights",
+    summary:
+      "Lets users see how the business is doing: sales figures, targets, costs and reports.",
+    gives: [
+      "Dashboard figures and charts",
+      "Products > Sales Stats",
+      "Sales > Sales Target and User Sales Stats",
+      "Operational Costs",
+      "Business Report",
+    ],
+  },
   [Permissions.support]: {
     title: "Support",
     summary:
@@ -138,7 +150,7 @@ const permissionGuide = {
   },
 };
 
-const formatPermissionLabel = (permission: string) =>
+export const formatPermissionLabel = (permission: string) =>
   permissionGuide[permission]?.title ||
   permission
     ?.replace(/_/g, " ")

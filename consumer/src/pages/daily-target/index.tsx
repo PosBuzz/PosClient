@@ -43,6 +43,13 @@ const DailyTargetReport = () => {
 
   const [pagination, setPagination] = useState({ page: 1, limit: 20 });
 
+  // The server filters, so wait for a pause in typing before asking
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const { data, isLoading } = useQuery({
     queryKey: [
       queryKeys.dailyTarget,
@@ -50,6 +57,8 @@ const DailyTargetReport = () => {
       selectedBranch,
       pagination.page,
       pagination.limit,
+      debouncedSearch,
+      targetStatusFilter,
     ],
     queryFn: () =>
       salesApi.getDailyTargetReport({
@@ -57,6 +66,11 @@ const DailyTargetReport = () => {
         branch_id: selectedBranch,
         page: pagination.page,
         limit: pagination.limit,
+        search: debouncedSearch,
+        target_status: targetStatusFilter as
+          | "achieved"
+          | "not_achieved"
+          | undefined,
       }),
     enabled: !!selectedDate,
     staleTime: queryStaleTimeMap[queryKeys.dailyTarget],
@@ -71,37 +85,6 @@ const DailyTargetReport = () => {
       setSelectedBranch(defaultBranch.id);
     }
   }, [userBranches, selectedBranch]);
-
-  // filter
-  const filteredRows = (data?.rows || []).filter((row) => {
-    // if (targetStatusFilter === "all") return true;
-
-    // If percentage is 100 or more, it's achieved
-    const isAchieved = row.achievement_pct >= 100;
-    let statusMatch = true;
-
-    if (targetStatusFilter === "achieved") {
-      statusMatch = isAchieved;
-    } else if (targetStatusFilter === "not_achieved") {
-      statusMatch = !isAchieved;
-    }
-
-    // B. Filter by Search Text
-    let searchMatch = true;
-    if (searchText) {
-      const lowerSearch = searchText.toLowerCase();
-
-      const matchProduct = row.product_name.toLowerCase().includes(lowerSearch);
-
-      const matchVariant = row.variant_name.toLowerCase().includes(lowerSearch);
-
-      const matchSku = (row.sku || "").toLowerCase().includes(lowerSearch);
-
-      searchMatch = matchProduct || matchVariant || matchSku;
-    }
-
-    return statusMatch && searchMatch;
-  });
 
   const columns = [
     {
@@ -256,7 +239,7 @@ const DailyTargetReport = () => {
       {/* Pivot Table */}
       <Card>
         <Table
-          dataSource={filteredRows}
+          dataSource={data?.rows ?? []}
           columns={columns}
           rowKey="variant_id"
           loading={isLoading}

@@ -163,6 +163,7 @@ export class InventoryTransferService {
       limit?: number;
       status?: string;
       branch_id?: number;
+      search?: string;
     } = {},
   ) {
     try {
@@ -171,30 +172,59 @@ export class InventoryTransferService {
 
       const skip = (page - 1) * limit;
 
-      const where: any = {
-        OR: [
-          {
-            source_branch: {
-              consumer_id: consumerId,
+      // Tenant scope and the optional branch filter are separate AND terms, so
+      // a branch filter can never widen the query beyond this consumer.
+      const and: any[] = [
+        {
+          OR: [
+            { source_branch: { consumer_id: consumerId } },
+            { destination_branch: { consumer_id: consumerId } },
+          ],
+        },
+      ];
+
+      if (options.branch_id !== undefined) {
+        and.push({
+          OR: [
+            { source_branch_id: options.branch_id },
+            { destination_branch_id: options.branch_id },
+          ],
+        });
+      }
+
+      const search = options.search?.trim();
+      if (search) {
+        const contains = { contains: search, mode: 'insensitive' as const };
+        const asId = /^\d+$/.test(search) ? Number(search) : undefined;
+        and.push({
+          OR: [
+            ...(asId !== undefined ? [{ id: asId }] : []),
+            { notes: contains },
+            { source_branch: { name: contains } },
+            { destination_branch: { name: contains } },
+            { created_by_user: { name: contains } },
+            {
+              items: {
+                some: {
+                  batch: {
+                    OR: [
+                      { batch_number: contains },
+                      { variant: { name: contains } },
+                      { variant: { sku: contains } },
+                      { variant: { product: { name: contains } } },
+                    ],
+                  },
+                },
+              },
             },
-          },
-          {
-            destination_branch: {
-              consumer_id: consumerId,
-            },
-          },
-        ],
-      };
+          ],
+        });
+      }
+
+      const where: any = { AND: and };
 
       if (options.status) {
         where.status = options.status;
-      }
-
-      if (options.branch_id !== undefined) {
-        where.OR = [
-          { source_branch_id: options.branch_id },
-          { destination_branch_id: options.branch_id },
-        ];
       }
 
       const [transfers, total] = await Promise.all([

@@ -612,6 +612,75 @@ describe('SalesService.create rewards and errors (unit)', () => {
     }
   });
 
+  it('[BE-SALE-075] with "earn on sales only" off, a part-paid sale earns on the amount already received; with it on it earns nothing', async () => {
+    const off = arrange();
+    off.rewards.getSettings.mockResolvedValue({
+      allow_partial_redemption: true,
+      earn_on_sale_only: false,
+    });
+    off.tx.sale.create.mockResolvedValue(
+      paidSale({
+        payment_status: 'partial',
+        total_amount: '100',
+        received_amount: '40',
+      }),
+    );
+    await off.service.create(dto({ customer_id: 4 }), 5, 8);
+    expect(off.rewards.earnPoints).toHaveBeenCalledWith(5, 4, 99, 40);
+
+    const on = arrange();
+    on.tx.sale.create.mockResolvedValue(
+      paidSale({
+        payment_status: 'partial',
+        total_amount: '100',
+        received_amount: '40',
+      }),
+    );
+    await on.service.create(dto({ customer_id: 4 }), 5, 8);
+    expect(on.rewards.earnPoints).not.toHaveBeenCalled();
+  });
+
+  it('[BE-SALE-076] with partial redemption off, points must cover the whole sale; the sale is refused otherwise and points are not spent', async () => {
+    const blocked = arrange();
+    blocked.rewards.getSettings.mockResolvedValue({
+      allow_partial_redemption: false,
+      earn_on_sale_only: true,
+    });
+    blocked.rewards.validateCreditPayment.mockResolvedValue({ isValid: true });
+    blocked.tx.sale.create.mockResolvedValue(paidSale({ total_amount: '30' }));
+    await expect(
+      blocked.service.create(
+        dto({
+          customer_id: 4,
+          payments: [
+            { payment_method: 'CREDIT', amount: 10 },
+            { payment_method: 'CASH', amount: 20 },
+          ],
+        }),
+        5,
+        8,
+      ),
+    ).rejects.toThrow('Partial redemption is turned off');
+    expect(blocked.rewards.processCreditPayment).not.toHaveBeenCalled();
+
+    const whole = arrange();
+    whole.rewards.getSettings.mockResolvedValue({
+      allow_partial_redemption: false,
+      earn_on_sale_only: true,
+    });
+    whole.rewards.validateCreditPayment.mockResolvedValue({ isValid: true });
+    whole.tx.sale.create.mockResolvedValue(paidSale({ total_amount: '30' }));
+    await whole.service.create(
+      dto({
+        customer_id: 4,
+        payments: [{ payment_method: 'CREDIT', amount: 30 }],
+      }),
+      5,
+      8,
+    );
+    expect(whole.rewards.processCreditPayment).toHaveBeenCalledTimes(1);
+  });
+
   it('[BE-MUT-869] a points failure is logged but never fails the sale', async () => {
     const { tx, rewards, service } = arrange();
     const err = jest.spyOn(console, 'error').mockImplementation();
