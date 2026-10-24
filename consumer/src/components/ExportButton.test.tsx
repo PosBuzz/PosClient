@@ -10,7 +10,7 @@ import ExportButton from "./ExportButton";
 
 vi.mock("file-saver", () => ({ default: vi.fn() }));
 
-it("[CO-EXPORT-001] offers Excel and PDF and downloads the chosen format", async () => {
+it("[CO-EXPORT-001] offers PDF only and downloads it", async () => {
   const urls: URL[] = [];
   server.use(
     http.get(`${API}${endpoints.exportProducts}`, ({ request }) => {
@@ -22,8 +22,8 @@ it("[CO-EXPORT-001] offers Excel and PDF and downloads the chosen format", async
   );
   const { user } = renderWithProviders(<ExportButton entity="products" />);
   await user.click(screen.getByRole("button", { name: /export/i }));
-  expect(await screen.findByText("Export as Excel")).toBeTruthy();
   await user.click(await screen.findByText("Export as PDF"));
+  expect(screen.queryByText("Export as Excel")).toBeNull();
   await waitFor(() => expect(saveAs).toHaveBeenCalled());
   expect(urls[0].searchParams.get("format")).toBe("pdf");
   expect((saveAs as any).mock.calls[0][1]).toBe("products.pdf");

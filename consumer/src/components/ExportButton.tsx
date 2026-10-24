@@ -6,7 +6,7 @@ import { ExportEntity, ExportFormat, exportApi } from "../api/export-api";
 import { useMessageStore } from "../stores/messageStore";
 import { getErrorMessage } from "../utils/api-error";
 
-/** Export the list as Excel or PDF. */
+/** Export the list as PDF. (Excel export is switched off for now.) */
 export default function ExportButton({ entity }: { entity: ExportEntity }) {
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,8 @@ export default function ExportButton({ entity }: { entity: ExportEntity }) {
     <Dropdown
       menu={{
         items: [
-          { key: "xlsx", label: "Export as Excel" },
+          // Excel export is switched off for now; uncomment to offer it again.
+          // { key: "xlsx", label: "Export as Excel" },
           { key: "pdf", label: "Export as PDF" },
         ],
         onClick: ({ key }) => download(key as ExportFormat),
