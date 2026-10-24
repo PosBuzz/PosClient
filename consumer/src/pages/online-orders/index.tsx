@@ -24,6 +24,9 @@ import { deliveryPartnersApi } from "../../api/delivery-partners-api";
 import { salesApi } from "../../api/sales-api";
 import { Money } from "../../components/Currency";
 import PageTitle from "../../components/PageTitle";
+import PdfPreviewModal, {
+  usePdfPreview,
+} from "../../components/PdfPreviewModal";
 import { useAuthStore } from "../../stores/authStore";
 import { useMessageStore } from "../../stores/messageStore";
 import { Sale } from "../../types/sale.types";
@@ -71,28 +74,13 @@ const OnlineOrders = () => {
     queryKey: ["delivery-partners"],
     queryFn: deliveryPartnersApi.list,
   });
-  const [printingOrderId, setPrintingOrderId] = useState<number | null>(null);
-  const printDeliverySlip = async (order: Sale) => {
-    setPrintingOrderId(order.id!);
-    try {
-      const blob = await salesApi.generateReceipt(
-        order.id!,
-        "online_delivery_slip",
-      );
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `online-delivery-slip-${order.sale_number}.pdf`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) {
-      messageApi?.error(
-        getErrorMessage(error, "Failed to generate online delivery slip"),
-      );
-    } finally {
-      setPrintingOrderId(null);
-    }
-  };
+  // The slip opens in the same preview as other documents; print or download from there
+  const { preview, previewProps } = usePdfPreview();
+  const previewDeliverySlip = (order: Sale) =>
+    preview(() => salesApi.generateReceipt(order.id!, "online_delivery_slip"), {
+      title: `Online Delivery Slip - ${order.sale_number}`,
+      fileName: `online-delivery-slip-${order.sale_number}.pdf`,
+    });
   const { user } = useAuthStore();
   const { messageApi } = useMessageStore();
 
@@ -335,8 +323,7 @@ const OnlineOrders = () => {
           <Button
             type="link"
             size="small"
-            loading={printingOrderId === record.id}
-            onClick={() => printDeliverySlip(record)}
+            onClick={() => previewDeliverySlip(record)}
           >
             Online Delivery Slip
           </Button>
@@ -665,6 +652,7 @@ const OnlineOrders = () => {
           </Form.Item>
         </Form>
       </Modal>
+      <PdfPreviewModal {...previewProps} />
     </div>
   );
 };

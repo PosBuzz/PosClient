@@ -250,6 +250,8 @@ model Consumer {
   business_category String?
   secondary_email   String?
   logo              String?
+  /// Optional square mark for small spots in the app; falls back to logo
+  logo_icon         String?
   max_branch        Int      @default(1)
   email             String
   phone             String?

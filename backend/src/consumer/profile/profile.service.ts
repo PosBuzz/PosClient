@@ -25,6 +25,7 @@ export class ProfileService {
         'address',
         'company_name',
         'logo',
+        'logo_icon',
       ];
 
       const data: any = {};
@@ -49,6 +50,7 @@ export class ProfileService {
           phone: true,
           address: true,
           logo: true,
+          logo_icon: true,
         },
       });
 
