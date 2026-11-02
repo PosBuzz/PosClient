@@ -1,5 +1,6 @@
 {
   "date": "2026-03-14",
+  "delivery_partners": [],
   "hourly_sales": [
     {
       "hour": 0,
@@ -228,9 +229,14 @@
     "net_money_collected": 1015,
     "net_operating_cash_flow": 715,
     "net_operating_result": 685,
-    "net_sale_amount": 985,
+    "net_sale_amount": 925,
     "non_cash_sales": 440,
+    "offline_sales_amount": 1065,
+    "offline_sales_count": 5,
+    "online_sales_amount": 0,
+    "online_sales_count": 0,
     "operational_costs": 300,
+    "partner_delivery_charges": 0,
     "partner_payments_cash": 0,
     "partner_payments_made": 0,
     "partner_payouts_cash": 0,
@@ -238,6 +244,7 @@
     "period_sales_collected": 1045,
     "real_money_collected": 1095,
     "reward_point_sales": 0,
+    "shipping_margin": 60,
     "total_amount": 1065,
     "total_collected": 1095,
     "total_discount": 50,
