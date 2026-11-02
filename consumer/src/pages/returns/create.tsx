@@ -298,7 +298,7 @@ const CreateReturn = () => {
       return;
     }
 
-    if (payments.length === 0) {
+    if (paymentNeeded && payments.length === 0) {
       messageApi?.error(
         "Please add at least one payment method to process the return",
       );
@@ -358,21 +358,21 @@ const CreateReturn = () => {
       return;
     }
 
-    if (totalPaymentAmount > selectedReturnValue + 0.01) {
+    if (totalPaymentAmount > refundPayable + 0.01) {
       messageApi?.error(
         `Total payment amount (${formatCurrency(
           totalPaymentAmount,
-        )}) exceeds selected return value (${formatCurrency(
-          selectedReturnValue,
+        )}) exceeds the amount to pay out (${formatCurrency(
+          refundPayable,
         )}). ` + `Please adjust your payment amounts.`,
       );
       return;
     }
 
-    if (Math.abs(totalPaymentAmount - selectedReturnValue) > 0.01) {
+    if (Math.abs(totalPaymentAmount - refundPayable) > 0.01) {
       messageApi?.error(
-        `Total payment amount must exactly match selected return value. Expected ${formatCurrency(
-          selectedReturnValue,
+        `Total payment amount must exactly match the amount to pay out. Expected ${formatCurrency(
+          refundPayable,
         )}, got ${formatCurrency(totalPaymentAmount)}.`,
       );
       return;
@@ -499,6 +499,12 @@ const CreateReturn = () => {
   const shippingRefundAmount = Math.max(0, shippingRefundAmountWatch);
   const selectedReturnValue =
     Number(selectedReturnTotals.net || 0) + shippingRefundAmount;
+  // What the customer still owes on the sale comes off first; only the rest of
+  // the returned value is paid out
+  const dueOwed = Number(saleData?.return_summary?.due_amount ?? 0);
+  const dueCancelled = Math.min(dueOwed, Math.max(0, selectedReturnValue));
+  const refundPayable = Math.max(0, selectedReturnValue - dueCancelled);
+  const paymentNeeded = refundPayable > 0.01;
   const totalTendered = Number(
     saleData?.received_amount ??
       saleData?.payments?.reduce(
@@ -528,10 +534,7 @@ const CreateReturn = () => {
   const exchangeVat = Number(exchangeSaleQuery.data?.tax_amount || 0);
 
   // Calculate remaining amount to prefill payment
-  const remainingRefundAmount = Math.max(
-    0,
-    selectedReturnValue - getTotalPayments(),
-  );
+  const remainingRefundAmount = Math.max(0, refundPayable - getTotalPayments());
 
   const saleItemColumns = [
     {
@@ -1541,7 +1544,7 @@ const CreateReturn = () => {
                 <span>
                   Payments & Exchanges
                   <span style={{ color: "#ff4d4f", marginLeft: "4px" }}>*</span>
-                  {payments.length === 0 && (
+                  {paymentNeeded && payments.length === 0 && (
                     <Text
                       type="danger"
                       style={{ fontSize: "12px", marginLeft: "8px" }}
@@ -1625,6 +1628,20 @@ const CreateReturn = () => {
                         Selected return value:{" "}
                         <Money value={selectedReturnValue} />
                       </Text>
+                      {dueCancelled > 0 && (
+                        <div>
+                          <Text type="warning" style={{ fontSize: 12 }}>
+                            The customer still owes <Money value={dueOwed} /> on
+                            this sale. <Money value={dueCancelled} /> of this
+                            return cancels that due, so it is not paid out.
+                          </Text>
+                        </div>
+                      )}
+                      <div>
+                        <Text strong style={{ fontSize: 12 }}>
+                          To pay out: <Money value={refundPayable} />
+                        </Text>
+                      </div>
                       <div>
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           Available sale balance:{" "}
@@ -1636,12 +1653,11 @@ const CreateReturn = () => {
                           />
                         </Text>
                       </div>
-                      {Math.abs(getTotalPayments() - selectedReturnValue) >
-                        0.01 && (
+                      {Math.abs(getTotalPayments() - refundPayable) > 0.01 && (
                         <div>
                           <Text type="danger" style={{ fontSize: 12 }}>
-                            Payment total must exactly match selected return
-                            value.
+                            Payment total must exactly match the amount to pay
+                            out.
                           </Text>
                         </div>
                       )}
@@ -1691,8 +1707,14 @@ const CreateReturn = () => {
                     )}{" "}
                     Processing branch selected
                   </Text>
-                  <Text type={payments.length > 0 ? "success" : "danger"}>
-                    {payments.length > 0 ? (
+                  <Text
+                    type={
+                      payments.length > 0 || !paymentNeeded
+                        ? "success"
+                        : "danger"
+                    }
+                  >
+                    {payments.length > 0 || !paymentNeeded ? (
                       <CheckCircleOutlined style={{ color: "#52c41a" }} />
                     ) : (
                       <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
@@ -1701,7 +1723,8 @@ const CreateReturn = () => {
                   </Text>
                   <Text
                     type={(() => {
-                      if (!saleData || payments.length === 0) return "danger";
+                      if (!saleData || (paymentNeeded && payments.length === 0))
+                        {return "danger";}
                       const totalPaymentAmount = getTotalPayments();
                       const availableAmount =
                         saleData?.return_summary?.available_amount ??
@@ -1711,23 +1734,24 @@ const CreateReturn = () => {
                       if (selectedReturnValue > availableAmount + 0.01) {
                         return "danger";
                       }
-                      return Math.abs(
-                        totalPaymentAmount - selectedReturnValue,
-                      ) <= 0.01
+                      return Math.abs(totalPaymentAmount - refundPayable) <=
+                        0.01
                         ? "success"
                         : "danger";
                     })()}
                   >
                     {(() => {
-                      if (!saleData || payments.length === 0) {
+                      if (
+                        !saleData ||
+                        (paymentNeeded && payments.length === 0)
+                      ) {
                         return (
                           <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
                         );
                       }
                       const totalPaymentAmount = getTotalPayments();
                       if (
-                        Math.abs(totalPaymentAmount - selectedReturnValue) <=
-                        0.01
+                        Math.abs(totalPaymentAmount - refundPayable) <= 0.01
                       ) {
                         return (
                           <CheckCircleOutlined style={{ color: "#52c41a" }} />
@@ -1739,21 +1763,23 @@ const CreateReturn = () => {
                       }
                     })()}{" "}
                     {(() => {
-                      if (!saleData || payments.length === 0) {
+                      if (
+                        !saleData ||
+                        (paymentNeeded && payments.length === 0)
+                      ) {
                         return "Payment amount validation (sale and payments required)";
                       }
                       const totalPaymentAmount = getTotalPayments();
                       if (
-                        Math.abs(totalPaymentAmount - selectedReturnValue) <=
-                        0.01
+                        Math.abs(totalPaymentAmount - refundPayable) <= 0.01
                       ) {
-                        return `Payment amount matches selected return value (${formatCurrency(
-                          selectedReturnValue,
+                        return `Payment amount matches the amount to pay out (${formatCurrency(
+                          refundPayable,
                         )})`;
                       } else {
-                        return `Payment amount must match selected return value. Entered ${formatCurrency(
+                        return `Payment amount must match the amount to pay out. Entered ${formatCurrency(
                           totalPaymentAmount,
-                        )}, expected ${formatCurrency(selectedReturnValue)}`;
+                        )}, expected ${formatCurrency(refundPayable)}`;
                       }
                     })()}
                   </Text>
@@ -1791,7 +1817,7 @@ const CreateReturn = () => {
                     (selectedItems.length === 0 && shippingRefundAmount <= 0) ||
                     !saleData ||
                     !selectedBranch ||
-                    payments.length === 0 ||
+                    (paymentNeeded && payments.length === 0) ||
                     selectedReturnValue <= 0 ||
                     (returnType === "exchange" &&
                       (!exchangeSaleId || !exchangeSaleQuery.data)) ||
@@ -1805,8 +1831,7 @@ const CreateReturn = () => {
                         return true;
                       }
                       return (
-                        Math.abs(totalPaymentAmount - selectedReturnValue) >
-                        0.01
+                        Math.abs(totalPaymentAmount - refundPayable) > 0.01
                       );
                     })()
                   }

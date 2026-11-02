@@ -52,13 +52,15 @@ export async function findViolations(db: PrismaClient): Promise<Violation[]> {
        WHERE l.quantity_after <> b.quantity`,
     ),
   );
-  // INV-05 sale arithmetic (quotations are not money movements but must still add up)
+  // INV-05 sale arithmetic (quotations are not money movements but must still add up).
+  // A return that cancels part of a due lowers the sale total by exactly that amount.
   add(
     'INV-05',
     await q(
       db,
-      `SELECT id AS sale_id, total_amount, subtotal, discount_amount, tax_amount, shipping_cost FROM sales
-       WHERE ABS(total_amount - (subtotal - discount_amount + tax_amount + shipping_cost)) > ${cents}`,
+      `SELECT s.id AS sale_id, s.total_amount, s.subtotal, s.discount_amount, s.tax_amount, s.shipping_cost FROM sales s
+       WHERE ABS(s.total_amount + COALESCE((SELECT SUM(r.due_reduction) FROM returns r WHERE r.original_sale_id = s.id), 0)
+                 - (s.subtotal - s.discount_amount + s.tax_amount + s.shipping_cost)) > ${cents}`,
     ),
   );
   // INV-06 sale discount equals its item discounts (sales that only carry a sale-level

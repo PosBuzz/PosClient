@@ -113,12 +113,33 @@ describe("Create return", () => {
     await user.click(screen.getByRole("button", { name: "+" }));
     await addPayment(user, "CASH", "50");
     await screen.findByText(
-      /Payment amount must match selected return value\. Entered BDT 50\.00/,
+      /Payment amount must match the amount to pay out\. Entered BDT 50\.00/,
     );
     const submit = screen.getByRole("button", { name: /Create Return/ });
     expect(submit).toBeDisabled();
     await user.click(submit);
     expect(created.calls).toHaveLength(0);
+  });
+
+  it("[CO-FLOW-RET-008] a return on a sale with a due cancels the due first, so nothing is paid out and no payment is needed", async () => {
+    server.use(
+      http.get(`${API}${endpoints.getSaleBySaleNumber(sale.sale_number)}`, () =>
+        ok({
+          ...sale,
+          return_summary: { ...sale.return_summary, due_amount: 100 },
+        }),
+      ),
+    );
+    const created = captureRequests("post", endpoints.createReturn, { id: 24 });
+    const { user } = mount();
+    await loadSale(user);
+    await user.click(screen.getByRole("button", { name: "+" }));
+    await pickOption(user, "reason", "Defective");
+    await screen.findByText(/cancels that due, so it is not paid out/);
+    await createReturn(user);
+    await screen.findByText("Return created successfully!");
+    expect(created.calls).toHaveLength(1);
+    expect(created.calls[0].body.payments).toBeUndefined();
   });
 
   it("[CO-FLOW-RET-005] a shipping refund above what is left cannot be submitted", async () => {

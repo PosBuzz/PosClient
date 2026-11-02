@@ -48,7 +48,7 @@ describe('service read paths', () => {
 
   async function soldAndReturned() {
     const v = await w.stock({ price: 100, batches: [{ qty: 10, cost: 40 }] });
-    const sale = await w.sell([{ variant: v, qty: 3 }], {}, 150);
+    const sale = await w.sell([{ variant: v, qty: 3 }], {}, 'full');
     const batch = await db.inventoryBatch.findFirstOrThrow({
       where: { variant_id: v.id },
     });

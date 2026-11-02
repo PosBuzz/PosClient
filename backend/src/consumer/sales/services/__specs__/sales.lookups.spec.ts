@@ -17,6 +17,7 @@ describe('SalesService.findBySaleNumber (unit)', () => {
     id: 1,
     sale_number: 'SAL-1',
     total_amount: '200',
+    received_amount: '200',
     shipping_cost: '10',
     items: [
       { id: 10, quantity: 4, line_total: '100', applied_promotion_id: 7 },
@@ -119,6 +120,8 @@ describe('SalesService.findBySaleNumber (unit)', () => {
       total_refunded: 65,
       total_exchanged: 5,
       total_already_returned: 70,
+      total_due_cancelled: 0,
+      due_amount: 0,
       available_amount: 130,
       shipping_refunded: 20,
       available_shipping_refund: 0,
@@ -140,6 +143,31 @@ describe('SalesService.findBySaleNumber (unit)', () => {
           reason: null,
         },
       ],
+    });
+  });
+
+  it('[BE-MUT-877] the summary shows what is still owed and counts cancelled due as returned', async () => {
+    const { service } = arrange(
+      baseSale({ total_amount: '150', received_amount: '100' }),
+      [
+        {
+          id: 3,
+          return_number: 'R-3',
+          return_date: new Date('2026-05-01'),
+          total_refund: '0',
+          total_exchange: '0',
+          due_reduction: '50',
+          reason: null,
+          items: [],
+        },
+      ],
+    );
+    const result: any = await service.findBySaleNumber('SAL-1', 5);
+    expect(result.return_summary).toMatchObject({
+      total_due_cancelled: 50,
+      total_already_returned: 50,
+      due_amount: 50,
+      available_amount: 150,
     });
   });
 

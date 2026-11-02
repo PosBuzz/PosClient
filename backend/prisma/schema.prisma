@@ -1265,6 +1265,9 @@ model Return {
   return_date      DateTime @default(now())
   total_refund     Decimal  @default(0) @db.Decimal(10, 2)
   total_exchange   Decimal  @default(0) @db.Decimal(10, 2)
+  // Part of the returned value that cancelled what the customer still owed on
+  // the sale instead of being paid out; the sale total was reduced by it
+  due_reduction    Decimal  @default(0) @db.Decimal(10, 2)
   reason           String?
   notes            String?
   created_at       DateTime @default(now())
