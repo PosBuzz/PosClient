@@ -324,7 +324,13 @@ describe('SalesService.getEODReport (unit)', () => {
       total_returns: 2,
       total_refund: 30,
       total_items_returned: 3,
-      net_sale_amount: 200,
+      net_sale_amount: 195,
+      online_sales_count: 0,
+      online_sales_amount: 0,
+      offline_sales_count: 3,
+      offline_sales_amount: 230,
+      partner_delivery_charges: 0,
+      shipping_margin: 5,
       cash_refunds: 25,
       digital_refunds: 5,
       net_cash_sales: 65,
@@ -339,6 +345,151 @@ describe('SalesService.getEODReport (unit)', () => {
       period_end: '2026-05-05',
     });
     expect(report.branch_name).toBeUndefined();
+  });
+
+  it('[BE-MUT-871] shipping stays out of net sales and delivery partner charges are costs set against it', async () => {
+    const { service, prisma } = world();
+    const base = {
+      subtotal: '0',
+      payment_status: 'paid',
+      items: [],
+      payments: [],
+      is_online_order: true,
+      delivery_partner_id: 7,
+      sale_date: new Date(2026, 4, 5, 12),
+    };
+    prisma.sale.findMany.mockResolvedValue([
+      {
+        ...base,
+        id: 1,
+        total_amount: '120',
+        shipping_cost: '20',
+        online_order_status: 'DELIVERED',
+        delivery_charge: '60',
+        cod_fee: '5',
+      },
+      {
+        ...base,
+        id: 2,
+        total_amount: '110',
+        shipping_cost: '10',
+        online_order_status: 'RETURNED',
+        delivery_charge: '30',
+        cod_fee: '9',
+      },
+      {
+        ...base,
+        id: 3,
+        total_amount: '50',
+        shipping_cost: '0',
+        online_order_status: 'SHIPPED',
+        delivery_charge: '40',
+        cod_fee: '0',
+      },
+    ]);
+    prisma.salePayment.findMany.mockResolvedValue([]);
+    prisma.return.findMany.mockResolvedValue([]);
+    prisma.operationalCost.findMany.mockResolvedValue([]);
+    const { summary } = await service.getEODReport(5, { date: '2026-05-05' });
+    expect(summary.total_shipping).toBe(30);
+    expect(summary.partner_delivery_charges).toBe(95);
+    expect(summary.shipping_margin).toBe(-65);
+    expect(summary.net_sale_amount).toBe(250);
+    expect(summary.net_operating_result).toBe(185);
+  });
+
+  it('[BE-MUT-872] online and shop sales are split and each partner row shows orders, charges, payouts and what is owed now', async () => {
+    const { service, prisma } = world();
+    const online = {
+      subtotal: '0',
+      payment_status: 'paid',
+      items: [],
+      payments: [],
+      is_online_order: true,
+      delivery_partner_id: 7,
+      delivery_partner: 'Pathao',
+      sale_date: new Date(2026, 4, 5, 12),
+    };
+    prisma.sale.findMany.mockResolvedValue([
+      {
+        ...online,
+        id: 1,
+        total_amount: '120',
+        online_order_status: 'DELIVERED',
+        cod_amount: '120',
+        delivery_charge: '60',
+        cod_fee: '5',
+      },
+      {
+        ...online,
+        id: 2,
+        total_amount: '110',
+        online_order_status: 'RETURNED',
+        delivery_charge: '30',
+      },
+      { ...online, id: 3, total_amount: '50', online_order_status: 'SHIPPED' },
+      {
+        id: 4,
+        total_amount: '40',
+        subtotal: '40',
+        payment_status: 'paid',
+        is_online_order: false,
+        items: [],
+        payments: [],
+        sale_date: new Date(2026, 4, 5, 13),
+      },
+    ]);
+    prisma.salePayment.findMany.mockResolvedValue([]);
+    prisma.return.findMany.mockResolvedValue([]);
+    prisma.deliveryPartnerSettlement.groupBy.mockResolvedValue([
+      {
+        partner_id: 7,
+        direction: 'RECEIVED',
+        payment_method: 'CASH',
+        _sum: { amount: '40' },
+      },
+    ]);
+    prisma.deliveryPartnerTransaction.groupBy.mockResolvedValue([
+      { partner_id: 7, _sum: { amount: '25' } },
+      { partner_id: 9, _sum: { amount: '-10' } },
+    ]);
+    prisma.deliveryPartner.findMany.mockResolvedValue([
+      { id: 7, name: 'Pathao' },
+      { id: 9, name: 'Steadfast' },
+    ]);
+    const report = await service.getEODReport(5, { date: '2026-05-05' });
+    expect(report.summary).toMatchObject({
+      online_sales_count: 3,
+      online_sales_amount: 280,
+      offline_sales_count: 1,
+      offline_sales_amount: 40,
+    });
+    expect(report.delivery_partners).toEqual([
+      {
+        partner_id: 7,
+        partner_name: 'Pathao',
+        orders_delivered: 1,
+        orders_returned: 1,
+        orders_on_the_way: 1,
+        cod_collected: 120,
+        charges: 95,
+        paid_over: 40,
+        paid_by_shop: 0,
+        balance: 25,
+      },
+      {
+        partner_id: 9,
+        partner_name: 'Steadfast',
+        orders_delivered: 0,
+        orders_returned: 0,
+        orders_on_the_way: 0,
+        cod_collected: 0,
+        charges: 0,
+        paid_over: 0,
+        paid_by_shop: 0,
+        balance: -10,
+      },
+    ]);
   });
 
   it('[BE-MUT-824] payments are deduplicated by id across both sources, grouped by method in first-seen order, and refunds by refund method', async () => {

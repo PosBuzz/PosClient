@@ -37,6 +37,18 @@ const summary = (extra: object = {}): any => ({
   net_cash_sales: 58000,
   net_money_collected: 87500.5,
   net_operating_result: 115956.789,
+  online_sales_count: 5,
+  online_sales_amount: 40000,
+  offline_sales_count: 7,
+  offline_sales_amount: 83456.789,
+  total_shipping: 1500,
+  partner_delivery_charges: 1100.5,
+  shipping_margin: 399.5,
+  delivery_partner_collected: 4000,
+  partner_payouts_received: 2500,
+  partner_payouts_cash: 1000,
+  partner_payments_made: 600,
+  partner_payments_cash: 100,
   ...extra,
 });
 
@@ -46,6 +58,20 @@ const report = (extra: object = {}): any => ({
   period_start: '2026-05-05T12:00:00.000Z',
   period_end: '2026-05-05T12:00:00.000Z',
   summary: summary(),
+  delivery_partners: [
+    {
+      partner_id: 1,
+      partner_name: 'Pathao',
+      orders_delivered: 3,
+      orders_returned: 1,
+      orders_on_the_way: 1,
+      cod_collected: 4000,
+      charges: 1100.5,
+      paid_over: 2500,
+      paid_by_shop: 600,
+      balance: 400,
+    },
+  ],
   payment_method_breakdown: [
     { payment_method: 'CASH', total_amount: 60000, transaction_count: 7 },
     {

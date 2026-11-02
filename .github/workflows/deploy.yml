@@ -29,6 +29,7 @@ permissions:
   contents: read
   packages: write
   checks: read
+  actions: read # the guard lists earlier successful deploys of this branch
 
 jobs:
   guard:

@@ -65,7 +65,7 @@ const AppLayout = () => {
         {/* Logo Area - Fixed at top, won't scroll away */}
         <div
           style={{
-            height: 65,
+            height: 84,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -74,7 +74,7 @@ const AppLayout = () => {
             flexShrink: 0,
           }}
         >
-          <CompanyLogo size={36} />
+          <CompanyLogo size={56} />
         </div>
 
         <div className="sidebar-scroll-container">

@@ -173,6 +173,47 @@ describe('returns and exchanges', () => {
     expect(error.message).toMatch(/greater than 0/);
   });
 
+  it('[BE-RET-043] a return on a partly paid sale cancels the due first and pays out only the rest', async () => {
+    const s = await committedSale({}, 200);
+    // total 450, paid 200, due 250; returning 300 of goods cancels 250 and pays out 50
+    const tooMuch = await failure(returnA(s, 3, { payments: cash(300) }));
+    expect(tooMuch.message).toMatch(/still owes .*250\.00/);
+    const ret = await returnA(s, 3, { payments: cash(50) });
+    expect(Number(ret.total_refund)).toBe(50);
+    expect(Number(ret.due_reduction)).toBe(250);
+    const sale = await db.sale.findUniqueOrThrow({ where: { id: s.sale.id } });
+    expect(Number(sale.total_amount)).toBe(200);
+    expect(sale.payment_status).toBe('paid');
+  });
+
+  it('[BE-RET-044] a return smaller than the due pays nothing out and only lowers the due', async () => {
+    const s = await committedSale({}, 200);
+    const ret = await returnA(s, 1, { payments: undefined });
+    expect(Number(ret.total_refund)).toBe(0);
+    expect(Number(ret.due_reduction)).toBe(100);
+    expect(await db.returnPayment.count({ where: { return_id: ret.id } })).toBe(
+      0,
+    );
+    const sale = await db.sale.findUniqueOrThrow({ where: { id: s.sale.id } });
+    expect(Number(sale.total_amount)).toBe(350);
+    expect(Number(sale.received_amount)).toBe(200);
+    expect(sale.payment_status).not.toBe('paid');
+  });
+
+  it('[BE-RET-045] after a due was cancelled the sale can still be returned up to its original total', async () => {
+    const s = await committedSale({}, 200);
+    await returnA(s, 1, { payments: undefined });
+    const summary: any = await sales.findBySaleNumber(
+      s.sale.sale_number,
+      w.tenant.consumer.id,
+    );
+    expect(summary.return_summary).toMatchObject({
+      total_due_cancelled: 100,
+      due_amount: 150,
+      available_amount: 350,
+    });
+  });
+
   it('[BE-RET-009] {SalesService.softDelete} a deleted sale cannot be returned against', async () => {
     const s = await committedSale();
     await sales.softDelete(

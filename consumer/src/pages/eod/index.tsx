@@ -2,7 +2,6 @@ import { Money, takaPrefix } from "../../components/Currency";
 import { AuditOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Alert,
   Button,
   Card,
   Col,
@@ -18,7 +17,6 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -41,13 +39,14 @@ import { queryKeys, queryStaleTimeMap } from "../../constants/queryKeys";
 import useDarkMode from "../../hooks/useDarkMode";
 import { useAuthStore } from "../../stores/authStore";
 import {
+  DeliveryPartnerReportRow,
   PaymentMethodBreakdown,
   ProductSalesStats,
 } from "../../types/sale.types";
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 const COLORS = [
   "#0088FE",
@@ -167,6 +166,62 @@ const EODReport = () => {
         sales: item.sales_count,
         amount: item.total_amount,
       })) || [];
+
+  // What delivery partners owe the shop right now; null when the report
+  // is for one branch, because partner balances belong to no branch
+  const partnerBalances = (eodData?.delivery_partners || []).map(
+    (row) => row.balance,
+  );
+  const partnerOwesNow = partnerBalances.some((balance) => balance === null)
+    ? null
+    : partnerBalances.reduce<number>((sum, balance) => sum + (balance ?? 0), 0);
+
+  const partnerColumns = [
+    { title: "Partner", dataIndex: "partner_name", key: "partner_name" },
+    {
+      title: "Delivered / returned / on the way",
+      key: "orders",
+      render: (_: unknown, row: DeliveryPartnerReportRow) =>
+        `${row.orders_delivered} / ${row.orders_returned} / ${row.orders_on_the_way}`,
+    },
+    {
+      title: "Cash collected from customers",
+      dataIndex: "cod_collected",
+      key: "cod_collected",
+      render: (amount: number) => <Money value={amount} />,
+    },
+    {
+      title: "Partner charges",
+      dataIndex: "charges",
+      key: "charges",
+      render: (amount: number) => <Money value={amount} />,
+    },
+    {
+      title: "Paid you",
+      dataIndex: "paid_over",
+      key: "paid_over",
+      render: (amount: number) => <Money value={amount} />,
+    },
+    {
+      title: "You paid",
+      dataIndex: "paid_by_shop",
+      key: "paid_by_shop",
+      render: (amount: number) => <Money value={amount} />,
+    },
+    {
+      title: "Owed now",
+      dataIndex: "balance",
+      key: "balance",
+      render: (balance: number | null) =>
+        balance === null ? (
+          "-"
+        ) : (
+          <Text strong type={balance > 0 ? "danger" : "success"}>
+            <Money value={balance} />
+          </Text>
+        ),
+    },
+  ];
 
   // Table columns for payment methods
   const paymentMethodColumns = [
@@ -443,7 +498,7 @@ const EODReport = () => {
                   precision={2}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Gross sales minus refunds
+                  Gross sales minus shipping and refunds
                 </Text>
               </Card>
             </Col>
@@ -522,55 +577,221 @@ const EODReport = () => {
               </Card>
             </Col>
           </Row>
-          {(Number(eodData.summary.delivery_partner_collected || 0) > 0 ||
+          {(Number(eodData.summary.online_sales_count || 0) > 0 ||
+            Number(eodData.summary.delivery_partner_collected || 0) > 0 ||
             Number(eodData.summary.partner_payouts_received || 0) > 0 ||
-            Number(eodData.summary.partner_payments_made || 0) > 0) && (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message={
-                <div>
-                  {Number(eodData.summary.delivery_partner_collected || 0) >
-                    0 && (
-                    <div>
+            Number(eodData.summary.partner_payments_made || 0) > 0 ||
+            (eodData.delivery_partners || []).length > 0) && (
+            <div style={{ marginBottom: 16 }}>
+              <Title level={5} style={{ marginBottom: 8 }}>
+                Shop sales and online sales
+              </Title>
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col xs={24} md={12}>
+                  <Card>
+                    <Statistic
+                      title={`Shop sales (${eodData.summary.offline_sales_count || 0})`}
+                      value={eodData.summary.offline_sales_amount || 0}
+                      prefix={takaPrefix}
+                      precision={2}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Sold at the counter. The customer pays you directly, so
+                      the money is already in your drawer or bank.
+                    </Text>
+                  </Card>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Card>
+                    <Statistic
+                      title={`Online sales (${eodData.summary.online_sales_count || 0})`}
+                      value={eodData.summary.online_sales_amount || 0}
+                      prefix={takaPrefix}
+                      precision={2}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Sent by a delivery partner. The partner usually collects
+                      the cash from the customer and pays you later.
+                    </Text>
+                  </Card>
+                </Col>
+              </Row>
+
+              <Title level={5} style={{ marginBottom: 8 }}>
+                Delivery partners: where the money is
+              </Title>
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col xs={24} sm={12} md={6}>
+                  <Card>
+                    <Statistic
+                      title="Customers paid partners"
+                      value={eodData.summary.delivery_partner_collected || 0}
+                      prefix={takaPrefix}
+                      precision={2}
+                      valueStyle={{ color: "#d46b08" }}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Cash on delivery taken by partners in this period. It is
+                      with them, not with you, until they pay it over.
+                    </Text>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Card>
+                    <Statistic
+                      title="Partners paid you"
+                      value={eodData.summary.partner_payouts_received || 0}
+                      prefix={takaPrefix}
+                      precision={2}
+                      valueStyle={{ color: "#3f8600" }}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Cash, in your drawer:{" "}
                       <Money
-                        value={eodData.summary.delivery_partner_collected}
-                      />{" "}
-                      was paid by customers to delivery partners. It counts as
-                      money only when the partner pays it over.
-                    </div>
-                  )}
-                  {Number(eodData.summary.partner_payouts_received || 0) >
-                    0 && (
-                    <div>
-                      Delivery partners paid you{" "}
-                      <Money value={eodData.summary.partner_payouts_received} />{" "}
-                      (<Money value={eodData.summary.partner_payouts_cash} /> in
-                      cash). It is in Real Money Collected, and the cash part is
-                      in the drawer.
-                    </div>
-                  )}
-                  {Number(eodData.summary.partner_payments_made || 0) > 0 && (
-                    <div>
-                      You paid delivery partners{" "}
-                      <Money value={eodData.summary.partner_payments_made} /> (
+                        value={eodData.summary.partner_payouts_cash || 0}
+                      />
+                      <br />
+                      Bank / digital:{" "}
                       <Money
-                        value={eodData.summary.partner_payments_cash}
-                      />{" "}
-                      from the drawer).
-                    </div>
+                        value={
+                          Number(
+                            eodData.summary.partner_payouts_received || 0,
+                          ) - Number(eodData.summary.partner_payouts_cash || 0)
+                        }
+                      />
+                    </Text>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Card>
+                    <Statistic
+                      title="You paid partners"
+                      value={eodData.summary.partner_payments_made || 0}
+                      prefix={takaPrefix}
+                      precision={2}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Cash, from your drawer:{" "}
+                      <Money
+                        value={eodData.summary.partner_payments_cash || 0}
+                      />
+                      <br />
+                      Bank / digital:{" "}
+                      <Money
+                        value={
+                          Number(eodData.summary.partner_payments_made || 0) -
+                          Number(eodData.summary.partner_payments_cash || 0)
+                        }
+                      />
+                    </Text>
+                  </Card>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  {partnerOwesNow === null ? (
+                    <Card>
+                      <Statistic title="Partners owe you now" value="-" />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Partner balances belong to no branch. Choose All
+                        Branches to see them.
+                      </Text>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <Statistic
+                        title="Partners owe you now"
+                        value={partnerOwesNow}
+                        prefix={takaPrefix}
+                        precision={2}
+                        valueStyle={{
+                          color: partnerOwesNow > 0 ? "#cf1322" : "#3f8600",
+                        }}
+                      />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Cash they collected, minus their charges, minus what
+                        they already paid you. This is today's balance, not only
+                        this period.
+                      </Text>
+                    </Card>
                   )}
-                  {selectedBranch ? (
-                    <div>
-                      Partner payouts belong to no branch, so this branch report
-                      leaves them out.
-                    </div>
-                  ) : null}{" "}
-                  <Link to="/delivery-partners">See what partners owe</Link>
-                </div>
-              }
-            />
+                </Col>
+              </Row>
+              {(eodData.delivery_partners || []).length > 0 && (
+                <Card
+                  size="small"
+                  title="Each delivery partner"
+                  styles={{ body: { padding: 0 } }}
+                >
+                  <Table
+                    size="small"
+                    pagination={false}
+                    rowKey="partner_id"
+                    scroll={{ x: "max-content" }}
+                    dataSource={eodData.delivery_partners}
+                    columns={partnerColumns}
+                  />
+                  <div style={{ padding: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Cash collected from customers is the money the partner
+                      took for delivered orders in this period. Partner charges
+                      are their delivery fees, COD fees and return fees. Owed
+                      now = what they still have to pay you (red) or what you
+                      still have to pay them (green, minus sign).
+                    </Text>
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {(Number(eodData.summary.total_shipping || 0) > 0 ||
+            Number(eodData.summary.partner_delivery_charges || 0) > 0) && (
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col xs={24} sm={12} md={8}>
+                <Card>
+                  <Statistic
+                    title="Shipping Charged to Customers"
+                    value={eodData.summary.total_shipping || 0}
+                    prefix={takaPrefix}
+                    precision={2}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Included in Gross Sales, not in Net Sales
+                  </Text>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Card>
+                  <Statistic
+                    title="Paid to Delivery Partners"
+                    value={eodData.summary.partner_delivery_charges || 0}
+                    prefix={takaPrefix}
+                    precision={2}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Delivery, COD fee and return charges
+                  </Text>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Card>
+                  <Statistic
+                    title="Shipping Profit / Loss"
+                    value={eodData.summary.shipping_margin || 0}
+                    prefix={takaPrefix}
+                    precision={2}
+                    valueStyle={{
+                      color:
+                        Number(eodData.summary.shipping_margin || 0) < 0
+                          ? "#cf1322"
+                          : "#3f8600",
+                    }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Shipping charged minus partner charges
+                  </Text>
+                </Card>
+              </Col>
+            </Row>
           )}
 
           {/* Cash Drawer & Operational Costs */}
@@ -925,7 +1146,7 @@ const EODReport = () => {
                       }}
                     >
                       Invoiced subtotal less line & promotional discounts, plus
-                      tax & shipping.
+                      tax & shipping. Net Sales leaves shipping out.
                     </Text>
                   </div>
                   <div>

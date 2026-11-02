@@ -12,11 +12,13 @@ import {
   FullscreenOutlined,
   MobileOutlined,
   MoneyCollectOutlined,
+  MoonOutlined,
   PayCircleOutlined,
   PercentageOutlined,
   PlusOutlined,
   SearchOutlined,
   ShoppingCartOutlined,
+  SunOutlined,
   SwapOutlined,
   TagOutlined,
   WalletOutlined,
@@ -90,10 +92,20 @@ import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
 import "./pos-mobile.css";
+import "./pos-luxury.css";
+import posbuzzLogo from "../../assets/posbuzz-logo.png";
 import { invalidateSalesReports } from "../../utils/invalidate-sales-reports";
 
 const { Option } = Select;
 const { Text } = Typography;
+
+/** Same switches the app theme menu flips, so the whole app follows the POS pill. */
+const setPosTheme = (theme: "dark" | "light") => {
+  localStorage.setItem("themeSettings", theme);
+  localStorage.setItem("isDarkMode", String(theme === "dark"));
+  document.documentElement.setAttribute("data-theme", theme);
+  window.dispatchEvent(new Event("themeChanged"));
+};
 
 const NewSale = () => {
   const [form] = Form.useForm();
@@ -815,6 +827,7 @@ const NewSale = () => {
     {
       title: "Special Disc",
       key: "special_discount",
+      width: 190,
       render: (record: SaleItem) => {
         const totalSpecialDiscount =
           Number(record.special_discount_amount) || 0;
@@ -833,6 +846,7 @@ const NewSale = () => {
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <Radio.Group
+              className="pos-luxury__mode"
               size="small"
               optionType="button"
               buttonStyle="solid"
@@ -855,6 +869,7 @@ const NewSale = () => {
               onChange={(value) =>
                 updateItemSpecialDiscount(record.variant_id, Number(value) || 0)
               }
+              className="pos-luxury__discount-input"
               style={{ width: 100 }}
               size="small"
             />
@@ -1133,6 +1148,7 @@ const NewSale = () => {
 
   return (
     <div
+      className="pos-luxury"
       style={{
         height: "100vh",
         display: "flex",
@@ -1263,26 +1279,30 @@ const NewSale = () => {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <CompanyLogo size={32} />
-          <Typography.Title
-            level={5}
-            style={{ margin: 0, whiteSpace: "nowrap" }}
-          >
-            Point of Sale
-          </Typography.Title>
+        <div className="pos-luxury__brand">
+          <span className="pos-luxury__shop-logo">
+            <CompanyLogo size={56} />
+          </span>
+          <div className="pos-luxury__shop-text">
+            <strong>{user?.company_name || "PosBuzz"}</strong>
+            <span>Point of Sale</span>
+          </div>
           {selectedItems.length > 0 && (
             <Badge
               count={`${selectedItems.length} items`}
-              style={{
-                fontSize: 12,
-                height: 22,
-                lineHeight: "22px",
-                borderRadius: 11,
-                padding: "0 8px",
-              }}
+              className="pos-luxury__items-badge"
             />
           )}
+          <span className="pos-luxury__divider" aria-hidden="true" />
+          <img
+            className="pos-luxury__platform-logo"
+            src={posbuzzLogo}
+            alt="PosBuzz"
+          />
+          <div className="pos-luxury__powered">
+            Powered by
+            <strong>Knit Coders</strong>
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Button
@@ -1593,7 +1613,10 @@ const NewSale = () => {
                   overflow: "hidden",
                 }}
               >
-                <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 12 }}>
+                <div
+                  className="pos-luxury__title"
+                  style={{ marginBottom: 8, fontWeight: 600, fontSize: 12 }}
+                >
                   <ShoppingCartOutlined style={{ marginRight: 4 }} /> Add
                   Products
                 </div>
@@ -1852,7 +1875,10 @@ const NewSale = () => {
                     marginBottom: 4,
                   }}
                 >
-                  <span style={{ fontWeight: 600, fontSize: 12 }}>
+                  <span
+                    className="pos-luxury__title"
+                    style={{ fontWeight: 600, fontSize: 12 }}
+                  >
                     <CreditCardOutlined style={{ marginRight: 4 }} /> Payments
                   </span>
                   <Button
@@ -2109,6 +2135,7 @@ const NewSale = () => {
                   >
                     <Typography.Title
                       level={5}
+                      className="pos-luxury__title"
                       style={{
                         margin: 0,
                         display: "flex",
@@ -2199,6 +2226,7 @@ const NewSale = () => {
             }}
           >
             <Card
+              className="pos-luxury__total"
               style={{
                 borderRadius: 10,
                 boxShadow: "0 3px 16px rgba(0,0,0,0.12)",
@@ -2230,6 +2258,7 @@ const NewSale = () => {
             </Card>
 
             <Card
+              className="pos-luxury__summary"
               style={{
                 borderRadius: 10,
                 boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
@@ -2348,6 +2377,8 @@ const NewSale = () => {
               </Form.Item>
 
               <div
+                className="pos-luxury__change"
+                data-due={dueAmount > 0}
                 style={{
                   padding: "6px 8px",
                   background:
@@ -2384,6 +2415,7 @@ const NewSale = () => {
             </Card>
 
             <Card
+              className="pos-luxury__actions"
               style={{
                 borderRadius: 10,
                 boxShadow: "0 3px 16px rgba(0,0,0,0.12)",
@@ -2422,6 +2454,26 @@ const NewSale = () => {
           </div>
         </div>
       </Form>
+
+      <div className="pos-luxury__theme" role="group" aria-label="Theme">
+        <button
+          type="button"
+          className={isDarkMode ? "is-active" : ""}
+          aria-pressed={isDarkMode}
+          onClick={() => setPosTheme("dark")}
+        >
+          <MoonOutlined /> Dark
+        </button>
+        <SwapOutlined className="pos-luxury__theme-track" />
+        <button
+          type="button"
+          className={isDarkMode ? "" : "is-active"}
+          aria-pressed={!isDarkMode}
+          onClick={() => setPosTheme("light")}
+        >
+          <SunOutlined /> Light
+        </button>
+      </div>
     </div>
   );
 };

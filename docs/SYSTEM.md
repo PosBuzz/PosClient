@@ -109,6 +109,9 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
   (Jest 30; overrides for `qs` under Stryker and `js-yaml` under the Jest coverage tooling, see `deploy/README.md`).
 - **Characterizations kept** (confirm intent before changing): sales never split a line across batches; settling a due sale later earns no reward
   points; a return item without a batch does not restock; a batch created without payments counts as fully paid (D-040).
+- **Returns on a sale with a due** (2026-11-02): the returned value first cancels what the customer still owes; only the rest is paid out. The cancelled
+  part is stored in `returns.due_reduction` and lowers the sale's `total_amount` (invariant INV-05 adds it back: total + cancelled due = subtotal - discount + tax + shipping).
+  Net Sales in the business report leaves shipping out; partner delivery charges are costs in Net Operating Result.
 - **Branch protection not used** (D-065). Tracked deployment credentials were removed from git and history on 2026-10-15 (D-067 superseded).
 - **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports of products, customers and inventory are always available as PDF; the Excel option is commented out in `consumer/src/components/ExportButton.tsx` (the backend still serves `format=xlsx`).
 - **Print server download:** the consumer app serves the Windows installer at `/print-server/PosBuzz-Print-Server.zip` (shown as Download Print Server on Receipt Settings). After rebuilding `PrintingFromWebToPOSPrinter`, copy `Distribution/PosBuzz-Print-Server.zip` to `consumer/public/print-server/`; a consumer test fails if the two differ.

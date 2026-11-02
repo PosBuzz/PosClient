@@ -8,6 +8,7 @@ const sale = (extra: object = {}) => ({
   id: 1,
   sale_number: 'S-1',
   total_amount: 200,
+  received_amount: 200,
   shipping_cost: 10,
   customer_id: 4,
   items: [
@@ -22,7 +23,7 @@ function setup() {
   const mk = (...names: string[]) =>
     Object.fromEntries(names.map((n) => [n, jest.fn()]));
   const prisma: any = {
-    sale: mk('findFirst'),
+    sale: mk('findFirst', 'update'),
     branch: mk('findFirst'),
     returnItem: mk('aggregate', 'create'),
     return: mk('findMany', 'count', 'create', 'findFirst', 'aggregate'),
@@ -368,6 +369,7 @@ describe('ReturnService.create writes (unit)', () => {
         exchange_sale_id: undefined,
         total_refund: 50,
         total_exchange: 0,
+        due_reduction: 0,
         reason: 'broken',
         notes: 'note',
       },
@@ -690,6 +692,99 @@ describe('ReturnService.create writes (unit)', () => {
   });
 });
 
+describe('ReturnService.create sales with a due (unit)', () => {
+  const owing = (received: number) =>
+    sale({ received_amount: received, shipping_cost: 0 });
+  const lockDue = (prisma: any, received: number) =>
+    prisma.$queryRaw.mockResolvedValue([
+      { total_amount: 200, received_amount: received },
+    ]);
+
+  it('[BE-MUT-873] returned value first cancels what the customer owes, so nothing is paid out', async () => {
+    const { prisma, service } = setup();
+    prisma.sale.findFirst.mockResolvedValue(owing(80));
+    lockDue(prisma, 80);
+    await service.create(
+      5,
+      8,
+      dto({
+        items: [{ sale_item_id: 10, variant_id: 20, quantity: 2 }],
+        payments: undefined,
+      }),
+    );
+    expect(prisma.return.create.mock.calls[0][0].data).toMatchObject({
+      total_refund: 0,
+      due_reduction: 100,
+    });
+    expect(prisma.sale.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { total_amount: 100 },
+    });
+    expect(prisma.returnPayment.create).not.toHaveBeenCalled();
+  });
+
+  it('[BE-MUT-874] only the part of the return above the due is paid out; paying out the whole value is refused', async () => {
+    const { prisma, service } = setup();
+    prisma.sale.findFirst.mockResolvedValue(owing(80));
+    lockDue(prisma, 80);
+    const items = [
+      { sale_item_id: 10, variant_id: 20, quantity: 2 },
+      { sale_item_id: 11, variant_id: 21, quantity: 1 },
+    ];
+    const tooMuch = await fail(
+      service,
+      dto({ items, payments: [{ payment_method: 'CASH', amount: 190 }] }),
+    );
+    expect(tooMuch.message).toContain(
+      'The customer still owes ৳120.00 on this sale, so ৳120.00 of the return cancels that due. Total payment amount must be ৳70.00, got ৳190.00',
+    );
+    await service.create(
+      5,
+      8,
+      dto({ items, payments: [{ payment_method: 'CASH', amount: 70 }] }),
+    );
+    expect(prisma.return.create.mock.calls[0][0].data).toMatchObject({
+      total_refund: 70,
+      due_reduction: 120,
+    });
+    expect(prisma.sale.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { total_amount: 80, payment_status: 'paid' },
+    });
+  });
+
+  it('[BE-MUT-875] a return that is not covered by the due still needs a payment method', async () => {
+    const { prisma, service } = setup();
+    prisma.sale.findFirst.mockResolvedValue(owing(150));
+    lockDue(prisma, 150);
+    const error = await fail(
+      service,
+      dto({
+        items: [{ sale_item_id: 10, variant_id: 20, quantity: 2 }],
+        payments: [],
+      }),
+    );
+    expect(error.message).toBe(
+      'At least one payment method is required to process a return',
+    );
+  });
+
+  it('[BE-MUT-876] a payment taken while the return is being recorded asks for a retry', async () => {
+    const { prisma, service } = setup();
+    prisma.sale.findFirst.mockResolvedValue(owing(80));
+    lockDue(prisma, 150);
+    const error = await fail(
+      service,
+      dto({
+        items: [{ sale_item_id: 10, variant_id: 20, quantity: 2 }],
+        payments: undefined,
+      }),
+    );
+    expect(error.message).toContain('A payment was recorded');
+    expect(prisma.return.create).not.toHaveBeenCalled();
+  });
+});
+
 describe('ReturnService reward reversal (unit)', () => {
   const run = async (
     rows: Array<{ type: string; points: number }>,
@@ -699,6 +794,7 @@ describe('ReturnService reward reversal (unit)', () => {
     ctx.prisma.sale.findFirst.mockResolvedValue(
       sale({
         total_amount: opts.total ?? 200,
+        received_amount: opts.total ?? 200,
         customer_id: opts.customer === undefined ? 4 : opts.customer,
       }),
     );

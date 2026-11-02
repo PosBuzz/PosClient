@@ -487,6 +487,20 @@ export interface ProductSalesStats {
   net_amount: number;
 }
 
+export interface DeliveryPartnerReportRow {
+  partner_id: number;
+  partner_name: string;
+  orders_delivered: number;
+  orders_returned: number;
+  orders_on_the_way: number;
+  cod_collected: number;
+  charges: number;
+  paid_over: number;
+  paid_by_shop: number;
+  /** Owed by the partner now; negative: the shop owes the partner; null on a branch report */
+  balance: number | null;
+}
+
 export interface EODSummary {
   total_sales: number;
   total_amount: number;
@@ -494,6 +508,12 @@ export interface EODSummary {
   total_discount?: number;
   total_tax?: number;
   total_shipping?: number;
+  online_sales_count?: number;
+  online_sales_amount?: number;
+  offline_sales_count?: number;
+  offline_sales_amount?: number;
+  partner_delivery_charges?: number;
+  shipping_margin?: number;
   total_transactions: number;
   total_collected?: number;
   real_money_collected?: number;
@@ -538,6 +558,7 @@ export interface EODReportResponse {
   period_end: string;
   branch_name?: string;
   summary: EODSummary;
+  delivery_partners?: DeliveryPartnerReportRow[];
   payment_method_breakdown: PaymentMethodBreakdown[];
   return_payment_breakdown: PaymentMethodBreakdown[];
   product_sales: ProductSalesStats[];
