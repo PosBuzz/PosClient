@@ -133,6 +133,7 @@
   "return_summary": {
     "available_amount": 168,
     "available_shipping_refund": 60,
+    "due_amount": 0,
     "returns": [
       {
         "id": 3,
@@ -145,6 +146,7 @@
     ],
     "shipping_refunded": 0,
     "total_already_returned": 72,
+    "total_due_cancelled": 0,
     "total_exchanged": 72,
     "total_refunded": 0,
     "total_returned": 1
