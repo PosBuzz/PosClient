@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as bwipjs from 'bwip-js';
 import { ReceiptPdfSettings } from '../preset/receipt-pdf-settings';
+import { amountInWords } from '../helpers/amount-in-words';
 import {
   PDF_LOGO_TRANSFORMATION,
   cloudinaryVariant,
@@ -1353,6 +1354,13 @@ export class ReceiptPdfService {
       );
     }
     y += 4;
+
+    if (s.totals.showAmountInWords) {
+      const words = 'In words: ' + amountInWords(data.totalAmount);
+      doc.font('Helvetica-Oblique').fontSize(s.fontSizes.body);
+      doc.text(words, lm, y, { width: uw, align: 'left' });
+      y = doc.y + 4;
+    }
 
     y = this.hr(doc, y, lm, uw);
     return y;
