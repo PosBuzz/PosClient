@@ -234,6 +234,29 @@ export async function buildBusinessDay(
     ],
     payments: [{ payment_method: 'CASH', amount: 40 }],
   });
+  const stampPayments = async (
+    saleId: number,
+    instant: string,
+    afterId: number,
+  ) => {
+    await db.$executeRaw`UPDATE sale_payments SET created_at = ${new Date(instant)} WHERE sale_id = ${saleId} AND id > ${afterId}`;
+  };
+  const lastPaymentId = async () =>
+    (await db.salePayment.aggregate({ _max: { id: true } }))._max.id ?? 0;
+  // E9b 12:00 Main: the customer settles the other 50 of yesterday's S0 (an older sale).
+  // It is recorded before R0 because a return on a sale that still owes cancels the due
+  // instead of paying cash out; its report time is still 12:00.
+  const beforeS0 = await lastPaymentId();
+  await at(iso('12:00'), () =>
+    payments.makePayment(
+      {
+        sale_id: s0.id,
+        payments: [{ payment_method: 'CASH', amount: 50 }],
+      } as any,
+      cid,
+    ),
+  );
+  await stampPayments(s0.id, iso('12:00'), beforeS0);
   // R0 11:15 against S0 (previous day), 1 x P3, cash refund 40
   const r0 = await refund(iso('11:15'), {
     original_sale_id: s0.id,
@@ -272,16 +295,7 @@ export async function buildBusinessDay(
     ],
   });
   // E9 14:00 Second: 25 more on S3 (20 stays due)
-  const stampPayments = async (
-    saleId: number,
-    instant: string,
-    afterId: number,
-  ) => {
-    await db.$executeRaw`UPDATE sale_payments SET created_at = ${new Date(instant)} WHERE sale_id = ${saleId} AND id > ${afterId}`;
-  };
-  const lastPaymentId = async () =>
-    (await db.salePayment.aggregate({ _max: { id: true } }))._max.id ?? 0;
-  let before = await lastPaymentId();
+  const before = await lastPaymentId();
   await at(iso('14:00'), () =>
     payments.makePayment(
       {
@@ -292,18 +306,6 @@ export async function buildBusinessDay(
     ),
   );
   await stampPayments(s3.id, iso('14:00'), before);
-  // E9b 12:00 Main: the customer settles the other 50 of yesterday's S0 (an older sale)
-  before = await lastPaymentId();
-  await at(iso('12:00'), () =>
-    payments.makePayment(
-      {
-        sale_id: s0.id,
-        payments: [{ payment_method: 'CASH', amount: 50 }],
-      } as any,
-      cid,
-    ),
-  );
-  await stampPayments(s0.id, iso('12:00'), before);
   // E10 14:30 Main: operational cost 300
   await at(iso('14:30'), () =>
     costs.create(cid, admin, {
@@ -380,7 +382,7 @@ export const expected = {
     digital_refunds: 0,
     total_exchange_return: 72,
     unique_exchanges: 72,
-    net_sale_amount: 985, // 1065 - 80
+    net_sale_amount: 925, // 1065 - 60 shipping - 80 refunds
     net_cash_sales: 545, // 625 - 80
     net_money_collected: 1015, // 1095 - 80
     net_operating_result: 685, // 1065 - 80 - 300

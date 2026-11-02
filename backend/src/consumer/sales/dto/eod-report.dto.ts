@@ -36,13 +36,40 @@ export interface ProductSalesStats {
   net_amount: number;
 }
 
+export interface DeliveryPartnerReportRow {
+  partner_id: number;
+  partner_name: string;
+  orders_delivered: number;
+  orders_returned: number;
+  orders_on_the_way: number;
+  /** Cash the partner collected from customers for delivered orders in the period */
+  cod_collected: number;
+  /** What the partner charges the shop (delivery, COD fee, return charge) for the period */
+  charges: number;
+  /** Partner payouts to the shop in the period (all-branches report only) */
+  paid_over: number;
+  /** Payments from the shop to the partner in the period (all-branches report only) */
+  paid_by_shop: number;
+  /** Owed by the partner right now; negative: the shop owes the partner. null for a branch report */
+  balance: number | null;
+}
+
 export interface EODSummary {
   total_sales: number;
   total_amount: number;
   gross_subtotal?: number;
   total_discount?: number;
   total_tax?: number;
+  /** Shipping charged to customers; not part of net sales */
   total_shipping?: number;
+  online_sales_count?: number;
+  online_sales_amount?: number;
+  offline_sales_count?: number;
+  offline_sales_amount?: number;
+  /** What delivery partners charge the shop (delivery, COD fee, return charge) */
+  partner_delivery_charges?: number;
+  /** Shipping charged minus partner charges; negative when delivery costs more than customers paid */
+  shipping_margin?: number;
   total_transactions: number;
   total_collected: number;
   real_money_collected: number;
@@ -89,6 +116,7 @@ export interface EODReportResponse {
   period_end: string;
   branch_name?: string;
   summary: EODSummary;
+  delivery_partners?: DeliveryPartnerReportRow[];
   payment_method_breakdown: PaymentMethodBreakdown[];
   return_payment_breakdown: PaymentMethodBreakdown[];
   product_sales: ProductSalesStats[];

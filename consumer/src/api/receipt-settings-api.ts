@@ -106,6 +106,7 @@ export interface ReceiptPdfSettings {
     showDiscount: boolean;
     showShipping: boolean;
     showTax: boolean;
+    showAmountInWords?: boolean;
   };
   payment: {
     show: boolean;

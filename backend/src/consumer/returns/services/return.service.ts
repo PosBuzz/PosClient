@@ -121,14 +121,10 @@ export class ReturnService {
       }
 
       // Calculate totals based on business logic
-      if (!dto.payments || dto.payments.length === 0) {
-        throw new BadRequestException(
-          'At least one payment method is required to process a return',
-        );
-      }
+      const suppliedPayments = dto.payments ?? [];
 
       if (
-        dto.payments.some(
+        suppliedPayments.some(
           (payment) =>
             !Number.isFinite(Number(payment.amount)) ||
             Number(payment.amount) <= 0,
@@ -195,11 +191,18 @@ export class ReturnService {
         },
       });
 
+      // Earlier returns may have cancelled part of the due, which lowered the
+      // sale total; the original total is what the returns are measured against
+      const totalDueReducedBefore = existingReturns.reduce(
+        (sum, ret) => sum + Number(ret.due_reduction ?? 0),
+        0,
+      );
       const totalAlreadyReturned = existingReturns.reduce(
         (sum, ret) =>
           sum +
           parseFloat(ret.total_refund.toString()) +
-          parseFloat(ret.total_exchange.toString()),
+          parseFloat(ret.total_exchange.toString()) +
+          Number(ret.due_reduction ?? 0),
         0,
       );
 
@@ -239,7 +242,9 @@ export class ReturnService {
       }
 
       const availableAmount =
-        parseFloat(originalSale.total_amount.toString()) - totalAlreadyReturned;
+        parseFloat(originalSale.total_amount.toString()) +
+        totalDueReducedBefore -
+        totalAlreadyReturned;
 
       if (dto.items.length === 0 && shippingRefundAmount <= 0) {
         throw new BadRequestException(
@@ -259,9 +264,27 @@ export class ReturnService {
         );
       }
 
-      if (Math.abs(totalPayments - selectedReturnAmount) > 0.01) {
+      // What the customer still owes comes off first: money is only paid out
+      // for the part of the returned value the customer has actually paid
+      const dueNow = Math.max(
+        0,
+        Number(originalSale.total_amount) -
+          Number(originalSale.received_amount),
+      );
+      const dueReduction = Math.min(dueNow, selectedReturnAmount);
+      const payableAmount = selectedReturnAmount - dueReduction;
+
+      if (payableAmount > 0.01 && suppliedPayments.length === 0) {
         throw new BadRequestException(
-          `Total payment amount must exactly match selected return value. Expected ৳${selectedReturnAmount.toFixed(2)}, got ৳${totalPayments.toFixed(2)}`,
+          'At least one payment method is required to process a return',
+        );
+      }
+
+      if (Math.abs(totalPayments - payableAmount) > 0.01) {
+        throw new BadRequestException(
+          dueReduction > 0
+            ? `The customer still owes ৳${dueNow.toFixed(2)} on this sale, so ৳${dueReduction.toFixed(2)} of the return cancels that due. Total payment amount must be ৳${payableAmount.toFixed(2)}, got ৳${totalPayments.toFixed(2)}`
+            : `Total payment amount must exactly match selected return value. Expected ৳${selectedReturnAmount.toFixed(2)}, got ৳${totalPayments.toFixed(2)}`,
         );
       }
 
@@ -289,6 +312,28 @@ export class ReturnService {
           );
         }
 
+        // The due was read outside the transaction; a payment taken since
+        // would change how much of this return cancels due
+        let lockedReceived = Number(originalSale.received_amount);
+        let lockedTotal = Number(originalSale.total_amount);
+        if (dueNow > 0) {
+          const [lockedSale] = await prisma.$queryRaw<
+            Array<{
+              total_amount: Prisma.Decimal;
+              received_amount: Prisma.Decimal;
+            }>
+          >`SELECT "total_amount", "received_amount" FROM "sales" WHERE "id" = ${originalSale.id} FOR UPDATE`;
+          lockedTotal = Number(lockedSale.total_amount);
+          lockedReceived = Number(lockedSale.received_amount);
+          if (
+            Math.abs(Math.max(0, lockedTotal - lockedReceived) - dueNow) > 0.01
+          ) {
+            throw new BadRequestException(
+              'A payment was recorded for this sale at the same time. Please reload the sale and try again.',
+            );
+          }
+        }
+
         // Generate return number
         const returnNumber = await this.generateReturnNumber(
           consumerId,
@@ -306,6 +351,7 @@ export class ReturnService {
             exchange_sale_id: dto.exchange_sale_id,
             total_refund: totalRefund,
             total_exchange: totalExchange,
+            due_reduction: dueReduction,
             reason: dto.reason,
             notes: dto.notes,
           },
@@ -397,6 +443,20 @@ export class ReturnService {
               },
             });
           }
+        }
+
+        // The cancelled due comes off the sale, so the customer owes less
+        if (dueReduction > 0) {
+          const newTotal = lockedTotal - dueReduction;
+          await prisma.sale.update({
+            where: { id: originalSale.id },
+            data: {
+              total_amount: newTotal,
+              ...(lockedReceived >= newTotal - 0.01
+                ? { payment_status: 'paid' }
+                : {}),
+            },
+          });
         }
 
         // Create return payments if provided

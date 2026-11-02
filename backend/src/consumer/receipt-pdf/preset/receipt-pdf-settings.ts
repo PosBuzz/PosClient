@@ -81,6 +81,8 @@ export interface ReceiptPdfSettings {
     showDiscount: boolean;
     showShipping: boolean;
     showTax: boolean;
+    /** Prints the total in words ("One Thousand Taka Only") under TOTAL. Defaults off. */
+    showAmountInWords?: boolean;
   };
 
   payment: {

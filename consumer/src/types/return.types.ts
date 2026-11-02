@@ -198,6 +198,10 @@ export interface SaleForReturn {
     total_refunded: number;
     total_exchanged: number;
     total_already_returned: number;
+    /** Returned value that cancelled the customer's due instead of being paid out */
+    total_due_cancelled?: number;
+    /** Still owed on the sale; a return cancels this first */
+    due_amount?: number;
     available_amount: number | string;
     shipping_refunded?: number;
     available_shipping_refund?: number;

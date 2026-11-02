@@ -1,0 +1,630 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap");
+
+/*
+ * Luxury finish for the Express Sale (classic layout) screen. Colours come from the
+ * app theme (html[data-theme]); structure and behaviour are the existing page.
+ * Ant Design writes many sizes inline, hence the !important on those overrides.
+ */
+.pos-luxury {
+  --lx-serif: "Cormorant Garamond", Georgia, serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--lx-page);
+  color: var(--lx-text);
+  position: relative;
+}
+
+html[data-theme="dark"] .pos-luxury {
+  --lx-page: #050d14;
+  --lx-surface: #09161f;
+  --lx-surface-2: #0d1d29;
+  --lx-surface-3: #12283a;
+  --lx-border: #1a2f3f;
+  --lx-border-strong: #2b4558;
+  --lx-text: #eef3f2;
+  --lx-muted: #94a9b4;
+  --lx-soft: #6c8591;
+  --lx-green: #52d3a3;
+  --lx-green-2: #2aa57a;
+  --lx-green-wash: rgba(82, 211, 163, 0.09);
+  --lx-input: #07121a;
+  --lx-gold: #d6bb80;
+  --lx-gold-wash: rgba(214, 187, 128, 0.09);
+  --lx-gold-line: rgba(214, 187, 128, 0.28);
+  --lx-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+  --lx-promo: #6d5fcf;
+  --lx-danger: #ff7d8f;
+  --lx-onaccent: #052116;
+}
+
+html:not([data-theme="dark"]) .pos-luxury {
+  --lx-page: #f3f2ee;
+  --lx-surface: #fffdfa;
+  --lx-surface-2: #f8f5ef;
+  --lx-surface-3: #efece4;
+  --lx-border: #e5dfd2;
+  --lx-border-strong: #d0c7b4;
+  --lx-text: #1b2a38;
+  --lx-muted: #667a8a;
+  --lx-soft: #92a1ad;
+  --lx-green: #1c8a63;
+  --lx-green-2: #146c4d;
+  --lx-green-wash: #e5f3ec;
+  --lx-input: #fffefb;
+  --lx-gold: #9d7d35;
+  --lx-gold-wash: #f6efde;
+  --lx-gold-line: rgba(157, 125, 53, 0.35);
+  --lx-shadow: 0 16px 40px rgba(60, 48, 20, 0.09);
+  --lx-promo: #5b46c4;
+  --lx-danger: #cc4660;
+  --lx-onaccent: #fff;
+}
+
+/* ---------- header ---------- */
+.pos-luxury .pos-classic__header {
+  position: relative;
+  min-height: 96px;
+  padding: 12px 22px 14px !important;
+  border-bottom: 0 !important;
+  gap: 16px;
+}
+.pos-luxury .pos-classic__header::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--lx-gold-line), var(--lx-border) 55%, transparent);
+}
+.pos-luxury .pos-classic__header::after {
+  content: "";
+  position: absolute;
+  inset: 0 18% 0 32%;
+  pointer-events: none;
+  opacity: 0.8;
+  background: linear-gradient(
+    125deg,
+    transparent 44%,
+    var(--lx-gold-wash) 44%,
+    transparent 52%,
+    transparent 57%,
+    var(--lx-gold-wash) 57%,
+    transparent 66%
+  );
+}
+.pos-luxury .pos-classic__header > * {
+  position: relative;
+  z-index: 1;
+}
+.pos-luxury__brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.pos-luxury__shop-logo {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 18px;
+  border: 1px solid var(--lx-gold-line);
+  background: linear-gradient(145deg, var(--lx-surface-3), var(--lx-surface));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+.pos-luxury__shop-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pos-luxury__shop-text strong {
+  font-family: var(--lx-serif);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.2px;
+  color: var(--lx-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.pos-luxury__shop-text span {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lx-gold);
+}
+.pos-luxury__items-badge .ant-scroll-number {
+  background: var(--lx-green) !important;
+  color: var(--lx-onaccent) !important;
+  box-shadow: none !important;
+  font-weight: 700;
+  font-size: 12px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+  border-radius: 12px !important;
+  padding: 0 10px !important;
+  position: static !important;
+  transform: none !important;
+}
+.pos-luxury__items-badge {
+  line-height: 1;
+}
+.pos-luxury__divider {
+  width: 1px;
+  height: 52px;
+  background: linear-gradient(transparent, var(--lx-gold-line), transparent);
+  flex-shrink: 0;
+}
+.pos-luxury__platform-logo {
+  width: 130px;
+  max-height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.pos-luxury__powered {
+  border-left: 1px solid var(--lx-gold-line);
+  padding-left: 15px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--lx-muted);
+  white-space: nowrap;
+}
+.pos-luxury__powered strong {
+  display: block;
+  font-size: 13px;
+  color: var(--lx-text);
+}
+
+/* header actions + other buttons */
+.pos-luxury .pos-classic__header .ant-btn {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: var(--lx-surface-2) !important;
+  border: 1px solid var(--lx-border-strong) !important;
+  color: var(--lx-text) !important;
+  box-shadow: none;
+}
+.pos-luxury .pos-classic__header .ant-btn:hover {
+  border-color: var(--lx-gold) !important;
+}
+.pos-luxury .pos-classic__header .ant-btn[style*="722ed1"] {
+  background: linear-gradient(135deg, var(--lx-promo), #4c3fa8) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+/* ---------- panels ---------- */
+.pos-luxury .pos-classic__body {
+  padding: 12px 22px 22px !important;
+  gap: 12px !important;
+}
+.pos-luxury .pos-classic__main {
+  gap: 12px !important;
+}
+.pos-luxury .pos-classic__cards {
+  gap: 12px !important;
+}
+.pos-luxury .ant-card {
+  background: var(--lx-surface) !important;
+  border: 1px solid var(--lx-border) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--lx-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+  color: var(--lx-text);
+}
+.pos-luxury .pos-classic__card .ant-card-body {
+  padding: 16px !important;
+}
+@media (min-width: 768px) {
+  .pos-luxury .pos-classic__card.ant-card {
+    height: 292px !important;
+  }
+}
+.pos-luxury .pos-classic__card .ant-card-body {
+  overflow-y: auto !important;
+}
+
+.pos-luxury .pos-luxury__title {
+  font-family: var(--lx-serif) !important;
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px;
+  color: var(--lx-text) !important;
+}
+.pos-luxury .pos-luxury__title .anticon {
+  color: var(--lx-gold);
+}
+.pos-luxury .ant-form-item-label > label,
+.pos-luxury .pos-classic__card .ant-form-item-label label {
+  color: var(--lx-muted);
+  font-weight: 600;
+}
+
+/* inputs */
+.pos-luxury .ant-select-selector,
+.pos-luxury .ant-input,
+.pos-luxury .ant-input-number,
+.pos-luxury .ant-input-affix-wrapper,
+.pos-luxury .ant-input-number-affix-wrapper {
+  background: var(--lx-input) !important;
+  border-color: var(--lx-border-strong) !important;
+  border-radius: 11px !important;
+  color: var(--lx-text);
+}
+.pos-luxury .pos-classic__card .ant-select-single .ant-select-selector,
+.pos-luxury .pos-classic__card .ant-input-number,
+.pos-luxury .pos-classic__card .ant-input-number-affix-wrapper {
+  min-height: 40px;
+  align-items: center;
+}
+.pos-luxury .pos-classic__card .ant-select-single .ant-select-selector {
+  height: 40px !important;
+}
+.pos-luxury .pos-classic__card .ant-select-single .ant-select-selection-item,
+.pos-luxury .pos-classic__card .ant-select-single .ant-select-selection-placeholder,
+.pos-luxury .pos-classic__card .ant-select-single .ant-select-selection-search-input {
+  line-height: 38px !important;
+  height: 38px !important;
+}
+.pos-luxury .pos-classic__card .ant-input-number-input {
+  height: 38px;
+}
+.pos-luxury .ant-select:hover .ant-select-selector,
+.pos-luxury .ant-input:hover,
+.pos-luxury .ant-input-number:hover {
+  border-color: var(--lx-gold-line) !important;
+}
+.pos-luxury .ant-select-focused .ant-select-selector,
+.pos-luxury .ant-input:focus,
+.pos-luxury .ant-input-number-focused {
+  border-color: var(--lx-gold) !important;
+  box-shadow: 0 0 0 2px var(--lx-gold-wash) !important;
+}
+.pos-luxury .ant-select-selection-placeholder,
+.pos-luxury .ant-input::placeholder {
+  color: var(--lx-soft) !important;
+}
+
+/* buttons inside the panels */
+.pos-luxury .ant-btn-primary:not(:disabled),
+.pos-luxury .ant-radio-button-wrapper-checked,
+.pos-luxury .pos-classic__card .ant-btn-primary {
+  background: linear-gradient(135deg, var(--lx-green), var(--lx-green-2)) !important;
+  border-color: transparent !important;
+  color: var(--lx-onaccent) !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--lx-green) 22%, transparent);
+}
+.pos-luxury .ant-btn-primary:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+.pos-luxury .ant-btn-primary:disabled {
+  opacity: 0.55;
+}
+.pos-luxury .pos-classic__card .ant-btn:not(.ant-btn-primary),
+.pos-luxury .ant-card .ant-btn-default {
+  background: var(--lx-surface-2);
+  border-color: var(--lx-border-strong);
+  color: var(--lx-text);
+  border-radius: 10px;
+}
+.pos-luxury .ant-btn-dangerous,
+.pos-luxury .ant-btn-dangerous .anticon {
+  color: var(--lx-danger);
+}
+
+/* ---------- cart ---------- */
+.pos-luxury .pos-classic__cart .ant-card > div:first-child {
+  padding: 16px 18px !important;
+  border-bottom: 1px solid var(--lx-border);
+  border-radius: 20px 20px 0 0 !important;
+}
+.pos-luxury .pos-classic__cart .ant-badge-count {
+  background: var(--lx-green) !important;
+  color: var(--lx-onaccent) !important;
+  box-shadow: none;
+  min-width: 28px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 14px;
+  font-weight: 800;
+}
+.pos-luxury .ant-table {
+  background: transparent !important;
+  color: var(--lx-text);
+}
+.pos-luxury .ant-table-thead > tr > th {
+  background: var(--lx-surface-2) !important;
+  color: var(--lx-text) !important;
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--lx-border) !important;
+  padding: 14px 16px !important;
+}
+.pos-luxury .ant-table-thead > tr > th::before {
+  display: none !important;
+}
+.pos-luxury .ant-table-thead > tr > th:first-child {
+  border-radius: 12px 0 0 12px !important;
+}
+.pos-luxury .ant-table-thead > tr > th:last-child {
+  border-radius: 0 12px 12px 0 !important;
+}
+.pos-luxury .ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--lx-border) !important;
+  padding: 18px 16px !important;
+  vertical-align: middle;
+}
+.pos-luxury .ant-table-tbody > tr:hover > td {
+  background: var(--lx-gold-wash) !important;
+}
+.pos-luxury .ant-table-tbody .ant-btn-sm {
+  border-radius: 8px;
+  font-weight: 700;
+}
+.pos-luxury .ant-table-tbody .ant-btn-default {
+  background: var(--lx-surface-2);
+  color: var(--lx-muted);
+  border-color: var(--lx-border-strong);
+}
+.pos-luxury .pos-classic__cart .anticon-shopping-cart[style*="font-size: 48px"] {
+  color: var(--lx-gold);
+  opacity: 1 !important;
+  padding: 22px;
+  border-radius: 50%;
+  background: var(--lx-gold-wash);
+  border: 1px solid var(--lx-gold-line);
+  font-size: 34px !important;
+}
+
+/* ---------- totals column ---------- */
+.pos-luxury .pos-classic__side {
+  width: 340px !important;
+  padding: 14px;
+  background: var(--lx-surface);
+  border: 1px solid var(--lx-border);
+  border-radius: 20px;
+  box-shadow: var(--lx-shadow);
+  gap: 12px !important;
+}
+.pos-luxury .pos-classic__side > .ant-card.pos-luxury__summary,
+.pos-luxury .pos-classic__side > .ant-card.pos-luxury__actions {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.pos-luxury .pos-luxury__actions .ant-card-body {
+  padding: 0 !important;
+}
+.pos-luxury .pos-luxury__total.ant-card {
+  background: linear-gradient(135deg, var(--lx-gold-wash), var(--lx-green-wash)) !important;
+  border: 1px solid var(--lx-gold-line) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+.pos-luxury .pos-luxury__total .ant-card-body {
+  padding: 18px 16px !important;
+}
+.pos-luxury .pos-luxury__total .ant-typography:first-child {
+  letter-spacing: 0.14em;
+  font-size: 12px !important;
+  color: var(--lx-gold) !important;
+}
+.pos-luxury [data-testid="pos-total"] {
+  font-family: var(--lx-serif);
+  font-size: 38px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  color: var(--lx-gold) !important;
+  white-space: nowrap;
+}
+.pos-luxury .pos-luxury__summary .ant-card-body {
+  padding: 0 4px !important;
+}
+.pos-luxury .pos-luxury__summary .ant-typography {
+  color: var(--lx-text);
+}
+.pos-luxury .pos-luxury__summary .ant-divider {
+  border-color: var(--lx-border);
+}
+.pos-luxury .pos-luxury__change {
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+}
+.pos-luxury .pos-luxury__change[data-due="false"] {
+  background: var(--lx-gold-wash) !important;
+  border: 1px solid var(--lx-gold-line) !important;
+}
+.pos-luxury .pos-luxury__change[data-due="false"] .ant-typography {
+  color: var(--lx-gold) !important;
+}
+.pos-luxury .pos-luxury__actions .ant-btn {
+  min-height: 54px;
+  border-radius: 13px;
+}
+.pos-luxury .pos-luxury__actions .ant-btn-primary {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- theme pill ---------- */
+.pos-luxury__theme {
+  position: fixed;
+  z-index: 5;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--lx-gold-line);
+  border-radius: 999px;
+  background: var(--lx-surface);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+.pos-luxury__theme button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--lx-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pos-luxury__theme button.is-active {
+  background: var(--lx-gold-wash);
+  color: var(--lx-gold);
+}
+.pos-luxury__theme button:focus-visible {
+  outline: 2px solid var(--lx-gold);
+  outline-offset: 2px;
+}
+.pos-luxury__theme-track {
+  color: var(--lx-gold);
+  font-size: 16px;
+  padding: 0 5px;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1200px) {
+  .pos-luxury .pos-classic__side {
+    width: 300px !important;
+  }
+  .pos-luxury__powered {
+    display: none;
+  }
+}
+@media (max-width: 850px) {
+  .pos-luxury .pos-classic__header {
+    flex-wrap: wrap;
+    padding: 10px 12px !important;
+    min-height: 0;
+  }
+  .pos-luxury__divider,
+  .pos-luxury__platform-logo,
+  .pos-luxury__powered {
+    display: none;
+  }
+  .pos-luxury__shop-text strong {
+    font-size: 22px;
+    max-width: 180px;
+  }
+}
+@media (max-width: 767px) {
+  .pos-luxury .pos-classic__body {
+    padding: 8px 10px 84px !important;
+  }
+  .pos-luxury .pos-classic__side {
+    width: 100% !important;
+  }
+  .pos-luxury .pos-classic__header .ant-btn {
+    padding: 0 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pos-luxury * {
+    transition: none !important;
+  }
+}
+
+/* ---------- spacing and nesting refinements ---------- */
+.pos-luxury .pos-classic__header .ant-btn.ant-btn-primary {
+  background: var(--lx-surface-2) !important;
+  border: 1px solid var(--lx-border-strong) !important;
+  color: var(--lx-text) !important;
+  box-shadow: none;
+}
+.pos-luxury .pos-classic__header .ant-btn.ant-btn-primary:hover {
+  border-color: var(--lx-gold) !important;
+}
+.pos-luxury .pos-classic__header .ant-btn[style*="722ed1"] {
+  background: linear-gradient(135deg, var(--lx-promo), #4c3fa8) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.pos-luxury .pos-classic__card .ant-form-item {
+  margin-bottom: 12px !important;
+}
+.pos-luxury .pos-classic__card .ant-form-item-label {
+  padding-bottom: 6px;
+}
+.pos-luxury .pos-classic__card .pos-luxury__title {
+  margin-bottom: 12px !important;
+}
+.pos-luxury .pos-classic__card .ant-select {
+  margin-bottom: 12px;
+}
+.pos-luxury .pos-classic__card .ant-form-item .ant-select {
+  margin-bottom: 0;
+}
+.pos-luxury .ant-card .ant-card {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  background: var(--lx-surface-2) !important;
+}
+/* keep the last cart rows clear of the floating theme pill */
+.pos-luxury .pos-classic__cart .ant-card-body > div:last-child {
+  padding-bottom: 76px !important;
+}
+.pos-luxury .pos-classic__side {
+  padding-bottom: 14px;
+}
+.pos-luxury .pos-classic__card .ant-select-sm {
+  height: 40px;
+}
+.pos-luxury .pos-classic__card .ant-btn-sm:not(.pos-luxury__title) {
+  min-height: 34px;
+}
+.pos-luxury .pos-classic__card .ant-form-item .ant-btn {
+  height: 40px;
+  border-radius: 11px;
+}
+.pos-luxury .ant-table-tbody .ant-btn-sm {
+  display: block;
+  min-width: 88px;
+  height: 32px;
+  margin-bottom: 6px;
+}
+
+/* Special Disc column: Overall / Per qty as one segmented control, input on the full width below */
+.pos-luxury .pos-luxury__mode.ant-radio-group {
+  display: flex;
+  width: 100%;
+}
+.pos-luxury .pos-luxury__mode .ant-radio-button-wrapper {
+  flex: 1;
+  height: 34px;
+  line-height: 32px;
+  padding: 0 12px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lx-muted);
+  background: var(--lx-surface-2);
+  border-color: var(--lx-border-strong);
+}
+.pos-luxury .pos-luxury__mode .ant-radio-button-wrapper:first-child {
+  border-radius: 10px 0 0 10px;
+}
+.pos-luxury .pos-luxury__mode .ant-radio-button-wrapper:last-child {
+  border-radius: 0 10px 10px 0;
+}
+.pos-luxury .pos-luxury__mode .ant-radio-button-wrapper-checked {
+  color: var(--lx-onaccent) !important;
+}
+.pos-luxury .pos-luxury__discount-input {
+  width: 100% !important;
+  height: 38px;
+}
+.pos-luxury .pos-luxury__discount-input .ant-input-number-input {
+  height: 36px;
+}

@@ -56,6 +56,7 @@ export class BusinessReportPdfService {
       this.summaryCards(doc, report);
       this.paymentTable(doc, report);
       this.statusTable(doc, report);
+      this.deliveryTable(doc, report);
       this.refundTable(doc, report);
       this.costTable(doc, report);
       this.productTable(doc, report);
@@ -217,7 +218,7 @@ export class BusinessReportPdfService {
       {
         label: 'NET SALES',
         value: this.money(report.summary.net_sale_amount),
-        sub: 'Gross sales less refunds',
+        sub: 'Gross sales less shipping & refunds',
         color: '#2563eb',
       },
       {
@@ -261,7 +262,7 @@ export class BusinessReportPdfService {
       {
         label: 'NET OPERATING RESULT',
         value: this.money(report.summary.net_operating_result),
-        sub: 'Net sales less operational costs',
+        sub: 'Net sales + shipping profit less costs',
         color: report.summary.net_operating_result >= 0 ? '#059669' : '#dc2626',
       },
       {
@@ -368,6 +369,81 @@ export class BusinessReportPdfService {
       [255, 100, 160],
       [0, 1, 2],
     );
+  }
+
+  private deliveryTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
+    const s = report.summary;
+    const partners = report.delivery_partners ?? [];
+    const rows: string[][] = [];
+    if (s.online_sales_count) {
+      rows.push(
+        [
+          `Shop sales, paid at the counter (${s.offline_sales_count ?? 0})`,
+          this.money(s.offline_sales_amount ?? 0),
+        ],
+        [
+          `Online sales, sent by a delivery partner (${s.online_sales_count})`,
+          this.money(s.online_sales_amount ?? 0),
+        ],
+      );
+    }
+    if (s.delivery_partner_collected) {
+      rows.push([
+        'Customers paid delivery partners (still with them until paid over)',
+        this.money(s.delivery_partner_collected),
+      ]);
+    }
+    if (s.partner_payouts_received) {
+      rows.push([
+        `Delivery partners paid you: ${this.money(s.partner_payouts_cash)} cash, ${this.money(s.partner_payouts_received - s.partner_payouts_cash)} bank/digital`,
+        this.money(s.partner_payouts_received),
+      ]);
+    }
+    if (s.partner_payments_made) {
+      rows.push([
+        `You paid delivery partners: ${this.money(s.partner_payments_cash)} cash, ${this.money(s.partner_payments_made - s.partner_payments_cash)} bank/digital`,
+        this.money(s.partner_payments_made),
+      ]);
+    }
+    if (s.total_shipping || s.partner_delivery_charges) {
+      rows.push(
+        ['Shipping charged to customers', this.money(s.total_shipping || 0)],
+        [
+          'Paid to delivery partners (delivery, COD fee, returns)',
+          this.money(s.partner_delivery_charges || 0),
+        ],
+        ['Shipping profit / loss', this.money(s.shipping_margin || 0)],
+      );
+    }
+    if (rows.length) {
+      this.section(doc, 'SHOP SALES, ONLINE SALES & DELIVERY PARTNER MONEY');
+      this.table(doc, ['Item', 'Amount'], rows, [355, 160], [1]);
+    }
+
+    if (partners.length) {
+      this.section(doc, 'EACH DELIVERY PARTNER');
+      this.table(
+        doc,
+        [
+          'Partner',
+          'Delivered/Ret./Transit',
+          'Cash collected',
+          'Charges',
+          'Paid you',
+          'Owed now',
+        ],
+        partners.map((p) => [
+          p.partner_name,
+          `${p.orders_delivered}/${p.orders_returned}/${p.orders_on_the_way}`,
+          this.money(p.cod_collected),
+          this.money(p.charges),
+          this.money(p.paid_over),
+          p.balance === null ? '-' : this.money(p.balance),
+        ]),
+        [105, 100, 85, 75, 75, 75],
+        [1, 2, 3, 4, 5],
+      );
+    }
   }
 
   private refundTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
@@ -477,7 +553,7 @@ export class BusinessReportPdfService {
       .fontSize(6)
       .fillColor('#334155')
       .text(
-        '• Gross Sales: Invoiced subtotal less line & promotional discounts, plus tax & shipping.\n' +
+        '• Gross Sales: Invoiced subtotal less line & promotional discounts, plus tax & shipping. Net Sales leaves shipping out.\n' +
           '• Real Money Collected: Liquid currency received via Cash and verified Digital accounts (Cards/MFS).\n' +
           '• Net Cash in Drawer: Total physical cash received (sales + due collections) less cash refunds paid.',
         col1X,

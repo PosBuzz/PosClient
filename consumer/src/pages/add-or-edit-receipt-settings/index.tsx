@@ -101,6 +101,7 @@ const SECTION_CHILDREN_MAP: Record<string, string[][]> = {
     ["settings", "totals", "showDiscount"],
     ["settings", "totals", "showShipping"],
     ["settings", "totals", "showTax"],
+    ["settings", "totals", "showAmountInWords"],
   ],
   payment: [
     ["settings", "payment", "showBreakdown"],
@@ -952,6 +953,13 @@ export default function ReceiptSettingsFormPage() {
                       <ToggleItem
                         label="Tax"
                         name={["settings", "totals", "showTax"]}
+                        disabled={!totalsShow}
+                      />
+                    </Col>
+                    <Col xs={12} sm={8}>
+                      <ToggleItem
+                        label="Total in Words (Taka)"
+                        name={["settings", "totals", "showAmountInWords"]}
                         disabled={!totalsShow}
                       />
                     </Col>
