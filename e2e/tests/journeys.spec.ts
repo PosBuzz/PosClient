@@ -61,7 +61,7 @@ test('[E2E-J3] a partially paid sale is completed from the partial-payments page
   await createStock(api,name);
   await addToPos(page,name,2);
   await expect(page.getByTestId('pos-total')).toContainText('210.00');
-  const amount=page.getByRole('spinbutton',{name:'Amount',exact:true});
+  const amount=page.getByRole('spinbutton',{name:'Payment amount 1',exact:true});
   await amount.fill('100');
   await expect(amount).toHaveValue(/^100(\.00)?$/);
   await amount.blur();
