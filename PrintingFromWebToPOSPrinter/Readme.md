@@ -1,6 +1,6 @@
 # PosBuzz Print Server - Complete Project & Distribution Guide
 
-A complete Windows application for enabling web-based printing to POS thermal printers and barcode label printers.
+A complete Windows application for enabling web-based printing to POS thermal printers.
 
 ## 🎉 Project Status: COMPLETE & READY FOR PRODUCTION
 
@@ -102,20 +102,17 @@ Same contents as ZIP, useful for:
 
 ### ✅ Completed Features
 - **Thermal Receipt Printing**: 80mm receipt printers
-- **Barcode Label Printing**: Dedicated label printers
 - **System Tray Integration**: Background operation
 - **Windows Auto-Startup**: Boots with Windows
 - **Configuration GUI**: Easy settings management
 - **HTTP API Server**: RESTful endpoints
 - **Cash Drawer Control**: Automatic drawer opening
-- **Multiple Barcode Formats**: EAN13, UPC-A, Code128, Code39
 - **VAT Support**: Tax information on labels
 - **Error Handling**: Robust failure recovery
 - **Complete Documentation**: User and developer guides
 
 ### 🖨️ Supported Hardware
 - **Thermal Printers**: RONGTA, Star TSP, Epson TM series
-- **Barcode Printers**: Gprinter GP-3120TUC and compatible
 - **Cash Drawers**: Connected via thermal printer
 - **Operating Systems**: Windows 7/8/10/11
 
@@ -144,8 +141,8 @@ PosBuzz-Print-Server/
 ├── Printer.exe.config             # Application configuration
 (user settings and logo live in %LOCALAPPDATA%\PosBuzz Print Server)
 ├── Newtonsoft.Json.dll            # JSON processing library
-├── zxing.dll                      # Barcode generation library
-├── zxing.presentation.dll         # Barcode UI components
+├── zxing.dll                      # Receipt barcode generation library
+├── zxing.presentation.dll         # Receipt barcode support
 ├── LICENSE.txt                    # Software license
 ├── README.md                      # Main user documentation
 ├── INSTALLATION_GUIDE.md          # Step-by-step setup guide
@@ -159,7 +156,6 @@ PosBuzz-Print-Server/
 
 ### Retail POS Systems
 - Print sales receipts on thermal printers
-- Generate product barcode labels
 - Open cash drawers automatically
 - Handle returns and exchanges
 
@@ -170,7 +166,6 @@ PosBuzz-Print-Server/
 - Daily summary reports
 
 ### Inventory Management
-- Product labeling with barcodes
 - Stock level reports
 - Transfer documents
 - Audit trails
@@ -214,7 +209,6 @@ See `Distribution/PosBuzz-Print-Server/VERSION_INFO.md` for detailed version his
 - [x] Configuration dialog functional with visible buttons
 - [x] All HTTP endpoints respond correctly
 - [x] Receipt printing works
-- [x] Barcode printing works
 - [x] Cash drawer opens
 - [x] Auto-startup functionality
 - [x] Error handling implemented
@@ -290,3 +284,8 @@ This project is provided under the terms in `LICENSE.txt`. The distribution pack
 ---
 
 **🎉 Ready to Deploy!** The Distribution folder contains everything needed for end-user deployment.
+
+
+## Barcode labels
+
+Standalone labels are designed in **Products > Barcode Printing** and printed through the browser. The agent has no label-printing endpoints, label-printer settings or label test menu. Sale barcodes on thermal receipts remain supported through ZXing.

@@ -1,6 +1,6 @@
 # PosBuzz Print Server v2.0.0
 
-A complete Windows application for thermal receipt printing and barcode label printing via HTTP API.
+A complete Windows application for thermal receipt printing via HTTP API.
 
 ## 🚀 Quick Start (5 Minutes)
 
@@ -13,7 +13,7 @@ A complete Windows application for thermal receipt printing and barcode label pr
 ## 📋 What's Included
 
 - **Printer.exe** - Main application with system tray
-- **Complete HTTP API** - Print receipts, barcode labels, open cash drawer
+- **Complete HTTP API** - Print receipts and open cash drawer
 - **Configuration GUI** - Easy printer setup
 - **Auto-startup** - Starts with Windows
 - **API Examples** - Postman collection included
@@ -29,15 +29,7 @@ Copy the **exact** printer names into the configuration.
 
 ### Supported Printers
 - **Thermal**: 80mm receipt printers (RONGTA, Star TSP, Epson TM series)
-- **Barcode**: Label printers (Gprinter GP-3120TUC, Zebra, DYMO, Brother QL)
 - **Cash Drawer**: Connected via thermal printer (RJ11/RJ12)
-
-### Barcode Label Size
-Labels are laid out on the label size selected in the printer driver, so set it once:
-**Printers → barcode printer → Printing Preferences → Page Setup → Stock**, pick (or create with **New...**)
-a stock with the exact width and height of the labels in the printer, and click **OK**.
-Text wraps and resizes to fit that label. If the print sits off to one side, adjust
-**Advanced Options... → Horizontal Offset** in the same window.
 
 ## 🌐 API Usage
 
@@ -54,17 +46,6 @@ POST /print/receipt
 }
 ```
 
-### Print Barcode Label
-```bash
-POST /print/barcode
-{
-  "productName": "Sample Product",
-  "barcode": "1234567890123",
-  "price": "9.99",
-  "currency": "$"
-}
-```
-
 ### Test & Status
 - **GET /** - Server status
 - **GET /config** - View settings
@@ -76,7 +57,7 @@ POST /print/barcode
 **Right-click menu**:
 - **Configure** - Open settings
 - **Start/Stop Server** - Control server
-- **Test Receipt/Barcode** - Quick tests
+- **Test Receipt** - Quick tests
 - **Exit** - Close application
 
 ## ⚙️ Configuration Options
@@ -84,7 +65,6 @@ POST /print/barcode
 - **Store Info**: Name, address, phone, email
 - **Thermal Printer**: Receipt printer name
 - **Logo**: a PNG/JPG file on this PC, printed at the top of receipts fitted inside 50 × 25 mm (never stretched). Black on white prints best, and a wide (about 2:1) logo uses the space fully
-- **Barcode Printer**: Label printer name
 - **Port**: Server port (default: 8080)
 - **Currency**: Price symbol ($, €, £)
 - **Cash Drawer**: Enable/disable
@@ -167,11 +147,9 @@ Import `Documentation/PosBuzz_Print_Server.postman_collection.json` for ready-to
 ## 💡 Features
 
 ✅ **Thermal Receipt Printing** - 80mm receipt printers  
-✅ **Barcode Label Printing** - Product labels with barcodes  
 ✅ **Cash Drawer Control** - Automatic drawer opening  
 ✅ **System Tray Integration** - Background operation  
 ✅ **Windows Auto-startup** - Starts with Windows  
-✅ **Multiple Barcode Formats** - EAN13, UPC-A, Code128, Code39  
 ✅ **VAT Support** - Tax information on labels  
 ✅ **Error Handling** - Graceful printer error recovery  
 ✅ **Test Endpoints** - Built-in testing capabilities  
@@ -197,3 +175,8 @@ the store details, printers and logo once. They are remembered from then on.
 
 **Version**: 2.0.0 | **Release**: September 2025 | **Size**: ~8MB  
 **Ready for production use!** ✅
+
+
+## Barcode labels
+
+Standalone labels are designed in **Products > Barcode Printing** and printed through the browser. The agent has no label-printing endpoints, label-printer settings or label test menu. Sale barcodes on thermal receipts remain supported through ZXing.

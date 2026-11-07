@@ -7,44 +7,47 @@ import { API, ok } from "../../../test/msw/api";
 import { server } from "../../../test/msw/server";
 import { renderWithProviders } from "../../../test/render";
 import Page from "../index";
+import { printLabelDocument } from "../label-layout";
+vi.mock("../label-layout", async (original) => ({
+  ...(await original<typeof import("../label-layout")>()),
+  printLabelDocument: vi.fn().mockResolvedValue(undefined),
+}));
 
-it("[CO-SMOKE-barcode-printing] uses the authenticated shop name and sends a barcode label to the local agent", async () => {
+it("[CO-SMOKE-barcode-printing] uses the authenticated shop name and prints barcode labels through the browser", async () => {
   const errors = vi.spyOn(console, "error");
-  const products = responseContract<any>("products-list");
-  let data = { ...products, data: [] };
-  const printed: any[] = [];
+  const products = structuredClone(responseContract<any>("products-list"));
+  products.data.find((product: any) => product.name === "Product 5").tax = 0;
+
   server.use(
     http.get(`${API}${endpoints.getBranches}`, () =>
       ok(responseContract("branches")),
     ),
-    http.get(`${API}${endpoints.products}`, () => ok(data)),
-    http.post(
-      "http://localhost:8080/print-barcode-label",
-      async ({ request }) => {
-        printed.push(await request.json());
-        return ok({});
-      },
-    ),
+    http.get(`${API}${endpoints.products}`, () => ok(products)),
   );
   const { user, queryClient } = renderWithProviders(<Page />);
   expect(screen.getByLabelText("Shop Name")).toHaveValue("Shop 1");
   await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-  data = products;
-  await queryClient.invalidateQueries();
-  const picker = screen.getByText("Search and select a product...").closest(".ant-select")!;
+  const picker = screen
+    .getByText("Search and select a product...")
+    .closest(".ant-select")!;
   await user.click(within(picker as HTMLElement).getByRole("combobox"));
-  const variant = products.data.find((p: any) => p.name === "Product 5").variants[0];
+  const variant = products.data.find((p: any) => p.name === "Product 5")
+    .variants[0];
   await user.click(await screen.findByText(/Product 5 - Default.*Barcode:/));
-  const barcode = screen.getByPlaceholderText("Enter barcode number (e.g., 1234567890123)") as HTMLInputElement;
+  expect(screen.getByLabelText("VAT Percentage")).toHaveValue("0.0");
+  const barcode = screen.getByPlaceholderText(
+    "Enter barcode number (e.g., 1234567890123)",
+  ) as HTMLInputElement;
   expect(barcode).toHaveValue(variant.barcode);
-  await user.type(barcode, "1234567890123", { initialSelectionStart: 0, initialSelectionEnd: barcode.value.length });
+  await user.clear(barcode);
+  await user.paste("1234567890123");
   await user.click(screen.getByRole("button", { name: /Print Label/ }));
-  await screen.findByText("Barcode label printed successfully!");
-  expect(printed).toHaveLength(1);
-  expect(printed[0]).toMatchObject({
-    BarcodeValue: "1234567890123",
-    Quantity: 1,
-    ShopName: "Shop 1",
-  });
+  await waitFor(() => expect(printLabelDocument).toHaveBeenCalledTimes(1));
+  const html = vi.mocked(printLabelDocument).mock.calls[0][0];
+  expect(html).toContain("Shop 1");
+  expect(html).toContain("1234567890123");
+  expect(html).toContain("@page{size:50mm 30mm");
+  expect(html).not.toContain("VAT 21%");
+  expect(html).not.toContain("localhost:8080");
   expect(errors).not.toHaveBeenCalled();
 });

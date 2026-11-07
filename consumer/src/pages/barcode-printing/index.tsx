@@ -16,7 +16,18 @@ import {
   Switch,
 } from "antd";
 import InputNumber from "../../components/NumberInput";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Typography } from "antd";
+import {
+  barcodeIsValid,
+  barcodeDisplayValue,
+  defaultLayout,
+  labelGeometry,
+  labelStyles,
+  labelPrintDocument,
+  printLabelDocument,
+  type LabelLayout,
+} from "./label-layout";
 import Barcode from "react-barcode";
 import { inventoryApi } from "../../api/inventory-api";
 import { productApi } from "../../api/product-api";
@@ -31,19 +42,6 @@ import {
 import { setPageTitle } from "../../utils/setPageTitle";
 
 const { Option } = Select;
-
-interface BarcodePrintData {
-  BarcodeValue: string;
-  ProductName?: string;
-  Price?: string;
-  PrintBarcodeOnly: boolean;
-  VatIncluded?: boolean;
-  VatPercentage?: number;
-  Quantity: number;
-  ShopName?: string;
-  BranchName?: string;
-  Location?: string;
-}
 
 interface ProductOption {
   id: number;
@@ -63,7 +61,6 @@ const BarcodePrinting = () => {
   const { user } = useAuthStore();
   const { messageApi } = useMessageStore();
   const [loading, setLoading] = useState(false);
-  const [previewData, setPreviewData] = useState<BarcodePrintData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
 
@@ -98,7 +95,7 @@ const BarcodePrinting = () => {
               productName: product.name,
               variantName: variant.name,
               taxMethod: product.tax_method || "INCLUSIVE",
-              taxPercentage: product.tax || 21.0,
+              taxPercentage: product.tax ?? 0,
             });
           }
         });
@@ -139,135 +136,100 @@ const BarcodePrinting = () => {
     }
   };
 
-  const handlePreview = () => {
-    const values = form.getFieldsValue();
-
-    const printData: BarcodePrintData = {
-      BarcodeValue: values.BarcodeValue || "",
-      Quantity: values.Quantity || 1,
-      PrintBarcodeOnly: values.PrintBarcodeOnly || false,
-    };
-
-    // Only include optional fields if not printing barcode only
-    if (!printData.PrintBarcodeOnly) {
-      if (values.ProductName?.trim()) {
-        printData.ProductName = values.ProductName.trim();
-      }
-      if (values.Price && values.Price > 0) {
-        printData.Price = values.Price.toFixed(2);
-      }
-      // Only include VAT if percentage is not 0 or empty
-      if (
-        values.vatPercentage &&
-        values.vatPercentage > 0 &&
-        values.Price &&
-        values.Price > 0
-      ) {
-        printData.VatIncluded = values.vatIncluded === true; // Ensure boolean
-        printData.VatPercentage = values.vatPercentage;
-      }
+  const values = Form.useWatch([], form) || {};
+  const layout = { ...defaultLayout, ...values } as LabelLayout;
+  const labelRef = useRef<HTMLDivElement>(null);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const barcode = values.BarcodeValue || "";
+  const format = values.format || "CODE128";
+  const valid = barcodeIsValid(barcode, format);
+  let layoutError = "";
+  let geometry: ReturnType<typeof labelGeometry> | undefined;
+  try {
+    geometry = labelGeometry(layout);
+  } catch (error) {
+    layoutError = (error as Error).message;
+  }
+  useEffect(() => {
+    const svg = labelRef.current?.querySelector("svg");
+    if (svg) {
+      svg.setAttribute(
+        "viewBox",
+        `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`,
+      );
+      svg.setAttribute("preserveAspectRatio", "none");
     }
-
-    // Include shop related fields if provided
-    if (values.ShopName?.trim()) {
-      printData.ShopName = values.ShopName.trim();
+  }, [barcode, format]);
+  const documentHtml = async () => {
+    await form.validateFields();
+    labelGeometry(layout);
+    if (!valid) {
+      throw new Error("Enter a valid barcode for the selected format.");
     }
-    if (values.BranchName?.trim()) {
-      printData.BranchName = values.BranchName.trim();
+    const label = labelRef.current;
+    if (!label) throw new Error("Label preview is unavailable.");
+    if (
+      label.scrollHeight > label.clientHeight + 1 ||
+      label.scrollWidth > label.clientWidth + 1
+    ) {
+      throw new Error(
+        "Content does not fit. Increase the label size, reduce text or font size, or hide fields.",
+      );
     }
-    if (values.Location?.trim()) {
-      printData.Location = values.Location.trim();
+    const svg = label.querySelector("svg");
+    const modules = Number(svg?.getAttribute("width")) / 2;
+    if (modules && (layout.labelWidth - 2 * layout.padding) / modules < 0.19) {
+      throw new Error(
+        "Barcode bars are too narrow to scan reliably. Use a wider label or a shorter barcode.",
+      );
     }
-
-    console.log("Print data:", printData);
-    setPreviewData(printData);
-    setPreviewModalVisible(true);
+    return labelPrintDocument(layout, label.outerHTML);
   };
-
+  const handlePreview = async () => {
+    try {
+      setPreviewHtml(await documentHtml());
+      setPreviewModalVisible(true);
+    } catch (error) {
+      if (error instanceof Error) messageApi?.error(error.message);
+    }
+  };
   const handlePrint = async () => {
     try {
-      await form.validateFields();
+      const html = await documentHtml();
       setLoading(true);
-
-      const values = form.getFieldsValue();
-      const printData: BarcodePrintData = {
-        BarcodeValue: values.BarcodeValue,
-        Quantity: values.Quantity || 1,
-        PrintBarcodeOnly: values.PrintBarcodeOnly || false,
-      };
-
-      // Only include optional fields if not printing barcode only
-      if (!printData.PrintBarcodeOnly) {
-        if (values.ProductName?.trim()) {
-          printData.ProductName = values.ProductName.trim();
-        }
-        if (values.Price && values.Price > 0) {
-          printData.Price = values.Price.toString();
-        }
-        // Only include VAT if percentage is not 0 or empty
-        if (
-          values.vatPercentage &&
-          values.vatPercentage > 0 &&
-          values.Price &&
-          values.Price > 0
-        ) {
-          printData.VatIncluded = values.vatIncluded === true; // Ensure boolean
-          printData.VatPercentage = values.vatPercentage;
-        }
-      }
-
-      // Include shop related fields if provided
-      if (values.ShopName?.trim()) {
-        printData.ShopName = values.ShopName.trim();
-      }
-      if (values.BranchName?.trim()) {
-        printData.BranchName = values.BranchName.trim();
-      }
-      if (values.Location?.trim()) {
-        printData.Location = values.Location.trim();
-      }
-
-      console.log("Sending barcode print request:", printData);
-
-      const response = await fetch(
-        "http://localhost:8080/print-barcode-label",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(printData),
-        },
-      );
-
-      if (response.ok) {
-        messageApi?.success("Barcode label printed successfully!");
-      } else {
-        const errorText = await response.text();
-        messageApi?.error("Failed to print barcode label: " + errorText);
-      }
-    } catch (error: any) {
-      console.error("Print error:", error);
-      if (error.message?.includes("fetch")) {
-        messageApi?.error(
-          "Printing agent is not running. Please start the printing agent and try again.",
-        );
-      } else {
-        messageApi?.error(
-          "Failed to print barcode label. Please check your input.",
-        );
-      }
+      await printLabelDocument(html);
+    } catch (error) {
+      if (error instanceof Error) messageApi?.error(error.message);
     } finally {
       setLoading(false);
     }
   };
-
   const handleClear = () => {
     form.resetFields();
-    setPreviewData(null);
     setPreviewModalVisible(false);
   };
-
+  const numberField = (
+    name: keyof LabelLayout,
+    label: string,
+    min = 0,
+    max = 500,
+    step = 0.5,
+  ) => (
+    <Col xs={12} md={8}>
+      <Form.Item
+        name={name}
+        label={label}
+        rules={[{ required: true, message: "Required" }]}
+      >
+        <InputNumber
+          min={min}
+          max={max}
+          step={step}
+          style={{ width: "100%" }}
+        />
+      </Form.Item>
+    </Col>
+  );
   return (
     <div>
       {setPageTitle("Barcode Printing")}
@@ -280,19 +242,135 @@ const BarcodePrinting = () => {
       />
 
       <Row gutter={24}>
-        <Col xs={24} lg={18} xl={20}>
+        <Col xs={24} lg={16}>
           <Card title="Label Configuration" size="small">
             <Form
               form={form}
               layout="vertical"
               initialValues={{
+                ...defaultLayout,
+                format: "CODE128",
+                showShop: true,
+                showBranch: true,
+                showLocation: true,
+                showProduct: true,
+                showPrice: true,
+                showValue: true,
                 ShopName: user?.company_name || "",
                 Quantity: 1,
                 PrintBarcodeOnly: false,
                 vatIncluded: true,
-                vatPercentage: 21.0,
+                vatPercentage: 0,
               }}
             >
+              <Alert
+                type="info"
+                showIcon
+                message="Print using your browser"
+                description="Choose the matching paper size, use 100% scale, and turn off headers and footers in the print dialog. No printing agent is needed for labels."
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                <Col xs={24} md={12}>
+                  <Form.Item label="Label preset">
+                    <Select
+                      value={
+                        ["38x25", "50x30", "58x40", "70x40", "100x50"].includes(
+                          `${layout.labelWidth}x${layout.labelHeight}`,
+                        )
+                          ? `${layout.labelWidth}x${layout.labelHeight}`
+                          : "custom"
+                      }
+                      options={[
+                        ...["38x25", "50x30", "58x40", "70x40", "100x50"].map(
+                          (value) => ({
+                            value,
+                            label: value.replace("x", " × ") + " mm",
+                          }),
+                        ),
+                        { value: "custom", label: "Custom", disabled: true },
+                      ]}
+                      onChange={(value) => {
+                        const [labelWidth, labelHeight] = value
+                          .split("x")
+                          .map(Number);
+                        form.setFieldsValue({ labelWidth, labelHeight });
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="paper" label="Paper layout">
+                    <Select
+                      options={[
+                        { value: "roll", label: "Label roll / strip" },
+                        { value: "sheet", label: "Sheet (A4 or custom)" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                {numberField("labelWidth", "Label width (mm)", 10, 300)}
+                {numberField("labelHeight", "Label height (mm)", 10, 500)}
+                {numberField("columns", "Labels across", 1, 20, 1)}
+                {layout.paper === "sheet" && (
+                  <>
+                    {numberField("paperWidth", "Paper width (mm)", 10, 1000)}
+                    {numberField("paperHeight", "Paper height (mm)", 10, 1000)}
+                  </>
+                )}
+                {numberField("marginX", "Side margins (mm)")}
+                {numberField("marginY", "Top/bottom margins (mm)")}
+                {numberField("gapX", "Horizontal gap (mm)")}
+                {numberField("gapY", "Vertical gap (mm)")}
+                {numberField("padding", "Label padding (mm)", 0, 20)}
+                {numberField("fontSize", "Text size (pt)", 4, 24)}
+                <Col xs={12} md={8}>
+                  <Form.Item name="fontFamily" label="Font">
+                    <Select
+                      options={[
+                        { value: "sans", label: "Sans-serif (Arial)" },
+                        { value: "serif", label: "Serif (Times)" },
+                        { value: "mono", label: "Monospace (Courier)" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} md={8}>
+                  <Form.Item
+                    name="bold"
+                    label="Bold text"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                {numberField("barcodeHeight", "Barcode height (mm)", 4, 100)}
+                {numberField("skip", "Skip used labels", 0, 1000, 1)}
+                <Col xs={12} md={8}>
+                  <Form.Item name="align" label="Text alignment">
+                    <Select
+                      options={["left", "center", "right"].map((value) => ({
+                        value,
+                        label: value,
+                      }))}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} md={8}>
+                  <Form.Item name="format" label="Barcode format">
+                    <Select
+                      options={[
+                        "CODE128",
+                        "CODE39",
+                        "EAN13",
+                        "EAN8",
+                        "UPC",
+                      ].map((value) => ({ value, label: value }))}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Divider>Label content</Divider>
               <Row gutter={16}>
                 <Col xs={24} lg={12}>
                   <Form.Item
@@ -414,6 +492,16 @@ const BarcodePrinting = () => {
                     name="BarcodeValue"
                     rules={[
                       { required: true, message: "Please enter barcode value" },
+                      {
+                        validator: (_, value) =>
+                          barcodeIsValid(value || "", format)
+                            ? Promise.resolve()
+                            : Promise.reject(
+                                new Error(
+                                  "Invalid barcode or checksum for this format",
+                                ),
+                              ),
+                      },
                     ]}
                   >
                     <Input placeholder="Enter barcode number (e.g., 1234567890123)" />
@@ -473,12 +561,17 @@ const BarcodePrinting = () => {
                 <Col xs={12} lg={6}>
                   <Form.Item
                     label="Quantity"
-                    name="Quantity"
+                    name="quantity"
                     rules={[
                       { required: true, message: "Please enter quantity" },
                     ]}
                   >
-                    <InputNumber min={1} max={100} style={{ width: "100%" }} />
+                    <InputNumber
+                      min={1}
+                      max={1000}
+                      precision={0}
+                      style={{ width: "100%" }}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={12} lg={6}>
@@ -494,9 +587,28 @@ const BarcodePrinting = () => {
 
               <Divider />
 
+              <Space wrap style={{ marginBottom: 16 }}>
+                {[
+                  ["showShop", "Shop"],
+                  ["showBranch", "Branch"],
+                  ["showLocation", "Location"],
+                  ["showProduct", "Product"],
+                  ["showPrice", "Price / VAT"],
+                  ["showValue", "Barcode text"],
+                ].map(([name, label]) => (
+                  <Form.Item
+                    key={name}
+                    name={name}
+                    valuePropName="checked"
+                    label={label}
+                  >
+                    <Switch />
+                  </Form.Item>
+                ))}
+              </Space>
               <Row justify="center">
                 <Col>
-                  <Space>
+                  <Space wrap>
                     <Button
                       type="default"
                       icon={<EyeOutlined />}
@@ -521,138 +633,109 @@ const BarcodePrinting = () => {
             </Form>
           </Card>
         </Col>
+        <Col xs={24} lg={8}>
+          <Card title="Live label preview" style={{ marginTop: 16 }}>
+            {layoutError && <Alert type="error" message={layoutError} />}
+            <Typography.Paragraph>
+              {geometry
+                ? `${layout.labelWidth} × ${layout.labelHeight} mm · ${geometry.pages} page(s) · ${layout.quantity} label(s)`
+                : "Adjust the dimensions to fit your paper."}
+            </Typography.Paragraph>
+            <div style={{ overflowX: "auto", padding: 8, background: "#eee" }}>
+              <style>{labelStyles(layoutError ? defaultLayout : layout)}</style>
+              <div ref={labelRef} className="barcode-label">
+                {!values.PrintBarcodeOnly && (
+                  <>
+                    {values.showShop && values.ShopName && (
+                      <strong className="label-line">{values.ShopName}</strong>
+                    )}
+                    {values.showBranch && values.BranchName && (
+                      <div className="label-line">{values.BranchName}</div>
+                    )}
+                    {values.showLocation && values.Location && (
+                      <div className="label-line">{values.Location}</div>
+                    )}
+                  </>
+                )}
+                <div className="barcode-symbol">
+                  {valid ? (
+                    <Barcode
+                      value={barcode}
+                      format={format}
+                      displayValue={false}
+                      width={2}
+                      height={80}
+                      margin={0}
+                      marginLeft={22}
+                      marginRight={22}
+                    />
+                  ) : (
+                    <span>Enter a valid barcode</span>
+                  )}
+                </div>
+                {!values.PrintBarcodeOnly && (
+                  <>
+                    {values.showValue && (
+                      <div className="label-line barcode-value">
+                        {barcodeDisplayValue(barcode, format)}
+                      </div>
+                    )}
+                    {values.showProduct && values.ProductName && (
+                      <strong className="label-line">
+                        {values.ProductName}
+                      </strong>
+                    )}
+                    {values.showPrice && values.Price != null && (
+                      <div className="label-line">
+                        {formatCurrency(Number(values.Price))}
+                        {values.vatPercentage > 0
+                          ? ` (${values.vatIncluded ? "inc." : "exc."} VAT ${values.vatPercentage}%)`
+                          : ""}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+              Preview uses your selected dimensions. Hide fields or reduce text
+              size if the content does not fit.
+            </Typography.Paragraph>
+          </Card>
+        </Col>
       </Row>
 
-      {/* Preview Modal */}
       <Modal
         title="Barcode Label Preview"
         open={previewModalVisible}
         onCancel={() => setPreviewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setPreviewModalVisible(false)}>
-            Close
-          </Button>,
-          <Button
-            key="print"
-            type="primary"
-            icon={<PrinterOutlined />}
-            onClick={handlePrint}
-          >
-            Print This Label
-          </Button>,
-        ]}
-        width={400}
+        width={960}
+        footer={
+          <Button type="primary" onClick={handlePrint}>
+            Print Label
+          </Button>
+        }
       >
-        {previewData && (
-          <div
-            style={{
-              border: "2px dashed #d9d9d9",
-              padding: "24px",
-              textAlign: "center",
-              backgroundColor: "#ffffff",
-              color: "#000000",
-              fontFamily: "monospace",
-              fontSize: "12px",
-              lineHeight: "1.4",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div className="flex items-center mb-1">
-              {/* Shop info */}
-              {previewData.ShopName && (
-                <div
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: "#000000",
-                  }}
-                >
-                  {previewData.ShopName}&nbsp;
-                </div>
-              )}
-              {/* Branch info */}
-              {previewData.BranchName && (
-                <div
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: "10px",
-                    color: "#000000",
-                  }}
-                >
-                  {`- ${previewData.BranchName}`}
-                </div>
-              )}
-            </div>
-
-            {/* Location info */}
-            {previewData.Location && (
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#000000",
-                }}
-              >
-                {previewData.Location}
-              </div>
-            )}
-
-            {/* Barcode component */}
-            <div
-              style={{
-                marginBottom: "0",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Barcode
-                value={previewData.BarcodeValue}
-                displayValue={!previewData.PrintBarcodeOnly}
-                width={1.5}
-                height={60}
-                background="#ffffff"
-                lineColor="#000000"
-              />
-            </div>
-
-            {!previewData.PrintBarcodeOnly && previewData.ProductName && (
-              <div
-                style={{
-                  marginBottom: "4px",
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                  color: "#000000",
-                }}
-              >
-                {previewData.ProductName}
-              </div>
-            )}
-
-            {!previewData.PrintBarcodeOnly && previewData.Price && (
-              <div
-                style={{
-                  marginBottom: "4px",
-                  fontSize: "11px",
-                  color: "#000000",
-                }}
-              >
-                ৳{previewData.Price}
-                {previewData.VatIncluded !== undefined && (
-                  <span>
-                    {" "}
-                    ({previewData.VatIncluded ? "inc." : "exc."} VAT{" "}
-                    {previewData.VatPercentage}%)
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <iframe
+          title="Barcode page preview"
+          srcDoc={previewHtml}
+          onLoad={(event) => {
+            const frame = event.currentTarget;
+            const doc = frame.contentDocument;
+            if (doc && geometry) {
+              const scale = Math.min(
+                1,
+                (frame.clientWidth - 16) / ((geometry.width * 96) / 25.4),
+              );
+              const style = doc.createElement("style");
+              style.textContent = `@media screen{.label-page{zoom:${scale}}}`;
+              doc.head.appendChild(style);
+            }
+          }}
+          style={{ width: "100%", height: 550, border: "1px solid #ddd" }}
+        />
       </Modal>
     </div>
   );
 };
-
 export default BarcodePrinting;
