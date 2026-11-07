@@ -87,8 +87,6 @@ namespace Printer
                 LogMessage(string.Format("  GET  http://localhost:{0}/config - Get configuration", port));
                 LogMessage(string.Format("  POST http://localhost:{0}/config - Update configuration", port));
                 LogMessage(string.Format("  GET  http://localhost:{0}/cash-drawer - Open cash drawer", port));
-                LogMessage(string.Format("  POST http://localhost:{0}/print-barcode-label - Print barcode label", port));
-                LogMessage(string.Format("  GET  http://localhost:{0}/test-barcode-label - Test barcode print", port));
                 LogMessage(string.Format("  GET  http://localhost:{0}/test-receipt - Test receipt print", port));
                 LogMessage("");
                 LogMessage("Server is ready. Use right-click tray icon → View Logs to see activity.");
@@ -175,14 +173,6 @@ namespace Printer
                 else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/cash-drawer")
                 {
                     responseText = HandleCashDrawerRequest();
-                }
-                else if (request.HttpMethod == "POST" && request.Url.AbsolutePath == "/print-barcode-label")
-                {
-                    responseText = HandlePrintBarcodeLabel(request);
-                }
-                else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/test-barcode-label")
-                {
-                    responseText = HandleTestBarcodeLabel();
                 }
                 else if (request.HttpMethod == "GET" && request.Url.AbsolutePath == "/test-receipt")
                 {
@@ -305,7 +295,7 @@ namespace Printer
             try
             {
                 StoreConfig config = ConfigManager.GetConfig();
-                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"contactInfo\":\"{4}\",\"logoPath\":\"{5}\",\"printerName\":\"{6}\",\"barcodePrinterName\":\"{7}\",\"currency\":\"{8}\",\"port\":{9},\"headerText\":\"{10}\",\"vatRegistrationNumber\":\"{11}\",\"footerTerms\":\"{12}\",\"showPoweredByPosbuzz\":{13},\"poweredByText\":\"{14}\",\"showCustomerRewardPoints\":{15}}}",
+                return string.Format("{{\"storeName\":\"{0}\",\"address\":\"{1}\",\"phone\":\"{2}\",\"email\":\"{3}\",\"contactInfo\":\"{4}\",\"logoPath\":\"{5}\",\"printerName\":\"{6}\",\"currency\":\"{7}\",\"port\":{8},\"headerText\":\"{9}\",\"vatRegistrationNumber\":\"{10}\",\"footerTerms\":\"{11}\",\"showPoweredByPosbuzz\":{12},\"poweredByText\":\"{13}\",\"showCustomerRewardPoints\":{14}}}",
                     EscapeJson(config.StoreName),
                     EscapeJson(config.Address),
                     EscapeJson(config.Phone),
@@ -313,7 +303,6 @@ namespace Printer
                     EscapeJson(config.ContactInfo),
                     EscapeJson(config.LogoPath),
                     EscapeJson(config.PrinterName),
-                    EscapeJson(config.BarcodePrinterName),
                     EscapeJson(config.Currency),
                     config.Port,
                     EscapeJson(config.HeaderText),
@@ -404,13 +393,7 @@ namespace Printer
                     Console.WriteLine("HTTP: Setting PrinterName = " + printerName);
                 }
                 
-                string barcodePrinterName = GetFirstNonNull(
-                    ExtractJsonString(body, "barcodePrinterName"),
-                    ExtractJsonString(body, "BarcodePrinterName"));
-                if (barcodePrinterName != null) {
-                    updatedFields.BarcodePrinterName = barcodePrinterName;
-                    Console.WriteLine("HTTP: Setting BarcodePrinterName = " + barcodePrinterName);
-                }
+
                 
                 string currency = GetFirstNonNull(
                     ExtractJsonString(body, "currency"),
@@ -546,50 +529,6 @@ namespace Printer
             catch (Exception ex)
             {
                 Console.WriteLine("Cash drawer error: " + ex.Message);
-                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
-            }
-        }
-
-        private string HandlePrintBarcodeLabel(HttpListenerRequest request)
-        {
-            try
-            {
-                LogMessage("Barcode label print request received");
-                string body = "";
-                using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
-                {
-                    body = reader.ReadToEnd();
-                }
-                var printRequest = JsonConvert.DeserializeObject<BarcodeLabelPrintRequest>(body);
-                if (printRequest == null)
-                {
-                    LogMessage("ERROR: Failed to parse barcode print request");
-                    return "{\"error\":\"Invalid request format\"}";
-                }
-                LogMessage(string.Format("Printing barcode: {0} | product: {1} | qty: {2}", printRequest.BarcodeValue, printRequest.ProductName, printRequest.Quantity));
-                BarcodeLabelPrint.PrintLabel(printRequest.BarcodeValue, printRequest.ProductName, printRequest.Price, printRequest.PrintBarcodeOnly, printRequest.VatIncluded, printRequest.VatPercentage, printRequest.Quantity, printRequest.ShopName, printRequest.BranchName, printRequest.Location);
-                LogMessage("Barcode label printed successfully");
-                return "{\"success\":true,\"message\":\"Barcode label printed successfully\"}";
-            }
-            catch (Exception ex)
-            {
-                LogMessage("Barcode print error: " + ex.Message);
-                return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
-            }
-        }
-
-        private string HandleTestBarcodeLabel()
-        {
-            try
-            {
-                LogMessage("Test barcode label print requested");
-                BarcodeLabelPrint.PrintLabel("123456789012", "Test Product", "9.99", false, true, 21.0m);
-                LogMessage("Test barcode label printed successfully");
-                return "{\"success\":true,\"message\":\"Test barcode label printed successfully\"}";
-            }
-            catch (Exception ex)
-            {
-                LogMessage("Test barcode print error: " + ex.Message);
                 return "{\"error\":\"" + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }

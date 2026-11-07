@@ -991,101 +991,31 @@ The button reads **Create Unit** or **Update Unit**. Only a name is stored. Ther
 
 ## Barcode Printing
 
-### What it is
+Menu: **Products > Barcode Printing**. Requires permission to add products.
 
-A screen to design and print barcode stickers (labels) for your products on a label printer connected to this computer.
+Labels print through your browser; the print-server agent is not required. The agent remains available for thermal receipts, including their sale barcode.
 
-### Where to find it
+### Choose the paper and label layout
 
-Menu: **Products > Barcode Printing**. You need the permission to add products.
+Choose a label preset or enter a custom **Label width (mm)** and **Label height (mm)**. Roll/strip mode sizes each print page to one row of labels. Set **Labels across** for rolls with multiple stickers per row. Sheet mode supports A4 (210 × 297 mm) or custom paper dimensions.
 
-![Barcode Printing](images/consumer/barcode-printing-d.png)
-*The Label Configuration form.*
+Set the horizontal/vertical gaps, side and top/bottom margins, label padding, text size, barcode height and text alignment to match your stock. **Skip used labels** leaves the selected number of slots blank on the first sheet. The label count and page count appear beside the live preview. Quantity supports 1–1000 copies.
 
-### What you see
+### Choose the content
 
-One card titled **Label Configuration** with the form below. Three buttons sit in the middle at the bottom: **Preview**, **Print Label** (blue) and **Clear**.
+Select a product to fill its barcode, name, price and actual VAT rate, or enter your own values. Selecting a branch fills its name and address. Edit all text freely. Switch shop, branch, location, product, price/VAT and barcode text on or off separately. **Print Barcode Only** hides every text field.
 
-| Field | Required | Notes |
-|---|---|---|
-| Shop Name | No | Filled in with your company name. Hint "Enter shop name (optional)". Help text: "Shop name will be prefilled from your account". |
-| Select Branch | No | Searchable list, hint "Select a branch...". Each option shows the branch and its address. Choosing one fills Branch Name and Location. Clearing it empties them. Help text: "Choose a branch to auto-fill branch name and location". |
-| Branch Name | No | Hint "Enter branch name (optional)". Help text: "Leave empty to hide branch name on label". |
-| Location | No | Hint "Enter location (optional)". Help text: "Leave empty to hide location on label". |
-| Select Product | No | Searchable list, hint "Search and select a product...". Each option shows the product and variant with its code, SKU, barcode and price. Help text: "Choose from existing products or enter barcode manually". See the notes below. |
-| Barcode Value | Yes | Hint "Enter barcode number (e.g., 1234567890123)". |
-| Product Name | No | Hint "Enter product name (optional)". Help text: "Leave empty to hide product name on label". |
-| Price | No | Taka sign, two decimals, 0 or more. Help text: "Leave empty to hide price on label". |
-| VAT Included | No | A switch. On by default. On means the product's tax method is Inclusive. |
-| VAT Percentage | No | 0 to 100, with a "%" sign. Starts at 21. |
-| Quantity | Yes | From 1 to 100. Starts at 1. This is the number of labels. |
-| Print Barcode Only | No | A switch. Off by default. When on, only the barcode bars print, with no name, price, VAT or number under the bars. |
+Formats include CODE128 (default), CODE39, EAN13, EAN8 and UPC. Retail formats require valid digits and checksums; CODE39 uses uppercase characters. Invalid barcodes and layouts cannot print. If content exceeds the label or barcode bars become too narrow, increase the size, shorten the content or reduce/hide text.
 
-Notes on **Select Product**:
+### Preview and print
 
-- Only variants that have a barcode are listed. It searches the first 50 matching products.
-- Choosing a variant fills **Barcode Value**, **Product Name** (as "product - variant"), **Price**, **VAT Included** and **VAT Percentage**. Clearing the choice resets those fields.
+1. Set dimensions to match the paper loaded in your printer.
+2. Select a product or enter a barcode and optional label text.
+3. Set Quantity and the content switches.
+4. Check the live label, then click **Preview** to inspect the complete pages and copy layout.
+5. Click **Print Label**. In the browser dialog, choose your printer and matching paper size, set scale to **100%**, and turn off browser headers and footers. Save as PDF is also available through the browser.
 
-**The preview pop-up.** It is titled **Barcode Label Preview**. It shows the shop name and branch, the location, the barcode bars with the number under them, the product name and the price with "(inc. VAT x%)" or "(exc. VAT x%)". It has two buttons, **Print This Label** and **Close**.
-
-> **Good to know:** The price and VAT show on the label only when Price is above 0. VAT shows only when VAT Percentage is above 0.
-
-> **Good to know:** If you choose a product with 0% tax, **VAT Percentage** is filled with 21, not 0. Check it, and change it to 0 before you print.
-
-> **Good to know:** A preview with no **Barcode Value** shows an empty or invalid barcode. Enter a value first.
-
-> **Good to know:** Printing does not use your browser's print window. It sends the label to the PosBuzz printing agent installed on this same computer. The agent must be running for printing to work.
-
-![Select Product list](images/consumer/barcode-printing-product-dropdown-d.png)
-*Searching the product list for a name.*
-
-![Barcode Label Preview](images/consumer/barcode-printing-preview-d.png)
-*The preview pop-up with Close and Print This Label.*
-
-### How to print labels for a product
-
-1. Make sure the PosBuzz printing agent is running on this computer.
-2. Optional: choose a branch in **Select Branch** to fill the branch name and location. Edit **Shop Name** if needed.
-3. In **Select Product**, type part of the name and choose the variant. The barcode, name, price and VAT fields fill in.
-4. Set **Quantity** to the number of stickers you need. Set the switches.
-5. Click **Preview** to check the label. In the pop-up click **Print This Label**, or **Close** to go back.
-6. Click **Print Label**.
-
-**What happens next:** You see "Barcode label printed successfully!" and the labels print.
-
-### How to print a custom barcode
-
-1. Leave **Select Product** empty.
-2. Type the **Barcode Value**. Add a **Product Name** and **Price** if you want them on the label.
-3. Set **Quantity**.
-4. Click **Print Label**.
-
-**What happens next:** The label prints as above.
-
-### How to clear the form
-
-1. Click **Clear**.
-
-**What happens next:** All fields go back to their starting values.
-
-> **Good to know:** If a product does not appear in **Select Product**, its variants have no barcode. Open **Edit Product** and give the variant a barcode first.
-
-![Printing agent warning](images/consumer/barcode-printing-agent-offline-d.png)
-*With no printing agent running, a red message appears at the top.*
-
-![Barcode validation](images/consumer/barcode-printing-validation-error-d.png)
-*After Clear, Print Label shows the red field messages.*
-
-### Messages on this screen
-
-| Message | What it means | What to do |
-|---|---|---|
-| Please enter barcode value | Barcode Value is empty. | Type or choose a barcode. |
-| Please enter quantity | Quantity is empty. | Enter 1 to 100. |
-| Failed to print barcode label. Please check your input. | Barcode Value or Quantity is missing. | Fix the red fields. |
-| Printing agent is not running. Please start the printing agent and try again. | The app cannot reach the printing agent on this computer. | Start the printing agent, then try again. |
-| Failed to print barcode label: {message} | The agent refused the job and gave a reason. | Read the reason and fix it, for example check the printer. |
-| Barcode label printed successfully! | The label was sent to the printer. | Nothing. |
+The browser dialog controls the printer and its paper settings. Opening it does not confirm that a physical label printed. **Clear** restores the default form.
 
 ---
 

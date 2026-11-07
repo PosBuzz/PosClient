@@ -10,7 +10,7 @@ PosBuzz is the point-of-sale system for your shop. With it you can:
 - see how the day and the month went, and
 - give each member of staff only the screens they need.
 
-This manual explains every screen of the Shop App, step by step. You can open it at any time from inside the app: click the **book icon** ("User Guide (PDF)") in the top bar. It opens this manual as a PDF in a new browser tab. You do not need to read it from start to finish. Use the **Contents** page to jump to the screen you need.
+This manual explains every screen of the Shop App, step by step. The PosBuzz team can open or download it from **User Manuals** in the Admin Panel and share it with your shop. You do not need to read it from start to finish. Use the **Contents** page to jump to the screen you need.
 
 ## How the manual is organised
 

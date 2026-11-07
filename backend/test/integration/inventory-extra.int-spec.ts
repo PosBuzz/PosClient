@@ -209,6 +209,19 @@ describe('inventory reads (extra mutation hardening)', () => {
     await mk({ variant_id: v.id, branch_id: main(), quantity: 2 });
     const res: any = await inventory.getInventorySummary(cid());
     expect(res).toEqual({
+      total_inventory_value: 8,
+      branch_values: [
+        {
+          branch_id: main(),
+          branch_name: w.tenant.branches[0].name,
+          inventory_value: 8,
+        },
+        {
+          branch_id: second(),
+          branch_name: w.tenant.branches[1].name,
+          inventory_value: 0,
+        },
+      ],
       total_batches: 4,
       total_quantity: 8,
       physical_quantity: 8,
@@ -230,6 +243,14 @@ describe('inventory reads (extra mutation hardening)', () => {
     // the second branch holds nothing, which the branch view counts as low
     const empty: any = await inventory.getInventorySummary(cid(), second());
     expect(empty).toEqual({
+      total_inventory_value: 0,
+      branch_values: [
+        {
+          branch_id: second(),
+          branch_name: w.tenant.branches[1].name,
+          inventory_value: 0,
+        },
+      ],
       total_batches: 0,
       total_quantity: 0,
       physical_quantity: 0,

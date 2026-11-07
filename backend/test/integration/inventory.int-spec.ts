@@ -867,6 +867,19 @@ describe('inventory', () => {
       });
       const all: any = await inventory.getInventorySummary(cid());
       expect(all).toEqual({
+        total_inventory_value: 404,
+        branch_values: [
+          {
+            branch_id: main(),
+            branch_name: w.tenant.branches[0].name,
+            inventory_value: 400,
+          },
+          {
+            branch_id: second(),
+            branch_name: w.tenant.branches[1].name,
+            inventory_value: 4,
+          },
+        ],
         total_batches: 3,
         total_quantity: 12,
         physical_quantity: 14,
@@ -876,6 +889,14 @@ describe('inventory', () => {
       });
       const m: any = await inventory.getInventorySummary(cid(), main());
       expect(m).toEqual({
+        total_inventory_value: 400,
+        branch_values: [
+          {
+            branch_id: main(),
+            branch_name: w.tenant.branches[0].name,
+            inventory_value: 400,
+          },
+        ],
         total_batches: 1,
         total_quantity: 8,
         physical_quantity: 10,

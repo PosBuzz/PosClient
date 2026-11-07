@@ -85,6 +85,8 @@ The page title is **Inventory Management**. The path at the top is Dashboard > I
 - **Add Inventory**: opens the Add New Inventory form.
 - **Import Excel**: normally hidden (see below).
 
+**Inventory value.** The **Total Inventory Value** card shows physical units × their batch cost, including units reserved for pending delivery. Separate cards show each branch's inventory value. Choosing a branch changes the heading to **Selected Branch Inventory Value** and shows that branch's value. These totals cover all stock in the selected branch; table search, category and pagination do not change them.
+
 **Summary cards.** They follow the branch you choose in the filter.
 
 | Card | Meaning |
@@ -172,7 +174,7 @@ At the bottom you see "x-y of N batches", page numbers, the page size and a box 
 1. Press **Export**.
 2. Choose **Export as PDF**.
 
-**What happens next:** A file called inventory.pdf is saved to your device. If it fails you see "Failed to export the list".
+**What happens next:** A file called inventory.pdf is saved to your device. The export includes batch cost, per-batch value, total exported inventory value and branch totals in BDT. It exports the whole business list (up to 20,000 positive-stock batches), independently of table filters. Long names wrap, and table headers repeat on new pages. If it fails you see "Failed to export the list".
 
 ### Import from Excel (only if your shop has it switched on)
 This button is normally not shown. If it is, **Import Excel** opens the window **Import Stock Intake from Excel**. It has a link **Download Stock Intake template**, a line "Required columns: ...", and a box "Click or drag the filled .xlsx file here" (maximum 5 MB, only the first sheet is read). The buttons are **Cancel** (or **Done** after finishing) and **Import** (or **Import N row(s)**). Nothing is saved unless every row is correct.

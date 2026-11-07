@@ -11,7 +11,6 @@ namespace Printer.Models
         public string ContactInfo { get; set; }
         public string LogoPath { get; set; }
         public string PrinterName { get; set; }
-        public string BarcodePrinterName { get; set; }
         public string Currency { get; set; }
         public int Port { get; set; }
         public string Password { get; set; }
@@ -32,7 +31,6 @@ namespace Printer.Models
             ContactInfo = "";
             LogoPath = "";
             PrinterName = "";
-            BarcodePrinterName = "";
             Currency = "$";
             Port = 8080;
             Password = "123456"; // Default password

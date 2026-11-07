@@ -1,4 +1,5 @@
 import {
+  BookOutlined,
   CustomerServiceOutlined,
   DashboardOutlined,
   GlobalOutlined,
@@ -87,6 +88,11 @@ const SideBar: React.FC = () => {
       icon: <CustomerServiceOutlined />,
       label: <span title="Support Tickets">Support</span>,
       permissions: [AdminPermission.support],
+    },
+    {
+      key: "/manuals",
+      icon: <BookOutlined />,
+      label: <span title="User Manuals">User Manuals</span>,
     },
     {
       label: <span title="Settings">Settings</span>,

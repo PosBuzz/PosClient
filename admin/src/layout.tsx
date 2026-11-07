@@ -1,5 +1,4 @@
 import {
-  BookOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -116,17 +115,6 @@ const AppLayout = () => {
           <div className="flex">
             <CacheInvalidationButton />
             <ThemeDropdown />
-            <Tooltip title="User Guide (PDF)">
-              <Button
-                type="text"
-                data-testid="user-guide-link"
-                icon={<BookOutlined />}
-                href="/manual/PosBuzz-Admin-Manual.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Download the Admin Panel Manual"
-              />
-            </Tooltip>
             <Tooltip title="Account and Security">
               <Button
                 type="text"

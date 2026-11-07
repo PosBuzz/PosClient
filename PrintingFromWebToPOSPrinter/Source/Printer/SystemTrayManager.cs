@@ -39,7 +39,6 @@ namespace Printer
             var configureItem = new ToolStripMenuItem("Configure", null, Configure_Click);
             var changePasswordItem = new ToolStripMenuItem("Change Password", null, ChangePassword_Click);
             var testReceiptItem = new ToolStripMenuItem("Test Receipt", null, TestReceipt_Click);
-            var testBarcodeItem = new ToolStripMenuItem("Test Barcode", null, TestBarcode_Click);
             var exitItem = new ToolStripMenuItem("Exit", null, Exit_Click);
             
             contextMenu.Items.Add(startServerItem);
@@ -51,7 +50,6 @@ namespace Printer
             contextMenu.Items.Add(changePasswordItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(testReceiptItem);
-            contextMenu.Items.Add(testBarcodeItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(exitItem);
 
@@ -94,7 +92,6 @@ namespace Printer
         private void Configure_Click(object sender, EventArgs e) => ShowConfigurationDialog();
         private void ChangePassword_Click(object sender, EventArgs e) => ShowChangePasswordDialog();
         private void TestReceipt_Click(object sender, EventArgs e) => TestReceipt();
-        private void TestBarcode_Click(object sender, EventArgs e) => TestBarcode();
         private void Exit_Click(object sender, EventArgs e) => Exit();
 
         private void NotifyIcon_DoubleClick(object sender, EventArgs e)
@@ -224,23 +221,6 @@ namespace Printer
             catch (Exception ex)
             {
                 ShowBalloonTip("Test Receipt Error", "Error: " + ex.Message, ToolTipIcon.Error);
-            }
-        }
-
-        private void TestBarcode()
-        {
-            try
-            {
-                var config = ConfigManager.GetConfig();
-                string shopName = !string.IsNullOrEmpty(config.StoreName) ? config.StoreName : "PosBuzz";
-                string branchName = "Main Branch";
-                string location = !string.IsNullOrEmpty(config.Address) ? config.Address : "Test Location";
-                BarcodeLabelPrint.PrintLabel("1234567890123", "Test Product", "19.99", false, true, 21.0m, 1, shopName, branchName, location);
-                ShowBalloonTip("Test Barcode", "Test barcode printed successfully", ToolTipIcon.Info);
-            }
-            catch (Exception ex)
-            {
-                ShowBalloonTip("Test Barcode Error", "Error: " + ex.Message, ToolTipIcon.Error);
             }
         }
 

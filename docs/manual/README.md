@@ -1,11 +1,11 @@
 # User manuals
 
-Two end-user manuals, written in Markdown and built into PDFs that ship inside the apps.
+Two end-user manuals, written in Markdown and built into PDFs that ship inside the Admin Panel.
 
 | Manual | Source | PDF (committed, served by the app) | Download link |
 |---|---|---|---|
-| Shop App (consumer) | `docs/manual/consumer/*.md` | `consumer/public/manual/PosBuzz-Shop-App-Manual.pdf` | Book icon in the top bar |
-| Admin Panel | `docs/manual/admin/*.md` | `admin/public/manual/PosBuzz-Admin-Manual.pdf` | Book icon in the top bar |
+| Shop App (consumer) | `docs/manual/consumer/*.md` | `admin/public/manual/PosBuzz-Shop-App-Manual.pdf` | Admin Panel → User Manuals |
+| Admin Panel | `docs/manual/admin/*.md` | `admin/public/manual/PosBuzz-Admin-Manual.pdf` | Admin Panel → User Manuals |
 
 Screenshots live in `docs/manual/images/<app>/` and are referenced from the Markdown as `images/<app>/<name>.png`.
 

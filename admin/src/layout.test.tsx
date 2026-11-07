@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
 import { screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import AppLayout from "./layout";
@@ -14,12 +12,10 @@ it("[AD-LAYOUT-001] the sidebar ends with Powered by PosBuzz, and PB when collap
   expect(screen.queryByText("Powered by PosBuzz")).toBeNull();
 });
 
-it("[AD-LAYOUT-002] the top bar links to the user manual PDF, which ships in public/manual", async () => {
+it("[AD-LAYOUT-002] the header has no manual shortcut", async () => {
   renderWithProviders(<AppLayout />);
-  const link = await screen.findByTestId("user-guide-link");
-  expect(link.getAttribute("href")).toBe("/manual/PosBuzz-Admin-Manual.pdf");
-  expect(link.getAttribute("target")).toBe("_blank");
-  expect(existsSync(resolve(__dirname, "../public/manual/PosBuzz-Admin-Manual.pdf"))).toBe(true);
+  expect(screen.queryByTestId("user-guide-link")).toBeNull();
+  expect(screen.queryByRole("link", { name: /manual/i })).toBeNull();
 });
 
 it("[AD-LAYOUT-003] Settings shows for any user allowed one of its pages, and is hidden when none is allowed", async () => {

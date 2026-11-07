@@ -9,8 +9,10 @@ import { renderWithProviders } from "./test/render";
 it("[AD-ROUTE-001] the app root requires auth and business pages retain permission gates", () => {
   const root = routes.find((route) => route.path === "/")!;
   expect(root.element.type).toBe(RequireAuth);
+  expect(root.children!.find((route) => route.path === "manuals")).toBeDefined();
+  expect(routes.find((route) => route.path === "/manuals")).toBeUndefined();
   const permissions = root
-    .children!.filter((route) => !route.index)
+    .children!.filter((route) => !route.index && route.path !== "manuals")
     .map((route) => {
       const element = route.element as ReactElement<{ permission: string }>;
       expect(element.type).toBe(RequirePermission);

@@ -107,7 +107,6 @@ The five icons at the top right, from left to right, are: refresh, light bulb, b
 | Company name | Shows the name from your Company Profile. Only shown on screens 768 px wide or more. |
 | Refresh icon (tooltip "Clear Application Cache") | Loads all screen data again. A green message "All caches cleared!" shows for 3 seconds. It does not sign you out and does not delete anything. |
 | Light-bulb icon | Opens the theme menu: **Dark**, **Light**, **System**. The chosen one is highlighted. System follows your device. The choice is remembered on this device. |
-| Book icon (tooltip "User Guide (PDF)") | Opens this manual as a PDF in a new browser tab. You can save it from there. |
 | Person icon (tooltip "Account and Security") | Opens the Account & Security page. You need the Profile permission, or you land on the Dashboard. |
 | Logout icon (tooltip "Logout") | Signs you out and returns to the Login page. |
 
@@ -118,10 +117,6 @@ The five icons at the top right, from left to right, are: refresh, light bulb, b
 ![Theme menu](images/consumer/topbar-theme-menu-d.png)
 
 *The theme menu with Dark, Light and System. The chosen one is highlighted.*
-
-![User Guide tooltip](images/consumer/topbar-tooltip-guide-d.png)
-
-*Hover over the book icon to see "User Guide (PDF)".*
 
 > **Good to know:** The top bar has no branch switcher, no notification bell and no offline message. The app checks for a new version in the background every hour, when you come back to the browser tab, and when the internet returns. It never reloads the page by itself, so a sale is never interrupted. To use a new version, refresh the page yourself (press F5). If a page file is missing after an update, the app reloads once by itself.
 

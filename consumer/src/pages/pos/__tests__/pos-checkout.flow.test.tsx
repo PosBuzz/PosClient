@@ -128,6 +128,32 @@ function expectedCart(
 const money = (n: number) => n.toFixed(2);
 
 describe("POS checkout", () => {
+  it("[CO-FLOW-POS-023] quantity can be cleared, typed manually and adjusted with plus and minus without submitting", async () => {
+    const created = captureRequests("post", endpoints.createSale, { id: 107 });
+    const { user } = mount();
+    await addProduct(user, P1);
+    const quantity = within(cartRow(P1)!).getAllByRole("spinbutton")[0];
+    await user.clear(quantity);
+    expect(quantity).toHaveValue("");
+    await user.type(quantity, "12");
+    expect(quantity).toHaveValue("12");
+    await user.keyboard("{Escape}");
+    expect(quantity).not.toHaveFocus();
+    await user.click(screen.getByRole("button", { name: `Decrease ${P1}` }));
+    expect(quantity).toHaveValue("11");
+    await user.click(screen.getByRole("button", { name: `Increase ${P1}` }));
+    expect(quantity).toHaveValue("12");
+    await user.clear(quantity);
+    await user.keyboard("{Escape}");
+    expect(quantity).toHaveValue("12");
+    await user.click(quantity);
+    await user.keyboard("{Enter}");
+    expect(created.calls).toHaveLength(0);
+    await complete(user);
+    await screen.findByText("Sale created successfully!");
+    expect(created.calls[0].body.items[0].quantity).toBe(12);
+  });
+
   it("[CO-FLOW-POS-022] a printer HTTP rejection reports its reason without retrying the sale", async () => {
     localStorage.setItem("autoPrintThermal", "true");
     server.use(
@@ -160,7 +186,11 @@ describe("POS checkout", () => {
     const { user } = mount();
     await user.click(await screen.findByText(P1));
     await user.click(screen.getByText("Per qty"));
-    await setNumber(user, screen.getByRole("spinbutton"), "5");
+    await setNumber(
+      user,
+      screen.getByLabelText(`Special discount for ${P1}`),
+      "5",
+    );
     await user.click(
       screen.getAllByText(P1).find((node) => node.closest("article"))!,
     );
@@ -178,7 +208,11 @@ describe("POS checkout", () => {
     const { user } = mount();
     await user.click(await screen.findByText(P1));
     await user.click(screen.getByText("Per qty"));
-    await setNumber(user, screen.getByRole("spinbutton"), "5");
+    await setNumber(
+      user,
+      screen.getByLabelText(`Special discount for ${P1}`),
+      "5",
+    );
     await user.click(screen.getByRole("button", { name: `Increase ${P1}` }));
     await user.click(screen.getByRole("button", { name: /Checkout/ }));
     await screen.findByText("Sale created successfully!");

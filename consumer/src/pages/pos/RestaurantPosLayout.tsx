@@ -5,7 +5,6 @@ import {
   DeleteOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
-  MinusOutlined,
   PlusOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -43,6 +42,7 @@ import {
 } from "../../utils/payment-provider.utils";
 import "./RestaurantPosLayout.css";
 import CompanyLogo from "../../components/CompanyLogo";
+import QuantityInput from "./QuantityInput";
 
 type StaffUser = { id: number; name: string };
 type BranchOption = { id: number; name?: string };
@@ -432,21 +432,11 @@ const RestaurantPosLayout = ({
                       {item.variant_name} • <Money value={item.unit_price} />
                     </div>
                     <div className="restaurant-pos__qty">
-                      <Button
-                        icon={<MinusOutlined />}
-                        aria-label={`Decrease ${item.product_name}`}
-                        onClick={() =>
-                          onUpdateQuantity(item.variant_id, item.quantity - 1)
-                        }
-                      />
-                      <span className="restaurant-pos__qty-value">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        icon={<PlusOutlined />}
-                        aria-label={`Increase ${item.product_name}`}
-                        onClick={() =>
-                          onUpdateQuantity(item.variant_id, item.quantity + 1)
+                      <QuantityInput
+                        value={item.quantity}
+                        name={item.product_name}
+                        onChange={(quantity) =>
+                          onUpdateQuantity(item.variant_id, quantity)
                         }
                       />
                       <Button
@@ -462,6 +452,7 @@ const RestaurantPosLayout = ({
                       precision={2}
                       size="small"
                       addonBefore="Disc"
+                      aria-label={`Special discount for ${item.product_name}`}
                       value={
                         (specialDiscountModes[item.variant_id] || "overall") ===
                         "quantity"

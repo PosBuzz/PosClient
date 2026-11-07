@@ -16,7 +16,6 @@ namespace Printer
         private TextBox txtVatRegNumber;
         private TextBox txtFooterTerms;
         private TextBox txtPrinterName;
-        private TextBox txtBarcodePrinterName;
         private TextBox txtCurrency;
         private NumericUpDown numPort;
         private CheckBox chkShowCustomerRewardPoints;
@@ -81,10 +80,6 @@ namespace Printer
             // Printer settings
             var lblPrinterName = new Label { Text = "Receipt Printer:", Location = new Point(20, yPos), Size = new Size(120, 20) };
             txtPrinterName = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
-            yPos += 30;
-
-            var lblBarcodePrinter = new Label { Text = "Barcode Printer:", Location = new Point(20, yPos), Size = new Size(120, 20) };
-            txtBarcodePrinterName = new TextBox { Location = new Point(150, yPos - 2), Size = new Size(460, 20) };
             yPos += 30;
 
             var lblCurrency = new Label { Text = "Currency:", Location = new Point(20, yPos), Size = new Size(120, 20) };
@@ -166,7 +161,6 @@ namespace Printer
                 lblContactInfo, txtContactInfo,
                 lblVatRegNumber, txtVatRegNumber,
                 lblPrinterName, txtPrinterName,
-                lblBarcodePrinter, txtBarcodePrinterName,
                 lblCurrency, txtCurrency,
                 lblPort, numPort,
                 lblLogo, btnSelectLogo,
@@ -187,7 +181,6 @@ namespace Printer
             txtContactInfo.Text = config.ContactInfo ?? "";
             txtVatRegNumber.Text = config.VatRegistrationNumber ?? "";
             txtPrinterName.Text = config.PrinterName ?? "";
-            txtBarcodePrinterName.Text = config.BarcodePrinterName ?? "";
             txtCurrency.Text = config.Currency ?? "$";
             numPort.Value = config.Port > 0 ? config.Port : 8080;
             txtFooterTerms.Text = config.FooterTerms ?? "";
@@ -210,7 +203,6 @@ namespace Printer
                 ContactInfo = txtContactInfo.Text,
                 VatRegistrationNumber = txtVatRegNumber.Text,
                 PrinterName = txtPrinterName.Text,
-                BarcodePrinterName = txtBarcodePrinterName.Text,
                 Currency = txtCurrency.Text,
                 Port = (int)numPort.Value,
                 FooterTerms = txtFooterTerms.Text,

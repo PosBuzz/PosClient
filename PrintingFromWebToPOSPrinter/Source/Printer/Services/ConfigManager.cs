@@ -63,7 +63,6 @@ namespace Printer.Services
                                     case "ContactInfo": _config.ContactInfo = value; break;
                                     case "LogoPath": _config.LogoPath = value; break;
                                     case "PrinterName": _config.PrinterName = value; break;
-                                    case "BarcodePrinterName": _config.BarcodePrinterName = value; break;
                                     case "Currency": _config.Currency = value; break;
                                     case "Port": _config.Port = int.Parse(value); break;
                                     case "HeaderText": _config.HeaderText = value; break;
@@ -77,10 +76,7 @@ namespace Printer.Services
                         }
                     }
 
-                    if (string.IsNullOrWhiteSpace(_config.BarcodePrinterName))
-                    {
-                        _config.BarcodePrinterName = "Gprinter GP-3120TUC";
-                    }
+
 
                     AdoptLogo();
                 }
@@ -134,7 +130,6 @@ namespace Printer.Services
                     "ContactInfo=" + _config.ContactInfo,
                     "LogoPath=" + _config.LogoPath,
                     "PrinterName=" + _config.PrinterName,
-                    "BarcodePrinterName=" + _config.BarcodePrinterName,
                     "Currency=" + _config.Currency,
                     "Port=" + _config.Port,
                     "HeaderText=" + _config.HeaderText,
@@ -185,8 +180,6 @@ namespace Printer.Services
                 _config.LogoPath = fieldsToUpdate.LogoPath;
             if (fieldsToUpdate.PrinterName != null)
                 _config.PrinterName = fieldsToUpdate.PrinterName;
-            if (fieldsToUpdate.BarcodePrinterName != null)
-                _config.BarcodePrinterName = fieldsToUpdate.BarcodePrinterName;
             if (fieldsToUpdate.Currency != null)
                 _config.Currency = fieldsToUpdate.Currency;
             if (fieldsToUpdate.HeaderText != null)
@@ -221,7 +214,6 @@ namespace Printer.Services
             config.FooterTerms = "Terms & Conditions:\n1. All sales are final\n2. No returns after 7 days\n3. Warranty claims require original receipt\n4. Customer is responsible for verifying items";
             config.LogoPath = "";
             config.PrinterName = "RONGTA 80mm Series Printer";
-            config.BarcodePrinterName = "Gprinter GP-3120TUC";
             config.Currency = "\u09F3";
             config.Port = 8080;
             config.ShowPoweredByPosbuzz = true;

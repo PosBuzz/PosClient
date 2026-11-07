@@ -24,8 +24,6 @@ Source/
     ├── SystemTrayManager.cs           # System tray functionality
     ├── ConfigurationForm.cs           # Settings GUI
     ├── StartupManager.cs              # Windows startup management
-    ├── BarcodeLabelPrint.cs           # Barcode generation and printing
-    ├── BarcodeLabelPrintRequest.cs    # Barcode request model
     ├── Models/                        # Data models
     │   ├── StoreConfig.cs             # Configuration model
     │   ├── ReceiptModel.cs            # Receipt data model
@@ -62,12 +60,6 @@ Source/
 - Store and printer settings
 - Validation and persistence
 - User-friendly interface
-
-#### 5. Barcode Generation
-- ZXing.Net library integration
-- Multiple format support (EAN13, UPC-A, Code128, Code39)
-- Error handling and fallback
-- Label formatting
 
 ### Key Features Implementation
 
@@ -149,7 +141,6 @@ private void PrintReceipt(ReceiptModel receipt)
 
 ### Integration Testing
 1. **Printer Testing**: Requires physical thermal printer
-2. **Barcode Testing**: Test various barcode formats
 3. **System Tray**: Test on different Windows versions
 4. **Auto-startup**: Test registry modification
 
@@ -158,7 +149,6 @@ private void PrintReceipt(ReceiptModel receipt)
 - [ ] Configuration dialog opens and saves
 - [ ] HTTP server responds to requests
 - [ ] Receipt printing works
-- [ ] Barcode printing works
 - [ ] Cash drawer opens
 - [ ] Auto-startup functionality
 - [ ] Error handling
@@ -244,7 +234,6 @@ private void LogError(string message, Exception ex = null)
 - Print queue management
 - Network printer support
 - Database integration
-- Advanced barcode features
 - Print templates
 - Audit logging
 
@@ -272,3 +261,12 @@ private void LogError(string message, Exception ex = null)
 ---
 
 **📧 Developer Support**: For technical questions about the codebase, refer to the inline code comments and this documentation.
+
+
+## Barcode labels
+
+Standalone labels are designed in **Products > Barcode Printing** and printed through the browser. The agent has no label-printing endpoints, label-printer settings or label test menu. Sale barcodes on thermal receipts remain supported through ZXing.
+
+## Build with the .NET SDK
+
+Run `./PrintingFromWebToPOSPrinter/build-distribution.sh` from the repository root. The cross-build project targets .NET Framework 4.6.2 and builds the same source files as the Windows project. It uses reference assemblies to build on macOS/Linux; runtime QA still requires Windows and a printer. The script updates Distribution and the consumer download ZIP.

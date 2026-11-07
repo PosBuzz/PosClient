@@ -1,8 +1,21 @@
 {
+  "branch_values": [
+    {
+      "branch_id": 1,
+      "branch_name": "Branch 1",
+      "inventory_value": 19145
+    },
+    {
+      "branch_id": 2,
+      "branch_name": "Branch 2",
+      "inventory_value": 19450
+    }
+  ],
   "expiring_soon": 0,
   "low_stock_variants": 1,
   "physical_quantity": 591,
   "reserved_quantity": 1,
   "total_batches": 6,
+  "total_inventory_value": 38595,
   "total_quantity": 590
 }
