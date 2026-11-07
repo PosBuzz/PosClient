@@ -1,5 +1,7 @@
+import { inflateSync } from 'node:zlib';
 import { BadRequestException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import * as PDFDocument from 'pdfkit';
 import { EXPORT_ROW_LIMIT, ExportService } from './export.service';
 
 const prisma: any = {
@@ -234,7 +236,8 @@ describe('ExportService', () => {
       'SKU',
       'Batch',
       'Qty',
-      'Cost',
+      'Cost (BDT)',
+      'Value (BDT)',
       'Expiry',
     ]);
     expect(sheet.getRow(2).values).toEqual([
@@ -246,6 +249,7 @@ describe('ExportService', () => {
       'B9',
       7,
       12.5,
+      87.5,
       '2027-02-03',
     ]);
   });
@@ -288,5 +292,91 @@ describe('ExportService', () => {
     expect(await pageCount(41)).toBe(2);
     expect(await pageCount(83)).toBe(2);
     expect(await pageCount(84)).toBe(3);
+  });
+  it('[BE-EXPORT-013] {ExportService.export} inventory includes total and branch values in its summary sheet', async () => {
+    const file = await service.export('inventory', 1, 'xlsx');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+    const sheet = workbook.getWorksheet('Inventory Value')!;
+    expect(sheet.getRow(2).values).toEqual([
+      undefined,
+      'Total exported inventory value (BDT)',
+      120,
+    ]);
+    expect(sheet.getRow(3).values).toEqual([undefined, 'Branch: Main', 120]);
+  });
+
+  it('[BE-EXPORT-015] {ExportService.toPdf} wrapped door-frame variants leave enough space before the next inventory row', async () => {
+    const batches = ['290054', '596203', '331130', '379313', '000001'];
+    prisma.inventoryBatch.findMany.mockResolvedValueOnce(
+      batches.map((batch_number, i) => ({
+        batch_number,
+        quantity: i + 1,
+        cost_price: '4000',
+        expiry_date: null,
+        branch: { name: 'Main Branch' },
+        variant: {
+          name: i < 4 ? `CTG Teak Door Frame - ${39 + i}.5 x 42` : 'Bread',
+          sku: `CTG-SKU-${i}`,
+          product: { name: i < 4 ? 'CTG Teak Door Frame' : 'Bread' },
+        },
+      })),
+    );
+    const text = jest.spyOn(PDFDocument.prototype, 'text');
+    try {
+      await service.export('inventory', 1, 'pdf');
+      const calls = text.mock.calls as unknown as Array<
+        [string, number, number]
+      >;
+      const starts = batches.map(
+        (batch) => calls.find(([s]) => s === batch)![2],
+      );
+      const variantX = calls.find(([s]) => s === 'Variant')![1];
+      for (let i = 0; i < 4; i++) {
+        const lines = calls.filter(
+          ([, x, y]) => x === variantX && y >= starts[i] && y < starts[i + 1],
+        );
+        expect(lines.length).toBeGreaterThan(1);
+        expect(Math.max(...lines.map(([, , y]) => y)) + 12).toBeLessThanOrEqual(
+          starts[i + 1],
+        );
+      }
+    } finally {
+      text.mockRestore();
+    }
+  });
+
+  it('[BE-EXPORT-014] {ExportService.toPdf} very long names wrap across pages without creating a page for each overflowing cell', async () => {
+    const pdf = await service.toPdf({
+      title: 'Long names',
+      columns: [
+        { header: 'Product', width: 2 },
+        { header: 'Qty', width: 1 },
+      ],
+      rows: [
+        ['LONG_PRODUCT_'.repeat(500) + 'END_OF_LONG_PRODUCT', 7],
+        ['NEXT PRODUCT', 3],
+      ],
+    });
+    const pages = pdf.toString('latin1').match(/\/Type \/Page\b/g) ?? [];
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.length).toBeLessThan(10);
+    const contentText = [
+      ...pdf
+        .toString('latin1')
+        .matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g),
+    ]
+      .map((match) =>
+        inflateSync(Buffer.from(match[1], 'latin1')).toString('latin1'),
+      )
+      .map((stream) =>
+        [...stream.matchAll(/<([0-9a-f]+)>/gi)].map((match) =>
+          Buffer.from(match[1], 'hex').toString('latin1'),
+        ),
+      );
+    expect(contentText[0]).toContain('7');
+    const text = contentText.flat().join('');
+    expect(text).toContain('END_OF_LONG_PRODUCT');
+    expect(text).toContain('NEXT PRODUCT');
   });
 });

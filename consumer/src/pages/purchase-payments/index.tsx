@@ -197,7 +197,6 @@ const PurchasePayments = () => {
           <Button
             type={
               record.payment_status === "paid" ||
-              record.quantity <= 0 ||
               record.remaining_amount <= 0
                 ? "default"
                 : "primary"
@@ -206,7 +205,6 @@ const PurchasePayments = () => {
             size="small"
           >
             {record.payment_status === "paid" ||
-            record.quantity <= 0 ||
             record.remaining_amount <= 0
               ? "View"
               : "Pay"}

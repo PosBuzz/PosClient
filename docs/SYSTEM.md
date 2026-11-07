@@ -3,7 +3,7 @@
 The one summary document for people and AI agents. Last updated 2026-10-16.
 How to operate the server day to day (log in, deploy/rollback, logs, restore, rotate secrets, troubleshooting): [`docs/OPERATIONS.md`](OPERATIONS.md).
 File-level detail of the deploy, backup and alert setup: [`deploy/README.md`](../deploy/README.md).
-User manuals (shop app and admin panel, PDF download from each app's top bar): [`docs/manual/README.md`](manual/README.md).
+User manuals (both available from the super-admin User Manuals page): [`docs/manual/README.md`](manual/README.md).
 Other references: [`SECURITY-NOTES.md`](SECURITY-NOTES.md), [`contracts/README.md`](../contracts/README.md),
 [`PRINTING_SETUP.md`](PRINTING_SETUP.md), [`docs/account-data-imports.md`](account-data-imports.md).
 
@@ -111,9 +111,16 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
   points; a return item without a batch does not restock; a batch created without payments counts as fully paid (D-040).
 - **Returns on a sale with a due** (2026-11-02): the returned value first cancels what the customer still owes; only the rest is paid out. The cancelled
   part is stored in `returns.due_reduction` and lowers the sale's `total_amount` (invariant INV-05 adds it back: total + cancelled due = subtotal - discount + tax + shipping).
-  Net Sales in the business report leaves shipping out; partner delivery charges are costs in Net Operating Result.
+  The business report restores original invoice totals by adding cancelled due back before reporting sales. Full returned value
+  (refunds + exchanges + cancelled due) reduces sales in the return period; shipping returns reduce shipping margin rather than product Net Sales.
+  Due and payment-status figures on period invoices are measured at period end. Store-credit refunds do not reduce cash/digital collections.
+  Partner charges follow ledger posting dates, including corrections. Net Operating Result deducts returned value, partner charges and
+  operational expenses, but excludes product costs and tax payments; it is not net profit. Net Cash Collections excludes opening cash,
+  inventory payments and operational expenses. See [the business report audit](business-report-audit.md) for formulas and validation.
 - **Branch protection not used** (D-065). Tracked deployment credentials were removed from git and history on 2026-10-15 (D-067 superseded).
+- **Inventory valuation (2026-11-07):** View Inventory values physical stock (including reserved stock) at batch cost, with a total and branch breakdown independent of pagination/search/category filters. Inventory exports include the value of exported batches and branch totals; long cells wrap and paginate.
 - **Bulk import:** off unless the backend env has `IMPORT_ENABLED=true` (restart to apply); the API refuses it while off. The import buttons are hidden unless the consumer build sets `VITE_IMPORT_ENABLED=true` (turn both on together). Exports of products, customers and inventory are always available as PDF; the Excel option is commented out in `consumer/src/components/ExportButton.tsx` (the backend still serves `format=xlsx`).
+- **Barcode labels (2026-11-07):** standalone labels print in-browser with physical millimetre sizing, roll/sheet pagination, custom gaps/margins, content switches and validated formats. The Windows agent no longer serves label endpoints/settings; receipt barcodes remain. `PrintingFromWebToPOSPrinter/build-distribution.sh` builds the Windows .NET Framework executable with the .NET SDK and refreshes both ZIP copies.
 - **Print server download:** the consumer app serves the Windows installer at `/print-server/PosBuzz-Print-Server.zip` (shown as Download Print Server on Receipt Settings). After rebuilding `PrintingFromWebToPOSPrinter`, copy `Distribution/PosBuzz-Print-Server.zip` to `consumer/public/print-server/`; a consumer test fails if the two differ.
 - **Brand images (2026-10-24):** a shop uploads a full logo (`consumers.logo`) and optionally a square app icon (`consumers.logo_icon`) on the
   Profile page, which explains what each needs and previews both. Both are stored once as Cloudinary originals; each place asks Cloudinary for its own

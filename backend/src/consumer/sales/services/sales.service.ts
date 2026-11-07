@@ -1869,10 +1869,11 @@ export class SalesService {
       let branchName: string | undefined;
       if (eodDto.branch_id) {
         const branch = await this.prisma.branch.findUnique({
-          where: { id: eodDto.branch_id },
+          where: { id: eodDto.branch_id, consumer_id: consumerId },
           select: { name: true },
         });
-        branchName = branch?.name;
+        if (!branch) throw new NotFoundException('Branch not found');
+        branchName = branch.name;
       }
 
       // Get all sales for the day
@@ -1880,6 +1881,9 @@ export class SalesService {
         where: whereClause,
         include: {
           payments: true,
+          returns_as_original: {
+            select: { due_reduction: true, return_date: true },
+          },
           items: {
             include: {
               variant: {
@@ -1917,7 +1921,10 @@ export class SalesService {
       const operationalCosts = await this.prisma.operationalCost.findMany({
         where: {
           consumer_id: consumerId,
-          incurred_on: { gte: startOfDay, lte: endOfDay },
+          incurred_on: {
+            gte: new Date(`${toLocalDateString(startOfDay)}T00:00:00.000Z`),
+            lte: new Date(`${toLocalDateString(endOfDay)}T00:00:00.000Z`),
+          },
           ...(eodDto.branch_id ? { branch_id: eodDto.branch_id } : {}),
         },
         include: { branch: { select: { name: true } } },
@@ -1947,6 +1954,8 @@ export class SalesService {
               sale_number: true,
               sale_date: true,
               total_amount: true,
+              delivery_partner_id: true,
+              delivery_partner: true,
             },
           },
         },
@@ -1969,6 +1978,8 @@ export class SalesService {
                     sale_number: s.sale_number,
                     sale_date: s.sale_date,
                     total_amount: s.total_amount,
+                    delivery_partner_id: s.delivery_partner_id,
+                    delivery_partner: s.delivery_partner,
                   },
                 });
               }
@@ -1982,8 +1993,29 @@ export class SalesService {
 
       // Calculate sales summary statistics (Accrual / Invoiced basis)
       const totalSales = sales.length;
+      // Returns lower the stored sale total only when they cancel due. Restore
+      // the invoice here, then recognise every return in its own reporting period.
+      const invoiceAmount = (sale: (typeof sales)[number]) =>
+        Number(sale.total_amount) +
+        (sale.returns_as_original ?? []).reduce(
+          (sum, ret) => sum + Number(ret.due_reduction),
+          0,
+        );
+      const dueAtEnd = (sale: (typeof sales)[number]) => {
+        const cancelled = (sale.returns_as_original ?? [])
+          .filter((ret) => ret.return_date <= endOfDay)
+          .reduce((sum, ret) => sum + Number(ret.due_reduction), 0);
+        const paid = (sale.payments ?? [])
+          .filter((p) => new Date(p.created_at) <= endOfDay)
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        const balance = Math.max(0, invoiceAmount(sale) - cancelled - paid);
+        return {
+          balance,
+          status: balance <= 0.001 ? 'paid' : paid > 0 ? 'partial' : 'due',
+        };
+      };
       const totalAmount = sales.reduce(
-        (sum, sale) => sum + Number(sale.total_amount),
+        (sum, sale) => sum + invoiceAmount(sale),
         0,
       );
       const grossSubtotal = sales.reduce(
@@ -2008,19 +2040,24 @@ export class SalesService {
       // What delivery partners charge the shop, on the same terms as the partner
       // ledger: delivery charge and COD fee once delivered, the return charge
       // (kept in delivery_charge) once returned.
-      const partnerCharges = sales.reduce((sum, sale) => {
-        if (!sale.delivery_partner_id || !sale.is_online_order) return sum;
-        if (sale.online_order_status === 'DELIVERED') {
-          return (
-            sum + Number(sale.delivery_charge || 0) + Number(sale.cod_fee || 0)
-          );
-        }
-        if (sale.online_order_status === 'RETURNED') {
-          return sum + Number(sale.delivery_charge || 0);
-        }
-        return sum;
-      }, 0);
-      const shippingMargin = totalShipping - partnerCharges;
+      const chargePostings =
+        await this.prisma.deliveryPartnerTransaction.groupBy({
+          by: ['partner_id', 'type'],
+          where: {
+            consumer_id: consumerId,
+            created_at: { gte: startOfDay, lte: endOfDay },
+            type: { in: ['DELIVERY_CHARGE', 'COD_FEE', 'RETURN_CHARGE'] },
+            ...(eodDto.branch_id
+              ? { sale: { branch_id: eodDto.branch_id } }
+              : {}),
+          },
+          _sum: { amount: true },
+        });
+      // Ledger charges are negative; corrections reverse them in the posting period.
+      const partnerCharges = (chargePostings ?? []).reduce(
+        (sum, row) => sum - Number(row._sum.amount ?? 0),
+        0,
+      );
       const totalItemsSold = sales.reduce(
         (sum, sale) =>
           sum +
@@ -2033,6 +2070,41 @@ export class SalesService {
         (sum, record) => sum + Number(record.total_refund),
         0,
       );
+      const dueReduced = returns.reduce(
+        (sum, ret) => sum + Number(ret.due_reduction ?? 0),
+        0,
+      );
+      const totalReturnedValue = returns.reduce(
+        (sum, ret) =>
+          sum +
+          Number(ret.total_refund) +
+          Number(ret.total_exchange) +
+          Number(ret.due_reduction ?? 0),
+        0,
+      );
+      // Shipping is the part of a return not attributable to its product lines.
+      const shippingRefunded = returns.reduce((sum, ret) => {
+        const itemValue = ret.items.reduce(
+          (value, item) =>
+            value +
+            (item.sale_item?.quantity
+              ? (Number(item.sale_item.line_total) * item.quantity) /
+                item.sale_item.quantity
+              : 0),
+          0,
+        );
+        return (
+          sum +
+          Math.max(
+            0,
+            Number(ret.total_refund) +
+              Number(ret.total_exchange) +
+              Number(ret.due_reduction ?? 0) -
+              itemValue,
+          )
+        );
+      }, 0);
+      const shippingMargin = totalShipping - shippingRefunded - partnerCharges;
       const totalItemsReturned = returns.reduce(
         (sum, record) =>
           sum + record.items.reduce((qty, item) => qty + item.quantity, 0),
@@ -2246,7 +2318,7 @@ export class SalesService {
         const existing = hourlySalesMap.get(hour)!;
         hourlySalesMap.set(hour, {
           sales_count: existing.sales_count + 1,
-          total_amount: existing.total_amount + Number(sale.total_amount),
+          total_amount: existing.total_amount + invoiceAmount(sale),
         });
       });
 
@@ -2264,13 +2336,14 @@ export class SalesService {
         { count: number; total_amount: number }
       >();
       sales.forEach((sale) => {
-        const existing = paymentStatusMap.get(sale.payment_status) || {
+        const { status } = dueAtEnd(sale);
+        const existing = paymentStatusMap.get(status) || {
           count: 0,
           total_amount: 0,
         };
-        paymentStatusMap.set(sale.payment_status, {
+        paymentStatusMap.set(status, {
           count: existing.count + 1,
-          total_amount: existing.total_amount + Number(sale.total_amount),
+          total_amount: existing.total_amount + invoiceAmount(sale),
         });
       });
 
@@ -2287,20 +2360,9 @@ export class SalesService {
       let dueSalesCount = 0;
 
       sales.forEach((sale) => {
-        const total = Number(sale.total_amount);
-        // Payments made on this sale on or before end of this reporting period
-        const paidOnSale = sale.payments
-          ? sale.payments
-              .filter((p) => new Date(p.created_at) <= endOfDay)
-              .reduce((sum, p) => sum + Number(p.amount), 0)
-          : 0;
-        const remaining = Math.max(0, total - paidOnSale);
-        if (
-          remaining > 0.001 ||
-          sale.payment_status === 'due' ||
-          sale.payment_status === 'partial'
-        ) {
-          totalDue += remaining;
+        const { balance } = dueAtEnd(sale);
+        if (balance > 0.001) {
+          totalDue += balance;
           dueSalesCount += 1;
         }
       });
@@ -2334,7 +2396,7 @@ export class SalesService {
       // Online (delivery) and shop (counter) sales, kept apart
       const onlineSales = sales.filter((sale) => sale.is_online_order);
       const onlineSalesAmount = onlineSales.reduce(
-        (sum, sale) => sum + Number(sale.total_amount),
+        (sum, sale) => sum + invoiceAmount(sale),
         0,
       );
 
@@ -2368,16 +2430,40 @@ export class SalesService {
         );
         if (sale.online_order_status === 'DELIVERED') {
           row.orders_delivered += 1;
-          row.cod_collected += Number(sale.cod_amount || 0);
-          row.charges +=
-            Number(sale.delivery_charge || 0) + Number(sale.cod_fee || 0);
         } else if (sale.online_order_status === 'RETURNED') {
           row.orders_returned += 1;
-          row.charges += Number(sale.delivery_charge || 0);
-        } else {
+        } else if (sale.online_order_status !== 'CANCELLED') {
           row.orders_on_the_way += 1;
         }
       });
+      collectedPaymentsList.forEach((payment) => {
+        if (payment.payment_method !== 'DELIVERY_PARTNER') return;
+        const partnerId = payment.sale?.delivery_partner_id;
+        if (partnerId) {
+          rowFor(
+            partnerId,
+            payment.sale.delivery_partner || 'Delivery partner',
+          ).cod_collected += Number(payment.amount);
+        }
+      });
+      (chargePostings ?? []).forEach((posting) => {
+        rowFor(posting.partner_id, 'Delivery partner').charges -= Number(
+          posting._sum.amount ?? 0,
+        );
+      });
+      // Resolve names for charge-only rows in branch reports as well.
+      if (eodDto.branch_id && partnerRows.size) {
+        const names = await this.prisma.deliveryPartner.findMany({
+          where: {
+            consumer_id: consumerId,
+            id: { in: [...partnerRows.keys()] },
+          },
+          select: { id: true, name: true },
+        });
+        (names ?? []).forEach((partner) => {
+          partnerRows.get(partner.id)!.partner_name = partner.name;
+        });
+      }
       if (!eodDto.branch_id) {
         const ids = new Set<number>(partnerRows.keys());
         (partnerMoney ?? []).forEach((m) => ids.add(m.partner_id));
@@ -2426,33 +2512,51 @@ export class SalesService {
         exchangeSales +
         partnerCollected;
 
-      // Standalone return exchanges that were not already counted as an exchange payment on a sale in this period
-      let standaloneReturnExchanges = 0;
+      // Count the overlap only when an exchange tender was actually collected
+      // on the linked replacement sale in this period, not merely invoiced then.
+      const exchangeTenderLeft = new Map<number, number>();
+      collectedPaymentsList
+        .filter((p) => p.payment_method === 'EXCHANGE')
+        .forEach((p) => {
+          exchangeTenderLeft.set(
+            p.sale_id,
+            (exchangeTenderLeft.get(p.sale_id) ?? 0) + Number(p.amount),
+          );
+        });
+      let uniqueExchanges = exchangeSales;
       const totalExchangeReturn = returns.reduce((sum, ret) => {
-        const val = Number(ret.total_exchange || 0);
-        if (val > 0) {
-          if (ret.exchange_sale_id && periodSaleIds.has(ret.exchange_sale_id)) {
-            // Already counted as exchangeSales on the exchange sale in this period!
-          } else {
-            standaloneReturnExchanges += val;
-          }
+        const value = Number(ret.total_exchange || 0);
+        const available = ret.exchange_sale_id
+          ? (exchangeTenderLeft.get(ret.exchange_sale_id) ?? 0)
+          : 0;
+        const overlap = Math.min(value, available);
+        if (ret.exchange_sale_id) {
+          exchangeTenderLeft.set(ret.exchange_sale_id, available - overlap);
         }
-        return sum + val;
+        uniqueExchanges += value - overlap;
+        return sum + value;
       }, 0);
 
-      // Unique exchanges across the business in this period (Deduplicated!)
-      const uniqueExchanges = exchangeSales + standaloneReturnExchanges;
-
-      const nonCashSales = totalAmount - cashSales;
+      const nonCashSales = totalCollected - cashSales;
       const cashRefunds =
         returnPaymentBreakdown.find((p) => p.payment_method === 'CASH')
           ?.total_amount || 0;
-      const digitalRefunds = totalRefund - cashRefunds;
+      const creditRefunds =
+        returnPaymentBreakdown.find((p) => p.payment_method === 'CREDIT')
+          ?.total_amount || 0;
+      const digitalRefunds = returnPaymentBreakdown
+        .filter(
+          (p) =>
+            !['CASH', 'CREDIT', 'EXCHANGE', 'DELIVERY_PARTNER'].includes(
+              p.payment_method,
+            ),
+        )
+        .reduce((sum, p) => sum + p.total_amount, 0);
 
       const netCashSales =
         cashSales - cashRefunds + partnerPayoutsCash - partnerPaymentsCash;
       const netMoneyCollected =
-        realMoneyCollected - totalRefund - partnerPaymentsMade;
+        realMoneyCollected - cashRefunds - digitalRefunds - partnerPaymentsMade;
       const netOperatingCashFlow = netMoneyCollected - totalOperationalCosts;
 
       const summary: EODSummary = {
@@ -2496,13 +2600,21 @@ export class SalesService {
         total_refund: totalRefund,
         total_items_returned: totalItemsReturned,
         // Shipping is not sale revenue: it is reported on its own line
-        net_sale_amount: totalAmount - totalShipping - totalRefund,
+        net_sale_amount:
+          totalAmount - totalShipping - totalReturnedValue + shippingRefunded,
+        total_return_value: totalReturnedValue,
+        due_reduced: dueReduced,
+        shipping_refunded: shippingRefunded,
+        credit_refunds: creditRefunds,
         cash_refunds: cashRefunds,
         digital_refunds: digitalRefunds,
         net_cash_sales: netCashSales,
         net_money_collected: netMoneyCollected,
         net_operating_result:
-          totalAmount - totalRefund - partnerCharges - totalOperationalCosts,
+          totalAmount -
+          totalReturnedValue -
+          partnerCharges -
+          totalOperationalCosts,
         net_operating_cash_flow: netOperatingCashFlow,
       };
 

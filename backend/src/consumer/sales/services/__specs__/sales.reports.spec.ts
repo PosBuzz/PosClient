@@ -315,8 +315,8 @@ describe('SalesService.getEODReport (unit)', () => {
       partner_payments_made: 0,
       partner_payments_cash: 0,
       total_exchange_return: 17,
-      unique_exchanges: 22,
-      non_cash_sales: 140,
+      unique_exchanges: 32,
+      non_cash_sales: 75,
       average_transaction_value: 230 / 3,
       total_items_sold: 8,
       unique_products_sold: 3,
@@ -324,18 +324,22 @@ describe('SalesService.getEODReport (unit)', () => {
       total_returns: 2,
       total_refund: 30,
       total_items_returned: 3,
-      net_sale_amount: 195,
+      net_sale_amount: 183,
+      total_return_value: 47,
+      due_reduced: 0,
+      shipping_refunded: 5,
+      credit_refunds: 0,
       online_sales_count: 0,
       online_sales_amount: 0,
       offline_sales_count: 3,
       offline_sales_amount: 230,
       partner_delivery_charges: 0,
-      shipping_margin: 5,
+      shipping_margin: 0,
       cash_refunds: 25,
       digital_refunds: 5,
       net_cash_sales: 65,
       net_money_collected: 100,
-      net_operating_result: 150,
+      net_operating_result: 133,
       net_operating_cash_flow: 50,
     });
     expect(report).toMatchObject({
@@ -390,6 +394,9 @@ describe('SalesService.getEODReport (unit)', () => {
     prisma.salePayment.findMany.mockResolvedValue([]);
     prisma.return.findMany.mockResolvedValue([]);
     prisma.operationalCost.findMany.mockResolvedValue([]);
+    prisma.deliveryPartnerTransaction.groupBy.mockResolvedValueOnce([
+      { partner_id: 7, type: 'DELIVERY_CHARGE', _sum: { amount: '-95' } },
+    ]);
     const { summary } = await service.getEODReport(5, { date: '2026-05-05' });
     expect(summary.total_shipping).toBe(30);
     expect(summary.partner_delivery_charges).toBe(95);
@@ -439,7 +446,12 @@ describe('SalesService.getEODReport (unit)', () => {
         sale_date: new Date(2026, 4, 5, 13),
       },
     ]);
-    prisma.salePayment.findMany.mockResolvedValue([]);
+    prisma.salePayment.findMany.mockResolvedValue([
+      {
+        ...payment(9, 'DELIVERY_PARTNER', 120, 1),
+        sale: { id: 1, delivery_partner_id: 7, delivery_partner: 'Pathao' },
+      },
+    ]);
     prisma.return.findMany.mockResolvedValue([]);
     prisma.deliveryPartnerSettlement.groupBy.mockResolvedValue([
       {
@@ -449,10 +461,14 @@ describe('SalesService.getEODReport (unit)', () => {
         _sum: { amount: '40' },
       },
     ]);
-    prisma.deliveryPartnerTransaction.groupBy.mockResolvedValue([
-      { partner_id: 7, _sum: { amount: '25' } },
-      { partner_id: 9, _sum: { amount: '-10' } },
-    ]);
+    prisma.deliveryPartnerTransaction.groupBy
+      .mockResolvedValueOnce([
+        { partner_id: 7, type: 'DELIVERY_CHARGE', _sum: { amount: '-95' } },
+      ])
+      .mockResolvedValueOnce([
+        { partner_id: 7, _sum: { amount: '25' } },
+        { partner_id: 9, _sum: { amount: '-10' } },
+      ]);
     prisma.deliveryPartner.findMany.mockResolvedValue([
       { id: 7, name: 'Pathao' },
       { id: 9, name: 'Steadfast' },
@@ -617,7 +633,7 @@ describe('SalesService.getEODReport (unit)', () => {
     const end = new Date(2026, 4, 5, 23, 59, 59, 999);
     expect(report.branch_name).toBe('Main');
     expect(prisma.branch.findUnique).toHaveBeenCalledWith({
-      where: { id: 2 },
+      where: { id: 2, consumer_id: 5 },
       select: { name: true },
     });
     expect(prisma.sale.findMany).toHaveBeenCalledWith({
@@ -630,6 +646,9 @@ describe('SalesService.getEODReport (unit)', () => {
       },
       include: {
         payments: true,
+        returns_as_original: {
+          select: { due_reduction: true, return_date: true },
+        },
         items: { include: { variant: { include: { product: true } } } },
       },
     });
@@ -654,7 +673,10 @@ describe('SalesService.getEODReport (unit)', () => {
     expect(prisma.operationalCost.findMany).toHaveBeenCalledWith({
       where: {
         consumer_id: 5,
-        incurred_on: { gte: start, lte: end },
+        incurred_on: {
+          gte: new Date('2026-05-05T00:00:00Z'),
+          lte: new Date('2026-05-05T00:00:00Z'),
+        },
         branch_id: 2,
       },
       include: { branch: { select: { name: true } } },
@@ -677,6 +699,8 @@ describe('SalesService.getEODReport (unit)', () => {
             sale_number: true,
             sale_date: true,
             total_amount: true,
+            delivery_partner_id: true,
+            delivery_partner: true,
           },
         },
       },
@@ -776,8 +800,12 @@ describe('SalesService.getEODReport (unit)', () => {
     const report = await ctx.service.getEODReport(5, {
       date: '2026-05-05',
     });
-    expect(report.summary.due_sales_count).toBe(2);
-    expect(report.summary.total_due).toBeCloseTo(0.01 + 0, 2);
+    expect(report.summary.due_sales_count).toBe(1);
+    expect(report.payment_status_breakdown).toEqual([
+      { status: 'paid', count: 4, total_amount: 400 },
+      { status: 'partial', count: 1, total_amount: 100 },
+    ]);
+    expect(report.summary.total_due).toBeCloseTo(0.01, 2);
   });
 
   it('[BE-MUT-831] failures are logged and hidden behind a generic 500', async () => {

@@ -1,10 +1,10 @@
-// Builds the two user manuals from Markdown into PDFs that ship inside each app.
+// Builds the two user manuals from Markdown into PDFs that ship in the Admin Panel.
 //
 //   npm run build   (from docs/manual)  writes the PDFs
 //   npm run check   fails if a committed PDF is older than its Markdown or images
 //
 // Source:  docs/manual/<app>/*.md (joined in file-name order) and docs/manual/images/<app>/*
-// Output:  consumer/public/manual/PosBuzz-Shop-App-Manual.pdf
+// Output:  admin/public/manual/PosBuzz-Shop-App-Manual.pdf
 //          admin/public/manual/PosBuzz-Admin-Manual.pdf
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -16,7 +16,7 @@ import { chromium } from "playwright";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
 const manuals = [
-  { app: "consumer", title: "PosBuzz Shop App Manual", subtitle: "For shop owners, managers and cashiers", out: join(root, "consumer/public/manual/PosBuzz-Shop-App-Manual.pdf") },
+  { app: "consumer", title: "PosBuzz Shop App Manual", subtitle: "For shop owners, managers and cashiers", out: join(root, "admin/public/manual/PosBuzz-Shop-App-Manual.pdf") },
   { app: "admin", title: "PosBuzz Admin Panel Manual", subtitle: "For the PosBuzz team", out: join(root, "admin/public/manual/PosBuzz-Admin-Manual.pdf") },
 ];
 

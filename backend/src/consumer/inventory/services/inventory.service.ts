@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { collectBatchLocations } from '../utils/batch-location.util';
 import { InventoryHelperService } from './inventory-helper.service';
@@ -108,7 +109,42 @@ export class InventoryService {
             },
           }),
         ]);
+      const [valueGroups, branches] = await Promise.all([
+        this.prisma.inventoryBatch.groupBy({
+          by: ['branch_id', 'cost_price'],
+          where: whereClause,
+          _sum: { quantity: true },
+        }),
+        this.prisma.branch.findMany({
+          where: {
+            consumer_id: consumerId,
+            ...(branchId ? { id: branchId } : {}),
+          },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+      ]);
+      const values = new Map<number, Prisma.Decimal>();
+      for (const row of valueGroups) {
+        values.set(
+          row.branch_id,
+          (values.get(row.branch_id) ?? new Prisma.Decimal(0)).plus(
+            new Prisma.Decimal(row.cost_price).times(row._sum.quantity ?? 0),
+          ),
+        );
+      }
+      const branchValues = branches.map((branch) => ({
+        branch_id: branch.id,
+        branch_name: branch.name,
+        inventory_value: (
+          values.get(branch.id) ?? new Prisma.Decimal(0)
+        ).toNumber(),
+      }));
       return {
+        total_inventory_value: [...values.values()]
+          .reduce((sum, value) => sum.plus(value), new Prisma.Decimal(0))
+          .toNumber(),
+        branch_values: branchValues,
         total_batches: totalBatches,
         total_quantity:
           (totalQuantity._sum.quantity || 0) -

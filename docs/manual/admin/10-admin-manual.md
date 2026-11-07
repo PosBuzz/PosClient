@@ -74,15 +74,20 @@ If you are already signed in and open the sign-in page, you are taken straight t
 ![Settings menu opened](images/admin/menu-settings-open-d.png)
 *The Settings group opened: Account & Security, Roles, Users and Backup & Restore.*
 
-- **Menu (left).** Dashboard, Plans, Consumers, Billing & Subscriptions, Portfolio Site, Support and Settings (which opens Account & Security, Roles, Users and Backup & Restore). The bottom of the menu reads "Powered by PosBuzz".
+- **Menu (left).** Dashboard, Plans, Consumers, Billing & Subscriptions, Portfolio Site, Support, User Manuals and Settings (which opens Account & Security, Roles, Users and Backup & Restore). The bottom of the menu reads "Powered by PosBuzz".
 - **Top bar (right side), icons from left to right:**
   1. **Clear All Admin Caches** (circular arrow). Reloads every list from the server. Use it if a screen looks out of date. You see "All admin caches cleared!".
   2. **Theme** (light bulb). Choose **Dark**, **Light** or **System**. The choice is remembered in your browser.
-  3. **User Guide (PDF)** (book icon). Opens this manual as a PDF in a new tab.
-  4. **Account and Security** (person). Opens your account page.
-  5. **Logout** (arrow out of a door). Signs you out.
+  3. **Account and Security** (person). Opens your account page.
+  4. **Logout** (arrow out of a door). Signs you out.
 - **Fold button** (three lines, top left). Collapses or expands the menu.
 - **Breadcrumbs** above each page title (for example *Dashboard > Consumers*). Click **Dashboard** to go back home.
+
+### User Manuals
+
+**Where to find it.** Menu > **User Manuals**. Available to signed-in Admin Panel users.
+
+This page contains both the **Shop App Manual** (for shop owners, managers and cashiers) and the **Admin Panel Manual** (for the PosBuzz team). Choose **Open PDF** to read a manual in a new browser tab, or **Download PDF** to save a copy. You can share the Shop App Manual with a shop when helping them get started. Manual links are not shown in either app's header, and the Shop App does not host a manual.
 
 ### Using the Admin Panel on a phone
 

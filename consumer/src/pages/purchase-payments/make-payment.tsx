@@ -120,8 +120,8 @@ const MakePurchasePayment = () => {
 
   const handleSubmit = () => {
     if (!batch) return;
-    if (batch.quantity <= 0 || batch.remaining_amount <= 0) {
-      messageApi?.error("This batch has no payable quantity or balance");
+    if (batch.payment_status === "paid" || batch.remaining_amount <= 0) {
+      messageApi?.error("This batch has no outstanding balance");
       return;
     }
 
@@ -236,9 +236,7 @@ const MakePurchasePayment = () => {
   if (!batch) return null;
 
   const canRecordPayment =
-    batch.payment_status !== "paid" &&
-    batch.quantity > 0 &&
-    batch.remaining_amount > 0;
+    batch.payment_status !== "paid" && batch.remaining_amount > 0;
   const totalPaying = payments.reduce(
     (sum, p) => sum + (Number(p.amount) || 0),
     0,
@@ -406,8 +404,8 @@ const MakePurchasePayment = () => {
               </>
             ) : (
               <Text type="secondary">
-                This batch has no payable quantity or balance. Review the
-                payment history on the left.
+                This batch has no outstanding balance. Review the payment
+                history on the left.
               </Text>
             )}
           </Card>

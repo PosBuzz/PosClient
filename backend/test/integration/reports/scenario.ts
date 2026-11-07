@@ -382,12 +382,12 @@ export const expected = {
     digital_refunds: 0,
     total_exchange_return: 72,
     unique_exchanges: 72,
-    net_sale_amount: 925, // 1065 - 60 shipping - 80 refunds
+    net_sale_amount: 853, // 1065 - 60 shipping - 80 refunds - 72 exchange returns
     net_cash_sales: 545, // 625 - 80
     net_money_collected: 1015, // 1095 - 80
-    net_operating_result: 685, // 1065 - 80 - 300
+    net_operating_result: 613, // 1065 - 80 refunds - 72 exchanges - 300 costs
     net_operating_cash_flow: 715, // 1015 - 300
-    non_cash_sales: 440, // 1065 - 625
+    non_cash_sales: 470, // 1095 collected - 625 cash
   },
   paymentMethods: {
     CASH: { amount: 625, count: 5 },

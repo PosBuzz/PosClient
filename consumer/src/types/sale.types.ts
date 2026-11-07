@@ -541,6 +541,11 @@ export interface EODSummary {
   // Returns booked in the period; sales above stay gross
   total_returns: number;
   total_refund: number;
+  /** Full returned value: refunds, exchanges and cancelled due. */
+  total_return_value?: number;
+  due_reduced?: number;
+  shipping_refunded?: number;
+  credit_refunds?: number;
   total_items_returned: number;
   net_sale_amount: number;
   cash_refunds: number;

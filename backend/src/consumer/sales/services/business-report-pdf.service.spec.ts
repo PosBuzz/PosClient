@@ -229,4 +229,26 @@ describe('BusinessReportPdfService layout (unit)', () => {
       recorder.documents[0],
     );
   });
+  it('[BE-RPT-PDF-001] a due-only return is printed even though no refund tender was paid', async () => {
+    const { service } = setup();
+    await service.generate(
+      5,
+      {},
+      report({
+        return_payment_breakdown: [],
+        summary: summary({
+          total_refund: 0,
+          total_exchange_return: 0,
+          total_return_value: 250,
+          due_reduced: 250,
+        }),
+      }),
+    );
+    const text = recorder.documents[0].calls
+      .filter((c) => c[0] === 'text')
+      .map((c) => String(c[1]));
+    expect(text).toContain('RETURNS, REFUNDS & DUE CANCELLED');
+    expect(text).toContain('Due cancelled (no money paid out)');
+    expect(text).toContain('BDT 250.00');
+  });
 });

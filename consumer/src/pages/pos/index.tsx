@@ -91,6 +91,7 @@ import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
+import QuantityInput from "./QuantityInput";
 import "./pos-mobile.css";
 import "./pos-luxury.css";
 import posbuzzLogo from "../../assets/posbuzz-logo.png";
@@ -776,16 +777,12 @@ const NewSale = () => {
       key: "quantity",
       render: (record: SaleItem) => (
         <div>
-          <InputNumber
-            min={1}
+          <QuantityInput
             value={record.quantity}
-            onChange={(value) =>
-              updateItemQuantity(record.variant_id, value || 1)
+            name={record.product_name}
+            onChange={(quantity) =>
+              updateItemQuantity(record.variant_id, quantity)
             }
-            onPressEnter={(e) => {
-              (e.target as HTMLInputElement).blur();
-            }}
-            style={{ width: 70, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: "#666" }}>{record.unit_name}</div>
         </div>
@@ -1300,7 +1297,7 @@ const NewSale = () => {
             alt="PosBuzz"
           />
           <div className="pos-luxury__powered">
-            Powered by
+            Developed by
             <strong>Knit Coders</strong>
           </div>
         </div>
@@ -1946,8 +1943,8 @@ const NewSale = () => {
                           );
 
                           return (
-                            <Row gutter={6} align="middle">
-                              <Col span={requiresProvider ? 6 : 8}>
+                            <div className="pos-payment-fields">
+                              <div className="pos-payment-field pos-payment-field--method">
                                 <Select
                                   size="small"
                                   value={payment.payment_method}
@@ -1968,6 +1965,7 @@ const NewSale = () => {
                                     }, 0);
                                   }}
                                   style={{ width: "100%" }}
+                                  aria-label={`Payment method ${index + 1}`}
                                   placeholder="Method"
                                 >
                                   <Option value={PaymentMethod.CASH}>
@@ -1995,9 +1993,12 @@ const NewSale = () => {
                                     <SwapOutlined className="mr-2" /> Exchange
                                   </Option>
                                 </Select>
-                              </Col>
+                              </div>
 
-                              <Col span={requiresProvider ? 6 : 0}>
+                              <div
+                                className="pos-payment-field pos-payment-field--provider"
+                                hidden={!requiresProvider}
+                              >
                                 {requiresProvider ? (
                                   <Select
                                     size="small"
@@ -2022,9 +2023,9 @@ const NewSale = () => {
                                     listHeight={200}
                                   />
                                 ) : null}
-                              </Col>
+                              </div>
 
-                              <Col span={requiresProvider ? 5 : 7}>
+                              <div className="pos-payment-field">
                                 <InputNumber
                                   size="small"
                                   value={payment.amount}
@@ -2041,11 +2042,12 @@ const NewSale = () => {
                                   min={0}
                                   precision={2}
                                   style={{ width: "100%" }}
+                                  aria-label={`Payment amount ${index + 1}`}
                                   placeholder="Amount"
                                   prefix={takaPrefix}
                                 />
-                              </Col>
-                              <Col span={requiresProvider ? 5 : 7}>
+                              </div>
+                              <div className="pos-payment-field">
                                 <Input
                                   size="small"
                                   value={payment.reference}
@@ -2058,15 +2060,17 @@ const NewSale = () => {
                                   onPressEnter={(e) =>
                                     (e.target as HTMLInputElement).blur()
                                   }
-                                  placeholder="Ref#"
+                                  aria-label={`Payment reference ${index + 1}`}
+                                  placeholder="Reference"
                                 />
-                              </Col>
-                              <Col span={2}>
+                              </div>
+                              <div className="pos-payment-field pos-payment-field--remove">
                                 <Tooltip title="Remove">
                                   <Button
                                     size="small"
                                     danger
                                     type="text"
+                                    aria-label={`Remove payment ${index + 1}`}
                                     icon={<DeleteOutlined />}
                                     onClick={() => {
                                       const updatedPayments =
@@ -2077,8 +2081,8 @@ const NewSale = () => {
                                     }}
                                   />
                                 </Tooltip>
-                              </Col>
-                            </Row>
+                              </div>
+                            </div>
                           );
                         })()}
                       </Card>

@@ -81,8 +81,10 @@ Both layouts work the same way underneath. Only the buttons differ.
 | **Select bank** | Shown for Card and Transfer. A searchable list of Bangladesh banks. |
 | **Select MFS** | Shown for MFS. Choose from bKash, Nagad, Rocket, MyCash, Islami Bank mCash, Trust Axiata Pay (TAP), FirstCash, Upay, OK Wallet, Rupali Bank, Telecash, Islamic Wallet, Meghna Pay. |
 | **Amount** | Minimum 0, two decimal places. |
-| **Ref#** | Optional reference, for example a transaction number. |
+| **Reference** | Optional reference, for example a transaction number. |
 | Red trash button (**Remove**) | Removes this payment row. |
+
+Payment method, provider, amount and reference fields wrap within the payment card to stay usable on narrow screens. The Express Sale branding reads **Developed by Knit Coders**.
 
 **Cart Items card**
 
@@ -92,7 +94,7 @@ The card has a count badge. When empty it says **No items in cart** and **Search
 | --- | --- |
 | **Product** | Picture, name, variant and **SKU:**. |
 | **Price** | Unit price. |
-| **Qty** | A number box, minimum 1, with the unit name below. Setting it to 0 or clearing it removes the line. |
+| **Qty** | Type a whole quantity directly, or use **−** and **+**. The box can be cleared with Backspace while entering a new quantity. Enter or Escape leaves the box; a blank value restores the last quantity. Pressing **−** at 1 removes the line. The unit name is below. |
 | **Tax** | The tax amount, followed by **(Inc)** if tax is already inside the price, or **(Exc)** if tax is added on top. |
 | **Avg Disc** | The share of the order discount on this line. |
 | **Special Disc** | A switch **Overall** / **Per qty**, an amount box, a percent text and the total. |

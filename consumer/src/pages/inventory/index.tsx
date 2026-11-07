@@ -506,10 +506,38 @@ export default function InventoryPage() {
           </Space>
         }
       />
+      {summary && (
+        <Card
+          title={
+            selectedBranch === undefined
+              ? "Total Inventory Value"
+              : "Selected Branch Inventory Value"
+          }
+          style={{ marginBottom: 24 }}
+        >
+          <Typography.Title level={3} style={{ marginTop: 0 }}>
+            <Money value={summary.total_inventory_value ?? 0} />
+          </Typography.Title>
+          <Typography.Paragraph type="secondary">
+            Physical stock at batch cost, including stock reserved for pending
+            delivery. Values cover the selected branch, independently of table
+            search, category and pagination.
+          </Typography.Paragraph>
+          <Row gutter={[16, 16]}>
+            {(summary.branch_values ?? []).map((branch) => (
+              <Col xs={24} sm={12} lg={8} key={branch.branch_id}>
+                <Card size="small" title={branch.branch_name}>
+                  <Money value={branch.inventory_value} />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
       {/* Summary Cards */}
       {summary && (
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={12} lg={6}>
             <Card size="small">
               <div style={{ textAlign: "center" }}>
                 <div
@@ -525,7 +553,7 @@ export default function InventoryPage() {
               </div>
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Card size="small">
               <div style={{ textAlign: "center" }}>
                 <div
@@ -541,7 +569,7 @@ export default function InventoryPage() {
               </div>
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Card size="small">
               <div style={{ textAlign: "center" }}>
                 <div
@@ -557,7 +585,7 @@ export default function InventoryPage() {
               </div>
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Card size="small">
               <div style={{ textAlign: "center" }}>
                 <div
@@ -677,7 +705,7 @@ export default function InventoryPage() {
       {/* Quick Navigation */}
       {/* <Card title="Inventory Views" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Button
               block
               icon={<ShopOutlined />}
@@ -686,7 +714,7 @@ export default function InventoryPage() {
               Stock by Variant
             </Button>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Button
               block
               icon={<WarningOutlined />}
@@ -696,7 +724,7 @@ export default function InventoryPage() {
               Low Stock Items
             </Button>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Button
               block
               icon={<CalendarOutlined />}
@@ -706,7 +734,7 @@ export default function InventoryPage() {
               Expiring Items
             </Button>
           </Col>
-          <Col span={6}>
+          <Col xs={12} lg={6}>
             <Button
               block
               icon={<SwapOutlined />}

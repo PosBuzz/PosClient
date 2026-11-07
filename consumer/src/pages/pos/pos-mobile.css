@@ -58,3 +58,31 @@
     gap: 6px;
   }
 }
+
+/* Respond to the payment card width, including narrow desktop columns. */
+.pos-payment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 4px;
+}
+.pos-payment-field {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+.pos-payment-field--method {
+  grid-column: 1 / 3;
+}
+.pos-payment-field--provider {
+  grid-column: 1 / -1;
+}
+.pos-payment-field--remove {
+  grid-column: 3;
+  grid-row: 1;
+}
+.pos-payment-fields .ant-input-number-affix-wrapper,
+.pos-payment-fields .ant-input-number {
+  width: 100%;
+  min-width: 0;
+}

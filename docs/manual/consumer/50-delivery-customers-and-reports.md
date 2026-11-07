@@ -1729,7 +1729,7 @@ Use these steps once on the Windows computer where the receipt printer is connec
 2. Fill in the store name, address, phone and email.
 3. Type the **receipt printer name**. It must be exactly the name Windows shows. To check, open Windows Settings > Devices > Printers & scanners.
 4. If you want a logo, add a PNG or JPG file.
-5. If you print barcode labels, type the **barcode label printer name**.
+5. Barcode labels use the browser from **Products > Barcode Printing**; no label printer is configured in the agent.
 6. Set the currency symbol.
 7. If a cash drawer is connected through the receipt printer, switch on the cash drawer option.
 8. Tick the option to start with Windows, so the program opens every time the computer starts.
@@ -1752,7 +1752,7 @@ If the program is not running, nothing prints by itself. The app may then show: 
 
 ### How to set the label size
 
-Set the label size once in the barcode printer's driver: Printers > the barcode printer > Printing Preferences > Page Setup > Stock.
+Set label dimensions in **Products > Barcode Printing**, then choose matching paper in the browser print dialog and printer driver. Use 100% scale and disable browser headers and footers.
 
 ### How to update the print program
 
