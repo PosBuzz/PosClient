@@ -1,3 +1,4 @@
+import QuantityInput from "../../components/QuantityInput";
 import { Money } from "../../components/Currency";
 import {
   ArrowLeftOutlined,
@@ -20,7 +21,6 @@ import {
   Table,
   Typography,
 } from "antd";
-import InputNumber from "../../components/NumberInput";
 import debounce from "lodash/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -286,12 +286,13 @@ export default function AddInventoryTransfer() {
       key: "quantity",
       align: "right" as const,
       render: (_, record: TransferItem) => (
-        <InputNumber
-          min={1}
+        <QuantityInput
+          buttons={false}
+          width={130}
           max={record.max_quantity}
           value={record.quantity}
-          onChange={(value) => handleQuantityChange(record.key, value || 1)}
-          style={{ width: 100 }}
+          name={record.batch.batch_number}
+          onChange={(quantity) => handleQuantityChange(record.key, quantity)}
           addonAfter="units"
         />
       ),

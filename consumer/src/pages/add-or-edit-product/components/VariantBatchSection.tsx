@@ -17,6 +17,7 @@ import {
   Typography,
 } from "antd";
 import InputNumber from "../../../components/NumberInput";
+import QuantityInput from "../../../components/QuantityInput";
 import dayjs from "dayjs";
 import { ValidationState, VariantBatchInput } from "../types";
 import VendorSelector from "./VendorSelector";
@@ -270,18 +271,17 @@ export default function VariantBatchSection({
 
               <Col xs={24} md={4} style={{ minWidth: 0 }}>
                 <Text strong>Quantity *</Text>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="0"
-                  min={1}
-                  precision={0}
+                <QuantityInput
+                  buttons={false}
+                  width="100%"
+                  name={`batch ${index + 1}`}
                   value={batch.quantity}
                   status={
                     getError(validationState, variantId, index, "quantity")
                       .status
                   }
-                  onChange={(value) =>
-                    updateBatch(index, "quantity", value || 1)
+                  onChange={(quantity) =>
+                    updateBatch(index, "quantity", quantity)
                   }
                 />
                 {getError(validationState, variantId, index, "quantity")

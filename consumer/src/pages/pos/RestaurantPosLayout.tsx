@@ -42,7 +42,7 @@ import {
 } from "../../utils/payment-provider.utils";
 import "./RestaurantPosLayout.css";
 import CompanyLogo from "../../components/CompanyLogo";
-import QuantityInput from "./QuantityInput";
+import QuantityInput from "../../components/QuantityInput";
 
 type StaffUser = { id: number; name: string };
 type BranchOption = { id: number; name?: string };
