@@ -775,6 +775,7 @@ const NewSale = () => {
     {
       title: "Qty",
       key: "quantity",
+      width: 140,
       render: (record: SaleItem) => (
         <div>
           <QuantityInput
@@ -2208,6 +2209,7 @@ const NewSale = () => {
                         pagination={false}
                         showHeader={true}
                         sticky
+                        scroll={{ x: "max-content" }}
                         bordered={false}
                         style={{ background: "transparent" }}
                       />
