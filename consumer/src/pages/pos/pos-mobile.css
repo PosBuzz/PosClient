@@ -86,9 +86,3 @@
   width: 100%;
   min-width: 0;
 }
-
-/* Quantity box: never let a narrow table cell squeeze the number away. */
-.pos-qty-input .ant-input-number-input {
-  text-align: center;
-  padding-inline: 4px;
-}

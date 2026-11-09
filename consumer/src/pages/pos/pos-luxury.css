@@ -628,3 +628,50 @@ html:not([data-theme="dark"]) .pos-luxury {
 .pos-luxury .pos-luxury__discount-input .ant-input-number-input {
   height: 36px;
 }
+
+/* Payments: modern "Add payment" pill and softer payment cards */
+.pos-luxury .pos-pay-add.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--lx-green-2);
+  background: var(--lx-green-wash);
+  border: 1px solid color-mix(in srgb, var(--lx-green) 45%, transparent);
+  box-shadow: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.pos-luxury .pos-pay-add.ant-btn .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  color: var(--lx-onaccent);
+  background: linear-gradient(135deg, var(--lx-green), var(--lx-green-2));
+}
+.pos-luxury .pos-pay-add.ant-btn:hover,
+.pos-luxury .pos-pay-add.ant-btn:focus-visible {
+  color: var(--lx-green-2);
+  background: color-mix(in srgb, var(--lx-green) 18%, transparent);
+  border-color: var(--lx-green);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--lx-green) 25%, transparent);
+}
+.pos-luxury .pos-pay-add.ant-btn:active {
+  transform: scale(0.97);
+}
+.pos-luxury .pos-pay-card.ant-card {
+  background: var(--lx-surface-2);
+  border: 1px solid var(--lx-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.pos-luxury .pos-pay-card .ant-card-body {
+  padding: 8px !important;
+}

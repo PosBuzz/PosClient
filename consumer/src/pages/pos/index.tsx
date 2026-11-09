@@ -91,7 +91,7 @@ import { getProductVariantSearchLabel } from "../../utils/product-search.utils";
 import { getPosLayout } from "../../constants/pos-layout";
 import CompanyLogo from "../../components/CompanyLogo";
 import RestaurantPosLayout from "./RestaurantPosLayout";
-import QuantityInput from "./QuantityInput";
+import QuantityInput from "../../components/QuantityInput";
 import "./pos-mobile.css";
 import "./pos-luxury.css";
 import posbuzzLogo from "../../assets/posbuzz-logo.png";
@@ -1881,14 +1881,8 @@ const NewSale = () => {
                   </span>
                   <Button
                     size="small"
-                    type="primary"
+                    className="pos-pay-add"
                     icon={<PlusOutlined />}
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: 2,
-                      height: "auto",
-                    }}
                     onClick={() => {
                       const remainingAmount = Math.max(
                         0,
@@ -1911,7 +1905,7 @@ const NewSale = () => {
                       ]);
                     }}
                   >
-                    Add
+                    Add payment
                   </Button>
                 </div>
                 <div
@@ -1931,7 +1925,8 @@ const NewSale = () => {
                       <Card
                         key={index}
                         size="small"
-                        style={{ borderRadius: 6 }}
+                        className="pos-pay-card"
+                        style={{ borderRadius: 12 }}
                         bodyStyle={{ padding: 4 }}
                       >
                         {(() => {

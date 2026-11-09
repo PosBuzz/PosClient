@@ -1,0 +1,5 @@
+/* Quantity box: never let a narrow table cell squeeze the number away. */
+.qty-input .ant-input-number-input {
+  text-align: center;
+  padding-inline: 4px;
+}
