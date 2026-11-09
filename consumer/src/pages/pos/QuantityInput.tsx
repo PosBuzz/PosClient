@@ -13,7 +13,7 @@ export default function QuantityInput({ value, name, onChange }: Props) {
   const [draft, setDraft] = useState<number | null>(value);
   useEffect(() => setDraft(value), [value]);
   return (
-    <Space.Compact style={{ maxWidth: "100%" }}>
+    <Space.Compact style={{ minWidth: 124, flex: "none" }}>
       <Button
         aria-label={`Decrease ${name}`}
         icon={<MinusOutlined />}
@@ -42,7 +42,8 @@ export default function QuantityInput({ value, name, onChange }: Props) {
             event.currentTarget.blur();
           }
         }}
-        style={{ width: 60, textAlign: "center" }}
+        style={{ width: 60, minWidth: 60, flex: "none" }}
+        className="pos-qty-input"
       />
       <Button
         aria-label={`Increase ${name}`}

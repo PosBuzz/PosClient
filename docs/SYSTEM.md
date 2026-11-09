@@ -63,7 +63,7 @@ the stack back to its last good commit (images only, not migrations); a dump is 
 CI (`.github/workflows/ci.yml`, `All checks` is the single aggregator): lint+typecheck, production dependency audit for
 backend/consumer/admin/portfolio (high+ fails), PR dependency review, builds and Docker builds, backend unit /
 integration+e2e / optional-infra, consumer and admin tests, contracts, Playwright e2e, secret scan (gitleaks, new commits
-only), tests-required (PRs), coverage ratchets, consumer and backend-unit mutation. `nightly.yml` runs domain mutation.
+only), tests-required (PRs), coverage ratchets, consumer and backend-unit mutation. `nightly.yml` (domain mutation) is disabled (2026-11-07, Actions minutes budget); re-enable with `gh workflow enable Nightly`.
 `cancel-on-close.yml` cancels a PR's CI when the PR closes; pushing again cancels the older run. The Actions budget has run out
 once (2026-10-14): do not push repeatedly while CI runs, and keep throwaway branches with temporary triggers short-lived.
 
@@ -90,7 +90,7 @@ Prisma schema and migrations are checked for an empty `migrate diff`, and a dest
 **Rules (do not break):**
 - Never lower an assertion, coverage floor or mutation threshold to make something pass: fix the code or add tests.
 - A confirmed defect found while testing is fixed now with a normal passing regression test. No `it.failing`, `skip` or similar markers.
-- Domain mutation is nightly-only: a seventh of the files per night (`STRYKER_ROTATION=d/7`) plus recently changed files, split into shards,
+- Domain mutation is nightly-only, but the Nightly workflow is disabled since 2026-11-07 (Actions minutes), so it does not run until re-enabled: a seventh of the files per night (`STRYKER_ROTATION=d/7`) plus recently changed files, split into shards,
   judged by the ratchet `scripts/mutation-tier-gate.mjs --baseline backend/test/service-coverage/mutation-baseline.json`.
   A shard stops itself at 5h, caches its partial results for the next run and reports nothing that night (it leaves a `budget-hit` marker).
   A `full_domain` run judges the strict Tier A/B floors only when no shard stopped; otherwise it falls back to the ratchet and warns.
