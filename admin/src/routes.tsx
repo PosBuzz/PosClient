@@ -16,6 +16,7 @@ const BackupRestore = lazy(() => import("./pages/backup&restore"));
 const Support = lazy(() => import("./pages/support"));
 const Portfolio = lazy(() => import("./pages/portfolio"));
 const AccountSecurity = lazy(() => import("./pages/account-security"));
+const Manuals = lazy(() => import("./pages/manuals"));
 const Test = lazy(() => import("./pages/test"));
 
 export const routes = [
@@ -36,6 +37,7 @@ export const routes = [
     ),
     children: [
       { index: true, element: <Home /> },
+      { path: "manuals", element: <Manuals /> },
       {
         path: "consumers",
         element: (

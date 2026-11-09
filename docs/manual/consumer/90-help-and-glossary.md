@@ -9,7 +9,7 @@
 | You cannot sign in | Wrong email or password, or too many attempts in a minute | Check the details. Wait a minute before trying again. Ask the owner to reset your password if you forgot it. |
 | A menu item described in this manual is missing | Your role does not include that permission, or your plan does not include the feature | Ask the owner or a manager with the *Users & Roles* permission. |
 | A list does not show a change you just made | The screen is showing older data | Click the circular arrow in the top bar (tooltip "Clear Application Cache"). It loads the lists again and does not sign you out. Or reload the page. |
-| You want to read the manual again | Not applicable | Click the book icon ("User Guide (PDF)") in the top bar. The manual opens as a PDF in a new tab. |
+| You want to read the manual again | Not applicable | Ask the PosBuzz team for the Shop App Manual. Both manuals are available on the Admin Panel's User Manuals page. |
 | After you delete a role, the people who had it are gone from Users | Deleting a role in use also removed those people in our test | Before deleting a role, move its people to another role in Settings > Users. |
 | You open a page and are sent to the sign-in page | Your session ended | Sign in again. |
 | A sale is refused with a message about stock | The batch has fewer items than you tried to sell | Lower the quantity, pick another batch, or add stock. Check **Stock Overview**. |

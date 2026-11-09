@@ -73,6 +73,7 @@ on 2026-10-16; the full text is in git history (`git show 840c2b3:docs/testing/<
   text only through `getErrorMessage` in `consumer|admin/src/utils/api-error.ts`.
 - `ci.yml` runs every job on every PR and on pushes to `main` and `staging`; `All checks` is the single aggregator the deploy workflow looks up. Path-filtering was
   tried and reverted — do not reintroduce it without asking. Dependencies: `npm audit` is at 0 in all four apps; the CI audit gates production dependencies (high+).
+- `nightly.yml` is disabled (2026-11-07, Actions minutes budget; ~73% of November usage); re-enable with `gh workflow enable Nightly` before relying on domain mutation.
 - `nightly.yml` is not on the default branch until a PR merges, so it cannot be dispatched with `gh workflow run`; to test it, push a throwaway branch with a
   temporary `push` trigger and delete it afterwards. It skips on schedule when there are no commits in the last 25 hours.
 - Do not push repeatedly while CI runs: a new push cancels the run in progress. Mutation and E2E jobs are expensive; the GitHub Actions budget has run out once (2026-10-14).

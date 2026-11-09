@@ -3,6 +3,12 @@ import { endpoints } from "./endpoints";
 import axiosInstance from "./axiosInstance";
 
 export interface InventorySummary {
+  total_inventory_value?: number;
+  branch_values?: Array<{
+    branch_id: number;
+    branch_name: string;
+    inventory_value: number;
+  }>;
   total_batches: number;
   total_quantity: number;
   physical_quantity: number;

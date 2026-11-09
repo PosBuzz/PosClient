@@ -10,6 +10,7 @@ export interface ExportColumn {
 
 export interface ExportTable {
   title: string;
+  summary?: Array<{ label: string; value: number }>;
   columns: ExportColumn[];
   rows: (string | number)[][];
 }

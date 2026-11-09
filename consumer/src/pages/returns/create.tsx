@@ -1,3 +1,4 @@
+import QuantityInput from "../../components/QuantityInput";
 import { Money, takaPrefix } from "../../components/Currency";
 import { formatCurrency } from "../../utils/formatters";
 import {
@@ -694,13 +695,13 @@ const CreateReturn = () => {
         const maxAvailable = record.max_quantity || saleItem?.quantity || 1;
 
         return (
-          <InputNumber
-            min={1}
+          <QuantityInput
+            buttons={false}
+            width={80}
             max={maxAvailable}
             value={record.quantity}
-            onChange={(value) => {
-              const newQty = value || 1;
-
+            name={saleItem?.product_name ?? `item ${record.sale_item_id}`}
+            onChange={(newQty) => {
               const updatedItems = selectedItems.map((item) =>
                 item.sale_item_id === record.sale_item_id
                   ? { ...item, quantity: newQty }
@@ -708,7 +709,6 @@ const CreateReturn = () => {
               );
               setSelectedItems(updatedItems);
             }}
-            style={{ width: 80 }}
           />
         );
       },

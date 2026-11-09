@@ -356,8 +356,8 @@ const EODReport = () => {
 
       {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
-        <Row gutter={16} align="bottom">
-          <Col span={6}>
+        <Row gutter={[16, 16]} align="bottom">
+          <Col xs={24} sm={12} lg={6}>
             <label>Report period:</label>
             <br />
             <Segmented
@@ -371,7 +371,7 @@ const EODReport = () => {
               ]}
             />
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} lg={6}>
             <label>
               {period === "day"
                 ? "Date:"
@@ -392,7 +392,7 @@ const EODReport = () => {
               picker={period === "month" ? "month" : "date"}
             />
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} lg={6}>
             <label>Branch:</label>
             <Select
               style={{ width: "100%", marginTop: 4 }}
@@ -498,7 +498,7 @@ const EODReport = () => {
                   precision={2}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Gross sales minus shipping and refunds
+                  Product sales less returned product value
                 </Text>
               </Card>
             </Col>
@@ -515,7 +515,7 @@ const EODReport = () => {
                   precision={2}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Net Cash in Drawer:{" "}
+                  Net Cash Collections:{" "}
                   <Money value={eodData.summary.net_cash_sales} />
                 </Text>
               </Card>
@@ -596,8 +596,8 @@ const EODReport = () => {
                       precision={2}
                     />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Sold at the counter. The customer pays you directly, so
-                      the money is already in your drawer or bank.
+                      Invoices issued at the counter in this period, including
+                      unpaid sales. See collections and dues for payment totals.
                     </Text>
                   </Card>
                 </Col>
@@ -610,8 +610,9 @@ const EODReport = () => {
                       precision={2}
                     />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Sent by a delivery partner. The partner usually collects
-                      the cash from the customer and pays you later.
+                      Online invoices issued in this period, including pending
+                      orders. Partner collections and payouts are shown
+                      separately.
                     </Text>
                   </Card>
                 </Col>
@@ -732,10 +733,11 @@ const EODReport = () => {
                   <div style={{ padding: 12 }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       Cash collected from customers is the money the partner
-                      took for delivered orders in this period. Partner charges
-                      are their delivery fees, COD fees and return fees. Owed
-                      now = what they still have to pay you (red) or what you
-                      still have to pay them (green, minus sign).
+                      collected in this period. Order counts cover invoices
+                      issued in this period, shown at their current status.
+                      Charges are fees and corrections booked in this period.
+                      Owed now = what they still have to pay you (red) or what
+                      you still have to pay them (green, minus sign).
                     </Text>
                   </div>
                 </Card>
@@ -743,7 +745,8 @@ const EODReport = () => {
             </div>
           )}
 
-          {(Number(eodData.summary.total_shipping || 0) > 0 ||
+          {(Number(eodData.summary.shipping_refunded || 0) > 0 ||
+            Number(eodData.summary.total_shipping || 0) > 0 ||
             Number(eodData.summary.partner_delivery_charges || 0) > 0) && (
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col xs={24} sm={12} md={8}>
@@ -755,14 +758,14 @@ const EODReport = () => {
                     precision={2}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Included in Gross Sales, not in Net Sales
+                    Shipping charged before shipping refunds
                   </Text>
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8}>
                 <Card>
                   <Statistic
-                    title="Paid to Delivery Partners"
+                    title="Partner Charges Booked"
                     value={eodData.summary.partner_delivery_charges || 0}
                     prefix={takaPrefix}
                     precision={2}
@@ -775,7 +778,7 @@ const EODReport = () => {
               <Col xs={24} sm={12} md={8}>
                 <Card>
                   <Statistic
-                    title="Shipping Profit / Loss"
+                    title="Shipping Margin"
                     value={eodData.summary.shipping_margin || 0}
                     prefix={takaPrefix}
                     precision={2}
@@ -787,7 +790,7 @@ const EODReport = () => {
                     }}
                   />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Shipping charged minus partner charges
+                    Shipping charged less shipping returned and partner charges
                   </Text>
                 </Card>
               </Col>
@@ -817,7 +820,7 @@ const EODReport = () => {
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Net Cash in Drawer"
+                  title="Net Cash Collections"
                   value={eodData.summary.net_cash_sales}
                   prefix={takaPrefix}
                   precision={2}
@@ -859,11 +862,54 @@ const EODReport = () => {
                   }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  After refunds & operational costs
+                  After returns, delivery charges & expenses; before product
+                  costs
                 </Text>
               </Card>
             </Col>
           </Row>
+
+          {eodData.summary.total_returns > 0 && (
+            <Card title="Return Value Breakdown" style={{ marginBottom: 16 }}>
+              <Row gutter={[16, 16]}>
+                {[
+                  [
+                    "Total returned value",
+                    eodData.summary.total_return_value ??
+                      eodData.summary.total_refund +
+                        (eodData.summary.total_exchange_return || 0),
+                  ],
+                  ["Due cancelled", eodData.summary.due_reduced || 0],
+                  [
+                    "Cash / digital refunded",
+                    eodData.summary.cash_refunds +
+                      (eodData.summary.digital_refunds || 0),
+                  ],
+                  [
+                    "Store credit refunded",
+                    eodData.summary.credit_refunds || 0,
+                  ],
+                  [
+                    "Shipping returned (included above)",
+                    eodData.summary.shipping_refunded || 0,
+                  ],
+                ].map(([title, value]) => (
+                  <Col xs={24} sm={12} lg={8} key={title}>
+                    <Statistic
+                      title={title}
+                      value={value}
+                      precision={2}
+                      prefix={takaPrefix}
+                    />
+                  </Col>
+                ))}
+              </Row>
+              <Text type="secondary">
+                Returned value includes refunds, exchange credit and cancelled
+                due. Only cash and digital refunds reduce money collected.
+              </Text>
+            </Card>
+          )}
 
           {/* Operational Volume & Metadata */}
           <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -1162,8 +1208,9 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Liquid currency received via Cash and verified Digital
-                      accounts (Cards/MFS).
+                      Cash and digital collections, including partner payouts.
+                      Excludes reward points, exchanges and money still held by
+                      partners.
                     </Text>
                   </div>
                   <div>
@@ -1171,7 +1218,7 @@ const EODReport = () => {
                       strong
                       style={{ color: isDarkMode ? "#5eead4" : "#0f766e" }}
                     >
-                      • Net Cash in Drawer:{" "}
+                      • Net Cash Collections:{" "}
                     </Text>
                     <Text
                       style={{
@@ -1179,8 +1226,10 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Total physical cash received (sales + due collections)
-                      less cash refunds paid.
+                      Cash sales and due collections, less cash refunds, plus
+                      partner cash received less partner cash paid. Excludes
+                      opening cash, inventory purchases and operational
+                      expenses.
                     </Text>
                   </div>
                 </div>
@@ -1207,8 +1256,9 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Remaining unpaid balance on sales invoices finalized
-                      during this period.
+                      Balance at period end on invoices issued during this
+                      period, after collections and due cancellations up to that
+                      date.
                     </Text>
                   </div>
                   <div>
@@ -1241,8 +1291,9 @@ const EODReport = () => {
                         color: isDarkMode ? "#cbd5e1" : "#475569",
                       }}
                     >
-                      Gross Sales minus Returns/Refunds and Operational
-                      Expenses.
+                      Invoiced sales less full returned value, delivery partner
+                      charges and operational expenses. Before product costs and
+                      tax payments; this is not net profit.
                     </Text>
                   </div>
                 </div>
@@ -1264,9 +1315,9 @@ const EODReport = () => {
                   fontStyle: "italic",
                 }}
               >
-                Official computer-generated financial report. Prepared in
-                accordance with standard retail cash & accrual accounting
-                principles.
+                Computer-generated business report. Prepared from recorded
+                invoices, returns, collections and expenses. Net Operating
+                Result excludes product costs and tax payments.
               </Text>
             </div>
           </Card>

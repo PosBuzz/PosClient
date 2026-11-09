@@ -28,6 +28,7 @@ import {
   Typography,
 } from "antd";
 import InputNumber from "../../components/NumberInput";
+import QuantityInput from "../../components/QuantityInput";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { post } from "../../api/crud-api";
@@ -683,17 +684,12 @@ const NewSale = () => {
       key: "quantity",
       render: (record: SaleItem) => (
         <div>
-          <InputNumber
-            min={1}
+          <QuantityInput
             value={record.quantity}
-            onChange={(value) =>
-              updateItemQuantity(record.variant_id, value || 1)
+            name={record.product_name}
+            onChange={(quantity) =>
+              updateItemQuantity(record.variant_id, quantity)
             }
-            onPressEnter={(e) => {
-              // Just blur the input, the global handler will handle form submission
-              (e.target as HTMLInputElement).blur();
-            }}
-            style={{ width: 80, marginBottom: 4 }}
           />
           <div style={{ fontSize: 11, color: "#666" }}>{record.unit_name}</div>
         </div>

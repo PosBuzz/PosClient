@@ -58,6 +58,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Test harness runtime state
 /test/.tmp/
 
-reports/
+/reports/
 
 .stryker-tmp/

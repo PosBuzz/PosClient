@@ -38,7 +38,7 @@ it("[CO-FLOW-EOD-001] renders business totals and requests the PDF with the same
     ["Reward Points Redeemed", "reward_point_sales"],
     ["Product Exchanges", "unique_exchanges"],
     ["Cash Refunds", "cash_refunds"],
-    ["Net Cash in Drawer", "net_cash_sales"],
+    ["Net Cash Collections", "net_cash_sales"],
     ["Operational Costs", "operational_costs"],
     ["Net Operating Result", "net_operating_result"],
     ["Total Refunds", "total_refund"],
@@ -88,4 +88,43 @@ it("[CO-FLOW-EOD-001] renders business totals and requests the PDF with the same
   expect(Object.fromEntries(pdfs[0].searchParams)).toEqual(
     Object.fromEntries(reports[0].searchParams),
   );
+});
+
+it("[CO-FLOW-EOD-006] distinguishes cancelled due, credit refunds and money paid out in the return breakdown", async () => {
+  const data = responseContract<any>("eod");
+  data.summary = {
+    ...data.summary,
+    total_returns: 3,
+    total_return_value: 500,
+    total_refund: 225,
+    total_exchange_return: 25,
+    due_reduced: 250,
+    cash_refunds: 100,
+    digital_refunds: 50,
+    credit_refunds: 75,
+    shipping_refunded: 25,
+  };
+  server.use(
+    http.get(`${API}${endpoints.getSales}/reports/eod`, () => ok(data)),
+  );
+  renderWithProviders(<EOD />);
+  await screen.findByText("Return Value Breakdown");
+  for (const [label, value] of [
+    ["Total returned value", "500.00"],
+    ["Due cancelled", "250.00"],
+    ["Cash / digital refunded", "150.00"],
+    ["Store credit refunded", "75.00"],
+    ["Shipping returned (included above)", "25.00"],
+  ]) {
+    expect(
+      screen
+        .getByText(label)
+        .closest(".ant-statistic")
+        ?.querySelector(".ant-statistic-content-value")?.textContent,
+    ).toBe(value);
+  }
+  expect(
+    screen.getByText(/Only cash and digital refunds reduce money collected/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/this is not net profit/)).toBeInTheDocument();
 });

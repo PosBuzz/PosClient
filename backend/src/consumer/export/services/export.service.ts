@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ExportEntity, ExportFormat, ExportTable } from '../export.types';
 
@@ -134,6 +135,29 @@ export class ExportService {
     });
     return {
       title: 'Inventory',
+      summary: [
+        {
+          label: 'Total exported inventory value (BDT)',
+          value: batches
+            .reduce(
+              (sum, b) =>
+                sum.plus(new Prisma.Decimal(b.cost_price).times(b.quantity)),
+              new Prisma.Decimal(0),
+            )
+            .toNumber(),
+        },
+        ...[...new Set(batches.map((b) => b.branch.name))].map((name) => ({
+          label: `Branch: ${name}`,
+          value: batches
+            .filter((b) => b.branch.name === name)
+            .reduce(
+              (sum, b) =>
+                sum.plus(new Prisma.Decimal(b.cost_price).times(b.quantity)),
+              new Prisma.Decimal(0),
+            )
+            .toNumber(),
+        })),
+      ],
       columns: [
         { header: 'Branch', width: 3 },
         { header: 'Product', width: 5 },
@@ -141,7 +165,8 @@ export class ExportService {
         { header: 'SKU', width: 3 },
         { header: 'Batch', width: 3 },
         { header: 'Qty', width: 1.5, align: 'right' },
-        { header: 'Cost', width: 2, align: 'right' },
+        { header: 'Cost (BDT)', width: 2, align: 'right' },
+        { header: 'Value (BDT)', width: 2.5, align: 'right' },
         { header: 'Expiry', width: 2.5 },
       ],
       rows: batches.map((b) => [
@@ -152,6 +177,7 @@ export class ExportService {
         b.batch_number,
         b.quantity,
         money(b.cost_price),
+        new Prisma.Decimal(b.cost_price).times(b.quantity).toNumber(),
         day(b.expiry_date),
       ]),
     };
@@ -166,6 +192,16 @@ export class ExportService {
     }));
     sheet.getRow(1).font = { bold: true };
     table.rows.forEach((row) => sheet.addRow(row));
+    if (table.summary?.length) {
+      const summary = workbook.addWorksheet('Inventory Value');
+      summary.columns = [
+        { header: 'Scope', width: 48 },
+        { header: 'Value (BDT)', width: 22 },
+      ];
+      summary.getRow(1).font = { bold: true };
+      table.summary.forEach((row) => summary.addRow([row.label, row.value]));
+      summary.getColumn(2).numFmt = '#,##0.00';
+    }
     return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
@@ -183,25 +219,129 @@ export class ExportService {
 
       const left = doc.page.margins.left;
       const usable = doc.page.width - left - doc.page.margins.right;
-      const totalWeight = table.columns.reduce((s, c) => s + c.width, 0);
-      const xs: number[] = [];
-      const widths = table.columns.map((c) => (c.width / totalWeight) * usable);
-      widths.reduce((x, w) => (xs.push(x), x + w), left);
+      const lineHeight = 12;
 
-      const header = (y: number) => {
-        doc.font('Helvetica-Bold').fontSize(8);
-        table.columns.forEach((c, i) =>
-          doc.text(c.header, xs[i] + 2, y, {
-            width: widths[i] - 4,
-            align: c.align ?? 'left',
-            lineBreak: false,
-          }),
+      // Wrap words to the actual font width, including very long unbroken names.
+      // Drawing already-wrapped lines stops PDFKit from auto-paginating a single
+      // cell independently of its neighbouring cells.
+      const linesFor = (cell: string | number, width: number): string[] => {
+        const lines: string[] = [];
+        for (const paragraph of String(cell).split(/\r?\n/)) {
+          let line = '';
+          for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+            const candidate = line ? `${line} ${word}` : word;
+            if (doc.widthOfString(candidate) <= width) {
+              line = candidate;
+              continue;
+            }
+            if (line) {
+              lines.push(line);
+              line = '';
+            }
+            for (const char of word) {
+              if (line && doc.widthOfString(line + char) > width) {
+                lines.push(line);
+                line = '';
+              }
+              line += char;
+            }
+          }
+          lines.push(line);
+        }
+        return lines;
+      };
+
+      const drawTable = (
+        columns: ExportTable['columns'],
+        rows: ExportTable['rows'],
+        startY: number,
+      ): number => {
+        const totalWeight = columns.reduce(
+          (sum, column) => sum + column.width,
+          0,
         );
-        doc
-          .moveTo(left, y + 12)
-          .lineTo(left + usable, y + 12)
-          .stroke();
-        return y + 16;
+        const widths = columns.map(
+          (column) => (column.width / totalWeight) * usable,
+        );
+        const xs: number[] = [];
+        widths.reduce((x, width) => {
+          xs.push(x);
+          return x + width;
+        }, left);
+        const header = (top: number) => {
+          doc.font('Helvetica-Bold').fontSize(8);
+          const labels = columns.map((column, i) =>
+            linesFor(column.header, widths[i] - 4),
+          );
+          const height =
+            Math.max(...labels.map((lines) => lines.length)) * lineHeight;
+          labels.forEach((lines, i) =>
+            lines.forEach((line, lineIndex) =>
+              doc.text(line, xs[i] + 2, top + lineIndex * lineHeight, {
+                width: widths[i] - 4,
+                align: columns[i].align ?? 'left',
+                lineBreak: false,
+              }),
+            ),
+          );
+          doc
+            .moveTo(left, top + height)
+            .lineTo(left + usable, top + height)
+            .stroke();
+          doc.font('Helvetica').fontSize(8);
+          return top + height + 4;
+        };
+        let y = startY;
+        if (y > doc.page.height - doc.page.margins.bottom - 40) {
+          doc.addPage();
+          y = doc.page.margins.top;
+        }
+        y = header(y);
+        for (const row of rows) {
+          const cells = columns.map((_, i) =>
+            linesFor(row[i] ?? '', widths[i] - 4),
+          );
+          const height = Math.max(...cells.map((lines) => lines.length));
+          // Keep ordinary rows together. Exceptionally tall rows continue safely
+          // on the next page, with the table header repeated and no lost text.
+          if (
+            height * lineHeight <=
+              doc.page.height -
+                doc.page.margins.bottom -
+                doc.page.margins.top -
+                28 &&
+            y + height * lineHeight > doc.page.height - doc.page.margins.bottom
+          ) {
+            doc.addPage();
+            y = header(doc.page.margins.top);
+          }
+          let offset = 0;
+          while (offset < height) {
+            let available = Math.floor(
+              (doc.page.height - doc.page.margins.bottom - y) / lineHeight,
+            );
+            if (available < 1) {
+              doc.addPage();
+              y = header(doc.page.margins.top);
+              available = Math.floor(
+                (doc.page.height - doc.page.margins.bottom - y) / lineHeight,
+              );
+            }
+            const count = Math.min(available, height - offset);
+            cells.forEach((lines, i) =>
+              lines.slice(offset, offset + count).forEach((line, lineIndex) =>
+                doc.text(line, xs[i] + 2, y + lineIndex * lineHeight, {
+                  width: widths[i] - 4,
+                  align: columns[i].align ?? 'left',
+                  lineBreak: false,
+                }),
+              ),
+            );
+            y += count * lineHeight;
+            offset += count;
+          }
+        }
+        return y;
       };
 
       doc.font('Helvetica-Bold').fontSize(14).text(table.title, left, 30);
@@ -213,25 +353,19 @@ export class ExportService {
           left,
           48,
         );
-
-      let y = header(66);
-      doc.font('Helvetica').fontSize(8);
-      for (const row of table.rows) {
-        if (y > doc.page.height - doc.page.margins.bottom - 14) {
-          doc.addPage();
-          y = header(doc.page.margins.top);
-          doc.font('Helvetica').fontSize(8);
-        }
-        row.forEach((cell, i) =>
-          doc.text(String(cell), xs[i] + 2, y, {
-            width: widths[i] - 4,
-            align: table.columns[i].align ?? 'left',
-            lineBreak: false,
-            ellipsis: true,
-          }),
-        );
-        y += 12;
+      let y = 66;
+      if (table.summary?.length) {
+        y =
+          drawTable(
+            [
+              { header: 'Inventory value at batch cost', width: 8 },
+              { header: 'Value (BDT)', width: 2, align: 'right' },
+            ],
+            table.summary.map((row) => [row.label, row.value.toFixed(2)]),
+            y,
+          ) + 16;
       }
+      drawTable(table.columns, table.rows, y);
       doc.end();
     });
   }

@@ -210,25 +210,28 @@ export class BusinessReportPdfService {
         color: report.summary.total_due ? '#dc2626' : undefined,
       },
       {
-        label: 'REFUNDS PAID',
-        value: this.money(report.summary.total_refund),
-        sub: `${report.summary.total_returns} return(s) disbursed`,
+        label: 'RETURNED VALUE',
+        value: this.money(
+          report.summary.total_return_value ??
+            report.summary.total_refund + report.summary.total_exchange_return,
+        ),
+        sub: `${report.summary.total_returns} return(s), incl. cancelled due`,
         color: report.summary.total_refund ? '#dc2626' : undefined,
       },
       {
         label: 'NET SALES',
         value: this.money(report.summary.net_sale_amount),
-        sub: 'Gross sales less shipping & refunds',
+        sub: 'Product sales less returned product value',
         color: '#2563eb',
       },
       {
-        label: 'CASH IN DRAWER',
+        label: 'NET CASH COLLECTIONS',
         value: this.money(report.summary.net_cash_sales),
         sub:
           report.summary.partner_payouts_cash ||
           report.summary.partner_payments_cash
-            ? 'Net drawer cash, incl. partner cash'
-            : 'Net physical drawer cash',
+            ? 'Incl. partner cash; before expenses'
+            : 'Before purchases & operational costs',
         color: '#059669',
       },
       {
@@ -262,7 +265,7 @@ export class BusinessReportPdfService {
       {
         label: 'NET OPERATING RESULT',
         value: this.money(report.summary.net_operating_result),
-        sub: 'Net sales + shipping profit less costs',
+        sub: 'After returns & expenses; before product costs',
         color: report.summary.net_operating_result >= 0 ? '#059669' : '#dc2626',
       },
       {
@@ -405,14 +408,18 @@ export class BusinessReportPdfService {
         this.money(s.partner_payments_made),
       ]);
     }
-    if (s.total_shipping || s.partner_delivery_charges) {
+    if (s.total_shipping || s.shipping_refunded || s.partner_delivery_charges) {
       rows.push(
         ['Shipping charged to customers', this.money(s.total_shipping || 0)],
+        ['Shipping returned', this.money(s.shipping_refunded || 0)],
         [
-          'Paid to delivery partners (delivery, COD fee, returns)',
+          'Partner charges booked (delivery, COD fee, returns)',
           this.money(s.partner_delivery_charges || 0),
         ],
-        ['Shipping profit / loss', this.money(s.shipping_margin || 0)],
+        [
+          'Shipping margin after shipping refunds',
+          this.money(s.shipping_margin || 0),
+        ],
       );
     }
     if (rows.length) {
@@ -449,21 +456,29 @@ export class BusinessReportPdfService {
   private refundTable(doc: PDFKit.PDFDocument, report: EODReportResponse) {
     if (
       !report.return_payment_breakdown?.length &&
-      !report.summary.total_refund
+      !report.summary.total_refund &&
+      !report.summary.due_reduced
     ) {
       return;
     }
 
-    this.section(doc, 'REFUNDS & RETURNS DISBURSED');
+    this.section(doc, 'RETURNS, REFUNDS & DUE CANCELLED');
     const rows = report.return_payment_breakdown.map((item) => [
       this.human(item.payment_method),
       String(item.transaction_count),
       this.money(item.total_amount),
     ]);
 
+    if (report.summary.due_reduced) {
+      rows.push([
+        'Due cancelled (no money paid out)',
+        '-',
+        this.money(report.summary.due_reduced),
+      ]);
+    }
     this.table(
       doc,
-      ['Refund Method', 'Returns Count', 'Refunded Amount'],
+      ['Return Settlement', 'Transactions', 'Amount'],
       rows,
       [255, 100, 160],
       [0, 1, 2],
@@ -518,11 +533,11 @@ export class BusinessReportPdfService {
   }
 
   private termsAndClosure(doc: PDFKit.PDFDocument) {
-    this.ensure(doc, 135);
+    this.ensure(doc, 165);
     doc.moveDown(0.8);
 
     const startY = doc.y;
-    const boxHeight = 88;
+    const boxHeight = 112;
 
     // Background Container for Terms
     doc
@@ -554,8 +569,8 @@ export class BusinessReportPdfService {
       .fillColor('#334155')
       .text(
         '• Gross Sales: Invoiced subtotal less line & promotional discounts, plus tax & shipping. Net Sales leaves shipping out.\n' +
-          '• Real Money Collected: Liquid currency received via Cash and verified Digital accounts (Cards/MFS).\n' +
-          '• Net Cash in Drawer: Total physical cash received (sales + due collections) less cash refunds paid.',
+          '• Real Money Collected: Cash and digital collections, including partner payouts; excludes money still held by partners.\n' +
+          '• Net Cash Collections: Cash collected less cash refunds, plus net partner cash. Before opening cash, purchases and expenses.',
         col1X,
         textY,
         { width: colWidth, lineGap: 3 },
@@ -567,9 +582,9 @@ export class BusinessReportPdfService {
       .fontSize(6)
       .fillColor('#334155')
       .text(
-        '• Due / Receivables: Remaining unpaid balance on sales invoices finalized during this period.\n' +
+        '• Due / Receivables: Balance at period end on invoices issued in this period, after payments and cancelled due.\n' +
           '• Product Exchanges: Deduplicated barter value of exchanged goods; counted once across linked records.\n' +
-          '• Net Operating Result: Gross Sales minus Returns/Refunds and Operational Expenses.',
+          '• Net Operating Result: Invoices less full return value, partner charges and expenses. Before product costs and tax payments; not net profit.',
         col2X,
         textY,
         { width: colWidth, lineGap: 3 },
@@ -581,9 +596,9 @@ export class BusinessReportPdfService {
       .fontSize(5.8)
       .fillColor('#64748b')
       .text(
-        'Official computer-generated financial report. Prepared in accordance with standard retail cash & accrual accounting principles.',
+        'Computer-generated business report from recorded transactions. Product costs and tax payments are excluded from Net Operating Result.',
         this.left + 10,
-        startY + 72,
+        startY + 96,
         { width: this.width - 20, align: 'center' },
       );
 
