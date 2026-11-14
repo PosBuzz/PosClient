@@ -138,6 +138,15 @@ returns 500 must first pass client errors through `isClientError`. Enforced by `
   adjustment. In the business report (all-branches view only, since payouts have no branch) payouts received count as real money
   collected, cash ones also as drawer cash, and payments to partners come off both; a voided payout drops out. The migration turned existing free-text partner names into
   partners per shop (case-insensitive) without inventing balances for old orders. These endpoints use the `sales` permission.
+- **Stock rules (D-077, 2026-11-14):** *Sellable* stock is quantity minus reserved, leaving out expired batches (expired = expiry date before today
+  in UTC; a batch expiring today still sells). Sales, quotation conversion, exchanges and the POS lookups never use expired batches. A sale
+  line with no named batch takes the oldest sellable batches first (FIFO) and may span several; it stays **one** `sale_items` row, and
+  `sale_item_batches` records which batch supplied how many units and how many were returned. Delete, restore, delivery and returns work from that table
+  (older rows were backfilled with their single batch). A return puts units back into the batch they came from: the batch named on the return first,
+  then the sale's others in the order the sale took them, each only up to what it supplied; if the return is processed at another branch, a matching
+  batch (same number, cost, expiry, vendor) is found or created there. Alerts use `alert_quantity` per variant: 0 or unset means not tracked
+  (never flagged); nothing sellable is **out of stock** (`is_out_of_stock`), not low; 1 up to the alert level in any one branch is **low**
+  (`is_low_stock`). One helper (`stock-status.util.ts`) serves the inventory list, summary, variant stock, product pages and dashboard.
 
 ## 6. Known issues and owner actions
 

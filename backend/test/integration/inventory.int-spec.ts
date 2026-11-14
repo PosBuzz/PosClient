@@ -884,7 +884,8 @@ describe('inventory', () => {
         total_quantity: 12,
         physical_quantity: 14,
         reserved_quantity: 2,
-        low_stock_variants: 1, // second branch: 3+1=4 <= 4; main 8 > 4
+        low_stock_variants: 1, // second branch: 3 sellable (the expired batch is left out) <= 4; main 8 > 4
+        out_of_stock_variants: 0,
         expiring_soon: 1,
       });
       const m: any = await inventory.getInventorySummary(cid(), main());
@@ -902,6 +903,7 @@ describe('inventory', () => {
         physical_quantity: 10,
         reserved_quantity: 2,
         low_stock_variants: 0,
+        out_of_stock_variants: 0,
         expiring_soon: 1,
       });
       const s: any = await inventory.getInventorySummary(cid(), second());

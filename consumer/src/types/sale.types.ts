@@ -657,6 +657,7 @@ export interface DashboardAnalyticsResponse {
   top_products: DashboardTopProductPoint[];
   low_stock: {
     total_critical_items: number;
+    out_of_stock_items?: number;
     items: DashboardLowStockPoint[];
   };
   expiring_items: {

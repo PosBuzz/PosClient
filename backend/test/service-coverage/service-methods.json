@@ -475,7 +475,7 @@
     "service": "ConsumerPurgeService",
     "method": "purge",
     "file": "src/admin/consumer/services/consumer-purge.service.ts",
-    "line": 158,
+    "line": 159,
     "throws": 3,
     "consumerId": false
   },
@@ -1011,7 +1011,7 @@
     "service": "InventoryService",
     "method": "getExpiringBatches",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 336,
+    "line": 295,
     "throws": 1,
     "consumerId": true
   },
@@ -1019,7 +1019,7 @@
     "service": "InventoryService",
     "method": "getInventoryMovementHistory",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 678,
+    "line": 602,
     "throws": 2,
     "consumerId": true
   },
@@ -1027,7 +1027,7 @@
     "service": "InventoryService",
     "method": "getInventorySummary",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 22,
+    "line": 23,
     "throws": 1,
     "consumerId": true
   },
@@ -1035,7 +1035,15 @@
     "service": "InventoryService",
     "method": "getLowStockItems",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 557,
+    "line": 529,
+    "throws": 1,
+    "consumerId": true
+  },
+  {
+    "service": "InventoryService",
+    "method": "getOutOfStockCount",
+    "file": "src/consumer/inventory/services/inventory.service.ts",
+    "line": 490,
     "throws": 1,
     "consumerId": true
   },
@@ -1043,7 +1051,7 @@
     "service": "InventoryService",
     "method": "getProductsForInventory",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 379,
+    "line": 338,
     "throws": 1,
     "consumerId": true
   },
@@ -1051,7 +1059,7 @@
     "service": "InventoryService",
     "method": "getProductVariants",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 408,
+    "line": 367,
     "throws": 2,
     "consumerId": true
   },
@@ -1059,7 +1067,7 @@
     "service": "InventoryService",
     "method": "getStockByVariant",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 171,
+    "line": 152,
     "throws": 1,
     "consumerId": true
   },
@@ -1067,7 +1075,7 @@
     "service": "InventoryService",
     "method": "getVariantStock",
     "file": "src/consumer/inventory/services/inventory.service.ts",
-    "line": 448,
+    "line": 407,
     "throws": 2,
     "consumerId": true
   },
@@ -1603,7 +1611,7 @@
     "service": "ProductService",
     "method": "create",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 184,
+    "line": 185,
     "throws": 3,
     "consumerId": true
   },
@@ -1611,7 +1619,7 @@
     "service": "ProductService",
     "method": "findAll",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 270,
+    "line": 271,
     "throws": 1,
     "consumerId": true
   },
@@ -1619,7 +1627,7 @@
     "service": "ProductService",
     "method": "findOne",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 435,
+    "line": 436,
     "throws": 2,
     "consumerId": true
   },
@@ -1627,7 +1635,7 @@
     "service": "ProductService",
     "method": "getProductLimit",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 75,
+    "line": 76,
     "throws": 0,
     "consumerId": true
   },
@@ -1635,7 +1643,7 @@
     "service": "ProductService",
     "method": "remove",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 887,
+    "line": 889,
     "throws": 1,
     "consumerId": true
   },
@@ -1643,7 +1651,7 @@
     "service": "ProductService",
     "method": "update",
     "file": "src/consumer/product/services/product.service.ts",
-    "line": 755,
+    "line": 757,
     "throws": 3,
     "consumerId": true
   },
@@ -1651,7 +1659,7 @@
     "service": "ProductVariantService",
     "method": "create",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 22,
+    "line": 23,
     "throws": 1,
     "consumerId": false
   },
@@ -1659,7 +1667,7 @@
     "service": "ProductVariantService",
     "method": "findOne",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 191,
+    "line": 192,
     "throws": 3,
     "consumerId": true
   },
@@ -1667,7 +1675,7 @@
     "service": "ProductVariantService",
     "method": "remove",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 441,
+    "line": 443,
     "throws": 2,
     "consumerId": false
   },
@@ -1675,7 +1683,7 @@
     "service": "ProductVariantService",
     "method": "update",
     "file": "src/consumer/product/services/product-variant.service.ts",
-    "line": 274,
+    "line": 276,
     "throws": 3,
     "consumerId": false
   },
@@ -1963,15 +1971,15 @@
     "service": "ReturnService",
     "method": "create",
     "file": "src/consumer/returns/services/return.service.ts",
-    "line": 26,
-    "throws": 21,
+    "line": 27,
+    "throws": 23,
     "consumerId": true
   },
   {
     "service": "ReturnService",
     "method": "findAll",
     "file": "src/consumer/returns/services/return.service.ts",
-    "line": 707,
+    "line": 776,
     "throws": 1,
     "consumerId": true
   },
@@ -1979,7 +1987,7 @@
     "service": "ReturnService",
     "method": "findOne",
     "file": "src/consumer/returns/services/return.service.ts",
-    "line": 882,
+    "line": 951,
     "throws": 2,
     "consumerId": true
   },
@@ -2123,7 +2131,7 @@
     "service": "SalesService",
     "method": "cancelPendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 4204,
+    "line": 4243,
     "throws": 2,
     "consumerId": true
   },
@@ -2131,7 +2139,7 @@
     "service": "SalesService",
     "method": "completePendingDelivery",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 4143,
+    "line": 4181,
     "throws": 3,
     "consumerId": true
   },
@@ -2139,23 +2147,23 @@
     "service": "SalesService",
     "method": "convertQuotationToSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3024,
-    "throws": 8,
+    "line": 3063,
+    "throws": 7,
     "consumerId": true
   },
   {
     "service": "SalesService",
     "method": "create",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 208,
-    "throws": 16,
+    "line": 231,
+    "throws": 17,
     "consumerId": true
   },
   {
     "service": "SalesService",
     "method": "findAll",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 722,
+    "line": 755,
     "throws": 1,
     "consumerId": true
   },
@@ -2163,7 +2171,7 @@
     "service": "SalesService",
     "method": "findAllOnlineOrders",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3819,
+    "line": 3857,
     "throws": 1,
     "consumerId": true
   },
@@ -2171,7 +2179,7 @@
     "service": "SalesService",
     "method": "findAllQuotations",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2844,
+    "line": 2883,
     "throws": 1,
     "consumerId": true
   },
@@ -2179,7 +2187,7 @@
     "service": "SalesService",
     "method": "findBySaleNumber",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1333,
+    "line": 1368,
     "throws": 2,
     "consumerId": true
   },
@@ -2187,7 +2195,7 @@
     "service": "SalesService",
     "method": "findOne",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 864,
+    "line": 897,
     "throws": 2,
     "consumerId": true
   },
@@ -2195,7 +2203,7 @@
     "service": "SalesService",
     "method": "findOneQuotation",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 2967,
+    "line": 3006,
     "throws": 2,
     "consumerId": true
   },
@@ -2203,7 +2211,7 @@
     "service": "SalesService",
     "method": "getDailyTargetReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 4237,
+    "line": 4277,
     "throws": 0,
     "consumerId": true
   },
@@ -2211,7 +2219,7 @@
     "service": "SalesService",
     "method": "getEODReport",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1785,
+    "line": 1824,
     "throws": 2,
     "consumerId": true
   },
@@ -2219,7 +2227,7 @@
     "service": "SalesService",
     "method": "getOnlineOrderStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 4014,
+    "line": 4052,
     "throws": 1,
     "consumerId": true
   },
@@ -2227,7 +2235,7 @@
     "service": "SalesService",
     "method": "getPendingDeliveries",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 4100,
+    "line": 4138,
     "throws": 0,
     "consumerId": true
   },
@@ -2235,7 +2243,7 @@
     "service": "SalesService",
     "method": "getProductByBarcode",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1593,
+    "line": 1630,
     "throws": 1,
     "consumerId": true
   },
@@ -2243,7 +2251,7 @@
     "service": "SalesService",
     "method": "getProductsForSale",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1512,
+    "line": 1547,
     "throws": 1,
     "consumerId": true
   },
@@ -2251,7 +2259,7 @@
     "service": "SalesService",
     "method": "getSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1661,
+    "line": 1700,
     "throws": 1,
     "consumerId": true
   },
@@ -2259,7 +2267,7 @@
     "service": "SalesService",
     "method": "getUserSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3674,
+    "line": 3712,
     "throws": 1,
     "consumerId": true
   },
@@ -2267,7 +2275,7 @@
     "service": "SalesService",
     "method": "getUsersSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3571,
+    "line": 3609,
     "throws": 0,
     "consumerId": true
   },
@@ -2275,7 +2283,7 @@
     "service": "SalesService",
     "method": "getVariantSalesDetail",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3358,
+    "line": 3396,
     "throws": 2,
     "consumerId": true
   },
@@ -2283,7 +2291,7 @@
     "service": "SalesService",
     "method": "getVariantSalesStats",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3213,
+    "line": 3251,
     "throws": 1,
     "consumerId": true
   },
@@ -2291,7 +2299,7 @@
     "service": "SalesService",
     "method": "restore",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1204,
+    "line": 1237,
     "throws": 5,
     "consumerId": true
   },
@@ -2299,7 +2307,7 @@
     "service": "SalesService",
     "method": "softDelete",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 1053,
+    "line": 1086,
     "throws": 8,
     "consumerId": true
   },
@@ -2307,7 +2315,7 @@
     "service": "SalesService",
     "method": "updateNote",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 947,
+    "line": 980,
     "throws": 2,
     "consumerId": true
   },
@@ -2315,7 +2323,7 @@
     "service": "SalesService",
     "method": "updateOnlineOrderStatus",
     "file": "src/consumer/sales/services/sales.service.ts",
-    "line": 3970,
+    "line": 4008,
     "throws": 1,
     "consumerId": true
   },

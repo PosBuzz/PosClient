@@ -153,10 +153,12 @@ const BarcodePrinting = () => {
   useEffect(() => {
     const svg = labelRef.current?.querySelector("svg");
     if (svg) {
-      svg.setAttribute(
-        "viewBox",
-        `0 0 ${svg.getAttribute("width")} ${svg.getAttribute("height")}`,
-      );
+      // Some formats (e.g. EAN-13) write "234px"; a viewBox needs plain numbers
+      const width = parseFloat(svg.getAttribute("width") ?? "");
+      const height = parseFloat(svg.getAttribute("height") ?? "");
+      if (width > 0 && height > 0) {
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      }
       svg.setAttribute("preserveAspectRatio", "none");
     }
   }, [barcode, format]);
@@ -177,7 +179,7 @@ const BarcodePrinting = () => {
       );
     }
     const svg = label.querySelector("svg");
-    const modules = Number(svg?.getAttribute("width")) / 2;
+    const modules = parseFloat(svg?.getAttribute("width") ?? "") / 2;
     if (modules && (layout.labelWidth - 2 * layout.padding) / modules < 0.19) {
       throw new Error(
         "Barcode bars are too narrow to scan reliably. Use a wider label or a shorter barcode.",

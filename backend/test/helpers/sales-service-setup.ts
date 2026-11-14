@@ -14,6 +14,7 @@ export function setupSales() {
       'count',
     ),
     saleItem: mk('create', 'createMany', 'update', 'findMany'),
+    saleItemBatch: mk('create'),
     salePayment: mk('create', 'createMany', 'findMany', 'deleteMany'),
     inventoryBatch: mk('findFirst', 'findMany', 'update', 'findUnique'),
     inventoryAuditLog: mk('create', 'createMany'),

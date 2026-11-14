@@ -15,6 +15,7 @@
           "name": "Branch 2"
         },
         "branch_id": 2,
+        "expiry_date": null,
         "quantity": 100,
         "reserved_quantity": 0
       },
@@ -24,6 +25,7 @@
           "name": "Branch 1"
         },
         "branch_id": 1,
+        "expiry_date": null,
         "quantity": 99,
         "reserved_quantity": 1
       }

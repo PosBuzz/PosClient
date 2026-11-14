@@ -198,6 +198,7 @@ export class DashboardService {
         returnPaymentBreakdown,
         topProductsGrouped,
         lowStockItems,
+        outOfStockCount,
         expiringBatches,
         totalExpiringCount,
       ] = await Promise.all([
@@ -298,6 +299,7 @@ export class DashboardService {
         }),
 
         this.inventoryService.getLowStockItems(consumerId, query.branch_id),
+        this.inventoryService.getOutOfStockCount(consumerId, query.branch_id),
 
         this.prisma.inventoryBatch.findMany({
           where: expiringBatchWhere,
@@ -407,6 +409,7 @@ export class DashboardService {
 
       const lowStock = {
         total_critical_items: lowStockItems.length,
+        out_of_stock_items: outOfStockCount,
         items: lowStockItems.slice(0, 5).map((item: any) => ({
           variant_id: item.id,
           product_name: item.product?.name ?? 'Unknown Product',

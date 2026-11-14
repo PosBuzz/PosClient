@@ -95,6 +95,7 @@
       ],
       "is_default": true,
       "is_low_stock": false,
+      "is_out_of_stock": false,
       "name": "Default",
       "price_change_percentage": null,
       "price_history": [],

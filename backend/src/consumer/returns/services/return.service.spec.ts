@@ -27,8 +27,15 @@ function setup() {
     branch: mk('findFirst'),
     returnItem: mk('aggregate', 'create'),
     return: mk('findMany', 'count', 'create', 'findFirst', 'aggregate'),
-    inventoryBatch: mk('findFirst', 'update', 'findUnique'),
+    inventoryBatch: mk(
+      'findFirst',
+      'update',
+      'findUnique',
+      'findUniqueOrThrow',
+      'create',
+    ),
     inventoryAdjustment: mk('create'),
+    saleItemBatch: mk('findMany', 'update'),
     inventoryAuditLog: mk('create'),
     returnPayment: mk('create'),
     returnExchange: mk('create'),
@@ -64,7 +71,23 @@ function setup() {
     id: 55,
     ...data,
   }));
+  prisma.saleItemBatch.findMany.mockResolvedValue([]); // lines without recorded batches
   prisma.inventoryBatch.findFirst.mockResolvedValue({ id: 30 });
+  // the sold batch sits in the return's branch unless a test says otherwise
+  prisma.inventoryBatch.findUniqueOrThrow.mockResolvedValue({
+    id: 30,
+    branch_id: 2,
+    variant_id: 20,
+    batch_number: 'B1',
+    cost_price: 5,
+    vendor_id: null,
+    expiry_date: null,
+    location: null,
+  });
+  prisma.inventoryBatch.findUnique.mockResolvedValue({
+    batch_number: 'B1',
+    expiry_date: null,
+  });
   prisma.inventoryBatch.update.mockResolvedValue({ quantity: 12 });
   prisma.productVariant.findFirst.mockResolvedValue({ id: 30 });
   prisma.$queryRaw.mockResolvedValue([{ quantity: 4, reserved_quantity: 0 }]);
@@ -400,6 +423,42 @@ describe('ReturnService.create writes (unit)', () => {
       'Another return was recorded for this sale at the same time. Please reload the sale and try again.',
     );
     expect(prisma.return.create).not.toHaveBeenCalled();
+  });
+
+  it('[BE-MUT-562] returned stock goes into the matching batch of the return branch, created empty when missing', async () => {
+    const { prisma, service } = setup();
+    prisma.inventoryBatch.findUniqueOrThrow.mockResolvedValue({
+      id: 30,
+      branch_id: 9, // sold at another branch than the return's branch 2
+      variant_id: 20,
+      batch_number: 'B1',
+      cost_price: 5,
+      vendor_id: null,
+      expiry_date: null,
+      location: 'R1',
+    });
+    prisma.inventoryBatch.findFirst
+      .mockResolvedValueOnce({ id: 30 }) // assertBatchOfVariant
+      .mockResolvedValueOnce(null); // no matching batch in branch 2
+    prisma.inventoryBatch.create.mockResolvedValue({ id: 44 });
+    await service.create(5, 8, dto());
+    expect(prisma.inventoryBatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        branch_id: 2,
+        variant_id: 20,
+        batch_number: 'B1',
+        quantity: 0,
+        location: 'R1',
+      }),
+      select: { id: true },
+    });
+    expect(prisma.inventoryBatch.update).toHaveBeenCalledWith({
+      where: { id: 44 },
+      data: { quantity: { increment: 1 } },
+    });
+    expect(prisma.inventoryAdjustment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ branch_id: 2, batch_id: 44 }),
+    });
   });
 
   it('[BE-MUT-534] each returned line is stored, put back into its batch with an adjustment and a RETURN_IN audit entry', async () => {

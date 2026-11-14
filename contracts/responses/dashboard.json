@@ -16,6 +16,7 @@
         "variant_name": "Default"
       }
     ],
+    "out_of_stock_items": 0,
     "total_critical_items": 1
   },
   "payment_method_breakdown": [

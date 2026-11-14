@@ -729,6 +729,7 @@ model InventoryBatch {
   InventoryAdjustment  InventoryAdjustment[]
   serials              ProductSerial[]
   SaleItems            SaleItem[]
+  SaleItemBatches      SaleItemBatch[]
   ReturnItems          ReturnItem[]
   ReturnExchanges      ReturnExchange[]
   inventory_audit_logs InventoryAuditLog[]
@@ -1222,15 +1223,34 @@ model SaleItem {
   tax_amount                Decimal  @default(0) @db.Decimal(10, 2)
   line_total                Decimal  @db.Decimal(10, 2)
 
-  sale         Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  variant      ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
-  batch        InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
-  return_items ReturnItem[]
+  sale              Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant           ProductVariant  @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  batch             InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+  return_items      ReturnItem[]
+  // Which batches this line was taken from; one line can span several
+  batch_allocations SaleItemBatch[]
 
   @@index([sale_id])
   @@index([variant_id])
   @@index([batch_id])
   @@map("sale_items")
+}
+
+// One sale line shows as one row, but its units may come from several batches.
+// `returned_quantity` is how many of this batch's units have been returned.
+model SaleItemBatch {
+  id                Int  @id @default(autoincrement())
+  sale_item_id      Int
+  batch_id          Int?
+  quantity          Int
+  returned_quantity Int  @default(0)
+
+  sale_item SaleItem        @relation(fields: [sale_item_id], references: [id], onDelete: Cascade)
+  batch     InventoryBatch? @relation(fields: [batch_id], references: [id], onDelete: SetNull)
+
+  @@index([sale_item_id])
+  @@index([batch_id])
+  @@map("sale_item_batches")
 }
 
 model SalePayment {

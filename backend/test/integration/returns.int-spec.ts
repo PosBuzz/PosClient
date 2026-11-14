@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getPrisma, disconnect } from '../helpers/db';
-import { Boot, World, bootDomain, newWorld } from '../helpers/domain';
+import { Boot, World, batchOf, bootDomain, newWorld } from '../helpers/domain';
 import { createCustomer, createRewardsSettings } from '../factories';
 import { ReturnService } from '../../src/consumer/returns/services/return.service';
 import { SalesService } from '../../src/consumer/sales/services/sales.service';
@@ -107,6 +107,160 @@ describe('returns and exchanges', () => {
         where: { batch_id: s.batchA.id, adjustment_type: 'return_in' },
       }),
     ).toBe(1);
+  });
+
+  it('[BE-RET-062] {ReturnService.create} a return processed at another branch restocks that branch, not the one that sold it', async () => {
+    w = await newWorld(db, boot, { branches: 2 });
+    const [soldAt, returnedAt] = w.tenant.branches;
+    const s = await committedSale();
+    await db.inventoryBatch.update({
+      where: { id: s.batchA.id },
+      data: { batch_number: 'LOT-62', location: 'Rack 4' },
+    });
+
+    const ret = await returnA(s, 2, { branch_id: returnedAt.id });
+    expect(Number(ret.total_refund)).toBe(200);
+
+    // The selling branch keeps what the sale left (10 - 3 = 7)
+    expect((await batchOf(db, s.batchA.id)).quantity).toBe(7);
+    // The return branch got a matching batch holding the returned units
+    const landed = await db.inventoryBatch.findMany({
+      where: { variant_id: s.a.id, branch_id: returnedAt.id },
+    });
+    expect(landed).toHaveLength(1);
+    expect(landed[0]).toMatchObject({
+      quantity: 2,
+      batch_number: 'LOT-62',
+      location: 'Rack 4',
+    });
+    expect(
+      await db.inventoryAuditLog.count({
+        where: {
+          batch_id: landed[0].id,
+          branch_id: returnedAt.id,
+          event_type: 'RETURN_IN',
+          quantity_delta: 2,
+        },
+      }),
+    ).toBe(1);
+    expect(
+      await db.inventoryAuditLog.count({
+        where: { batch_id: s.batchA.id, event_type: 'RETURN_IN' },
+      }),
+    ).toBe(0);
+
+    // A second return there tops up the same batch instead of making another
+    await returnA(s, 1, { branch_id: returnedAt.id });
+    const again = await db.inventoryBatch.findMany({
+      where: { variant_id: s.a.id, branch_id: returnedAt.id },
+    });
+    expect(again.map((b) => b.quantity)).toEqual([3]);
+    expect(soldAt.id).not.toBe(returnedAt.id);
+  });
+
+  it("[BE-RET-063] {ReturnService.create} a row filled from two batches returns to the batch named first, then the sale's other batches in the order it took them", async () => {
+    const v = await w.stock({
+      price: 100,
+      batches: [
+        { qty: 2, cost: 40, createdAt: new Date('2026-03-01T10:00:00Z') },
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
+      ],
+    });
+    const sale = await w.sell([{ variant: v, qty: 5 }], {}, 'full');
+    const [old, fresh] = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    const item = await db.saleItem.findFirstOrThrow({
+      where: { sale_id: sale.id },
+    });
+    expect(item.quantity).toBe(5); // old gave 2, fresh gave 3
+    const give = (quantity: number, batchId: number) =>
+      make({
+        original_sale_id: sale.id,
+        items: [
+          {
+            sale_item_id: item.id,
+            variant_id: v.id,
+            batch_id: batchId,
+            quantity,
+          },
+        ],
+        payments: cash(100 * quantity),
+      });
+    const stock = async () => [
+      (await batchOf(db, old.id)).quantity,
+      (await batchOf(db, fresh.id)).quantity,
+    ];
+    expect(await stock()).toEqual([0, 2]);
+
+    await give(1, fresh.id); // named batch first
+    expect(await stock()).toEqual([0, 3]);
+    await give(2, old.id); // old only supplied 2
+    expect(await stock()).toEqual([2, 3]);
+    await give(1, old.id); // old is used up, so the rest follows the sale's order
+    expect(await stock()).toEqual([2, 4]);
+    await give(1, fresh.id);
+    expect(await stock()).toEqual([2, 5]);
+    expect(
+      (
+        await db.saleItemBatch.findMany({
+          where: { sale_item_id: item.id },
+          orderBy: { id: 'asc' },
+        })
+      ).map((leg) => [leg.quantity, leg.returned_quantity]),
+    ).toEqual([
+      [2, 2],
+      [3, 3],
+    ]);
+    // nothing is left to return
+    const refused = await failure(give(1, old.id));
+    expect(refused).toBeInstanceOf(BadRequestException);
+    expect(await stock()).toEqual([2, 5]);
+  });
+
+  it('[BE-RET-064] {ReturnService.create} units from a row of two batches returned at another branch land in matching batches created there', async () => {
+    w = await newWorld(db, boot, { branches: 2 });
+    const [, elsewhere] = w.tenant.branches;
+    const v = await w.stock({
+      price: 100,
+      batches: [
+        { qty: 2, cost: 40, createdAt: new Date('2026-03-01T10:00:00Z') },
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
+      ],
+    });
+    const sale = await w.sell([{ variant: v, qty: 5 }], {}, 'full');
+    const [old, fresh] = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    const item = await db.saleItem.findFirstOrThrow({
+      where: { sale_id: sale.id },
+    });
+    await make({
+      branch_id: elsewhere.id,
+      original_sale_id: sale.id,
+      items: [
+        {
+          sale_item_id: item.id,
+          variant_id: v.id,
+          batch_id: old.id,
+          quantity: 4,
+        },
+      ],
+      payments: cash(400),
+    });
+    // the selling branch is untouched; the other branch holds copies of both batches
+    expect((await batchOf(db, old.id)).quantity).toBe(0);
+    expect((await batchOf(db, fresh.id)).quantity).toBe(2);
+    const landed = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id, branch_id: elsewhere.id },
+      orderBy: { id: 'asc' },
+    });
+    expect(landed.map((b) => [b.batch_number, b.quantity])).toEqual([
+      [old.batch_number, 2],
+      [fresh.batch_number, 2],
+    ]);
   });
 
   it('[BE-RET-002] {ReturnService.create} a refund that differs from the selected value is refused', async () => {

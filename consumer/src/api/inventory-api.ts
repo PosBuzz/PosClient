@@ -14,6 +14,7 @@ export interface InventorySummary {
   physical_quantity: number;
   reserved_quantity: number;
   low_stock_variants: number;
+  out_of_stock_variants?: number;
   expiring_soon: number;
 }
 

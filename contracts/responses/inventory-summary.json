@@ -13,6 +13,7 @@
   ],
   "expiring_soon": 0,
   "low_stock_variants": 1,
+  "out_of_stock_variants": 0,
   "physical_quantity": 591,
   "reserved_quantity": 1,
   "total_batches": 6,

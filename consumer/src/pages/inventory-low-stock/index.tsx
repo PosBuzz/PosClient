@@ -106,6 +106,13 @@ export default function InventoryLowStockPage() {
     staleTime: queryStaleTimeMap[queryKeys.lowStockItems],
   });
 
+  const { data: stockSummary } = useQuery({
+    queryKey: [queryKeys.inventorySummary, selectedBranch],
+    queryFn: () => inventoryApi.getSummary(selectedBranch),
+    staleTime: queryStaleTimeMap[queryKeys.inventorySummary],
+  });
+  const outOfStockCount = stockSummary?.out_of_stock_variants ?? 0;
+
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
     queryKey: [queryKeys.branches],
     queryFn: () => inventoryApi.getBranches(),
@@ -114,15 +121,9 @@ export default function InventoryLowStockPage() {
   const getUrgencyConfig = (item: LowStockItem) => {
     const stockRatio = item.total_stock / (item.alert_quantity || 1);
 
-    if (item.total_stock === 0) {
-      return {
-        level: "critical" as const,
-        color: "#ff4d4f",
-        bgColor: "#fff2f0",
-        text: "Out of Stock",
-        icon: <WarningOutlined />,
-      };
-    } else if (stockRatio <= 0.25) {
+    // Items listed here always have stock left; nothing sellable is
+    // "out of stock" and is counted separately.
+    if (stockRatio <= 0.25) {
       return {
         level: "critical" as const,
         color: "#ff4d4f",
@@ -522,7 +523,7 @@ export default function InventoryLowStockPage() {
       {filteredData.length > 0 && (
         <Alert
           message="Low Stock Alert"
-          description={`You have ${filteredData.length} items below their alert thresholds. ${criticalCount} critical, ${warningCount} warning level.`}
+          description={`You have ${filteredData.length} items at or below their alert thresholds. ${criticalCount} critical, ${warningCount} warning level.${outOfStockCount > 0 ? ` ${outOfStockCount} more are out of stock.` : ""}`}
           type="warning"
           showIcon
           style={{ marginBottom: 24 }}
@@ -540,7 +541,7 @@ export default function InventoryLowStockPage() {
       {/* Summary Cards */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         {" "}
-        <Col span={6}>
+        <Col xs={12} md={{ flex: "20%" }}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div
@@ -556,7 +557,7 @@ export default function InventoryLowStockPage() {
             </div>
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} md={{ flex: "20%" }}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div
@@ -572,7 +573,7 @@ export default function InventoryLowStockPage() {
             </div>
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} md={{ flex: "20%" }}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div
@@ -588,7 +589,26 @@ export default function InventoryLowStockPage() {
             </div>
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={12} md={{ flex: "20%" }}>
+          <Card
+            style={{ ...getCardStyle(), cursor: "pointer" }}
+            onClick={() => navigate("/inventory/stock-by-variant")}
+          >
+            <div style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#8c8c8c",
+                }}
+              >
+                {outOfStockCount}
+              </div>
+              <div style={{ color: getSummaryTextColor() }}>Out of Stock</div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={12} md={{ flex: "20%" }}>
           <Card style={getCardStyle()}>
             <div style={{ textAlign: "center" }}>
               <div

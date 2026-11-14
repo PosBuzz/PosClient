@@ -40,6 +40,41 @@ describe('sales: soft delete, restore and concurrency', () => {
       (e: any) => e,
     );
 
+  it('[BE-SALE-067] {SalesService.softDelete} {SalesService.restore} a row filled from two batches puts stock back into, and takes it out of, each of them', async () => {
+    const v = await w.stock({
+      price: 100,
+      batches: [
+        { qty: 2, cost: 40, createdAt: new Date('2026-03-01T10:00:00Z') },
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
+      ],
+    });
+    const sale = await w.sell([{ variant: v, qty: 5 }]);
+    const [old, fresh] = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    const quantities = async () =>
+      (
+        await db.inventoryBatch.findMany({
+          where: { variant_id: v.id },
+          orderBy: { created_at: 'asc' },
+        })
+      ).map((b) => b.quantity);
+    expect(await quantities()).toEqual([0, 2]);
+
+    await del(sale.id);
+    expect(await quantities()).toEqual([2, 5]);
+    expect(
+      await db.inventoryAuditLog.count({
+        where: { variant_id: v.id, event_type: 'SALE_DELETE_IN' },
+      }),
+    ).toBe(2);
+
+    await restore(sale.id);
+    expect(await quantities()).toEqual([0, 2]);
+    expect(old.id).not.toBe(fresh.id);
+  });
+
   it('[BE-SALE-050] {SalesService.restore} deleting restores stock to the original batch and reverses earned points', async () => {
     await createRewardsSettings(db, { consumer_id: w.tenant.consumer.id });
     const customer = await createCustomer(db, {

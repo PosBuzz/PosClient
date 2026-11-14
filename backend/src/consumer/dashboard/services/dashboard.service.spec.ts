@@ -21,7 +21,10 @@ function setup() {
     productVariant: mk('findMany'),
     $queryRaw: jest.fn(),
   };
-  const inventory: any = { getLowStockItems: jest.fn() };
+  const inventory: any = {
+    getLowStockItems: jest.fn(),
+    getOutOfStockCount: jest.fn(),
+  };
   const agg = { _count: { id: 0 }, _sum: {} };
   prisma.sale.aggregate.mockResolvedValue(agg);
   prisma.return.aggregate.mockResolvedValue(agg);
@@ -33,6 +36,7 @@ function setup() {
   prisma.inventoryBatch.count.mockResolvedValue(0);
   prisma.productVariant.findMany.mockResolvedValue([]);
   inventory.getLowStockItems.mockResolvedValue([]);
+  inventory.getOutOfStockCount.mockResolvedValue(0);
   return {
     prisma,
     inventory,

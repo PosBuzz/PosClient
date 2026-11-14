@@ -13,6 +13,7 @@ import { RewardsService } from '../../rewards/services/rewards.service';
 import { errorStack } from '../../../common/utils/error.util';
 import { lockDocumentNumbering } from '../../../common/utils/document-number-lock.util';
 import { takeAvailableStock } from '../../inventory/utils/stock-mutation.util';
+import { isBatchExpired } from '../../inventory/utils/batch-location.util';
 import { isClientError } from '../../../common/errors/client-error';
 
 @Injectable()
@@ -400,48 +401,107 @@ export class ReturnService {
 
           returnItems.push(returnItem);
 
-          // Create inventory adjustment to add returned items back to stock
+          // Put the returned units back into stock, into the batch they came
+          // from. The line may have been filled from several batches, so the
+          // batch named on the return is refilled first, then the others in the
+          // order the sale took from them; each only up to what it supplied
+          // and has not had returned yet.
           if (itemDto.batch_id) {
-            await prisma.inventoryAdjustment.create({
-              data: {
-                variant_id: itemDto.variant_id,
-                branch_id: dto.branch_id,
-                batch_id: itemDto.batch_id,
-                quantity_change: itemDto.quantity, // Positive for return to stock
-                reason: `Return from sale ${originalSale.sale_number}`,
-                notes: `Return ID: ${returnNumber}`,
-                created_by_user_id: userId,
-                adjustment_type: 'return_in',
-              },
-            });
+            const legs = (
+              await prisma.saleItemBatch.findMany({
+                where: { sale_item_id: itemDto.sale_item_id },
+                orderBy: { id: 'asc' },
+              })
+            ).sort(
+              (a, b) =>
+                Number(b.batch_id === itemDto.batch_id) -
+                Number(a.batch_id === itemDto.batch_id),
+            );
+            let remaining = itemDto.quantity;
+            const restocks: {
+              legId: number | null;
+              soldBatchId: number;
+              quantity: number;
+            }[] = [];
+            for (const leg of legs) {
+              if (remaining <= 0 || !leg.batch_id) continue;
+              const take = Math.min(
+                remaining,
+                leg.quantity - leg.returned_quantity,
+              );
+              if (take > 0) {
+                restocks.push({
+                  legId: leg.id,
+                  soldBatchId: leg.batch_id,
+                  quantity: take,
+                });
+                remaining -= take;
+              }
+            }
+            if (!legs.length) {
+              // Lines without recorded batches: use the batch the caller named
+              restocks.push({
+                legId: null,
+                soldBatchId: itemDto.batch_id,
+                quantity: remaining,
+              });
+              remaining = 0;
+            }
+            if (remaining > 0) {
+              throw new BadRequestException(
+                `Return quantity exceeds what is left to return for item ${itemDto.sale_item_id}`,
+              );
+            }
 
-            // Update batch quantity
-            const updatedBatch = await prisma.inventoryBatch.update({
-              where: { id: itemDto.batch_id },
-              data: {
-                quantity: {
-                  increment: itemDto.quantity,
+            for (const restock of restocks) {
+              if (restock.legId !== null) {
+                await prisma.saleItemBatch.update({
+                  where: { id: restock.legId },
+                  data: { returned_quantity: { increment: restock.quantity } },
+                });
+              }
+              // Stock goes back into the branch the return is processed at,
+              // not necessarily the branch the sale came from
+              const restockBatchId = await this.resolveRestockBatch(
+                prisma,
+                restock.soldBatchId,
+                dto.branch_id,
+              );
+              await prisma.inventoryAdjustment.create({
+                data: {
+                  variant_id: itemDto.variant_id,
+                  branch_id: dto.branch_id,
+                  batch_id: restockBatchId,
+                  quantity_change: restock.quantity, // Positive for return to stock
+                  reason: `Return from sale ${originalSale.sale_number}`,
+                  notes: `Return ID: ${returnNumber}`,
+                  created_by_user_id: userId,
+                  adjustment_type: 'return_in',
                 },
-              },
-            });
+              });
 
-            // Create RETURN_IN audit log
-            await prisma.inventoryAuditLog.create({
-              data: {
-                consumer_id: consumerId,
-                branch_id: dto.branch_id,
-                variant_id: itemDto.variant_id,
-                batch_id: itemDto.batch_id,
-                inventoryBatchId: itemDto.batch_id,
-                event_type: 'RETURN_IN',
-                quantity_delta: itemDto.quantity,
-                quantity_after: updatedBatch.quantity,
-                reference_id: returnItem.id,
-                reference_type: 'return_items',
-                notes: `Return #${returnNumber} from sale ${originalSale.sale_number}`,
-                created_by_user_id: userId,
-              },
-            });
+              const updatedBatch = await prisma.inventoryBatch.update({
+                where: { id: restockBatchId },
+                data: { quantity: { increment: restock.quantity } },
+              });
+
+              await prisma.inventoryAuditLog.create({
+                data: {
+                  consumer_id: consumerId,
+                  branch_id: dto.branch_id,
+                  variant_id: itemDto.variant_id,
+                  batch_id: restockBatchId,
+                  inventoryBatchId: restockBatchId,
+                  event_type: 'RETURN_IN',
+                  quantity_delta: restock.quantity,
+                  quantity_after: updatedBatch.quantity,
+                  reference_id: returnItem.id,
+                  reference_type: 'return_items',
+                  notes: `Return #${returnNumber} from sale ${originalSale.sale_number}`,
+                  created_by_user_id: userId,
+                },
+              });
+            }
           }
         }
 
@@ -541,6 +601,15 @@ export class ReturnService {
                 exchangeDto.variant_id,
                 consumerId,
               );
+              const exchangeBatch = await prisma.inventoryBatch.findUnique({
+                where: { id: exchangeDto.batch_id },
+                select: { batch_number: true, expiry_date: true },
+              });
+              if (exchangeBatch && isBatchExpired(exchangeBatch)) {
+                throw new BadRequestException(
+                  `Batch ${exchangeBatch.batch_number} has expired and cannot be sold`,
+                );
+              }
 
               await prisma.inventoryAdjustment.create({
                 data: {
@@ -970,6 +1039,50 @@ export class ReturnService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * The batch to put returned stock into: the sold batch itself when it is in
+   * the return's branch, otherwise the matching batch there (created empty if
+   * the branch has none), the same way a transfer lands stock.
+   */
+  private async resolveRestockBatch(
+    client: Prisma.TransactionClient,
+    soldBatchId: number,
+    branchId: number,
+  ): Promise<number> {
+    const sold = await client.inventoryBatch.findUniqueOrThrow({
+      where: { id: soldBatchId },
+    });
+    if (sold.branch_id === branchId) return sold.id;
+
+    const existing = await client.inventoryBatch.findFirst({
+      where: {
+        variant_id: sold.variant_id,
+        branch_id: branchId,
+        batch_number: sold.batch_number,
+        cost_price: sold.cost_price,
+        expiry_date: sold.expiry_date,
+        vendor_id: sold.vendor_id,
+      },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const created = await client.inventoryBatch.create({
+      data: {
+        variant_id: sold.variant_id,
+        branch_id: branchId,
+        batch_number: sold.batch_number,
+        quantity: 0,
+        cost_price: sold.cost_price,
+        vendor_id: sold.vendor_id,
+        expiry_date: sold.expiry_date,
+        location: sold.location,
+      },
+      select: { id: true },
+    });
+    return created.id;
   }
 
   private async assertBatchOfVariant(
