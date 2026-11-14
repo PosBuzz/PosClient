@@ -125,7 +125,7 @@ describe('inventory reads (extra mutation hardening)', () => {
     expect(theirs.data.map((r: any) => r.id)).toEqual([w.theirs.id]);
   });
 
-  it('[BE-INV-081] {InventoryService.getStockByVariant} a variant without stock still lists, with empty maps and the branch-filtered low-stock rule', async () => {
+  it('[BE-INV-081] {InventoryService.getStockByVariant} a variant without stock still lists as out of stock (not low), with empty maps', async () => {
     const v = await w.stock({ price: 100, batches: [] });
     await db.productVariant.update({
       where: { id: v.id },
@@ -136,18 +136,21 @@ describe('inventory reads (extra mutation hardening)', () => {
     expect(row).toMatchObject({
       total_stock: 0,
       pending_delivery: 0,
-      is_low_stock: false, // no branch holds it, so no branch is low
+      is_low_stock: false, // nothing to sell is out of stock, not low
+      is_out_of_stock: true,
       locations: [],
       locations_by_branch: {},
       stock_by_branch: {},
     });
     expect(row.inventory_items).toEqual([]);
-    // asking about one branch treats the empty stock as low
+    // asking about one branch: empty stock is out of stock, never low
     const branch: any = await inventory.getStockByVariant(cid(), {
       branch_id: main(),
     });
-    expect(branch.data.find((r: any) => r.id === v.id).is_low_stock).toBe(true);
-    // without an alert level it is never low
+    const emptyRow = branch.data.find((r: any) => r.id === v.id);
+    expect(emptyRow.is_low_stock).toBe(false);
+    expect(emptyRow.is_out_of_stock).toBe(true);
+    // without an alert level it is never low or out (not tracked for restocking)
     await db.productVariant.update({
       where: { id: v.id },
       data: { alert_quantity: 0 },
@@ -156,6 +159,9 @@ describe('inventory reads (extra mutation hardening)', () => {
       branch_id: main(),
     });
     expect(off.data.find((r: any) => r.id === v.id).is_low_stock).toBe(false);
+    expect(off.data.find((r: any) => r.id === v.id).is_out_of_stock).toBe(
+      false,
+    );
     // stock exactly one above the alert is fine, exactly at it is low
     await db.productVariant.update({
       where: { id: v.id },
@@ -227,6 +233,7 @@ describe('inventory reads (extra mutation hardening)', () => {
       physical_quantity: 8,
       reserved_quantity: 0,
       low_stock_variants: 0, // no alert level set
+      out_of_stock_variants: 0,
       expiring_soon: 1,
     });
     // an alert level counts the branch that holds the stock, not the empty one
@@ -240,7 +247,7 @@ describe('inventory reads (extra mutation hardening)', () => {
     expect(
       (await inventory.getInventorySummary(cid(), main())).low_stock_variants,
     ).toBe(1);
-    // the second branch holds nothing, which the branch view counts as low
+    // the second branch holds nothing: out of stock, not low
     const empty: any = await inventory.getInventorySummary(cid(), second());
     expect(empty).toEqual({
       total_inventory_value: 0,
@@ -255,13 +262,14 @@ describe('inventory reads (extra mutation hardening)', () => {
       total_quantity: 0,
       physical_quantity: 0,
       reserved_quantity: 0,
-      low_stock_variants: 1,
+      low_stock_variants: 0,
+      out_of_stock_variants: 1,
       expiring_soon: 0,
     });
-    // one above the alert is not low
+    // 6 units are sellable (the expired batch is left out): one above an alert of 5 is not low
     await db.productVariant.update({
       where: { id: v.id },
-      data: { alert_quantity: 7 },
+      data: { alert_quantity: 5 },
     });
     expect(
       (await inventory.getInventorySummary(cid())).low_stock_variants,
@@ -480,30 +488,101 @@ describe('inventory reads (extra mutation hardening)', () => {
     expect(
       (await inventory.getLowStockItems(cid())).map((x: any) => x.id),
     ).toEqual([v.id]);
-    // ...but a branch filter lists it, falling back to the Central label
+    // ...and a branch filter does not list it either: zero is out of stock, not low
     const branch: any[] = await inventory.getLowStockItems(cid(), second());
-    const missing = branch.find((x) => x.id === none.id);
-    expect(missing).toMatchObject({
-      total_stock: 0,
-      shortage: 1,
-      affected_branch_id: second(),
-      affected_branch_name: 'Central',
-      stock_by_branch: {},
-    });
+    expect(branch.find((x) => x.id === none.id)).toBeUndefined();
     // an alert of zero never lists
     await db.productVariant.update({
       where: { id: none.id },
       data: { alert_quantity: 0 },
     });
-    expect(
-      (await inventory.getLowStockItems(cid(), second())).map((x: any) => x.id),
-    ).toEqual([v.id]);
+    expect(await inventory.getLowStockItems(cid(), second())).toEqual([]);
     // one above the available stock is not low
     await db.productVariant.update({
       where: { id: v.id },
       data: { alert_quantity: 3 },
     });
     expect(await inventory.getLowStockItems(cid(), main())).toEqual([]);
+  });
+
+  it('[BE-INV-130] {InventoryService.getOutOfStockCount} low stock needs sellable units: zero is out of stock, expired stock does not count, an alert of 0 is never flagged', async () => {
+    const v = await w.stock({ price: 100, batches: [] });
+    await db.productVariant.update({
+      where: { id: v.id },
+      data: { alert_quantity: 5 },
+    });
+    const day = 24 * 3600 * 1000;
+    const find = async (opts: object = {}) =>
+      ((await inventory.getStockByVariant(cid(), opts)) as any).data.find(
+        (r: any) => r.id === v.id,
+      );
+
+    // nothing held at all: out of stock, not low, and not on the low-stock list
+    expect(await find()).toMatchObject({
+      is_low_stock: false,
+      is_out_of_stock: true,
+    });
+    expect(await inventory.getLowStockItems(cid())).toEqual([]);
+
+    // 3 units that expired yesterday do not make it low: still out of stock
+    await mk({
+      variant_id: v.id,
+      branch_id: main(),
+      quantity: 3,
+      expiry_date: new Date(Date.now() - 2 * day),
+    });
+    expect(await find()).toMatchObject({
+      is_low_stock: false,
+      is_out_of_stock: true,
+    });
+
+    // 3 sellable units against an alert of 5: low, not out
+    const fresh = await mk({
+      variant_id: v.id,
+      branch_id: main(),
+      quantity: 3,
+      expiry_date: new Date(Date.now() + 30 * day),
+    });
+    expect(await find()).toMatchObject({
+      is_low_stock: true,
+      is_out_of_stock: false,
+    });
+    expect(
+      (await inventory.getLowStockItems(cid())).map((x: any) => x.total_stock),
+    ).toEqual([3]);
+    expect(
+      (await inventory.getInventorySummary(cid())).low_stock_variants,
+    ).toBe(1);
+
+    // everything left is reserved for a delivery: out of stock again
+    await db.inventoryBatch.update({
+      where: { id: fresh.id },
+      data: { reserved_quantity: 3 },
+    });
+    expect(await find()).toMatchObject({
+      is_low_stock: false,
+      is_out_of_stock: true,
+    });
+    const summary: any = await inventory.getInventorySummary(cid());
+    expect(summary).toMatchObject({
+      low_stock_variants: 0,
+      out_of_stock_variants: 1,
+    });
+    expect(await inventory.getOutOfStockCount(cid())).toBe(1);
+
+    // a product that is not tracked for restocking (alert 0) is never flagged
+    await db.productVariant.update({
+      where: { id: v.id },
+      data: { alert_quantity: 0 },
+    });
+    expect(await find()).toMatchObject({
+      is_low_stock: false,
+      is_out_of_stock: false,
+    });
+    expect(
+      (await inventory.getInventorySummary(cid())).out_of_stock_variants,
+    ).toBe(0);
+    expect(await inventory.getOutOfStockCount(cid())).toBe(0);
   });
 
   it('[BE-INV-087] {InventoryService.getInventoryMovementHistory} page and limit slice the history, other variants are left out and the totals follow adjustments', async () => {

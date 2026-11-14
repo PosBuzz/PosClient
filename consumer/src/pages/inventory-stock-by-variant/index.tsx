@@ -48,6 +48,7 @@ interface StockByVariantItem {
   total_stock: number;
   pending_delivery: number;
   is_low_stock: boolean;
+  is_out_of_stock?: boolean;
   stock_by_branch: Record<string, number>;
   locations: string[];
   locations_by_branch: Record<string, string[]>;
@@ -148,7 +149,13 @@ export default function InventoryStockByVariantPage() {
                 strong
                 style={{
                   fontSize: "16px",
-                  color: record.is_low_stock ? "#ff4d4f" : "#52c41a",
+                  color: record.is_low_stock
+                    ? "#fa8c16"
+                    : record.is_out_of_stock
+                      ? "#ff4d4f"
+                      : record.total_stock > 0
+                        ? "#52c41a"
+                        : "#8c8c8c",
                 }}
               >
                 {record.total_stock} units
@@ -259,10 +266,12 @@ export default function InventoryStockByVariantPage() {
             strong
             style={{
               color: record.is_low_stock
-                ? "#ff4d4f"
-                : record.total_stock > 0
-                  ? "#52c41a"
-                  : "#8c8c8c",
+                ? "#fa8c16"
+                : record.is_out_of_stock
+                  ? "#ff4d4f"
+                  : record.total_stock > 0
+                    ? "#52c41a"
+                    : "#8c8c8c",
               fontSize: "16px",
             }}
           >
@@ -271,7 +280,7 @@ export default function InventoryStockByVariantPage() {
           <Text type="secondary">units</Text>
           {!record.is_low_stock || (
             <Tooltip title="Low stock alert">
-              <WarningOutlined style={{ color: "#ff4d4f" }} />
+              <WarningOutlined style={{ color: "#fa8c16" }} />
             </Tooltip>
           )}
         </Space>
@@ -336,17 +345,19 @@ export default function InventoryStockByVariantPage() {
         <Tag
           color={
             record.is_low_stock
-              ? "red"
-              : record.total_stock > 0
-                ? "green"
-                : "default"
+              ? "orange"
+              : record.is_out_of_stock
+                ? "red"
+                : record.total_stock > 0
+                  ? "green"
+                  : "default"
           }
         >
           {record.is_low_stock
             ? "Low Stock"
-            : record.total_stock > 0
-              ? "In Stock"
-              : "Out of Stock"}
+            : record.is_out_of_stock || record.total_stock <= 0
+              ? "Out of Stock"
+              : "In Stock"}
         </Tag>
       ),
     },

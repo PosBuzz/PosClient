@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { stockStatus } from '../../inventory/utils/stock-status.util';
 import { validatePurchase } from '../../inventory/utils/validate-purchase.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateProductVariantDto } from '../dto/create-product-variant.dto';
@@ -244,16 +245,17 @@ export class ProductVariantService {
         (sum, item) => sum + item.quantity,
         0,
       );
-      const isLowStock = Boolean(
-        variant.alert_quantity &&
-          variant.alert_quantity > 0 &&
-          totalStock <= variant.alert_quantity,
+      const { status: stockLevel } = stockStatus(
+        variant.inventory_items,
+        variant.alert_quantity,
       );
+      const isLowStock = stockLevel === 'low';
 
       return {
         ...variant,
         total_stock: totalStock,
         is_low_stock: isLowStock,
+        is_out_of_stock: stockLevel === 'out',
         available_serials_count: variant.serials.filter(
           (s) => s.status === 'available',
         ).length,

@@ -49,6 +49,7 @@
     }
   ],
   "is_low_stock": false,
+  "is_out_of_stock": false,
   "stock_by_branch": {
     "Branch 1": 98,
     "Branch 2": 99

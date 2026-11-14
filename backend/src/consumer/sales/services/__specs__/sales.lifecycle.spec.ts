@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { stockLegs } from '../sales.service';
 import { expectGenericWrapping } from '../../../../../test/helpers/error-wrapping';
 import { setupSales } from '../../../../../test/helpers/sales-service-setup';
 
@@ -47,7 +48,7 @@ describe('SalesService.softDelete (unit)', () => {
     expect(prisma.sale.findFirst).toHaveBeenCalledWith({
       where: { id: 1, consumer_id: 5, sale_type: 'sale', deleted_at: null },
       include: {
-        items: true,
+        items: { include: { batch_allocations: true } },
         payments: true,
         returns_as_original: { select: { id: true, return_number: true } },
         returns_as_exchange: { select: { id: true } },
@@ -281,7 +282,7 @@ describe('SalesService.restore (unit)', () => {
         sale_type: 'sale',
         deleted_at: { not: null },
       },
-      include: { items: true },
+      include: { items: { include: { batch_allocations: true } } },
     });
     expect(prisma.inventoryBatch.findMany).toHaveBeenCalledWith({
       where: { id: { in: [30, 31] } },
@@ -423,5 +424,27 @@ describe('SalesService.restore (unit)', () => {
       message: 'Failed to restore sale',
       logged: ['Error restoring sale 1 for consumer 5'],
     });
+  });
+});
+
+describe('stockLegs', () => {
+  it('[BE-SALE-068] a line uses its recorded batches, or its single batch when none were recorded', () => {
+    expect(
+      stockLegs({
+        batch_id: 1,
+        quantity: 5,
+        batch_allocations: [
+          { batch_id: 1, quantity: 2 },
+          { batch_id: 2, quantity: 3 },
+        ],
+      }),
+    ).toEqual([
+      { batch_id: 1, quantity: 2 },
+      { batch_id: 2, quantity: 3 },
+    ]);
+    expect(stockLegs({ batch_id: 7, quantity: 4 })).toEqual([
+      { batch_id: 7, quantity: 4 },
+    ]);
+    expect(stockLegs({ batch_id: null, quantity: 4 })).toEqual([]);
   });
 });

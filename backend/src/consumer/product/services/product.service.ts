@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { stockStatus } from '../../inventory/utils/stock-status.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TaxMethod } from '@prisma/client';
 import { CreateProductDto } from '../dto/create-product.dto';
@@ -638,11 +639,11 @@ export class ProductService {
           );
 
           // Check if stock is low
-          const isLowStock = Boolean(
-            variant.alert_quantity &&
-              variant.alert_quantity > 0 &&
-              totalStock <= variant.alert_quantity,
+          const { status: stockLevel } = stockStatus(
+            variant.inventory_items,
+            variant.alert_quantity,
           );
+          const isLowStock = stockLevel === 'low';
 
           // Get current and previous prices
           const currentPrice = variant.price_history[0];
@@ -679,6 +680,7 @@ export class ProductService {
             total_stock: totalStock,
             stock_by_branch: stockByBranch,
             is_low_stock: isLowStock,
+            is_out_of_stock: stockLevel === 'out',
             serials_summary: serialsSummary,
             available_serials_count: serialsSummary.available || 0,
             sold_serials_count: serialsSummary.sold || 0,

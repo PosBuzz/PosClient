@@ -10,7 +10,13 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import {
   availableQuantity,
   collectBatchLocations,
+  isBatchExpired,
+  notExpiredWhere,
 } from '../../inventory/utils/batch-location.util';
+import {
+  allocateFifo,
+  sellableBatchesFifo,
+} from '../utils/batch-allocation.util';
 import { Prisma } from '@prisma/client';
 import {
   CreateSaleDto,
@@ -54,6 +60,23 @@ import { UpdateOnlineOrderStatusDto } from '../dto/update-online-order-status.dt
 import { applyOnlineOrderUpdate } from '../../delivery-partners/ledger/order-update';
 import { syncPartnerOrder } from '../../delivery-partners/ledger/partner-ledger';
 import { unsettledOrderWhere } from '../../delivery-partners/services/delivery-partners.service';
+
+/**
+ * The batches a sale line took its units from. Lines saved before allocations
+ * existed fall back to their single batch.
+ */
+export function stockLegs(item: {
+  batch_id: number | null;
+  quantity: number;
+  batch_allocations?: { batch_id: number | null; quantity: number }[];
+}): { batch_id: number; quantity: number }[] {
+  const legs = item.batch_allocations?.length
+    ? item.batch_allocations
+    : [{ batch_id: item.batch_id, quantity: item.quantity }];
+  return legs.filter(
+    (leg): leg is { batch_id: number; quantity: number } => !!leg.batch_id,
+  );
+}
 
 @Injectable()
 export class SalesService {
@@ -330,12 +353,13 @@ export class SalesService {
 
           // Skip stock validation for quotations
           if (isQuotation) {
-            return { ...item, selectedBatch: null };
+            return { ...item, selectedBatch: null, allocations: null };
           }
 
           // Check stock availability for sales
           let availableStock = 0;
           let selectedBatch: any = null;
+          let allocations: ReturnType<typeof allocateFifo<any>> = null;
 
           if (item.batch_id) {
             selectedBatch = variant.inventory_items.find(
@@ -346,23 +370,30 @@ export class SalesService {
                 `Batch ${item.batch_id} not found for variant ${item.variant_id}`,
               );
             }
-            availableStock =
-              selectedBatch.quantity - selectedBatch.reserved_quantity;
-          } else {
-            // Use FIFO (First In, First Out) - oldest batch first
-            selectedBatch = variant.inventory_items
-              .filter((batch) => batch.quantity - batch.reserved_quantity > 0)
-              .sort(
-                (a, b) => a.created_at.getTime() - b.created_at.getTime(),
-              )[0];
-
-            if (!selectedBatch) {
+            if (isBatchExpired(selectedBatch)) {
               throw new BadRequestException(
-                `Insufficient stock for variant ${item.variant_id}. Available: 0, Requested: ${item.quantity}`,
+                `Batch ${selectedBatch.batch_number} of variant ${item.variant_id} has expired and cannot be sold`,
               );
             }
             availableStock =
               selectedBatch.quantity - selectedBatch.reserved_quantity;
+            allocations = [{ batch: selectedBatch, quantity: item.quantity }];
+          } else {
+            // FIFO: the oldest batches first, skipping expired ones. A line
+            // bigger than the oldest batch continues into the next batches.
+            const candidates = sellableBatchesFifo(variant.inventory_items);
+            const totalFree = candidates.reduce(
+              (sum, batch) => sum + batch.quantity - batch.reserved_quantity,
+              0,
+            );
+            allocations = allocateFifo(candidates, item.quantity);
+            if (!allocations) {
+              throw new BadRequestException(
+                `Insufficient stock for variant ${item.variant_id}. Available: ${totalFree}, Requested: ${item.quantity}`,
+              );
+            }
+            selectedBatch = allocations[0].batch;
+            availableStock = item.quantity;
           }
 
           if (availableStock < item.quantity) {
@@ -371,7 +402,7 @@ export class SalesService {
             );
           }
 
-          return { ...item, selectedBatch };
+          return { ...item, selectedBatch, allocations };
         }),
       );
 
@@ -586,7 +617,7 @@ export class SalesService {
         // Create sale items and update inventory with audit logs. Sequential so
         // a failed stock check aborts the transaction before later writes run.
         for (const item of validationResults) {
-          // Create sale item
+          // One stored line per product, however many batches it is taken from
           const saleItem = await tx.saleItem.create({
             data: {
               sale_id: sale.id,
@@ -605,21 +636,23 @@ export class SalesService {
           });
 
           // Only update inventory for actual sales, not quotations
-          if (!isQuotation && item.selectedBatch) {
+          if (isQuotation || !item.allocations) continue;
+
+          for (const { batch, quantity } of item.allocations) {
+            await tx.saleItemBatch.create({
+              data: {
+                sale_item_id: saleItem.id,
+                batch_id: batch.id,
+                quantity,
+              },
+            });
+
             // Atomic check-and-update: the availability check above ran
             // outside this transaction, so a concurrent sale may have taken
             // the stock since then
             const updatedBatch = createSaleDto.is_delivery_later
-              ? await reserveAvailableStock(
-                  tx,
-                  item.selectedBatch.id,
-                  item.quantity,
-                )
-              : await takeAvailableStock(
-                  tx,
-                  item.selectedBatch.id,
-                  item.quantity,
-                );
+              ? await reserveAvailableStock(tx, batch.id, quantity)
+              : await takeAvailableStock(tx, batch.id, quantity);
 
             if (!updatedBatch) {
               throw new BadRequestException(
@@ -633,14 +666,14 @@ export class SalesService {
                   consumer_id: consumerId,
                   branch_id: createSaleDto.branch_id,
                   variant_id: item.variant_id,
-                  batch_id: item.selectedBatch.id,
-                  inventoryBatchId: item.selectedBatch.id,
+                  batch_id: batch.id,
+                  inventoryBatchId: batch.id,
                   event_type: 'SALE_OUT',
-                  quantity_delta: -item.quantity,
+                  quantity_delta: -quantity,
                   quantity_after: updatedBatch.quantity,
                   reference_id: saleItem.id,
                   reference_type: 'sale_items',
-                  notes: `Sale #${saleNumber} - Qty: ${item.quantity}`,
+                  notes: `Sale #${saleNumber} - Qty: ${quantity}`,
                   created_by_user_id: userId,
                 },
               });
@@ -1064,7 +1097,7 @@ export class SalesService {
         deleted_at: null,
       },
       include: {
-        items: true,
+        items: { include: { batch_allocations: true } },
         payments: true,
         returns_as_original: { select: { id: true, return_number: true } },
         returns_as_exchange: { select: { id: true } },
@@ -1130,41 +1163,41 @@ export class SalesService {
         // A deleted online order no longer counts in its delivery partner's balance
         if (sale.is_online_order) await syncPartnerOrder(tx, sale.id, userId);
 
+        const isPendingDelivery =
+          sale.is_delivery_later && sale.delivery_status === 'PENDING';
+        const isCancelledDelivery =
+          sale.is_delivery_later && sale.delivery_status === 'CANCELLED';
+
         for (const item of sale.items) {
-          if (!item.batch_id) continue;
-
-          const isPendingDelivery =
-            sale.is_delivery_later && sale.delivery_status === 'PENDING';
-          const isCancelledDelivery =
-            sale.is_delivery_later && sale.delivery_status === 'CANCELLED';
-
           if (isCancelledDelivery) continue;
 
-          const updatedBatch = await tx.inventoryBatch.update({
-            where: { id: item.batch_id },
-            data: isPendingDelivery
-              ? { reserved_quantity: { decrement: item.quantity } }
-              : { quantity: { increment: item.quantity } },
-          });
+          for (const leg of stockLegs(item)) {
+            const updatedBatch = await tx.inventoryBatch.update({
+              where: { id: leg.batch_id },
+              data: isPendingDelivery
+                ? { reserved_quantity: { decrement: leg.quantity } }
+                : { quantity: { increment: leg.quantity } },
+            });
 
-          if (isPendingDelivery) continue;
+            if (isPendingDelivery) continue;
 
-          await tx.inventoryAuditLog.create({
-            data: {
-              consumer_id: consumerId,
-              branch_id: sale.branch_id,
-              variant_id: item.variant_id,
-              batch_id: item.batch_id,
-              inventoryBatchId: item.batch_id,
-              event_type: 'SALE_DELETE_IN',
-              quantity_delta: item.quantity,
-              quantity_after: updatedBatch.quantity,
-              reference_id: item.id,
-              reference_type: 'sale_items',
-              notes: `Sale #${sale.sale_number} deleted - stock restored: ${item.quantity}`,
-              created_by_user_id: userId,
-            },
-          });
+            await tx.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: sale.branch_id,
+                variant_id: item.variant_id,
+                batch_id: leg.batch_id,
+                inventoryBatchId: leg.batch_id,
+                event_type: 'SALE_DELETE_IN',
+                quantity_delta: leg.quantity,
+                quantity_after: updatedBatch.quantity,
+                reference_id: item.id,
+                reference_type: 'sale_items',
+                notes: `Sale #${sale.sale_number} deleted - stock restored: ${leg.quantity}`,
+                created_by_user_id: userId,
+              },
+            });
+          }
         }
       });
 
@@ -1209,21 +1242,21 @@ export class SalesService {
         sale_type: SaleType.SALE,
         deleted_at: { not: null },
       },
-      include: { items: true },
+      include: { items: { include: { batch_allocations: true } } },
     });
 
     if (!sale) {
       throw new NotFoundException('Deleted sale not found');
     }
 
-    const batchedItems = sale.items.filter((item) => item.batch_id);
-
     const requiredByBatch = new Map<number, number>();
-    for (const item of batchedItems) {
-      requiredByBatch.set(
-        item.batch_id!,
-        (requiredByBatch.get(item.batch_id!) || 0) + item.quantity,
-      );
+    for (const item of sale.items) {
+      for (const leg of stockLegs(item)) {
+        requiredByBatch.set(
+          leg.batch_id,
+          (requiredByBatch.get(leg.batch_id) || 0) + leg.quantity,
+        );
+      }
     }
 
     const isPendingDelivery =
@@ -1272,38 +1305,40 @@ export class SalesService {
         }
         if (sale.is_online_order) await syncPartnerOrder(tx, sale.id, userId);
 
-        for (const item of batchedItems) {
+        for (const item of sale.items) {
           if (isCancelledDelivery) continue;
 
-          // Atomic check-and-update; the availability check above ran outside
-          // this transaction
-          const updatedBatch = isPendingDelivery
-            ? await reserveAvailableStock(tx, item.batch_id!, item.quantity)
-            : await takeAvailableStock(tx, item.batch_id!, item.quantity);
-          if (!updatedBatch) {
-            throw new BadRequestException(
-              'Cannot restore this sale: the stock it consumed is no longer available in the original batch(es).',
-            );
+          for (const leg of stockLegs(item)) {
+            // Atomic check-and-update; the availability check above ran
+            // outside this transaction
+            const updatedBatch = isPendingDelivery
+              ? await reserveAvailableStock(tx, leg.batch_id, leg.quantity)
+              : await takeAvailableStock(tx, leg.batch_id, leg.quantity);
+            if (!updatedBatch) {
+              throw new BadRequestException(
+                'Cannot restore this sale: the stock it consumed is no longer available in the original batch(es).',
+              );
+            }
+
+            if (isPendingDelivery) continue;
+
+            await tx.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: sale.branch_id,
+                variant_id: item.variant_id,
+                batch_id: leg.batch_id,
+                inventoryBatchId: leg.batch_id,
+                event_type: 'SALE_RESTORE_OUT',
+                quantity_delta: -leg.quantity,
+                quantity_after: updatedBatch.quantity,
+                reference_id: item.id,
+                reference_type: 'sale_items',
+                notes: `Sale #${sale.sale_number} restored - stock deducted: ${leg.quantity}`,
+                created_by_user_id: userId,
+              },
+            });
           }
-
-          if (isPendingDelivery) continue;
-
-          await tx.inventoryAuditLog.create({
-            data: {
-              consumer_id: consumerId,
-              branch_id: sale.branch_id,
-              variant_id: item.variant_id,
-              batch_id: item.batch_id,
-              inventoryBatchId: item.batch_id,
-              event_type: 'SALE_RESTORE_OUT',
-              quantity_delta: -item.quantity,
-              quantity_after: updatedBatch.quantity,
-              reference_id: item.id,
-              reference_type: 'sale_items',
-              notes: `Sale #${sale.sale_number} restored - stock deducted: ${item.quantity}`,
-              created_by_user_id: userId,
-            },
-          });
         }
       });
 
@@ -1521,6 +1556,7 @@ export class SalesService {
           some: {
             branch_id: branchId,
             quantity: { gt: 0 },
+            ...notExpiredWhere(),
           },
         },
       };
@@ -1546,6 +1582,7 @@ export class SalesService {
             where: {
               branch_id: branchId,
               quantity: { gt: 0 },
+              ...notExpiredWhere(),
             },
             orderBy: { created_at: 'asc' }, // FIFO
           },
@@ -1604,6 +1641,7 @@ export class SalesService {
             some: {
               branch_id: branchId,
               quantity: { gt: 0 },
+              ...notExpiredWhere(),
             },
           },
         },
@@ -1614,6 +1652,7 @@ export class SalesService {
             where: {
               branch_id: branchId,
               quantity: { gt: 0 },
+              ...notExpiredWhere(),
             },
             orderBy: { created_at: 'asc' }, // FIFO
           },
@@ -3063,26 +3102,20 @@ export class SalesService {
             );
           }
 
-          const selectedBatch = variant.inventory_items
-            .filter((batch) => batch.quantity - batch.reserved_quantity > 0)
-            .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())[0];
-
-          if (!selectedBatch) {
+          const candidates = sellableBatchesFifo(variant.inventory_items);
+          const totalFree = candidates.reduce(
+            (sum, batch) => sum + batch.quantity - batch.reserved_quantity,
+            0,
+          );
+          const allocations = allocateFifo(candidates, item.quantity);
+          if (!allocations) {
             throw new BadRequestException(
-              `Insufficient stock for variant ${item.variant_id}. Available: 0, Requested: ${item.quantity}`,
+              `Insufficient stock for variant ${item.variant_id}. Available: ${totalFree}, Requested: ${item.quantity}`,
             );
           }
+          const selectedBatch = allocations[0].batch;
 
-          const availableStock =
-            selectedBatch.quantity - selectedBatch.reserved_quantity;
-
-          if (availableStock < item.quantity) {
-            throw new BadRequestException(
-              `Insufficient stock for variant ${item.variant_id}. Available: ${availableStock}, Requested: ${item.quantity}`,
-            );
-          }
-
-          return { ...item, selectedBatch };
+          return { ...item, selectedBatch, allocations };
         }),
       );
 
@@ -3136,36 +3169,41 @@ export class SalesService {
             },
           });
 
-          // Atomic check-and-update (the availability check ran outside
-          // this transaction)
-          const updatedBatch = await takeAvailableStock(
-            tx,
-            item.selectedBatch.id,
-            item.quantity,
-          );
-          if (!updatedBatch) {
-            throw new BadRequestException(
-              `Insufficient stock for variant ${item.variant_id}. Stock changed while the sale was being saved; please try again.`,
-            );
-          }
+          for (const { batch, quantity } of item.allocations) {
+            await tx.saleItemBatch.create({
+              data: { sale_item_id: saleItem.id, batch_id: batch.id, quantity },
+            });
 
-          // Create SALE_OUT audit log
-          await tx.inventoryAuditLog.create({
-            data: {
-              consumer_id: consumerId,
-              branch_id: quotation.branch_id,
-              variant_id: item.variant_id,
-              batch_id: item.selectedBatch.id,
-              inventoryBatchId: item.selectedBatch.id,
-              event_type: 'SALE_OUT',
-              quantity_delta: -item.quantity,
-              quantity_after: updatedBatch.quantity,
-              reference_id: saleItem.id,
-              reference_type: 'sale_items',
-              notes: `Sale #${saleNumber} (converted from quotation #${quotation.sale_number})`,
-              created_by_user_id: userId,
-            },
-          });
+            // Atomic check-and-update (the availability check ran outside
+            // this transaction)
+            const updatedBatch = await takeAvailableStock(
+              tx,
+              batch.id,
+              quantity,
+            );
+            if (!updatedBatch) {
+              throw new BadRequestException(
+                `Insufficient stock for variant ${item.variant_id}. Stock changed while the sale was being saved; please try again.`,
+              );
+            }
+
+            await tx.inventoryAuditLog.create({
+              data: {
+                consumer_id: consumerId,
+                branch_id: quotation.branch_id,
+                variant_id: item.variant_id,
+                batch_id: batch.id,
+                inventoryBatchId: batch.id,
+                event_type: 'SALE_OUT',
+                quantity_delta: -quantity,
+                quantity_after: updatedBatch.quantity,
+                reference_id: saleItem.id,
+                reference_type: 'sale_items',
+                notes: `Sale #${saleNumber} (converted from quotation #${quotation.sale_number})`,
+                created_by_user_id: userId,
+              },
+            });
+          }
         }
 
         // Mark quotation as converted, only if no concurrent request already did
@@ -4153,7 +4191,7 @@ export class SalesService {
         delivery_status: 'PENDING',
         deleted_at: null,
       },
-      include: { items: true },
+      include: { items: { include: { batch_allocations: true } } },
     });
     if (!sale) throw new NotFoundException('Pending delivery not found');
 
@@ -4169,33 +4207,34 @@ export class SalesService {
       }
 
       for (const item of sale.items) {
-        if (!item.batch_id) continue;
-        const updated = await takeReservedStock(
-          tx,
-          item.batch_id,
-          item.quantity,
-        );
-        if (!updated) {
-          throw new BadRequestException(
-            'Reserved inventory is no longer available for this delivery.',
+        for (const leg of stockLegs(item)) {
+          const updated = await takeReservedStock(
+            tx,
+            leg.batch_id,
+            leg.quantity,
           );
+          if (!updated) {
+            throw new BadRequestException(
+              'Reserved inventory is no longer available for this delivery.',
+            );
+          }
+          await tx.inventoryAuditLog.create({
+            data: {
+              consumer_id: consumerId,
+              branch_id: sale.branch_id,
+              variant_id: item.variant_id,
+              batch_id: leg.batch_id,
+              inventoryBatchId: leg.batch_id,
+              event_type: 'SALE_OUT',
+              quantity_delta: -leg.quantity,
+              quantity_after: updated.quantity,
+              reference_id: item.id,
+              reference_type: 'sale_items',
+              notes: `Delivery completed for sale #${sale.sale_number}`,
+              created_by_user_id: userId,
+            },
+          });
         }
-        await tx.inventoryAuditLog.create({
-          data: {
-            consumer_id: consumerId,
-            branch_id: sale.branch_id,
-            variant_id: item.variant_id,
-            batch_id: item.batch_id,
-            inventoryBatchId: item.batch_id,
-            event_type: 'SALE_OUT',
-            quantity_delta: -item.quantity,
-            quantity_after: updated.quantity,
-            reference_id: item.id,
-            reference_type: 'sale_items',
-            notes: `Delivery completed for sale #${sale.sale_number}`,
-            created_by_user_id: userId,
-          },
-        });
       }
     });
     return this.findOne(id, consumerId);
@@ -4210,7 +4249,7 @@ export class SalesService {
         delivery_status: 'PENDING',
         deleted_at: null,
       },
-      include: { items: true },
+      include: { items: { include: { batch_allocations: true } } },
     });
     if (!sale) throw new NotFoundException('Pending delivery not found');
     await this.prisma.$transaction(async (tx) => {
@@ -4224,11 +4263,12 @@ export class SalesService {
       }
 
       for (const item of sale.items) {
-        if (!item.batch_id) continue;
-        await tx.inventoryBatch.update({
-          where: { id: item.batch_id },
-          data: { reserved_quantity: { decrement: item.quantity } },
-        });
+        for (const leg of stockLegs(item)) {
+          await tx.inventoryBatch.update({
+            where: { id: leg.batch_id },
+            data: { reserved_quantity: { decrement: leg.quantity } },
+          });
+        }
       }
     });
     return this.findOne(id, consumerId);
