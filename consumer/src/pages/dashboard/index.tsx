@@ -552,7 +552,9 @@ function Dashboard() {
                     color: isDarkMode ? "#94a3b8" : "#8c8c8c",
                   }}
                 >
-                  Critical threshold
+                  {data?.low_stock?.out_of_stock_items
+                    ? `${data.low_stock.out_of_stock_items} out of stock`
+                    : "At or below alert level"}
                 </div>
               </Card>
             </Col>

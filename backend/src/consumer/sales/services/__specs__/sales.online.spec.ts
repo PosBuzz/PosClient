@@ -357,7 +357,7 @@ describe('SalesService pending deliveries (unit)', () => {
       delivery_status: 'PENDING',
       deleted_at: null,
     },
-    include: { items: true },
+    include: { items: { include: { batch_allocations: true } } },
   };
 
   it('[BE-MUT-808] completing a delivery claims it, takes the reserved stock of each batch with a SALE_OUT audit row and returns the sale', async () => {

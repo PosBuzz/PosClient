@@ -51,3 +51,29 @@ it("[CO-SMOKE-barcode-printing] uses the authenticated shop name and prints barc
   expect(html).not.toContain("localhost:8080");
   expect(errors).not.toHaveBeenCalled();
 });
+
+it("[CO-LABEL-010] the barcode drawing keeps a valid viewBox for EAN-13, so the bars scale into the label instead of running off its edge", async () => {
+  const products = structuredClone(responseContract<any>("products-list"));
+  server.use(
+    http.get(`${API}${endpoints.getBranches}`, () =>
+      ok(responseContract("branches")),
+    ),
+    http.get(`${API}${endpoints.products}`, () => ok(products)),
+  );
+  vi.mocked(printLabelDocument).mockClear();
+  const { user, queryClient } = renderWithProviders(<Page />);
+  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+  const barcode = screen.getByPlaceholderText(
+    "Enter barcode number (e.g., 1234567890123)",
+  );
+  await user.clear(barcode);
+  await user.paste("1230831887214");
+  const format = screen.getByText("CODE128").closest(".ant-select")!;
+  await user.click(within(format as HTMLElement).getByRole("combobox"));
+  await user.click(await screen.findByTitle("EAN13"));
+  await user.click(screen.getByRole("button", { name: /Print Label/ }));
+  await waitFor(() => expect(printLabelDocument).toHaveBeenCalledTimes(1));
+  const html = vi.mocked(printLabelDocument).mock.calls[0][0];
+  const viewBox = html.match(/viewBox="([^"]*)"/)?.[1];
+  expect(viewBox).toMatch(/^0 0 [\d.]+ [\d.]+$/);
+});

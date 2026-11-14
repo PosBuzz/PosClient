@@ -119,6 +119,57 @@ describe('sales: create', () => {
     expect((await batchOf(db, newest.id)).quantity).toBe(4);
   });
 
+  it('[BE-SALE-064] FIFO never sells from an expired batch', async () => {
+    const v = await w.stock({
+      price: 100,
+      batches: [
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-01T10:00:00Z') },
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
+      ],
+    });
+    const [oldest, newest] = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    await db.inventoryBatch.update({
+      where: { id: oldest.id },
+      data: { expiry_date: new Date(Date.now() - 2 * 24 * 3600 * 1000) },
+    });
+    await w.sell([{ variant: v, qty: 1 }]);
+    expect((await batchOf(db, oldest.id)).quantity).toBe(5);
+    expect((await batchOf(db, newest.id)).quantity).toBe(4);
+  });
+
+  it('[BE-SALE-065] an expired batch cannot be chosen explicitly, and a batch expiring today still sells', async () => {
+    const v = await w.stock({ price: 100, batches: [{ qty: 5, cost: 40 }] });
+    const batch = await db.inventoryBatch.findFirstOrThrow({
+      where: { variant_id: v.id },
+    });
+    await db.inventoryBatch.update({
+      where: { id: batch.id },
+      data: { expiry_date: new Date(Date.now() - 2 * 24 * 3600 * 1000) },
+    });
+    await rejects(
+      w.sell([{ variant: v, qty: 1, batchId: batch.id }]),
+      /expired/,
+    );
+    await rejects(w.sell([{ variant: v, qty: 1 }]), /Insufficient stock/);
+    expect(await salesCount()).toBe(0);
+    expect((await batchOf(db, batch.id)).quantity).toBe(5);
+
+    const now = new Date();
+    await db.inventoryBatch.update({
+      where: { id: batch.id },
+      data: {
+        expiry_date: new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+        ),
+      },
+    });
+    await w.sell([{ variant: v, qty: 1, batchId: batch.id }]);
+    expect((await batchOf(db, batch.id)).quantity).toBe(4);
+  });
+
   it('[BE-SALE-004] an explicit batch is used even when it is not the oldest', async () => {
     const v = await w.stock({
       price: 100,
@@ -136,7 +187,7 @@ describe('sales: create', () => {
     expect((await batchOf(db, newest.id)).quantity).toBe(3);
   });
 
-  it('[BE-SALE-005] a sale never splits across batches (characterization: confirm intent)', async () => {
+  it('[BE-SALE-005] a line bigger than the oldest batch continues into the next batches but stays one row', async () => {
     const v = await w.stock({
       price: 100,
       batches: [
@@ -144,8 +195,65 @@ describe('sales: create', () => {
         { qty: 3, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
       ],
     });
-    await rejects(w.sell([{ variant: v, qty: 4 }]), /Insufficient stock/);
-    expect(await salesCount()).toBe(0);
+    const sale = await w.sell([{ variant: v, qty: 4 }]);
+    const batches = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    expect(batches.map((b) => b.quantity)).toEqual([0, 1]);
+    // still one row for the product, with the batches kept behind it
+    const items = await db.saleItem.findMany({
+      where: { sale_id: sale.id },
+      include: { batch_allocations: { orderBy: { id: 'asc' } } },
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ quantity: 4, batch_id: batches[0].id });
+    expect(Number(items[0].line_total)).toBe(400);
+    expect(
+      items[0].batch_allocations.map((a) => [a.batch_id, a.quantity]),
+    ).toEqual([
+      [batches[0].id, 2],
+      [batches[1].id, 2],
+    ]);
+    expect(
+      await db.inventoryAuditLog.count({
+        where: { variant_id: v.id, event_type: 'SALE_OUT' },
+      }),
+    ).toBe(2);
+    // together the batches still limit the sale, and the message says how much is there
+    await rejects(
+      w.sell([{ variant: v, qty: 2 }]),
+      /Insufficient stock.*Available: 1, Requested: 2/,
+    );
+  });
+
+  it('[BE-SALE-066] a line split across batches skips expired and fully reserved batches', async () => {
+    const v = await w.stock({
+      price: 100,
+      batches: [
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-01T10:00:00Z') },
+        { qty: 5, cost: 40, createdAt: new Date('2026-03-02T10:00:00Z') },
+        { qty: 2, cost: 40, createdAt: new Date('2026-03-03T10:00:00Z') },
+        { qty: 3, cost: 40, createdAt: new Date('2026-03-04T10:00:00Z') },
+      ],
+    });
+    const [expired, reserved, a, b] = await db.inventoryBatch.findMany({
+      where: { variant_id: v.id },
+      orderBy: { created_at: 'asc' },
+    });
+    await db.inventoryBatch.update({
+      where: { id: expired.id },
+      data: { expiry_date: new Date(Date.now() - 2 * 24 * 3600 * 1000) },
+    });
+    await db.inventoryBatch.update({
+      where: { id: reserved.id },
+      data: { reserved_quantity: 5 },
+    });
+    await w.sell([{ variant: v, qty: 4 }]);
+    expect((await batchOf(db, expired.id)).quantity).toBe(5);
+    expect((await batchOf(db, reserved.id)).quantity).toBe(5);
+    expect((await batchOf(db, a.id)).quantity).toBe(0);
+    expect((await batchOf(db, b.id)).quantity).toBe(1);
   });
 
   it("[BE-SALE-006] another tenant's variant is refused and nothing is written", async () => {

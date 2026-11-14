@@ -25,7 +25,11 @@ export function collectBatchLocations(
  */
 export function availableQuantity(
   batches:
-    | { quantity: number; reserved_quantity?: number | null }[]
+    | {
+        quantity: number;
+        reserved_quantity?: number | null;
+        expiry_date?: Date | null;
+      }[]
     | null
     | undefined,
 ): number {
@@ -33,7 +37,34 @@ export function availableQuantity(
 
   return batches.reduce(
     (sum, batch) =>
-      sum + Math.max(0, batch.quantity - (batch.reserved_quantity ?? 0)),
+      isBatchExpired(batch)
+        ? sum
+        : sum + Math.max(0, batch.quantity - (batch.reserved_quantity ?? 0)),
     0,
   );
+}
+
+/** Midnight (UTC) at the start of today; expiry dates are stored as dates. */
+export function startOfToday(now: Date = new Date()): Date {
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+}
+
+/**
+ * A batch is expired once its expiry date is before today, so stock that
+ * expires today can still be sold that day. Batches without a date never expire.
+ */
+export function isBatchExpired(
+  batch: { expiry_date?: Date | null },
+  now: Date = new Date(),
+): boolean {
+  return !!batch.expiry_date && batch.expiry_date < startOfToday(now);
+}
+
+/** Prisma filter that keeps only batches that are not expired. */
+export function notExpiredWhere() {
+  return {
+    OR: [{ expiry_date: null }, { expiry_date: { gte: startOfToday() } }],
+  };
 }

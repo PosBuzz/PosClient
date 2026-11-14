@@ -764,6 +764,15 @@ export default function InventoryPage() {
           }
         />
       )}{" "}
+      {summary && (summary.out_of_stock_variants ?? 0) > 0 && (
+        <Alert
+          message="Out of Stock"
+          description={`${summary.out_of_stock_variants} ${summary.out_of_stock_variants === 1 ? "product you restock has" : "products you restock have"} nothing left to sell. Products with no low stock alert level are not counted.`}
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+      )}
       {/* Alerts for low stock items */}
       {summary && summary.low_stock_variants > 0 && (
         <Alert

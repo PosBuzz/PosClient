@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { notExpiredWhere } from '../../../inventory/utils/batch-location.util';
 import { expectGenericWrapping } from '../../../../../test/helpers/error-wrapping';
 import { setupSales } from '../../../../../test/helpers/sales-service-setup';
 
@@ -262,13 +263,15 @@ describe('SalesService POS product lookups (unit)', () => {
     expect(prisma.productVariant.findMany).toHaveBeenCalledWith({
       where: {
         product: { consumer_id: 5 },
-        inventory_items: { some: { branch_id: 2, quantity: { gt: 0 } } },
+        inventory_items: {
+          some: { branch_id: 2, quantity: { gt: 0 }, ...notExpiredWhere() },
+        },
       },
       include: {
         product: { include: { category: true } },
         sale_unit: true,
         inventory_items: {
-          where: { branch_id: 2, quantity: { gt: 0 } },
+          where: { branch_id: 2, quantity: { gt: 0 }, ...notExpiredWhere() },
           orderBy: { created_at: 'asc' },
         },
       },
@@ -338,13 +341,15 @@ describe('SalesService POS product lookups (unit)', () => {
       where: {
         barcode: 'B',
         product: { consumer_id: 5 },
-        inventory_items: { some: { branch_id: 2, quantity: { gt: 0 } } },
+        inventory_items: {
+          some: { branch_id: 2, quantity: { gt: 0 }, ...notExpiredWhere() },
+        },
       },
       include: {
         product: true,
         sale_unit: true,
         inventory_items: {
-          where: { branch_id: 2, quantity: { gt: 0 } },
+          where: { branch_id: 2, quantity: { gt: 0 }, ...notExpiredWhere() },
           orderBy: { created_at: 'asc' },
         },
       },

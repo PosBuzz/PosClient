@@ -14,6 +14,7 @@
             "name": "Branch 2"
           },
           "branch_id": 2,
+          "expiry_date": null,
           "location": null,
           "quantity": 100,
           "reserved_quantity": 0
@@ -24,6 +25,7 @@
             "name": "Branch 1"
           },
           "branch_id": 1,
+          "expiry_date": null,
           "location": null,
           "quantity": 96,
           "reserved_quantity": 0
@@ -31,6 +33,7 @@
       ],
       "is_default": true,
       "is_low_stock": false,
+      "is_out_of_stock": false,
       "locations": [],
       "locations_by_branch": {},
       "name": "Default",
@@ -67,6 +70,7 @@
             "name": "Branch 2"
           },
           "branch_id": 2,
+          "expiry_date": null,
           "location": null,
           "quantity": 100,
           "reserved_quantity": 0
@@ -77,6 +81,7 @@
             "name": "Branch 1"
           },
           "branch_id": 1,
+          "expiry_date": null,
           "location": null,
           "quantity": 99,
           "reserved_quantity": 1
@@ -84,6 +89,7 @@
       ],
       "is_default": true,
       "is_low_stock": true,
+      "is_out_of_stock": false,
       "locations": [],
       "locations_by_branch": {},
       "name": "Default",
@@ -120,6 +126,7 @@
             "name": "Branch 2"
           },
           "branch_id": 2,
+          "expiry_date": null,
           "location": null,
           "quantity": 99,
           "reserved_quantity": 0
@@ -130,6 +137,7 @@
             "name": "Branch 1"
           },
           "branch_id": 1,
+          "expiry_date": null,
           "location": null,
           "quantity": 97,
           "reserved_quantity": 0
@@ -137,6 +145,7 @@
       ],
       "is_default": true,
       "is_low_stock": false,
+      "is_out_of_stock": false,
       "locations": [],
       "locations_by_branch": {},
       "name": "Default",

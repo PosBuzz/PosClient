@@ -524,13 +524,30 @@ describe('response contracts for the canonical business day', () => {
     expect(
       (await service.findOne(variant.id, product.consumer_id)).is_low_stock,
     ).toBe(true);
+    // a variant is low as soon as any one branch is at the alert, so the
+    // "not low" edge is one below the smallest branch's stock
+    const perBranch = await db.inventoryBatch.groupBy({
+      by: ['branch_id'],
+      where: { variant_id: variant.id },
+      _sum: { quantity: true },
+    });
+    const smallestBranch = Math.min(
+      ...perBranch.map((row) => row._sum.quantity ?? 0),
+    );
     await db.productVariant.update({
       where: { id: variant.id },
-      data: { alert_quantity: current.total_stock - 1 },
+      data: { alert_quantity: smallestBranch - 1 },
     });
     expect(
       (await service.findOne(variant.id, product.consumer_id)).is_low_stock,
     ).toBe(false);
+    await db.productVariant.update({
+      where: { id: variant.id },
+      data: { alert_quantity: smallestBranch },
+    });
+    expect(
+      (await service.findOne(variant.id, product.consumer_id)).is_low_stock,
+    ).toBe(true);
     await db.productVariant.update({
       where: { id: variant.id },
       data: { alert_quantity: 0 },

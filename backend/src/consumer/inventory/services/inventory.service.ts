@@ -1,3 +1,4 @@
+import { availableByBranch, stockStatus } from '../utils/stock-status.util';
 import {
   HttpException,
   HttpStatus,
@@ -33,7 +34,7 @@ export class InventoryService {
         whereClause.branch_id = branchId;
       }
 
-      const [totalBatches, totalQuantity, lowStockVariants, expiringSoon] =
+      const [totalBatches, totalQuantity, stockAlerts, expiringSoon] =
         await Promise.all([
           // Total batches count
           this.prisma.inventoryBatch.count({ where: whereClause }),
@@ -56,6 +57,7 @@ export class InventoryService {
                     quantity: true,
                     reserved_quantity: true,
                     branch_id: true,
+                    expiry_date: true,
                   },
                 },
                 product: { select: { id: true, name: true } },
@@ -63,39 +65,17 @@ export class InventoryService {
             })
             .then((variants) => {
               let lowStockCount = 0;
+              let outOfStockCount = 0;
               variants.forEach((variant) => {
-                if (branchId) {
-                  // If checking specific branch, count variant if that branch's stock is low
-                  const branchStock = variant.inventory_items.reduce(
-                    (sum, item) => sum + item.quantity - item.reserved_quantity,
-                    0,
-                  );
-                  if (branchStock <= (variant.alert_quantity || 0)) {
-                    lowStockCount++;
-                  }
-                } else {
-                  // If checking all branches, count how many branches have low stock for this variant
-                  const branchStockMap = variant.inventory_items.reduce(
-                    (acc, item) => {
-                      acc[item.branch_id] =
-                        (acc[item.branch_id] || 0) +
-                        item.quantity -
-                        item.reserved_quantity;
-                      return acc;
-                    },
-                    {} as Record<number, number>,
-                  );
-
-                  const lowStockBranches = Object.values(branchStockMap).filter(
-                    (stock) => stock <= (variant.alert_quantity || 0),
-                  );
-
-                  if (lowStockBranches.length > 0) {
-                    lowStockCount += lowStockBranches.length;
-                  }
-                }
+                const { status, lowBranchIds } = stockStatus(
+                  variant.inventory_items,
+                  variant.alert_quantity,
+                );
+                // One per low branch; a single branch when one is selected
+                lowStockCount += lowBranchIds.length;
+                if (status === 'out') outOfStockCount++;
               });
-              return lowStockCount;
+              return { lowStockCount, outOfStockCount };
             }),
 
           // Batches expiring in next 30 days
@@ -151,7 +131,8 @@ export class InventoryService {
           (totalQuantity._sum.reserved_quantity || 0),
         physical_quantity: totalQuantity._sum.quantity || 0,
         reserved_quantity: totalQuantity._sum.reserved_quantity || 0,
-        low_stock_variants: lowStockVariants,
+        low_stock_variants: stockAlerts.lowStockCount,
+        out_of_stock_variants: stockAlerts.outOfStockCount,
         expiring_soon: expiringSoon,
       };
     } catch (error) {
@@ -218,6 +199,7 @@ export class InventoryService {
               quantity: true,
               reserved_quantity: true,
               branch_id: true,
+              expiry_date: true,
               location: true,
               branch: { select: { id: true, name: true } },
             },
@@ -238,42 +220,19 @@ export class InventoryService {
             0,
           );
 
-          let isLowStock = false;
-
-          if (branch_id) {
-            // If filtering by branch, check only that branch's stock
-            isLowStock = !!(
-              variant.alert_quantity &&
-              variant.alert_quantity > 0 &&
-              totalStock <= variant.alert_quantity
-            );
-          } else {
-            // If not filtering by branch, check if any branch has low stock
-            const branchStockMap = variant.inventory_items.reduce(
-              (acc, item) => {
-                acc[item.branch_id] =
-                  (acc[item.branch_id] || 0) +
-                  item.quantity -
-                  item.reserved_quantity;
-                return acc;
-              },
-              {} as Record<number, number>,
-            );
-
-            isLowStock = !!(
-              variant.alert_quantity &&
-              variant.alert_quantity > 0 &&
-              Object.values(branchStockMap).some(
-                (branchStock) => branchStock <= (variant.alert_quantity || 0),
-              )
-            );
-          }
+          const { status } = stockStatus(
+            variant.inventory_items,
+            variant.alert_quantity,
+          );
+          const isLowStock = status === 'low';
+          const isOutOfStock = status === 'out';
 
           return {
             ...variant,
             total_stock: totalStock,
             pending_delivery: pendingDelivery,
             is_low_stock: isLowStock,
+            is_out_of_stock: isOutOfStock,
             // Surfaced on the list itself so no drill-down is needed
             locations: collectBatchLocations(variant.inventory_items),
             locations_by_branch: variant.inventory_items.reduce(
@@ -496,36 +455,8 @@ export class InventoryService {
         {} as Record<string, number>,
       );
 
-      // Calculate low stock status based on branch
-      let isLowStock = false;
-      if (branchId) {
-        // If checking specific branch, use that branch's stock
-        isLowStock = !!(
-          variant.alert_quantity &&
-          variant.alert_quantity > 0 &&
-          totalStock <= variant.alert_quantity
-        );
-      } else {
-        // If checking all branches, see if any branch has low stock
-        const branchStockMap = batches.reduce(
-          (acc, batch) => {
-            acc[batch.branch?.id || 0] =
-              (acc[batch.branch?.id || 0] || 0) +
-              batch.quantity -
-              batch.reserved_quantity;
-            return acc;
-          },
-          {} as Record<number, number>,
-        );
-
-        isLowStock = !!(
-          variant.alert_quantity &&
-          variant.alert_quantity > 0 &&
-          Object.values(branchStockMap).some(
-            (branchStock) => branchStock <= (variant.alert_quantity || 0),
-          )
-        );
-      }
+      const { status } = stockStatus(batches, variant.alert_quantity);
+      const isLowStock = status === 'low';
 
       return {
         variant: {
@@ -537,6 +468,7 @@ export class InventoryService {
         },
         total_stock: totalStock,
         is_low_stock: isLowStock,
+        is_out_of_stock: status === 'out',
         stock_by_branch: stockByBranch,
         batches,
       };
@@ -550,6 +482,46 @@ export class InventoryService {
       );
       throw new HttpException(
         'Failed to get variant stock',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  /** Variants tracked for restocking (alert level above 0) with nothing sellable left. */
+  async getOutOfStockCount(consumerId: number, branchId?: number) {
+    try {
+      const variants = await this.prisma.productVariant.findMany({
+        where: {
+          product: { consumer_id: consumerId },
+          alert_quantity: { gt: 0 },
+        },
+        select: {
+          alert_quantity: true,
+          inventory_items: {
+            where: branchId ? { branch_id: branchId } : {},
+            select: {
+              quantity: true,
+              reserved_quantity: true,
+              branch_id: true,
+              expiry_date: true,
+            },
+          },
+        },
+      });
+      return variants.filter(
+        (variant) =>
+          stockStatus(variant.inventory_items, variant.alert_quantity)
+            .status === 'out',
+      ).length;
+    } catch (error) {
+      if (isClientError(error)) {
+        throw error;
+      }
+      this.logger.error(
+        `Error counting out of stock items for consumer ${consumerId} branch ${branchId}`,
+        errorStack(error),
+      );
+      throw new HttpException(
+        'Failed to count out of stock items',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -569,6 +541,7 @@ export class InventoryService {
               quantity: true,
               reserved_quantity: true,
               branch_id: true,
+              expiry_date: true,
               branch: { select: { id: true, name: true } },
             },
           },
@@ -578,86 +551,37 @@ export class InventoryService {
       const lowStockItems: any[] = [];
 
       variants.forEach((variant) => {
-        if (branchId) {
-          // If filtering by branch, check only that branch's stock
-          const branchStock = variant.inventory_items.reduce(
-            (sum, item) => sum + item.quantity - item.reserved_quantity,
-            0,
-          );
+        const alert = variant.alert_quantity || 0;
+        const { lowBranchIds } = stockStatus(variant.inventory_items, alert);
+        if (!lowBranchIds.length) return;
 
-          if (branchStock <= (variant.alert_quantity || 0)) {
-            const stockByBranch = variant.inventory_items.reduce(
-              (acc, item) => {
-                const branchName = item.branch?.name || 'Central';
-                acc[branchName] =
-                  (acc[branchName] || 0) +
-                  item.quantity -
-                  item.reserved_quantity;
-                return acc;
-              },
-              {} as Record<string, number>,
-            );
+        const branchStock = availableByBranch(variant.inventory_items);
+        const stockByBranch = variant.inventory_items.reduce(
+          (acc, item) => {
+            const branchName = item.branch?.name || 'Central';
+            acc[branchName] =
+              (acc[branchName] || 0) + item.quantity - item.reserved_quantity;
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
 
-            lowStockItems.push({
-              ...variant,
-              total_stock: branchStock,
-              stock_by_branch: stockByBranch,
-              shortage: (variant.alert_quantity || 0) - branchStock,
-              affected_branch_id: branchId,
-              affected_branch_name:
-                variant.inventory_items[0]?.branch?.name || 'Central',
-            });
-          }
-        } else {
-          // If not filtering by branch, check each branch separately
-          const stockByBranch = variant.inventory_items.reduce(
-            (acc, item) => {
-              const branchName = item.branch?.name || 'Central';
-              acc[branchName] =
-                (acc[branchName] || 0) + item.quantity - item.reserved_quantity;
-              return acc;
-            },
-            {} as Record<string, number>,
-          );
-
-          // Check each branch for low stock
-          const branchStockMap = variant.inventory_items.reduce(
-            (acc, item) => {
-              acc[item.branch_id] =
-                (acc[item.branch_id] || 0) +
-                item.quantity -
-                item.reserved_quantity;
-              return acc;
-            },
-            {} as Record<number, number>,
-          );
-
-          // Find branches with low stock
-          const lowStockBranches = Object.entries(branchStockMap).filter(
-            ([, stock]) => stock <= (variant.alert_quantity || 0),
-          );
-
-          if (lowStockBranches.length > 0) {
-            // If multiple branches have low stock, create separate entries for each
-            lowStockBranches.forEach(([lowStockBranchId, branchStock]) => {
-              const branchName =
-                variant.inventory_items.find(
-                  (item) => item.branch_id === parseInt(lowStockBranchId),
-                )?.branch?.name || 'Central';
-
-              lowStockItems.push({
-                ...variant,
-                total_stock: branchStock,
-                stock_by_branch: stockByBranch,
-                shortage: (variant.alert_quantity || 0) - branchStock,
-                affected_branch_id: parseInt(lowStockBranchId),
-                affected_branch_name: branchName,
-                // Add a unique key for frontend to handle multiple entries for same variant
-                unique_key: `${variant.id}-${lowStockBranchId}`,
-              });
-            });
-          }
-        }
+        lowBranchIds.forEach((lowBranchId) => {
+          const stock = branchStock.get(lowBranchId) ?? 0;
+          const branchName =
+            variant.inventory_items.find(
+              (item) => item.branch_id === lowBranchId,
+            )?.branch?.name || 'Central';
+          lowStockItems.push({
+            ...variant,
+            total_stock: stock,
+            stock_by_branch: stockByBranch,
+            shortage: alert - stock,
+            affected_branch_id: lowBranchId,
+            affected_branch_name: branchName,
+            ...(branchId ? {} : { unique_key: `${variant.id}-${lowBranchId}` }),
+          });
+        });
       });
 
       return lowStockItems;

@@ -38,6 +38,7 @@ export const consumerScope = (): Record<string, string> => ({
   inventory_transfer_items: `transfer_id IN (SELECT t.id FROM inventory_transfers t JOIN branches b ON b.id = t.source_branch_id WHERE b.consumer_id = $1)`,
   purchase_payments: `batch_id IN (SELECT ib.id FROM inventory_batches ib JOIN branches b ON b.id = ib.branch_id WHERE b.consumer_id = $1)`,
   sale_items: `sale_id IN (SELECT id FROM sales WHERE consumer_id = $1)`,
+  sale_item_batches: `sale_item_id IN (SELECT si.id FROM sale_items si JOIN sales s ON s.id = si.sale_id WHERE s.consumer_id = $1)`,
   sale_payments: `sale_id IN (SELECT id FROM sales WHERE consumer_id = $1)`,
   return_items: `return_id IN (SELECT id FROM returns WHERE consumer_id = $1)`,
   return_exchanges: `return_id IN (SELECT id FROM returns WHERE consumer_id = $1)`,
